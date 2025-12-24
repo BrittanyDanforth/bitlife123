@@ -1,0 +1,530 @@
+--[[
+	Science Career Events
+	AAA-quality events with random BitLife-style outcomes
+	User CANNOT control outcomes - everything is randomized
+	
+	Careers covered:
+	- Lab Technician
+	- Research Assistant
+	- Scientist
+	- Senior Scientist
+	- Research Director
+]]
+
+local ScienceCareerEvents = {}
+
+local function hasScienceJob(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local category = (state.CurrentJob.category or ""):lower()
+	return category == "science" or jobId:find("scientist") or jobId:find("research") 
+		or jobId:find("lab") or jobId:find("chemist") or jobId:find("biologist")
+		or jobId:find("physicist")
+end
+
+local function isSeniorScientist(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	return jobId:find("senior") or jobId:find("director") or jobId:find("principal")
+end
+
+ScienceCareerEvents.events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- RESEARCH EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "sci_experiment_success",
+		title = "Experiment Success!",
+		emoji = "🧪",
+		text = "Your latest experiment yielded unexpected but promising results! This could be significant!",
+		category = "career_science",
+		weight = 18,
+		minAge = 22, maxAge = 70,
+		baseChance = 0.55,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = hasScienceJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Run more trials to confirm",
+				effects = { Smarts = 5 },
+				feedText = "Science requires verification...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 20) end
+						state.Money = (state.Money or 0) + math.random(5000, 20000)
+						state.Flags = state.Flags or {}
+						state.Flags.breakthrough_researcher = true
+						if state.AddFeed then state:AddFeed("🧪 CONFIRMED! Results replicated! This is a legitimate breakthrough!") end
+					elseif roll <= 80 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then state:AddFeed("🧪 Results are inconsistent. Need more data. Back to the lab.") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						if state.AddFeed then state:AddFeed("🧪 Couldn't replicate. Equipment malfunction? False positive. Frustrating.") end
+					end
+				end,
+			},
+			{
+				text = "Publish preliminary findings",
+				effects = {},
+				feedText = "Getting it out there...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 35 then
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
+						state.Fame = (state.Fame or 0) + 15
+						if state.AddFeed then state:AddFeed("🧪 Paper published! Scientific community is intrigued!") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						if state.AddFeed then state:AddFeed("🧪 Peer reviewers tore it apart. 'Insufficient data.' Embarrassing.") end
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "sci_failed_experiment",
+		title = "Failed Experiment",
+		emoji = "💥",
+		text = "Months of work just went up in smoke. The experiment failed catastrophically.",
+		category = "career_science",
+		weight = 15,
+		minAge = 22, maxAge = 70,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = hasScienceJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Learn from the failure",
+				effects = { Smarts = 5 },
+				feedText = "Failure is data...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.AddFeed then state:AddFeed("💥 Found the flaw! This failure taught you something important!") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then state:AddFeed("💥 Still not sure what went wrong. Science can be frustrating.") end
+					end
+				end,
+			},
+			{
+				text = "Start completely over",
+				effects = { Happiness = -10 },
+				feedText = "Back to square one...",
+				onResolve = function(state)
+					-- AAA FIX: Nil check for all state methods
+					if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+					if state.AddFeed then state:AddFeed("💥 Scrapped everything. Starting fresh. That's science.") end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "sci_grant_application",
+		title = "Grant Application",
+		emoji = "💰",
+		text = "Your research needs funding. Time to write grant applications and compete for limited funds.",
+		category = "career_science",
+		weight = 14,
+		minAge = 24, maxAge = 65,
+		baseChance = 0.5,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasScienceJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Apply for NIH grant",
+				effects = { Smarts = 3 },
+				feedText = "Writing proposals...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 25 then
+						local grant = math.random(100000, 500000)
+						state.Money = (state.Money or 0) + math.floor(grant * 0.1) -- Researcher's cut
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 25) end
+						state.Flags = state.Flags or {}
+						state.Flags.grant_funded = true
+						if state.AddFeed then state:AddFeed(string.format("💰 GRANT APPROVED! $%d in funding! Research can continue!", grant)) end
+					elseif roll <= 60 then
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then state:AddFeed("💰 Grant rejected but reviewers gave useful feedback. Revise and resubmit.") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -12) end
+						if state.AddFeed then state:AddFeed("💰 Rejected. Funding is brutal. Only 10% of grants get approved.") end
+					end
+				end,
+			},
+			{
+				text = "Seek industry partnership",
+				effects = {},
+				feedText = "Exploring private funding...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 45 then
+						local funding = math.random(50000, 200000)
+						state.Money = (state.Money or 0) + math.floor(funding * 0.15)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
+						if state.AddFeed then state:AddFeed(string.format("💰 Industry partner found! $%d in funding! With strings attached...", funding)) end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then state:AddFeed("💰 Companies aren't interested. Too basic, not profitable enough.") end
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "sci_peer_review",
+		title = "Peer Review Nightmare",
+		emoji = "📝",
+		text = "Reviewer 2 is destroying your paper. Completely unreasonable demands. Classic academic politics.",
+		category = "career_science",
+		weight = 14,
+		minAge = 24, maxAge = 70,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = hasScienceJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Address all comments professionally",
+				effects = { Smarts = 3, Health = -3 },
+				feedText = "Point by point rebuttal...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
+						state.Flags = state.Flags or {}
+						state.Flags.published_scientist = true
+						if state.AddFeed then state:AddFeed("📝 Paper accepted after revisions! Published! Sweet vindication!") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						if state.AddFeed then state:AddFeed("📝 Still rejected. 'Major revisions needed.' The cycle continues.") end
+					end
+				end,
+			},
+			{
+				text = "Submit to a different journal",
+				effects = {},
+				feedText = "Finding a better fit...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
+						if state.AddFeed then state:AddFeed("📝 New journal accepted it! Sometimes it's just about finding the right audience.") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						if state.AddFeed then state:AddFeed("📝 Another rejection. Starting to question the research itself...") end
+					end
+				end,
+			},
+			{
+				text = "Give up on this paper",
+				effects = { Happiness = -12 },
+				feedText = "It's not worth it anymore...",
+				onResolve = function(state)
+					-- AAA FIX: Nil check for all state methods
+					if state.AddFeed then state:AddFeed("📝 Filed it away. Maybe revisit later. Academia is exhausting.") end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "sci_lab_accident",
+		title = "Lab Accident",
+		emoji = "⚠️",
+		text = "There's been an accident in the lab! Chemical spill, equipment malfunction - chaos!",
+		category = "career_science",
+		weight = 12,
+		minAge = 22, maxAge = 65,
+		baseChance = 0.4,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = hasScienceJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Follow emergency protocols",
+				effects = { Smarts = 3 },
+				feedText = "Training kicks in...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.AddFeed then state:AddFeed("⚠️ Handled it by the book. No injuries. Safety review passed.") end
+					else
+						if state.ModifyStat then 
+							state:ModifyStat("Health", -10)
+							state:ModifyStat("Happiness", -8)
+						end
+						if state.AddFeed then state:AddFeed("⚠️ Minor exposure. Medical checkup. Scary but okay.") end
+					end
+				end,
+			},
+			{
+				text = "Evacuate immediately",
+				effects = {},
+				feedText = "Safety first!",
+				onResolve = function(state)
+					-- AAA FIX: Nil check for all state methods
+					if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+					if state.AddFeed then state:AddFeed("⚠️ Everyone got out. Lost some samples but everyone is safe.") end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "sci_discovery",
+		title = "Eureka Moment!",
+		emoji = "💡",
+		text = "Late night in the lab and suddenly - EUREKA! A genuine scientific breakthrough!",
+		category = "career_science",
+		weight = 10,
+		minAge = 25, maxAge = 70,
+		baseChance = 0.3,
+		cooldown = 5,
+		requiresJob = true,
+		eligibility = hasScienceJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Document everything immediately",
+				effects = { Smarts = 5, Happiness = 20 },
+				feedText = "This changes everything!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state.Money = (state.Money or 0) + math.random(30000, 100000)
+						state.Fame = (state.Fame or 0) + 40
+						state.Flags = state.Flags or {}
+						state.Flags.major_discovery = true
+						state.Flags.is_famous = true
+						-- AAA FIX: Nil check for all state methods
+						if state.AddFeed then state:AddFeed("💡 MAJOR DISCOVERY! Your name will be in textbooks! Grant funding secured!") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
+						if state.AddFeed then state:AddFeed("💡 Significant finding! Paper published in top journal!") end
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "sci_conference_presentation",
+		title = "Conference Presentation",
+		emoji = "🎤",
+		text = "You're presenting your research at a major scientific conference! Hundreds of experts in the audience!",
+		category = "career_science",
+		weight = 14,
+		minAge = 24, maxAge = 70,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = hasScienceJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Present confidently",
+				effects = {},
+				feedText = "Taking the stage...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local bonus = (smarts - 50) / 3
+					
+					if roll + bonus <= 50 then
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 18) end
+						state.Fame = (state.Fame or 0) + 15
+						state.Flags = state.Flags or {}
+						state.Flags.respected_scientist = true
+						if state.AddFeed then state:AddFeed("🎤 Standing ovation! Brilliant Q&A! Networking opportunities!") end
+					elseif roll + bonus <= 80 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.AddFeed then state:AddFeed("🎤 Solid presentation. Good questions. Made some connections.") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						if state.AddFeed then state:AddFeed("🎤 Tough crowd. Got grilled during Q&A. Humbling experience.") end
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "sci_compete_with_colleague",
+		title = "Research Competition",
+		emoji = "🏃",
+		text = "Another lab is working on the same problem! It's a race to publish first!",
+		category = "career_science",
+		weight = 14,
+		minAge = 24, maxAge = 65,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasScienceJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Speed up - work overtime",
+				effects = { Health = -10 },
+				feedText = "Racing to publish...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 45 then
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 20) end
+						state.Fame = (state.Fame or 0) + 20
+						state.Flags = state.Flags or {}
+						state.Flags.published_first = true
+						if state.AddFeed then state:AddFeed("🏃 Published first! YOU get the credit! Science is competitive!") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -15) end
+						state.Flags = state.Flags or {}
+						state.Flags.got_scooped = true
+						if state.AddFeed then state:AddFeed("🏃 They beat you by a week. Years of work scooped. Devastating.") end
+					end
+				end,
+			},
+			{
+				text = "Collaborate instead of compete",
+				effects = { Smarts = 3 },
+				feedText = "Reaching out to them...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
+						state.Flags = state.Flags or {}
+						state.Flags.collaborative_scientist = true
+						if state.AddFeed then state:AddFeed("🏃 Joint publication! Both labs credited! Science wins!") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then state:AddFeed("🏃 They refused collaboration. Still racing. Their loss.") end
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "sci_ethical_dilemma",
+		title = "Ethical Question",
+		emoji = "🤔",
+		text = "Your research has applications that could be used for harm. A company wants to fund it with 'no questions asked.'",
+		category = "career_science",
+		weight = 10,
+		minAge = 26, maxAge = 65,
+		baseChance = 0.4,
+		cooldown = 5,
+		requiresJob = true,
+		eligibility = hasScienceJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Decline the funding",
+				effects = { Smarts = 5, Happiness = 5 },
+				setFlags = { ethical_scientist = true },
+				feedText = "🤔 Some doors shouldn't be opened. Ethics over profit. Sleep well at night.",
+			},
+			{
+				text = "Take the money",
+				effects = { Happiness = -5 },
+				feedText = "Research needs funding...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					local funding = math.random(200000, 500000)
+					
+					if roll <= 50 then
+						state.Money = (state.Money or 0) + math.floor(funding * 0.2)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
+						if state.AddFeed then state:AddFeed(string.format("🤔 $%d in funding. Research advances. Hopefully no bad applications...", funding)) end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -20) end
+						state.Flags = state.Flags or {}
+						state.Flags.ethical_compromise = true
+						state.Flags.sold_out_science = true
+						if state.AddFeed then state:AddFeed("🤔 Your research was weaponized. Haunts you now. Worth the funding?") end
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "sci_nobel_consideration",
+		title = "Nobel Prize Nomination",
+		emoji = "🏆",
+		text = "You've been nominated for the Nobel Prize! Years of groundbreaking work have led to this moment!",
+		category = "career_science",
+		weight = 5,
+		minAge = 40, maxAge = 90,
+		baseChance = 0.15,
+		cooldown = 10,
+		oneTime = true,
+		requiresJob = true,
+		eligibility = isSeniorScientist,
+		requiresFlags = { major_discovery = true },
+		blockedByFlags = { in_prison = true, nobel_winner = true },
+		
+		choices = {
+			{
+				text = "Wait for the announcement...",
+				effects = {},
+				feedText = "Heart pounding...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state.Money = (state.Money or 0) + 500000
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 50) end
+						state.Fame = (state.Fame or 0) + 200
+						state.Flags = state.Flags or {}
+						state.Flags.nobel_winner = true
+						state.Flags.is_famous = true
+						if state.AddFeed then state:AddFeed("🏆 NOBEL PRIZE WINNER! Highest honor in science! Your life's work recognized!") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
+						state.Fame = (state.Fame or 0) + 30
+						if state.AddFeed then state:AddFeed("🏆 Didn't win this year but the nomination itself is an honor. Few ever get nominated.") end
+					end
+				end,
+			},
+		},
+	},
+}
+
+return ScienceCareerEvents

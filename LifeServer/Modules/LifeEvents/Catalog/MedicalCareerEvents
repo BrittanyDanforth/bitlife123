@@ -1,0 +1,968 @@
+--[[
+	MedicalCareerEvents.lua
+	
+	MASSIVE career events for Medical professionals:
+	- Hospital Orderlies, Medical Assistants, EMTs
+	- Nurses (LPN, RN, Practitioner), Physical Therapists
+	- Pharmacists, Dentists, Doctors, Surgeons
+	
+	All events use randomized outcomes for unpredictable gameplay!
+]]
+
+local MedicalCareerEvents = {}
+
+local CATEGORY = "career_medical"
+
+MedicalCareerEvents.events = {
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- EMT/PARAMEDIC EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "emt_car_accident",
+		title = "🚑 Multi-Car Pileup",
+		emoji = "🚑",
+		text = "Major accident on the highway. Multiple casualties. You're first on scene.",
+		question = "Who do you prioritize?",
+		category = CATEGORY,
+		weight = 14,
+		minAge = 18, maxAge = 55,
+		baseChance = 0.45,
+		cooldown = 2,
+		requiresJob = true,
+		requiresJobId = { "emt" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Follow triage protocol - most salvageable first",
+				effects = { Smarts = 3 },
+				feedText = "Making hard choices...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.triage_expert = true
+						state:AddFeed("🚑 Saved three lives. Made the hard calls. This is the job.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("🚑 Did everything right but lost one. Never gets easier.")
+					end
+				end,
+			},
+			{
+				text = "Go to the one screaming loudest",
+				effects = {},
+				feedText = "Following instinct...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🚑 Turned out to be the right call. They needed immediate help.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:ModifyStat("Smarts", 2)
+						state:AddFeed("🚑 They were stable. Someone else wasn't. Learn from this.")
+					end
+				end,
+			},
+			{
+				text = "Wait for backup before engaging",
+				effects = {},
+				feedText = "Waiting for help...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🚑 Backup arrived fast. Good teamwork saved everyone.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("🚑 Waited too long. Supervisor questioned your hesitation.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "emt_overdose_call",
+		title = "💉 Overdose Call",
+		emoji = "💉",
+		text = "Young person overdosed. Family is panicking. Narcan is ready.",
+		question = "How do you handle the scene?",
+		category = CATEGORY,
+		weight = 16,
+		minAge = 18, maxAge = 55,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		requiresJobId = { "emt" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Administer Narcan and stabilize",
+				effects = { Smarts = 2 },
+				feedText = "Administering treatment...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 85 then
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.saved_overdose_victim = true
+						state:AddFeed("💉 They came back! Handed them off to ER. You saved a life today.")
+					else
+						state:ModifyStat("Happiness", -20)
+						state:AddFeed("💉 Too late. Nothing could save them. This job takes a toll.")
+					end
+				end,
+			},
+			{
+				text = "Calm the family while treating",
+				effects = { Happiness = 5 },
+				feedText = "💉 Multitasked. Kept family calm, saved the patient. Perfect handling.",
+				setFlags = { crisis_management = true },
+			},
+			{
+				text = "Call for additional support first",
+				effects = {},
+				feedText = "Getting backup...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:AddFeed("💉 Police arrived to manage family. Made treatment easier.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("💉 Delay cost precious seconds. Patient survived but barely.")
+					end
+				end,
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- NURSE EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "nurse_medication_error",
+		title = "💊 Medication Alert",
+		emoji = "💊",
+		text = "You notice another nurse about to give the wrong medication to a patient.",
+		question = "What do you do?",
+		category = CATEGORY,
+		weight = 14,
+		minAge = 20, maxAge = 60,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresJob = true,
+		requiresJobId = { "nurse_lpn", "nurse_rn", "nurse_practitioner" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Stop them immediately",
+				effects = { Smarts = 3 },
+				feedText = "Intervening...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 80 then
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.patient_advocate = true
+						state:AddFeed("💊 Caught a potentially fatal error! Patient safe. Colleague grateful.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("💊 They got defensive about being corrected. Awkward but necessary.")
+					end
+				end,
+			},
+			{
+				text = "Double-check the chart first",
+				effects = { Smarts = 2 },
+				feedText = "Verifying...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("💊 Good thing you checked - dosage was wrong. Fixed it quietly.")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("💊 Actually it was correct. False alarm but better safe than sorry.")
+					end
+				end,
+			},
+			{
+				text = "Report to supervisor",
+				effects = {},
+				feedText = "Going through channels...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("💊 Supervisor handled it professionally. System worked.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state.Flags = state.Flags or {}
+						state.Flags.snitch_reputation = true
+						state:AddFeed("💊 Other nurses think you went over someone's head. Politics.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "nurse_difficult_family",
+		title = "👨‍👩‍👧 Difficult Family",
+		emoji = "👨‍👩‍👧",
+		text = "A patient's family is demanding, questioning every decision, threatening lawsuits.",
+		question = "How do you deal with them?",
+		category = CATEGORY,
+		weight = 16,
+		minAge = 20, maxAge = 60,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		requiresJobId = { "nurse_lpn", "nurse_rn", "nurse_practitioner" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Patiently explain everything",
+				effects = { Happiness = -5, Smarts = 2 },
+				feedText = "Being transparent...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 65 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.patient_communicator = true
+						state:AddFeed("👨‍👩‍👧 They calmed down once they understood. Wrote a thank you letter!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("👨‍👩‍👧 Some people can't be satisfied. You did your best.")
+					end
+				end,
+			},
+			{
+				text = "Get the doctor to handle them",
+				effects = {},
+				feedText = "Escalating appropriately...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("👨‍👩‍👧 Doctor explained things. They needed the white coat authority.")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("👨‍👩‍👧 Doctor was annoyed you couldn't handle it. Fair or not.")
+					end
+				end,
+			},
+			{
+				text = "Document everything for liability",
+				effects = { Smarts = 3 },
+				feedText = "👨‍👩‍👧 Created a paper trail. Whatever happens, you're protected.",
+				setFlags = { thorough_documentation = true },
+			},
+		},
+	},
+	
+	{
+		id = "nurse_code_blue",
+		title = "🚨 Code Blue!",
+		emoji = "🚨",
+		text = "A patient flatlines during your shift. The code team isn't there yet.",
+		question = "What do you do?",
+		category = CATEGORY,
+		weight = 12,
+		minAge = 22, maxAge = 60,
+		baseChance = 0.35,
+		cooldown = 3,
+		requiresJob = true,
+		requiresJobId = { "nurse_rn", "nurse_practitioner" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Start CPR immediately",
+				effects = { Health = -5 },
+				feedText = "Starting compressions...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 20)
+						state.Flags = state.Flags or {}
+						state.Flags.saved_life_cpr = true
+						state:AddFeed("🚨 They came back! Your CPR kept them alive until the team arrived!")
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("🚨 Did everything right. Sometimes it's not enough. This is healthcare.")
+					end
+				end,
+			},
+			{
+				text = "Call the code and prep the crash cart",
+				effects = { Smarts = 3 },
+				feedText = "Coordinating response...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("🚨 Perfect coordination! Team arrived with everything ready. Patient saved!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🚨 Did the right things. Sometimes outcomes don't match effort.")
+					end
+				end,
+			},
+			{
+				text = "Grab the AED first",
+				effects = {},
+				feedText = "🚨 AED advised shock. You delivered it. Rhythm restored! Quick thinking!",
+				setFlags = { aed_certified = true },
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- DOCTOR EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "doctor_malpractice_threat",
+		title = "⚖️ Lawsuit Threat",
+		emoji = "⚖️",
+		text = "A patient's family is threatening malpractice. You followed protocol but outcome was bad.",
+		question = "How do you respond?",
+		category = CATEGORY,
+		weight = 12,
+		minAge = 30, maxAge = 65,
+		baseChance = 0.35,
+		cooldown = 4,
+		requiresJob = true,
+		requiresJobId = { "doctor", "surgeon", "doctor_resident" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Meet with family - show compassion",
+				effects = { Smarts = 3 },
+				feedText = "Having a difficult conversation...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.empathetic_doctor = true
+						state:AddFeed("⚖️ They dropped the lawsuit. Your honesty and compassion helped them grieve.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("⚖️ They're still suing but acknowledged you were caring.")
+					end
+				end,
+			},
+			{
+				text = "Refer everything to hospital legal",
+				effects = {},
+				feedText = "Getting legal involved...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("⚖️ Legal handled it. Case dismissed - you followed protocol.")
+					else
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 5000)
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("⚖️ Settled out of court. Your insurance covered most but reputation damaged.")
+					end
+				end,
+			},
+			{
+				text = "Document everything obsessively",
+				effects = { Smarts = 2 },
+				feedText = "⚖️ Your documentation was flawless. Case thrown out on evidence alone.",
+				setFlags = { thorough_documentation = true },
+			},
+		},
+	},
+	
+	{
+		id = "doctor_miracle_diagnosis",
+		title = "🔬 Mystery Case",
+		emoji = "🔬",
+		text = "Patient stumping everyone. You have a hunch about a rare condition nobody's considered.",
+		question = "Push your theory?",
+		category = CATEGORY,
+		weight = 10,
+		minAge = 28, maxAge = 65,
+		baseChance = 0.3,
+		cooldown = 4,
+		requiresJob = true,
+		requiresJobId = { "doctor", "surgeon", "chief_of_medicine" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Order the unusual test anyway",
+				effects = {},
+				feedText = "Following your instinct...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local bonus = math.floor(smarts / 10)
+					
+					if roll + bonus <= 65 then
+						state:ModifyStat("Happiness", 25)
+						state:ModifyStat("Smarts", 5)
+						state.Flags = state.Flags or {}
+						state.Flags.diagnostic_genius = true
+						state:AddFeed("🔬 YOU WERE RIGHT! Rare disease caught early. Patient will recover! Career-making diagnosis!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🔬 Test was negative. Insurance might question it. At least you tried.")
+					end
+				end,
+			},
+			{
+				text = "Present your theory to the team",
+				effects = { Smarts = 3 },
+				feedText = "Collaborating...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("🔬 Team was skeptical but test confirmed it! Shared credit but right diagnosis!")
+					else
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🔬 Team went a different direction. They might be right.")
+					end
+				end,
+			},
+			{
+				text = "Defer to the specialists",
+				effects = { Happiness = -3 },
+				feedText = "🔬 Specialists eventually figured it out. You could have caught it first.",
+			},
+		},
+	},
+	
+	{
+		id = "doctor_drug_rep",
+		title = "💼 Drug Rep Offer",
+		emoji = "💼",
+		text = "A pharmaceutical rep offers an all-expenses trip to a 'conference' in Hawaii. Just prescribe their new med.",
+		question = "Accept the bribe?",
+		category = CATEGORY,
+		weight = 10,
+		minAge = 28, maxAge = 65,
+		baseChance = 0.35,
+		cooldown = 5,
+		requiresJob = true,
+		requiresJobId = { "doctor", "surgeon", "chief_of_medicine" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Report them to ethics board",
+				effects = { Smarts = 3, Happiness = 5 },
+				feedText = "💼 Ethics complaint filed. Their company got fined. Your integrity intact.",
+				setFlags = { ethical_doctor = true },
+			},
+			{
+				text = "Politely decline",
+				effects = { Happiness = 2 },
+				feedText = "💼 You said no. They moved on to someone else. Some doctors take these.",
+			},
+			{
+				text = "Take the trip",
+				effects = {},
+				feedText = "Going to Hawaii...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("💼 Nice vacation. Nobody found out. Morally grey at best.")
+					else
+						state:ModifyStat("Happiness", -20)
+						state.Flags = state.Flags or {}
+						state.Flags.ethics_violation = true
+						state:AddFeed("💼 Someone reported it. Medical board investigation. Career at risk.")
+					end
+				end,
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- SURGEON EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "surgeon_OR_complication",
+		title = "🔪 Surgery Complication",
+		emoji = "🔪",
+		text = "Mid-surgery, you hit an unexpected complication. Patient is losing blood fast.",
+		question = "How do you proceed?",
+		category = CATEGORY,
+		weight = 12,
+		minAge = 34, maxAge = 65,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresJob = true,
+		requiresJobId = { "surgeon" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Improvise a solution on the spot",
+				effects = {},
+				feedText = "Thinking fast...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local bonus = math.floor(smarts / 8)
+					
+					if roll + bonus <= 70 then
+						state:ModifyStat("Happiness", 25)
+						state:ModifyStat("Smarts", 5)
+						state.Flags = state.Flags or {}
+						state.Flags.brilliant_surgeon = true
+						state:AddFeed("🔪 BRILLIANT SAVE! Your quick thinking will be taught in medical schools!")
+					else
+						state:ModifyStat("Happiness", -20)
+						state:AddFeed("🔪 Did everything possible. Patient didn't make it. Review board cleared you.")
+					end
+				end,
+			},
+			{
+				text = "Call for senior assistance",
+				effects = { Smarts = 2 },
+				feedText = "Getting backup...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 80 then
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("🔪 Senior surgeon took over. Patient saved. Team effort.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🔪 Help arrived too late. Sometimes this happens.")
+					end
+				end,
+			},
+			{
+				text = "Follow textbook protocol exactly",
+				effects = {},
+				feedText = "By the book...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("🔪 Protocol worked! Patient stable. Sometimes basics are best.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("🔪 Protocol wasn't enough this time. Need to learn more adaptive techniques.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "surgeon_hand_tremor",
+		title = "✋ The Shakes",
+		emoji = "✋",
+		text = "You notice your hands have been trembling slightly. Could affect your surgical precision.",
+		question = "What do you do?",
+		category = CATEGORY,
+		weight = 10,
+		minAge = 40, maxAge = 70,
+		baseChance = 0.3,
+		cooldown = 5,
+		oneTime = true,
+		requiresJob = true,
+		requiresJobId = { "surgeon" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "See a neurologist immediately",
+				effects = { Smarts = 5 },
+				feedText = "Getting checked out...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("✋ Just caffeine and stress. Cut back and you're fine. Smart to check.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.early_parkinsons = true
+						state:AddFeed("✋ Early signs of essential tremor. Might need to transition away from surgery.")
+					end
+				end,
+			},
+			{
+				text = "Ignore it - probably just tired",
+				effects = {},
+				feedText = "Pushing through...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("✋ It went away. Just stress. Dodged a bullet.")
+					else
+						state:ModifyStat("Happiness", -25)
+						state.Flags = state.Flags or {}
+						state.Flags.surgical_incident = true
+						state:AddFeed("✋ Tremor during surgery caused a complication. Forced to take leave.")
+					end
+				end,
+			},
+			{
+				text = "Take a sabbatical to rest",
+				effects = { Happiness = 5, Health = 10 },
+				feedText = "✋ You took time off. Tremors gone after resting. Career longevity matters.",
+				setFlags = { self_aware_surgeon = true },
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- PHARMACIST EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "pharmacist_dangerous_interaction",
+		title = "💊 Drug Interaction Alert",
+		emoji = "💊",
+		text = "A prescription would cause a dangerous interaction with patient's existing meds. Doctor insists.",
+		question = "How do you handle it?",
+		category = CATEGORY,
+		weight = 14,
+		minAge = 28, maxAge = 65,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		requiresJobId = { "pharmacist" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Refuse to fill and call the doctor",
+				effects = { Smarts = 3 },
+				feedText = "Standing firm...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 75 then
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.patient_protector = true
+						state:AddFeed("💊 Doctor was wrong and admitted it. You might have saved a life!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("💊 Doctor was annoyed but changed the prescription. Worth the friction.")
+					end
+				end,
+			},
+			{
+				text = "Fill it - doctor knows best",
+				effects = {},
+				feedText = "Deferring to authority...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:AddFeed("💊 Turned out fine. Maybe you were overthinking.")
+					else
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 10000)
+						state:ModifyStat("Happiness", -25)
+						state.Flags = state.Flags or {}
+						state.Flags.malpractice = true
+						state:AddFeed("💊 Patient hospitalized. You're named in the lawsuit. Should have refused.")
+					end
+				end,
+			},
+			{
+				text = "Document concern but fill with warning",
+				effects = { Smarts = 2 },
+				feedText = "💊 Gave patient the warning, documented everything. Covered legally.",
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- DENTIST EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "dentist_anxious_patient",
+		title = "🦷 Dentist Phobia",
+		emoji = "🦷",
+		text = "A patient with severe dental anxiety is having a panic attack in your chair.",
+		question = "How do you calm them?",
+		category = CATEGORY,
+		weight = 14,
+		minAge = 28, maxAge = 65,
+		baseChance = 0.45,
+		cooldown = 2,
+		requiresJob = true,
+		requiresJobId = { "dentist" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Stop everything - talk them through it",
+				effects = { Happiness = 5 },
+				feedText = "Taking time to help...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 12)
+						state.Flags = state.Flags or {}
+						state.Flags.compassionate_dentist = true
+						state:AddFeed("🦷 Patient calmed down. Finished procedure. They left a 5-star review about your patience!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🦷 Had to reschedule. Some anxiety is too much. You tried.")
+					end
+				end,
+			},
+			{
+				text = "Offer sedation options",
+				effects = { Smarts = 2 },
+				feedText = "🦷 Nitrous oxide helped! Patient relaxed, procedure completed. Modern dentistry!",
+			},
+			{
+				text = "Power through quickly",
+				effects = {},
+				feedText = "Getting it done...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:AddFeed("🦷 Got it done fast. They were grateful it was over.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🦷 Patient had a full panic attack. Left a terrible review. Not ideal.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "dentist_start_practice",
+		title = "🏥 Start Your Own Practice?",
+		emoji = "🏥",
+		text = "You have enough savings and experience. A perfect office space just became available.",
+		question = "Start your own dental practice?",
+		category = CATEGORY,
+		weight = 8,
+		minAge = 32, maxAge = 55,
+		baseChance = 0.25,
+		cooldown = 6,
+		oneTime = true,
+		requiresJob = true,
+		requiresJobId = { "dentist" },
+		blockedByFlags = { in_prison = true, owns_practice = true },
+		
+		choices = {
+			{
+				text = "Take the leap - open the practice",
+				effects = {},
+				feedText = "Becoming a business owner...",
+				-- CRITICAL FIX: Add eligibility check for affordability
+				eligibility = function(state) return (state.Money or 0) >= 50000 end,
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 50000)
+						state:ModifyStat("Happiness", 25)
+						state.Flags = state.Flags or {}
+						state.Flags.owns_practice = true
+						state.Flags.entrepreneur = true
+						local salary = (state.CurrentJob and state.CurrentJob.salary or 175000)
+						if state.CurrentJob then
+							state.CurrentJob.salary = salary * 1.5
+						end
+						state:AddFeed("🏥 YOUR OWN PRACTICE! 50% more income as a business owner!")
+					else
+						-- CRITICAL FIX: Prevent negative money - cap at available funds
+						local loss = math.min(100000, state.Money or 0)
+						state.Money = math.max(0, (state.Money or 0) - loss)
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed(string.format("🏥 Practice failed after 2 years. Lost $%d. Back to working for someone else.", loss))
+					end
+				end,
+			},
+			{
+				text = "Not ready - keep building savings",
+				effects = { Smarts = 2 },
+				feedText = "🏥 Played it safe. The opportunity passed but you're financially secure.",
+			},
+			{
+				text = "Partner with another dentist instead",
+				effects = {},
+				feedText = "Sharing the risk...",
+				-- CRITICAL FIX: Add eligibility check for affordability
+				eligibility = function(state) return (state.Money or 0) >= 25000 end,
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 25000)
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.dental_partner = true
+						local salary = (state.CurrentJob and state.CurrentJob.salary or 175000)
+						if state.CurrentJob then
+							state.CurrentJob.salary = salary * 1.25
+						end
+						state:AddFeed("🏥 Partnership works! Split costs, split profit. 25% more income!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("🏥 Partner disagreements. Dissolved the partnership after a year.")
+					end
+				end,
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- PHYSICAL THERAPIST EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "pt_athlete_client",
+		title = "🏃 Pro Athlete Rehab",
+		emoji = "🏃",
+		text = "A professional athlete needs rehab. If you help them recover, it could make your career.",
+		question = "Take on the high-profile case?",
+		category = CATEGORY,
+		weight = 10,
+		minAge = 26, maxAge = 55,
+		baseChance = 0.35,
+		cooldown = 5,
+		requiresJob = true,
+		requiresJobId = { "physical_therapist" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Accept the challenge",
+				effects = { Happiness = 10 },
+				feedText = "Working with elite athlete...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						local bonus = math.random(5000, 15000)
+						state.Money = (state.Money or 0) + bonus
+						state:ModifyStat("Happiness", 20)
+						state.Flags = state.Flags or {}
+						state.Flags.sports_pt = true
+						state:AddFeed(string.format("🏃 Full recovery! They mentioned you in interviews! $%d bonus and tons of referrals!", bonus))
+					elseif roll <= 85 then
+						local bonus = math.random(2000, 5000)
+						state.Money = (state.Money or 0) + bonus
+						state:AddFeed(string.format("🏃 Good recovery. Career continues. $%d bonus. Solid work.", bonus))
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("🏃 Recovery wasn't complete. Their agent blames you publicly. Unfair but damaging.")
+					end
+				end,
+			},
+			{
+				text = "Refer to a sports specialist",
+				effects = { Smarts = 2 },
+				feedText = "🏃 Knew your limits. Referred to someone with more experience.",
+			},
+			{
+				text = "Only if they pay premium rates",
+				effects = {},
+				feedText = "Negotiating...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						local bonus = math.random(8000, 20000)
+						state.Money = (state.Money or 0) + bonus
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed(string.format("🏃 Premium rates accepted! $%d for the case!", bonus))
+					else
+						state:AddFeed("🏃 They found someone cheaper. Fair enough.")
+					end
+				end,
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CHIEF OF MEDICINE EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "chief_budget_crisis",
+		title = "💰 Budget Crisis",
+		emoji = "💰",
+		text = "Hospital budget is being slashed. You must decide: cut staff or cut programs?",
+		question = "What gets cut?",
+		category = CATEGORY,
+		weight = 10,
+		minAge = 45, maxAge = 70,
+		baseChance = 0.35,
+		cooldown = 5,
+		requiresJob = true,
+		requiresJobId = { "chief_of_medicine" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Cut administrative staff",
+				effects = { Smarts = 3 },
+				feedText = "Making tough calls...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.efficient_leader = true
+						state:AddFeed("💰 Cut the bloat. Medical staff intact. Department runs leaner but better.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("💰 Admin chaos. Doctors drowning in paperwork. Maybe cut too deep.")
+					end
+				end,
+			},
+			{
+				text = "Cut expensive equipment upgrades",
+				effects = {},
+				feedText = "Delaying purchases...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("💰 Old equipment works fine. Jobs saved. Crisis averted.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("💰 MRI machine broke. No budget for replacement. Patients transferred elsewhere.")
+					end
+				end,
+			},
+			{
+				text = "Fight for more funding from board",
+				effects = {},
+				feedText = "Going to battle...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 15)
+						state:ModifyStat("Smarts", 5)
+						state.Flags = state.Flags or {}
+						state.Flags.hospital_champion = true
+						state:AddFeed("💰 Board approved more funding! Your advocacy saved the department!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("💰 Board said no. Still have to make cuts anyway.")
+					end
+				end,
+			},
+		},
+	},
+}
+
+return MedicalCareerEvents

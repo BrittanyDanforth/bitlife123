@@ -1,0 +1,513 @@
+--[[
+	Enforcer / Mafia Muscle Career Events
+	AAA-quality events with random BitLife-style outcomes
+	User CANNOT control outcomes - everything is randomized
+	
+	Careers covered:
+	- Enforcer
+	- Hitman
+	- Mob Muscle
+	- Crew Boss
+	- Underboss
+	
+	CRITICAL FIX #RVS-2: Added premium path blocking
+]]
+
+local EnforcerEvents = {}
+
+-- ═════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #RVS-ENFORCER-1: Premium path blocking
+-- Enforcer/mafia events should NEVER fire for royalty or celebrity players
+-- ═════════════════════════════════════════════════════════════════════════════════════
+local function isBlockedByPremiumPath(state)
+	if not state.Flags then return false end
+	local flags = state.Flags
+	
+	-- Block if player chose royalty path
+	if flags.primary_wish_type == "royalty" then return true end
+	if flags.is_royalty or flags.royal_birth or flags.dating_royalty then return true end
+	if state.RoyalState and state.RoyalState.isRoyal then return true end
+	
+	-- Block if player chose celebrity path (unless crime-famous)
+	if flags.primary_wish_type == "celebrity" then
+		if not (flags.crime_famous or flags.mob_fame) then
+			return true
+		end
+	end
+	
+	return false
+end
+
+-- Helper function to check if player is an enforcer
+local function isEnforcer(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	return jobId:find("enforcer") or jobId:find("hitman") or jobId:find("muscle")
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Strict mafia membership check
+-- User complaint: "COLLECTION JOB and ENFORCER_BODY_DISPOSAL popping up when not in mafia!"
+-- The old check was too loose - now requires EXPLICIT mafia membership flags
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function isMafiaAssociate(state)
+	-- CRITICAL FIX #RVS-ENFORCER-2: Check premium path blocking first
+	if isBlockedByPremiumPath(state) then return false end
+	
+	-- MUST have explicit mafia flags - no loose checking
+	if not state.Flags then return false end
+	
+	-- Check explicit mafia membership flags
+	local hasMafiaFlag = state.Flags.in_mob == true
+		or state.Flags.mafia_member == true
+		or state.Flags.made_member == true
+		or state.Flags.mob_associate == true
+		or state.Flags.initiated == true
+		or state.Flags.mob_soldier == true
+		or state.Flags.mob_capo == true
+		or state.Flags.mob_underboss == true
+		or state.Flags.mob_boss == true
+	
+	if hasMafiaFlag then return true end
+	
+	-- Also allow if explicitly has enforcer job AND mafia gamepass
+	if state.Flags.mafia_gamepass and isEnforcer(state) then
+		return true
+	end
+	
+	return false
+end
+
+EnforcerEvents.events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- ENFORCER / MOB MUSCLE EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "enforcer_collection_job",
+		title = "💰 Collection Job",
+		emoji = "💰",
+		text = "The boss wants you to collect from a deadbeat who owes $50,000. He's been ducking the family for months.",
+		category = "career_mafia",
+		weight = 18,
+		minAge = 20, maxAge = 55,
+		baseChance = 0.55,
+		cooldown = 2,
+		eligibility = isMafiaAssociate,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Pay him a visit",
+				effects = {},
+				feedText = "Knocking on his door...",
+				triggerMinigame = "combat",
+				minigameOptions = { context = "collection", difficulty = "weak" },
+				onResolve = function(state, minigameResult)
+					local roll = math.random(1, 100)
+					local won = minigameResult and minigameResult.won
+					
+					if won then
+						local cut = math.random(5000, 15000)
+						state.Money = (state.Money or 0) + cut
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.reliable_enforcer = true
+						state:AddFeed(string.format("💰 Collected the full amount! $%s cut for you! Boss is happy!", cut))
+					else
+						if roll <= 50 then
+							state:ModifyStat("Happiness", -5)
+							state:AddFeed("💰 Fight went badly but guy still paid up out of fear. Job done.")
+						else
+							state:ModifyStat("Happiness", -15)
+							state.Flags = state.Flags or {}
+							state.Flags.failed_collection = true
+							state:AddFeed("💰 Got beaten up and didn't collect. Boss is NOT happy.")
+						end
+					end
+				end,
+			},
+			{
+				text = "Torch his car first as a warning",
+				effects = { Happiness = -3 },
+				feedText = "Sending a message...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 65 then
+						local cut = math.random(8000, 20000)
+						state.Money = (state.Money or 0) + cut
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed(string.format("💰 He paid IMMEDIATELY after seeing his car. $%s cut! Easy money!", cut))
+					elseif roll <= 90 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("💰 He still didn't pay, but boss respects the initiative.")
+					else
+						state:ModifyStat("Happiness", -20)
+						state.Flags = state.Flags or {}
+						state.Flags.police_heat = true
+						state:AddFeed("💰 Caught on camera! Police investigating! Boss told you to lay low.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "enforcer_rival_crew",
+		title = "⚔️ Rival Crew Encounter",
+		emoji = "⚔️",
+		text = "You ran into members of a rival family on neutral territory. Tensions are HIGH. They're talking disrespect.",
+		category = "career_mafia",
+		weight = 15,
+		minAge = 20, maxAge = 50,
+		baseChance = 0.5,
+		cooldown = 2,
+		eligibility = isMafiaAssociate,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Start throwing hands",
+				effects = { Health = -5 },
+				feedText = "Nobody disrespects the family!",
+				triggerMinigame = "combat",
+				minigameOptions = { context = "street_fight", difficulty = "average" },
+				onResolve = function(state, minigameResult)
+					local won = minigameResult and minigameResult.won
+					
+					if won then
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.street_rep = true
+						state.Flags.made_man_candidate = true
+						state:AddFeed("⚔️ DOMINATED! They'll think twice before talking again! Your rep grows!")
+					else
+						state:ModifyStat("Happiness", -15)
+						state:ModifyStat("Health", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.lost_fight = true
+						state:AddFeed("⚔️ They beat you down. Embarrassing. Word will spread...")
+					end
+				end,
+			},
+			{
+				text = "Walk away - not worth the heat",
+				effects = { Smarts = 2 },
+				feedText = "Live to fight another day...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("⚔️ Boss said you made the smart call. No unnecessary heat.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.coward_rep = true
+						state:AddFeed("⚔️ Word got back that you backed down. Your rep took a hit.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "enforcer_body_disposal",
+		title = "🪦 Cleanup Duty",
+		emoji = "🪦",
+		text = "Someone got whacked. The boss needs the evidence to disappear. Tonight.",
+		category = "career_mafia",
+		weight = 12,
+		minAge = 21, maxAge = 55,
+		baseChance = 0.45,
+		cooldown = 3,
+		eligibility = isMafiaAssociate,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Handle it - no questions",
+				effects = { Happiness = -8, Smarts = 2 },
+				feedText = "You know what needs to be done...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						local pay = math.random(10000, 30000)
+						state.Money = (state.Money or 0) + pay
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.cleanup_trusted = true
+						state:AddFeed(string.format("🪦 Done clean. $%s bonus. Boss trusts you with the serious stuff now.", pay))
+					elseif roll <= 85 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🪦 Handled, but sloppy. Evidence is gone but you'll have nightmares.")
+					else
+						state:ModifyStat("Happiness", -25)
+						state.Flags = state.Flags or {}
+						state.Flags.police_suspects = true
+						state:AddFeed("🪦 Police found something. You're not directly linked... yet.")
+					end
+				end,
+			},
+			{
+				text = "Say you can't do it",
+				effects = { Happiness = -5 },
+				feedText = "This is a line you won't cross...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🪦 Boss understood. Someone else handled it.")
+					else
+						state:ModifyStat("Happiness", -20)
+						state.Flags = state.Flags or {}
+						state.Flags.unreliable_earner = true
+						state:AddFeed("🪦 'Not reliable.' Your standing in the family just dropped.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "enforcer_hit_contract",
+		title = "☠️ Contract Offered",
+		emoji = "☠️",
+		text = "The boss has a special job. A rat needs to be eliminated. The pay is massive, but so are the risks.",
+		category = "career_mafia",
+		weight = 10,
+		minAge = 25, maxAge = 55,
+		baseChance = 0.4,
+		cooldown = 5,
+		eligibility = isEnforcer,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Accept the contract",
+				effects = { Happiness = -5 },
+				feedText = "This is what you do...",
+				triggerMinigame = "qte",
+				minigameOptions = { difficulty = "hard" },
+				onResolve = function(state, minigameResult)
+					local roll = math.random(1, 100)
+					local bonus = (minigameResult and minigameResult.success) and 25 or 0
+					
+					if roll + bonus >= 45 then
+						local pay = math.random(50000, 150000)
+						state.Money = (state.Money or 0) + pay
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.contract_killer = true
+						state:AddFeed(string.format("☠️ Job done clean. $%s. You're one of the serious earners now.", pay))
+					elseif roll + bonus >= 20 then
+						state:ModifyStat("Happiness", -10)
+						state.Money = (state.Money or 0) + 20000
+						state:AddFeed("☠️ Done, but messy. Made the news. Cops are looking.")
+					else
+						state:ModifyStat("Happiness", -30)
+						state.Flags = state.Flags or {}
+						state.Flags.in_prison = true
+						state.Flags.incarcerated = true
+						-- CRITICAL FIX: Use JailYearsLeft for consistency with rest of codebase
+						state.InJail = true
+						state.JailYearsLeft = math.random(15, 40)
+						state.CurrentJob = nil
+						state.Flags.employed = nil
+						state.Flags.has_job = nil
+						state:AddFeed("☠️ CAUGHT! First-degree charges! Life is essentially over.")
+					end
+				end,
+			},
+			{
+				text = "Decline - too hot right now",
+				effects = { Happiness = 3 },
+				feedText = "I don't do those kind of jobs.",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("☠️ Boss respected your honesty. No hard feelings.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state.Flags = state.Flags or {}
+						state.Flags.declined_contract = true
+						state:AddFeed("☠️ 'When I ask, I expect yes.' Your position just got more uncertain.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "enforcer_feds_approaching",
+		title = "🕵️ Feds Want to Talk",
+		emoji = "🕵️",
+		text = "FBI agents approached you. They know who you are. They're offering witness protection if you flip on the family.",
+		category = "career_mafia",
+		weight = 12,
+		minAge = 25, maxAge = 60,
+		baseChance = 0.4,
+		cooldown = 5,
+		eligibility = isMafiaAssociate,
+		blockedByFlags = { in_prison = true, in_witness_protection = true },
+		
+		choices = {
+			{
+				text = "Tell them nothing",
+				effects = { Happiness = -5 },
+				feedText = "Omertà. The code is everything.",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.kept_omerta = true
+						state:AddFeed("🕵️ Said nothing. Boss heard and respects your loyalty.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("🕵️ They're building a case anyway. RICO charges incoming...")
+					end
+				end,
+			},
+			{
+				text = "Consider their offer",
+				effects = { Smarts = 3 },
+				feedText = "Self-preservation is natural...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 15)
+						state.Money = (state.Money or 0) + 100000
+						state.Flags = state.Flags or {}
+						state.Flags.in_witness_protection = true
+						state.Flags.former_mob = true
+						state.CurrentJob = nil
+						state:AddFeed("🕵️ Took the deal. New identity. Old life is dead. You're free but alone.")
+					else
+						state:ModifyStat("Happiness", -25)
+						state:AddFeed("🕵️ Word got out that you even TALKED to feds. You're marked now...")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "enforcer_made_ceremony",
+		title = "🩸 The Ceremony",
+		emoji = "🩸",
+		text = "After years of proving yourself, you're being 'made'. Full membership in the family. This is the life.",
+		category = "career_mafia",
+		weight = 8,
+		minAge = 25, maxAge = 50,
+		baseChance = 0.3,
+		cooldown = 10,
+		oneTime = true,
+		eligibility = isMafiaAssociate,
+		blockedByFlags = { in_prison = true, made_man = true },
+		
+		choices = {
+			{
+				text = "Take the oath",
+				effects = { Happiness = 20 },
+				feedText = "This is everything you've worked for...",
+				onResolve = function(state)
+					state.Money = (state.Money or 0) + math.random(50000, 150000)
+					state.Flags = state.Flags or {}
+					state.Flags.made_man = true
+					state.Flags.untouchable_by_rivals = true
+					state:AddFeed("🩸 You're MADE. Blood in, blood out. Full member of the family. Protected. Powerful.")
+				end,
+			},
+			{
+				text = "This is your chance to walk away",
+				effects = { Smarts = 5 },
+				feedText = "Once you're in, you can never leave...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.left_mob = true
+						state.CurrentJob = nil
+						state:AddFeed("🩸 Walked away. Boss let you go. Start fresh somewhere far away.")
+					else
+						state:ModifyStat("Happiness", -30)
+						state:ModifyStat("Health", -20)
+						state:AddFeed("🩸 'You know too much.' They beat you half to death as a warning. Can't leave.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "enforcer_prison_time",
+		title = "⚖️ Case Going to Trial",
+		emoji = "⚖️",
+		text = "The feds finally got an indictment. Your lawyer says you're looking at 10-20 years if convicted.",
+		category = "career_mafia",
+		weight = 12,
+		minAge = 22, maxAge = 65,
+		baseChance = 0.4,
+		cooldown = 5,
+		eligibility = isMafiaAssociate,
+		blockedByFlags = { in_prison = true },
+		requiresFlags = { police_heat = true },
+		
+		choices = {
+			{
+				text = "Take it to trial - stay silent",
+				effects = { Happiness = -8 },
+				feedText = "Trust in the lawyer...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 35 then
+						state:ModifyStat("Happiness", 20)
+						state:AddFeed("⚖️ NOT GUILTY! Walked free! Your loyalty is legendary!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.in_prison = true
+						state.Flags.incarcerated = true
+						-- CRITICAL FIX: Use JailYearsLeft and InJail for consistency
+						state.InJail = true
+						state.JailYearsLeft = math.random(3, 8)
+						state:AddFeed("⚖️ Convicted on lesser charges. Few years. You kept your mouth shut.")
+					else
+						state:ModifyStat("Happiness", -25)
+						state.Flags = state.Flags or {}
+						state.Flags.in_prison = true
+						state.Flags.incarcerated = true
+						-- CRITICAL FIX: Use JailYearsLeft and InJail for consistency
+						state.InJail = true
+						state.JailYearsLeft = math.random(10, 20)
+						state.CurrentJob = nil
+						state.Flags.employed = nil
+						state.Flags.has_job = nil
+						state:AddFeed("⚖️ Full conviction. Long stretch. Family will take care of you inside.")
+					end
+				end,
+			},
+			{
+			text = "Take a plea deal",
+			effects = { Happiness = -5, Smarts = 3 },
+			feedText = "Lesser of two evils...",
+			onResolve = function(state)
+				state:ModifyStat("Happiness", -10)
+				state.Flags = state.Flags or {}
+				state.Flags.in_prison = true
+				state.Flags.incarcerated = true
+				-- CRITICAL FIX: Use JailYearsLeft and InJail for consistency
+				state.InJail = true
+				state.JailYearsLeft = math.random(2, 5)
+				state.CurrentJob = nil
+				state.Flags.employed = nil
+				state.Flags.has_job = nil
+				state:AddFeed("⚖️ Pled out. Shorter time guaranteed. Smart move.")
+			end,
+		},
+		},
+	},
+}
+
+return EnforcerEvents

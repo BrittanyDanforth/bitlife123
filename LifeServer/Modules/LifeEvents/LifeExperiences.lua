@@ -1,0 +1,730 @@
+--[[
+    Life Experiences Events
+    Random life experiences and special moments
+    All events use randomized outcomes - NO god mode
+]]
+
+local LifeExperiences = {}
+
+local STAGE = "random"
+
+LifeExperiences.events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- ONCE IN A LIFETIME EXPERIENCES
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "exp_eclipse_viewing",
+		title = "Rare Eclipse",
+		emoji = "🌑",
+		text = "A rare solar/lunar eclipse is happening in your area!",
+		question = "Do you watch the eclipse?",
+		minAge = 5, maxAge = 100,
+		baseChance = 0.05,
+		cooldown = 4,
+		oneTime = true,
+		stage = STAGE,
+		ageBand = "any",
+		category = "experience",
+		tags = { "nature", "rare", "experience" },
+		
+		choices = {
+			{ text = "Watch it with proper glasses", effects = { Happiness = 10, Smarts = 2 }, setFlags = { saw_eclipse = true }, feedText = "🌑 Breathtaking! Once in a lifetime moment!" },
+			{ text = "Miss it entirely", effects = { Happiness = -3 }, feedText = "🌑 Forgot about it. Regret when everyone talks about it." },
+			{ text = "Try to look without protection", effects = { Happiness = 4, Health = -8 }, setFlags = { damaged_eyes = true }, feedText = "🌑 SAW IT but... your vision is damaged. Bad choice." },
+		},
+	},
+	{
+		id = "exp_natural_disaster_witness",
+		title = "Witnessing Nature's Power",
+		emoji = "⛈️",
+		text = "You witnessed an intense natural phenomenon!",
+		question = "What did you see?",
+		minAge = 8, maxAge = 100,
+		baseChance = 0.1,
+		cooldown = 3,
+		stage = STAGE,
+		ageBand = "any",
+		category = "experience",
+		tags = { "nature", "witness", "powerful" },
+		
+		choices = {
+			{ text = "Incredible lightning storm", effects = { Happiness = 6, Smarts = 2 }, feedText = "⛈️ Nature's light show. Terrifying and beautiful." },
+			{ text = "Massive waves/flooding", effects = { Happiness = -4, Smarts = 2 }, setFlags = { flood_witness = true }, feedText = "⛈️ The power of water. Humbling and scary." },
+			{ text = "Earthquake tremors", effects = { Happiness = -3, Smarts = 2 }, setFlags = { felt_earthquake = true }, feedText = "⛈️ Ground shaking. Primal fear. Never forget it." },
+			{ text = "Breathtaking aurora", effects = { Happiness = 10, Smarts = 2 }, setFlags = { saw_aurora = true }, feedText = "⛈️ Northern lights! Magical. Life-changing beauty." },
+		},
+	},
+	{
+		id = "exp_brush_with_fame",
+		title = "Brush with Fame",
+		emoji = "⭐",
+		text = "You had a random interaction with someone famous!",
+		question = "How did the encounter go?",
+		minAge = 10, maxAge = 90,
+		baseChance = 0.08,
+		cooldown = 2,
+		stage = STAGE,
+		ageBand = "any",
+		category = "experience",
+		tags = { "fame", "celebrity", "encounter" },
+		
+		-- CRITICAL: Random celebrity interaction
+		choices = {
+			{
+				text = "Play it cool",
+				effects = {},
+				feedText = "Acting casual...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.60 then
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.met_celebrity = true
+						state:AddFeed("⭐ Had a nice chat! They were so normal and cool!")
+					else
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("⭐ Brief polite exchange. Still counts!")
+					end
+				end,
+			},
+			{
+				text = "Fanboy/fangirl moment",
+				effects = {},
+				feedText = "Can't contain your excitement...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("⭐ They were so gracious about your enthusiasm! Photo together!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("⭐ Scared them off. Too intense. Cringe memories.")
+					end
+				end,
+			},
+			{
+				text = "Don't recognize them at first",
+				effects = { Happiness = 5, Smarts = 2 },
+				feedText = "⭐ Talked normally then realized. They appreciated being treated like a regular person!",
+			},
+		},
+	},
+	{
+		id = "exp_life_flashing",
+		title = "Life Flashing Before Eyes",
+		emoji = "💫",
+		text = "You had a near-miss that made your life flash before your eyes!",
+		question = "How did you process this experience?",
+		minAge = 16, maxAge = 90,
+		baseChance = 0.1,
+		cooldown = 2,
+		stage = STAGE,
+		ageBand = "any",
+		category = "experience",
+		tags = { "near_death", "perspective", "life" },
+		
+		choices = {
+			{ text = "Reassess priorities completely", effects = { Happiness = 5, Smarts = 5 }, setFlags = { life_epiphany = true }, feedText = "💫 Changed everything. Life is too short for BS." },
+			{ text = "Shake it off and continue", effects = { Happiness = 2 }, feedText = "💫 Scary moment but life goes on." },
+			{ text = "Develop anxiety about it", effects = { Happiness = -6, Health = -2 }, setFlags = { near_death_anxiety = true }, feedText = "💫 Can't stop thinking about 'what if'. PTSD symptoms." },
+			{ text = "Become more adventurous", effects = { Happiness = 4, Health = -1 }, setFlags = { yolo_attitude = true }, feedText = "💫 YOLO! Taking more risks. Living fully!" },
+		},
+	},
+	{
+		id = "exp_bucket_list_item",
+		title = "Bucket List Achievement",
+		emoji = "✅",
+		text = "You accomplished something on your bucket list!",
+		question = "What did you achieve?",
+		minAge = 18, maxAge = 90,
+		baseChance = 0.4,
+		cooldown = 2,
+		stage = STAGE,
+		ageBand = "any",
+		category = "achievement",
+		tags = { "bucket_list", "achievement", "goals" },
+		
+		eligibility = function(state)
+			local money = state.Money or 0
+			local health = (state.Stats and state.Stats.Health) or 50
+			if money < 500 and health < 40 then
+				return false, "Need resources for bucket list items"
+			end
+			return true
+		end,
+		
+		choices = {
+			{ 
+				-- CRITICAL FIX: Show price and add per-choice eligibility check
+				text = "Visited dream destination ($1,500)", 
+				effects = { Happiness = 15, Money = -1500 }, 
+				setFlags = { traveled_dream_place = true }, 
+				feedText = "✅ The trip of a lifetime! Everything you imagined!",
+				eligibility = function(state)
+					if (state.Money or 0) < 1500 then
+						return false, "Can't afford $1,500 dream trip"
+					end
+					return true
+				end,
+			},
+			{ 
+				-- CRITICAL FIX: Show price and add per-choice eligibility check
+				text = "Met a personal hero ($200)", 
+				effects = { Happiness = 12, Money = -200 }, 
+				setFlags = { met_hero = true }, 
+				feedText = "✅ They were even better in person. Inspired!",
+				eligibility = function(state)
+					if (state.Money or 0) < 200 then
+						return false, "Can't afford $200 to meet hero"
+					end
+					return true
+				end,
+			},
+			{ 
+				-- CRITICAL FIX: Show price and add per-choice eligibility check
+				text = "Learned a lifelong dream skill ($300)", 
+				effects = { Happiness = 10, Smarts = 5, Money = -300 }, 
+				setFlags = { learned_dream_skill = true }, 
+				feedText = "✅ Finally! Something you always wanted to do!",
+				eligibility = function(state)
+					if (state.Money or 0) < 300 then
+						return false, "Can't afford $300 for classes"
+					end
+					return true
+				end,
+			},
+			{ 
+				-- CRITICAL FIX: Show price and add per-choice eligibility check
+				text = "Accomplished a physical feat ($500)", 
+				effects = { Happiness = 12, Health = 3, Money = -500 }, 
+				setFlags = { physical_achievement = true }, 
+				feedText = "✅ Your body did that! Marathon/climb/swim - DONE!",
+				eligibility = function(state)
+					if (state.Money or 0) < 500 then
+						return false, "Can't afford $500 entry fees"
+					end
+					return true
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- DAILY LIFE EXPERIENCES
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "exp_perfect_day",
+		title = "Perfect Day",
+		emoji = "☀️",
+		text = "Everything is just going RIGHT today!",
+		question = "What made today perfect?",
+		minAge = 8, maxAge = 100,
+		baseChance = 0.4,
+		cooldown = 2,
+		stage = STAGE,
+		ageBand = "any",
+		category = "experience",
+		tags = { "good_day", "happiness", "life" },
+		
+		choices = {
+			{ text = "Everything aligned - work, people, weather", effects = { Happiness = 12, Health = 2 }, feedText = "☀️ One of those rare perfect days. Savoring it." },
+			{ text = "Accomplishment that felt great", effects = { Happiness = 10, Smarts = 2 }, feedText = "☀️ Finished something big. Riding that high!" },
+			{ text = "Quality time with loved ones", effects = { Happiness = 12 }, feedText = "☀️ Perfect moments with people who matter." },
+			{ text = "Just good vibes for no reason", effects = { Happiness = 8 }, feedText = "☀️ No explanation. Just happy. Enjoy it!" },
+		},
+	},
+	{
+		id = "exp_terrible_day",
+		title = "Terrible, Horrible, No Good Day",
+		emoji = "😞",
+		text = "Everything that could go wrong today, did.",
+		question = "How do you cope with this awful day?",
+		minAge = 8, maxAge = 100,
+		baseChance = 0.45,
+		cooldown = 3,
+		stage = STAGE,
+		ageBand = "any",
+		category = "experience",
+		tags = { "bad_day", "coping", "life" },
+		
+		choices = {
+			{ text = "Cry it out and go to bed early", effects = { Happiness = -4, Health = 2 }, feedText = "😞 Sometimes you just need to cry. Reset tomorrow." },
+			{ text = "Vent to someone who listens", effects = { Happiness = -2, Smarts = 1 }, feedText = "😞 Getting it out helped. They understood." },
+			{ text = "Comfort eat/drink", effects = { Happiness = 2, Health = -3 }, feedText = "😞 Ice cream and/or wine. Temporary fix." },
+			{ text = "Power through and pretend it's fine", effects = { Happiness = -6 }, setFlags = { bottled_emotions = true }, feedText = "😞 Stuffing it down. It'll come out eventually." },
+		},
+	},
+	{
+		id = "exp_deja_vu",
+		title = "Intense Déjà Vu",
+		emoji = "🔄",
+		text = "You had the most intense déjà vu moment!",
+		question = "What was the déjà vu like?",
+		minAge = 10, maxAge = 90,
+		baseChance = 0.45,
+		cooldown = 2,
+		stage = STAGE,
+		ageBand = "any",
+		category = "experience",
+		tags = { "weird", "deja_vu", "experience" },
+		
+		choices = {
+			{ text = "Eerie - like you'd lived this before", effects = { Happiness = 2, Smarts = 2 }, feedText = "🔄 So vivid. Are we in a simulation?" },
+			{ text = "Brief - just a weird brain glitch", effects = { Happiness = 1 }, feedText = "🔄 Brain being weird. Science explains it. Mostly." },
+			{ text = "Take it as a sign", effects = { Happiness = 3, Smarts = 1 }, setFlags = { believes_in_signs = true }, feedText = "🔄 The universe is trying to tell you something!" },
+			{ text = "Freaks you out", effects = { Happiness = -2 }, feedText = "🔄 That was unsettling. Reality felt unstable." },
+		},
+	},
+	{
+		id = "exp_random_act_kindness",
+		title = "Random Act of Kindness",
+		emoji = "💖",
+		text = "You did something kind for a stranger!",
+		question = "What kind act did you do?",
+		minAge = 8, maxAge = 100,
+		baseChance = 0.455,
+		cooldown = 2,
+		stage = STAGE,
+		ageBand = "any",
+		category = "kindness",
+		tags = { "kindness", "giving", "good_deed" },
+		
+		choices = {
+			{ text = "Paid for their coffee/food", effects = { Happiness = 8, Money = -15 }, setFlags = { kind_person = true }, feedText = "💖 Their reaction made your day! Pay it forward!" },
+			{ text = "Helped with something heavy/difficult", effects = { Happiness = 6, Health = -1 }, feedText = "💖 Jumped in to help. They were so grateful!" },
+			{ text = "Gave genuine compliment", effects = { Happiness = 5 }, feedText = "💖 Simple words that clearly meant a lot to them." },
+			{ text = "Donated money to someone in need", effects = { Happiness = 7, Money = -50 }, feedText = "💖 Direct help. Made a real difference." },
+		},
+	},
+	{
+		id = "exp_awkward_moment",
+		title = "Peak Awkward Moment",
+		emoji = "😬",
+		text = "You had a supremely awkward experience!",
+		question = "What was the awkward situation?",
+		minAge = 10, maxAge = 80,
+		baseChance = 0.55,
+		cooldown = 2,
+		stage = STAGE,
+		ageBand = "any",
+		category = "experience",
+		tags = { "awkward", "embarrassing", "social" },
+		
+		choices = {
+			{ text = "Waved at someone who wasn't waving at you", effects = { Happiness = -3 }, feedText = "😬 Played it off like you were stretching. They knew." },
+			{ text = "Said 'you too' when inappropriate", effects = { Happiness = -3 }, feedText = "😬 'Enjoy your meal' - 'You too!' They're the waiter." },
+			{ text = "Called someone wrong name multiple times", effects = { Happiness = -4 }, feedText = "😬 They finally corrected you. SO embarrassing." },
+			{ text = "Bathroom accident situation", effects = { Happiness = -6 }, feedText = "😬 We don't talk about what happened. Ever." },
+			{ text = "Sent message to wrong person", effects = { Happiness = -5 }, feedText = "😬 The message was ABOUT them. Crisis." },
+		},
+	},
+	{
+		id = "exp_major_coincidence",
+		title = "Incredible Coincidence",
+		emoji = "🎲",
+		text = "An unbelievable coincidence just happened!",
+		question = "What was the coincidence?",
+		minAge = 10, maxAge = 100,
+		baseChance = 0.1,
+		cooldown = 2,
+		stage = STAGE,
+		ageBand = "any",
+		category = "experience",
+		tags = { "coincidence", "fate", "luck" },
+		
+		choices = {
+			{ text = "Ran into someone from your past in unlikely place", effects = { Happiness = 6 }, setFlags = { weird_coincidence = true }, feedText = "🎲 Small world! What are the odds?!" },
+			{ text = "Thought of someone then they called", effects = { Happiness = 4 }, feedText = "🎲 Telepathy? Coincidence? Spooky either way." },
+			{ text = "Found exactly what you needed by chance", effects = { Happiness = 8, Money = 50 }, feedText = "🎲 Universe providing! Right place, right time!" },
+			{ text = "Matching experiences with a stranger", effects = { Happiness = 5 }, feedText = "🎲 Same hometown, same obscure hobby - instant connection!" },
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- LEARNING EXPERIENCES
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "exp_learn_hard_lesson",
+		title = "Learned the Hard Way",
+		emoji = "💡",
+		text = "You learned an important lesson the hard way.",
+		question = "What lesson did you learn?",
+		minAge = 10, maxAge = 80,
+		baseChance = 0.455,
+		cooldown = 3,
+		stage = STAGE,
+		ageBand = "any",
+		category = "growth",
+		tags = { "lesson", "learning", "growth" },
+		
+		choices = {
+			{ text = "Trust must be earned, not given", effects = { Smarts = 4, Happiness = -2 }, setFlags = { trust_carefully = true }, feedText = "💡 Burned by misplaced trust. Won't happen again." },
+			{ text = "You can't please everyone", effects = { Smarts = 3, Happiness = 3 }, setFlags = { self_acceptance = true }, feedText = "💡 Stop trying. Their opinion isn't your concern." },
+			{ text = "Money comes and goes", effects = { Smarts = 4, Happiness = 2 }, setFlags = { money_perspective = true }, feedText = "💡 Lost some money. Learned it's not everything." },
+			{ text = "Health isn't guaranteed", effects = { Smarts = 3, Health = 2, Happiness = 2 }, setFlags = { health_aware = true }, feedText = "💡 Take care of your body. It's the only one you get." },
+			{ text = "Time is the real currency", effects = { Smarts = 5, Happiness = 3 }, setFlags = { time_aware = true }, feedText = "💡 You can always make more money. Can't make more time." },
+		},
+	},
+	{
+		id = "exp_skill_development",
+		title = "New Skill Progress",
+		emoji = "📈",
+		text = "You've been working on a new skill!",
+		question = "How is your skill development going?",
+		minAge = 8, maxAge = 90,
+		baseChance = 0.555,
+		cooldown = 2,
+		stage = STAGE,
+		ageBand = "any",
+		category = "growth",
+		tags = { "skill", "learning", "improvement" },
+		
+		-- CRITICAL: Random skill progress outcome
+		choices = {
+			{
+				text = "Practice consistently",
+				effects = {},
+				feedText = "Putting in the hours...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.55 then
+						state:ModifyStat("Smarts", 5)
+						state:ModifyStat("Happiness", 5)
+						state.Flags = state.Flags or {}
+						state.Flags.skilled = true
+						state:AddFeed("📈 Major breakthrough! Suddenly clicked!")
+					elseif roll < 0.85 then
+						state:ModifyStat("Smarts", 3)
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("📈 Steady progress. Getting better slowly.")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("📈 Plateau. Frustrating lack of progress.")
+					end
+				end,
+			},
+			{
+				text = "Take lessons/courses",
+				effects = { Money = -100 },
+				feedText = "Investing in education...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.70 then
+						state:ModifyStat("Smarts", 6)
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("📈 Great instruction! Learning accelerated!")
+					else
+						state:ModifyStat("Smarts", 2)
+						state:AddFeed("📈 Course was okay. Some useful tips.")
+					end
+				end,
+			},
+			{
+				text = "Give up - too hard",
+				effects = { Happiness = -3 },
+				setFlags = { quitter = true },
+				feedText = "📈 Not meant for this. Moving on.",
+			},
+		},
+	},
+	{
+		id = "exp_world_event_witness",
+		title = "Historic Event",
+		emoji = "📺",
+		text = "A major world event is happening right now.",
+		question = "How do you experience this historic moment?",
+		minAge = 10, maxAge = 100,
+		baseChance = 0.1,
+		cooldown = 2,
+		stage = STAGE,
+		ageBand = "any",
+		category = "experience",
+		tags = { "history", "world", "event" },
+		
+		choices = {
+			{ text = "Glued to the news", effects = { Smarts = 3, Happiness = -2 }, setFlags = { witnessed_history = true }, feedText = "📺 Watching history unfold. Overwhelming." },
+			{ text = "Avoid the news - too much", effects = { Happiness = 2, Health = 1 }, setFlags = { news_avoidant = true }, feedText = "📺 Protecting your peace. Can't handle more." },
+			{ text = "Discuss with everyone", effects = { Smarts = 2 }, feedText = "📺 Deep conversations. Everyone processing together." },
+			{ text = "Document your reaction", effects = { Smarts = 2, Happiness = 2 }, feedText = "📺 Journal/video. Future you will want to remember how you felt." },
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- UNEXPECTED SITUATIONS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "exp_wrong_place_right_time",
+		title = "Wrong Place, Right Time",
+		emoji = "✨",
+		text = "Being somewhere you weren't supposed to be led to something great!",
+		question = "What happened by accident?",
+		minAge = 15, maxAge = 80,
+		baseChance = 0.1,
+		cooldown = 2,
+		stage = STAGE,
+		ageBand = "any",
+		category = "luck",
+		tags = { "luck", "serendipity", "opportunity" },
+		
+		choices = {
+			{ text = "Met someone important", effects = { Happiness = 8, Smarts = 2 }, setFlags = { serendipity_connection = true }, feedText = "✨ Chance encounter changed everything!" },
+			{ text = "Found amazing opportunity", effects = { Happiness = 10, Money = 200 }, feedText = "✨ Right place, right time. Doors opened!" },
+			{ text = "Witnessed something incredible", effects = { Happiness = 8 }, feedText = "✨ Saw something you'll never forget." },
+			{ text = "Avoided disaster by being elsewhere", effects = { Happiness = 6, Health = 2 }, setFlags = { lucky_escape = true }, feedText = "✨ If you'd been where planned... scary." },
+		},
+	},
+	{
+		id = "exp_stranger_wisdom",
+		title = "Stranger's Wisdom",
+		emoji = "🧙",
+		text = "A random stranger said something that really stuck with you.",
+		question = "What did they say?",
+		minAge = 15, maxAge = 90,
+		baseChance = 0.4,
+		cooldown = 2,
+		stage = STAGE,
+		ageBand = "any",
+		category = "growth",
+		tags = { "wisdom", "stranger", "insight" },
+		
+		choices = {
+			{ text = "Exactly what you needed to hear", effects = { Happiness = 8, Smarts = 4 }, setFlags = { received_wisdom = true }, feedText = "🧙 How did they know? Changed your perspective." },
+			{ text = "Made you question your choices", effects = { Happiness = 2, Smarts = 3 }, feedText = "🧙 Uncomfortable truth. But you needed it." },
+			{ text = "Encouraged you at lowest point", effects = { Happiness = 10, Health = 2 }, feedText = "🧙 Angel in disguise. Kept you going." },
+			{ text = "Weird but somehow profound", effects = { Happiness = 4, Smarts = 2 }, feedText = "🧙 Made no sense at first. Now it does." },
+		},
+	},
+	{
+		id = "exp_technology_fail",
+		title = "Technology Disaster",
+		emoji = "💻",
+		text = "Technology has failed you spectacularly!",
+		question = "What went wrong?",
+		minAge = 10, maxAge = 90,
+		baseChance = 0.55,
+		cooldown = 2,
+		stage = STAGE,
+		ageBand = "any",
+		category = "misfortune",
+		tags = { "technology", "fail", "frustration" },
+		
+		-- CRITICAL: Random tech failure
+		choices = {
+			{
+				text = "Deal with the tech crisis",
+				effects = {},
+				feedText = "Attempting to fix it...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.30 then
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("💻 Lost some data but recovered most. Close call.")
+					elseif roll < 0.55 then
+						state:ModifyStat("Happiness", -5)
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 100)
+						state:AddFeed("💻 Needed repair/replacement. $100 gone.")
+					elseif roll < 0.80 then
+						state:ModifyStat("Happiness", -8)
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 300)
+						state.Flags = state.Flags or {}
+						state.Flags.lost_data = true
+						state:AddFeed("💻 Major failure. Lost important files. Heartbreaking.")
+					else
+						state:ModifyStat("Happiness", -10)
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 500)
+						state:AddFeed("💻 Complete disaster. Expensive replacement needed.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "exp_pleasant_surprise",
+		title = "Pleasant Surprise",
+		emoji = "🎁",
+		text = "Something unexpectedly wonderful happened!",
+		question = "What was the surprise?",
+		minAge = 5, maxAge = 100,
+		baseChance = 0.45,
+		cooldown = 3,
+		stage = STAGE,
+		ageBand = "any",
+		category = "luck",
+		tags = { "surprise", "good_news", "luck" },
+		
+		choices = {
+			{ text = "Unexpected gift", effects = { Happiness = 8, Money = 50 }, feedText = "🎁 Someone thought of you! So touching!" },
+			{ text = "Good news you didn't expect", effects = { Happiness = 10 }, feedText = "🎁 Life-changing good news! Celebration!" },
+			{ text = "Reunited with lost item", effects = { Happiness = 7 }, feedText = "🎁 Found something you thought was gone forever!" },
+			{ text = "Spontaneous adventure opportunity", effects = { Happiness = 8, Money = -50 }, feedText = "🎁 Said yes to something random. Best decision!" },
+		},
+	},
+	{
+		id = "exp_nostalgia_wave",
+		title = "Nostalgia Wave",
+		emoji = "🕰️",
+		text = "Something triggered intense nostalgia for the past.",
+		question = "What brought on the nostalgia?",
+		minAge = 18, maxAge = 100,
+		baseChance = 0.55,
+		cooldown = 3,
+		stage = STAGE,
+		ageBand = "any",
+		category = "experience",
+		tags = { "nostalgia", "memory", "past" },
+		
+		choices = {
+			{ text = "A song from your past", effects = { Happiness = 5 }, feedText = "🕰️ Transported back in time. The feels hit hard." },
+			{ text = "Finding old photos", effects = { Happiness = 6, Smarts = 1 }, feedText = "🕰️ Look how young you were! Memories flooding back." },
+			{ text = "Visiting somewhere from childhood", effects = { Happiness = 7 }, setFlags = { nostalgic_visit = true }, feedText = "🕰️ Smaller than you remembered. Bittersweet." },
+			{ text = "A smell that triggered memories", effects = { Happiness = 5 }, feedText = "🕰️ That specific smell. Instantly back to that moment." },
+		},
+	},
+	{
+		id = "exp_confronting_fear",
+		title = "Confronting a Fear",
+		emoji = "😰",
+		text = "You faced something you've always been afraid of!",
+		question = "How did confronting the fear go?",
+		minAge = 10, maxAge = 80,
+		baseChance = 0.45,
+		cooldown = 2,
+		stage = STAGE,
+		ageBand = "any",
+		category = "growth",
+		tags = { "fear", "courage", "growth" },
+		
+		-- CRITICAL: Random fear confrontation outcome
+		choices = {
+			{
+				text = "Face it head on",
+				effects = {},
+				feedText = "Confronting your fear...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.55 then
+						state:ModifyStat("Happiness", 10)
+						state:ModifyStat("Smarts", 3)
+						state.Flags = state.Flags or {}
+						state.Flags.conquered_fear = true
+						state:AddFeed("😰 YOU DID IT! Fear conquered! Empowered!")
+					elseif roll < 0.80 then
+						state:ModifyStat("Happiness", 4)
+						state:ModifyStat("Smarts", 2)
+						state:AddFeed("😰 Survived it! Still scared but did it!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("😰 Panicked and retreated. Not ready yet.")
+					end
+				end,
+			},
+			{
+				text = "Avoid it again",
+				effects = { Happiness = -2 },
+				setFlags = { avoiding_fears = true },
+				feedText = "😰 Not today. Maybe not ever.",
+			},
+		},
+	},
+	{
+		id = "exp_creative_inspiration",
+		title = "Creative Inspiration Strike",
+		emoji = "💡",
+		text = "Creative inspiration hit you out of nowhere!",
+		question = "What did you create?",
+		minAge = 10, maxAge = 100,
+		baseChance = 0.45,
+		cooldown = 3,
+		stage = STAGE,
+		ageBand = "any",
+		category = "creativity",
+		tags = { "creativity", "inspiration", "art" },
+		
+		choices = {
+			{ text = "Write something meaningful", effects = { Smarts = 4, Happiness = 6 }, setFlags = { creative_writer = true }, feedText = "💡 Words flowed! Created something real and true!" },
+			{ text = "Make visual art", effects = { Smarts = 2, Happiness = 6, Looks = 1 }, setFlags = { visual_artist = true }, feedText = "💡 Your vision became reality! Beautiful!" },
+			{ text = "Compose/play music", effects = { Smarts = 3, Happiness = 7 }, setFlags = { musical_creator = true }, feedText = "💡 The melody in your head is now real!" },
+			{ text = "Build/craft something", effects = { Smarts = 4, Happiness = 5 }, setFlags = { maker = true }, feedText = "💡 Hands created what mind envisioned! Proud!" },
+			{ text = "Forget it before you could capture it", effects = { Happiness = -4 }, feedText = "💡 Gone. That amazing idea slipped away. Tragic." },
+		},
+	},
+	{
+		id = "exp_question_everything",
+		title = "Existential Moment",
+		emoji = "🤔",
+		text = "Deep questions about life, universe, and everything hit you.",
+		question = "How do you handle existential thoughts?",
+		minAge = 14, maxAge = 100,
+		baseChance = 0.45,
+		cooldown = 2,
+		stage = STAGE,
+		ageBand = "any",
+		category = "psychology",
+		tags = { "existential", "philosophy", "deep" },
+		
+		choices = {
+			{ text = "Embrace the uncertainty", effects = { Smarts = 5, Happiness = 3 }, setFlags = { philosophically_minded = true }, feedText = "🤔 Not knowing is okay. Wonder is beautiful." },
+			{ text = "Spiral into existential dread", effects = { Happiness = -6, Smarts = 2 }, setFlags = { existential_crisis = true }, feedText = "🤔 Nothing matters. Everything matters. Overwhelmed." },
+			{ text = "Find comfort in something bigger", effects = { Happiness = 5, Smarts = 1 }, setFlags = { spiritually_curious = true }, feedText = "🤔 Faith, nature, connection - something grounds you." },
+			{ text = "Focus on the present moment", effects = { Happiness = 4, Health = 2 }, setFlags = { present_focused = true }, feedText = "🤔 Here and now is all we have. That's enough." },
+		},
+	},
+	{
+		id = "exp_overheard_conversation",
+		title = "Overheard Conversation",
+		emoji = "👂",
+		text = "You accidentally overheard something you shouldn't have!",
+		question = "What did you hear?",
+		minAge = 12, maxAge = 90,
+		baseChance = 0.45,
+		cooldown = 2,
+		stage = STAGE,
+		ageBand = "any",
+		category = "experience",
+		tags = { "overheard", "secret", "awkward" },
+		
+		choices = {
+			{ text = "Someone talking about you", effects = {}, feedText = "Hearing your name...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Happiness", 6)
+						state:AddFeed("👂 They were saying nice things! Unexpected validation!")
+					else
+						state:ModifyStat("Happiness", -6)
+						state:AddFeed("👂 Not kind words. That stings. Can't unhear it.")
+					end
+				end,
+			},
+			{ text = "A secret you shouldn't know", effects = { Smarts = 2, Happiness = -2 }, setFlags = { knows_secret = true }, feedText = "👂 Knowledge you can't un-know. Burden of secrets." },
+			{ text = "Hilarious strangers' drama", effects = { Happiness = 4 }, feedText = "👂 Better than any reality show. Free entertainment!" },
+			{ text = "Something that helped you", effects = { Happiness = 5, Smarts = 2 }, feedText = "👂 Useful information! Accidentally fortunate!" },
+		},
+	},
+	{
+		id = "exp_personal_record",
+		title = "Personal Record",
+		emoji = "🏅",
+		text = "You achieved a personal best at something!",
+		question = "What record did you break?",
+		minAge = 10, maxAge = 90,
+		baseChance = 0.45,
+		cooldown = 3,
+		stage = STAGE,
+		ageBand = "any",
+		category = "achievement",
+		tags = { "achievement", "personal_best", "progress" },
+		
+		choices = {
+			{ text = "Physical fitness milestone", effects = { Happiness = 8, Health = 5 }, setFlags = { fitness_milestone = true }, feedText = "🏅 Faster, stronger, better! Body exceeded expectations!" },
+			{ text = "Mental/cognitive achievement", effects = { Happiness = 7, Smarts = 4 }, setFlags = { mental_milestone = true }, feedText = "🏅 Brain power! Problem solved you couldn't before!" },
+			{ text = "Social breakthrough", effects = { Happiness = 8 }, setFlags = { social_milestone = true }, feedText = "🏅 Connection you never thought possible! Growth!" },
+			{ text = "Financial milestone", effects = { Happiness = 8, Money = 100 }, setFlags = { financial_milestone = true }, feedText = "🏅 Money goals! Saved/earned more than ever!" },
+		},
+	},
+}
+
+return LifeExperiences

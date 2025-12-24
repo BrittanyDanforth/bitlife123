@@ -1,0 +1,186 @@
+--[[
+	CareerSystem.lua
+	
+	DEPRECATION NOTICE: This module is currently NOT USED by the main game loop.
+	Career simulation is handled by LifeBackend:tickCareer() instead.
+	
+	This module is kept for potential future use or modular career simulation.
+	If you need career functionality, use LifeBackend:tickCareer() instead.
+	
+	TODO: Consider removing or integrating this module fully.
+]]
+
+local CareerSystem = {}
+
+CareerSystem.Catalog = {
+	gig = {
+		{
+			id = "barista",
+			name = "Coffee Barista",
+			category = "service",
+			requiredEducation = "none",
+			baseSalary = 24000,
+			performanceGain = { Happiness = 1, Smarts = 1 },
+		},
+		{
+			id = "retail",
+			name = "Retail Associate",
+			category = "retail",
+			requiredEducation = "none",
+			baseSalary = 26000,
+		},
+	},
+	professional = {
+		{
+			id = "software_engineer",
+			name = "Junior Software Engineer",
+			category = "tech",
+			requiredEducation = "bachelor", -- FIXED: was "bachelors"
+			baseSalary = 72000,
+			performanceGain = { Smarts = 2 },
+		},
+		{
+			id = "nurse",
+			name = "Registered Nurse",
+			category = "medical",
+			requiredEducation = "bachelor", -- FIXED: was "bachelors"
+			baseSalary = 68000,
+		},
+	},
+	creative = {
+		{
+			id = "graphic_designer",
+			name = "Graphic Designer",
+			category = "creative",
+			requiredEducation = "community", -- FIXED: was "associate"
+			baseSalary = 52000,
+		},
+		{
+			id = "musician",
+			name = "Touring Musician",
+			category = "entertainment",
+			requiredEducation = "none",
+			baseSalary = 38000,
+			variance = 30000,
+		},
+	},
+}
+
+local function meetsEducation(requirement, level)
+	if not requirement or requirement == "none" then
+		return true
+	end
+
+	-- FIXED: Match the Education IDs used in LifeBackend and OccupationScreen
+	-- Supports both legacy names (bachelors) and new names (bachelor)
+	local hierarchy = {
+		none = 0,
+		-- High school variants
+		high_school = 1,
+		highschool = 1,
+		["high-school"] = 1,
+		-- Associate/Community
+		associate = 2,
+		community = 2,
+		-- Bachelor variants
+		bachelor = 3,
+		bachelors = 3,
+		["bachelor's"] = 3,
+		-- Master variants
+		master = 4,
+		masters = 4,
+		["master's"] = 4,
+		-- Professional/Advanced
+		law = 5,
+		medical = 5,
+		doctorate = 6,
+		phd = 6,
+	}
+	
+	local playerLevel = hierarchy[string.lower(level or "none")] or 0
+	local requiredLevel = hierarchy[string.lower(requirement or "none")] or 0
+	return playerLevel >= requiredLevel
+end
+
+function CareerSystem.getJobsForState(state)
+	local available = {}
+	for _, track in pairs(CareerSystem.Catalog) do
+		for _, job in ipairs(track) do
+			if meetsEducation(job.requiredEducation, state.Education and state.Education.level) then
+				table.insert(available, job)
+			end
+		end
+	end
+	return available
+end
+
+function CareerSystem.getJob(jobId)
+	for _, track in pairs(CareerSystem.Catalog) do
+		for _, job in ipairs(track) do
+			if job.id == jobId then
+				return job
+			end
+		end
+	end
+end
+
+function CareerSystem.simulateWork(state)
+	-- CRITICAL FIX: Don't simulate work for retired players
+	if state.Flags and state.Flags.retired then
+		return
+	end
+	
+	-- Support both state.CurrentJob (LifeState) and state.Career.jobId (legacy)
+	local hasJob = state.CurrentJob or (state.Career and state.Career.jobId)
+	if not hasJob then
+		return
+	end
+	
+	-- Use CareerInfo for performance tracking (matches LifeState structure)
+	state.CareerInfo = state.CareerInfo or {}
+	local info = state.CareerInfo
+	
+	info.performance = math.clamp((info.performance or 60) + Random.new():NextInteger(-2, 5), 0, 100)
+	info.promotionProgress = math.clamp((info.promotionProgress or 0) + Random.new():NextInteger(3, 10), 0, 100)
+	
+	-- Check for promotion
+	if info.performance >= 90 and info.promotionProgress >= 100 then
+		-- Get current salary from CurrentJob or Career
+		local currentSalary = 0
+		if state.CurrentJob and state.CurrentJob.salary then
+			currentSalary = state.CurrentJob.salary
+			state.CurrentJob.salary = math.floor(currentSalary * 1.15)
+		elseif state.Career and state.Career.salary then
+			currentSalary = state.Career.salary
+			state.Career.salary = math.floor(currentSalary * 1.15)
+		end
+		
+		info.promotionProgress = 20
+		-- CRITICAL FIX: Track promotions separately from raises!
+		-- Promotions != Raises. Raises are negotiated, promotions are earned.
+		info.promotions = (info.promotions or 0) + 1
+		-- Reset raises counter on promotion (new role = new raise cap)
+		info.raises = 0
+		
+		local newSalary = state.CurrentJob and state.CurrentJob.salary or (state.Career and state.Career.salary) or currentSalary
+		if state.AddFeed then
+			state:AddFeed(("You were promoted! Salary is now $%s."):format(newSalary))
+		end
+	end
+	
+	-- Add monthly salary
+	local salary = 0
+	if state.CurrentJob and state.CurrentJob.salary then
+		salary = state.CurrentJob.salary
+	elseif state.Career and state.Career.salary then
+		salary = state.Career.salary
+	end
+	
+	if state.AddMoney then
+		state:AddMoney(math.floor(salary / 12), "Monthly salary")
+	elseif state.Money ~= nil then
+		state.Money = (state.Money or 0) + math.floor(salary / 12)
+	end
+end
+
+return CareerSystem

@@ -1,0 +1,1602 @@
+--[[
+	TechCareerEvents.lua
+	AAA-quality BitLife-style career events for Tech paths.
+	Randomized outcomes. Player choices affect probabilities, but outcomes are still uncertain.
+
+	Covers:
+	- DevOps Engineer / SRE / Infrastructure
+	- Security Consultant / Cyber / Pen Test / GRC
+	- Software Developer (Junior -> Senior -> Staff)
+	- Tech Lead / Engineering Manager-ish moments
+	- CTO / Executive tech chaos
+
+	EXPECTED STATE API (supports both styles):
+	- state:ModifyStat(statName, delta)   (optional)
+	- state:AddFeed(text)                 (optional)
+	- state.Flags table
+	- state.Money number
+	- state.CurrentJob { id, name, category, salary, company }
+
+	Module shape:
+	TechCareerEvents.events = { ... }
+	return TechCareerEvents
+]]
+
+local TechCareerEvents = {}
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- SAFE HELPERS (so events can't crash backend)
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local function ensureFlags(state)
+	state.Flags = state.Flags or {}
+	return state.Flags
+end
+
+local function clamp(v, a, b)
+	if v < a then return a end
+	if v > b then return b end
+	return v
+end
+
+local function getStatsTable(state)
+	state.Stats = state.Stats or {}
+	return state.Stats
+end
+
+local function addStat(state, key, delta)
+	-- Supports both state.Stats and legacy flat fields.
+	local stats = getStatsTable(state)
+	local current = stats[key]
+	if type(current) ~= "number" then
+		current = state[key]
+	end
+	if type(current) ~= "number" then
+		current = 50
+	end
+	local nextVal = clamp(current + delta, 0, 100)
+	stats[key] = nextVal
+	state[key] = nextVal
+end
+
+local function addMoney(state, amount)
+	state.Money = (state.Money or 0) + amount
+end
+
+local function addFeed(state, msg)
+	if not msg or msg == "" then return end
+	if state.AddFeed then
+		state:AddFeed(msg)
+	else
+		-- fallback: store pending feed (if your backend uses this)
+		state.PendingFeed = state.PendingFeed and (state.PendingFeed .. " " .. msg) or msg
+	end
+end
+
+local function modStatIfPossible(state, key, delta)
+	if state.ModifyStat then
+		state:ModifyStat(key, delta)
+	else
+		addStat(state, key, delta)
+	end
+end
+
+local function roll100()
+	return math.random(1, 100)
+end
+
+local function chance(pct)
+	return roll100() <= pct
+end
+
+local function fmtMoney(n)
+	n = math.floor(n + 0.5)
+	if n >= 1000000000 then
+		return string.format("$%.2fB", n / 1000000000)
+	elseif n >= 1000000 then
+		return string.format("$%.2fM", n / 1000000)
+	elseif n >= 1000 then
+		return string.format("$%.1fK", n / 1000)
+	end
+	return "$" .. tostring(n)
+end
+
+-- ═══════════════════════════════════════════════════════════════════════
+-- JOB CHECKS
+-- ═══════════════════════════════════════════════════════════════════════
+
+local function hasTechJob(state)
+	if not state.CurrentJob then return false end
+	local jobId = tostring(state.CurrentJob.id or ""):lower()
+	local jobCat = tostring(state.CurrentJob.category or ""):lower()
+	local jobName = tostring(state.CurrentJob.name or ""):lower()
+	return jobCat == "tech"
+		or jobId:find("developer")
+		or jobId:find("devops")
+		or jobId:find("security")
+		or jobId:find("engineer")
+		or jobId:find("cto")
+		or jobName:find("developer")
+		or jobName:find("engineer")
+		or jobName:find("security")
+		or jobName:find("devops")
+		or jobName:find("sre")
+		or jobName:find("software")
+		or jobName:find("programmer")
+end
+
+local function hasDevOpsJob(state)
+	if not state.CurrentJob then return false end
+	local jobId = tostring(state.CurrentJob.id or ""):lower()
+	local jobName = tostring(state.CurrentJob.name or ""):lower()
+	return jobId:find("devops") or jobId:find("sre") or jobId:find("infra")
+		or jobName:find("devops") or jobName:find("sre") or jobName:find("infrastructure")
+		or jobName:find("platform") or jobName:find("reliability")
+end
+
+local function hasSecurityJob(state)
+	if not state.CurrentJob then return false end
+	local jobId = tostring(state.CurrentJob.id or ""):lower()
+	local jobName = tostring(state.CurrentJob.name or ""):lower()
+	return jobId:find("security") or jobId:find("cyber") or jobId:find("pen")
+		or jobId:find("ciso") or jobName:find("security") or jobName:find("cyber")
+		or jobName:find("penetration") or jobName:find("soc") or jobName:find("infosec")
+end
+
+local function hasDevJob(state)
+	if not state.CurrentJob then return false end
+	local jobId = tostring(state.CurrentJob.id or ""):lower()
+	local jobName = tostring(state.CurrentJob.name or ""):lower()
+	return jobId:find("developer") or jobId:find("software") or jobId:find("engineer")
+		or jobName:find("developer") or jobName:find("software") or jobName:find("engineer")
+		or jobName:find("programmer") or jobName:find("coder")
+end
+
+local function isSeniorish(state)
+	if not state.CurrentJob then return false end
+	local name = tostring(state.CurrentJob.name or ""):lower()
+	return name:find("senior") or name:find("staff") or name:find("principal") or name:find("lead")
+end
+
+local function isLeadOrManager(state)
+	if not state.CurrentJob then return false end
+	local name = tostring(state.CurrentJob.name or ""):lower()
+	return name:find("lead") or name:find("tech lead") or name:find("manager") or name:find("head")
+		or name:find("director") or name:find("vp")
+end
+
+local function isCTO(state)
+	if not state.CurrentJob then return false end
+	local id = tostring(state.CurrentJob.id or ""):lower()
+	local name = tostring(state.CurrentJob.name or ""):lower()
+	return id:find("cto") or name:find("cto") or name:find("chief technology")
+		or name:find("chief technical")
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- EVENTS
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+TechCareerEvents.events = {
+
+	-- ==========================================================================
+	-- DEVOPS / SRE
+	-- ==========================================================================
+
+	{
+		id = "devops_production_outage",
+		title = "🚨 PRODUCTION IS DOWN!",
+		emoji = "🚨",
+		text = "At 3 AM, your phone explodes with alerts. Production is down and thousands of users are affected.",
+		category = "career_tech",
+		weight = 20,
+		minAge = 22, maxAge = 60,
+		baseChance = 0.60,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = hasDevOpsJob,
+		blockedByFlags = { in_prison = true },
+
+		choices = {
+			{
+				text = "Jump online and fix it",
+				effects = { Health = -5 },
+				feedText = "Logging in at 3 AM...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					local r = roll100()
+					modStatIfPossible(state, "Health", -5)
+					if r <= 62 then
+						addMoney(state, math.random(2000, 6000))
+						modStatIfPossible(state, "Happiness", 10)
+						flags.incident_hero = true
+						addFeed(state, "🚨 You restored production fast. Leadership calls you a hero.")
+					elseif r <= 86 then
+						modStatIfPossible(state, "Happiness", 2)
+						addFeed(state, "🚨 You fixed it after a long night. You're exhausted, but it's stable.")
+					else
+						modStatIfPossible(state, "Happiness", -12)
+						flags.outage_blamed = true
+						addFeed(state, "🚨 You pushed the wrong change and made it worse. You're getting blamed.")
+					end
+				end,
+			},
+			{
+				text = "Escalate to the on-call teammate",
+				effects = { Happiness = -1 },
+				feedText = "Calling the on-call engineer...",
+				onResolve = function(state)
+					local r = roll100()
+					modStatIfPossible(state, "Happiness", -1)
+					if r <= 45 then
+						modStatIfPossible(state, "Happiness", 6)
+						addFeed(state, "🚨 They fixed it. You dodged the worst night of your life.")
+					elseif r <= 80 then
+						modStatIfPossible(state, "Happiness", -4)
+						addFeed(state, "🚨 They tried. Now you're both awake, stressed, and still broken.")
+					else
+						modStatIfPossible(state, "Happiness", -10)
+						addFeed(state, "🚨 Nobody answered. Your manager calls YOU. It's getting ugly.")
+					end
+				end,
+			},
+			{
+				text = "Sleep through it (not my rotation)",
+				effects = { Health = 2, Happiness = 1 },
+				feedText = "Phone on silent...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Health", 2)
+					modStatIfPossible(state, "Happiness", 1)
+					if chance(30) then
+						addFeed(state, "🚨 Somehow… nobody noticed you ignored it.")
+					else
+						modStatIfPossible(state, "Happiness", -16)
+						flags.unreliable_engineer = true
+						addFeed(state, "🚨 Your manager is furious you didn't respond. Formal warning issued.")
+					end
+				end,
+			},
+		},
+	},
+
+	{
+		id = "devops_deploy_friday",
+		title = "Friday Deployment",
+		emoji = "📦",
+		text = "It's Friday at 4 PM. A critical fix is ready. Your manager asks you to deploy it now.",
+		category = "career_tech",
+		weight = 16,
+		minAge = 22, maxAge = 60,
+		baseChance = 0.52,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = hasDevOpsJob,
+		blockedByFlags = { in_prison = true },
+
+		choices = {
+			{
+				text = "Deploy it (we test in production)",
+				effects = {},
+				feedText = "Shipping on Friday...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					local r = roll100()
+					if r <= 42 then
+						addMoney(state, math.random(800, 3000))
+						modStatIfPossible(state, "Happiness", 8)
+						flags.deploy_reliable = true
+						addFeed(state, "📦 Smooth deploy. You saved everyone's weekend.")
+					elseif r <= 74 then
+						modStatIfPossible(state, "Happiness", -6)
+						modStatIfPossible(state, "Health", -4)
+						addFeed(state, "📦 It broke something subtle. You spent your weekend firefighting.")
+					else
+						modStatIfPossible(state, "Happiness", -18)
+						flags.friday_disaster = true
+						addFeed(state, "📦 Catastrophic outage. Execs are involved. This will follow you.")
+					end
+				end,
+			},
+			{
+				text = "Wait until Monday",
+				effects = { Happiness = 2 },
+				feedText = "Refusing the Friday curse...",
+				onResolve = function(state)
+					modStatIfPossible(state, "Happiness", 2)
+					if chance(78) then
+						addFeed(state, "📦 Good call. Monday deploy goes fine and you enjoyed your weekend.")
+					else
+						modStatIfPossible(state, "Happiness", -6)
+						addFeed(state, "📦 Manager is annoyed about the delay. You did the right thing though.")
+					end
+				end,
+			},
+			{
+				text = "Do a canary deploy only",
+				effects = { Smarts = 2 },
+				feedText = "Rolling out gradually...",
+				onResolve = function(state)
+					modStatIfPossible(state, "Smarts", 2)
+					if chance(65) then
+						modStatIfPossible(state, "Happiness", 6)
+						addMoney(state, math.random(500, 2500))
+						addFeed(state, "📦 Canary caught a bug early. You look extremely competent.")
+					else
+						modStatIfPossible(state, "Happiness", -4)
+						addFeed(state, "📦 Canary still failed. At least you limited the blast radius.")
+					end
+				end,
+			},
+		},
+	},
+
+	{
+		id = "devops_k8s_migration",
+		title = "Kubernetes Migration",
+		emoji = "☸️",
+		text = "The company wants everything moved to Kubernetes. You're asked to lead the migration.",
+		category = "career_tech",
+		weight = 12,
+		minAge = 24, maxAge = 55,
+		baseChance = 0.45,
+		cooldown = 4,
+		oneTime = true,
+		requiresJob = true,
+		eligibility = hasDevOpsJob,
+		blockedByFlags = { in_prison = true },
+
+		choices = {
+			{
+				text = "Accept the challenge",
+				effects = { Smarts = 4, Happiness = -1 },
+				feedText = "Entering YAML hell...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Smarts", 4)
+					modStatIfPossible(state, "Happiness", -1)
+					local r = roll100()
+					if r <= 52 then
+						addMoney(state, math.random(12000, 28000))
+						modStatIfPossible(state, "Happiness", 15)
+						flags.k8s_expert = true
+						addFeed(state, "☸️ Migration succeeded. You're now the Kubernetes legend.")
+					elseif r <= 84 then
+						modStatIfPossible(state, "Happiness", 6)
+						addFeed(state, "☸️ It took forever, but the platform is finally stable.")
+					else
+						modStatIfPossible(state, "Happiness", -12)
+						flags.migration_failed = true
+						addFeed(state, "☸️ Costs exploded. Leadership froze the project and blamed 'over-engineering.'")
+					end
+				end,
+			},
+			{
+				text = "Recommend managed services instead",
+				effects = { Smarts = 2 },
+				feedText = "Pitching the simpler path...",
+				onResolve = function(state)
+					modStatIfPossible(state, "Smarts", 2)
+					if chance(62) then
+						addMoney(state, math.random(3000, 9000))
+						modStatIfPossible(state, "Happiness", 8)
+						addFeed(state, "☸️ They accepted your plan. Less pain, same outcome.")
+					else
+						modStatIfPossible(state, "Happiness", -3)
+						addFeed(state, "☸️ Management insisted on raw K8s anyway. You tried.")
+					end
+				end,
+			},
+			{
+				text = "Decline (too risky)",
+				effects = { Happiness = -2 },
+				feedText = "Avoiding a career trap...",
+				onResolve = function(state)
+					modStatIfPossible(state, "Happiness", -2)
+					if chance(40) then
+						modStatIfPossible(state, "Happiness", 5)
+						addFeed(state, "☸️ Someone else took it and got burned. You escaped.")
+					else
+						modStatIfPossible(state, "Happiness", -6)
+						addFeed(state, "☸️ Your manager thinks you're not leadership material.")
+					end
+				end,
+			},
+		},
+	},
+
+	{
+		id = "devops_cloud_bill_explodes",
+		title = "Cloud Bill Explosion",
+		emoji = "💸",
+		text = "Finance storms in: the cloud bill doubled overnight. They want answers RIGHT NOW.",
+		category = "career_tech",
+		weight = 14,
+		minAge = 22, maxAge = 60,
+		baseChance = 0.50,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasDevOpsJob,
+		blockedByFlags = { in_prison = true },
+
+		choices = {
+			{
+				text = "Find the leak and fix it",
+				effects = { Smarts = 2, Happiness = -2 },
+				feedText = "Hunting runaway resources...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Smarts", 2)
+					modStatIfPossible(state, "Happiness", -2)
+					local r = roll100()
+					if r <= 60 then
+						addMoney(state, math.random(2000, 7000))
+						flags.cost_saver = true
+						modStatIfPossible(state, "Happiness", 10)
+						addFeed(state, "💸 You found a runaway cluster and saved the company thousands monthly.")
+					elseif r <= 85 then
+						modStatIfPossible(state, "Happiness", 3)
+						addFeed(state, "💸 You reduced costs a bit, but finance still wants more.")
+					else
+						modStatIfPossible(state, "Happiness", -10)
+						flags.cost_blamed = true
+						addFeed(state, "💸 You couldn't explain it fast enough. You got blamed anyway.")
+					end
+				end,
+			},
+			{
+				text = "Blame a third-party vendor",
+				effects = { Happiness = 1 },
+				feedText = "Pointing fingers...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Happiness", 1)
+					if chance(35) then
+						modStatIfPossible(state, "Happiness", 6)
+						addFeed(state, "💸 The vendor owned it. You got lucky.")
+					else
+						modStatIfPossible(state, "Happiness", -12)
+						flags.reputation_hit = true
+						addFeed(state, "💸 They proved it wasn't the vendor. Now you look incompetent.")
+					end
+				end,
+			},
+			{
+				text = "Implement budgets + alerts immediately",
+				effects = { Smarts = 1 },
+				feedText = "Setting guardrails...",
+				onResolve = function(state)
+					modStatIfPossible(state, "Smarts", 1)
+					if chance(70) then
+						addMoney(state, math.random(500, 2500))
+						modStatIfPossible(state, "Happiness", 7)
+						addFeed(state, "💸 Budgets and alerts prevented another disaster. Finance calmed down.")
+					else
+						modStatIfPossible(state, "Happiness", -4)
+						addFeed(state, "💸 Alerts helped, but finance still wants a root cause.")
+					end
+				end,
+			},
+		},
+	},
+
+	{
+		id = "devops_incident_postmortem",
+		title = "Postmortem Meeting",
+		emoji = "🧯",
+		text = "After a major incident, you're asked to lead the postmortem. People are defensive.",
+		category = "career_tech",
+		weight = 12,
+		minAge = 22, maxAge = 60,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasDevOpsJob,
+		blockedByFlags = { in_prison = true },
+
+		choices = {
+			{
+				text = "Run a blameless postmortem",
+				effects = { Smarts = 2, Happiness = 2 },
+				feedText = "Focusing on systems, not people...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Smarts", 2)
+					modStatIfPossible(state, "Happiness", 2)
+					if chance(68) then
+						flags.blameless_leader = true
+						addMoney(state, math.random(800, 3000))
+						addFeed(state, "🧯 Team trust improved. Execs loved your leadership.")
+					else
+						modStatIfPossible(state, "Happiness", -3)
+						addFeed(state, "🧯 People still argued, but you kept it mostly productive.")
+					end
+				end,
+			},
+			{
+				text = "Call out whoever caused it",
+				effects = { Happiness = -2 },
+				feedText = "Making it personal...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Happiness", -2)
+					if chance(40) then
+						addFeed(state, "🧯 You scared everyone into being careful… but morale dropped hard.")
+						modStatIfPossible(state, "Happiness", -8)
+						flags.toxic_lead = true
+					else
+						addFeed(state, "🧯 HR pulled you aside. That was NOT okay.")
+						modStatIfPossible(state, "Happiness", -12)
+						flags.hr_warning = true
+					end
+				end,
+			},
+			{
+				text = "Quietly document and move on",
+				effects = { Happiness = 1 },
+				feedText = "Keeping it short...",
+				onResolve = function(state)
+					modStatIfPossible(state, "Happiness", 1)
+					if chance(55) then
+						addFeed(state, "🧯 Quick and painless. Nobody learned anything, but nobody fought either.")
+					else
+						modStatIfPossible(state, "Happiness", -4)
+						addFeed(state, "🧯 The same incident happened again. Everyone asked why nothing changed.")
+					end
+				end,
+			},
+		},
+	},
+
+	-- ==========================================================================
+	-- SECURITY / CYBER
+	-- ==========================================================================
+
+	{
+		id = "security_breach_detected",
+		title = "🔐 Breach Detected",
+		emoji = "🔐",
+		text = "You discover signs of a breach that may have happened weeks ago. Sensitive data could be exposed.",
+		category = "career_tech",
+		weight = 18,
+		minAge = 24, maxAge = 60,
+		baseChance = 0.52,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasSecurityJob,
+		blockedByFlags = { in_prison = true },
+
+		choices = {
+			{
+				text = "Initiate full incident response",
+				effects = { Smarts = 3, Happiness = -2 },
+				feedText = "Locking systems down...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Smarts", 3)
+					modStatIfPossible(state, "Happiness", -2)
+					local r = roll100()
+					if r <= 58 then
+						addMoney(state, math.random(6000, 18000))
+						modStatIfPossible(state, "Happiness", 12)
+						flags.breach_responder = true
+						addFeed(state, "🔐 You contained the breach and saved the company millions.")
+					elseif r <= 86 then
+						modStatIfPossible(state, "Happiness", 3)
+						addFeed(state, "🔐 You limited the damage, but the press still found out.")
+					else
+						modStatIfPossible(state, "Happiness", -10)
+						flags.breach_public = true
+						addFeed(state, "🔐 Too late. Data is already circulating. Brutal outcome.")
+					end
+				end,
+			},
+			{
+				text = "Investigate quietly first",
+				effects = { Smarts = 2 },
+				feedText = "Gathering evidence...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Smarts", 2)
+					local r = roll100()
+					if r <= 45 then
+						modStatIfPossible(state, "Happiness", 10)
+						flags.forensics_pro = true
+						addFeed(state, "🔐 You found the entry point and closed it without panic.")
+					elseif r <= 72 then
+						modStatIfPossible(state, "Happiness", -4)
+						addFeed(state, "🔐 Leadership is upset you delayed escalation.")
+					else
+						modStatIfPossible(state, "Happiness", -12)
+						flags.evidence_wiped = true
+						addFeed(state, "🔐 Attackers noticed you. They wiped logs and vanished.")
+					end
+				end,
+			},
+			{
+				text = "Report it and step back",
+				effects = { Happiness = 1 },
+				feedText = "Escalating to leadership...",
+				onResolve = function(state)
+					modStatIfPossible(state, "Happiness", 1)
+					if chance(60) then
+						addFeed(state, "🔐 Leadership acted quickly. You did the right thing.")
+					else
+						modStatIfPossible(state, "Happiness", -6)
+						addFeed(state, "🔐 Leadership ignored it. Now you feel complicit.")
+					end
+				end,
+			},
+		},
+	},
+
+	{
+		id = "security_bug_bounty_grind",
+		title = "Bug Bounty Weekend",
+		emoji = "🐛",
+		text = "A major company launches a huge bug bounty program. You could earn serious cash… or waste your time.",
+		category = "career_tech",
+		weight = 14,
+		minAge = 20, maxAge = 50,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasSecurityJob,
+		blockedByFlags = { in_prison = true },
+
+		choices = {
+			{
+				text = "Spend nights hunting bugs",
+				effects = { Health = -3 },
+				feedText = "Hacking legally for profit...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Health", -3)
+					local r = roll100()
+					if r <= 30 then
+						local bounty = math.random(10000, 100000)
+						addMoney(state, bounty)
+						modStatIfPossible(state, "Happiness", 20)
+						flags.bug_bounty_hunter = true
+						addFeed(state, "🐛 Critical bug found! Bounty awarded: " .. fmtMoney(bounty))
+					elseif r <= 62 then
+						local bounty = math.random(500, 7000)
+						addMoney(state, bounty)
+						modStatIfPossible(state, "Happiness", 10)
+						addFeed(state, "🐛 You found a real vulnerability! You earned " .. fmtMoney(bounty) .. ".")
+					elseif r <= 85 then
+						modStatIfPossible(state, "Happiness", -3)
+						addFeed(state, "🐛 Duplicate report… someone beat you by minutes.")
+					else
+						modStatIfPossible(state, "Happiness", -6)
+						addFeed(state, "🐛 You wasted a weekend and found nothing.")
+					end
+				end,
+			},
+			{
+				text = "Skip it (work-life balance)",
+				effects = { Health = 2, Happiness = 2 },
+				feedText = "Choosing sleep...",
+				onResolve = function(state)
+					modStatIfPossible(state, "Health", 2)
+					modStatIfPossible(state, "Happiness", 2)
+					addFeed(state, "🐛 You stayed rested. No extra cash, but no burnout either.")
+				end,
+			},
+		},
+	},
+
+	{
+		id = "security_compliance_audit",
+		title = "Compliance Audit",
+		emoji = "📋",
+		text = "Auditors arrive for a surprise compliance audit. If you fail, contracts could be lost.",
+		category = "career_tech",
+		weight = 12,
+		minAge = 24, maxAge = 60,
+		baseChance = 0.45,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = hasSecurityJob,
+		blockedByFlags = { in_prison = true },
+
+		choices = {
+			{
+				text = "Prepare everything honestly",
+				effects = { Smarts = 2, Happiness = -1 },
+				feedText = "Collecting evidence...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Smarts", 2)
+					modStatIfPossible(state, "Happiness", -1)
+					local r = roll100()
+					if r <= 65 then
+						addMoney(state, math.random(2000, 9000))
+						modStatIfPossible(state, "Happiness", 8)
+						flags.audit_passed = true
+						addFeed(state, "📋 Audit passed. The auditors said your program was 'mature.'")
+					elseif r <= 85 then
+						modStatIfPossible(state, "Happiness", -3)
+						addFeed(state, "📋 You passed with minor findings. Annoying paperwork follows.")
+					else
+						modStatIfPossible(state, "Happiness", -12)
+						flags.audit_failed = true
+						addFeed(state, "📋 Audit failed. Leadership is furious and scrambling.")
+					end
+				end,
+			},
+			{
+				text = "Try to hide weak spots",
+				effects = { Happiness = 1 },
+				feedText = "Papering over issues...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Happiness", 1)
+					if chance(35) then
+						modStatIfPossible(state, "Happiness", 6)
+						addFeed(state, "📋 You got away with it… this time.")
+					else
+						modStatIfPossible(state, "Happiness", -16)
+						flags.integrity_hit = true
+						addFeed(state, "📋 Auditors caught you. Trust is shattered. Career damage.")
+					end
+				end,
+			},
+			{
+				text = "Ask leadership for more resources",
+				effects = { Smarts = 1 },
+				feedText = "Escalating resourcing...",
+				onResolve = function(state)
+					modStatIfPossible(state, "Smarts", 1)
+					if chance(55) then
+						addMoney(state, math.random(1000, 5000))
+						addFeed(state, "📋 Leadership approved tools + budget. You stabilized the program.")
+					else
+						modStatIfPossible(state, "Happiness", -5)
+						addFeed(state, "📋 Leadership denied resources. You had to 'make it work.'")
+					end
+				end,
+			},
+		},
+	},
+
+	{
+		id = "security_ransomware_attack",
+		title = "Ransomware Attack",
+		emoji = "💀",
+		text = "The company's systems have been hit with ransomware. The attackers want $500,000 in Bitcoin.",
+		category = "career_tech",
+		weight = 10,
+		minAge = 24, maxAge = 60,
+		baseChance = 0.35,
+		cooldown = 5,
+		oneTime = true,
+		requiresJob = true,
+		eligibility = hasSecurityJob,
+		blockedByFlags = { in_prison = true },
+
+		choices = {
+			{
+				text = "Refuse to pay and recover from backups",
+				effects = { Smarts = 3, Happiness = -5 },
+				feedText = "Starting disaster recovery...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Smarts", 3)
+					modStatIfPossible(state, "Happiness", -5)
+					local r = roll100()
+					if r <= 50 then
+						addMoney(state, math.random(10000, 30000))
+						modStatIfPossible(state, "Happiness", 15)
+						flags.ransomware_hero = true
+						addFeed(state, "💀 Full recovery! You're the hero who refused to pay criminals.")
+					elseif r <= 80 then
+						modStatIfPossible(state, "Happiness", 2)
+						addFeed(state, "💀 Partial recovery. Some data lost, but you kept integrity.")
+					else
+						modStatIfPossible(state, "Happiness", -15)
+						flags.ransomware_disaster = true
+						addFeed(state, "💀 Backups were corrupted too. Catastrophic data loss.")
+					end
+				end,
+			},
+			{
+				text = "Recommend paying the ransom",
+				effects = { Happiness = -2 },
+				feedText = "The pragmatic choice...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Happiness", -2)
+					local r = roll100()
+					if r <= 60 then
+						modStatIfPossible(state, "Happiness", 5)
+						addFeed(state, "💀 Paid and recovered. Attackers kept their word... this time.")
+					elseif r <= 85 then
+						modStatIfPossible(state, "Happiness", -8)
+						addFeed(state, "💀 Paid, but attackers leaked the data anyway. Double hit.")
+					else
+						modStatIfPossible(state, "Happiness", -12)
+						flags.sec_reputation_ruined = true
+						addFeed(state, "💀 Word got out you paid. Now you're a bigger target.")
+					end
+				end,
+			},
+			{
+				text = "Call in the FBI",
+				effects = { Smarts = 1 },
+				feedText = "Bringing in federal authorities...",
+				onResolve = function(state)
+					modStatIfPossible(state, "Smarts", 1)
+					if chance(40) then
+						addMoney(state, math.random(5000, 20000))
+						modStatIfPossible(state, "Happiness", 12)
+						addFeed(state, "💀 FBI traced the attackers. Case made headlines - you're famous!")
+					else
+						modStatIfPossible(state, "Happiness", -6)
+						addFeed(state, "💀 FBI investigation dragged on. No arrests. Attackers still free.")
+					end
+				end,
+			},
+		},
+	},
+
+	-- ==========================================================================
+	-- SOFTWARE DEV (GENERAL)
+	-- ==========================================================================
+
+	{
+		id = "dev_code_review_drama",
+		title = "Code Review Drama",
+		emoji = "👀",
+		text = "A senior dev publicly trashes your PR in a harsh review. The whole team saw it.",
+		category = "career_tech",
+		weight = 16,
+		minAge = 18, maxAge = 55,
+		baseChance = 0.55,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = hasTechJob,
+		blockedByFlags = { in_prison = true },
+
+		choices = {
+			{
+				text = "Respond professionally",
+				effects = { Smarts = 2, Happiness = -2 },
+				feedText = "Taking the high road...",
+				onResolve = function(state)
+					modStatIfPossible(state, "Smarts", 2)
+					modStatIfPossible(state, "Happiness", -2)
+					if chance(62) then
+						modStatIfPossible(state, "Happiness", 10)
+						addFeed(state, "👀 Your professionalism earned respect. The senior dev cooled off.")
+					else
+						addFeed(state, "👀 You fixed the PR quietly. Still stings though.")
+					end
+				end,
+			},
+			{
+				text = "Defend your choices",
+				effects = {},
+				feedText = "Arguing in the comments...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					local r = roll100()
+					if r <= 40 then
+						modStatIfPossible(state, "Smarts", 2)
+						modStatIfPossible(state, "Happiness", 10)
+						addFeed(state, "👀 You convinced them. Your approach was actually better.")
+					elseif r <= 72 then
+						modStatIfPossible(state, "Happiness", -6)
+						addFeed(state, "👀 It got heated. Now there's tension in the team.")
+					else
+						modStatIfPossible(state, "Happiness", -12)
+						flags.difficult_coworker = true
+						addFeed(state, "👀 You were wrong… and now you look defensive.")
+					end
+				end,
+			},
+			{
+				text = "Escalate the tone to your manager",
+				effects = { Happiness = -1 },
+				feedText = "Raising concerns...",
+				onResolve = function(state)
+					modStatIfPossible(state, "Happiness", -1)
+					if chance(52) then
+						modStatIfPossible(state, "Happiness", 6)
+						addFeed(state, "👀 Manager agreed it was unprofessional. The senior dev apologized.")
+					else
+						modStatIfPossible(state, "Happiness", -8)
+						addFeed(state, "👀 Manager said 'they're just direct.' Nobody backed you up.")
+					end
+				end,
+			},
+		},
+	},
+
+	{
+		id = "dev_hotfix_pressure",
+		title = "Hotfix Pressure",
+		emoji = "🔥",
+		text = "A bug is impacting users right now. Product wants a hotfix ASAP with minimal testing.",
+		category = "career_tech",
+		weight = 14,
+		minAge = 18, maxAge = 60,
+		baseChance = 0.50,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = hasDevJob,
+		blockedByFlags = { in_prison = true },
+
+		choices = {
+			{
+				text = "Ship the hotfix immediately",
+				effects = { Happiness = -1 },
+				feedText = "Pushing a risky fix...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Happiness", -1)
+					local r = roll100()
+					if r <= 50 then
+						addMoney(state, math.random(500, 2500))
+						modStatIfPossible(state, "Happiness", 8)
+						flags.fast_shipper = true
+						addFeed(state, "🔥 Hotfix worked. Users calmed down and leadership praised you.")
+					elseif r <= 78 then
+						modStatIfPossible(state, "Happiness", -6)
+						addFeed(state, "🔥 Fix worked… but introduced a minor bug. You'll patch it next.")
+					else
+						modStatIfPossible(state, "Happiness", -15)
+						flags.hotfix_disaster = true
+						addFeed(state, "🔥 The hotfix broke more things. Everyone's mad. You're on cleanup duty.")
+					end
+				end,
+			},
+			{
+				text = "Insist on tests + review first",
+				effects = { Smarts = 1, Happiness = 1 },
+				feedText = "Demanding safety...",
+				onResolve = function(state)
+					modStatIfPossible(state, "Smarts", 1)
+					modStatIfPossible(state, "Happiness", 1)
+					if chance(70) then
+						addFeed(state, "🔥 You shipped safely. It took longer, but it didn't explode.")
+					else
+						modStatIfPossible(state, "Happiness", -6)
+						addFeed(state, "🔥 Product is furious about the delay. You did the right thing though.")
+					end
+				end,
+			},
+			{
+				text = "Ask DevOps to roll back instead",
+				effects = { Happiness = 1 },
+				feedText = "Rolling back...",
+				onResolve = function(state)
+					modStatIfPossible(state, "Happiness", 1)
+					if chance(60) then
+						addFeed(state, "🔥 Rollback solved the issue. You bought time to fix properly.")
+					else
+						modStatIfPossible(state, "Happiness", -5)
+						addFeed(state, "🔥 Rollback didn't help. Turns out it's a deeper problem.")
+					end
+				end,
+			},
+		},
+	},
+
+	{
+		id = "dev_open_source_fame",
+		title = "Open Source Breakout",
+		emoji = "🌟",
+		text = "A side project you open-sourced is suddenly trending. People are praising your work everywhere.",
+		category = "career_tech",
+		weight = 10,
+		minAge = 18, maxAge = 55,
+		baseChance = 0.35,
+		cooldown = 6,
+		oneTime = true,
+		requiresJob = true,
+		eligibility = hasTechJob,
+		blockedByFlags = { in_prison = true },
+
+		choices = {
+			{
+				text = "Lean in and maintain it seriously",
+				effects = { Smarts = 3, Health = -2 },
+				feedText = "Shipping releases nonstop...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Smarts", 3)
+					modStatIfPossible(state, "Health", -2)
+					local r = roll100()
+					if r <= 55 then
+						addMoney(state, math.random(2000, 12000))
+						modStatIfPossible(state, "Happiness", 15)
+						flags.open_source_star = true
+						addFeed(state, "🌟 Your project became industry-standard. Recruiters won't stop messaging you.")
+					elseif r <= 82 then
+						modStatIfPossible(state, "Happiness", 6)
+						addFeed(state, "🌟 It stayed popular, but the maintenance load is intense.")
+					else
+						modStatIfPossible(state, "Happiness", -8)
+						flags.burned_out = true
+						addFeed(state, "🌟 You burned out trying to keep up with issues and demands.")
+					end
+				end,
+			},
+			{
+				text = "Enjoy the hype and do nothing",
+				effects = { Happiness = 6 },
+				feedText = "Watching the stars roll in...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Happiness", 6)
+					if chance(45) then
+						flags.open_source_star = true
+						addFeed(state, "🌟 The community maintained it for you. You still got the credit.")
+					else
+						modStatIfPossible(state, "Happiness", -4)
+						addFeed(state, "🌟 It died off quickly. People moved on.")
+					end
+				end,
+			},
+		},
+	},
+
+	{
+		id = "dev_imposter_syndrome",
+		title = "Imposter Syndrome",
+		emoji = "😰",
+		text = "You feel like everyone around you is smarter. Maybe you don't belong here.",
+		category = "career_tech",
+		weight = 18,
+		minAge = 18, maxAge = 50,
+		baseChance = 0.50,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasTechJob,
+		blockedByFlags = { in_prison = true },
+
+		choices = {
+			{
+				text = "Push through and prove yourself",
+				effects = { Smarts = 2, Happiness = -3 },
+				feedText = "Working extra hard...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Smarts", 2)
+					modStatIfPossible(state, "Happiness", -3)
+					if chance(65) then
+						modStatIfPossible(state, "Happiness", 12)
+						flags.overcame_imposter = true
+						addFeed(state, "😰 You delivered something impressive. The feeling faded... for now.")
+					else
+						modStatIfPossible(state, "Happiness", -8)
+						addFeed(state, "😰 You're still not sure you belong. But you're still here.")
+					end
+				end,
+			},
+			{
+				text = "Talk to a mentor about it",
+				effects = { Happiness = 3 },
+				feedText = "Opening up...",
+				onResolve = function(state)
+					modStatIfPossible(state, "Happiness", 3)
+					if chance(80) then
+						modStatIfPossible(state, "Happiness", 8)
+						addFeed(state, "😰 They felt the same way once. Perspective helps.")
+					else
+						modStatIfPossible(state, "Happiness", -2)
+						addFeed(state, "😰 They didn't quite get it. But trying to share helped a little.")
+					end
+				end,
+			},
+			{
+				text = "Consider leaving tech",
+				effects = { Happiness = -5 },
+				feedText = "Maybe this isn't for me...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Happiness", -5)
+					if chance(20) then
+						flags.tech_burnout = true
+						addFeed(state, "😰 You started exploring other career paths.")
+					else
+						modStatIfPossible(state, "Happiness", 5)
+						addFeed(state, "😰 After some reflection, you realized you do belong. For now.")
+					end
+				end,
+			},
+		},
+	},
+
+	-- ==========================================================================
+	-- SENIOR / LEAD / STAFF MOMENTS
+	-- ==========================================================================
+
+	{
+		id = "tech_layoff_rumors",
+		title = "Layoff Rumors",
+		emoji = "📉",
+		text = "Rumors swirl that layoffs are coming. Your team might be on the list.",
+		category = "career_tech",
+		weight = 14,
+		minAge = 22, maxAge = 60,
+		baseChance = 0.45,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = hasTechJob,
+		blockedByFlags = { in_prison = true },
+
+		choices = {
+			{
+				text = "Start job hunting immediately",
+				effects = {},
+				feedText = "Updating your resume...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					local r = roll100()
+					if r <= 50 then
+						addMoney(state, math.random(5000, 22000))
+						modStatIfPossible(state, "Happiness", 12)
+						flags.left_before_layoffs = true
+						addFeed(state, "📉 You secured a better offer and escaped the chaos.")
+					elseif r <= 80 then
+						modStatIfPossible(state, "Happiness", 5)
+						addFeed(state, "📉 Layoffs happened… but you survived. Still stressful.")
+					else
+						modStatIfPossible(state, "Happiness", -8)
+						addFeed(state, "📉 Management noticed your job hunting. Awkward consequences.")
+					end
+				end,
+			},
+			{
+				text = "Stay loyal and hope",
+				effects = { Happiness = -2 },
+				feedText = "Trusting leadership...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Happiness", -2)
+					local r = roll100()
+					if r <= 40 then
+						addMoney(state, math.random(2000, 6000))
+						modStatIfPossible(state, "Happiness", 10)
+						addFeed(state, "📉 Layoffs hit elsewhere. You even got a raise for 'loyalty.'")
+					elseif r <= 75 then
+						modStatIfPossible(state, "Happiness", -4)
+						addFeed(state, "📉 Layoffs didn't happen, but the fear was exhausting.")
+					else
+						modStatIfPossible(state, "Happiness", -20)
+						state.CurrentJob = nil
+						flags.laid_off = true
+						flags.employed = nil
+						flags.has_job = nil
+						addFeed(state, "📉 You were laid off. Loyalty didn't protect you.")
+					end
+				end,
+			},
+		},
+	},
+
+	{
+		id = "lead_architecture_decision",
+		title = "Architecture Decision War",
+		emoji = "🏗️",
+		text = "Two senior engineers are fighting over architecture. Everyone wants you to decide.",
+		category = "career_tech",
+		weight = 12,
+		minAge = 24, maxAge = 60,
+		baseChance = 0.40,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = function(state) return hasTechJob(state) and (isSeniorish(state) or isLeadOrManager(state)) end,
+		blockedByFlags = { in_prison = true },
+
+		choices = {
+			{
+				text = "Run a structured RFC process",
+				effects = { Smarts = 2, Happiness = 2 },
+				feedText = "Writing an RFC...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Smarts", 2)
+					modStatIfPossible(state, "Happiness", 2)
+					if chance(68) then
+						addMoney(state, math.random(1000, 6000))
+						flags.rfc_leader = true
+						addFeed(state, "🏗️ The RFC clarified everything. The team aligned and shipped faster.")
+					else
+						modStatIfPossible(state, "Happiness", -3)
+						addFeed(state, "🏗️ People complained about 'process,' but it still prevented chaos.")
+					end
+				end,
+			},
+			{
+				text = "Pick one side immediately",
+				effects = { Happiness = -1 },
+				feedText = "Making a call...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Happiness", -1)
+					if chance(45) then
+						modStatIfPossible(state, "Happiness", 8)
+						addFeed(state, "🏗️ Your decision worked. The system is clean and performance improved.")
+					else
+						modStatIfPossible(state, "Happiness", -10)
+						flags.team_division = true
+						addFeed(state, "🏗️ The other side resented you. Morale dropped and collaboration suffered.")
+					end
+				end,
+			},
+			{
+				text = "Avoid it and let them fight",
+				effects = { Happiness = 1 },
+				feedText = "Staying out of it...",
+				onResolve = function(state)
+					modStatIfPossible(state, "Happiness", 1)
+					if chance(35) then
+						addFeed(state, "🏗️ They resolved it themselves. Rare peaceful ending.")
+					else
+						modStatIfPossible(state, "Happiness", -12)
+						addFeed(state, "🏗️ The project stalled for months. Leadership blamed you for no direction.")
+					end
+				end,
+			},
+		},
+	},
+
+	{
+		id = "lead_team_conflict",
+		title = "Team Conflict",
+		emoji = "⚔️",
+		text = "Two of your team members can't stand each other. It's affecting everyone's productivity.",
+		category = "career_tech",
+		weight = 12,
+		minAge = 26, maxAge = 60,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = isLeadOrManager,
+		blockedByFlags = { in_prison = true },
+
+		choices = {
+			{
+				text = "Have 1-on-1s with both",
+				effects = { Smarts = 1, Happiness = -2 },
+				feedText = "Playing therapist...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Smarts", 1)
+					modStatIfPossible(state, "Happiness", -2)
+					if chance(60) then
+						modStatIfPossible(state, "Happiness", 10)
+						flags.conflict_resolver = true
+						addFeed(state, "⚔️ You helped them understand each other. Peace restored.")
+					else
+						modStatIfPossible(state, "Happiness", -5)
+						addFeed(state, "⚔️ They're civil now but still cold. Better than before.")
+					end
+				end,
+			},
+			{
+				text = "Move one to another team",
+				effects = { Happiness = 1 },
+				feedText = "Separating them...",
+				onResolve = function(state)
+					modStatIfPossible(state, "Happiness", 1)
+					if chance(70) then
+						addFeed(state, "⚔️ Problem solved. Both are happier apart.")
+					else
+						modStatIfPossible(state, "Happiness", -6)
+						addFeed(state, "⚔️ The one who moved feels punished. HR is involved now.")
+					end
+				end,
+			},
+			{
+				text = "Ignore it and hope it resolves",
+				effects = {},
+				feedText = "Maybe they'll work it out...",
+				onResolve = function(state)
+					if chance(25) then
+						addFeed(state, "⚔️ They actually bonded over a shared enemy. Weird but okay.")
+					else
+						modStatIfPossible(state, "Happiness", -12)
+						addFeed(state, "⚔️ It exploded. One quit. The other badmouths you publicly.")
+					end
+				end,
+			},
+		},
+	},
+
+	-- ==========================================================================
+	-- CTO / EXEC TECH
+	-- ==========================================================================
+
+	{
+		id = "cto_board_presentation",
+		title = "Board Presentation",
+		emoji = "📊",
+		text = "As CTO, you must explain a massive outage to the board. They want confidence and a plan.",
+		category = "career_tech",
+		weight = 10,
+		minAge = 30, maxAge = 70,
+		baseChance = 0.30,
+		cooldown = 6,
+		requiresJob = true,
+		eligibility = isCTO,
+		blockedByFlags = { in_prison = true },
+
+		choices = {
+			{
+				text = "Be honest, specific, and accountable",
+				effects = { Smarts = 2, Happiness = -1 },
+				feedText = "Preparing the narrative...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Smarts", 2)
+					modStatIfPossible(state, "Happiness", -1)
+					if chance(65) then
+						addMoney(state, math.random(20000, 80000))
+						flags.board_trust = true
+						modStatIfPossible(state, "Happiness", 12)
+						addFeed(state, "📊 The board respected your honesty. Budget approved for reliability upgrades.")
+					else
+						modStatIfPossible(state, "Happiness", -6)
+						addFeed(state, "📊 The board was tense, but you barely avoided fallout.")
+					end
+				end,
+			},
+			{
+				text = "Spin it and downplay the impact",
+				effects = { Happiness = 1 },
+				feedText = "Trying to soften the truth...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Happiness", 1)
+					if chance(35) then
+						addMoney(state, math.random(10000, 50000))
+						addFeed(state, "📊 They bought it. You escaped… this time.")
+					else
+						modStatIfPossible(state, "Happiness", -18)
+						flags.board_distrust = true
+						addFeed(state, "📊 They saw through it. Trust collapsed. Your job feels shaky.")
+					end
+				end,
+			},
+			{
+				text = "Blame engineering teams",
+				effects = { Happiness = -2 },
+				feedText = "Throwing people under the bus...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Happiness", -2)
+					if chance(25) then
+						addFeed(state, "📊 The board pushed for layoffs. Morale collapsed across engineering.")
+						flags.layoff_pressure = true
+						modStatIfPossible(state, "Happiness", -8)
+					else
+						addFeed(state, "📊 The board blamed YOU for weak leadership. This backfired badly.")
+						flags.exec_heat = true
+						modStatIfPossible(state, "Happiness", -15)
+					end
+				end,
+			},
+		},
+	},
+
+	{
+		id = "cto_ai_strategy",
+		title = "AI Strategy Pivot",
+		emoji = "🤖",
+		text = "Leadership demands an 'AI strategy' immediately. You can do it right… or rush nonsense.",
+		category = "career_tech",
+		weight = 10,
+		minAge = 28, maxAge = 70,
+		baseChance = 0.30,
+		cooldown = 6,
+		requiresJob = true,
+		eligibility = function(state) return isCTO(state) or isLeadOrManager(state) end,
+		blockedByFlags = { in_prison = true },
+
+		choices = {
+			{
+				text = "Build a real roadmap with guardrails",
+				effects = { Smarts = 2 },
+				feedText = "Defining real strategy...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Smarts", 2)
+					if chance(65) then
+						addMoney(state, math.random(5000, 30000))
+						modStatIfPossible(state, "Happiness", 10)
+						flags.ai_roadmap = true
+						addFeed(state, "🤖 Your roadmap impressed leadership. Budget approved and hiring begins.")
+					else
+						modStatIfPossible(state, "Happiness", -4)
+						addFeed(state, "🤖 Strategy was solid, but politics slowed everything down.")
+					end
+				end,
+			},
+			{
+				text = "Rush a flashy demo for optics",
+				effects = { Happiness = 2 },
+				feedText = "Building something shiny...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Happiness", 2)
+					local r = roll100()
+					if r <= 40 then
+						addMoney(state, math.random(10000, 60000))
+						addFeed(state, "🤖 Demo went viral internally. You got praise and a bonus.")
+					elseif r <= 75 then
+						modStatIfPossible(state, "Happiness", -5)
+						addFeed(state, "🤖 Demo impressed leadership, but engineering hates the tech debt.")
+					else
+						modStatIfPossible(state, "Happiness", -15)
+						flags.ai_backfire = true
+						addFeed(state, "🤖 The demo hallucinated on stage. Embarrassing disaster.")
+					end
+				end,
+			},
+			{
+				text = "Refuse (too risky)",
+				effects = { Happiness = -3 },
+				feedText = "Pushing back...",
+				onResolve = function(state)
+					modStatIfPossible(state, "Happiness", -3)
+					if chance(30) then
+						addFeed(state, "🤖 Leadership respected your caution. You avoided a trap.")
+					else
+						addFeed(state, "🤖 Leadership thinks you're 'not innovative.' This hurt your standing.")
+						modStatIfPossible(state, "Happiness", -8)
+					end
+				end,
+			},
+		},
+	},
+
+	{
+		id = "cto_acquisition_offer",
+		title = "Acquisition Interest",
+		emoji = "💰",
+		text = "A major company is interested in acquiring your company. The board wants your technical assessment.",
+		category = "career_tech",
+		weight = 8,
+		minAge = 32, maxAge = 70,
+		baseChance = 0.25,
+		cooldown = 8,
+		oneTime = true,
+		requiresJob = true,
+		eligibility = isCTO,
+		blockedByFlags = { in_prison = true },
+
+		choices = {
+			{
+				text = "Recommend the acquisition",
+				effects = { Happiness = 5 },
+				feedText = "Supporting the deal...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Happiness", 5)
+					local r = roll100()
+					if r <= 50 then
+						local bonus = math.random(100000, 500000)
+						addMoney(state, bonus)
+						modStatIfPossible(state, "Happiness", 20)
+						flags.acquisition_winner = true
+						addFeed(state, "💰 Deal closed! You got " .. fmtMoney(bonus) .. " in stock payouts!")
+					elseif r <= 80 then
+						addMoney(state, math.random(20000, 80000))
+						modStatIfPossible(state, "Happiness", 8)
+						addFeed(state, "💰 Deal closed but with earnouts. Still a nice payday.")
+					else
+						modStatIfPossible(state, "Happiness", -10)
+						flags.acquisition_failed = true
+						addFeed(state, "💰 Deal fell through. Now there's blood in the water.")
+					end
+				end,
+			},
+			{
+				text = "Advise against it",
+				effects = { Smarts = 2 },
+				feedText = "Protecting the company's future...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					modStatIfPossible(state, "Smarts", 2)
+					if chance(55) then
+						modStatIfPossible(state, "Happiness", 10)
+						addFeed(state, "💰 Company stayed independent. You're seen as a true believer.")
+					else
+						modStatIfPossible(state, "Happiness", -12)
+						flags.board_upset = true
+						addFeed(state, "💰 Board members who wanted the exit are furious at you.")
+					end
+				end,
+			},
+			{
+				text = "Stay neutral - let the board decide",
+				effects = {},
+				feedText = "Avoiding politics...",
+				onResolve = function(state)
+					if chance(60) then
+						addFeed(state, "💰 Smart move. You kept relationships on all sides.")
+					else
+						modStatIfPossible(state, "Happiness", -5)
+						addFeed(state, "💰 Both sides think you're fence-sitting. Nobody trusts you.")
+					end
+				end,
+			},
+		},
+	},
+
+	{
+		id = "tech_recruiter_spam",
+		title = "Recruiter Blitz",
+		emoji = "📧",
+		text = "Your LinkedIn is flooded with recruiter messages. Some offers look tempting.",
+		category = "career_tech",
+		weight = 15,
+		minAge = 22, maxAge = 55,
+		baseChance = 0.50,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = hasTechJob,
+		blockedByFlags = { in_prison = true },
+
+		choices = {
+			{
+				text = "Explore the opportunities",
+				effects = {},
+				feedText = "Taking some calls...",
+				onResolve = function(state)
+					local flags = ensureFlags(state)
+					local r = roll100()
+					if r <= 35 then
+						local raise = math.random(15000, 50000)
+						addMoney(state, raise)
+						modStatIfPossible(state, "Happiness", 15)
+						flags.job_hopped = true
+						addFeed(state, "📧 You landed a new job with " .. fmtMoney(raise) .. " more per year!")
+					elseif r <= 70 then
+						modStatIfPossible(state, "Happiness", 5)
+						addFeed(state, "📧 Interesting conversations. You know your market value now.")
+					else
+						modStatIfPossible(state, "Happiness", -5)
+						addFeed(state, "📧 Word got back to your manager. Awkward 1-on-1 tomorrow.")
+					end
+				end,
+			},
+			{
+				text = "Ignore all of them",
+				effects = { Happiness = 1 },
+				feedText = "Marking as spam...",
+				onResolve = function(state)
+					modStatIfPossible(state, "Happiness", 1)
+					addFeed(state, "📧 Peace and quiet. Focus on what matters.")
+				end,
+			},
+			{
+				text = "Use offers to negotiate a raise",
+				effects = { Smarts = 2 },
+				feedText = "Playing the game...",
+				onResolve = function(state)
+					modStatIfPossible(state, "Smarts", 2)
+					local r = roll100()
+					if r <= 40 then
+						local raise = math.random(5000, 25000)
+						addMoney(state, raise)
+						modStatIfPossible(state, "Happiness", 12)
+						addFeed(state, "📧 Counter-offer accepted! You got a " .. fmtMoney(raise) .. " raise!")
+					elseif r <= 75 then
+						modStatIfPossible(state, "Happiness", 3)
+						addFeed(state, "📧 They matched partially. Better than nothing.")
+					else
+						modStatIfPossible(state, "Happiness", -10)
+						addFeed(state, "📧 'We don't counter-offer.' Now you look like you have one foot out.")
+					end
+				end,
+			},
+		},
+	},
+}
+
+return TechCareerEvents

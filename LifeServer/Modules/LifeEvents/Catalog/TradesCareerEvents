@@ -1,0 +1,1113 @@
+--[[
+	TradesCareerEvents.lua
+	
+	MASSIVE career events for Trades workers:
+	- Janitors, Construction Workers, Electricians, Plumbers
+	- Mechanics, HVAC Techs, Welders, Carpenters, Truck Drivers
+	- Foremen and Supervisors
+	
+	All events use randomized outcomes for unpredictable gameplay!
+	Each playthrough should feel DIFFERENT!
+]]
+
+local TradesCareerEvents = {}
+
+local CATEGORY = "career_trades"
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CONSTRUCTION WORKER EVENTS
+-- ═══════════════════════════════════════════════════════════════════════════════
+TradesCareerEvents.events = {
+	-- Construction: Workplace Safety
+	{
+		id = "construction_safety_incident",
+		title = "⚠️ Safety Violation",
+		emoji = "⚠️",
+		text = "OSHA inspector shows up unannounced. Someone left equipment lying around and there's a violation.",
+		question = "How do you handle it?",
+		category = CATEGORY,
+		weight = 15,
+		minAge = 18, maxAge = 65,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		requiresJobCategory = "trades",
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Own up - it was your equipment",
+				effects = {},
+				feedText = "Taking responsibility...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 5)
+						state.Flags = state.Flags or {}
+						state.Flags.honest_worker = true
+						state:AddFeed("⚠️ Boss appreciated your honesty. No write-up!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("⚠️ You got a formal warning. Watch your equipment!")
+					end
+				end,
+			},
+			{
+				text = "Stay quiet and blend in",
+				effects = { Happiness = -5 },
+				feedText = "Playing it safe...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:AddFeed("⚠️ Someone else took the blame. You lucked out.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("⚠️ They figured it out anyway. Trust damaged.")
+					end
+				end,
+			},
+			{
+				text = "Help fix the violations quickly",
+				effects = { Health = -3 },
+				feedText = "Scrambling to clean up...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.team_player = true
+						state:AddFeed("⚠️ Everyone pitched in! Inspector left satisfied.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("⚠️ Too late. Site got fined anyway.")
+					end
+				end,
+			},
+		},
+	},
+	
+	-- Construction: Weather Challenge
+	{
+		id = "construction_bad_weather",
+		title = "🌧️ Weather Delays",
+		emoji = "🌧️",
+		text = "A massive storm is coming. The foreman asks if anyone wants to push through and finish before it hits.",
+		question = "Overtime in dangerous conditions?",
+		category = CATEGORY,
+		weight = 12,
+		minAge = 18, maxAge = 60,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		requiresJobCategory = "trades",
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Push through for overtime pay",
+				effects = {},
+				feedText = "Racing against the weather...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						local bonus = math.random(200, 500)
+						state.Money = (state.Money or 0) + bonus
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed(string.format("🌧️ Made it! Got $%d overtime bonus!", bonus))
+					elseif roll <= 80 then
+						state:ModifyStat("Health", -8)
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🌧️ Got caught in the rain. Miserable but done.")
+					else
+						state:ModifyStat("Health", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.work_injury = true
+						state:AddFeed("🌧️ Slipped in the mud. Injured your back!")
+					end
+				end,
+			},
+			{
+				text = "Play it safe - go home",
+				effects = { Happiness = 3 },
+				feedText = "🌧️ Safety first. Tomorrow's another day.",
+			},
+			{
+				text = "Volunteer to stay as lookout",
+				effects = { Happiness = 2 },
+				feedText = "🌧️ You watched the equipment until the storm passed. Small but appreciated contribution.",
+			},
+		},
+	},
+	
+	-- Construction: Promotion Opportunity
+	{
+		id = "construction_foreman_spot",
+		title = "🏗️ Foreman Opening",
+		emoji = "🏗️",
+		text = "The site foreman is retiring. Boss is looking for someone to step up.",
+		question = "Do you go for the promotion?",
+		category = CATEGORY,
+		weight = 10,
+		minAge = 25, maxAge = 55,
+		baseChance = 0.35,
+		cooldown = 5,
+		oneTime = true,
+		requiresJob = true,
+		requiresJobCategory = "trades",
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Apply immediately",
+				effects = {},
+				feedText = "Putting yourself forward...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local bonus = math.floor(smarts / 10)
+					
+					if roll + bonus <= 55 then
+						state:ModifyStat("Happiness", 15)
+						state:ModifyStat("Smarts", 3)
+						state.Flags = state.Flags or {}
+						state.Flags.site_supervisor = true
+						state.Flags.construction_leadership = true
+						local raise = math.random(8000, 15000)
+						if state.CurrentJob then
+							state.CurrentJob.salary = (state.CurrentJob.salary or 45000) + raise
+						end
+						state:AddFeed(string.format("🏗️ YOU GOT THE FOREMAN JOB! $%d raise!", raise))
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("🏗️ They gave it to someone with more experience. Keep grinding.")
+					end
+				end,
+			},
+			{
+				text = "Recommend a coworker instead",
+				effects = { Happiness = 3, Smarts = 2 },
+				feedText = "🏗️ You put in a good word for Miguel. He got it and owes you one.",
+				setFlags = { team_player = true },
+			},
+			{
+				text = "Not ready for that responsibility",
+				effects = { Happiness = 2 },
+				feedText = "🏗️ Maybe next time. You kept your head down.",
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- ELECTRICIAN EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "electrician_dangerous_job",
+		title = "⚡ Dangerous Wiring",
+		emoji = "⚡",
+		text = "Client wants you to fix some sketchy DIY wiring. It's dangerous and not up to code.",
+		question = "Take the risk for good money?",
+		category = CATEGORY,
+		weight = 14,
+		minAge = 20, maxAge = 60,
+		baseChance = 0.45,
+		cooldown = 2,
+		requiresJob = true,
+		requiresJobId = { "electrician", "electrician_apprentice" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Do the job but charge extra for hazard",
+				effects = {},
+				feedText = "Working carefully on the mess...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						local bonus = math.random(300, 800)
+						state.Money = (state.Money or 0) + bonus
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed(string.format("⚡ Fixed it safely! Got $%d hazard pay!", bonus))
+					elseif roll <= 90 then
+						state:ModifyStat("Health", -10)
+						state:AddFeed("⚡ Got a nasty shock but finished the job.")
+					else
+						state:ModifyStat("Health", -25)
+						state.Flags = state.Flags or {}
+						state.Flags.work_injury = true
+						state:AddFeed("⚡ SEVERE SHOCK! Had to go to the hospital!")
+					end
+				end,
+			},
+			{
+				text = "Refuse - report it to the city",
+				effects = { Smarts = 3 },
+				feedText = "⚡ You reported the hazard. City inspector will handle it. Ethics over money.",
+				setFlags = { ethical_tradesman = true },
+			},
+			{
+				text = "Tell them to hire a licensed contractor",
+				effects = { Happiness = 2 },
+				feedText = "⚡ Passed on the liability. Smart move.",
+			},
+		},
+	},
+	
+	{
+		id = "electrician_apprentice_test",
+		title = "📝 Journeyman Exam",
+		emoji = "📝",
+		text = "Time to take your journeyman electrician exam. Passing means a big raise and license.",
+		question = "How do you prepare?",
+		category = CATEGORY,
+		weight = 12,
+		minAge = 20, maxAge = 40,
+		baseChance = 0.5,
+		oneTime = true,
+		requiresJob = true,
+		requiresJobId = { "electrician_apprentice" },
+		requiresFlags = { electrical_training = true },
+		blockedByFlags = { in_prison = true, licensed_electrician = true },
+		
+		choices = {
+			{
+				text = "Study hard for weeks",
+				effects = { Happiness = -5, Health = -3 },
+				feedText = "Cramming electrical codes...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random(1, 100)
+					local bonus = math.floor(smarts / 5)
+					
+					if roll + bonus <= 75 then
+						state:ModifyStat("Happiness", 20)
+						state:ModifyStat("Smarts", 5)
+						state.Flags = state.Flags or {}
+						state.Flags.licensed_electrician = true
+						state.Flags.journeyman_electrician = true
+						state:AddFeed("📝 PASSED! You're now a licensed journeyman electrician!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("📝 Failed by 3 points. Can retake in 6 months.")
+					end
+				end,
+			},
+			{
+				text = "Wing it - you know your stuff",
+				effects = {},
+				feedText = "Taking the exam...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 20)
+						state.Flags = state.Flags or {}
+						state.Flags.licensed_electrician = true
+						state:AddFeed("📝 PASSED! Natural talent!")
+					else
+						state:ModifyStat("Happiness", -12)
+						state:AddFeed("📝 Failed. Should have studied.")
+					end
+				end,
+			},
+			{
+				text = "Postpone - not ready yet",
+				effects = { Happiness = -3 },
+				feedText = "📝 You delayed the exam. More time to prepare.",
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- PLUMBER EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "plumber_emergency_call",
+		title = "🔧 Emergency Call",
+		emoji = "🔧",
+		text = "It's 2 AM. A client has a burst pipe flooding their house. Triple overtime rates.",
+		question = "Answer the call?",
+		category = CATEGORY,
+		weight = 15,
+		minAge = 20, maxAge = 60,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		requiresJobId = { "plumber", "plumber_apprentice" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Get up and go - money's money",
+				effects = { Health = -5 },
+				feedText = "Racing to the emergency...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 80 then
+						local pay = math.random(400, 900)
+						state.Money = (state.Money or 0) + pay
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.reliable_tradesman = true
+						state:AddFeed(string.format("🔧 Saved their house! Got $%d for the emergency call!", pay))
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🔧 Took forever but you fixed it. Exhausted.")
+					end
+				end,
+			},
+			{
+				text = "Ignore the call - sleep is sacred",
+				effects = { Health = 5, Happiness = 3 },
+				feedText = "🔧 You slept through. Someone else got the call.",
+			},
+			{
+				text = "Refer them to another plumber",
+				effects = { Happiness = 2 },
+				feedText = "🔧 You passed the job to Dave. He owes you one.",
+				setFlags = { networking = true },
+			},
+		},
+	},
+	
+	{
+		id = "plumber_gross_job",
+		title = "🚽 The Worst Job",
+		emoji = "🚽",
+		text = "Restaurant bathroom backed up. It's NASTY. But they're offering double the usual rate.",
+		question = "Take the gross job?",
+		category = CATEGORY,
+		weight = 12,
+		minAge = 18, maxAge = 60,
+		baseChance = 0.45,
+		cooldown = 2,
+		requiresJob = true,
+		requiresJobId = { "plumber", "plumber_apprentice" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Put on the hazmat suit",
+				effects = { Happiness = -8, Health = -3 },
+				feedText = "Diving into the horror...",
+				onResolve = function(state)
+					local pay = math.random(500, 1000)
+					state.Money = (state.Money or 0) + pay
+					state:ModifyStat("Happiness", 5)
+					state.Flags = state.Flags or {}
+					state.Flags.tough_worker = true
+					state:AddFeed(string.format("🚽 It was disgusting but $%d is $%d. Showered for an hour.", pay, pay))
+				end,
+			},
+			{
+				text = "Nope. Some jobs aren't worth it.",
+				effects = { Happiness = 5 },
+				feedText = "🚽 You passed. Self-respect intact.",
+			},
+			{
+				text = "Send the apprentice",
+				effects = { Happiness = 3 },
+				feedText = "🚽 The new guy handled it. That's what apprentices are for.",
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- MECHANIC EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "mechanic_classic_car",
+		title = "🚗 Classic Car Project",
+		emoji = "🚗",
+		text = "A customer brings in a rare 1967 Mustang. Restoration job could make your reputation.",
+		question = "Take on the prestigious project?",
+		category = CATEGORY,
+		weight = 12,
+		minAge = 20, maxAge = 60,
+		baseChance = 0.4,
+		cooldown = 4,
+		requiresJob = true,
+		requiresJobId = { "mechanic" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Absolutely - this is the dream",
+				effects = { Happiness = 10 },
+				feedText = "Starting the restoration...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						local bonus = math.random(2000, 5000)
+						state.Money = (state.Money or 0) + bonus
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.master_mechanic = true
+						state.Flags.restoration_expert = true
+						state:AddFeed(string.format("🚗 BEAUTIFUL WORK! Got $%d and amazing reviews!", bonus))
+					elseif roll <= 85 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🚗 It took months but the car looks amazing!")
+					else
+						state:ModifyStat("Happiness", -10)
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 1000)
+						state:AddFeed("🚗 Hit some complications. Lost money on parts.")
+					end
+				end,
+			},
+			{
+				text = "Refer to a specialist",
+				effects = { Happiness = 2, Smarts = 2 },
+				feedText = "🚗 You knew your limits. Referred to a restoration shop.",
+			},
+			{
+				text = "Quote double to make it worth it",
+				effects = {},
+				feedText = "Quoting high...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 12)
+						local bonus = math.random(4000, 8000)
+						state.Money = (state.Money or 0) + bonus
+						state:AddFeed(string.format("🚗 They accepted! $%d profit!", bonus))
+					else
+						state:AddFeed("🚗 They went somewhere cheaper.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "mechanic_scam_customer",
+		title = "🔩 Ethical Dilemma",
+		emoji = "🔩",
+		text = "Boss wants you to tell a customer their transmission is shot. It's actually fine - easy upsell.",
+		question = "Go along with the scam?",
+		category = CATEGORY,
+		weight = 14,
+		minAge = 18, maxAge = 60,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresJob = true,
+		requiresJobId = { "mechanic" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Lie to the customer",
+				effects = { Happiness = -10 },
+				feedText = "Selling the lie...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						local bonus = math.random(100, 300)
+						state.Money = (state.Money or 0) + bonus
+						state.Flags = state.Flags or {}
+						state.Flags.dishonest = true
+						state:AddFeed(string.format("🔩 They bought it. Got $%d commission. Guilt sets in.", bonus))
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("🔩 They got a second opinion. Shop's reputation damaged.")
+					end
+				end,
+			},
+			{
+				text = "Tell the truth quietly",
+				effects = { Smarts = 3 },
+				feedText = "Being honest...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.ethical_mechanic = true
+						state:AddFeed("🔩 Customer appreciated your honesty. Left a 5-star review!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🔩 Boss found out. He's not happy with you.")
+					end
+				end,
+			},
+			{
+				text = "Quit - you don't work for scammers",
+				effects = { Happiness = 5 },
+				feedText = "🔩 You walked out. Integrity over income.",
+				setFlags = { ethical_tradesman = true },
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- TRUCK DRIVER EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "trucker_long_haul",
+		title = "🚛 Cross-Country Run",
+		emoji = "🚛",
+		text = "A lucrative cross-country delivery. 3 days on the road, double pay.",
+		question = "Take the long haul?",
+		category = CATEGORY,
+		weight = 14,
+		minAge = 21, maxAge = 65,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		requiresJobId = { "truck_driver" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Hit the road - adventure awaits",
+				effects = { Health = -5, Happiness = 5 },
+				feedText = "Driving across America...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						local bonus = math.random(800, 1500)
+						state.Money = (state.Money or 0) + bonus
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.road_warrior = true
+						state:AddFeed(string.format("🚛 Delivered on time! Got $%d bonus!", bonus))
+					elseif roll <= 90 then
+						local bonus = math.random(400, 800)
+						state.Money = (state.Money or 0) + bonus
+						state:AddFeed(string.format("🚛 Hit some traffic but made it. $%d.", bonus))
+					else
+						state:ModifyStat("Health", -10)
+						state:AddFeed("🚛 Truck broke down in the desert. Nightmare trip.")
+					end
+				end,
+			},
+			{
+				text = "Stick to local routes",
+				effects = { Happiness = 2 },
+				feedText = "🚛 You stayed local. Less money, more sleep.",
+			},
+			{
+				text = "Request a partner driver",
+				effects = {},
+				feedText = "Bringing backup...",
+				onResolve = function(state)
+					local bonus = math.random(500, 1000)
+					state.Money = (state.Money or 0) + bonus
+					state:ModifyStat("Happiness", 8)
+					state.Flags = state.Flags or {}
+					state.Flags.team_trucker = true
+					state:AddFeed(string.format("🚛 Split the driving, split the pay. $%d each. Made a friend!", bonus))
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "trucker_weigh_station",
+		title = "⚖️ Weigh Station Trouble",
+		emoji = "⚖️",
+		text = "Your load is overweight. The weigh station is coming up. Fines are brutal.",
+		question = "What do you do?",
+		category = CATEGORY,
+		weight = 12,
+		minAge = 21, maxAge = 65,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresJob = true,
+		requiresJobId = { "truck_driver" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Pull in and face the music",
+				effects = {},
+				feedText = "Going through inspection...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("⚖️ They waved you through! Lucky day!")
+					elseif roll <= 70 then
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 500)
+						state:AddFeed("⚖️ $500 fine for being overweight. It happens.")
+					else
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 2000)
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("⚖️ $2000 fine plus forced to offload. Terrible day.")
+					end
+				end,
+			},
+			{
+				text = "Take the back roads",
+				effects = {},
+				feedText = "Dodging the scale...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.knows_backroads = true
+						state:AddFeed("⚖️ Made it around. Saved hundreds in fines!")
+					else
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 3000)
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("⚖️ Highway patrol caught you bypassing. MASSIVE fine.")
+					end
+				end,
+			},
+			{
+				text = "Call dispatch and explain",
+				effects = { Smarts = 2 },
+				feedText = "⚖️ Dispatch found a nearby drop point. Problem solved professionally.",
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- WELDER EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "welder_custom_project",
+		title = "🔥 Custom Fabrication",
+		emoji = "🔥",
+		text = "An artist wants you to help build a massive metal sculpture for a public installation.",
+		question = "Take on the artistic project?",
+		category = CATEGORY,
+		weight = 10,
+		minAge = 20, maxAge = 60,
+		baseChance = 0.35,
+		cooldown = 4,
+		requiresJob = true,
+		requiresJobId = { "welder" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "This sounds amazing!",
+				effects = { Happiness = 10 },
+				feedText = "Creating art from metal...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 65 then
+						local bonus = math.random(1500, 4000)
+						state.Money = (state.Money or 0) + bonus
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.metal_artist = true
+						state:AddFeed(string.format("🔥 The sculpture unveiled to applause! $%d and your name on the plaque!", bonus))
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🔥 Artist was difficult. Project fell through halfway.")
+					end
+				end,
+			},
+			{
+				text = "Art isn't my thing",
+				effects = { Happiness = 2 },
+				feedText = "🔥 You passed. Industrial work is more your style.",
+			},
+			{
+				text = "Only if they pay upfront",
+				effects = { Smarts = 3 },
+				feedText = "Negotiating terms...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						local bonus = math.random(2000, 3500)
+						state.Money = (state.Money or 0) + bonus
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed(string.format("🔥 Got paid upfront! Project completed. $%d!", bonus))
+					else
+						state:AddFeed("🔥 They found someone cheaper. No regrets - smart to ask.")
+					end
+				end,
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- HVAC TECHNICIAN EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "hvac_summer_rush",
+		title = "❄️ Summer Heatwave",
+		emoji = "❄️",
+		text = "Brutal heatwave - every AC in the city is breaking down. 12-hour days for a month straight.",
+		question = "How do you handle the rush?",
+		category = CATEGORY,
+		weight = 14,
+		minAge = 20, maxAge = 60,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		requiresJobId = { "hvac_tech" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Maximum overtime - cash in!",
+				effects = { Health = -15, Happiness = -5 },
+				feedText = "Working non-stop...",
+				onResolve = function(state)
+					local bonus = math.random(3000, 7000)
+					state.Money = (state.Money or 0) + bonus
+					state:ModifyStat("Happiness", 10)
+					state.Flags = state.Flags or {}
+					state.Flags.hvac_hero = true
+					state:AddFeed(string.format("❄️ Exhausted but rich! Made $%d in overtime!", bonus))
+				end,
+			},
+			{
+				text = "Reasonable hours - health first",
+				effects = { Happiness = 3 },
+				feedText = "❄️ You worked steady but didn't burn out. Smart.",
+			},
+			{
+				text = "Prioritize elderly and medical cases",
+				effects = { Happiness = 8 },
+				feedText = "Helping the vulnerable...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.community_hero = true
+					state:AddFeed("❄️ You saved lives. Local news did a story on you!")
+				end,
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CARPENTER EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "carpenter_custom_furniture",
+		title = "🪚 Custom Furniture Order",
+		emoji = "🪚",
+		text = "A wealthy client wants handcrafted bedroom furniture. High pay but tight deadline.",
+		question = "Take the custom order?",
+		category = CATEGORY,
+		weight = 12,
+		minAge = 20, maxAge = 65,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresJob = true,
+		requiresJobId = { "carpenter" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Take it - showcase your skills",
+				effects = { Health = -5 },
+				feedText = "Crafting the furniture...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						local bonus = math.random(2000, 5000)
+						state.Money = (state.Money or 0) + bonus
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.master_carpenter = true
+						state:AddFeed(string.format("🪚 Stunning work! $%d and referrals to wealthy friends!", bonus))
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("🪚 Missed the deadline. Only got partial payment.")
+					end
+				end,
+			},
+			{
+				text = "Quote it high with timeline buffer",
+				effects = { Smarts = 3 },
+				feedText = "Setting expectations...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						local bonus = math.random(3000, 6000)
+						state.Money = (state.Money or 0) + bonus
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed(string.format("🪚 They accepted! $%d with comfortable deadline!", bonus))
+					else
+						state:AddFeed("🪚 They went with someone cheaper. Oh well.")
+					end
+				end,
+			},
+			{
+				text = "Recommend a specialist",
+				effects = { Happiness = 2 },
+				feedText = "🪚 You knew custom furniture needs a specialist. Good call.",
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- JANITOR EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "janitor_promotion_opportunity",
+		title = "🧹 Head Custodian Opening",
+		emoji = "🧹",
+		text = "The head custodian is retiring. You've been here longest - perfect chance to move up.",
+		question = "Apply for the supervisor role?",
+		category = CATEGORY,
+		weight = 12,
+		minAge = 25, maxAge = 60,
+		baseChance = 0.4,
+		cooldown = 5,
+		requiresJob = true,
+		requiresJobId = { "janitor" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Apply and interview",
+				effects = {},
+				feedText = "Going for the promotion...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.facility_supervisor = true
+						local raise = math.random(5000, 10000)
+						if state.CurrentJob then
+							state.CurrentJob.salary = (state.CurrentJob.salary or 28000) + raise
+						end
+						state:AddFeed(string.format("🧹 HEAD CUSTODIAN! $%d raise! You run the show now!", raise))
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🧹 They gave it to someone with management experience. Next time.")
+					end
+				end,
+			},
+			{
+				text = "I like working alone",
+				effects = { Happiness = 3 },
+				feedText = "🧹 Supervisors deal with people problems. You prefer the work.",
+			},
+			{
+				text = "Ask for a raise instead",
+				effects = {},
+				feedText = "Negotiating...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						local raise = math.random(2000, 4000)
+						if state.CurrentJob then
+							state.CurrentJob.salary = (state.CurrentJob.salary or 28000) + raise
+						end
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed(string.format("🧹 Got a $%d raise without the headache of managing people!", raise))
+					else
+						state:AddFeed("🧹 Budget's tight. No raise this year.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "janitor_found_money",
+		title = "💵 Money in the Trash",
+		emoji = "💵",
+		text = "While cleaning, you find an envelope with $500 cash in a trash can.",
+		question = "What do you do with it?",
+		category = CATEGORY,
+		weight = 10,
+		minAge = 18, maxAge = 70,
+		baseChance = 0.35,
+		cooldown = 4,
+		requiresJob = true,
+		requiresJobId = { "janitor" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Turn it in to lost and found",
+				effects = { Smarts = 2, Happiness = 5 },
+				feedText = "Being honest...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state.Money = (state.Money or 0) + 500
+						state.Flags = state.Flags or {}
+						state.Flags.honest_employee = true
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("💵 Nobody claimed it after 30 days - it's legally yours! Plus a good reputation!")
+					else
+						state.Flags = state.Flags or {}
+						state.Flags.honest_employee = true
+						state:AddFeed("💵 Owner picked it up. Thanked you profusely. Good karma.")
+					end
+				end,
+			},
+			{
+				text = "Pocket it - finder's keepers",
+				effects = {},
+				feedText = "Keeping quiet...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						state.Money = (state.Money or 0) + 500
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("💵 Nobody saw. $500 richer.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("💵 Camera caught you. Fired. It wasn't worth it.")
+					end
+				end,
+			},
+			{
+				text = "Ask around if anyone lost money",
+				effects = { Happiness = 3 },
+				feedText = "💵 You found the owner - someone's grandma who was devastated. Her gratitude made your day.",
+				setFlags = { kind_hearted = true },
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- FOREMAN/SUPERVISOR EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "foreman_union_negotiations",
+		title = "🏗️ Union Talks",
+		emoji = "🏗️",
+		text = "The workers want better conditions. As foreman, you're caught between management and your crew.",
+		question = "Where do your loyalties lie?",
+		category = CATEGORY,
+		weight = 10,
+		minAge = 28, maxAge = 60,
+		baseChance = 0.4,
+		cooldown = 4,
+		requiresJob = true,
+		requiresFlags = { site_supervisor = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Advocate for the workers",
+				effects = {},
+				feedText = "Fighting for your crew...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.workers_champion = true
+						state:AddFeed("🏗️ Got them a raise! Crew loves you. Management... less so.")
+					else
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🏗️ Minor concessions won. Better than nothing.")
+					end
+				end,
+			},
+			{
+				text = "Side with management",
+				effects = {},
+				feedText = "Toeing the company line...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						local bonus = math.random(2000, 5000)
+						if state.CurrentJob then
+							state.CurrentJob.salary = (state.CurrentJob.salary or 72000) + bonus
+						end
+						state:ModifyStat("Happiness", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.company_man = true
+						state:AddFeed(string.format("🏗️ Got a $%d bonus from upstairs. Crew doesn't trust you now.", bonus))
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🏗️ Neither side respects you now. Worst of both worlds.")
+					end
+				end,
+			},
+			{
+				text = "Mediate a compromise",
+				effects = { Smarts = 5 },
+				feedText = "Finding middle ground...",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 10)
+					state.Flags = state.Flags or {}
+					state.Flags.skilled_negotiator = true
+					state:AddFeed("🏗️ Both sides got something. You're the peacemaker.")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "foreman_safety_cover_up",
+		title = "⚠️ Injury Cover-Up",
+		emoji = "⚠️",
+		text = "A worker got hurt. Boss wants you to file it as 'off-site injury' to avoid OSHA investigation.",
+		question = "Do you falsify the report?",
+		category = CATEGORY,
+		weight = 12,
+		minAge = 28, maxAge = 60,
+		baseChance = 0.35,
+		cooldown = 4,
+		requiresJob = true,
+		requiresFlags = { site_supervisor = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "File the honest report",
+				effects = { Smarts = 3 },
+				feedText = "Doing the right thing...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.ethical_leader = true
+						state:AddFeed("⚠️ OSHA investigation was minor. Your integrity saved the company from worse.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("⚠️ Boss is furious. Your job might be at risk.")
+					end
+				end,
+			},
+			{
+				text = "Cover it up as requested",
+				effects = { Happiness = -10 },
+				feedText = "Falsifying records...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						local bonus = math.random(1000, 3000)
+						state.Money = (state.Money or 0) + bonus
+						state.Flags = state.Flags or {}
+						state.Flags.cover_up = true
+						state:AddFeed(string.format("⚠️ Got a $%d bonus for 'handling it.' Guilt haunts you.", bonus))
+					else
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 5000)
+						state:ModifyStat("Happiness", -20)
+						state:AddFeed("⚠️ Worker's wife found out. Lawsuit. You're named personally.")
+					end
+				end,
+			},
+			{
+				text = "Anonymous tip to OSHA",
+				effects = { Smarts = 5 },
+				feedText = "Whistleblowing...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.whistleblower = true
+						state:AddFeed("⚠️ Investigation happened. Boss couldn't trace it to you.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("⚠️ They suspect you. Workplace tension is high.")
+					end
+				end,
+			},
+		},
+	},
+}
+
+return TradesCareerEvents

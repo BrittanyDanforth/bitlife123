@@ -1,0 +1,488 @@
+--[[
+	Investment Banking / High Finance Career Events
+	AAA-quality events with random BitLife-style outcomes
+	User CANNOT control outcomes - everything is randomized
+	
+	Careers covered:
+	- Investment Banking Analyst
+	- Investment Banker
+	- Hedge Fund Manager
+	- Private Equity
+	- Venture Capital
+	- CFO
+]]
+
+local InvestmentBankingEvents = {}
+
+-- Helper function to check if player has a finance career
+local function hasFinanceJob(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local jobCat = (state.CurrentJob.category or ""):lower()
+	return jobCat == "finance" or jobId:find("banker") or jobId:find("analyst") or 
+		   jobId:find("hedge") or jobId:find("fund") or jobId:find("equity") or
+		   jobId:find("cfo") or jobId:find("financial")
+end
+
+local function isInvestmentBanker(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	return jobId:find("investment") or jobId:find("ib_analyst") or jobId:find("banker")
+end
+
+InvestmentBankingEvents.events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- INVESTMENT BANKING ANALYST EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "ib_allnighter_deal",
+		title = "💼 All-Nighter for the Deal!",
+		emoji = "💼",
+		text = "A massive M&A deal is closing tomorrow. The Managing Director needs the pitch book done by 6 AM. It's currently 11 PM.",
+		category = "career_finance",
+		weight = 18,
+		minAge = 22, maxAge = 40,
+		baseChance = 0.55,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = isInvestmentBanker,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Grind through the night",
+				effects = { Health = -8, Happiness = -5 },
+				feedText = "Sleep is for the weak...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						local bonus = math.random(10000, 50000)
+						state.Money = (state.Money or 0) + bonus
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.dealmaker = true
+						state:AddFeed(string.format("💼 Deal closed! $%s bonus! MD personally thanked you!", bonus))
+					elseif roll <= 85 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("💼 Work was good enough. Nobody praised you but no complaints either.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("💼 Made errors due to exhaustion. MD furious. Bad look.")
+					end
+				end,
+			},
+			{
+				text = "Ask to extend the deadline",
+				effects = {},
+				feedText = "This isn't humanly possible...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("💼 They agreed! Got extra time and delivered quality work!")
+					else
+						state:ModifyStat("Happiness", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.not_team_player = true
+						state:AddFeed("💼 'If you can't handle it, we'll find someone who can.' Ominous.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "ib_bonus_season",
+		title = "💰 Bonus Season!",
+		emoji = "💰",
+		text = "It's bonus season at the bank. You've worked 100+ hour weeks all year. Time to see if it paid off!",
+		category = "career_finance",
+		weight = 16,
+		minAge = 22, maxAge = 55,
+		baseChance = 0.5,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = isInvestmentBanker,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Wait anxiously for the number",
+				effects = { Happiness = -3 },
+				feedText = "Everything rides on this...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					local salary = state.CurrentJob and state.CurrentJob.salary or 100000
+					
+					if roll <= 25 then
+						local bonus = math.floor(salary * math.random(150, 250) / 100)
+						state.Money = (state.Money or 0) + bonus
+						state:ModifyStat("Happiness", 25)
+						state.Flags = state.Flags or {}
+						state.Flags.top_performer = true
+						state:AddFeed(string.format("💰 HUGE BONUS! $%s! Top performer! Champagne time!", bonus))
+					elseif roll <= 55 then
+						local bonus = math.floor(salary * math.random(80, 120) / 100)
+						state.Money = (state.Money or 0) + bonus
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed(string.format("💰 Solid bonus. $%s. In line with expectations.", bonus))
+					elseif roll <= 85 then
+						local bonus = math.floor(salary * math.random(40, 70) / 100)
+						state.Money = (state.Money or 0) + bonus
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed(string.format("💰 Below expectations. $%s. 'Market conditions' they said.", bonus))
+					else
+						state:ModifyStat("Happiness", -20)
+						state:AddFeed("💰 Minimal bonus. They're pushing you out. Start job hunting.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "ib_client_tantrum",
+		title = "Client Meltdown",
+		emoji = "😤",
+		text = "A billionaire client is throwing a tantrum on a call. They're screaming about their portfolio performance and threatening to pull everything.",
+		category = "career_finance",
+		weight = 14,
+		minAge = 24, maxAge = 55,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = hasFinanceJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Stay calm and professional",
+				effects = { Smarts = 2 },
+				feedText = "Kill them with kindness...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 10)
+						state.Money = (state.Money or 0) + math.random(5000, 20000)
+						state:AddFeed("😤 Calmed them down! Client apologized later. Respect earned.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("😤 They pulled half their money anyway. At least you kept composure.")
+					end
+				end,
+			},
+			{
+				text = "Match their energy",
+				effects = { Happiness = -3 },
+				feedText = "Nobody talks to me like that!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 20 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("😤 Somehow they respected the pushback! Bizarre but it worked!")
+					else
+						state:ModifyStat("Happiness", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.lost_client = true
+						state:AddFeed("😤 Lost the client. And your job might be next. HR involved.")
+					end
+				end,
+			},
+			{
+				text = "Pass them to your manager",
+				effects = {},
+				feedText = "Above my pay grade...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("😤 Manager handled it. Smart move knowing when to escalate.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("😤 Manager annoyed you couldn't handle it. 'Need to step up.'")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "ib_insider_info",
+		title = "🤫 Suspicious Information",
+		emoji = "🤫",
+		text = "A colleague just let slip material non-public information about an upcoming acquisition. You could make millions if you traded on it...",
+		category = "career_finance",
+		weight = 12,
+		minAge = 24, maxAge = 60,
+		baseChance = 0.4,
+		cooldown = 5,
+		requiresJob = true,
+		eligibility = hasFinanceJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Trade on it - can't get caught",
+				effects = {},
+				feedText = "Easy money...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 25 then
+						local profit = math.random(500000, 2000000)
+						state.Money = (state.Money or 0) + profit
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.insider_trader = true
+						state:AddFeed(string.format("🤫 Made $%s. Nobody noticed. Yet.", profit))
+					elseif roll <= 60 then
+						state:ModifyStat("Happiness", -25)
+						state.Money = math.max(0, (state.Money or 0) - 500000)
+						state.Flags = state.Flags or {}
+						state.Flags.sec_investigation = true
+						state:AddFeed("🤫 SEC is investigating. Lawyers already cost you a fortune.")
+					else
+						state:ModifyStat("Happiness", -30)
+						state.Flags = state.Flags or {}
+						state.Flags.in_prison = true
+						state.PrisonYearsRemaining = math.random(3, 10)
+						state.CurrentJob = nil
+						state:AddFeed("🤫 ARRESTED for insider trading! Federal charges! Career over!")
+					end
+				end,
+			},
+			{
+				text = "Report to compliance",
+				effects = { Smarts = 5, Happiness = 5 },
+				setFlags = { compliance_hero = true },
+				feedText = "Doing the right thing.",
+				onResolve = function(state)
+					state:AddFeed("🤫 Did the right thing. Colleague fired. You're protected by whistleblower laws.")
+				end,
+			},
+			{
+				text = "Pretend you didn't hear anything",
+				effects = { Happiness = 3 },
+				feedText = "None of my business.",
+			},
+		},
+	},
+	
+	{
+		id = "ib_headhunter_call",
+		title = "Headhunter on the Phone!",
+		emoji = "📞",
+		text = "A top headhunter is calling. A rival bank wants to poach you with a 40% raise and a signing bonus!",
+		category = "career_finance",
+		weight = 14,
+		minAge = 25, maxAge = 50,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = isInvestmentBanker,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Take the interview",
+				effects = {},
+				feedText = "Always good to know your value...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						local raise = math.floor((state.CurrentJob and state.CurrentJob.salary or 150000) * 0.4)
+						local bonus = math.random(50000, 200000)
+						state.Money = (state.Money or 0) + bonus
+						state.CurrentJob = state.CurrentJob or {}
+						state.CurrentJob.salary = (state.CurrentJob.salary or 150000) + raise
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed(string.format("📞 Got the offer! $%s signing bonus! 40%% raise!", bonus))
+					elseif roll <= 80 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("📞 Didn't get the offer, but your current firm counter-offered a raise!")
+						state.Money = (state.Money or 0) + math.random(10000, 30000)
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("📞 Word got back to your firm. They're questioning your loyalty.")
+					end
+				end,
+			},
+			{
+				text = "Use it to negotiate at current firm",
+				effects = { Smarts = 2 },
+				feedText = "Leverage is everything...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						local raise = math.random(20000, 80000)
+						state.Money = (state.Money or 0) + raise
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed(string.format("📞 Counter-offered! $%s raise to stay! Power move!", raise))
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("📞 'Take the other offer then.' Called your bluff. Awkward.")
+					end
+				end,
+			},
+			{
+				text = "Stay loyal - not interested",
+				effects = { Happiness = 3 },
+				feedText = "Happy where I am.",
+			},
+		},
+	},
+	
+	{
+		id = "ib_market_crash",
+		title = "📉 Market Crash!",
+		emoji = "📉",
+		text = "Markets just crashed 10% in one day. Panic everywhere. Clients are calling non-stop. Your team has to figure this out!",
+		category = "career_finance",
+		weight = 12,
+		minAge = 22, maxAge = 65,
+		baseChance = 0.4,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = hasFinanceJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Stay calm and advise clients not to panic sell",
+				effects = { Smarts = 3 },
+				feedText = "This is when professionals shine...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						state.Money = (state.Money or 0) + math.random(20000, 100000)
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.market_veteran = true
+						state:AddFeed("📉 Kept clients calm. Market recovered. You look like a genius now!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("📉 Market kept falling. Clients angry they didn't sell. Hindsight is 20/20.")
+					end
+				end,
+			},
+			{
+				text = "Tell clients to sell everything NOW",
+				effects = { Happiness = -5 },
+				feedText = "Protect capital at all costs!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("📉 Market crashed further. Clients glad they got out. Lucky call!")
+					else
+						state:ModifyStat("Happiness", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.bad_advice = true
+						state:AddFeed("📉 Market bounced immediately. Clients sold at the bottom. You're in trouble.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "ib_ipo_lead",
+		title = "🚀 Lead on Major IPO!",
+		emoji = "🚀",
+		text = "You've been asked to lead the IPO for a hot tech unicorn! This could be career-defining!",
+		category = "career_finance",
+		weight = 10,
+		minAge = 28, maxAge = 50,
+		baseChance = 0.35,
+		cooldown = 5,
+		oneTime = true,
+		requiresJob = true,
+		eligibility = isInvestmentBanker,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Accept and give it everything!",
+				effects = { Health = -5, Smarts = 5 },
+				feedText = "Once in a lifetime opportunity!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 45 then
+						local bonus = math.random(500000, 3000000)
+						state.Money = (state.Money or 0) + bonus
+						state:ModifyStat("Happiness", 30)
+						state.Fame = (state.Fame or 0) + 30
+						state.Flags = state.Flags or {}
+						state.Flags.ipo_legend = true
+						state:AddFeed(string.format("🚀 IPO was MASSIVE success! $%s bonus! Your name in the financial press!", bonus))
+					elseif roll <= 75 then
+						local bonus = math.random(100000, 400000)
+						state.Money = (state.Money or 0) + bonus
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed(string.format("🚀 IPO went okay. $%s bonus. Not legendary, but solid.", bonus))
+					else
+						state:ModifyStat("Happiness", -20)
+						state.Flags = state.Flags or {}
+						state.Flags.ipo_disaster = true
+						state:AddFeed("🚀 IPO flopped. Stock crashed day one. Your name associated with failure.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "ib_ethics_dilemma",
+		title = "Ethics vs Profit",
+		emoji = "⚖️",
+		text = "Your analysis shows the company you're advising to buy has hidden liabilities. Revealing this will kill the deal (and your bonus).",
+		category = "career_finance",
+		weight = 12,
+		minAge = 24, maxAge = 55,
+		baseChance = 0.4,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = isInvestmentBanker,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Disclose everything to the client",
+				effects = { Smarts = 5, Happiness = -3 },
+				setFlags = { ethical_banker = true },
+				feedText = "Integrity over money.",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 15)
+						state.Money = (state.Money or 0) + math.random(20000, 100000)
+						state:AddFeed("⚖️ Client appreciated honesty! They'll work with you exclusively from now on!")
+					else
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("⚖️ Deal died, no bonus. But you can sleep at night.")
+					end
+				end,
+			},
+			{
+				text = "Bury it deep in the footnotes",
+				effects = { Happiness = -5 },
+				feedText = "Technically compliant...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						local bonus = math.random(50000, 200000)
+						state.Money = (state.Money or 0) + bonus
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed(string.format("⚖️ Deal closed. $%s bonus. Nobody looked closely.", bonus))
+					else
+						state:ModifyStat("Happiness", -20)
+						state.Flags = state.Flags or {}
+						state.Flags.legal_trouble = true
+						state:AddFeed("⚖️ They found it later. Lawsuit incoming. You might have to testify.")
+					end
+				end,
+			},
+		},
+	},
+}
+
+return InvestmentBankingEvents

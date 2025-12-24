@@ -1,0 +1,644 @@
+--[[
+	Education Career Events
+	AAA-quality events with random BitLife-style outcomes
+	User CANNOT control outcomes - everything is randomized
+	
+	Careers covered:
+	- Teaching Assistant
+	- Teacher
+	- Department Head
+	- Principal
+	- Professor
+	- Dean
+]]
+
+local EducationCareerEvents = {}
+
+local function hasEducationJob(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local category = (state.CurrentJob.category or ""):lower()
+	return category == "education" or jobId:find("teacher") or jobId:find("professor") 
+		or jobId:find("principal") or jobId:find("dean") or jobId:find("superintendent")
+end
+
+local function isTeacher(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	return jobId:find("teacher") or jobId:find("teaching")
+end
+
+local function isProfessor(state)
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	return jobId:find("professor") or jobId:find("dean")
+end
+
+EducationCareerEvents.events = {
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- TEACHER EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "edu_difficult_student",
+		title = "Challenging Student",
+		emoji = "😤",
+		text = "One student is constantly disrupting your class. Other students can't learn, and you're at your wit's end.",
+		category = "career_education",
+		weight = 18,
+		minAge = 22, maxAge = 65,
+		baseChance = 0.55,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = isTeacher,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Have a private conversation with them",
+				effects = { Smarts = 3 },
+				feedText = "Trying to understand what's going on...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
+						state.Flags = state.Flags or {}
+						state.Flags.mentor_teacher = true
+						if state.AddFeed then state:AddFeed("😤 Breakthrough! They were struggling at home. With support, they turned around completely!") end
+					elseif roll <= 80 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then state:AddFeed("😤 Some improvement. Building trust takes time.") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then state:AddFeed("😤 They shut down. At least you tried.") end
+					end
+				end,
+			},
+			{
+				text = "Involve parents and administration",
+				effects = {},
+				feedText = "Following proper channels...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
+						if state.AddFeed then state:AddFeed("😤 Parents were supportive. Behavior improved significantly.") end
+					elseif roll <= 70 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 3) end
+						if state.AddFeed then state:AddFeed("😤 Parents blamed you. Admin was no help. Typical.") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						if state.AddFeed then state:AddFeed("😤 Student was removed from your class. Feels like failure.") end
+					end
+				end,
+			},
+			{
+				text = "Send them out every time",
+				effects = { Happiness = -3 },
+				feedText = "Can't teach if they're disrupting...",
+				onResolve = function(state)
+					-- AAA FIX: Nil check for all state methods
+					if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+					if state.AddFeed then state:AddFeed("😤 Class is calmer but you're just passing the problem around.") end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "edu_student_success",
+		title = "Student Success Story",
+		emoji = "⭐",
+		text = "A former student reached out to thank you. They said you changed their life and inspired them to pursue their dreams!",
+		category = "career_education",
+		weight = 15,
+		minAge = 25, maxAge = 70,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasEducationJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "This is why you teach!",
+				effects = { Happiness = 20 },
+				setFlags = { inspired_students = true },
+				feedText = "⭐ The best feeling. Making a difference one student at a time. THIS is teaching.",
+			},
+		},
+	},
+	
+	{
+		id = "edu_standardized_testing",
+		title = "Testing Pressure",
+		emoji = "📝",
+		text = "Administration is pushing hard for better standardized test scores. They want you to 'teach to the test.'",
+		category = "career_education",
+		weight = 14,
+		minAge = 22, maxAge = 60,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = isTeacher,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Focus on test prep",
+				effects = {},
+				feedText = "Teaching to the test...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						state.Flags = state.Flags or {}
+						state.Flags.good_test_scores = true
+						if state.AddFeed then state:AddFeed("📝 Scores went up! Admin is happy. Students? Bored.") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						if state.AddFeed then state:AddFeed("📝 Scores barely moved. All that stress for nothing.") end
+					end
+				end,
+			},
+			{
+				text = "Keep teaching your way",
+				effects = { Smarts = 2 },
+				feedText = "Real learning over test scores...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 45 then
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
+						if state.AddFeed then state:AddFeed("📝 Scores were fine AND students actually learned! Win-win!") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then state:AddFeed("📝 Scores dipped. Getting heat from admin. Standing by your methods.") end
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "edu_parent_conflict",
+		title = "Angry Parent",
+		emoji = "😡",
+		text = "A parent is furious about their child's grade. They're demanding you change it and threatening to go to the school board!",
+		category = "career_education",
+		weight = 14,
+		minAge = 22, maxAge = 65,
+		baseChance = 0.5,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = isTeacher,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Explain your grading objectively",
+				effects = { Smarts = 2 },
+				feedText = "Showing them the rubric and assignments...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.AddFeed then state:AddFeed("😡 Parent understood once they saw the evidence. Crisis averted.") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						if state.AddFeed then state:AddFeed("😡 They still went to the board. Exhausting meetings ahead...") end
+					end
+				end,
+			},
+			{
+				text = "Offer extra credit opportunity",
+				effects = {},
+				feedText = "Meeting them halfway...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then state:AddFeed("😡 Compromise accepted. Student earned a better grade legitimately.") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then state:AddFeed("😡 Now every parent expects special treatment. Precedent set.") end
+					end
+				end,
+			},
+			{
+				text = "Stand firm - the grade stands",
+				effects = { Happiness = -5 },
+				feedText = "Integrity matters...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
+						state.Flags = state.Flags or {}
+						state.Flags.principled_teacher = true
+						if state.AddFeed then state:AddFeed("😡 Board backed you up. Your integrity was recognized!") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -15) end
+						if state.AddFeed then state:AddFeed("😡 Political pressure. Grade was overturned anyway. Demoralizing.") end
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "edu_budget_cuts",
+		title = "Budget Cuts",
+		emoji = "💸",
+		text = "District budget cuts are hitting hard. Programs are being eliminated and class sizes are increasing.",
+		category = "career_education",
+		weight = 12,
+		minAge = 22, maxAge = 65,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasEducationJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Buy supplies with your own money",
+				effects = { Happiness = 3 },
+				feedText = "Because kids need supplies...",
+				-- CRITICAL FIX: Add eligibility check to ensure player can afford supplies
+				eligibility = function(state)
+					if (state.Money or 0) < 200 then
+						return false, "Can't afford supplies right now"
+					end
+					return true
+				end,
+				onResolve = function(state)
+					local spent = math.random(200, 800)
+					-- CRITICAL FIX: Prevent negative money
+					spent = math.min(spent, state.Money or 0)
+					state.Money = math.max(0, (state.Money or 0) - spent)
+					-- AAA FIX: Nil check for all state methods
+					if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+					if state.AddFeed then state:AddFeed(string.format("💸 Spent $%d on classroom supplies. Tax write-off at least?", spent)) end
+				end,
+			},
+			{
+				text = "Advocate for better funding",
+				effects = { Smarts = 3 },
+				feedText = "Attending school board meetings...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
+						if state.AddFeed then state:AddFeed("💸 Your advocacy helped! Some funding was restored!") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then state:AddFeed("💸 Spoke at board meetings. Nothing changed. System is broken.") end
+					end
+				end,
+			},
+			{
+				text = "Start a fundraiser",
+				effects = {},
+				feedText = "GoFundMe for classroom needs...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						local raised = math.random(500, 2000)
+						state.Money = (state.Money or 0) + raised
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
+						if state.AddFeed then state:AddFeed(string.format("💸 Community stepped up! Raised $%d for classroom!", raised)) end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then state:AddFeed("💸 Fundraiser didn't take off. Teachers shouldn't have to do this.") end
+					end
+				end,
+			},
+		},
+	},
+
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- PROFESSOR/UNIVERSITY EVENTS
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "edu_publish_or_perish",
+		title = "Publish or Perish",
+		emoji = "📚",
+		text = "Tenure review is coming up. You need publications, but teaching is consuming all your time.",
+		category = "career_education",
+		weight = 14,
+		minAge = 28, maxAge = 55,
+		baseChance = 0.5,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = isProfessor,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Focus on research - students can wait",
+				effects = { Health = -5 },
+				feedText = "Writing papers day and night...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
+						state.Flags = state.Flags or {}
+						state.Flags.published_researcher = true
+						if state.AddFeed then state:AddFeed("📚 Paper accepted in top journal! Tenure looking likely!") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						if state.AddFeed then state:AddFeed("📚 Paper rejected. Teaching reviews tanked. Worst of both worlds.") end
+					end
+				end,
+			},
+			{
+				text = "Balance both - somehow",
+				effects = { Health = -8 },
+				feedText = "24/7 grind mode...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 20) end
+						state.Money = (state.Money or 0) + math.random(5000, 15000)
+						if state.AddFeed then state:AddFeed("📚 Published AND great student reviews! Exhausted but successful!") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then state:AddFeed("📚 Did both mediocrely. Jack of all trades, master of none.") end
+					end
+				end,
+			},
+			{
+				text = "Prioritize teaching",
+				effects = { Happiness = 5 },
+				feedText = "Students come first...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 35 then
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
+						if state.AddFeed then state:AddFeed("📚 Teaching awards! But tenure committee wants publications...") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						if state.AddFeed then state:AddFeed("📚 Tenure denied. 'Insufficient research output.' Teaching doesn't count?") end
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "edu_grad_student_drama",
+		title = "Graduate Student Crisis",
+		emoji = "😰",
+		text = "Your graduate student is struggling badly. Their thesis is a mess and they're clearly not cut out for academia.",
+		category = "career_education",
+		weight = 12,
+		minAge = 32, maxAge = 65,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = isProfessor,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Work intensively to save them",
+				effects = { Health = -5, Smarts = 3 },
+				feedText = "Investing massive time in mentorship...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
+						state.Flags = state.Flags or {}
+						state.Flags.great_mentor = true
+						if state.AddFeed then state:AddFeed("😰 They turned it around! Defended successfully! You saved a career!") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						if state.AddFeed then state:AddFeed("😰 Despite everything, they quit. Sometimes it's not meant to be.") end
+					end
+				end,
+			},
+			{
+				text = "Have an honest conversation about their future",
+				effects = { Smarts = 2 },
+				feedText = "Hard truths...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.AddFeed then state:AddFeed("😰 They appreciated the honesty. Found a non-academic path they love.") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then state:AddFeed("😰 They were devastated. Called you unsupportive. Awkward now.") end
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Tenure Decision requires PROFESSOR job!
+	-- User complaint: "TENURE DECISION POPPED UP BUT IM JUST A JANITOR"
+	-- Added stricter eligibility check and careerPath requirement
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "edu_tenure_decision",
+		title = "Tenure Decision",
+		emoji = "🎓",
+		text = "The tenure committee has made their decision. Your entire career has led to this moment.",
+		category = "career_education",
+		careerPath = "professor",  -- CRITICAL: Only for professors!
+		weight = 8,
+		minAge = 32, maxAge = 55,
+		baseChance = 0.35,
+		cooldown = 10,
+		oneTime = true,
+		requiresJob = true,
+		-- CRITICAL FIX: Much stricter eligibility - must be professor/academia
+		eligibility = function(state)
+			if not state.CurrentJob then return false end
+			local jobId = (state.CurrentJob.id or ""):lower()
+			local jobCat = (state.CurrentJob.category or ""):lower()
+			
+			-- MUST be a professor, dean, or academic position
+			local isAcademic = jobId:find("professor") or jobId:find("dean") 
+				or jobId:find("lecturer") or jobId:find("academic")
+				or jobId:find("faculty") or jobId:find("researcher")
+				or (jobCat == "education" and jobId:find("university"))
+			
+			-- Explicitly NOT a janitor, custodian, etc.
+			if jobId:find("janitor") or jobId:find("custodian") or jobId:find("maintenance")
+				or jobId:find("cleaner") or jobId:find("groundskeeper") then
+				return false
+			end
+			
+			return isAcademic == true
+		end,
+		blockedByFlags = { in_prison = true, has_tenure = true },
+		
+		choices = {
+			{
+				text = "Open the letter...",
+				effects = {},
+				feedText = "Heart pounding...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					local performance = (state.CareerInfo and state.CareerInfo.performance) or 60
+					local bonus = (performance - 50) / 2 -- Up to +25% from performance
+					
+					if roll + bonus <= 65 then
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 30) end
+						state.Money = (state.Money or 0) + math.random(10000, 30000)
+						state.Flags = state.Flags or {}
+						state.Flags.has_tenure = true
+						state.Flags.tenured_professor = true
+						if state.AddFeed then state:AddFeed("🎓 TENURE GRANTED! Job security for life! Everything paid off!") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -30) end
+						if state.AddFeed then state:AddFeed("🎓 Tenure denied. Years of work... Have to find another position.") end
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "edu_research_breakthrough",
+		title = "Research Breakthrough!",
+		emoji = "🔬",
+		text = "Your research has led to a major breakthrough! This could be career-defining!",
+		category = "career_education",
+		weight = 10,
+		minAge = 28, maxAge = 70,
+		baseChance = 0.35,
+		cooldown = 5,
+		requiresJob = true,
+		eligibility = isProfessor,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Publish immediately",
+				effects = { Happiness = 15 },
+				feedText = "Getting this out there!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state.Money = (state.Money or 0) + math.random(20000, 80000)
+						state.Fame = (state.Fame or 0) + 30
+						state.Flags = state.Flags or {}
+						state.Flags.renowned_researcher = true
+						-- AAA FIX: Nil check for all state methods
+						if state.AddFeed then state:AddFeed("🔬 Paper went viral in academic circles! Invitations to speak everywhere!") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then state:AddFeed("🔬 Published but didn't make the splash you hoped. Still good work.") end
+					end
+				end,
+			},
+			{
+				text = "Patent it first",
+				effects = { Smarts = 3 },
+				feedText = "Protecting intellectual property...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 45 then
+						local licensing = math.random(50000, 200000)
+						state.Money = (state.Money or 0) + licensing
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 25) end
+						if state.AddFeed then state:AddFeed(string.format("🔬 Patent granted! Licensing deal worth $%d!", licensing)) end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then state:AddFeed("🔬 Patent process is slow. Someone else published similar findings first.") end
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "edu_inspiring_lecture",
+		title = "Standing Ovation",
+		emoji = "👏",
+		text = "You just delivered the lecture of a lifetime. Students are standing and applauding!",
+		category = "career_education",
+		weight = 12,
+		minAge = 22, maxAge = 70,
+		baseChance = 0.4,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasEducationJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Take it in - you've earned this",
+				effects = { Happiness = 20 },
+				setFlags = { legendary_educator = true },
+				feedText = "👏 THIS is why you became an educator. Moments like this make everything worth it.",
+			},
+		},
+	},
+	
+	{
+		id = "edu_burnout",
+		title = "Teacher Burnout",
+		emoji = "😩",
+		text = "You're exhausted. The emotional labor, the paperwork, the parents, the administration... Is this sustainable?",
+		category = "career_education",
+		weight = 15,
+		minAge = 25, maxAge = 60,
+		baseChance = 0.5,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasEducationJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Take a mental health day",
+				effects = { Health = 8, Happiness = 5 },
+				feedText = "Self-care isn't selfish...",
+			},
+			{
+				text = "Push through - students need you",
+				effects = { Health = -8, Happiness = -5 },
+				feedText = "Martyrdom isn't healthy...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
+						if state.AddFeed then state:AddFeed("😩 Made it through. Second wind found.") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						state.Flags = state.Flags or {}
+						state.Flags.severe_burnout = true
+						if state.AddFeed then state:AddFeed("😩 Crashed hard. Need extended leave. System is broken.") end
+					end
+				end,
+			},
+			{
+				text = "Consider leaving the profession",
+				effects = { Smarts = 2 },
+				setFlags = { considering_career_change = true },
+				feedText = "😩 Sometimes the best thing for students is teachers who aren't burnt out...",
+			},
+		},
+	},
+}
+
+return EducationCareerEvents
