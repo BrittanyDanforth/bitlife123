@@ -1326,6 +1326,29 @@ local function canEventTrigger(event, state)
 			career_police = 3,    -- At least 3 years between police events
 			career_creative = 2,  -- At least 2 years between creative career events
 			career_trades = 3,    -- At least 3 years between trades events
+			-- CRITICAL FIX #DEEP-1: Added more category cooldowns
+			career_finance = 3,   -- At least 3 years between finance events
+			career_law = 3,       -- At least 3 years between law events
+			career_education = 3, -- At least 3 years between education events
+			career_racing = 3,    -- At least 3 years between racing events
+			career_hacker = 3,    -- At least 3 years between hacker events
+			career_gaming = 2,    -- At least 2 years between gaming/esports events
+			career_acting = 2,    -- At least 2 years between acting events
+			career_music = 2,     -- At least 2 years between music events
+			career_sports = 2,    -- At least 2 years between sports events
+			career_influencer = 2, -- At least 2 years between influencer events
+			career_streaming = 2,  -- At least 2 years between streaming events
+			-- Life category cooldowns
+			family = 2,           -- At least 2 years between family events
+			romance = 2,          -- At least 2 years between romance events
+			friends = 2,          -- At least 2 years between friend events
+			pets = 3,             -- At least 3 years between pet events
+			hobbies = 2,          -- At least 2 years between hobby events
+			travel = 2,           -- At least 2 years between travel events
+			financial = 3,        -- At least 3 years between financial crisis events
+			legal = 4,            -- At least 4 years between legal events
+			housing = 3,          -- At least 3 years between housing events
+			homeless = 2,         -- At least 2 years between homeless events
 		}
 		
 		local catCooldown = categoryCooldowns[eventCategory]
@@ -1362,6 +1385,36 @@ local function canEventTrigger(event, state)
 			burnout = 5,    -- At least 5 years between burnout events
 			shift_lead = 99, -- Shift lead promotion is basically one-time
 			escape_fast = 4, -- At least 4 years between "escape fast food" existential crises
+			-- CRITICAL FIX #DEEP-2: Added MORE keyword cooldowns for common spam patterns
+			jackpot = 10,    -- At least 10 years between jackpot events
+			lottery = 10,    -- At least 10 years between lottery wins
+			inheritance = 10, -- At least 10 years between inheritance events
+			windfall = 10,   -- At least 10 years between windfall events
+			layoff = 5,      -- At least 5 years between layoff events
+			fired = 4,       -- At least 4 years between getting fired
+			bankrupt = 10,   -- At least 10 years between bankruptcy events
+			accident = 4,    -- At least 4 years between accidents
+			disaster = 8,    -- At least 8 years between disasters
+			robbery = 4,     -- At least 4 years between robbery events
+			mugged = 5,      -- At least 5 years between mugging events
+			stalker = 8,     -- At least 8 years between stalker events
+			lawsuit = 6,     -- At least 6 years between lawsuits
+			audit = 6,       -- At least 6 years between audit events
+			scandal = 5,     -- At least 5 years between scandal events
+			affair = 8,      -- At least 8 years between affair events
+			divorce = 10,    -- At least 10 years between divorce events
+			propose = 5,     -- At least 5 years between proposal events (shouldn't spam)
+			wedding = 10,    -- At least 10 years between wedding events
+			pregnant = 3,    -- At least 3 years between pregnancy events
+			baby = 3,        -- At least 3 years between baby events
+			illness = 3,     -- At least 3 years between illness events
+			disease = 4,     -- At least 4 years between disease events
+			surgery = 5,     -- At least 5 years between surgery events
+			hospital = 4,    -- At least 4 years between hospital events
+			paparazzi = 3,   -- At least 3 years between paparazzi events
+			stalker_fan = 5, -- At least 5 years between stalker fan events
+			award = 4,       -- At least 4 years between award events
+			nomination = 3,  -- At least 3 years between nomination events
 		}
 		
 		for keyword, keywordCooldown in pairs(spamKeywords) do

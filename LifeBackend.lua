@@ -13981,8 +13981,8 @@ function LifeBackend:handleContinueAsKid(player, childData)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local relationship = child.relationship or 50
 	newState.Stats = newState.Stats or {}
-	newState.Stats.Happiness = math.clamp(50 + math.floor(relationship / 5), 20, 80)
-	newState.Stats.Health = math.clamp(100 - math.floor(childAge / 3), 60, 100)
+	newState.Stats.Happiness = clamp(50 + math.floor(relationship / 5), 20, 80)
+	newState.Stats.Health = clamp(100 - math.floor(childAge / 3), 60, 100)
 	newState.Stats.Smarts = newState.Stats.Smarts or 50
 	newState.Stats.Looks = newState.Stats.Looks or 50
 	
@@ -13991,6 +13991,75 @@ function LifeBackend:handleContinueAsKid(player, childData)
 	newState.Health = newState.Stats.Health
 	newState.Smarts = newState.Stats.Smarts
 	newState.Looks = newState.Stats.Looks
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #CHILD-1: Clear ALL old life state when continuing as child
+	-- User complaint: "Continue as child is buggy - weird spawning and age issues"
+	-- Make sure no data from parent life carries over incorrectly
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Clear education state - child needs their own education journey
+	newState.EducationData = {
+		Level = childAge >= 18 and "high_school" or nil,
+		Status = childAge >= 18 and nil or "enrolled",
+		inCollege = false,
+		GPA = nil,
+		Debt = 0,
+	}
+	
+	-- Set appropriate education flags based on age
+	if childAge >= 22 then
+		newState.Flags.has_diploma = true
+		newState.Flags.graduated_high_school = true
+	elseif childAge >= 18 then
+		newState.Flags.has_diploma = true
+		newState.Flags.graduated_high_school = true
+	else
+		-- Shouldn't happen since we require age 18+, but safety check
+		newState.Flags.in_school = true
+	end
+	
+	-- Clear job/career state - child starts fresh
+	newState.CurrentJob = nil
+	newState.Career = {}
+	newState.CareerInfo = nil
+	newState.Flags.employed = nil
+	newState.Flags.has_job = nil
+	
+	-- Clear any premium path states from parent
+	newState.Flags.is_royalty = nil
+	newState.Flags.royal_birth = nil
+	newState.Flags.in_mob = nil
+	newState.Flags.fame_career = nil
+	newState.Flags.is_famous = nil
+	newState.RoyalState = nil
+	newState.MobState = nil
+	newState.FameState = nil
+	
+	-- Clear relationship states - child has fresh relationship slate
+	newState.Flags.married = nil
+	newState.Flags.engaged = nil
+	newState.Flags.has_partner = nil
+	newState.Flags.dating = nil
+	newState.Flags.widowed = nil
+	newState.Relationships.partner = nil
+	
+	-- Clear prison state
+	newState.InJail = false
+	newState.JailYearsLeft = 0
+	newState.Flags.in_prison = nil
+	newState.Flags.incarcerated = nil
+	newState.Flags.criminal_record = nil -- Give child a clean slate
+	
+	-- Clear event history so child gets fresh events
+	newState.EventHistory = {
+		occurrences = {},
+		lastOccurrence = {},
+		completed = {},
+		recentCategories = {},
+		recentEvents = {},
+		lastCategoryOccurrence = {},
+	}
 	
 	-- Create parent as a memory
 	newState.Flags.parent_deceased = true
@@ -18096,16 +18165,51 @@ function LifeBackend:createBasicRelationship(state, relType)
 	state.Relationships = state.Relationships or {}
 	state.Flags = state.Flags or {}
 
-	-- Generate random name
-	local firstNames = { "Alex", "Jordan", "Taylor", "Morgan", "Casey", "Riley", "Drew", "Quinn", "Jamie", "Avery" }
-	local lastNames = { "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis" }
-	local randomName = firstNames[math.random(#firstNames)] .. " " .. lastNames[math.random(#lastNames)]
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #DEEP-3: Much more diverse name generation
+	-- Previous list had only 10 first names - now has 60+ for variety
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local maleFirstNames = { 
+		"James", "John", "Michael", "David", "Robert", "William", "Daniel", "Matthew", "Anthony", "Mark",
+		"Joshua", "Andrew", "Joseph", "Christopher", "Ryan", "Tyler", "Brandon", "Kevin", "Justin", "Jason",
+		"Brian", "Eric", "Steven", "Thomas", "Adam", "Nathan", "Charles", "Benjamin", "Timothy", "Patrick"
+	}
+	local femaleFirstNames = { 
+		"Emma", "Olivia", "Sophia", "Isabella", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn", "Abigail",
+		"Emily", "Elizabeth", "Sofia", "Ella", "Avery", "Scarlett", "Grace", "Chloe", "Victoria", "Madison",
+		"Luna", "Penelope", "Layla", "Riley", "Zoey", "Nora", "Lily", "Eleanor", "Hannah", "Lillian"
+	}
+	local neutralFirstNames = { "Alex", "Jordan", "Taylor", "Morgan", "Casey", "Riley", "Drew", "Quinn", "Jamie", "Avery", "Cameron", "Dakota", "Skyler", "Reese", "Finley" }
+	local lastNames = { 
+		"Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez",
+		"Anderson", "Taylor", "Thomas", "Moore", "Jackson", "Martin", "Lee", "Thompson", "White", "Harris",
+		"Clark", "Lewis", "Robinson", "Walker", "Hall", "Young", "Allen", "King", "Wright", "Lopez"
+	}
+	
+	-- Choose gender randomly for romance/friend, then select appropriate name
+	local gender = (math.random() > 0.5) and "male" or "female"
+	local firstName
+	if gender == "male" then
+		firstName = maleFirstNames[math.random(#maleFirstNames)]
+	elseif gender == "female" then
+		firstName = femaleFirstNames[math.random(#femaleFirstNames)]
+	else
+		firstName = neutralFirstNames[math.random(#neutralFirstNames)]
+	end
+	local randomName = firstName .. " " .. lastNames[math.random(#lastNames)]
 
 	-- CRITICAL FIX: Better age range for romantic partners (especially when old!)
 	-- User complaint: "ROMANCE DOSENT WORK SOMETIMES LIKE WHEN OLD"
 	local playerAge = state.Age or 20
 	local partnerAgeMin = math.max(18, playerAge - 15) -- No more than 15 years younger, min 18
-	local partnerAgeMax = playerAge + 10 -- No more than 10 years older
+	local partnerAgeMax = math.max(playerAge + 10, 25) -- No more than 10 years older, but at least 25
+	
+	-- Safety check: ensure min <= max
+	if partnerAgeMin > partnerAgeMax then
+		partnerAgeMin = 18
+		partnerAgeMax = 30
+	end
+	
 	local partnerAge = math.random(partnerAgeMin, partnerAgeMax)
 
 	local newId = string.format("%s_%s_%d", relType, os.time(), math.random(1000, 9999))
@@ -18116,7 +18220,10 @@ function LifeBackend:createBasicRelationship(state, relType)
 		role = relType == "friend" and "Friend" or relType == "romance" and "Partner" or "Person",
 		relationship = 60, -- CRITICAL FIX: Start at 60 instead of 50 for more immediate connection
 		age = partnerAge,
+		gender = gender, -- CRITICAL FIX #DEEP-4: Store gender for UI display
 		alive = true,
+		metAt = state.Age, -- Track when they met
+		lastContact = state.Age, -- Initialize last contact for decay system
 	}
 
 	state.Relationships[newId] = relationship
@@ -18134,7 +18241,16 @@ function LifeBackend:createBasicRelationship(state, relType)
 		state.Relationships.partner = relationship
 		state.Flags.has_partner = true
 		state.Flags.dating = true
+		state.Flags.recently_single = nil -- Clear this flag if it was set
 		debugPrint("[createBasicRelationship] Set partner reference for romance: " .. randomName)
+	end
+	
+	-- CRITICAL FIX #DEEP-5: Also handle enemy creation properly
+	if relType == "enemy" then
+		state.Relationships.enemies = state.Relationships.enemies or {}
+		table.insert(state.Relationships.enemies, relationship)
+		relationship.role = "Enemy"
+		relationship.relationship = 10 -- Enemies start with low relationship
 	end
 
 	debugPrint("[createBasicRelationship] Created basic " .. relType .. ": " .. randomName)
