@@ -1227,16 +1227,30 @@ function LifeBackend:syncHousingAndTitles(state)
 	
 	-- ═══════════════════════════════════════════════════════════════════════
 	-- AAA FIX: Sync housing with owned properties
+	-- CRITICAL FIX: Also clear ALL transitional/homeless flags when owning property
+	-- User complaint: "Housing doesn't update when I buy a house"
 	-- ═══════════════════════════════════════════════════════════════════════
 	if state.Assets and state.Assets.Properties and #state.Assets.Properties > 0 then
 		local primaryHome = state.Assets.Properties[1]
 		if housing.status ~= "owner" and housing.status ~= "royal_palace" then
 			housing.status = "owner"
-			housing.type = primaryHome.type or "house"
+			housing.type = primaryHome.type or primaryHome.name or "house"
 			housing.propertyId = primaryHome.id
+			housing.value = primaryHome.value or primaryHome.price
 			housing.rent = 0
 			flags.homeowner = true
 			flags.has_property = true
+			flags.has_home = true
+			flags.has_own_place = true
+			-- CRITICAL: Clear ALL housing flags that shouldn't exist with property ownership
+			flags.homeless = nil
+			flags.couch_surfing = nil
+			flags.living_in_car = nil
+			flags.using_shelter = nil
+			flags.in_transitional_housing = nil
+			flags.at_risk_homeless = nil
+			flags.eviction_notice = nil
+			flags.living_with_parents = nil
 			fixes = fixes + 1
 		end
 	end
@@ -17742,13 +17756,20 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 	-- This prevents "you're homeless" events from firing after buying housing
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	if assetType == "Properties" then
-		-- Clear all homeless-related flags
+		-- Clear ALL homeless-related and transitional housing flags
+		-- CRITICAL FIX: User reported housing situation not updating correctly!
+		-- The in_transitional_housing flag wasn't being cleared, so AssetsScreen
+		-- would still show "Transitional Housing" even after buying a house
 		state.Flags.homeless = nil
 		state.Flags.couch_surfing = nil
 		state.Flags.living_in_car = nil
 		state.Flags.using_shelter = nil
 		state.Flags.at_risk_homeless = nil
 		state.Flags.eviction_notice = nil
+		state.Flags.in_transitional_housing = nil  -- CRITICAL: Was missing!
+		state.Flags.living_with_family = nil       -- No longer living with family
+		state.Flags.living_with_parents = nil      -- No longer living with parents
+		state.Flags.in_foster_care = nil           -- No longer in foster care
 		
 		-- Set proper housing flags
 		state.Flags.has_home = true

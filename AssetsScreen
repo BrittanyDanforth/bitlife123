@@ -1273,9 +1273,14 @@ function AssetsScreen:populateProperty()
 	-- CRITICAL FIX: Check HousingState.status FIRST for most accurate info
 	-- Then fall back to flags for backwards compatibility
 	
-	-- Check various housing states - ORDER MATTERS!
-	-- CRITICAL FIX: Check royalty FIRST - they live in a palace!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: ORDER MATTERS! Homeownership should OVERRIDE transitional states!
+	-- User complaint: "Housing doesn't update when I buy a house from transitional"
+	-- The issue was transitional_housing check came BEFORE homeowner check
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	local royalState = self.playerState and self.playerState.RoyalState
+	
+	-- PRIORITY 1: Royalty (palace)
 	if flags.is_royalty or (royalState and royalState.isRoyal) then
 		livingEmoji = "🏰"
 		livingStatus = "Royal Palace"
@@ -1283,6 +1288,42 @@ function AssetsScreen:populateProperty()
 		local title = royalState and royalState.title or "Royal"
 		livingDetail = title .. " of " .. country
 		statusColor = C.Gold or C.Amber
+	-- PRIORITY 2: HOMEOWNER - Must come before ANY transitional/homeless states!
+	-- If player owns property, they are NOT homeless/transitional anymore
+	elseif flags.homeowner or flags.has_house or flags.has_property or housingStatus == "owner" then
+		-- Check for inherited property
+		if flags.inherited_property then
+			livingEmoji = "🏚️"
+			livingStatus = "Inherited Property"
+			local propValue = housingState.value or 0
+			if propValue > 0 then
+				livingDetail = "Inherited home! Value: $" .. self:formatMoney(propValue)
+			else
+				livingDetail = "Inherited from family (mortgage-free!)"
+			end
+		else
+			livingEmoji = "🏡"
+			livingStatus = "Homeowner"
+			local propValue = housingState.value or 0
+			if propValue > 0 then
+				livingDetail = "Property value: $" .. self:formatMoney(propValue)
+			else
+				livingDetail = "You own your home!"
+			end
+		end
+		statusColor = C.Green
+	-- PRIORITY 3: RENTING - Also overrides transitional states
+	elseif flags.has_apartment or flags.renting or housingStatus == "renter" then
+		livingEmoji = "🏢"
+		if flags.has_roommates or housingState.type == "shared_apartment" then
+			livingStatus = "Renting (Roommates)"
+		else
+			livingStatus = "Renting Apartment"
+		end
+		local rent = housingState.rent or 900 -- Default $900 if not set
+		livingDetail = "Monthly rent: $" .. self:formatMoney(rent)
+		statusColor = C.Blue
+	-- PRIORITY 4: Actual homeless states (no property, no rental)
 	elseif flags.homeless or housingStatus == "homeless" then
 		livingEmoji = "🏕️"
 		livingStatus = "Homeless"
@@ -1313,41 +1354,6 @@ function AssetsScreen:populateProperty()
 		livingStatus = "With Family"
 		livingDetail = "Living with family members"
 		statusColor = C.Green
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX: Handle INHERITED property specifically
-	-- User complaint: "Not showing inherited housing status"
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	elseif flags.inherited_property and (flags.homeowner or flags.has_house) then
-		livingEmoji = "🏚️"
-		livingStatus = "Inherited Property"
-		local propValue = housingState.value or 0
-		if propValue > 0 then
-			livingDetail = "Inherited home! Value: $" .. self:formatMoney(propValue)
-		else
-			livingDetail = "Inherited from family (mortgage-free!)"
-		end
-		statusColor = C.Green
-	elseif flags.homeowner or flags.has_house or housingStatus == "owner" then
-		livingEmoji = "🏡"
-		livingStatus = "Homeowner"
-		local propValue = housingState.value or 0
-		if propValue > 0 then
-			livingDetail = "Property value: $" .. self:formatMoney(propValue)
-		else
-			livingDetail = "You own your home!"
-		end
-		statusColor = C.Green
-	elseif flags.has_apartment or flags.renting or housingStatus == "renter" then
-		-- CRITICAL FIX: Show rent amount from HousingState
-		livingEmoji = "🏢"
-		if flags.has_roommates or housingState.type == "shared_apartment" then
-			livingStatus = "Renting (Roommates)"
-		else
-			livingStatus = "Renting Apartment"
-		end
-		local rent = housingState.rent or 900 -- Default $900 if not set
-		livingDetail = "Monthly rent: $" .. self:formatMoney(rent)
-		statusColor = C.Blue
 	elseif flags.married or flags.has_spouse or isSpouseFromRelationships then
 		-- CRITICAL FIX: Show married status in housing
 		-- User complaint: "Doesn't show if I'm living with my girl/wife/husband"
