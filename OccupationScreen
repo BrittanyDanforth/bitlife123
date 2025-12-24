@@ -1268,19 +1268,58 @@ local InterviewQuestions = {
 }
 
 -- Get interview questions for a job category
+-- CRITICAL FIX: Randomize questions to avoid repetitive interviews!
+-- User reported: "ENSURE THE INTERVIEW QUESTIONS ARE ALL SAME" (they were!)
 local function getInterviewQuestionsForJob(jobCategory)
-	local questions = InterviewQuestions[jobCategory] or InterviewQuestions.default
-	-- Always include at least one default question for variety
+	local categoryQuestions = InterviewQuestions[jobCategory] or InterviewQuestions.default
+	local defaultQuestions = InterviewQuestions.default
+	
+	-- Create shuffled copies of the question arrays
+	local function shuffleArray(arr)
+		local shuffled = {}
+		for i, v in ipairs(arr) do
+			shuffled[i] = v
+		end
+		-- Fisher-Yates shuffle
+		for i = #shuffled, 2, -1 do
+			local j = math.random(1, i)
+			shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
+		end
+		return shuffled
+	end
+	
+	-- Shuffle the category questions
+	local shuffledCategory = shuffleArray(categoryQuestions)
+	local shuffledDefault = shuffleArray(defaultQuestions)
+	
 	local result = {}
-	for i, q in ipairs(questions) do
-		if i <= 2 then -- Take 2 category-specific questions
-			table.insert(result, q)
+	
+	-- Add 2 random category-specific questions
+	for i = 1, math.min(2, #shuffledCategory) do
+		table.insert(result, shuffledCategory[i])
+	end
+	
+	-- Add 1 random default question (making sure it's not a duplicate if category == default)
+	if #shuffledDefault > 0 then
+		-- If using default questions for category, skip ones already added
+		local startIdx = 1
+		if categoryQuestions == defaultQuestions then
+			startIdx = 3 -- Skip the first 2 we already added
+		end
+		if shuffledDefault[startIdx] then
+			table.insert(result, shuffledDefault[startIdx])
+		elseif shuffledDefault[1] then
+			table.insert(result, shuffledDefault[1])
 		end
 	end
-	-- Add one default question
-	if InterviewQuestions.default[1] then
-		table.insert(result, InterviewQuestions.default[1])
+	
+	-- Also shuffle the options within each question for extra variety!
+	for _, question in ipairs(result) do
+		if question.options then
+			question.options = shuffleArray(question.options)
+		end
 	end
+	
 	return result
 end
 

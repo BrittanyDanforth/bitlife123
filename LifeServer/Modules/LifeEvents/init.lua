@@ -1108,6 +1108,34 @@ local function canEventTrigger(event, state)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #USER-XXL: Check minStage/maxStage for career-specific events
+	-- Events like "XXL Freshman" have minStage = 3, meaning you need to be at career
+	-- stage 3 (hot rapper level) before this event can trigger. Without this check,
+	-- underground rappers would get XXL Freshman nominations!
+	-- User reported: "IT SAID XXL FRESHMAN BUT I WASNT EVEN FAMOUS"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if event.minStage or event.maxStage then
+		local playerStage = 1  -- Default to stage 1 (lowest)
+		
+		-- Get player's current career stage from FameState
+		if state.FameState and state.FameState.currentStage then
+			playerStage = state.FameState.currentStage
+		end
+		
+		-- Check minimum stage requirement
+		local minStage = event.minStage or 1
+		local maxStage = event.maxStage or 999
+		
+		if playerStage < minStage then
+			return false -- Player hasn't reached the required career stage
+		end
+		
+		if playerStage > maxStage then
+			return false -- Player is past the maximum stage for this event
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #5: Critically ill/dying players shouldn't get fun events
 	-- Only allow health-related, medical, or high-priority events for very sick players
 	-- This prevents the weird situation of getting "Travel Opportunity!" while dying

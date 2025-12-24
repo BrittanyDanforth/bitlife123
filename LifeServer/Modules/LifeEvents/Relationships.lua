@@ -1637,6 +1637,8 @@ Relationships.events = {
 		minAge = 16, maxAge = 45,
 		baseChance = 0.4,
 		cooldown = 2,
+		-- CRITICAL FIX: MUST have a partner to get pregnant! User reported baby without partner
+		requiresFlags = { has_partner = true },
 
 		choices = {
 			{ 

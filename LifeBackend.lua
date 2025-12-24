@@ -16004,21 +16004,26 @@ function LifeBackend:handleJobApplication(player, jobId, clientInterviewScore)
 	
 	if hasClientInterviewScore then
 		-- Client already did the interview - use their score!
-		-- Score is 0-100, we need to convert it to hiring success
-		-- High scores should almost guarantee hire, low scores should likely reject
-		local scoreBonus = (clientInterviewScore - 50) / 100 -- -0.5 to +0.5
-		local adjustedChance = math.clamp(finalChance + scoreBonus, 0.10, 0.95)
+		-- CRITICAL FIX: User reported "I JUST GOT 55% IT SAID I PASSED GOT JOB BUT IT DIDNT GIVE ME JOB"
+		-- The client shows "Interview Passed! They've decided to hire you!" at 50%+
+		-- Server MUST honor this and actually give the job! Cannot reject after client says hired!
 		
-		-- For passing interviews (score >= 60), give a significant boost
-		if clientInterviewScore >= 60 then
-			adjustedChance = math.max(adjustedChance, 0.65) -- At least 65% for passing
+		-- If client interview passed (score >= 50), they ARE hired - no RNG!
+		-- The interview IS the RNG - passing means you got the job!
+		if clientInterviewScore >= 50 then
+			-- PASSED INTERVIEW = HIRED! No additional roll needed
+			-- This matches what the client displays to the user
+			accepted = true
+		elseif clientInterviewScore >= 40 then
+			-- Close to passing - give them a good chance
+			accepted = RANDOM:NextNumber() < 0.70
+		elseif clientInterviewScore >= 30 then
+			-- Poor interview - low chance
+			accepted = RANDOM:NextNumber() < 0.40
+		else
+			-- Failed interview badly
+			accepted = RANDOM:NextNumber() < 0.15
 		end
-		if clientInterviewScore >= 80 then
-			adjustedChance = math.max(adjustedChance, 0.85) -- At least 85% for great interview
-		end
-		
-		local roll = RANDOM:NextNumber()
-		accepted = roll < adjustedChance
 	else
 		-- No client interview score - check if we should show server-side interview
 		local shouldShowInterview = difficulty >= 4 and (job.salary or 0) >= 40000
