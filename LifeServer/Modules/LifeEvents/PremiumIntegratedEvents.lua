@@ -18,6 +18,64 @@ local PremiumIntegratedEvents = {}
 
 local STAGE = "random"
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- HELPER FUNCTIONS (CRITICAL FIX: Nil-safe operations)
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function safeModifyStat(state, stat, amount)
+	if not state then return end
+	if state.ModifyStat then
+		state:ModifyStat(stat, amount)
+	elseif state.Stats then
+		state.Stats[stat] = math.clamp((state.Stats[stat] or 50) + amount, 0, 100)
+	else
+		state[stat] = math.clamp((state[stat] or 50) + amount, 0, 100)
+	end
+end
+
+local function safeAddFeed(state, message)
+	if state and state.AddFeed then
+		state:AddFeed(message)
+	end
+end
+
+local function safeAddMoney(state, amount)
+	if state then
+		state.Money = math.max(0, (state.Money or 0) + amount)
+	end
+end
+
+local function safeSubtractMoney(state, amount)
+	if state then
+		state.Money = math.max(0, (state.Money or 0) - amount)
+	end
+end
+
+-- CRITICAL FIX: Check if player can do activities (not in prison)
+local function canDoActivities(state)
+	if not state then return false end
+	local flags = state.Flags or {}
+	return not (flags.in_prison or flags.incarcerated or flags.in_jail)
+end
+
+-- CRITICAL FIX: Check if player has required money for choices
+local function hasMinMoney(state, amount)
+	return (state.Money or 0) >= amount
+end
+
+-- CRITICAL FIX: Initialize MobState safely
+local function ensureMobState(state)
+	if not state then return end
+	state.MobState = state.MobState or {}
+	state.MobState.heat = state.MobState.heat or 0
+	state.MobState.respect = state.MobState.respect or 0
+end
+
+-- CRITICAL FIX: Initialize Flags safely
+local function ensureFlags(state)
+	if not state then return end
+	state.Flags = state.Flags or {}
+end
+
 PremiumIntegratedEvents.events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- LIFE CRISIS EVENTS - God Mode Integration

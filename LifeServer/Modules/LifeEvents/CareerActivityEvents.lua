@@ -23,9 +23,102 @@
 local CareerEvents = {}
 
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- HELPER FUNCTIONS (CRITICAL FIX: Nil-safe operations)
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function safeModifyStat(state, stat, amount)
+	if state and state.ModifyStat then
+		state:ModifyStat(stat, amount)
+	elseif state and state.Stats then
+		state.Stats[stat] = math.clamp((state.Stats[stat] or 50) + amount, 0, 100)
+	elseif state then
+		state[stat] = math.clamp((state[stat] or 50) + amount, 0, 100)
+	end
+end
+
+local function safeAddFeed(state, message)
+	if state and state.AddFeed then
+		state:AddFeed(message)
+	end
+end
+
+-- CRITICAL FIX: Check if player is currently employed
+local function isEmployed(state)
+	if not state then return false end
+	
+	-- Check CurrentJob
+	if state.CurrentJob and state.CurrentJob.id then
+		return true
+	end
+	
+	-- Check flags
+	local flags = state.Flags or {}
+	return flags.employed or flags.has_job or false
+end
+
+-- CRITICAL FIX: Check if player can do work activities (must be employed, not in prison)
+local function canDoWorkActivities(state)
+	if not state then return false end
+	
+	local flags = state.Flags or {}
+	-- Can't work from prison!
+	if flags.in_prison or flags.incarcerated or flags.in_jail then
+		return false
+	end
+	
+	return isEmployed(state)
+end
+
+-- CRITICAL FIX: Check if player is looking for work (for interview events)
+local function isJobSeeking(state)
+	if not state then return false end
+	
+	-- Job seekers can be unemployed or looking for new job
+	local flags = state.Flags or {}
+	if flags.in_prison or flags.incarcerated then
+		return false
+	end
+	
+	-- Employed people can also interview for new jobs
+	return true
+end
+
+-- CRITICAL FIX: Get player's work experience level
+local function getExperienceLevel(state)
+	if not state then return "entry" end
+	
+	local careerInfo = state.CareerInfo or {}
+	local yearsWorked = careerInfo.yearsInWorkforce or 0
+	local promotions = careerInfo.promotions or 0
+	
+	if promotions >= 3 or yearsWorked >= 10 then
+		return "senior"
+	elseif promotions >= 1 or yearsWorked >= 3 then
+		return "mid"
+	end
+	
+	return "entry"
+end
+
+-- CRITICAL FIX: Check if player is old enough to work
+local function isWorkingAge(state, minAge)
+	local age = state.Age or 0
+	return age >= (minAge or 16)
+end
+
+-- CRITICAL FIX: Check retirement eligibility
+local function canRetire(state)
+	if not state then return false end
+	local age = state.Age or 0
+	return age >= 55 and isEmployed(state)
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
 -- JOB INTERVIEW EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 CareerEvents.JobInterview = {
+	-- CRITICAL FIX: Category-wide eligibility
+	eligibility = function(state) return isJobSeeking(state) and isWorkingAge(state, 16) end,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	-- Event 1: Standard interview
 	{
 		id = "interview_standard",
@@ -202,6 +295,11 @@ CareerEvents.JobInterview = {
 -- FIRST DAY EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 CareerEvents.FirstDay = {
+	-- CRITICAL FIX: Category-wide eligibility - must have just started a job
+	eligibility = function(state) 
+		return canDoWorkActivities(state) and isWorkingAge(state, 16)
+	end,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	-- Event 1: Starting the job
 	{
 		id = "firstday_start",
@@ -288,6 +386,9 @@ CareerEvents.FirstDay = {
 -- PROMOTION EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 CareerEvents.Promotion = {
+	-- CRITICAL FIX: Category-wide eligibility - must be employed
+	eligibility = canDoWorkActivities,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	-- Event 1: Getting promoted
 	{
 		id = "promotion_receive",
@@ -374,6 +475,9 @@ CareerEvents.Promotion = {
 -- RAISE NEGOTIATION EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 CareerEvents.RaiseNegotiation = {
+	-- CRITICAL FIX: Category-wide eligibility - must be employed
+	eligibility = canDoWorkActivities,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	-- Event 1: Asking for a raise
 	{
 		id = "raise_ask",
@@ -460,6 +564,9 @@ CareerEvents.RaiseNegotiation = {
 -- WORK PROJECT EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 CareerEvents.WorkProject = {
+	-- CRITICAL FIX: Category-wide eligibility - must be employed
+	eligibility = canDoWorkActivities,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	-- Event 1: Big project assignment
 	{
 		id = "project_assigned",
@@ -586,6 +693,9 @@ CareerEvents.WorkProject = {
 -- OFFICE POLITICS EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 CareerEvents.OfficePolitics = {
+	-- CRITICAL FIX: Category-wide eligibility - must be employed
+	eligibility = canDoWorkActivities,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	-- Event 1: Office gossip
 	{
 		id = "politics_gossip",
@@ -672,6 +782,9 @@ CareerEvents.OfficePolitics = {
 -- PERFORMANCE REVIEW EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 CareerEvents.PerformanceReview = {
+	-- CRITICAL FIX: Category-wide eligibility - must be employed
+	eligibility = canDoWorkActivities,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	-- Event 1: Annual review
 	{
 		id = "review_annual",
@@ -749,6 +862,9 @@ CareerEvents.PerformanceReview = {
 -- WORK TRAVEL EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 CareerEvents.WorkTravel = {
+	-- CRITICAL FIX: Category-wide eligibility - must be employed
+	eligibility = canDoWorkActivities,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	-- Event 1: Business trip
 	{
 		id = "travel_business",
@@ -795,6 +911,9 @@ CareerEvents.WorkTravel = {
 -- RESIGNATION EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 CareerEvents.Resignation = {
+	-- CRITICAL FIX: Category-wide eligibility - must be employed to resign
+	eligibility = canDoWorkActivities,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	-- Event 1: Quitting
 	{
 		id = "resign_quit",
@@ -841,6 +960,9 @@ CareerEvents.Resignation = {
 -- RETIREMENT EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 CareerEvents.Retirement = {
+	-- CRITICAL FIX: Category-wide eligibility - must be old enough and employed
+	eligibility = canRetire,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true, retired = true },
 	-- Event 1: Retiring
 	{
 		id = "retire_end",
@@ -915,9 +1037,11 @@ CareerEvents.ActivityMapping = {
 }
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- HELPER FUNCTIONS
+-- ADDITIONAL HELPER FUNCTIONS
 -- ═══════════════════════════════════════════════════════════════════════════════
-function CareerEvents.getEventForActivity(activityId)
+
+-- CRITICAL FIX: Enhanced event retrieval with state-aware eligibility
+function CareerEvents.getEventForActivity(activityId, state)
 	local categoryName = CareerEvents.ActivityMapping[activityId]
 	if not categoryName then
 		-- Try partial matching
@@ -938,8 +1062,89 @@ function CareerEvents.getEventForActivity(activityId)
 		return nil
 	end
 	
-	-- Return random event from category
-	return eventList[math.random(1, #eventList)]
+	-- CRITICAL FIX: Check category-wide eligibility if state provided
+	if state and eventList.eligibility and not eventList.eligibility(state) then
+		return nil
+	end
+	
+	-- CRITICAL FIX: Check category-wide blocked flags
+	if state and eventList.blockedByFlags and state.Flags then
+		for flag, _ in pairs(eventList.blockedByFlags) do
+			if state.Flags[flag] then
+				return nil -- Blocked by flag
+			end
+		end
+	end
+	
+	-- Filter to valid events only
+	local validEvents = {}
+	for i, event in ipairs(eventList) do
+		if type(event) == "table" and event.id then
+			local valid = true
+			
+			-- Check event-level conditions
+			if event.condition and state and not event.condition(state) then
+				valid = false
+			end
+			
+			-- Check event-level blocked flags
+			if valid and event.blockedByFlags and state and state.Flags then
+				for flag, _ in pairs(event.blockedByFlags) do
+					if state.Flags[flag] then
+						valid = false
+						break
+					end
+				end
+			end
+			
+			if valid then
+				table.insert(validEvents, event)
+			end
+		end
+	end
+	
+	if #validEvents == 0 then
+		return nil
+	end
+	
+	-- Return random event from valid events
+	local selectedEvent = validEvents[math.random(1, #validEvents)]
+	
+	-- CRITICAL FIX: Process texts array if present
+	if selectedEvent.texts and #selectedEvent.texts > 0 then
+		local eventCopy = {}
+		for k, v in pairs(selectedEvent) do
+			eventCopy[k] = v
+		end
+		eventCopy.text = eventCopy.texts[math.random(#eventCopy.texts)]
+		return eventCopy
+	end
+	
+	return selectedEvent
+end
+
+-- CRITICAL FIX: Apply effects safely
+function CareerEvents.applyEffects(state, effects)
+	if not effects or not state then return state end
+	
+	for stat, value in pairs(effects) do
+		local change = 0
+		if type(value) == "table" then
+			change = math.random(value[1], value[2])
+		else
+			change = value
+		end
+		
+		if stat == "Money" then
+			state.Money = math.max(0, (state.Money or 0) + change)
+		elseif state.Stats then
+			state.Stats[stat] = math.clamp((state.Stats[stat] or 50) + change, 0, 100)
+		else
+			state[stat] = math.clamp((state[stat] or 50) + change, 0, 100)
+		end
+	end
+	
+	return state
 end
 
 function CareerEvents.getAllCategories()

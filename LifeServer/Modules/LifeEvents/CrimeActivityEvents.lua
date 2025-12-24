@@ -5,9 +5,56 @@
 local CrimeActivityEvents = {}
 
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- HELPER FUNCTIONS (CRITICAL FIX: Nil-safe state modifications)
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function safeModifyStat(state, stat, amount)
+	if state and state.ModifyStat then
+		state:ModifyStat(stat, amount)
+	elseif state and state.Stats then
+		state.Stats[stat] = math.clamp((state.Stats[stat] or 50) + amount, 0, 100)
+	elseif state then
+		state[stat] = math.clamp((state[stat] or 50) + amount, 0, 100)
+	end
+end
+
+local function safeAddFeed(state, message)
+	if state and state.AddFeed then
+		state:AddFeed(message)
+	end
+end
+
+local function safeAddMoney(state, amount)
+	if state then
+		state.Money = math.max(0, (state.Money or 0) + amount)
+	end
+end
+
+-- CRITICAL FIX: Check if player can commit crimes (not in prison already!)
+local function canCommitCrime(state)
+	if not state then return false end
+	local flags = state.Flags or {}
+	-- Can't commit crimes while already in prison!
+	if flags.in_prison or flags.incarcerated or flags.in_jail then
+		return false
+	end
+	return true
+end
+
+-- CRITICAL FIX: Check minimum age for crimes
+local function isOldEnoughForCrime(state, minAge)
+	local age = state.Age or 0
+	return age >= (minAge or 12)
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
 -- SHOPLIFTING EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 CrimeActivityEvents.Shoplift = {
+	-- CRITICAL FIX: Category-wide eligibility
+	eligibility = function(state)
+		return canCommitCrime(state) and isOldEnoughForCrime(state, 10)
+	end,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	{
 		id = "shoplift_easy",
 		title = "🛒 Shoplifting",
@@ -62,6 +109,11 @@ CrimeActivityEvents.Shoplift = {
 -- PICKPOCKETING EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 CrimeActivityEvents.Pickpocket = {
+	-- CRITICAL FIX: Category-wide eligibility
+	eligibility = function(state)
+		return canCommitCrime(state) and isOldEnoughForCrime(state, 12)
+	end,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	{
 		id = "pickpocket_crowded",
 		title = "👛 Pickpocketing",
@@ -102,6 +154,11 @@ CrimeActivityEvents.Pickpocket = {
 -- BURGLARY EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 CrimeActivityEvents.Burglary = {
+	-- CRITICAL FIX: Category-wide eligibility (must be 16+ for serious crimes)
+	eligibility = function(state)
+		return canCommitCrime(state) and isOldEnoughForCrime(state, 16)
+	end,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	{
 		id = "burglary_house",
 		title = "🏠 Breaking In",
@@ -175,6 +232,11 @@ CrimeActivityEvents.Burglary = {
 -- CAR THEFT EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 CrimeActivityEvents.CarTheft = {
+	-- CRITICAL FIX: Category-wide eligibility (must be 16+ and not in prison)
+	eligibility = function(state)
+		return canCommitCrime(state) and isOldEnoughForCrime(state, 16)
+	end,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	{
 		id = "car_theft_easy",
 		title = "🚗 Grand Theft Auto",
@@ -229,6 +291,11 @@ CrimeActivityEvents.CarTheft = {
 -- BANK ROBBERY EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 CrimeActivityEvents.BankRobbery = {
+	-- CRITICAL FIX: Category-wide eligibility (must be 18+ for major crimes)
+	eligibility = function(state)
+		return canCommitCrime(state) and isOldEnoughForCrime(state, 18)
+	end,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	{
 		id = "bank_robbery_heist",
 		title = "🏦 Bank Heist",
@@ -283,6 +350,11 @@ CrimeActivityEvents.BankRobbery = {
 -- ASSAULT EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 CrimeActivityEvents.Assault = {
+	-- CRITICAL FIX: Category-wide eligibility (must be 14+ and not in prison)
+	eligibility = function(state)
+		return canCommitCrime(state) and isOldEnoughForCrime(state, 14)
+	end,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	{
 		id = "assault_confrontation",
 		title = "👊 Violent Confrontation",
@@ -340,6 +412,11 @@ CrimeActivityEvents.Assault = {
 -- MUGGING EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 CrimeActivityEvents.Mugging = {
+	-- CRITICAL FIX: Category-wide eligibility (must be 16+ and not in prison)
+	eligibility = function(state)
+		return canCommitCrime(state) and isOldEnoughForCrime(state, 16)
+	end,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	{
 		id = "mugging_target",
 		title = "🔪 Mugging",
@@ -383,6 +460,20 @@ function CrimeActivityEvents.getRandomEvent(crimeType, state)
 	local events = CrimeActivityEvents[crimeType]
 	if not events then return nil end
 	
+	-- CRITICAL FIX: Check category-wide eligibility first
+	if events.eligibility and not events.eligibility(state) then
+		return nil
+	end
+	
+	-- CRITICAL FIX: Check category-wide blocked flags
+	if events.blockedByFlags and state and state.Flags then
+		for flag, _ in pairs(events.blockedByFlags) do
+			if state.Flags[flag] then
+				return nil -- Blocked by flag
+			end
+		end
+	end
+	
 	local validEvents = {}
 	local totalWeight = 0
 	
@@ -390,6 +481,16 @@ function CrimeActivityEvents.getRandomEvent(crimeType, state)
 		local valid = true
 		if event.condition and not event.condition(state) then
 			valid = false
+		end
+		
+		-- CRITICAL FIX: Check event-level blocked flags
+		if valid and event.blockedByFlags and state and state.Flags then
+			for flag, _ in pairs(event.blockedByFlags) do
+				if state.Flags[flag] then
+					valid = false
+					break
+				end
+			end
 		end
 		
 		if valid then

@@ -31,9 +31,65 @@
 local VacationEvents = {}
 
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- HELPER FUNCTIONS (CRITICAL FIX: Nil-safe operations)
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function safeModifyStat(state, stat, amount)
+	if not state then return end
+	if state.ModifyStat then
+		state:ModifyStat(stat, amount)
+	elseif state.Stats then
+		state.Stats[stat] = math.clamp((state.Stats[stat] or 50) + amount, 0, 100)
+	else
+		state[stat] = math.clamp((state[stat] or 50) + amount, 0, 100)
+	end
+end
+
+-- CRITICAL FIX: Check if player can go on vacation
+local function canGoOnVacation(state)
+	if not state then return false end
+	local flags = state.Flags or {}
+	-- Can't go on vacation from prison!
+	if flags.in_prison or flags.incarcerated or flags.in_jail then
+		return false
+	end
+	-- Can't travel if homeless (no money for travel)
+	if flags.homeless and (state.Money or 0) < 500 then
+		return false
+	end
+	return true
+end
+
+-- CRITICAL FIX: Check if player can afford vacation
+local function canAffordVacation(state, cost)
+	return (state.Money or 0) >= (cost or 0)
+end
+
+-- CRITICAL FIX: Process vacation cost safely
+local function processVacationCost(state, cost)
+	if not cost or cost <= 0 then return true end
+	if not state then return false end
+	
+	local money = state.Money or 0
+	if money < cost then return false end
+	
+	state.Money = money - cost
+	return true
+end
+
+-- CRITICAL FIX: Module-wide eligibility
+VacationEvents.moduleEligibility = function(state)
+	return canGoOnVacation(state)
+end
+
+VacationEvents.moduleBlockedFlags = { in_prison = true, incarcerated = true, in_jail = true }
+
+-- ═══════════════════════════════════════════════════════════════════════════════
 -- BEACH VACATIONS
 -- ═══════════════════════════════════════════════════════════════════════════════
 VacationEvents.Beach = {
+	-- CRITICAL FIX: Category eligibility
+	eligibility = function(state) return canGoOnVacation(state) and canAffordVacation(state, 2000) end,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	{
 		id = "vacation_beach_paradise",
 		title = "🏖️ Beach Paradise",
@@ -110,6 +166,9 @@ VacationEvents.Beach = {
 -- MOUNTAIN VACATIONS
 -- ═══════════════════════════════════════════════════════════════════════════════
 VacationEvents.Mountain = {
+	-- CRITICAL FIX: Category eligibility
+	eligibility = function(state) return canGoOnVacation(state) and canAffordVacation(state, 1500) end,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	{
 		id = "vacation_mountain_retreat",
 		title = "⛰️ Mountain Retreat",
@@ -156,6 +215,9 @@ VacationEvents.Mountain = {
 -- CITY VACATIONS
 -- ═══════════════════════════════════════════════════════════════════════════════
 VacationEvents.City = {
+	-- CRITICAL FIX: Category eligibility
+	eligibility = function(state) return canGoOnVacation(state) and canAffordVacation(state, 1800) end,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	{
 		id = "vacation_city_explore",
 		title = "🏙️ City Adventure",
@@ -211,6 +273,9 @@ VacationEvents.City = {
 -- CRUISE VACATIONS
 -- ═══════════════════════════════════════════════════════════════════════════════
 VacationEvents.Cruise = {
+	-- CRITICAL FIX: Category eligibility - cruises are expensive!
+	eligibility = function(state) return canGoOnVacation(state) and canAffordVacation(state, 3500) end,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	{
 		id = "vacation_cruise_luxury",
 		title = "🚢 Luxury Cruise",
@@ -257,6 +322,9 @@ VacationEvents.Cruise = {
 -- SAFARI VACATIONS
 -- ═══════════════════════════════════════════════════════════════════════════════
 VacationEvents.Safari = {
+	-- CRITICAL FIX: Category eligibility - safaris are very expensive!
+	eligibility = function(state) return canGoOnVacation(state) and canAffordVacation(state, 5000) end,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	{
 		id = "vacation_safari_africa",
 		title = "🦁 African Safari",
