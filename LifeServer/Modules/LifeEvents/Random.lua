@@ -2697,6 +2697,10 @@ Random.events = {
 					state.Flags.in_prison = true
 					state.Flags.incarcerated = true
 					state.Flags.criminal_record = true
+					-- CRITICAL FIX: Clear job when going to jail!
+					state.CurrentJob = nil
+					state.Flags.employed = nil
+					state.Flags.has_job = nil
 					state:AddFeed("🚔 You got caught! Arrested for theft.")
 				end
 				end,

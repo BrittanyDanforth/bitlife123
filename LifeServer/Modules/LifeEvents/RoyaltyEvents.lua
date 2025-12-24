@@ -1207,29 +1207,100 @@ RoyaltyEvents.LifeEvents = {
 				text = "Date someone from nobility",
 				effects = { Happiness = 8 },
 				royaltyEffect = { popularity = 5 },
-				setFlags = { dating_noble = true, traditional_romance = true, royal_courtship_done = true, engaged = true },
+				-- CRITICAL FIX: Dating is NOT engaged! Removed engaged = true
+				setFlags = { dating_noble = true, traditional_romance = true, royal_courtship_done = true, dating = true, has_partner = true },
 				feed = "You began courting someone from a noble family.",
+				-- CRITICAL FIX: Create partner relationship
+				onResolve = function(state)
+					state.Relationships = state.Relationships or {}
+					local isMale = state.Gender == "Female"
+					local nobleNames = isMale 
+						and {"Lord Sebastian", "Duke Edward", "Earl William", "Viscount James", "Baron Frederick"}
+						or {"Lady Victoria", "Duchess Amelia", "Countess Elizabeth", "Baroness Catherine", "Lady Margaret"}
+					local partnerName = nobleNames[math.random(1, #nobleNames)]
+					state.Relationships.partner = {
+						id = "partner_noble",
+						name = partnerName,
+						type = "romantic",
+						role = isMale and "Suitor" or "Suitor",
+						relationship = 70,
+						age = (state.Age or 25) + math.random(-3, 3),
+					}
+				end,
 			},
 			{
 				text = "Date a commoner (break tradition!)",
 				effects = { Happiness = 12 },
 				royaltyEffect = { popularity = 15 },
-				setFlags = { dating_commoner = true, modern_royal = true, royal_courtship_done = true, engaged = true },
+				-- CRITICAL FIX: Dating is NOT engaged! Removed engaged = true
+				setFlags = { dating_commoner = true, modern_royal = true, royal_courtship_done = true, dating = true, has_partner = true },
 				feed = "The public loves your down-to-earth romance!",
+				-- CRITICAL FIX: Create partner relationship
+				onResolve = function(state)
+					state.Relationships = state.Relationships or {}
+					local isMale = state.Gender == "Female"
+					local commonerNames = isMale 
+						and {"Marcus", "Oliver", "Thomas", "Benjamin", "Christopher"}
+						or {"Emma", "Sophie", "Kate", "Jessica", "Rachel"}
+					local partnerName = commonerNames[math.random(1, #commonerNames)]
+					state.Relationships.partner = {
+						id = "partner_commoner",
+						name = partnerName,
+						type = "romantic",
+						role = isMale and "Boyfriend" or "Girlfriend",
+						relationship = 80,
+						age = (state.Age or 25) + math.random(-5, 5),
+					}
+				end,
 			},
 			{
 				text = "Date a foreign royal (alliance)",
 				effects = { Happiness = 6 },
 				royaltyEffect = { popularity = 3 },
-				setFlags = { dating_foreign_royal = true, diplomatic_romance = true, royal_courtship_done = true, engaged = true },
+				-- CRITICAL FIX: Dating is NOT engaged! Removed engaged = true
+				setFlags = { dating_foreign_royal = true, diplomatic_romance = true, royal_courtship_done = true, dating = true, has_partner = true },
 				feed = "Your relationship could unite two kingdoms!",
+				-- CRITICAL FIX: Create partner relationship
+				onResolve = function(state)
+					state.Relationships = state.Relationships or {}
+					local isMale = state.Gender == "Female"
+					local royalNames = isMale 
+						and {"Prince Albert", "Prince Henrik", "Prince Guillaume", "Prince Frederik", "Prince Carl"}
+						or {"Princess Madeleine", "Princess Elisabeth", "Princess Mary", "Princess Maxima", "Princess Victoria"}
+					local partnerName = royalNames[math.random(1, #royalNames)]
+					state.Relationships.partner = {
+						id = "partner_royal",
+						name = partnerName,
+						type = "romantic",
+						role = isMale and "Prince Consort" or "Princess Consort",
+						relationship = 65,
+						age = (state.Age or 25) + math.random(-3, 3),
+					}
+				end,
 			},
 			{
 				text = "Keep your relationship secret",
 				effects = { Happiness = 10 },
 				royaltyEffect = { popularity = 0 },
-				setFlags = { secret_romance = true, royal_courtship_done = true },
+				setFlags = { secret_romance = true, royal_courtship_done = true, dating = true, has_partner = true },
 				feed = "You're keeping your love life private... for now.",
+				-- CRITICAL FIX: Create secret partner relationship
+				onResolve = function(state)
+					state.Relationships = state.Relationships or {}
+					local isMale = state.Gender == "Female"
+					local secretNames = isMale 
+						and {"Alex", "Jordan", "Morgan", "Taylor", "Casey"}
+						or {"Alex", "Jordan", "Morgan", "Taylor", "Casey"}
+					local partnerName = secretNames[math.random(1, #secretNames)]
+					state.Relationships.partner = {
+						id = "partner_secret",
+						name = partnerName,
+						type = "romantic",
+						role = "Secret Lover",
+						relationship = 75,
+						age = (state.Age or 25) + math.random(-5, 5),
+					}
+				end,
 			},
 		},
 	},

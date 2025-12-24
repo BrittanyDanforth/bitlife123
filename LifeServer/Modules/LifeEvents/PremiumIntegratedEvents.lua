@@ -476,20 +476,59 @@ PremiumIntegratedEvents.events = {
 		
 		eligibility = function(state)
 			local flags = state.Flags or {}
-			return flags.engaged or flags.getting_married
+			if not (flags.engaged or flags.getting_married) then
+				return false, "Not engaged"
+			end
+			-- CRITICAL FIX: Verify partner exists before wedding!
+			local hasPartner = false
+			if state.Relationships then
+				for _, rel in pairs(state.Relationships) do
+					if type(rel) == "table" and (rel.type == "romantic" or rel.type == "partner" or rel.type == "spouse" or rel.type == "fiance") then
+						hasPartner = true
+						break
+					end
+				end
+			end
+			if not hasPartner and not flags.has_partner then
+				return false, "No partner to marry"
+			end
+			return true
 		end,
 		
 		choices = {
 			{
 				text = "Simple courthouse wedding",
 				effects = { Happiness = 8, Money = -200 },
-				setFlags = { married = true, has_partner = true },
+				setFlags = { married = true, has_partner = true, engaged = false },
 				feedText = "Simple but meaningful. You're married!",
+				-- CRITICAL FIX: Ensure spouse relationship exists
+				onResolve = function(state)
+					-- Convert partner to spouse
+					if state.Relationships and state.Relationships.partner then
+						state.Relationships.spouse = state.Relationships.partner
+						state.Relationships.spouse.type = "spouse"
+						state.Relationships.partner = nil
+					elseif state.Relationships then
+						-- Find any romantic relationship and convert to spouse
+						for key, rel in pairs(state.Relationships) do
+							if type(rel) == "table" and (rel.type == "romantic" or rel.type == "partner" or rel.type == "fiance") then
+								rel.type = "spouse"
+								state.Relationships.spouse = rel
+								if key ~= "spouse" then state.Relationships[key] = nil end
+								break
+							end
+						end
+					end
+					-- Clear engagement flags
+					state.Flags = state.Flags or {}
+					state.Flags.engaged = nil
+					state.Flags.getting_married = nil
+				end,
 			},
 			{
 				text = "Traditional ceremony ($5,000)",
 				effects = { Happiness = 12, Money = -5000 },
-				setFlags = { married = true, has_partner = true, traditional_wedding = true },
+				setFlags = { married = true, has_partner = true, traditional_wedding = true, engaged = false },
 				feedText = "Beautiful ceremony with family and friends!",
 				-- CRITICAL FIX: Add eligibility check for affordability
 				eligibility = function(state)
@@ -498,11 +537,32 @@ PremiumIntegratedEvents.events = {
 					end
 					return true
 				end,
+				-- CRITICAL FIX: Ensure spouse relationship exists
+				onResolve = function(state)
+					-- Convert partner to spouse
+					if state.Relationships and state.Relationships.partner then
+						state.Relationships.spouse = state.Relationships.partner
+						state.Relationships.spouse.type = "spouse"
+						state.Relationships.partner = nil
+					elseif state.Relationships then
+						for key, rel in pairs(state.Relationships) do
+							if type(rel) == "table" and (rel.type == "romantic" or rel.type == "partner" or rel.type == "fiance") then
+								rel.type = "spouse"
+								state.Relationships.spouse = rel
+								if key ~= "spouse" then state.Relationships[key] = nil end
+								break
+							end
+						end
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.engaged = nil
+					state.Flags.getting_married = nil
+				end,
 			},
 			{
 				text = "Big expensive wedding",
 				effects = {},
-				setFlags = { married = true, has_partner = true },
+				setFlags = { married = true, has_partner = true, engaged = false },
 				feedText = "Going all out...",
 				onResolve = function(state)
 					local money = state.Money or 0
@@ -519,6 +579,23 @@ PremiumIntegratedEvents.events = {
 						state.Flags = state.Flags or {}
 						state.Flags.wedding_debt = true
 					end
+					-- CRITICAL FIX: Convert partner to spouse
+					if state.Relationships and state.Relationships.partner then
+						state.Relationships.spouse = state.Relationships.partner
+						state.Relationships.spouse.type = "spouse"
+						state.Relationships.partner = nil
+					elseif state.Relationships then
+						for key, rel in pairs(state.Relationships) do
+							if type(rel) == "table" and (rel.type == "romantic" or rel.type == "partner" or rel.type == "fiance") then
+								rel.type = "spouse"
+								state.Relationships.spouse = rel
+								if key ~= "spouse" then state.Relationships[key] = nil end
+								break
+							end
+						end
+					end
+					state.Flags.engaged = nil
+					state.Flags.getting_married = nil
 				end,
 			},
 			-- 👑 ROYALTY PREMIUM OPTION
@@ -528,7 +605,27 @@ PremiumIntegratedEvents.events = {
 				requiresGamepass = "ROYALTY",
 				gamepassEmoji = "👑",
 				feedText = "👑 A ROYAL-STYLE WEDDING! Fit for a king!",
-				setFlags = { married = true, has_partner = true, royal_wedding = true },
+				setFlags = { married = true, has_partner = true, royal_wedding = true, engaged = false },
+				-- CRITICAL FIX: Convert partner to spouse
+				onResolve = function(state)
+					if state.Relationships and state.Relationships.partner then
+						state.Relationships.spouse = state.Relationships.partner
+						state.Relationships.spouse.type = "spouse"
+						state.Relationships.partner = nil
+					elseif state.Relationships then
+						for key, rel in pairs(state.Relationships) do
+							if type(rel) == "table" and (rel.type == "romantic" or rel.type == "partner" or rel.type == "fiance") then
+								rel.type = "spouse"
+								state.Relationships.spouse = rel
+								if key ~= "spouse" then state.Relationships[key] = nil end
+								break
+							end
+						end
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.engaged = nil
+					state.Flags.getting_married = nil
+				end,
 			},
 			-- ⭐ CELEBRITY PREMIUM OPTION
 			{
@@ -537,7 +634,27 @@ PremiumIntegratedEvents.events = {
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
 				feedText = "⭐ Your wedding was on TV! Sponsors paid for everything!",
-				setFlags = { married = true, has_partner = true, celebrity_wedding = true },
+				setFlags = { married = true, has_partner = true, celebrity_wedding = true, engaged = false },
+				-- CRITICAL FIX: Convert partner to spouse
+				onResolve = function(state)
+					if state.Relationships and state.Relationships.partner then
+						state.Relationships.spouse = state.Relationships.partner
+						state.Relationships.spouse.type = "spouse"
+						state.Relationships.partner = nil
+					elseif state.Relationships then
+						for key, rel in pairs(state.Relationships) do
+							if type(rel) == "table" and (rel.type == "romantic" or rel.type == "partner" or rel.type == "fiance") then
+								rel.type = "spouse"
+								state.Relationships.spouse = rel
+								if key ~= "spouse" then state.Relationships[key] = nil end
+								break
+							end
+						end
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.engaged = nil
+					state.Flags.getting_married = nil
+				end,
 			},
 		},
 	},
