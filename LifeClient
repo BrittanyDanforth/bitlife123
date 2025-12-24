@@ -6566,6 +6566,16 @@ showIntro = function()
 		IntroUI.godModeContainer.Visible = false
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Clean up any Royal Birth overlay that might be lingering
+	-- User bug report: "countries IS VISIBLE LIKE ITS BUGGED SHOWING THE COUNTRIES 
+	-- AND MALE FEMALE LIKE ITS STACKED ON TOP"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if IntroUI.RoyalBirthData and IntroUI.RoyalBirthData.overlay then
+		IntroUI.RoyalBirthData.overlay:Destroy()
+		IntroUI.RoyalBirthData.overlay = nil
+	end
+	
 	-- CRITICAL FIX: Restore content to auto-size mode
 	IntroUI.content.AutomaticSize = Enum.AutomaticSize.Y
 	IntroUI.content.Size = UDim2.new(0.9, 0, 0, 0)
@@ -6596,6 +6606,14 @@ showIntro = function()
 	IntroUI.genderTitle.Text = "Start by picking a gender"
 	IntroUI.genderBtns.Visible = true
 	IntroUI.nameBtns.Visible = false
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Hide country selection buttons when showing intro!
+	-- User bug report: "countries IS VISIBLE LIKE ITS BUGGED SHOWING THE COUNTRIES 
+	-- AND MALE FEMALE LIKE ITS STACKED ON TOP"
+	-- The countryBtns frame was NOT being hidden, causing it to stack with genderBtns!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	IntroUI.countryBtns.Visible = false
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #643-645: Reset gender button transparency after death/new life
@@ -6623,6 +6641,17 @@ showIntro = function()
 			child.Size = UDim2.new(0.85, 0, 0, 54)
 		end
 	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Reset country buttons transparency in case animation was interrupted
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	for _, child in ipairs(IntroUI.countryBtns:GetChildren()) do
+		if child:IsA("TextButton") then
+			child.BackgroundTransparency = 0
+			child.TextTransparency = 0
+			child.Visible = true
+		end
+	end
 
 	-- CRITICAL FIX #104: Update Royalty button appearance on intro show
 	if IntroUI.updateRoyaltyGenderBtn then
@@ -6647,6 +6676,14 @@ hideIntro = function()
 	IntroUI.content.AutomaticSize = Enum.AutomaticSize.Y
 	IntroUI.content.Size = UDim2.new(0.9, 0, 0, 0)
 	IntroUI.godModeContainer.Visible = false
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Explicitly hide all intro sub-screens to prevent stacking bug!
+	-- User bug report: "countries IS VISIBLE LIKE ITS BUGGED"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	IntroUI.genderBtns.Visible = false
+	IntroUI.countryBtns.Visible = false
+	IntroUI.nameBtns.Visible = false
 	
 	-- Smooth fade out animation
 	local fadeTime = 0.25
@@ -6824,6 +6861,14 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 		selectedGender = nil
 		awaitingEvent = false
 		hasShownAgeHint = false
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Reset selectedCountry on new life!
+		-- User bug report: "countries IS VISIBLE LIKE ITS BUGGED SHOWING THE COUNTRIES 
+		-- AND MALE FEMALE LIKE ITS STACKED ON TOP"
+		-- This ensures country selection state is reset for new lives
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		selectedCountry = "usa" -- Reset to default
 
 		-- Clear pending minigame state
 		pendingMinigameEventId = nil
