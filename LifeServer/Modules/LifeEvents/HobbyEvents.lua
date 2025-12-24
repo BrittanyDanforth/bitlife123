@@ -25,6 +25,8 @@ HobbyEvents.events = {
 		ageBand = "any",
 		category = "hobbies",
 		tags = { "music", "instrument", "creative" },
+		-- AAA FIX: Can't pursue music hobbies in prison!
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		
 		-- CRITICAL: Random music progress
 		choices = {
@@ -35,18 +37,23 @@ HobbyEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.45 then
-						state:ModifyStat("Happiness", 10)
-						state:ModifyStat("Smarts", 3)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 10)
+							state:ModifyStat("Smarts", 3)
+						end
 						state.Flags = state.Flags or {}
 						state.Flags.musician = true
-						state:AddFeed("🎵 Getting good! Can play a whole song! Progress!")
+						if state.AddFeed then state:AddFeed("🎵 Getting good! Can play a whole song! Progress!") end
 					elseif roll < 0.80 then
-						state:ModifyStat("Happiness", 5)
-						state:ModifyStat("Smarts", 2)
-						state:AddFeed("🎵 Slow progress but improving bit by bit.")
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 5)
+							state:ModifyStat("Smarts", 2)
+						end
+						if state.AddFeed then state:AddFeed("🎵 Slow progress but improving bit by bit.") end
 					else
-						state:ModifyStat("Happiness", -2)
-						state:AddFeed("🎵 Frustrating plateau. Maybe not musical after all?")
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then state:AddFeed("🎵 Frustrating plateau. Maybe not musical after all?") end
 					end
 				end,
 			},
@@ -70,6 +77,8 @@ HobbyEvents.events = {
 		ageBand = "any",
 		category = "hobbies",
 		tags = { "art", "painting", "creative" },
+		-- AAA FIX: Can't do art hobbies in prison!
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		
 		-- CRITICAL: Random art creation outcome
 		choices = {
@@ -80,17 +89,20 @@ HobbyEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.40 then
-						state:ModifyStat("Happiness", 12)
-						state:ModifyStat("Smarts", 2)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 12)
+							state:ModifyStat("Smarts", 2)
+						end
 						state.Flags = state.Flags or {}
 						state.Flags.artist = true
-						state:AddFeed("🎨 MASTERPIECE! Best work yet! True creative expression!")
+						if state.AddFeed then state:AddFeed("🎨 MASTERPIECE! Best work yet! True creative expression!") end
 					elseif roll < 0.75 then
-						state:ModifyStat("Happiness", 6)
-						state:AddFeed("🎨 Decent piece. Learning and growing as an artist.")
+						if state.ModifyStat then state:ModifyStat("Happiness", 6) end
+						if state.AddFeed then state:AddFeed("🎨 Decent piece. Learning and growing as an artist.") end
 					else
-						state:ModifyStat("Happiness", -2)
-						state:AddFeed("🎨 Not happy with it. Scrapped and starting over.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then state:AddFeed("🎨 Not happy with it. Scrapped and starting over.") end
 					end
 				end,
 			},
@@ -99,15 +111,16 @@ HobbyEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.30 then
-						state:ModifyStat("Happiness", 12)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
 						state.Money = (state.Money or 0) + 50
-						state:AddFeed("🎨 VIRAL! People love your art! Commission requests!")
+						if state.AddFeed then state:AddFeed("🎨 VIRAL! People love your art! Commission requests!") end
 					elseif roll < 0.70 then
-						state:ModifyStat("Happiness", 5)
-						state:AddFeed("🎨 Some likes and comments! Encouragement helps!")
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then state:AddFeed("🎨 Some likes and comments! Encouragement helps!") end
 					else
-						state:ModifyStat("Happiness", -3)
-						state:AddFeed("🎨 Crickets. Or worse, criticism. Ouch.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then state:AddFeed("🎨 Crickets. Or worse, criticism. Ouch.") end
 					end
 				end,
 			},
@@ -126,6 +139,8 @@ HobbyEvents.events = {
 		ageBand = "any",
 		category = "hobbies",
 		tags = { "writing", "creative", "author" },
+		-- AAA FIX: Can't pursue writing hobbies in prison (different events for prison writing)
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		
 		-- CRITICAL: Random writing outcome
 		choices = {

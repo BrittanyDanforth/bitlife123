@@ -35,14 +35,27 @@ RelationshipsExpanded.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.55 then
-						state:ModifyStat("Happiness", 8)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
 						state.Flags = state.Flags or {}
 						state.Flags.has_partner = true
-						state:AddRelationship("Partner", "romantic", 0.65)
-						state:AddFeed("💕 Great connection! You're dating someone new!")
+						-- AAA FIX: Check if AddRelationship exists before calling
+						if state.AddRelationship then
+							state:AddRelationship("Partner", "romantic", 0.65)
+						else
+							state.Relationships = state.Relationships or {}
+							state.Relationships.partner = {
+								id = "partner_" .. tostring(state.Age or 0),
+								name = "Partner",
+								type = "romantic",
+								relationship = 65,
+								alive = true,
+							}
+						end
+						if state.AddFeed then state:AddFeed("💕 Great connection! You're dating someone new!") end
 					else
-						state:ModifyStat("Happiness", -2)
-						state:AddFeed("💕 They never texted back. Oh well.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then state:AddFeed("💕 They never texted back. Oh well.") end
 					end
 				end,
 			},
@@ -60,14 +73,27 @@ RelationshipsExpanded.events = {
 					local roll = math.random()
 					local successChance = 0.35 + (looks / 200)
 					if roll < successChance then
-						state:ModifyStat("Happiness", 10)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
 						state.Flags = state.Flags or {}
 						state.Flags.has_partner = true
-						state:AddRelationship("Partner", "romantic", 0.70)
-						state:AddFeed("💕 Chemistry! You're now dating!")
+						-- AAA FIX: Check if AddRelationship exists before calling
+						if state.AddRelationship then
+							state:AddRelationship("Partner", "romantic", 0.70)
+						else
+							state.Relationships = state.Relationships or {}
+							state.Relationships.partner = {
+								id = "partner_" .. tostring(state.Age or 0),
+								name = "Partner",
+								type = "romantic",
+								relationship = 70,
+								alive = true,
+							}
+						end
+						if state.AddFeed then state:AddFeed("💕 Chemistry! You're now dating!") end
 					else
-						state:ModifyStat("Happiness", -3)
-						state:AddFeed("💕 Awkward interaction. They weren't interested.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then state:AddFeed("💕 Awkward interaction. They weren't interested.") end
 					end
 				end,
 			},

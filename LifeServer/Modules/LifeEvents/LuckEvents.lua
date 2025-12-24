@@ -22,6 +22,8 @@ LuckEvents.events = {
 		ageBand = "any",
 		category = "luck",
 		tags = { "luck", "clover", "fortune" },
+		-- AAA FIX: Can't find clovers in prison!
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		
 		choices = {
 			{
@@ -31,14 +33,15 @@ LuckEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.60 then
-						state:ModifyStat("Happiness", 8)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
 						state.Money = (state.Money or 0) + 100
 						state.Flags = state.Flags or {}
 						state.Flags.lucky_clover = true
-						state:AddFeed("🍀 LUCK IS REAL! Good things happening! Keep the clover!")
+						if state.AddFeed then state:AddFeed("🍀 LUCK IS REAL! Good things happening! Keep the clover!") end
 					else
-						state:ModifyStat("Happiness", 4)
-						state:AddFeed("🍀 Nice keepsake! Luck or not, makes you smile!")
+						if state.ModifyStat then state:ModifyStat("Happiness", 4) end
+						if state.AddFeed then state:AddFeed("🍀 Nice keepsake! Luck or not, makes you smile!") end
 					end
 				end,
 			},
@@ -57,6 +60,8 @@ LuckEvents.events = {
 		ageBand = "any",
 		category = "luck",
 		tags = { "bird", "luck", "gross" },
+		-- AAA FIX: Can't get pooped on by birds in prison (indoor!)
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		
 		choices = {
 			{
@@ -67,11 +72,12 @@ LuckEvents.events = {
 					local roll = math.random()
 					if roll < 0.50 then
 						state.Money = (state.Money or 0) + 50
-						state:ModifyStat("Happiness", 5)
-						state:AddFeed("💩 The old wives tale was TRUE! Lucky day after the poop!")
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then state:AddFeed("💩 The old wives tale was TRUE! Lucky day after the poop!") end
 					else
-						state:ModifyStat("Happiness", -2)
-						state:AddFeed("💩 Just gross. No luck. Need a shower.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then state:AddFeed("💩 Just gross. No luck. Need a shower.") end
 					end
 				end,
 			},
@@ -99,13 +105,14 @@ LuckEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.25 then
-						state:ModifyStat("Happiness", 15)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
 						state.Flags = state.Flags or {}
 						state.Flags.wish_came_true = true
-						state:AddFeed("⭐ YOUR WISH CAME TRUE! Magic is real! Universe listening!")
+						if state.AddFeed then state:AddFeed("⭐ YOUR WISH CAME TRUE! Magic is real! Universe listening!") end
 					else
-						state:ModifyStat("Happiness", 6)
-						state:AddFeed("⭐ Beautiful moment. Wish made. Who knows what's possible?")
+						if state.ModifyStat then state:ModifyStat("Happiness", 6) end
+						if state.AddFeed then state:AddFeed("⭐ Beautiful moment. Wish made. Who knows what's possible?") end
 					end
 				end,
 			},
@@ -133,11 +140,12 @@ LuckEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.40 then
-						state:ModifyStat("Happiness", -6)
-						state:AddFeed("🪞 Bad things DID happen! Superstition confirmed!")
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", -6) end
+						if state.AddFeed then state:AddFeed("🪞 Bad things DID happen! Superstition confirmed!") end
 					else
-						state:ModifyStat("Happiness", -2)
-						state:AddFeed("🪞 Just a broken mirror. Cleaned it up. Life goes on.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then state:AddFeed("🪞 Just a broken mirror. Cleaned it up. Life goes on.") end
 					end
 				end,
 			},

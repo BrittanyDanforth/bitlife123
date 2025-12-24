@@ -566,14 +566,15 @@ Teen.events = {
 						successChance = successChance + 0.20
 					end
 					if roll < successChance then
-						state:ModifyStat("Happiness", 10)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
 						state.Flags = state.Flags or {}
 						state.Flags.prom_date = true
 						state.Flags.romantic_gesture = true
-						state:AddFeed("💃 They said YES! Your promposal was epic!")
+						if state.AddFeed then state:AddFeed("💃 They said YES! Your promposal was epic!") end
 					else
-						state:ModifyStat("Happiness", -8)
-						state:AddFeed("💃 They said no... Rejection stings, but you're brave for trying.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						if state.AddFeed then state:AddFeed("💃 They said no... Rejection stings, but you're brave for trying.") end
 					end
 				end,
 			},
@@ -595,14 +596,17 @@ Teen.events = {
 						askedChance = askedChance + 0.20
 					end
 					if roll < askedChance then
-						state:ModifyStat("Happiness", 12)
-						state:ModifyStat("Looks", 2)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 12)
+							state:ModifyStat("Looks", 2)
+						end
 						state.Flags = state.Flags or {}
 						state.Flags.prom_date = true
-						state:AddFeed("💃 Someone asked you to prom! What a moment!")
+						if state.AddFeed then state:AddFeed("💃 Someone asked you to prom! What a moment!") end
 					else
-						state:ModifyStat("Happiness", -5)
-						state:AddFeed("💃 Nobody asked... You ended up going with friends instead.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then state:AddFeed("💃 Nobody asked... You ended up going with friends instead.") end
 					end
 				end,
 			},

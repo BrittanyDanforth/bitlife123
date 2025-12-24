@@ -37,18 +37,19 @@ RandomExpanded.events = {
 					local amount
 					if roll < 0.50 then
 						amount = math.random(5, 20)
-						state:AddFeed(string.format("💵 Found $%d! Nice little bonus!", amount))
+						-- AAA FIX: Nil check for all state methods
+						if state.AddFeed then state:AddFeed(string.format("💵 Found $%d! Nice little bonus!", amount)) end
 					elseif roll < 0.80 then
 						amount = math.random(20, 100)
-						state:AddFeed(string.format("💵 Found $%d! Lucky day!", amount))
+						if state.AddFeed then state:AddFeed(string.format("💵 Found $%d! Lucky day!", amount)) end
 					else
 						amount = math.random(100, 500)
 						state.Flags = state.Flags or {}
 						state.Flags.very_lucky = true
-						state:AddFeed(string.format("💵 Found $%d! Incredible luck!", amount))
+						if state.AddFeed then state:AddFeed(string.format("💵 Found $%d! Incredible luck!", amount)) end
 					end
 					state.Money = (state.Money or 0) + amount
-					state:ModifyStat("Happiness", 4)
+					if state.ModifyStat then state:ModifyStat("Happiness", 4) end
 				end,
 			},
 			{
@@ -87,21 +88,22 @@ RandomExpanded.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.40 then
-						state:ModifyStat("Happiness", 5)
-						state:AddFeed("😱 FOUND IT! Still there! So relieved!")
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then state:AddFeed("😱 FOUND IT! Still there! So relieved!") end
 					elseif roll < 0.65 then
-						state:ModifyStat("Happiness", 2)
-						state:AddFeed("😱 Someone returned it! Faith in humanity restored!")
+						if state.ModifyStat then state:ModifyStat("Happiness", 2) end
+						if state.AddFeed then state:AddFeed("😱 Someone returned it! Faith in humanity restored!") end
 					elseif roll < 0.85 then
 						local loss = math.random(50, 150)
-						state.Money = (state.Money or 0) - loss
-						state:ModifyStat("Happiness", -3)
-						state:AddFeed(string.format("😱 Found it but $%d cash missing. Could be worse.", loss))
+						state.Money = math.max(0, (state.Money or 0) - loss)
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then state:AddFeed(string.format("😱 Found it but $%d cash missing. Could be worse.", loss)) end
 					else
 						local loss = math.random(100, 300)
-						state.Money = (state.Money or 0) - loss
-						state:ModifyStat("Happiness", -8)
-						state:AddFeed(string.format("😱 Gone forever. Lost $%d plus cards. Nightmare.", loss))
+						state.Money = math.max(0, (state.Money or 0) - loss)
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						if state.AddFeed then state:AddFeed(string.format("😱 Gone forever. Lost $%d plus cards. Nightmare.", loss)) end
 					end
 				end,
 			},

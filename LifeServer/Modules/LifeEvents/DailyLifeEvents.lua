@@ -25,6 +25,8 @@ DailyLifeEvents.events = {
 		ageBand = "any",
 		category = "daily",
 		tags = { "morning", "routine", "wake" },
+		-- AAA FIX: Can't have normal morning routine in prison!
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		
 		-- CRITICAL: Random morning outcome
 		choices = {
@@ -35,14 +37,17 @@ DailyLifeEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.50 then
-						state:ModifyStat("Happiness", 5)
-						state:ModifyStat("Health", 2)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 5)
+							state:ModifyStat("Health", 2)
+						end
 						state.Flags = state.Flags or {}
 						state.Flags.morning_person = true
-						state:AddFeed("⏰ Great start! Feeling energized! Productive day ahead!")
+						if state.AddFeed then state:AddFeed("⏰ Great start! Feeling energized! Productive day ahead!") end
 					else
-						state:ModifyStat("Happiness", 2)
-						state:AddFeed("⏰ Up and at 'em. Coffee will help. Normal morning.")
+						if state.ModifyStat then state:ModifyStat("Happiness", 2) end
+						if state.AddFeed then state:AddFeed("⏰ Up and at 'em. Coffee will help. Normal morning.") end
 					end
 				end,
 			},
@@ -63,6 +68,8 @@ DailyLifeEvents.events = {
 		ageBand = "any",
 		category = "daily",
 		tags = { "breakfast", "food", "morning" },
+		-- AAA FIX: Can't choose breakfast in prison!
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		
 		choices = {
 			{ text = "Healthy breakfast", effects = { Health = 3, Happiness = 3, Money = -5 }, feedText = "🍳 Eggs, fruit, good stuff! Fueled for the day!" },
@@ -84,6 +91,8 @@ DailyLifeEvents.events = {
 		ageBand = "any",
 		category = "daily",
 		tags = { "clothes", "fashion", "routine" },
+		-- AAA FIX: Can't choose outfits in prison (prison uniform!)
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		
 		-- CRITICAL: Random outfit outcome
 		choices = {
@@ -96,12 +105,15 @@ DailyLifeEvents.events = {
 					local roll = math.random()
 					
 					if roll < 0.50 then
-						state:ModifyStat("Happiness", 6)
-						state:ModifyStat("Looks", 2)
-						state:AddFeed("👕 Looking GOOD! Confidence boost! Outfit on point!")
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 6)
+							state:ModifyStat("Looks", 2)
+						end
+						if state.AddFeed then state:AddFeed("👕 Looking GOOD! Confidence boost! Outfit on point!") end
 					else
-						state:ModifyStat("Happiness", 3)
-						state:AddFeed("👕 Decent outfit. Presentable. Good enough!")
+						if state.ModifyStat then state:ModifyStat("Happiness", 3) end
+						if state.AddFeed then state:AddFeed("👕 Decent outfit. Presentable. Good enough!") end
 					end
 				end,
 			},

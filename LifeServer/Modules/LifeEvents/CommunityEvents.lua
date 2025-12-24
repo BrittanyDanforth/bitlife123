@@ -130,13 +130,14 @@ CommunityEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.70 then
-						state:ModifyStat("Happiness", 12)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
 						state.Flags = state.Flags or {}
 						state.Flags.community_leader = true
-						state:AddFeed("🎊 Huge success! Everyone loves you now!")
+						if state.AddFeed then state:AddFeed("🎊 Huge success! Everyone loves you now!") end
 					else
-						state:ModifyStat("Happiness", 4)
-						state:AddFeed("🎊 It was okay. Some hiccups but overall good.")
+						if state.ModifyStat then state:ModifyStat("Happiness", 4) end
+						if state.AddFeed then state:AddFeed("🎊 It was okay. Some hiccups but overall good.") end
 					end
 				end,
 			},
@@ -219,14 +220,17 @@ CommunityEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.65 then
-						state:ModifyStat("Happiness", 12)
-						state:ModifyStat("Smarts", 2)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 12)
+							state:ModifyStat("Smarts", 2)
+						end
 						state.Flags = state.Flags or {}
 						state.Flags.active_volunteer = true
-						state:AddFeed("🤝 Made a real difference! Fulfilling experience!")
+						if state.AddFeed then state:AddFeed("🤝 Made a real difference! Fulfilling experience!") end
 					else
-						state:ModifyStat("Happiness", 6)
-						state:AddFeed("🤝 Helped out. Good for the soul.")
+						if state.ModifyStat then state:ModifyStat("Happiness", 6) end
+						if state.AddFeed then state:AddFeed("🤝 Helped out. Good for the soul.") end
 					end
 				end,
 			},

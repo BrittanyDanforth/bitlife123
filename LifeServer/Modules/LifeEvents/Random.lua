@@ -195,15 +195,18 @@ Random.events = {
 						{ type = "Sprained your wrist", health = -7, hap = -3 },
 					}
 					local injury = injuries[math.random(#injuries)]
-					state:ModifyStat("Health", injury.health)
-					state:ModifyStat("Happiness", injury.hap)
+					-- AAA FIX: Nil check for ModifyStat
+					if state.ModifyStat then
+						state:ModifyStat("Health", injury.health)
+						state:ModifyStat("Happiness", injury.hap)
+					end
 					if injury.flag then
 						state.Flags = state.Flags or {}
 						state.Flags[injury.flag] = true
 					end
 					-- Doctor visit helps a bit
-					state:ModifyStat("Health", 3)
-					state:AddFeed(string.format("🤕 %s. The doctor patched you up.", injury.type))
+					if state.ModifyStat then state:ModifyStat("Health", 3) end
+					if state.AddFeed then state:AddFeed(string.format("🤕 %s. The doctor patched you up.", injury.type)) end
 				end,
 			},
 			{
@@ -220,13 +223,16 @@ Random.events = {
 						{ type = "Sprained something", health = -9, hap = -4 },
 					}
 					local injury = injuries[math.random(#injuries)]
-					state:ModifyStat("Health", injury.health)
-					state:ModifyStat("Happiness", injury.hap)
+					-- AAA FIX: Nil check for ModifyStat
+					if state.ModifyStat then
+						state:ModifyStat("Health", injury.health)
+						state:ModifyStat("Happiness", injury.hap)
+					end
 					if injury.flag then
 						state.Flags = state.Flags or {}
 						state.Flags[injury.flag] = true
 					end
-					state:AddFeed(string.format("🤕 %s. You're healing slowly without medical help.", injury.type))
+					if state.AddFeed then state:AddFeed(string.format("🤕 %s. You're healing slowly without medical help.", injury.type)) end
 				end,
 			},
 		},

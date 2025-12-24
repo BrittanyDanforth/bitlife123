@@ -57,19 +57,26 @@ TravelEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.60 then
-						state:ModifyStat("Happiness", 15)
-						state:ModifyStat("Health", 5)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 15)
+							state:ModifyStat("Health", 5)
+						end
 						state.Flags = state.Flags or {}
 						state.Flags.beach_lover = true
-						state:AddFeed("🏖️ PARADISE! Perfect weather, perfect beach! Refreshed!")
+						if state.AddFeed then state:AddFeed("🏖️ PARADISE! Perfect weather, perfect beach! Refreshed!") end
 					elseif roll < 0.85 then
-						state:ModifyStat("Happiness", 10)
-						state:ModifyStat("Health", 3)
-						state:AddFeed("🏖️ Great trip! Some rain but still wonderful!")
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 10)
+							state:ModifyStat("Health", 3)
+						end
+						if state.AddFeed then state:AddFeed("🏖️ Great trip! Some rain but still wonderful!") end
 					else
-						state:ModifyStat("Happiness", 4)
-						state:ModifyStat("Health", -2)
-						state:AddFeed("🏖️ Got sunburned and sick. Still needed the break.")
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 4)
+							state:ModifyStat("Health", -2)
+						end
+						if state.AddFeed then state:AddFeed("🏖️ Got sunburned and sick. Still needed the break.") end
 					end
 				end,
 			},
@@ -130,17 +137,20 @@ TravelEvents.events = {
 					local roll = math.random()
 					
 					if roll < 0.55 then
-						state:ModifyStat("Happiness", 12)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
 						state.Flags = state.Flags or {}
 						state.Flags.hiker = true
-						state:AddFeed("🏔️ Reached the summit! Views were breathtaking!")
+						if state.AddFeed then state:AddFeed("🏔️ Reached the summit! Views were breathtaking!") end
 					elseif roll < 0.85 then
-						state:ModifyStat("Happiness", 8)
-						state:AddFeed("🏔️ Great hike! Legs are sore but worth it!")
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.AddFeed then state:AddFeed("🏔️ Great hike! Legs are sore but worth it!") end
 					else
-						state:ModifyStat("Happiness", 2)
-						state:ModifyStat("Health", -3)
-						state:AddFeed("🏔️ Got lost briefly. Scary but made it back.")
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 2)
+							state:ModifyStat("Health", -3)
+						end
+						if state.AddFeed then state:AddFeed("🏔️ Got lost briefly. Scary but made it back.") end
 					end
 				end,
 			},
@@ -158,19 +168,24 @@ TravelEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.50 then
-						state:ModifyStat("Happiness", 15)
-						state:ModifyStat("Health", 3)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 15)
+							state:ModifyStat("Health", 3)
+						end
 						state.Flags = state.Flags or {}
 						state.Flags.skier = true
-						state:AddFeed("🏔️ Powder day! Best runs of your life!")
+						if state.AddFeed then state:AddFeed("🏔️ Powder day! Best runs of your life!") end
 					elseif roll < 0.80 then
-						state:ModifyStat("Happiness", 8)
-						state:AddFeed("🏔️ Great time on the mountain! Want to go again!")
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.AddFeed then state:AddFeed("🏔️ Great time on the mountain! Want to go again!") end
 					else
-						state:ModifyStat("Happiness", -2)
-						state:ModifyStat("Health", -5)
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", -2)
+							state:ModifyStat("Health", -5)
+						end
 						state.Money = (state.Money or 0) - 200
-						state:AddFeed("🏔️ Wiped out hard. Injury on the slopes. Ouch.")
+						if state.AddFeed then state:AddFeed("🏔️ Wiped out hard. Injury on the slopes. Ouch.") end
 					end
 				end,
 			},

@@ -288,6 +288,13 @@ function LifeEvents.init()
 		{ name = "ReputationEvents", category = "social" },        -- 10+ reputation/social events
 		{ name = "LuckEvents",       category = "random" },        -- 4+ luck/superstition events
 		
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- AAA FIX: FRIENDSHIP DECAY EVENTS - Like competition game
+		-- Tracks when you haven't talked to friends for years
+		-- Friends get angry, distant, or the friendship fades
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "FriendshipDecayEvents", category = "relationships" },
+		
 		-- Catalog modules (organized event collections)
 		{ name = "CareerEvents",   category = "career" },
 		{ name = "RomanceEvents",  category = "relationships" },
