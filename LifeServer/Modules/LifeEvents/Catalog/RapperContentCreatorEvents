@@ -59,18 +59,36 @@ end
 -- CRITICAL FIX #MOBILE-7: STRICT rapper check - MUST NOT trigger for streamers!
 -- BUG: Rapper events were firing for streamers because checks were too loose
 -- FIX: Now explicitly BLOCKS streamers/creators before checking for rapper status
+-- CRITICAL FIX #PENTESTER-1: Also block ALL non-entertainment jobs!
 -- ═══════════════════════════════════════════════════════════════════════════════
 local function isRapper(state)
 	-- CRITICAL FIX #RVS-FAME-2: Check premium path blocking first
 	if isBlockedByPremiumPath(state) then return false end
-	
-	-- CRITICAL FIX: Check if player is a streamer/creator BY JOB - if so, return FALSE immediately!
+
+	-- CRITICAL FIX: Check if player has ANY non-entertainment job - BLOCK rapper events!
 	if state.CurrentJob then
 		local jobId = (state.CurrentJob.id or ""):lower()
 		local jobName = (state.CurrentJob.name or ""):lower()
+		local jobCategory = (state.CurrentJob.category or ""):lower()
+
+		-- Block streamer/creator jobs
 		if jobId:find("streamer") or jobId:find("creator") or jobId:find("youtuber") or jobId:find("influencer")
 		   or jobName:find("streamer") or jobName:find("content creator") or jobName:find("youtuber") then
 			return false  -- STREAMER/CREATOR JOB - NOT a rapper!
+		end
+
+		-- CRITICAL FIX: Block ALL non-entertainment jobs (tech, service, trades, etc.)
+		local entertainmentCategories = {
+			["entertainment"] = true, ["music"] = true, ["celebrity"] = true,
+			["rapper"] = true, ["musician"] = true, ["fame"] = true
+		}
+		local isEntertainmentJob = entertainmentCategories[jobCategory] or
+			jobId:find("rapper") or jobId:find("music") or jobId:find("singer") or
+			jobName:find("rapper") or jobName:find("musician") or jobName:find("singer")
+
+		-- If player has a job but it's NOT an entertainment job, they're NOT a rapper
+		if not isEntertainmentJob then
+			return false  -- Has non-entertainment job - NOT a rapper!
 		end
 	end
 
@@ -947,9 +965,12 @@ RapperContentCreatorEvents.events = {
 		oneTime = false, -- CRITICAL FIX #573: Changed to allow multiple albums
 		maxOccurrences = 5,
 		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
-		-- CRITICAL FIX #574: Loosened eligibility - just need to be a rapper
+		-- CRITICAL FIX #PENTESTER-2: STRICT eligibility - MUST be a rapper, not just have mixtape flag
 		eligibility = function(state)
-			return isRapper(state) or (state.Flags and (state.Flags.has_mixtape or state.Flags.has_ep))
+			-- Must ACTUALLY be a rapper - no exceptions
+			if not isRapper(state) then return false end
+			-- Also require some music experience
+			return state.Flags and (state.Flags.has_mixtape or state.Flags.has_ep or state.Flags.first_track_recorded)
 		end,
 		
 		choices = {
