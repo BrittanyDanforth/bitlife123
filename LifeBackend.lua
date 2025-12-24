@@ -8147,8 +8147,8 @@ function LifeBackend:setupRemotes()
 		return self:handlePrisonAction(player, actionId)
 	end)
 
-	self.remotes.ApplyForJob.OnServerInvoke = safeHandler(function(self, player, jobId)
-		return self:handleJobApplication(player, jobId)
+	self.remotes.ApplyForJob.OnServerInvoke = safeHandler(function(self, player, jobId, interviewScore)
+		return self:handleJobApplication(player, jobId, interviewScore)
 	end)
 	
 	-- AAA FIX: Interview result handler for the interview screen system
@@ -15082,11 +15082,18 @@ local JobRejectionMessages = {
 
 -- NOTE: PromotionOnlyJobs is defined earlier (after JobCatalog) to fix scope issues
 
-function LifeBackend:handleJobApplication(player, jobId)
+function LifeBackend:handleJobApplication(player, jobId, interviewScore)
 	local state = self:getState(player)
 	if not state then
 		return { success = false, message = "Life data not loaded." }
 	end
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Client Interview System Integration
+	-- If interviewScore is provided, the client already conducted the interview
+	-- Use the score to determine acceptance (score >= 50 = passed)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local clientInterviewPassed = interviewScore and interviewScore >= 50
 
 	-- CRITICAL FIX #512: Use findJobByInput for flexible job lookup
 	-- This allows the client to send job IDs, names, or partial matches
@@ -15550,31 +15557,60 @@ function LifeBackend:handleJobApplication(player, jobId)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- AAA FIX: INTERVIEW SCREEN SYSTEM
-	-- For competitive jobs (difficulty 4+), show an interview event first
-	-- This gives players choices that affect their chances, like the competition game
+	-- CRITICAL FIX: Client Interview System
+	-- If the client already conducted an interview, use that result
+	-- Otherwise, use server-side random roll for simple jobs
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	local shouldShowInterview = difficulty >= 4 and (job.salary or 0) >= 40000
-	
-	if shouldShowInterview then
-		-- Generate interview questions/scenarios based on job category
-		local interviewData = self:generateInterviewEvent(state, job, finalChance)
-		
-		-- Return interview event for client to display
-		return {
-			success = true,
-			requiresInterview = true,
-			interviewEvent = interviewData,
-			jobId = actualJobId,
-			jobName = job.name or job.title,
-			company = job.company or "the company",
-			baseChance = finalChance,
-		}
+	local accepted = false
+
+	if interviewScore ~= nil then
+		-- Client conducted interview - use the result
+		if interviewScore >= 50 then
+			-- Passed interview!
+			-- Higher scores give bonus chance, but still check basic requirements
+			local scoreBonus = (interviewScore - 50) / 100 -- 0-0.5 bonus based on score 50-100
+			local hiringChance = math.min(0.95, finalChance + scoreBonus)
+
+			-- For low difficulty jobs (easy entry), passed interview = hired
+			if difficulty <= 3 then
+				accepted = true
+			else
+				-- For competitive jobs, still need a bit of luck even with good interview
+				local roll = RANDOM:NextNumber()
+				accepted = roll < hiringChance
+			end
+
+			if not accepted then
+				-- They passed interview but company had other candidates
+				state.JobApplications = state.JobApplications or {}
+				state.JobApplications[jobId] = {
+					attempts = (state.JobApplications[jobId] and state.JobApplications[jobId].attempts or 0) + 1,
+					lastAttempt = state.Age or 0,
+					rejectedThisYear = true,
+				}
+				return {
+					success = false,
+					message = "You interviewed well, but unfortunately they went with another candidate who had more experience. Keep trying!"
+				}
+			end
+		else
+			-- Failed interview - rejected
+			state.JobApplications = state.JobApplications or {}
+			state.JobApplications[jobId] = {
+				attempts = (state.JobApplications[jobId] and state.JobApplications[jobId].attempts or 0) + 1,
+				lastAttempt = state.Age or 0,
+				rejectedThisYear = true,
+			}
+			return {
+				success = false,
+				message = "Your interview performance wasn't strong enough. Practice your interview skills and try again!"
+			}
+		end
+	else
+		-- No client interview - use server random roll (for backward compatibility)
+		local roll = RANDOM:NextNumber()
+		accepted = roll < finalChance
 	end
-	
-	-- Roll for success (for jobs that skip interview)
-	local roll = RANDOM:NextNumber()
-	local accepted = roll < finalChance
 	
 	-- Track application
 	state.JobApplications[jobId] = {
