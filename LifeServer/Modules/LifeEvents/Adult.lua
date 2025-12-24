@@ -1115,6 +1115,8 @@ Adult.events = {
 		oneTime = true,
 		-- CRITICAL FIX #7: Added "birth" category for light blue event card
 		category = "birth",
+		-- CRITICAL FIX: Must have partner AND be trying for baby - user reported baby without partner!
+		requiresPartner = true,
 		requiresFlags = { trying_for_baby = true },
 
 		choices = {

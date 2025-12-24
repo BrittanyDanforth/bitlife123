@@ -371,7 +371,8 @@ MedicalCareerEvents.events = {
 						state:ModifyStat("Happiness", 5)
 						state:AddFeed("⚖️ Legal handled it. Case dismissed - you followed protocol.")
 					else
-						state.Money = (state.Money or 0) - 5000
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 5000)
 						state:ModifyStat("Happiness", -15)
 						state:AddFeed("⚖️ Settled out of court. Your insurance covered most but reputation damaged.")
 					end
@@ -671,7 +672,8 @@ MedicalCareerEvents.events = {
 					if roll <= 30 then
 						state:AddFeed("💊 Turned out fine. Maybe you were overthinking.")
 					else
-						state.Money = (state.Money or 0) - 10000
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 10000)
 						state:ModifyStat("Happiness", -25)
 						state.Flags = state.Flags or {}
 						state.Flags.malpractice = true
@@ -766,10 +768,13 @@ MedicalCareerEvents.events = {
 				text = "Take the leap - open the practice",
 				effects = {},
 				feedText = "Becoming a business owner...",
+				-- CRITICAL FIX: Add eligibility check for affordability
+				eligibility = function(state) return (state.Money or 0) >= 50000 end,
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 55 then
-						state.Money = (state.Money or 0) - 50000
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 50000)
 						state:ModifyStat("Happiness", 25)
 						state.Flags = state.Flags or {}
 						state.Flags.owns_practice = true
@@ -780,9 +785,11 @@ MedicalCareerEvents.events = {
 						end
 						state:AddFeed("🏥 YOUR OWN PRACTICE! 50% more income as a business owner!")
 					else
-						state.Money = (state.Money or 0) - 100000
+						-- CRITICAL FIX: Prevent negative money - cap at available funds
+						local loss = math.min(100000, state.Money or 0)
+						state.Money = math.max(0, (state.Money or 0) - loss)
 						state:ModifyStat("Happiness", -15)
-						state:AddFeed("🏥 Practice failed after 2 years. Lost $100K. Back to working for someone else.")
+						state:AddFeed(string.format("🏥 Practice failed after 2 years. Lost $%d. Back to working for someone else.", loss))
 					end
 				end,
 			},
@@ -795,10 +802,13 @@ MedicalCareerEvents.events = {
 				text = "Partner with another dentist instead",
 				effects = {},
 				feedText = "Sharing the risk...",
+				-- CRITICAL FIX: Add eligibility check for affordability
+				eligibility = function(state) return (state.Money or 0) >= 25000 end,
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 70 then
-						state.Money = (state.Money or 0) - 25000
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 25000)
 						state:ModifyStat("Happiness", 15)
 						state.Flags = state.Flags or {}
 						state.Flags.dental_partner = true

@@ -1121,7 +1121,8 @@ JobSpecificEvents.events = {
 						state:ModifyStat("Happiness", 8)
 						state:AddFeed("📉 Bought the dip! Made money when others panicked!")
 					else
-						state.Money = (state.Money or 0) - 500
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 500)
 						state:ModifyStat("Happiness", -6)
 						state:AddFeed("📉 Wrong call. Lost money trying to time the market.")
 					end
@@ -2419,11 +2420,12 @@ JobSpecificEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.60 then
-						state:ModifyStat("Smarts", 2)
-						state:AddFeed("⚗️ Administration appreciated your honesty. Small fine.")
-					else
-						state.Money = (state.Money or 0) - math.random(500, 2000)
-						state:AddFeed("⚗️ Serious consequences. Equipment costs deducted from budget.")
+					state:ModifyStat("Smarts", 2)
+					state:AddFeed("⚗️ Administration appreciated your honesty. Small fine.")
+				else
+					-- CRITICAL FIX: Prevent negative money
+					state.Money = math.max(0, (state.Money or 0) - math.random(500, 2000))
+					state:AddFeed("⚗️ Serious consequences. Equipment costs deducted from budget.")
 					end
 				end,
 			},

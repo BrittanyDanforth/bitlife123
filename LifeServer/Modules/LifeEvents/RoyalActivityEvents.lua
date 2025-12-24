@@ -5,9 +5,73 @@
 local RoyalActivityEvents = {}
 
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- HELPER FUNCTIONS (CRITICAL FIX: Nil-safe operations)
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function safeModifyStat(state, stat, amount)
+	if state and state.ModifyStat then
+		state:ModifyStat(stat, amount)
+	elseif state and state.Stats then
+		state.Stats[stat] = math.clamp((state.Stats[stat] or 50) + amount, 0, 100)
+	elseif state then
+		state[stat] = math.clamp((state[stat] or 50) + amount, 0, 100)
+	end
+end
+
+local function safeAddFeed(state, message)
+	if state and state.AddFeed then
+		state:AddFeed(message)
+	end
+end
+
+-- CRITICAL FIX: Check if player is actually royalty
+local function isActiveRoyal(state)
+	if not state then return false end
+	
+	-- Check flags for royalty status
+	local flags = state.Flags or {}
+	if flags.is_royalty or flags.royal_by_marriage or flags.born_royal then
+		return true
+	end
+	
+	-- Check RoyalState
+	if state.RoyalState and state.RoyalState.isRoyal then
+		return true
+	end
+	
+	return false
+end
+
+-- CRITICAL FIX: Check if player can do royal activities (not in prison!)
+local function canDoRoyalActivities(state)
+	if not state then return false end
+	if not isActiveRoyal(state) then return false end
+	
+	local flags = state.Flags or {}
+	-- Can't do royal duties from prison!
+	if flags.in_prison or flags.incarcerated or flags.in_jail then
+		return false
+	end
+	
+	return true
+end
+
+-- CRITICAL FIX: Get royal rank for activity eligibility
+local function getRoyalRank(state)
+	if not state then return 0 end
+	if state.RoyalState and state.RoyalState.rank then
+		return state.RoyalState.rank
+	end
+	return state.RoyalRank or 1
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
 -- ROYAL DUTIES
 -- ═══════════════════════════════════════════════════════════════════════════════
 RoyalActivityEvents.RoyalDuty = {
+	-- CRITICAL FIX: Category-wide eligibility - must be royalty!
+	eligibility = canDoRoyalActivities,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
+	requiresFlags = { is_royalty = true }, -- or royal_by_marriage or born_royal
 	{
 		id = "royal_charity_gala",
 		title = "👑 Royal Charity Gala",
@@ -20,7 +84,14 @@ RoyalActivityEvents.RoyalDuty = {
 		},
 		effects = { Happiness = {5, 15}, Fame = {3, 8} },
 		choices = {
-			{ text = "💰 Make a large donation", feed = "Your generosity made headlines!", cost = 10000, effects = { Fame = 15, Happiness = 10 } },
+			{ 
+			text = "💰 Make a large donation ($10,000)", 
+			feed = "Your generosity made headlines!", 
+			cost = 10000, 
+			effects = { Fame = 15, Happiness = 10 },
+			-- CRITICAL FIX: Money eligibility check
+			eligibility = function(state) return (state.Money or 0) >= 10000 end,
+		},
 			{ text = "📢 Give a speech", feed = "Your speech moved the audience.", effects = { Fame = 8 } },
 			{ text = "🤝 Network with nobles", feed = "You made valuable connections." },
 		},
@@ -56,7 +127,14 @@ RoyalActivityEvents.RoyalDuty = {
 		choices = {
 			{ text = "🗞️ Issue a statement", feed = "You addressed the rumors directly.", effects = { Fame = 5 } },
 			{ text = "🤫 Stay silent", feed = "You let the rumors die down on their own." },
-			{ text = "⚖️ Sue for defamation", feed = "Your lawyers are on it.", cost = 50000, effects = { Fame = 10 } },
+			{ 
+			text = "⚖️ Sue for defamation ($50,000)", 
+			feed = "Your lawyers are on it.", 
+			cost = 50000, 
+			effects = { Fame = 10 },
+			-- CRITICAL FIX: Money eligibility check
+			eligibility = function(state) return (state.Money or 0) >= 50000 end,
+		},
 		},
 	},
 	{
@@ -98,6 +176,9 @@ RoyalActivityEvents.RoyalDuty = {
 -- ROYAL LEISURE
 -- ═══════════════════════════════════════════════════════════════════════════════
 RoyalActivityEvents.RoyalLeisure = {
+	-- CRITICAL FIX: Category-wide eligibility - must be royalty!
+	eligibility = canDoRoyalActivities,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	{
 		id = "royal_polo",
 		title = "🏇 Polo Match",
@@ -166,6 +247,9 @@ RoyalActivityEvents.RoyalLeisure = {
 -- ROYAL POLITICS
 -- ═══════════════════════════════════════════════════════════════════════════════
 RoyalActivityEvents.RoyalPolitics = {
+	-- CRITICAL FIX: Category-wide eligibility - must be royalty!
+	eligibility = canDoRoyalActivities,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	{
 		id = "royal_council",
 		title = "🏛️ Royal Council",
@@ -187,7 +271,8 @@ RoyalActivityEvents.RoyalPolitics = {
 		title = "📜 Royal Decree",
 		emoji = "📜",
 		weight = 15,
-		condition = function(state) return (state.RoyalRank or 0) >= 3 end,  -- Higher ranking royals
+		-- CRITICAL FIX: Use helper function for rank check
+		condition = function(state) return getRoyalRank(state) >= 3 end,  -- Higher ranking royals
 		texts = {
 			"You have the opportunity to issue a royal decree.",
 			"The people await your royal proclamation.",
@@ -222,6 +307,9 @@ RoyalActivityEvents.RoyalPolitics = {
 -- ROYAL EDUCATION
 -- ═══════════════════════════════════════════════════════════════════════════════
 RoyalActivityEvents.RoyalEducation = {
+	-- CRITICAL FIX: Category-wide eligibility - must be royalty!
+	eligibility = canDoRoyalActivities,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	{
 		id = "royal_tutor",
 		title = "📚 Royal Tutor Session",
@@ -279,6 +367,35 @@ function RoyalActivityEvents.getRandomEvent(activityType, state)
 	local events = RoyalActivityEvents[activityType]
 	if not events then return nil end
 	
+	-- CRITICAL FIX: Check category-wide eligibility first
+	if events.eligibility and not events.eligibility(state) then
+		return nil
+	end
+	
+	-- CRITICAL FIX: Check category-wide blocked flags
+	if events.blockedByFlags and state and state.Flags then
+		for flag, _ in pairs(events.blockedByFlags) do
+			if state.Flags[flag] then
+				return nil -- Blocked by flag
+			end
+		end
+	end
+	
+	-- CRITICAL FIX: Check required flags
+	if events.requiresFlags and state then
+		local flags = state.Flags or {}
+		local hasRequired = false
+		for flag, _ in pairs(events.requiresFlags) do
+			if flags[flag] or flags.royal_by_marriage or flags.born_royal then
+				hasRequired = true
+				break
+			end
+		end
+		if not hasRequired and not isActiveRoyal(state) then
+			return nil
+		end
+	end
+	
 	local validEvents = {}
 	local totalWeight = 0
 	
@@ -286,6 +403,16 @@ function RoyalActivityEvents.getRandomEvent(activityType, state)
 		local valid = true
 		if event.condition and not event.condition(state) then
 			valid = false
+		end
+		
+		-- CRITICAL FIX: Check event-level blocked flags
+		if valid and event.blockedByFlags and state and state.Flags then
+			for flag, _ in pairs(event.blockedByFlags) do
+				if state.Flags[flag] then
+					valid = false
+					break
+				end
+			end
 		end
 		
 		if valid then
@@ -324,15 +451,50 @@ function RoyalActivityEvents.applyEffects(state, effects)
 	if not effects or not state then return state end
 	
 	for stat, value in pairs(effects) do
+		-- CRITICAL FIX: Handle different stat locations (Stats table vs direct)
+		local currentValue = 50
+		if state.Stats and state.Stats[stat] ~= nil then
+			currentValue = state.Stats[stat]
+		elseif state[stat] ~= nil then
+			currentValue = state[stat]
+		end
+		
+		local change = 0
 		if type(value) == "table" then
-			local change = math.random(value[1], value[2])
-			state[stat] = math.clamp((state[stat] or 50) + change, 0, 100)
+			change = math.random(value[1], value[2])
 		else
-			state[stat] = math.clamp((state[stat] or 50) + value, 0, 100)
+			change = value
+		end
+		
+		-- CRITICAL FIX: Handle special stats like Fame and Money differently
+		if stat == "Fame" then
+			state.Fame = math.max(0, (state.Fame or 0) + change)
+		elseif stat == "Money" then
+			state.Money = math.max(0, (state.Money or 0) + change)
+		elseif state.Stats then
+			state.Stats[stat] = math.clamp((state.Stats[stat] or currentValue) + change, 0, 100)
+		else
+			state[stat] = math.clamp((state[stat] or currentValue) + change, 0, 100)
 		end
 	end
 	
 	return state
+end
+
+-- CRITICAL FIX: Process choice costs safely
+function RoyalActivityEvents.processChoiceCost(state, choice)
+	if not choice or not choice.cost then return true end
+	if not state then return false end
+	
+	local cost = choice.cost
+	local money = state.Money or 0
+	
+	if money < cost then
+		return false -- Can't afford
+	end
+	
+	state.Money = money - cost
+	return true
 end
 
 return RoyalActivityEvents

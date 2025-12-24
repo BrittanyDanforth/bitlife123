@@ -627,7 +627,8 @@ HobbyEvents.events = {
 						state:AddFeed("🔨 Done! Not perfect but functional! Proud of it!")
 					else
 						state:ModifyStat("Happiness", -3)
-						state.Money = (state.Money or 0) - 50
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 50)
 						state:AddFeed("🔨 Disaster. Had to call a professional. Money wasted.")
 					end
 				end,

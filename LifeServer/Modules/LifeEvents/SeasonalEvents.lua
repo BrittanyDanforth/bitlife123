@@ -350,12 +350,13 @@ SeasonalEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.70 then
-						state:ModifyStat("Happiness", 4)
-						state:AddFeed("🥵 Survived! AC working overtime! Cool and comfortable!")
+						if state.ModifyStat then state:ModifyStat("Happiness", 4) end
+						if state.AddFeed then state:AddFeed("🥵 Survived! AC working overtime! Cool and comfortable!") end
 					else
-						state:ModifyStat("Happiness", -4)
-						state.Money = (state.Money or 0) - 100
-						state:AddFeed("🥵 AC broke! Emergency repair! Suffering in the heat!")
+						if state.ModifyStat then state:ModifyStat("Happiness", -4) end
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 100)
+						if state.AddFeed then state:AddFeed("🥵 AC broke! Emergency repair! Suffering in the heat!") end
 					end
 				end,
 			},

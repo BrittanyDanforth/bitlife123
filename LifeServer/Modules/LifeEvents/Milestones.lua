@@ -456,6 +456,14 @@ Milestones.events = {
 			-- CRITICAL FIX: Set flags needed for education activities
 			state.Flags.has_degree = true
 			state.Flags.has_ged_or_diploma = true
+			
+			-- CRITICAL FIX: User reported "IM A COLLEGE STUDENT LIVING IN DORM ROOM STILL EVEN THO IM LIKE 40"
+			-- MUST clear all college enrollment flags when graduating!
+			state.Flags.in_college = nil
+			state.Flags.college_student = nil
+			state.Flags.enrolled_college = nil
+			state.Flags.college_bound = nil
+			
 			if state.EducationData then
 				state.EducationData.Status = "completed"
 				state.EducationData.Level = "bachelor"

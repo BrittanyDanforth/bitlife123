@@ -21,9 +21,50 @@
 local HobbyEvents = {}
 
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- HELPER FUNCTIONS (CRITICAL FIX: Nil-safe operations)
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function safeModifyStat(state, stat, amount)
+	if not state then return end
+	if state.ModifyStat then
+		state:ModifyStat(stat, amount)
+	elseif state.Stats then
+		state.Stats[stat] = math.clamp((state.Stats[stat] or 50) + amount, 0, 100)
+	else
+		state[stat] = math.clamp((state[stat] or 50) + amount, 0, 100)
+	end
+end
+
+-- CRITICAL FIX: Check if player can do hobby activities
+local function canDoHobbies(state)
+	if not state then return false end
+	local flags = state.Flags or {}
+	-- Can't do hobbies from prison! (limited activities there)
+	if flags.in_prison or flags.incarcerated or flags.in_jail then
+		return false
+	end
+	return true
+end
+
+-- CRITICAL FIX: Check if hobby requires minimum age
+local function isOldEnoughForHobby(state, minAge)
+	local age = state.Age or 0
+	return age >= (minAge or 5)
+end
+
+-- CRITICAL FIX: Check if player has hobby-related flags
+local function hasHobbyFlag(state, hobbyFlag)
+	if not state then return false end
+	local flags = state.Flags or {}
+	return flags[hobbyFlag] or false
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
 -- MUSIC EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 HobbyEvents.Music = {
+	-- CRITICAL FIX: Category-wide eligibility
+	eligibility = function(state) return canDoHobbies(state) and isOldEnoughForHobby(state, 6) end,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	-- Event 1: Practice session
 	{
 		id = "music_practice",
@@ -160,6 +201,9 @@ HobbyEvents.Music = {
 -- ART EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 HobbyEvents.Art = {
+	-- CRITICAL FIX: Category-wide eligibility
+	eligibility = function(state) return canDoHobbies(state) and isOldEnoughForHobby(state, 4) end,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	-- Event 1: Creating art
 	{
 		id = "art_create",
@@ -296,6 +340,9 @@ HobbyEvents.Art = {
 -- GAMING EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 HobbyEvents.Gaming = {
+	-- CRITICAL FIX: Category-wide eligibility
+	eligibility = function(state) return canDoHobbies(state) and isOldEnoughForHobby(state, 5) end,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	-- Event 1: Gaming session
 	{
 		id = "gaming_session",
@@ -432,6 +479,9 @@ HobbyEvents.Gaming = {
 -- SPORTS HOBBY EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 HobbyEvents.Sports = {
+	-- CRITICAL FIX: Category-wide eligibility
+	eligibility = function(state) return canDoHobbies(state) and isOldEnoughForHobby(state, 5) end,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	-- Event 1: Working out
 	{
 		id = "sports_workout",

@@ -1108,6 +1108,34 @@ local function canEventTrigger(event, state)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #USER-XXL: Check minStage/maxStage for career-specific events
+	-- Events like "XXL Freshman" have minStage = 3, meaning you need to be at career
+	-- stage 3 (hot rapper level) before this event can trigger. Without this check,
+	-- underground rappers would get XXL Freshman nominations!
+	-- User reported: "IT SAID XXL FRESHMAN BUT I WASNT EVEN FAMOUS"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if event.minStage or event.maxStage then
+		local playerStage = 1  -- Default to stage 1 (lowest)
+		
+		-- Get player's current career stage from FameState
+		if state.FameState and state.FameState.currentStage then
+			playerStage = state.FameState.currentStage
+		end
+		
+		-- Check minimum stage requirement
+		local minStage = event.minStage or 1
+		local maxStage = event.maxStage or 999
+		
+		if playerStage < minStage then
+			return false -- Player hasn't reached the required career stage
+		end
+		
+		if playerStage > maxStage then
+			return false -- Player is past the maximum stage for this event
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #5: Critically ill/dying players shouldn't get fun events
 	-- Only allow health-related, medical, or high-priority events for very sick players
 	-- This prevents the weird situation of getting "Travel Opportunity!" while dying
@@ -1769,10 +1797,14 @@ local function canEventTrigger(event, state)
 			end
 			-- CRITICAL FIX #548: If eligibility returns nil or true, allow the event
 		else
-			-- CRITICAL FIX #549: If eligibility function errors, LOG but ALLOW the event
-			-- This prevents broken eligibility functions from blocking all events
-			warn("[LifeEvents] eligibility function error for " .. tostring(event.id) .. ": " .. tostring(result))
-			-- Continue - don't block the event due to error
+			-- ═══════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX #AAA-MEGA-5: If eligibility function ERRORS, BLOCK the event!
+			-- OLD BUG: Erroring eligibility functions caused events to fire anyway
+			-- This caused PR Crisis events for Movie Ushers, office events for service workers, etc.
+			-- If an eligibility check can't run properly, the event should NOT fire!
+			-- ═══════════════════════════════════════════════════════════════════════
+			warn("[LifeEvents] eligibility function error for " .. tostring(event.id) .. ": " .. tostring(result) .. " - BLOCKING event")
+			return false -- CRITICAL: Block event if eligibility function errors!
 		end
 	end
 	

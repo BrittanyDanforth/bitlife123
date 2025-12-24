@@ -148,7 +148,8 @@ RandomExpanded.events = {
 						state:ModifyStat("Happiness", 2)
 						state:AddFeed("🚗 Changed it yourself! Feeling capable!")
 					else
-						state.Money = (state.Money or 0) - 80
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 80)
 						state:ModifyStat("Happiness", -2)
 						state:AddFeed("🚗 Couldn't figure it out. Had to call for help. $80 gone.")
 					end
@@ -200,17 +201,20 @@ RandomExpanded.events = {
 						state:AddFeed("🚨 Just a warning! Phew!")
 					elseif roll < 0.60 then
 						local fine = math.random(100, 200)
-						state.Money = (state.Money or 0) - fine
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - fine)
 						state:ModifyStat("Happiness", -4)
 						state:AddFeed(string.format("🚨 Speeding ticket. $%d fine.", fine))
 					elseif roll < 0.85 then
 						local fine = math.random(200, 400)
-						state.Money = (state.Money or 0) - fine
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - fine)
 						state:ModifyStat("Happiness", -6)
 						state:AddFeed(string.format("🚨 Multiple violations! $%d!", fine))
 					else
 						local fine = math.random(300, 600)
-						state.Money = (state.Money or 0) - fine
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - fine)
 						state:ModifyStat("Happiness", -8)
 						state.Flags = state.Flags or {}
 						state.Flags.license_points = true
@@ -231,7 +235,8 @@ RandomExpanded.events = {
 						state:AddFeed("🚨 Talked your way out! Charming!")
 					else
 						local fine = math.random(150, 300)
-						state.Money = (state.Money or 0) - fine
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - fine)
 						state:ModifyStat("Happiness", -5)
 						state:AddFeed(string.format("🚨 Made it worse. $%d fine.", fine))
 					end
@@ -406,7 +411,8 @@ RandomExpanded.events = {
 						state:ModifyStat("Happiness", -6)
 						state:AddFeed(string.format("🔧 %s needs replacement: $%d! Brutal expense.", appliance, cost))
 					end
-					state.Money = (state.Money or 0) - cost
+					-- CRITICAL FIX: Prevent negative money
+					state.Money = math.max(0, (state.Money or 0) - cost)
 				end,
 			},
 			{
@@ -419,14 +425,17 @@ RandomExpanded.events = {
 					if roll < 0.35 then
 						state:ModifyStat("Smarts", 3)
 						state:ModifyStat("Happiness", 5)
-						state.Money = (state.Money or 0) - 50
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 50)
 						state:AddFeed("🔧 FIXED IT! Parts cost $50. Feeling handy!")
 					elseif roll < 0.65 then
-						state.Money = (state.Money or 0) - 150
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 150)
 						state:ModifyStat("Happiness", 1)
 						state:AddFeed("🔧 Partially fixed. Kinda works. $150 in parts.")
 					else
-						state.Money = (state.Money or 0) - 400
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 400)
 						state:ModifyStat("Happiness", -4)
 						state:AddFeed("🔧 Made it worse. Now need professional. $400 total.")
 					end
@@ -530,19 +539,22 @@ RandomExpanded.events = {
 						state:AddFeed("🌪️ Power flickered. Trees down. But you're fine.")
 					elseif roll < 0.75 then
 						local cost = math.random(100, 500)
-						state.Money = (state.Money or 0) - cost
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - cost)
 						state:ModifyStat("Happiness", -4)
 						state:AddFeed(string.format("🌪️ Some property damage. $%d to fix. Could be worse.", cost))
 					elseif roll < 0.92 then
 						local cost = math.random(500, 2000)
-						state.Money = (state.Money or 0) - cost
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - cost)
 						state:ModifyStat("Happiness", -8)
 						state.Flags = state.Flags or {}
 						state.Flags.weather_damage = true
 						state:AddFeed(string.format("🌪️ Significant damage. $%d in repairs. Stressful.", cost))
 					else
 						local cost = math.random(2000, 10000)
-						state.Money = (state.Money or 0) - cost
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - cost)
 						state:ModifyStat("Happiness", -12)
 						state:ModifyStat("Health", -5)
 						state.Flags = state.Flags or {}
@@ -654,12 +666,14 @@ RandomExpanded.events = {
 					elseif roll < mildChance + 0.42 then
 						state:ModifyStat("Health", -8)
 						state:ModifyStat("Happiness", -5)
-						state.Money = (state.Money or 0) - 100
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 100)
 						state:AddFeed("🤧 Needed doctor visit and medication. $100. Rough.")
 					else
 						state:ModifyStat("Health", -15)
 						state:ModifyStat("Happiness", -8)
-						state.Money = (state.Money or 0) - 500
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 500)
 						state.Flags = state.Flags or {}
 						state.Flags.serious_illness_random = true
 						state:AddFeed("🤧 Turned serious. Hospital visit. Scary experience.")
@@ -701,7 +715,8 @@ RandomExpanded.events = {
 					else
 						state:ModifyStat("Health", -10)
 						state:ModifyStat("Happiness", -7)
-						state.Money = (state.Money or 0) - 200
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 200)
 						state:AddFeed("🤢 Hospitalized. IV fluids. Seriously bad batch.")
 					end
 				end,

@@ -18,6 +18,64 @@ local PremiumIntegratedEvents = {}
 
 local STAGE = "random"
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- HELPER FUNCTIONS (CRITICAL FIX: Nil-safe operations)
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function safeModifyStat(state, stat, amount)
+	if not state then return end
+	if state.ModifyStat then
+		state:ModifyStat(stat, amount)
+	elseif state.Stats then
+		state.Stats[stat] = math.clamp((state.Stats[stat] or 50) + amount, 0, 100)
+	else
+		state[stat] = math.clamp((state[stat] or 50) + amount, 0, 100)
+	end
+end
+
+local function safeAddFeed(state, message)
+	if state and state.AddFeed then
+		state:AddFeed(message)
+	end
+end
+
+local function safeAddMoney(state, amount)
+	if state then
+		state.Money = math.max(0, (state.Money or 0) + amount)
+	end
+end
+
+local function safeSubtractMoney(state, amount)
+	if state then
+		state.Money = math.max(0, (state.Money or 0) - amount)
+	end
+end
+
+-- CRITICAL FIX: Check if player can do activities (not in prison)
+local function canDoActivities(state)
+	if not state then return false end
+	local flags = state.Flags or {}
+	return not (flags.in_prison or flags.incarcerated or flags.in_jail)
+end
+
+-- CRITICAL FIX: Check if player has required money for choices
+local function hasMinMoney(state, amount)
+	return (state.Money or 0) >= amount
+end
+
+-- CRITICAL FIX: Initialize MobState safely
+local function ensureMobState(state)
+	if not state then return end
+	state.MobState = state.MobState or {}
+	state.MobState.heat = state.MobState.heat or 0
+	state.MobState.respect = state.MobState.respect or 0
+end
+
+-- CRITICAL FIX: Initialize Flags safely
+local function ensureFlags(state)
+	if not state then return end
+	state.Flags = state.Flags or {}
+end
+
 PremiumIntegratedEvents.events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- LIFE CRISIS EVENTS - God Mode Integration
@@ -418,26 +476,93 @@ PremiumIntegratedEvents.events = {
 		
 		eligibility = function(state)
 			local flags = state.Flags or {}
-			return flags.engaged or flags.getting_married
+			if not (flags.engaged or flags.getting_married) then
+				return false, "Not engaged"
+			end
+			-- CRITICAL FIX: Verify partner exists before wedding!
+			local hasPartner = false
+			if state.Relationships then
+				for _, rel in pairs(state.Relationships) do
+					if type(rel) == "table" and (rel.type == "romantic" or rel.type == "partner" or rel.type == "spouse" or rel.type == "fiance") then
+						hasPartner = true
+						break
+					end
+				end
+			end
+			if not hasPartner and not flags.has_partner then
+				return false, "No partner to marry"
+			end
+			return true
 		end,
 		
 		choices = {
 			{
 				text = "Simple courthouse wedding",
 				effects = { Happiness = 8, Money = -200 },
-				setFlags = { married = true, has_partner = true },
+				setFlags = { married = true, has_partner = true, engaged = false },
 				feedText = "Simple but meaningful. You're married!",
+				-- CRITICAL FIX: Ensure spouse relationship exists
+				onResolve = function(state)
+					-- Convert partner to spouse
+					if state.Relationships and state.Relationships.partner then
+						state.Relationships.spouse = state.Relationships.partner
+						state.Relationships.spouse.type = "spouse"
+						state.Relationships.partner = nil
+					elseif state.Relationships then
+						-- Find any romantic relationship and convert to spouse
+						for key, rel in pairs(state.Relationships) do
+							if type(rel) == "table" and (rel.type == "romantic" or rel.type == "partner" or rel.type == "fiance") then
+								rel.type = "spouse"
+								state.Relationships.spouse = rel
+								if key ~= "spouse" then state.Relationships[key] = nil end
+								break
+							end
+						end
+					end
+					-- Clear engagement flags
+					state.Flags = state.Flags or {}
+					state.Flags.engaged = nil
+					state.Flags.getting_married = nil
+				end,
 			},
 			{
-				text = "Traditional ceremony",
+				text = "Traditional ceremony ($5,000)",
 				effects = { Happiness = 12, Money = -5000 },
-				setFlags = { married = true, has_partner = true, traditional_wedding = true },
+				setFlags = { married = true, has_partner = true, traditional_wedding = true, engaged = false },
 				feedText = "Beautiful ceremony with family and friends!",
+				-- CRITICAL FIX: Add eligibility check for affordability
+				eligibility = function(state)
+					if (state.Money or 0) < 5000 then
+						return false, "Can't afford $5,000 ceremony"
+					end
+					return true
+				end,
+				-- CRITICAL FIX: Ensure spouse relationship exists
+				onResolve = function(state)
+					-- Convert partner to spouse
+					if state.Relationships and state.Relationships.partner then
+						state.Relationships.spouse = state.Relationships.partner
+						state.Relationships.spouse.type = "spouse"
+						state.Relationships.partner = nil
+					elseif state.Relationships then
+						for key, rel in pairs(state.Relationships) do
+							if type(rel) == "table" and (rel.type == "romantic" or rel.type == "partner" or rel.type == "fiance") then
+								rel.type = "spouse"
+								state.Relationships.spouse = rel
+								if key ~= "spouse" then state.Relationships[key] = nil end
+								break
+							end
+						end
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.engaged = nil
+					state.Flags.getting_married = nil
+				end,
 			},
 			{
 				text = "Big expensive wedding",
 				effects = {},
-				setFlags = { married = true, has_partner = true },
+				setFlags = { married = true, has_partner = true, engaged = false },
 				feedText = "Going all out...",
 				onResolve = function(state)
 					local money = state.Money or 0
@@ -454,6 +579,23 @@ PremiumIntegratedEvents.events = {
 						state.Flags = state.Flags or {}
 						state.Flags.wedding_debt = true
 					end
+					-- CRITICAL FIX: Convert partner to spouse
+					if state.Relationships and state.Relationships.partner then
+						state.Relationships.spouse = state.Relationships.partner
+						state.Relationships.spouse.type = "spouse"
+						state.Relationships.partner = nil
+					elseif state.Relationships then
+						for key, rel in pairs(state.Relationships) do
+							if type(rel) == "table" and (rel.type == "romantic" or rel.type == "partner" or rel.type == "fiance") then
+								rel.type = "spouse"
+								state.Relationships.spouse = rel
+								if key ~= "spouse" then state.Relationships[key] = nil end
+								break
+							end
+						end
+					end
+					state.Flags.engaged = nil
+					state.Flags.getting_married = nil
 				end,
 			},
 			-- 👑 ROYALTY PREMIUM OPTION
@@ -463,7 +605,27 @@ PremiumIntegratedEvents.events = {
 				requiresGamepass = "ROYALTY",
 				gamepassEmoji = "👑",
 				feedText = "👑 A ROYAL-STYLE WEDDING! Fit for a king!",
-				setFlags = { married = true, has_partner = true, royal_wedding = true },
+				setFlags = { married = true, has_partner = true, royal_wedding = true, engaged = false },
+				-- CRITICAL FIX: Convert partner to spouse
+				onResolve = function(state)
+					if state.Relationships and state.Relationships.partner then
+						state.Relationships.spouse = state.Relationships.partner
+						state.Relationships.spouse.type = "spouse"
+						state.Relationships.partner = nil
+					elseif state.Relationships then
+						for key, rel in pairs(state.Relationships) do
+							if type(rel) == "table" and (rel.type == "romantic" or rel.type == "partner" or rel.type == "fiance") then
+								rel.type = "spouse"
+								state.Relationships.spouse = rel
+								if key ~= "spouse" then state.Relationships[key] = nil end
+								break
+							end
+						end
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.engaged = nil
+					state.Flags.getting_married = nil
+				end,
 			},
 			-- ⭐ CELEBRITY PREMIUM OPTION
 			{
@@ -472,7 +634,27 @@ PremiumIntegratedEvents.events = {
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
 				feedText = "⭐ Your wedding was on TV! Sponsors paid for everything!",
-				setFlags = { married = true, has_partner = true, celebrity_wedding = true },
+				setFlags = { married = true, has_partner = true, celebrity_wedding = true, engaged = false },
+				-- CRITICAL FIX: Convert partner to spouse
+				onResolve = function(state)
+					if state.Relationships and state.Relationships.partner then
+						state.Relationships.spouse = state.Relationships.partner
+						state.Relationships.spouse.type = "spouse"
+						state.Relationships.partner = nil
+					elseif state.Relationships then
+						for key, rel in pairs(state.Relationships) do
+							if type(rel) == "table" and (rel.type == "romantic" or rel.type == "partner" or rel.type == "fiance") then
+								rel.type = "spouse"
+								state.Relationships.spouse = rel
+								if key ~= "spouse" then state.Relationships[key] = nil end
+								break
+							end
+						end
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.engaged = nil
+					state.Flags.getting_married = nil
+				end,
 			},
 		},
 	},
@@ -578,12 +760,13 @@ PremiumIntegratedEvents.events = {
 						state.Flags = state.Flags or {}
 						state.Flags.risk_taker_success = true
 					elseif roll < 0.65 then
-						state:ModifyStat("Happiness", 5)
-						state:AddFeed("🔀 It worked out okay. Not amazing but no regrets.")
-					else
-						state.Money = (state.Money or 0) - math.random(1000, 5000)
-						state:ModifyStat("Happiness", -10)
-						state:AddFeed("🔀 The risk didn't pay off. Lesson learned the hard way.")
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("🔀 It worked out okay. Not amazing but no regrets.")
+				else
+					-- CRITICAL FIX: Prevent negative money
+					state.Money = math.max(0, (state.Money or 0) - math.random(1000, 5000))
+					state:ModifyStat("Happiness", -10)
+					state:AddFeed("🔀 The risk didn't pay off. Lesson learned the hard way.")
 					end
 				end,
 			},
@@ -862,9 +1045,16 @@ PremiumIntegratedEvents.events = {
 				end,
 			},
 			{
-				text = "Settle out of court",
+				text = "Settle out of court ($2,000)",
 				effects = { Money = -2000, Happiness = 5 },
 				feedText = "Reached a settlement. Not ideal but it's over.",
+				-- CRITICAL FIX: Add eligibility check for affordability
+				eligibility = function(state)
+					if (state.Money or 0) < 2000 then
+						return false, "Can't afford $2,000 settlement"
+					end
+					return true
+				end,
 			},
 			-- 🔫 MAFIA PREMIUM OPTION
 			{
@@ -965,8 +1155,16 @@ PremiumIntegratedEvents.events = {
 				text = "Invest small amount ($1,000)",
 				effects = {},
 				feedText = "Small investment, small risk...",
+				-- CRITICAL FIX: Add eligibility check for affordability
+				eligibility = function(state)
+					if (state.Money or 0) < 1000 then
+						return false, "Need at least $1,000 to invest"
+					end
+					return true
+				end,
 				onResolve = function(state)
-					state.Money = (state.Money or 0) - 1000
+					-- CRITICAL FIX: Prevent negative money
+					state.Money = math.max(0, (state.Money or 0) - 1000)
 					local roll = math.random()
 					if roll < 0.35 then
 						local profit = math.random(2000, 5000)
@@ -987,9 +1185,17 @@ PremiumIntegratedEvents.events = {
 				text = "Go all in",
 				effects = {},
 				feedText = "High risk, high reward...",
+				-- CRITICAL FIX: Add eligibility check - need some money to go all in
+				eligibility = function(state)
+					if (state.Money or 0) < 100 then
+						return false, "Need some money to invest"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local investment = math.floor((state.Money or 0) * 0.8)
-					state.Money = (state.Money or 0) - investment
+					-- CRITICAL FIX: Prevent negative money
+					state.Money = math.max(0, (state.Money or 0) - investment)
 					local roll = math.random()
 					if roll < 0.25 then
 						local multiplier = math.random(3, 10)

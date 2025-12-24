@@ -432,13 +432,50 @@ local events = {
 					state.PendingFeed = string.format("🔧 You're enrolled at %s! Real skills, real jobs!", schoolName)
 				end,
 			},
-			{
-				index = 3,
-				text = "Get a job - start earning immediately",
-				effects = { Happiness = 5, Money = 2000 },
-				setFlags = { working_class = true, hustler = true },
-				feedText = "You got hired at Target, Starbucks, or a local shop. You're making money! No debt! Living at home and stacking cash. Practical!",
-			},
+		{
+			index = 3,
+			text = "Get a job - start earning immediately",
+			effects = { Happiness = 5 },
+			setFlags = { working_class = true, hustler = true },
+			feedText = "Time to start your career...",
+			-- CRITICAL FIX: User complained "IT SAYS YOU GOT HIRED AT TARGET,STARBUCKS OR A LOCAL SHOP ???"
+			-- Don't hardcode job names! Actually assign a real entry-level job from the job system
+			onResolve = function(state)
+				local entryJobs = {
+					{ id = "fastfood", name = "Fast Food Worker", company = "Burger Palace", salary = 22000, category = "entry" },
+					{ id = "retail", name = "Retail Associate", company = "MegaMart", salary = 26000, category = "entry" },
+					{ id = "cashier", name = "Cashier", company = "QuickMart", salary = 24000, category = "entry" },
+					{ id = "barista", name = "Barista", company = "Coffee House", salary = 25000, category = "entry" },
+					{ id = "server", name = "Server", company = "Local Restaurant", salary = 28000, category = "service" },
+					{ id = "grocery", name = "Grocery Stocker", company = "Fresh Foods", salary = 23000, category = "entry" },
+					{ id = "movie_theater", name = "Theater Staff", company = "Cinema World", salary = 21000, category = "entry" },
+					{ id = "warehouse", name = "Warehouse Worker", company = "Distribution Co", salary = 30000, category = "entry" },
+				}
+				local job = entryJobs[math.random(1, #entryJobs)]
+				
+				state.CurrentJob = {
+					id = job.id,
+					name = job.name,
+					company = job.company,
+					salary = job.salary,
+					category = job.category,
+				}
+				state.Flags = state.Flags or {}
+				state.Flags.employed = true
+				state.Flags.has_job = true
+				state.Flags.first_job = true
+				state.CareerInfo = state.CareerInfo or {}
+				state.CareerInfo.yearsAtJob = 0
+				state.CareerInfo.jobStartAge = state.Age
+				
+				-- Give first paycheck bonus
+				state.Money = (state.Money or 0) + 2000
+				
+				if state.AddFeed then
+					state:AddFeed(string.format("🎉 You got hired as a %s at %s! Making $%d/year. No debt! Living at home and stacking cash!", job.name, job.company, job.salary))
+				end
+			end,
+		},
 			{
 				index = 4,
 				text = "Gap year - travel and figure it out",

@@ -269,9 +269,18 @@ EducationCareerEvents.events = {
 				text = "Buy supplies with your own money",
 				effects = { Happiness = 3 },
 				feedText = "Because kids need supplies...",
+				-- CRITICAL FIX: Add eligibility check to ensure player can afford supplies
+				eligibility = function(state)
+					if (state.Money or 0) < 200 then
+						return false, "Can't afford supplies right now"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local spent = math.random(200, 800)
-					state.Money = (state.Money or 0) - spent
+					-- CRITICAL FIX: Prevent negative money
+					spent = math.min(spent, state.Money or 0)
+					state.Money = math.max(0, (state.Money or 0) - spent)
 					-- AAA FIX: Nil check for all state methods
 					if state.ModifyStat then state:ModifyStat("Happiness", 5) end
 					if state.AddFeed then state:AddFeed(string.format("💸 Spent $%d on classroom supplies. Tax write-off at least?", spent)) end
@@ -633,3 +642,488 @@ EducationCareerEvents.events = {
 }
 
 return EducationCareerEvents
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- COACH EVENTS - User requested "COACH JOB DOSENT HAVE ANY LIFEEVNTS"
+-- Sports coaches at schools and pro teams
+-- ═══════════════════════════════════════════════════════════════════════════════
+local CoachCareerEvents = {
+	{
+		id = "coach_team_tryouts",
+		title = "Team Tryouts",
+		emoji = "📋",
+		text = "It's tryout season! You have to make some tough cuts to build your roster.",
+		category = "career_coach",
+		weight = 16,
+		minAge = 25, maxAge = 65,
+		baseChance = 0.55,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = function(state)
+			if not state.CurrentJob then return false end
+			local jobId = (state.CurrentJob.id or ""):lower()
+			return jobId:find("coach")
+		end,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Select purely on talent",
+				effects = { Smarts = 2 },
+				feedText = "Making tough decisions...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
+						if state.AddFeed then state:AddFeed("📋 Built a championship-caliber roster! Team chemistry is electric!") end
+						state.Flags = state.Flags or {}
+						state.Flags.strong_team = true
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then state:AddFeed("📋 Some angry parents. Cut a donor's kid. Politics incoming...") end
+					end
+				end,
+			},
+			{
+				text = "Consider character and work ethic too",
+				effects = { Happiness = 3, Smarts = 3 },
+				feedText = "📋 Balanced approach. Got some good kids who'll work hard.",
+			},
+			{
+				text = "Let everyone make the team",
+				effects = { Happiness = 2 },
+				feedText = "📋 No cuts this year. Everyone plays. Development over winning.",
+			},
+		},
+	},
+	{
+		id = "coach_big_game",
+		title = "Championship Game!",
+		emoji = "🏆",
+		text = "Your team made it to the championship! The whole school/city is watching. Pressure is INTENSE.",
+		category = "career_coach",
+		weight = 14,
+		minAge = 25, maxAge = 65,
+		baseChance = 0.35,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = function(state)
+			if not state.CurrentJob then return false end
+			local jobId = (state.CurrentJob.id or ""):lower()
+			return jobId:find("coach")
+		end,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Stick to our game plan",
+				effects = {},
+				feedText = "Trust in the preparation...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 25) end
+						state.Money = (state.Money or 0) + 5000
+						state.Flags = state.Flags or {}
+						state.Flags.championship_coach = true
+						if state.AddFeed then state:AddFeed("🏆 CHAMPIONS! Your team won it all! You're carried off the field!") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						if state.AddFeed then state:AddFeed("🏆 Lost the big game. So close. They played their hearts out.") end
+					end
+				end,
+			},
+			{
+				text = "Make bold halftime adjustments",
+				effects = { Smarts = 3 },
+				feedText = "Rolling the dice...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 30) end
+						state.Money = (state.Money or 0) + 8000
+						state.Flags = state.Flags or {}
+						state.Flags.genius_coach = true
+						if state.AddFeed then state:AddFeed("🏆 BRILLIANT! Your adjustments won the game! You're a genius!") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -15) end
+						if state.AddFeed then state:AddFeed("🏆 Adjustments backfired. Crushed. Second-guessing everything.") end
+					end
+				end,
+			},
+			{
+				text = "Focus on motivating the players",
+				effects = { Happiness = 5 },
+				feedText = "It's about the kids...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 45 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 20) end
+						state.Flags = state.Flags or {}
+						state.Flags.players_coach = true
+						if state.AddFeed then state:AddFeed("🏆 They played their best game ever. Win or lose, you're proud.") end
+					else
+						if state.AddFeed then state:AddFeed("🏆 Heart wasn't enough today. Better team won.") end
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "coach_injured_star",
+		title = "Star Player Injured!",
+		emoji = "🤕",
+		text = "Your star player went down with an injury right before the big game. Team morale is shaken.",
+		category = "career_coach",
+		weight = 15,
+		minAge = 25, maxAge = 65,
+		baseChance = 0.45,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = function(state)
+			if not state.CurrentJob then return false end
+			local jobId = (state.CurrentJob.id or ""):lower()
+			return jobId:find("coach")
+		end,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Rally the team - next player up!",
+				effects = { Happiness = 3, Smarts = 2 },
+				feedText = "🤕 Adversity reveals character. Team stepped up!",
+			},
+			{
+				text = "Adjust the entire game plan",
+				effects = { Smarts = 4 },
+				feedText = "🤕 Complete scheme overhaul. Pulling all-nighters.",
+			},
+			{
+				text = "Let the backup know they're ready",
+				effects = { Happiness = 5 },
+				feedText = "🤕 Building confidence in the backup. Their time to shine!",
+			},
+		},
+	},
+	{
+		id = "coach_parent_complaint",
+		title = "Angry Sports Parent",
+		emoji = "😠",
+		text = "A parent is livid that their kid isn't getting enough playing time. They're threatening to go to the athletic director.",
+		category = "career_coach",
+		weight = 16,
+		minAge = 25, maxAge = 65,
+		baseChance = 0.50,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = function(state)
+			if not state.CurrentJob then return false end
+			local jobId = (state.CurrentJob.id or ""):lower()
+			return jobId:find("coach")
+		end,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Explain your rotation decisions",
+				effects = { Smarts = 2 },
+				feedText = "Calmly walking through the reasons...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then state:AddFeed("😠 Parent understood. Crisis averted. Professionalism wins.") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						if state.AddFeed then state:AddFeed("😠 They went to the AD anyway. Now you have meetings.") end
+					end
+				end,
+			},
+			{
+				text = "Stand firm - playing time is earned",
+				effects = { Happiness = -3 },
+				setFlags = { tough_coach = true },
+				feedText = "😠 You don't negotiate with helicopter parents.",
+			},
+			{
+				text = "Give the kid a chance to prove themselves",
+				effects = { Happiness = 2 },
+				feedText = "😠 Put them in during practice. Let their play do the talking.",
+			},
+		},
+	},
+	{
+		id = "coach_recruit_talent",
+		title = "Recruiting Opportunity",
+		emoji = "🎯",
+		text = "A talented athlete is considering joining your program. They're also talking to rival schools.",
+		category = "career_coach",
+		weight = 12,
+		minAge = 25, maxAge = 65,
+		baseChance = 0.40,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = function(state)
+			if not state.CurrentJob then return false end
+			local jobId = (state.CurrentJob.id or ""):lower()
+			return jobId:find("coach")
+		end,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Sell them on your program's culture",
+				effects = { Smarts = 3, Happiness = 3 },
+				feedText = "Building something special...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state.Flags = state.Flags or {}
+						state.Flags.great_recruiter = true
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
+						if state.AddFeed then state:AddFeed("🎯 They committed! Next year's roster is looking STACKED!") end
+					else
+						if state.AddFeed then state:AddFeed("🎯 They chose the rival. Hurts, but you'll build without them.") end
+					end
+				end,
+			},
+			{
+				text = "Focus on development opportunities",
+				effects = { Smarts = 2 },
+				feedText = "🎯 Showed them how you develop players. Let results speak.",
+			},
+			{
+				text = "Don't oversell - let them decide",
+				effects = { Happiness = 2 },
+				feedText = "🎯 Honest approach. If it's meant to be, they'll come.",
+			},
+		},
+	},
+}
+
+-- Merge coach events into main table
+for _, event in ipairs(CoachCareerEvents) do
+	table.insert(EducationCareerEvents, event)
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- TEACHER QUIZ/LESSON CHOICE EVENTS
+-- User requested: "IF IM A TEACHER I CAN DECIDE WHAT I WANNA QUIZ THE KIDS IM TEACHING ON"
+-- Interactive teaching events where player makes curriculum decisions
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+table.insert(EducationCareerEvents, {
+	id = "teacher_quiz_choice",
+	emoji = "📝",
+	title = "Pop Quiz Time!",
+	textVariants = {
+		"Your students look TERRIFIED. You're holding a stack of blank quiz papers and a devious smile.",
+		"Friday afternoon. Perfect time for a surprise quiz. Your students groan as you pass out papers.",
+		"The class has been slacking. Time to remind them you're serious. Quiz time!",
+	},
+	text = "Time for a quiz! What do you test them on?",
+	category = "career_education",
+	weight = 15,
+	minAge = 23, maxAge = 65,
+	baseChance = 0.55,
+	cooldown = 2,
+	requiresJob = true,
+	eligibility = hasEducationJob,
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "📖 Core curriculum - by the book",
+			effects = { Smarts = 2 },
+			feedText = "Testing the basics...",
+			onResolve = function(state)
+				local roll = math.random(1, 100)
+				if roll <= 60 then
+					if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+					if state.AddFeed then state:AddFeed("📝 Most students passed! Your teaching is working!") end
+				else
+					if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+					if state.AddFeed then state:AddFeed("📝 Results were... disappointing. Need to review the material.") end
+				end
+			end,
+		},
+		{
+			text = "🧠 Critical thinking - make them THINK",
+			effects = { Smarts = 4 },
+			feedText = "Testing their reasoning...",
+			onResolve = function(state)
+				local roll = math.random(1, 100)
+				if roll <= 40 then
+					if state.ModifyStat then state:ModifyStat("Happiness", 10) end
+					state.Flags = state.Flags or {}
+					state.Flags.great_teacher = true
+					if state.AddFeed then state:AddFeed("📝 Some brilliant answers! You're developing real thinkers!") end
+				else
+					if state.ModifyStat then state:ModifyStat("Happiness", 2) end
+					if state.AddFeed then state:AddFeed("📝 Students struggled but they're learning to think deeper.") end
+				end
+			end,
+		},
+		{
+			text = "🎯 Current events - keep it relevant",
+			effects = { Smarts = 3, Happiness = 3 },
+			feedText = "📝 Testing on what matters today. Students were engaged!",
+		},
+		{
+			text = "🤣 Trick questions - have some fun",
+			effects = { Happiness = 5 },
+			feedText = "Testing their attention to detail...",
+			onResolve = function(state)
+				local roll = math.random(1, 100)
+				if roll <= 50 then
+					if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+					if state.AddFeed then state:AddFeed("📝 Students laughed at the tricks. Learning can be fun!") end
+				else
+					if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+					if state.AddFeed then state:AddFeed("📝 Parents complained about 'unfair questions.' Oops.") end
+				end
+			end,
+		},
+	},
+})
+
+table.insert(EducationCareerEvents, {
+	id = "teacher_lesson_plan",
+	emoji = "📚",
+	title = "Lesson Planning",
+	text = "You're preparing tomorrow's lesson. What approach do you take?",
+	category = "career_education",
+	weight = 14,
+	minAge = 23, maxAge = 65,
+	baseChance = 0.50,
+	cooldown = 2,
+	requiresJob = true,
+	eligibility = hasEducationJob,
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "📖 Traditional lecture style",
+			effects = { Smarts = 2 },
+			feedText = "📚 Classic approach. Some students tuned out, others took great notes.",
+		},
+		{
+			text = "🎮 Interactive games and activities",
+			effects = { Happiness = 5, Smarts = 1 },
+			feedText = "📚 Students had fun! Did they learn? Time will tell.",
+		},
+		{
+			text = "💻 Technology-based learning",
+			effects = { Smarts = 3 },
+			feedText = "📚 iPads and computers kept students engaged. Modern teaching!",
+		},
+		{
+			text = "🎬 Show a documentary",
+			effects = { Happiness = 3 },
+			feedText = "📚 Easy day for you. Students learned... maybe? At least it was peaceful.",
+		},
+		{
+			text = "👥 Group projects and discussions",
+			effects = { Smarts = 3, Happiness = 2 },
+			feedText = "📚 Collaborative learning! Some groups thrived, others argued. Normal day.",
+		},
+	},
+})
+
+table.insert(EducationCareerEvents, {
+	id = "teacher_student_question",
+	emoji = "❓",
+	title = "Tough Student Question",
+	textVariants = {
+		"A student raises their hand: 'Why do we have to learn this? When will I ever use this in real life?'",
+		"A curious student asks a question you weren't prepared for. The class is watching your response.",
+		"'That's a great question!' you say, while internally panicking because you don't know the answer.",
+	},
+	text = "How do you handle this?",
+	category = "career_education",
+	weight = 13,
+	minAge = 23, maxAge = 65,
+	baseChance = 0.45,
+	cooldown = 2,
+	requiresJob = true,
+	eligibility = hasEducationJob,
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "Give a thoughtful, inspiring answer",
+			effects = { Smarts = 4, Happiness = 5 },
+			feedText = "❓ Your response actually made the student think differently. Teaching win!",
+		},
+		{
+			text = "Admit you don't know and research it together",
+			effects = { Smarts = 3, Happiness = 3 },
+			feedText = "❓ Honesty impressed them. 'Even teachers are always learning!' Great lesson.",
+		},
+		{
+			text = "Deflect - 'We'll cover that later'",
+			effects = { Happiness = -2 },
+			feedText = "❓ Student saw through that. You've lost some credibility.",
+		},
+		{
+			text = "Make up an answer confidently",
+			effects = {},
+			feedText = "Winging it...",
+			onResolve = function(state)
+				local roll = math.random(1, 100)
+				if roll <= 30 then
+					if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+					if state.AddFeed then state:AddFeed("❓ They bought it! Confidence is key. (You should probably actually look it up later.)") end
+				else
+					if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+					state.Flags = state.Flags or {}
+					state.Flags.caught_lying = true
+					if state.AddFeed then state:AddFeed("❓ A student Googled it and called you out. Embarrassing!") end
+				end
+			end,
+		},
+	},
+})
+
+table.insert(EducationCareerEvents, {
+	id = "teacher_field_trip",
+	emoji = "🚌",
+	title = "Field Trip!",
+	text = "You're organizing a field trip. Where do you take the class?",
+	category = "career_education",
+	weight = 10,
+	minAge = 23, maxAge = 65,
+	baseChance = 0.40,
+	cooldown = 4,
+	requiresJob = true,
+	eligibility = hasEducationJob,
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "🏛️ Museum - educational and classic",
+			effects = { Smarts = 5, Happiness = 3 },
+			feedText = "🚌 Students learned a lot! Only one kid got lost. Success!",
+		},
+		{
+			text = "🌳 Nature park - hands-on learning",
+			effects = { Health = 3, Smarts = 3, Happiness = 4 },
+			feedText = "🚌 Fresh air and nature! Everyone had fun and learned something.",
+		},
+		{
+			text = "🏭 Factory tour - see how things are made",
+			effects = { Smarts = 4 },
+			feedText = "🚌 Industrial learning! A few students found future career interests.",
+		},
+		{
+			text = "🎭 Theater or concert - arts appreciation",
+			effects = { Happiness = 6, Smarts = 2 },
+			feedText = "🚌 Cultural experience! Some students discovered a love for the arts.",
+		},
+		{
+			text = "Cancel - too much paperwork",
+			effects = { Happiness = -3 },
+			feedText = "🚌 Students were disappointed. You avoided the stress though.",
+		},
+	},
+})

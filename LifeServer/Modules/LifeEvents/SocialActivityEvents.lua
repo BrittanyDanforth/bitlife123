@@ -22,9 +22,60 @@
 local SocialEvents = {}
 
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- HELPER FUNCTIONS (CRITICAL FIX: Nil-safe operations)
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function safeModifyStat(state, stat, amount)
+	if not state then return end
+	if state.ModifyStat then
+		state:ModifyStat(stat, amount)
+	elseif state.Stats then
+		state.Stats[stat] = math.clamp((state.Stats[stat] or 50) + amount, 0, 100)
+	else
+		state[stat] = math.clamp((state[stat] or 50) + amount, 0, 100)
+	end
+end
+
+-- CRITICAL FIX: Check if player can do social activities
+local function canDoSocialActivities(state)
+	if not state then return false end
+	local flags = state.Flags or {}
+	-- Can't go out socially from prison!
+	if flags.in_prison or flags.incarcerated or flags.in_jail then
+		return false
+	end
+	return true
+end
+
+-- CRITICAL FIX: Check age requirements for social activities
+local function isOldEnoughForActivity(state, minAge)
+	local age = state.Age or 0
+	return age >= (minAge or 13)
+end
+
+-- CRITICAL FIX: Check if player has money for social activities
+local function hasMinMoney(state, amount)
+	return (state.Money or 0) >= amount
+end
+
+-- CRITICAL FIX: Process cost safely
+local function processCost(state, cost)
+	if not cost or cost <= 0 then return true end
+	if not state then return false end
+	
+	local money = state.Money or 0
+	if money < cost then return false end
+	
+	state.Money = money - cost
+	return true
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
 -- JUICE BAR / HANGOUT SPOT EVENTS (TOS-Safe replacement for bar)
 -- ═══════════════════════════════════════════════════════════════════════════════
 SocialEvents.JuiceBar = {
+	-- CRITICAL FIX: Category-wide eligibility
+	eligibility = function(state) return canDoSocialActivities(state) and isOldEnoughForActivity(state, 16) end,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	-- Event 1: Regular visit
 	{
 		id = "juicebar_visit",
@@ -228,6 +279,9 @@ SocialEvents.JuiceBar = {
 -- NIGHTCLUB EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 SocialEvents.Nightclub = {
+	-- CRITICAL FIX: Category-wide eligibility - must be 18+ for nightclubs!
+	eligibility = function(state) return canDoSocialActivities(state) and isOldEnoughForActivity(state, 18) end,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	-- Event 1: Club night
 	{
 		id = "nightclub_visit",
@@ -356,6 +410,9 @@ SocialEvents.Nightclub = {
 -- PARTY EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 SocialEvents.Party = {
+	-- CRITICAL FIX: Category-wide eligibility - teens can go to parties
+	eligibility = function(state) return canDoSocialActivities(state) and isOldEnoughForActivity(state, 14) end,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	-- Event 1: House party
 	{
 		id = "party_house",
@@ -493,6 +550,9 @@ SocialEvents.Party = {
 -- CONCERT EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 SocialEvents.Concert = {
+	-- CRITICAL FIX: Category-wide eligibility
+	eligibility = function(state) return canDoSocialActivities(state) and isOldEnoughForActivity(state, 10) end,
+	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	-- Event 1: Live concert
 	{
 		id = "concert_attend",

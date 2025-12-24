@@ -150,8 +150,9 @@ PetEvents.events = {
 						if state.AddFeed then state:AddFeed("🐕 Temporary foster. Found them a good home!") end
 					else
 						if state.ModifyStat then state:ModifyStat("Happiness", 3) end
-						state.Money = (state.Money or 0) - 200
-						state:AddFeed("🐕 Needed lots of vet care. Worth it to help.")
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 200)
+						if state.AddFeed then state:AddFeed("🐕 Needed lots of vet care. Worth it to help.") end
 					end
 				end,
 			},
@@ -194,18 +195,20 @@ PetEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.55 then
-						state:ModifyStat("Happiness", 6)
-						state:AddFeed("🏥 Clean bill of health! Healthy pet! Good owner!")
+						if state.ModifyStat then state:ModifyStat("Happiness", 6) end
+						if state.AddFeed then state:AddFeed("🏥 Clean bill of health! Healthy pet! Good owner!") end
 					elseif roll < 0.80 then
-						state:ModifyStat("Happiness", 2)
-						state.Money = (state.Money or 0) - 100
-						state:AddFeed("🏥 Minor issues. Meds prescribed. Extra cost but manageable.")
+						if state.ModifyStat then state:ModifyStat("Happiness", 2) end
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 100)
+						if state.AddFeed then state:AddFeed("🏥 Minor issues. Meds prescribed. Extra cost but manageable.") end
 					else
-						state:ModifyStat("Happiness", -5)
-						state.Money = (state.Money or 0) - 500
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 500)
 						state.Flags = state.Flags or {}
 						state.Flags.sick_pet = true
-						state:AddFeed("🏥 Serious health issue found. Treatment needed. Expensive.")
+						if state.AddFeed then state:AddFeed("🏥 Serious health issue found. Treatment needed. Expensive.") end
 					end
 				end,
 			},
@@ -319,16 +322,18 @@ PetEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.50 then
-						state:ModifyStat("Happiness", -2)
-						state:AddFeed("😈 Chewed up a shoe. Annoying but not tragic.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then state:AddFeed("😈 Chewed up a shoe. Annoying but not tragic.") end
 					elseif roll < 0.80 then
-						state:ModifyStat("Happiness", -4)
-						state.Money = (state.Money or 0) - 50
-						state:AddFeed("😈 Knocked over something valuable. Replacement needed.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -4) end
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 50)
+						if state.AddFeed then state:AddFeed("😈 Knocked over something valuable. Replacement needed.") end
 					else
-						state:ModifyStat("Happiness", -6)
-						state.Money = (state.Money or 0) - 200
-						state:AddFeed("😈 Major destruction! Expensive damage. Love them anyway.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -6) end
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 200)
+						if state.AddFeed then state:AddFeed("😈 Major destruction! Expensive damage. Love them anyway.") end
 					end
 				end,
 			},
@@ -421,18 +426,20 @@ PetEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.50 then
-						state:ModifyStat("Happiness", 5)
-						state:AddFeed("😰 False alarm! They're okay! Expensive relief!")
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then state:AddFeed("😰 False alarm! They're okay! Expensive relief!") end
 					elseif roll < 0.80 then
-						state:ModifyStat("Happiness", -3)
-						state.Money = (state.Money or 0) - 300
-						state:AddFeed("😰 Treatable condition. More treatment needed. Scary but hopeful.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 300)
+						if state.AddFeed then state:AddFeed("😰 Treatable condition. More treatment needed. Scary but hopeful.") end
 					else
-						state:ModifyStat("Happiness", -8)
-						state.Money = (state.Money or 0) - 800
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 800)
 						state.Flags = state.Flags or {}
 						state.Flags.critically_ill_pet = true
-						state:AddFeed("😰 Serious diagnosis. Major surgery needed. Devastated.")
+						if state.AddFeed then state:AddFeed("😰 Serious diagnosis. Major surgery needed. Devastated.") end
 					end
 				end,
 			},

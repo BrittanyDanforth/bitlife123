@@ -3382,11 +3382,11 @@ local function buildDeathUI()
 	DeathUI.epitaph.ZIndex = 122
 	DeathUI.epitaph.Parent = DeathUI.epitaphSection
 
-	-- Restart button section (EXPANDED: Time Machine + New Life + Promo)
+	-- Restart button section (EXPANDED: Time Machine + Continue as Kid + New Life + Promo)
 	DeathUI.buttonSection = Instance.new("Frame")
 	DeathUI.buttonSection.Name = "ButtonSection"
-	-- CRITICAL FIX: Increased height to fit promo section
-	DeathUI.buttonSection.Size = UDim2.new(1, 0, 0, 300)
+	-- CRITICAL FIX: Increased height to fit Continue as Kid button
+	DeathUI.buttonSection.Size = UDim2.new(1, 0, 0, 380)
 	DeathUI.buttonSection.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
 	DeathUI.buttonSection.ZIndex = 121
 	DeathUI.buttonSection.LayoutOrder = 5
@@ -3595,10 +3595,71 @@ local function buildDeathUI()
 		end
 	end
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FEATURE: Continue as Your Kid Button
+	-- User requested: "I WANT A CONTINUE AS YOUR KID BUTTON WHEN YOU DIE"
+	-- Allows player to continue as their adult child (18+) with inherited assets
+	-- Can only be used ONCE per life (not infinitely)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	DeathUI.continueAsKidBtn = Instance.new("TextButton")
+	DeathUI.continueAsKidBtn.Size = UDim2.new(0.85, 0, 0, 56)
+	DeathUI.continueAsKidBtn.Position = UDim2.new(0.075, 0, 0, 195)
+	DeathUI.continueAsKidBtn.BackgroundColor3 = Color3.fromRGB(88, 86, 214) -- Purple
+	DeathUI.continueAsKidBtn.Font = F.Button
+	DeathUI.continueAsKidBtn.TextSize = 18
+	DeathUI.continueAsKidBtn.TextColor3 = C.White
+	DeathUI.continueAsKidBtn.Text = "👶 Continue as Your Child"
+	DeathUI.continueAsKidBtn.AutoButtonColor = false
+	DeathUI.continueAsKidBtn.ZIndex = 122
+	DeathUI.continueAsKidBtn.Visible = false -- Hidden by default, shown if eligible
+	DeathUI.continueAsKidBtn.Parent = DeathUI.buttonSection
+	corner(DeathUI.continueAsKidBtn, 16)
+	
+	local kidBtnHoverColor = Color3.fromRGB(76, 73, 186) -- Darker purple
+	DeathUI.continueAsKidBtn.MouseEnter:Connect(function()
+		tween(DeathUI.continueAsKidBtn, TweenInfo.new(0.12), { BackgroundColor3 = kidBtnHoverColor })
+	end)
+	DeathUI.continueAsKidBtn.MouseLeave:Connect(function()
+		tween(DeathUI.continueAsKidBtn, TweenInfo.new(0.12), { BackgroundColor3 = Color3.fromRGB(88, 86, 214) })
+	end)
+	
+	-- Handler for Continue as Kid button
+	local ContinueAsKid = remotesFolder:FindFirstChild("ContinueAsKid")
+	DeathUI.continueAsKidBtn.MouseButton1Click:Connect(function()
+		if not DeathUI._continueAsKidData then return end
+		
+		DeathUI.continueAsKidBtn.Text = "⏳ Inheriting legacy..."
+		
+		if ContinueAsKid then
+			local ok, result = pcall(function()
+				return ContinueAsKid:InvokeServer(DeathUI._continueAsKidData.child)
+			end)
+			
+			if ok and result and result.success then
+				-- Success! Hide death overlay and refresh
+				hideDeathOverlay()
+				if updateFromState then
+					updateFromState()
+				end
+			else
+				-- Failed - show error
+				DeathUI.continueAsKidBtn.Text = "❌ " .. (result and result.message or "Failed")
+				task.delay(2, function()
+					if DeathUI._continueAsKidData then
+						local child = DeathUI._continueAsKidData.child
+						DeathUI.continueAsKidBtn.Text = string.format("👶 Continue as %s", child.name or "Your Child")
+					end
+				end)
+			end
+		else
+			DeathUI.continueAsKidBtn.Text = "❌ Feature unavailable"
+		end
+	end)
+
 	DeathUI.restart = Instance.new("TextButton")
 	DeathUI.restart.Size = UDim2.new(0.85, 0, 0, 56)
-	-- CRITICAL FIX: Moved down to accommodate promo section
-	DeathUI.restart.Position = UDim2.new(0.075, 0, 0, 195)
+	-- CRITICAL FIX: Moved down to accommodate Continue as Kid button
+	DeathUI.restart.Position = UDim2.new(0.075, 0, 0, 260)
 	DeathUI.restart.BackgroundColor3 = C.Green
 	DeathUI.restart.Font = F.Button
 	DeathUI.restart.TextSize = 20
@@ -3689,7 +3750,7 @@ local function createAchievementBadge(icon, text, order)
 	return badge
 end
 
-showDeathOverlay = function(causeText, age)
+showDeathOverlay = function(causeText, age, canContinueAsKid, continueAsKidData)
 	local name = currentState.Name or "Unknown"
 	local finalAge = age or currentState.Age or 0
 	local birthYear = 2024 - finalAge
@@ -3705,6 +3766,25 @@ showDeathOverlay = function(causeText, age)
 	-- CRITICAL FIX: Update Time Machine UI based on gamepass ownership
 	if DeathUI.updateTimeMachineUI then
 		DeathUI.updateTimeMachineUI()
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FEATURE: Continue as Your Kid button
+	-- User requested: "I WANT A CONTINUE AS YOUR KID BUTTON WHEN YOU DIE"
+	-- Shows only if player has adult children to continue as
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if DeathUI.continueAsKidBtn then
+		if canContinueAsKid and continueAsKidData and continueAsKidData.child then
+			local child = continueAsKidData.child
+			DeathUI.continueAsKidBtn.Visible = true
+			DeathUI.continueAsKidBtn.Text = string.format("👶 Continue as %s (Age %d)", child.name or "Your Child", child.age or 18)
+			
+			-- Store data for the button click handler
+			DeathUI._continueAsKidData = continueAsKidData
+		else
+			DeathUI.continueAsKidBtn.Visible = false
+			DeathUI._continueAsKidData = nil
+		end
 	end
 
 	-- Clear old stats
@@ -6885,9 +6965,10 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 	-- Check for death (from result data or health hitting 0)
 	if resultData and resultData.fatal then
 		local causeText = resultData.cause or resultData.body or lastFeedText or "You passed away."
-		showDeathOverlay(causeText, state.Age)
+		-- CRITICAL FEATURE: Pass continue as kid data to death overlay
+		showDeathOverlay(causeText, state.Age, resultData.canContinueAsKid, resultData.continueAsKidData)
 	elseif currentState.Health and currentState.Health <= 0 then
-		showDeathOverlay("Health depleted.", state.Age)
+		showDeathOverlay("Health depleted.", state.Age, false, nil)
 	else
 		hideDeathOverlay()
 	end

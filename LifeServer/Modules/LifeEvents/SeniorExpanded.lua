@@ -47,9 +47,16 @@ SeniorExpanded.events = {
 		-- CRITICAL: Random travel outcome
 		choices = {
 			{
-				text = "Dream vacation abroad",
+				text = "Dream vacation abroad ($3,000)",
 				effects = { Money = -3000 },
 				feedText = "Off to see the world...",
+				-- CRITICAL FIX: Add eligibility check for affordability
+				eligibility = function(state)
+					if (state.Money or 0) < 3000 then
+						return false, "Can't afford $3,000 vacation"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local health = (state.Stats and state.Stats.Health) or 50
 					local roll = math.random()
@@ -70,14 +77,28 @@ SeniorExpanded.events = {
 				end,
 			},
 			{
-				text = "Road trip adventure",
+				text = "Road trip adventure ($800)",
 				effects = { Money = -800, Happiness = 10, Health = 1 },
 				feedText = "Open road, no schedule, pure freedom!",
+				-- CRITICAL FIX: Add eligibility check for affordability
+				eligibility = function(state)
+					if (state.Money or 0) < 800 then
+						return false, "Can't afford $800 trip"
+					end
+					return true
+				end,
 			},
 			{
-				text = "Cruise ship vacation",
+				text = "Cruise ship vacation ($2,000)",
 				effects = { Money = -2000 },
 				feedText = "Setting sail...",
+				-- CRITICAL FIX: Add eligibility check for affordability
+				eligibility = function(state)
+					if (state.Money or 0) < 2000 then
+						return false, "Can't afford $2,000 cruise"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.70 then
@@ -292,6 +313,24 @@ SeniorExpanded.events = {
 					local age = state.Age or 70
 					local roll = math.random()
 					local goodChance = 0.30 + (health / 200) - (age / 300)
+					
+					-- CRITICAL FIX: User complained "CHRONIC ILLNESS DIAGNOSIS YOUVE BEEN DIAGNOSED WITH A CHRONIC CONDITION"
+					-- Now specifies ACTUAL condition names!
+					local chronicConditions = {
+						{ name = "Type 2 Diabetes", flag = "diabetes", treatment = "diet and medication" },
+						{ name = "Hypertension", flag = "hypertension", treatment = "blood pressure medication" },
+						{ name = "Arthritis", flag = "arthritis", treatment = "anti-inflammatory medication" },
+						{ name = "High Cholesterol", flag = "high_cholesterol", treatment = "statins" },
+						{ name = "Osteoporosis", flag = "osteoporosis", treatment = "calcium supplements" },
+						{ name = "COPD", flag = "copd", treatment = "inhalers" },
+					}
+					local seriousConditions = {
+						{ name = "Heart Arrhythmia", flag = "heart_arrhythmia", treatment = "cardiac monitoring" },
+						{ name = "Early Stage Cancer", flag = "early_cancer", treatment = "oncology referral" },
+						{ name = "Kidney Disease", flag = "kidney_disease", treatment = "dialysis may be needed" },
+						{ name = "Liver Problems", flag = "liver_problems", treatment = "specialist care" },
+					}
+					
 					if roll < goodChance then
 						state:ModifyStat("Happiness", 8)
 						state:ModifyStat("Health", 2)
@@ -299,19 +338,25 @@ SeniorExpanded.events = {
 					elseif roll < goodChance + 0.30 then
 						state:ModifyStat("Happiness", -3)
 						state:ModifyStat("Health", -3)
-						state:AddFeed("🏥 Minor issue found. Manageable with medication.")
+						state:AddFeed("🏥 Minor vitamin deficiency found. Taking supplements.")
 					elseif roll < goodChance + 0.50 then
 						state:ModifyStat("Happiness", -6)
 						state:ModifyStat("Health", -8)
 						state.Flags = state.Flags or {}
+						local condition = chronicConditions[math.random(1, #chronicConditions)]
 						state.Flags.chronic_condition = true
-						state:AddFeed("🏥 Chronic condition diagnosed. Lifestyle changes needed.")
+						state.Flags[condition.flag] = true
+						state.Flags.current_condition_name = condition.name
+						state:AddFeed(string.format("🏥 Diagnosed with %s. Doctor prescribed %s.", condition.name, condition.treatment))
 					else
 						state:ModifyStat("Happiness", -12)
 						state:ModifyStat("Health", -15)
 						state.Flags = state.Flags or {}
+						local condition = seriousConditions[math.random(1, #seriousConditions)]
 						state.Flags.serious_illness = true
-						state:AddFeed("🏥 Serious diagnosis. Treatment options being discussed.")
+						state.Flags[condition.flag] = true
+						state.Flags.current_condition_name = condition.name
+						state:AddFeed(string.format("🏥 Serious diagnosis: %s detected. %s required.", condition.name, condition.treatment))
 					end
 				end,
 			},
@@ -353,7 +398,8 @@ SeniorExpanded.events = {
 					elseif roll < 0.90 then
 						state:ModifyStat("Happiness", -8)
 						state:ModifyStat("Health", -15)
-						state.Money = (state.Money or 0) - 1000
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 1000)
 						state.Flags = state.Flags or {}
 						state.Flags.broken_bone_senior = true
 						state:AddFeed("⚠️ Broken bone. Hospital and rehab. Serious setback.")
@@ -893,7 +939,8 @@ SeniorExpanded.events = {
 						state:ModifyStat("Happiness", 2)
 						state:AddFeed("🚨 Almost got you! Caught it just in time. Close call.")
 					else
-						state.Money = (state.Money or 0) - 500
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 500)
 						state:ModifyStat("Happiness", -8)
 						state.Flags = state.Flags or {}
 						state.Flags.scam_victim = true

@@ -184,7 +184,8 @@ TravelEvents.events = {
 							state:ModifyStat("Happiness", -2)
 							state:ModifyStat("Health", -5)
 						end
-						state.Money = (state.Money or 0) - 200
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 200)
 						if state.AddFeed then state:AddFeed("🏔️ Wiped out hard. Injury on the slopes. Ouch.") end
 					end
 				end,
@@ -255,7 +256,8 @@ TravelEvents.events = {
 						state:AddFeed("✈️ Amazing trip! Some travel mishaps but memories for life!")
 					else
 						state:ModifyStat("Happiness", 4)
-						state.Money = (state.Money or 0) - 500
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 500)
 						state:AddFeed("✈️ Got robbed/scammed. Ruined parts of trip. Stressful.")
 					end
 				end,
@@ -351,12 +353,14 @@ TravelEvents.events = {
 						state:AddFeed("🚗 Good trip! Some long stretches but worth it!")
 					elseif roll < 0.95 then
 						state:ModifyStat("Happiness", 2)
-						state.Money = (state.Money or 0) - 150
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 150)
 						state:AddFeed("🚗 Car trouble. Breakdown delayed everything.")
 					else
 						state:ModifyStat("Happiness", -4)
 						state:ModifyStat("Health", -3)
-						state.Money = (state.Money or 0) - 300
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 300)
 						state:AddFeed("🚗 Minor accident. Everyone okay but car damaged.")
 					end
 				end,
@@ -510,7 +514,8 @@ TravelEvents.events = {
 						state:AddFeed("✈️ Major delay. Lost half a day. Frustrating!")
 					elseif roll < 0.90 then
 						state:ModifyStat("Happiness", -8)
-						state.Money = (state.Money or 0) - 100
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 100)
 						state:AddFeed("✈️ Cancelled flight! Scrambling for alternatives!")
 					else
 						state:ModifyStat("Happiness", 3)
@@ -585,7 +590,8 @@ TravelEvents.events = {
 					else
 						state:ModifyStat("Happiness", -3)
 						state:ModifyStat("Health", -5)
-						state.Money = (state.Money or 0) - 500
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 500)
 						state:AddFeed("🎢 Hard landing. Minor injury. Still wild experience.")
 					end
 				end,

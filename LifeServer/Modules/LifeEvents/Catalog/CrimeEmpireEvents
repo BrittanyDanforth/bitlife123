@@ -486,7 +486,8 @@ local events = {
 				feedText = "Money talks.",
 				eligibility = function(state) return (state.Money or 0) >= 50000 end,
 				onResolve = function(state)
-					state.Money = (state.Money or 0) - 50000
+					-- CRITICAL FIX: Prevent negative money (eligibility check ensures we have enough)
+					state.Money = math.max(0, (state.Money or 0) - 50000)
 					state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) + 25
 					state.Flags.businessman_criminal = true
 					state:AddFeed("💰 Paid $50,000. They're out. Business as usual.")
@@ -692,7 +693,8 @@ local events = {
 				feedText = "Everyone has a price.",
 				eligibility = function(state) return (state.Money or 0) >= 25000 end,
 				onResolve = function(state)
-					state.Money = (state.Money or 0) - 25000
+					-- CRITICAL FIX: Prevent negative money
+					state.Money = math.max(0, (state.Money or 0) - 25000)
 					state.Flags.wanted = nil
 					state.Flags.has_cops_paid_off = true
 					state:AddFeed("💰 Paid $25,000. Problem solved... for now.")
@@ -805,7 +807,8 @@ local events = {
 				effects = {},
 				feedText = "New territory, new opportunities.",
 				onResolve = function(state)
-					state.Money = (state.Money or 0) - 20000
+					-- CRITICAL FIX: Prevent negative money
+					state.Money = math.max(0, (state.Money or 0) - 20000)
 					local roll = RANDOM:NextNumber()
 					if roll < 0.6 then
 						state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) + 25
@@ -824,7 +827,8 @@ local events = {
 				feedText = "The future of crime is online.",
 				setFlags = { cyber_criminal = true },
 				onResolve = function(state)
-					state.Money = (state.Money or 0) - 10000
+					-- CRITICAL FIX: Prevent negative money
+					state.Money = math.max(0, (state.Money or 0) - 10000)
 					state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) + 15
 					local payout = RANDOM:NextInteger(15000, 50000)
 					state.Money = (state.Money or 0) + payout
@@ -836,8 +840,11 @@ local events = {
 				effects = {},
 				feedText = "Clean money is the best money.",
 				setFlags = { has_front_business = true },
+				-- CRITICAL FIX: Add eligibility check for affordability
+				eligibility = function(state) return (state.Money or 0) >= 50000 end,
 				onResolve = function(state)
-					state.Money = (state.Money or 0) - 50000
+					-- CRITICAL FIX: Prevent negative money
+					state.Money = math.max(0, (state.Money or 0) - 50000)
 					state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) + 10
 					state:AddFeed("🏭 Opened a laundromat. Now you can clean your money.")
 				end,

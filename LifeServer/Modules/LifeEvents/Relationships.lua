@@ -842,7 +842,22 @@ Relationships.events = {
 						state.Flags.has_partner = true
 						state.Flags.dating = true
 						state.Flags.great_first_date = true
-						state:AddFeed("☕ Amazing chemistry! Best first date ever! You're smitten.")
+						-- CRITICAL FIX: Actually create the partner object!
+						state.Relationships = state.Relationships or {}
+						local isMale = math.random() > 0.5
+						local names = isMale 
+							and {"Liam", "Noah", "Oliver", "Elijah", "Lucas", "Mason", "Logan", "Henry", "Jack", "Owen"}
+							or {"Sophia", "Olivia", "Emma", "Ava", "Isabella", "Mia", "Luna", "Harper", "Ella", "Evelyn"}
+						local partnerName = names[math.random(1, #names)]
+						state.Relationships.partner = {
+							id = "partner",
+							name = partnerName,
+							type = "romantic",
+							role = isMale and "Boyfriend" or "Girlfriend",
+							relationship = 70,
+							age = (state.Age or 25) + math.random(-5, 5),
+						}
+						state:AddFeed("☕ Amazing chemistry with " .. partnerName .. "! Best first date ever! You're smitten.")
 					elseif roll < successChance + 0.30 then
 						state:ModifyStat("Happiness", 3)
 						state:AddFeed("☕ Nice enough, but no real spark. Probably won't call them.")
@@ -867,7 +882,22 @@ Relationships.events = {
 						state.Flags = state.Flags or {}
 						state.Flags.has_partner = true
 						state.Flags.dating = true
-						state:AddFeed("☕ They found you intriguing! Chemistry is building.")
+						-- CRITICAL FIX: Actually create the partner object!
+						state.Relationships = state.Relationships or {}
+						local isMale = math.random() > 0.5
+						local names = isMale 
+							and {"Ethan", "Aiden", "Jackson", "Sebastian", "Mateo", "Leo", "Asher", "Benjamin", "Ezra", "Miles"}
+							or {"Chloe", "Penelope", "Layla", "Riley", "Zoey", "Nora", "Lily", "Eleanor", "Hannah", "Lillian"}
+						local partnerName = names[math.random(1, #names)]
+						state.Relationships.partner = {
+							id = "partner",
+							name = partnerName,
+							type = "romantic",
+							role = isMale and "Boyfriend" or "Girlfriend",
+							relationship = 60,
+							age = (state.Age or 25) + math.random(-5, 5),
+						}
+						state:AddFeed("☕ " .. partnerName .. " found you intriguing! Chemistry is building.")
 					elseif roll < successChance + 0.35 then
 						state:ModifyStat("Happiness", 2)
 						state:AddFeed("☕ They couldn't really read you. Mixed signals all around.")
@@ -888,7 +918,22 @@ Relationships.events = {
 						state.Flags = state.Flags or {}
 						state.Flags.has_partner = true
 						state.Flags.dating = true
-						state:AddFeed("☕ They found your nervousness endearing! How sweet!")
+						-- CRITICAL FIX: Actually create the partner object!
+						state.Relationships = state.Relationships or {}
+						local isMale = math.random() > 0.5
+						local names = isMale 
+							and {"Carter", "Jayden", "Luke", "Dylan", "Grayson", "Isaac", "Nathan", "Caleb", "Ryan", "Adrian"}
+							or {"Addison", "Aubrey", "Savannah", "Brooklyn", "Leah", "Stella", "Natalie", "Zoe", "Hazel", "Violet"}
+						local partnerName = names[math.random(1, #names)]
+						state.Relationships.partner = {
+							id = "partner",
+							name = partnerName,
+							type = "romantic",
+							role = isMale and "Boyfriend" or "Girlfriend",
+							relationship = 65,
+							age = (state.Age or 25) + math.random(-5, 5),
+						}
+						state:AddFeed("☕ " .. partnerName .. " found your nervousness endearing! How sweet!")
 					elseif roll < 0.50 then
 						state:ModifyStat("Happiness", 1)
 						state:AddFeed("☕ You were awkward but they were nice about it.")
@@ -1592,6 +1637,8 @@ Relationships.events = {
 		minAge = 16, maxAge = 45,
 		baseChance = 0.4,
 		cooldown = 2,
+		-- CRITICAL FIX: MUST have a partner to get pregnant! User reported baby without partner
+		requiresFlags = { has_partner = true },
 
 		choices = {
 			{ 
@@ -1866,7 +1913,8 @@ Relationships.events = {
 					if roll <= 25 then
 						-- Caught doing something illegal
 						state.Flags.child_delinquent = true
-						state.Money = (state.Money or 0) - 2000
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 2000)
 						if state.ModifyStat then
 							state:ModifyStat("Happiness", -15)
 						end
@@ -1892,7 +1940,8 @@ Relationships.events = {
 						end
 					else
 						-- Fighting
-						state.Money = (state.Money or 0) - 500
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 500)
 						if state.ModifyStat then
 							state:ModifyStat("Happiness", -12)
 						end

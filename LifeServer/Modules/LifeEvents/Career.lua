@@ -909,7 +909,8 @@ Career.events = {
 						if state.ModifyStat then
 							state:ModifyStat("Happiness", -15)
 						end
-						state.Money = (state.Money or 0) - 500
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 500)
 						if state.AddFeed then
 							state:AddFeed("📦 Fired for performance issues. You saw it coming.")
 						end
@@ -2846,6 +2847,24 @@ Career.events = {
 	requiresJobCategory = "education",
 	blockedByFlags = { in_prison = true },
 	
+	-- CRITICAL FIX: User reported getting this as non-teacher!
+	-- "ANGRY PARENT A PARENT IS FURIOUS ABOUT THEIR CHILD'S GRADE. BRO IM NOT A TEACHER???"
+	-- Add explicit eligibility check as backup to requiresJobCategory
+	eligibility = function(state)
+		if not state.CurrentJob then return false end
+		local jobId = (state.CurrentJob.id or ""):lower()
+		local jobCat = (state.CurrentJob.category or ""):lower()
+		-- Must be in education field
+		local isTeacher = jobCat == "education" or jobCat == "teaching" 
+			or jobId:find("teacher") or jobId:find("professor") 
+			or jobId:find("instructor") or jobId:find("educator")
+			or jobId:find("tutor") or jobId:find("principal")
+		if not isTeacher then
+			return false, "Not a teacher"
+		end
+		return true
+	end,
+	
 	stage = STAGE,
 	ageBand = "working_age",
 	category = "career_education",
@@ -3333,7 +3352,8 @@ Career.events = {
 						state:ModifyStat("Happiness", 10)
 						state:AddFeed("🚀 Startup did okay. Made some money and gained great experience.")
 					else
-						state.Money = (state.Money or 0) - 10000
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 10000)
 						state:ModifyStat("Happiness", -15)
 						state.Flags = state.Flags or {}
 						state.Flags.startup_failed = true

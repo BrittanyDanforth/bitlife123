@@ -201,7 +201,8 @@ LegalEvents.events = {
 						state:AddFeed("💔 Painful but civil. Fair split. Moving forward.")
 					else
 						state:ModifyStat("Happiness", -10)
-						state.Money = (state.Money or 0) - 500
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 500)
 						state.Flags = state.Flags or {}
 						state.Flags.married = nil
 						state.Flags.divorced = true
@@ -349,7 +350,8 @@ LegalEvents.events = {
 						state:AddFeed("💼 Settled out of court. Some compensation.")
 					else
 						state:ModifyStat("Happiness", -6)
-						state.Money = (state.Money or 0) - 500
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 500)
 						state:AddFeed("💼 Case dismissed. Legal fees wasted.")
 					end
 				end,
@@ -420,7 +422,8 @@ LegalEvents.events = {
 						state:AddFeed("🏘️ Survey proved you right. Boundary settled.")
 					elseif roll < 0.65 then
 						state:ModifyStat("Happiness", 1)
-						state.Money = (state.Money or 0) - 200
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 200)
 						state:AddFeed("🏘️ Compromise reached. Paid for survey. Peace.")
 					else
 						state:ModifyStat("Happiness", -6)
@@ -461,11 +464,13 @@ LegalEvents.events = {
 						state:AddFeed("⚠️ Case dismissed! Lawyer proved their claims false!")
 					elseif roll < 0.70 then
 						state:ModifyStat("Happiness", -2)
-						state.Money = (state.Money or 0) - 500
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 500)
 						state:AddFeed("⚠️ Settled for less than sued for. Could've been worse.")
 					else
 						state:ModifyStat("Happiness", -10)
-						state.Money = (state.Money or 0) - 3000
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 3000)
 						state.Flags = state.Flags or {}
 						state.Flags.lost_lawsuit = true
 						state:AddFeed("⚠️ Lost the case. Major financial hit. Devastating.")
@@ -530,11 +535,13 @@ LegalEvents.events = {
 						state:AddFeed("🚦 DISMISSED! Beat the ticket! No points, no fine!")
 					elseif roll < (winChance * 2) then
 						state:ModifyStat("Happiness", 3)
-						state.Money = (state.Money or 0) - 100
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 100)
 						state:AddFeed("🚦 Reduced fine. Better than full ticket.")
 					else
 						state:ModifyStat("Happiness", -4)
-						state.Money = (state.Money or 0) - 250
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 250)
 						state:AddFeed("🚦 Judge wasn't convinced. Full fine plus court costs.")
 					end
 				end,

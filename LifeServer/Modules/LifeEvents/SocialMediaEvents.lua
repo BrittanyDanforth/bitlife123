@@ -472,11 +472,18 @@ SocialMediaEvents.events = {
 						state:AddFeed("🔐 Account hacked! Had to recover. Stressful but recovered.")
 					elseif roll < 0.85 then
 						state:ModifyStat("Happiness", -8)
-						state.Money = (state.Money or 0) - 200
+						-- CRITICAL FIX: Prevent money going negative
+						state.Money = math.max(0, (state.Money or 0) - 200)
 						state:AddFeed("🔐 Unauthorized purchases! Disputed but lost some money!")
 					else
 						state:ModifyStat("Happiness", -12)
-						state.Money = (state.Money or 0) - 1000
+						-- CRITICAL FIX: Prevent money going negative, add debt flag if needed
+						local lossAmount = 1000
+						if (state.Money or 0) < lossAmount then
+							state.Flags = state.Flags or {}
+							state.Flags.identity_theft_debt = true
+						end
+						state.Money = math.max(0, (state.Money or 0) - lossAmount)
 						state.Flags = state.Flags or {}
 						state.Flags.identity_stolen = true
 						state:AddFeed("🔐 IDENTITY THEFT! Major damage. Long recovery ahead.")

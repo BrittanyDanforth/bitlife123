@@ -4517,9 +4517,15 @@ local JobCatalogList = {
 		requiresFlags = { "athlete", "school_sports", "fitness_experience", "minor_league_player", "pro_athlete", "coach_experience" }, -- CRITICAL FIX: Need athletic background OR coaching experience
 		grantsFlags = { "coach_experience", "coaching_career" },
 		description = "Requires athletic background - teaching and athletic knowledge" },
+	-- CRITICAL FIX: Added senior_coach position between coach and head_coach
+	{ id = "senior_coach", name = "Senior Coach", company = "Sports Organization", emoji = "📋", salary = 85000, minAge = 30, requirement = "bachelor", category = "sports",
+		minStats = { Smarts = 55 }, difficulty = 5, 
+		requiresFlags = { "coach_experience", "coaching_career" },
+		grantsFlags = { "senior_coaching", "coaching_career" },
+		description = "Experienced coaching position" },
 	{ id = "head_coach", name = "Head Coach", company = "Pro Team", emoji = "📋", salary = 1500000, minAge = 40, requirement = "bachelor", category = "sports",
 		minStats = { Smarts = 65 }, difficulty = 8, 
-		requiresFlags = { "coach_experience", "coaching_career" }, -- CRITICAL FIX: Must have coaching experience
+		requiresFlags = { "senior_coaching", "coaching_career" }, -- CRITICAL FIX: Must have senior coaching experience
 		grantsFlags = { "head_coach", "elite_coach" },
 		description = "Requires coaching experience - elite coaching position" },
 
@@ -5331,6 +5337,109 @@ local ActivityCatalog = {
 	hangout = { stats = { Happiness = 3 }, feed = "hung out with friends", cost = 0 },
 	nightclub = { stats = { Happiness = 6, Health = -2 }, feed = "went clubbing", cost = 50 },
 	host_party = { stats = { Happiness = 8 }, feed = "hosted a party", cost = 300 },
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: ROMANCE & DATING ACTIVITIES - These were completely missing!
+	-- ═══════════════════════════════════════════════════════════════════════════
+	look_for_love = { 
+		stats = { Happiness = 5 }, 
+		feed = "looked for love",
+		cost = 0,
+		requiresAge = 16,
+		requiresSingle = true,
+		isRomanceSearch = true, -- Special handler will create partner if lucky
+	},
+	online_dating = { 
+		stats = { Happiness = 3 }, 
+		feed = "tried online dating",
+		cost = 0,
+		requiresAge = 18,
+		requiresSingle = true,
+		isRomanceSearch = true,
+	},
+	speed_dating = {
+		stats = { Happiness = 4 },
+		feed = "went speed dating",
+		cost = 50,
+		requiresAge = 18,
+		requiresSingle = true,
+		isRomanceSearch = true,
+	},
+	go_on_date = {
+		stats = { Happiness = 8 },
+		feed = "went on a romantic date! 💕",
+		cost = 50,
+		requiresAge = 16,
+		requiresPartner = true,
+		relationshipBoostPartner = 8,
+	},
+	romantic_dinner = {
+		stats = { Happiness = 10 },
+		feed = "had a romantic dinner! 🍷",
+		cost = 150,
+		requiresAge = 18,
+		requiresPartner = true,
+		relationshipBoostPartner = 12,
+	},
+	spend_time_partner = {
+		stats = { Happiness = 6 },
+		feed = "spent quality time with your partner! 💞",
+		cost = 0,
+		requiresAge = 14,
+		requiresPartner = true,
+		relationshipBoostPartner = 5,
+	},
+	flirt = {
+		stats = { Happiness = 4 },
+		feed = "flirted with someone! 😉",
+		cost = 0,
+		requiresAge = 14,
+		requiresSingle = true,
+		isRomanceSearch = true,
+	},
+	propose = {
+		stats = { Happiness = 15 },
+		feed = "proposed! 💍",
+		cost = 500,
+		requiresAge = 18,
+		requiresPartner = true,
+		blockedByFlag = "engaged",
+		blockedByFlag2 = "married",
+		isProposal = true, -- Special handler
+	},
+	plan_wedding = {
+		stats = { Happiness = 20 },
+		feed = "planned your dream wedding! 💒",
+		cost = 5000,
+		requiresAge = 18,
+		requiresFlag = "engaged",
+		blockedByFlag = "married",
+		isWedding = true, -- Special handler
+		setFlags = { married = true },
+	},
+	-- Friend activities
+	make_friends = {
+		stats = { Happiness = 5 },
+		feed = "made new friends! 👋",
+		cost = 0,
+		requiresAge = 5,
+		isFriendMaking = true, -- Special handler will create friend
+	},
+	hang_with_friends = {
+		stats = { Happiness = 6 },
+		feed = "hung out with friends! 🤝",
+		cost = 0,
+		requiresAge = 5,
+		relationshipBoostFriend = 5,
+	},
+	friend_trip = {
+		stats = { Happiness = 12, Health = 3 },
+		feed = "went on a trip with friends! 🚗",
+		cost = 500,
+		requiresAge = 16,
+		relationshipBoostFriend = 10,
+	},
+	
 	tv = { stats = { Happiness = 2 }, feed = "binged a show", cost = 0 },
 	games = { stats = { Happiness = 3, Smarts = 1 }, feed = "played video games", cost = 0 },
 	movies = { stats = { Happiness = 3 }, feed = "watched a movie", cost = 20 },
@@ -7570,6 +7679,148 @@ local LegalCareerEvents = {
 	},
 }
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #AAA-MEGA-3: ServiceCareerEvents for entry/service/retail workers
+-- Movie ushers, cashiers, servers, etc. don't have office meetings or email overload!
+-- They deal with customers, long shifts, and service industry challenges.
+-- ═══════════════════════════════════════════════════════════════════════════════
+local ServiceCareerEvents = {
+	{
+		id = "service_rude_customer",
+		title = "Difficult Customer",
+		emoji = "😤",
+		text = "A customer is being incredibly rude and demanding, yelling at you over something minor.",
+		question = "How do you handle this?",
+		cooldown = 2,
+		maxOccurrences = 4,
+		choices = {
+			{ text = "Stay calm and professional", deltas = { Happiness = -2, Smarts = 2 }, setFlags = { service_professional = true }, feedText = "You kept your cool with a difficult customer." },
+			{ text = "Get a manager", deltas = { Happiness = 1 }, feedText = "You let your manager handle the situation." },
+			{ text = "Walk away for a moment", deltas = { Happiness = 2 }, feedText = "You took a moment to collect yourself." },
+		},
+	},
+	{
+		id = "service_long_shift",
+		title = "Double Shift",
+		emoji = "😴",
+		text = "Your coworker called in sick. Your boss asks if you can cover their shift too.",
+		question = "What do you say?",
+		cooldown = 3,
+		maxOccurrences = 3,
+		choices = {
+			{ text = "Work the double", deltas = { Happiness = -4, Money = 100 }, setFlags = { service_reliable = true }, feedText = "You worked a grueling double shift." },
+			{ text = "Politely decline", deltas = { Happiness = 2 }, feedText = "You protected your personal time." },
+			{ text = "Agree but leave early if slow", deltas = { Happiness = 0 }, feedText = "You compromised on staying flexible." },
+		},
+	},
+	{
+		id = "service_tip_dispute",
+		title = "Tip Dispute",
+		emoji = "💵",
+		text = "A customer claims they left a big tip but the tip jar is short. They blame you.",
+		question = "What do you do?",
+		cooldown = 4,
+		maxOccurrences = 2,
+		choices = {
+			{ text = "Apologize even though it's not your fault", deltas = { Happiness = -2 }, feedText = "You apologized to calm the situation." },
+			{ text = "Explain you didn't touch their tip", deltas = { Happiness = 1 }, setFlags = { service_honest = true }, feedText = "You stood your ground honestly." },
+			{ text = "Ask manager to check cameras", deltas = { Smarts = 2 }, feedText = "You suggested checking the security footage." },
+		},
+	},
+	{
+		id = "service_coworker_lazy",
+		title = "Slacking Coworker",
+		emoji = "😒",
+		text = "Your coworker keeps disappearing on breaks while you pick up their slack.",
+		question = "What do you do about it?",
+		cooldown = 3,
+		maxOccurrences = 2,
+		choices = {
+			{ text = "Confront them directly", deltas = { Happiness = 1 }, setFlags = { service_assertive = true }, feedText = "You called them out on their slacking." },
+			{ text = "Tell the manager", deltas = { Happiness = 0 }, feedText = "You reported the issue to management." },
+			{ text = "Just keep working harder", deltas = { Happiness = -3 }, setFlags = { service_pushover = true }, feedText = "You said nothing and kept covering for them." },
+		},
+	},
+	{
+		id = "service_small_raise",
+		title = "Raise Discussion",
+		emoji = "💰",
+		text = "You've been working here for a while. Time to ask for a raise?",
+		question = "How do you approach it?",
+		cooldown = 5,
+		maxOccurrences = 2,
+		choices = {
+			{ text = "Ask confidently", deltas = { Happiness = 2, Money = 50 }, setFlags = { service_confident = true }, feedText = "You asked for and got a small raise!" },
+			{ text = "Wait for annual review", deltas = { Happiness = -1 }, feedText = "You decided to wait for the formal review process." },
+			{ text = "Hint at it casually", deltas = { Happiness = 0 }, feedText = "You dropped some hints about compensation." },
+		},
+	},
+}
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #AAA-MEGA-4: CreativeCareerEvents for creative workers
+-- Artists, designers, photographers, etc. have different challenges than office workers.
+-- NOTE: PR Crisis and brand events should ONLY fire for people with public brands!
+-- ═══════════════════════════════════════════════════════════════════════════════
+local CreativeCareerEvents = {
+	{
+		id = "creative_client_revision",
+		title = "Client Revisions",
+		emoji = "🎨",
+		text = "The client wants 'just one more small change' for the tenth time.",
+		question = "How do you handle revision requests?",
+		cooldown = 2,
+		maxOccurrences = 4,
+		choices = {
+			{ text = "Make all the changes", deltas = { Happiness = -3 }, feedText = "You made all their changes again." },
+			{ text = "Explain the revision limit", deltas = { Happiness = 2, Smarts = 2 }, setFlags = { creative_boundaries = true }, feedText = "You professionally explained your revision policy." },
+			{ text = "Suggest a compromise", deltas = { Happiness = 1 }, feedText = "You found a middle ground with the client." },
+		},
+	},
+	{
+		id = "creative_tight_deadline",
+		title = "Tight Deadline",
+		emoji = "⏰",
+		text = "A major project deadline got moved up by a week. Quality or speed?",
+		question = "What do you prioritize?",
+		cooldown = 3,
+		maxOccurrences = 3,
+		choices = {
+			{ text = "Crunch to meet deadline", deltas = { Health = -3, Happiness = -2 }, setFlags = { creative_reliable = true }, feedText = "You pulled all-nighters to deliver on time." },
+			{ text = "Ask for deadline extension", deltas = { Happiness = 2 }, feedText = "You negotiated more time for quality work." },
+			{ text = "Deliver what you can", deltas = { Happiness = 0 }, feedText = "You delivered your best work within the timeframe." },
+		},
+	},
+	{
+		id = "creative_portfolio_review",
+		title = "Portfolio Review",
+		emoji = "📂",
+		text = "A potential client wants to see your recent work. Your portfolio is outdated.",
+		question = "What do you do?",
+		cooldown = 4,
+		maxOccurrences = 2,
+		choices = {
+			{ text = "Update it immediately", deltas = { Happiness = 1, Smarts = 2 }, setFlags = { creative_organized = true }, feedText = "You updated your portfolio and impressed them!" },
+			{ text = "Send what you have", deltas = { Happiness = -1 }, feedText = "You sent your outdated portfolio anyway." },
+			{ text = "Ask for more time", deltas = { Happiness = 0 }, feedText = "You asked for a few days to prepare." },
+		},
+	},
+	{
+		id = "creative_inspiration_block",
+		title = "Creative Block",
+		emoji = "🧱",
+		text = "You're staring at a blank canvas/screen. Nothing is coming to you.",
+		question = "How do you break through?",
+		cooldown = 2,
+		maxOccurrences = 3,
+		choices = {
+			{ text = "Take a walk outside", deltas = { Health = 2, Happiness = 2 }, feedText = "Fresh air helped clear your mind!" },
+			{ text = "Push through", deltas = { Happiness = -2, Smarts = 1 }, feedText = "You forced yourself to work through it." },
+			{ text = "Look at others' work for inspiration", deltas = { Smarts = 2 }, setFlags = { creative_research = true }, feedText = "You found inspiration in others' work." },
+		},
+	},
+}
+
 local OfficeCareerEvents = {
 	{
 		id = "office_credit",
@@ -7716,13 +7967,18 @@ function LifeBackend:buildCareerEvent(state)
 			eventPool = OfficeCareerEvents
 			eventSource = "career_office_generic"
 		end
-	-- Entry-level/service/retail events - use office events as fallback
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #AAA-MEGA-2: Entry-level/service/retail events should use
+	-- ServiceCareerEvents, NOT OfficeCareerEvents! A movie usher doesn't have
+	-- "email overload" or "meeting marathon" - they deal with customers!
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	elseif jobCategory == "entry" or jobCategory == "service" or jobCategory == "retail" then
-		eventPool = OfficeCareerEvents
-		eventSource = "career_entry"
-	-- Creative category (acting, music, etc.)
+		eventPool = ServiceCareerEvents
+		eventSource = "career_service"
+	-- Creative category (acting, music, etc.) - DON'T use office events!
+	-- Creative workers have different work environments than cubicle workers
 	elseif jobCategory == "creative" then
-		eventPool = OfficeCareerEvents -- Use generic office events for creative
+		eventPool = CreativeCareerEvents
 		eventSource = "career_creative"
 	-- Hacker category
 	elseif jobCategory == "hacker" then
@@ -7773,6 +8029,9 @@ function LifeBackend:buildCareerEvent(state)
 	-- CRITICAL FIX #AAA-11: Filter out events that are on cooldown or have maxed occurrences
 	-- This was the main cause of event spam - career events weren't respecting cooldowns
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #AAA-MEGA-1: ALSO check eligibility functions! Without this, office
+	-- events fire for service workers, marketing events fire for movie ushers, etc.
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	state.EventHistory = state.EventHistory or {}
 	local eligibleEvents = {}
 	
@@ -7781,9 +8040,19 @@ function LifeBackend:buildCareerEvent(state)
 		local history = state.EventHistory[eventId]
 		local isEligible = true
 		
+		-- CRITICAL FIX #AAA-MEGA-1: CHECK ELIGIBILITY FUNCTION FIRST!
+		-- This prevents office events from firing for service workers,
+		-- marketing events from firing for movie ushers, etc.
+		if template.eligibility and type(template.eligibility) == "function" then
+			local success, result = pcall(template.eligibility, state)
+			if not success or not result then
+				isEligible = false
+			end
+		end
+		
 		-- Check cooldown (default 2 years for career events)
 		local cooldown = template.cooldown or 2
-		if history and history.lastAge then
+		if isEligible and history and history.lastAge then
 			local yearsSince = (state.Age or 0) - history.lastAge
 			if yearsSince < cooldown then
 				isEligible = false
@@ -7792,13 +8061,33 @@ function LifeBackend:buildCareerEvent(state)
 		
 		-- Check max occurrences (default 3 for career events)
 		local maxOccurrences = template.maxOccurrences or 3
-		if history and (history.count or 0) >= maxOccurrences then
+		if isEligible and history and (history.count or 0) >= maxOccurrences then
 			isEligible = false
 		end
 		
 		-- Check one-time events
-		if template.oneTime and history then
+		if isEligible and template.oneTime and history then
 			isEligible = false
+		end
+		
+		-- CRITICAL FIX: Check blockedByFlags
+		if isEligible and template.blockedByFlags then
+			for flagName, _ in pairs(template.blockedByFlags) do
+				if state.Flags and state.Flags[flagName] then
+					isEligible = false
+					break
+				end
+			end
+		end
+		
+		-- CRITICAL FIX: Check requiresFlags
+		if isEligible and template.requiresFlags then
+			for _, flagName in ipairs(template.requiresFlags) do
+				if not state.Flags or not state.Flags[flagName] then
+					isEligible = false
+					break
+				end
+			end
 		end
 		
 		if isEligible then
@@ -8083,6 +8372,8 @@ function LifeBackend:setupRemotes()
 	self.remotes.StartPath = self:createRemote("StartPath", "RemoteFunction")
 	self.remotes.DoPathAction = self:createRemote("DoPathAction", "RemoteFunction")
 	self.remotes.ResetLife = self:createRemote("ResetLife", "RemoteEvent")
+	-- CRITICAL FEATURE: Continue as your kid on death
+	self.remotes.ContinueAsKid = self:createRemote("ContinueAsKid", "RemoteFunction")
 	
 	-- PREMIUM FEATURES: Organized Crime remotes
 	self.remotes.JoinMob = self:createRemote("JoinMob", "RemoteFunction")
@@ -8145,8 +8436,8 @@ function LifeBackend:setupRemotes()
 		return self:handlePrisonAction(player, actionId)
 	end)
 
-	self.remotes.ApplyForJob.OnServerInvoke = safeHandler(function(self, player, jobId)
-		return self:handleJobApplication(player, jobId)
+	self.remotes.ApplyForJob.OnServerInvoke = safeHandler(function(self, player, jobId, interviewScore)
+		return self:handleJobApplication(player, jobId, interviewScore)
 	end)
 	
 	-- AAA FIX: Interview result handler for the interview screen system
@@ -8241,6 +8532,11 @@ function LifeBackend:setupRemotes()
 	
 	self.remotes.UseTimeMachine.OnServerInvoke = function(player, yearsBack)
 		return self:handleTimeMachine(player, yearsBack)
+	end
+	
+	-- CRITICAL FEATURE: Continue as Your Kid handler
+	self.remotes.ContinueAsKid.OnServerInvoke = function(player, childData)
+		return self:handleContinueAsKid(player, childData)
 	end
 	
 	-- CRITICAL FIX #360: Set up ProcessReceipt for Developer Products (Time Machine)
@@ -10860,6 +11156,9 @@ end
 -- Uses RelationshipDecaySystem for proper friend anger events like competition
 -- Friends get ANGRY if you don't talk to them for years!
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: User reported "Robert is furious!" showing as feed text, not card popup!
+-- These relationship events MUST show as proper card popups, not text in feed!
+-- ═══════════════════════════════════════════════════════════════════════════════
 function LifeBackend:applyRelationshipDecay(state)
 	if not state.Relationships then
 		return
@@ -10868,27 +11167,63 @@ function LifeBackend:applyRelationshipDecay(state)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- AAA: Use the RelationshipDecaySystem for friend anger events
 	-- This generates proper "friend is angry you haven't talked" events
+	-- CRITICAL FIX: Queue these as POPUP events, not just feed text!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local decayEvents = RelationshipDecaySystem.processYearlyDecay(state)
 	
-	-- Process generated decay events - show messages to player
+	-- CRITICAL FIX: Queue significant events as proper card popups!
+	-- These should NOT be feed text - user complained about this!
+	state.QueuedRelationshipPopups = state.QueuedRelationshipPopups or {}
+	
+	-- Process generated decay events - queue important ones as card popups
 	for _, event in ipairs(decayEvents) do
-		if event.message then
-			appendFeed(state, event.message)
-		end
+		-- CRITICAL FIX: Convert to proper popup format with nice formatting!
+		local popupData = nil
 		
-		-- Store for potential event triggering
-		if event.type == "friend_angry" then
+		if event.type == "friend_annoyed" then
+			popupData = {
+				emoji = "😤",
+				title = "Friend Annoyed",
+				body = string.format("%s is annoyed that you haven't reached out in %d years.\n\nThey feel like you've been neglecting the friendship.", 
+					event.name, event.yearsSince or 2),
+				happiness = -3,
+			}
+		elseif event.type == "friend_angry" then
+			popupData = {
+				emoji = "😡",
+				title = "Friend is Angry!",
+				body = string.format("%s is really upset with you!\n\n\"You haven't talked to me in years! Do you even care about our friendship anymore?\"", 
+					event.name),
+				happiness = -8,
+			}
 			state.Flags = state.Flags or {}
 			state.Flags.has_angry_friend = true
 			state.Flags.angry_friend_name = event.name
 			state.Flags.angry_friend_id = event.relId
-		end
-		
-		if event.type == "friendship_ended" then
+		elseif event.type == "friend_furious" then
+			popupData = {
+				emoji = "🔥",
+				title = string.format("%s is FURIOUS!", event.name),
+				body = string.format("%s confronted you, absolutely livid:\n\n\"You NEVER talk to me anymore! I'm always the one reaching out! What kind of friend are you?!\"\n\nThis friendship is on the verge of ending.", 
+					event.name),
+				happiness = -15,
+			}
+		elseif event.type == "friendship_ended" then
+			popupData = {
+				emoji = "💔",
+				title = "Friendship Over",
+				body = string.format("After %d years of no contact, you and %s have completely drifted apart.\n\nThe friendship that once meant so much... is now just a memory.", 
+					event.yearsSince or 8, event.name),
+				happiness = -20,
+			}
 			state.Flags = state.Flags or {}
 			state.Flags.lost_friend = true
 			state.Flags.lost_friend_name = event.name
+		end
+		
+		-- Queue the popup if it's a significant event
+		if popupData then
+			table.insert(state.QueuedRelationshipPopups, popupData)
 		end
 	end
 	
@@ -10944,8 +11279,17 @@ function LifeBackend:applyRelationshipDecay(state)
 						rel.alive = false
 						rel.ended = true
 						rel.endReason = "drifted_apart"
-						appendFeed(state, string.format("💔 You and %s have drifted apart. The relationship is over.", 
-							rel.name or "your partner"))
+						
+						-- CRITICAL FIX: Show as proper popup card, not feed text!
+						-- User complained these showed as text in the feed, not card popups
+						state.QueuedRelationshipPopups = state.QueuedRelationshipPopups or {}
+						table.insert(state.QueuedRelationshipPopups, {
+							emoji = "💔",
+							title = "Relationship Ended",
+							body = string.format("You and %s have drifted apart.\n\nWithout effort to maintain the relationship, the spark just... faded.\n\nThe relationship is over.", 
+								rel.name or "your partner"),
+							happiness = -25,
+						})
 						
 						-- Clear partner status
 						if relId == "partner" then
@@ -13406,7 +13750,188 @@ function LifeBackend:resetLife(player)
 	self:pushState(player, "A new life begins...")
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FEATURE: Continue as Your Kid
+-- User requested: "I WANT A CONTINUE AS YOUR KID BUTTON WHEN YOU DIE"
+-- Player continues playing as their child, inheriting 70% of assets after taxes
+-- Can only be used ONCE per life (cannot infinitely chain through generations)
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:handleContinueAsKid(player, childData)
+	local state = self:getState(player)
+	if not state then
+		return { success = false, message = "No life data found." }
+	end
+	
+	-- Must be dead to continue as kid
+	if not state.Flags or not state.Flags.dead then
+		return { success = false, message = "You can only continue as your kid after dying." }
+	end
+	
+	-- Cannot chain infinitely - check if already used this feature
+	if state.Flags.already_continued_as_kid then
+		return { success = false, message = "You can only continue as your child once per life." }
+	end
+	
+	-- Find the child to continue as
+	if not childData or not childData.id then
+		return { success = false, message = "No child data provided." }
+	end
+	
+	local child = nil
+	if state.Relationships then
+		child = state.Relationships[childData.id]
+		if not child then
+			-- Try to find by name
+			for relId, rel in pairs(state.Relationships) do
+				if type(rel) == "table" and rel.name == childData.name then
+					child = rel
+					break
+				end
+			end
+		end
+	end
+	
+	if not child then
+		return { success = false, message = "Could not find that child." }
+	end
+	
+	-- Verify child is eligible (18+, alive)
+	if child.age and child.age < 18 then
+		return { success = false, message = "Your child must be 18 or older to continue as them." }
+	end
+	
+	if child.deceased or child.alive == false then
+		return { success = false, message = "You cannot continue as a deceased child." }
+	end
+	
+	debugPrint("Player", player.Name, "continuing as their child:", child.name or "Child")
+	
+	-- Calculate inheritance (70% after taxes/fees)
+	local parentMoney = state.Money or 0
+	local inheritance = math.floor(parentMoney * 0.7)
+	
+	-- Store parent name for reference
+	local parentName = state.Name or "Parent"
+	local parentAge = state.Age or 0
+	
+	-- Create the new state as the child
+	local newState = self:createInitialState(player)
+	
+	-- Set up child's identity
+	newState.Name = child.name or child.Name or "Child of " .. parentName
+	newState.Gender = child.gender or "male"
+	newState.Age = child.age or 18
+	newState.Year = (state.Year or 2025) -- Same year
+	
+	-- Inherit money
+	newState.Money = inheritance
+	
+	-- Inherit assets
+	newState.Assets = newState.Assets or {}
+	if state.Assets then
+		-- Inherit properties
+		if state.Assets.Properties then
+			newState.Assets.Properties = {}
+			for _, prop in ipairs(state.Assets.Properties) do
+				table.insert(newState.Assets.Properties, {
+					id = prop.id,
+					name = prop.name,
+					emoji = prop.emoji,
+					price = prop.price,
+					value = prop.value,
+					income = prop.income,
+					purchasedAt = state.Age,
+					inherited = true,
+					inheritedFrom = parentName,
+				})
+			end
+		end
+		
+		-- Inherit vehicles
+		if state.Assets.Vehicles then
+			newState.Assets.Vehicles = {}
+			for _, vehicle in ipairs(state.Assets.Vehicles) do
+				table.insert(newState.Assets.Vehicles, {
+					id = vehicle.id,
+					name = vehicle.name,
+					emoji = vehicle.emoji,
+					price = vehicle.price,
+					value = vehicle.value,
+					inherited = true,
+					inheritedFrom = parentName,
+				})
+			end
+		end
+	end
+	
+	-- Mark that this life used the continue feature (can't use again)
+	newState.Flags = newState.Flags or {}
+	newState.Flags.already_continued_as_kid = true
+	newState.Flags.inherited_from_parent = true
+	newState.Flags.parent_name = parentName
+	
+	-- Set some starting stats based on child's prior relationship
+	local relationship = child.relationship or 50
+	newState.Stats = newState.Stats or {}
+	newState.Stats.Happiness = math.min(100, 50 + math.floor(relationship / 5))
+	newState.Stats.Health = math.max(30, 100 - math.floor((child.age or 18) / 2))
+	newState.Stats.Smarts = newState.Stats.Smarts or 50
+	newState.Stats.Looks = newState.Stats.Looks or 50
+	
+	-- Create parent as a memory
+	newState.Flags.parent_deceased = true
+	newState.Flags.grieving = true
+	
+	-- Store the new state
+	self.playerStates[player] = newState
+	
+	-- Clear pending events
+	self.pendingEvents[player.UserId] = nil
+	
+	-- Build a nice starting message
+	local genderText = newState.Gender == "female" and "daughter" or "son"
+	local message = string.format("You are now %s, age %d, %s of %s. You inherited $%s from your parent's estate.",
+		newState.Name, newState.Age, genderText, parentName, formatMoney(inheritance))
+	
+	debugPrint("Continue as kid complete:", message)
+	
+	-- Save and push state
+	self:pushState(player, message)
+	
+	return { 
+		success = true, 
+		message = message,
+		newName = newState.Name,
+		newAge = newState.Age,
+		inheritance = inheritance,
+	}
+end
+
 function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Show relationship decay events as proper card popups!
+	-- User reported: "Robert is furious!" was showing as feed text, not card popup
+	-- These queued popups should display as actual card popups instead of feed text!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.QueuedRelationshipPopups and #state.QueuedRelationshipPopups > 0 then
+		-- Take the first (most important) relationship popup
+		local relPopup = table.remove(state.QueuedRelationshipPopups, 1)
+		if relPopup and not resultData then
+			-- Only show if there's no other resultData (don't override important events)
+			resultData = {
+				showPopup = true,
+				emoji = relPopup.emoji or "💔",
+				title = relPopup.title or "Relationship Update",
+				body = relPopup.body or "Something happened with a relationship.",
+				happiness = relPopup.happiness,
+				health = relPopup.health,
+				wasSuccess = false,
+			}
+		end
+		-- Clear remaining popups for this year (to avoid spam)
+		state.QueuedRelationshipPopups = nil
+	end
+	
 	local deathInfo
 	-- CRITICAL FIX: Check Flags.dead FIRST (set by checkNaturalDeath)
 	-- This ensures natural deaths from old age are properly handled
@@ -13446,6 +13971,79 @@ function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
 			timeMachineData = TimeMachine.getDeathScreenData(player, state, hasTimeMachineGamepass)
 		end
 		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FEATURE: "Continue as Your Kid" on death!
+		-- User requested: "I WANT A CONTINUE AS YOUR KID BUTTON WHEN YOU DIE"
+		-- Player can continue with their child, inheriting assets but living their own life
+		-- Can only use this ONCE per life (not infinitely)
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local continueAsKidData = nil
+		local canContinueAsKid = false
+		local eligibleChild = nil
+		
+		-- Check if player has any living adult children (18+)
+		if state.Relationships and not state.Flags.already_continued_as_kid then
+			for relId, rel in pairs(state.Relationships) do
+				if type(rel) == "table" then
+					local isChild = rel.type == "child" or rel.role == "Child" 
+						or relId:find("child") or relId:find("son") or relId:find("daughter")
+					local isAlive = rel.alive ~= false and not rel.deceased
+					local isAdult = (rel.age or 0) >= 18
+					
+					if isChild and isAlive and isAdult then
+						eligibleChild = {
+							id = relId,
+							name = rel.name or rel.Name or "Your Child",
+							age = rel.age or 18,
+							gender = rel.gender or "male",
+							relationship = rel.relationship or 50,
+						}
+						canContinueAsKid = true
+						break -- Take first eligible child
+					end
+				end
+			end
+		end
+		
+		if canContinueAsKid and eligibleChild then
+			-- Calculate inheritance
+			local inheritance = math.floor((state.Money or 0) * 0.7) -- 70% after taxes/fees
+			local inheritedAssets = {}
+			
+			-- Copy real estate
+			if state.Assets and state.Assets.Properties then
+				for _, prop in ipairs(state.Assets.Properties) do
+					table.insert(inheritedAssets, {
+						type = "property",
+						id = prop.id,
+						name = prop.name,
+						value = prop.value or prop.price,
+					})
+				end
+			end
+			
+			-- Copy vehicles
+			if state.Assets and state.Assets.Vehicles then
+				for _, vehicle in ipairs(state.Assets.Vehicles) do
+					table.insert(inheritedAssets, {
+						type = "vehicle",
+						id = vehicle.id,
+						name = vehicle.name,
+						value = vehicle.value or vehicle.price,
+					})
+				end
+			end
+			
+			continueAsKidData = {
+				canContinue = true,
+				child = eligibleChild,
+				inheritance = inheritance,
+				inheritedAssets = inheritedAssets,
+				parentName = state.Name or "Parent",
+				parentNetWorth = state.Money or 0,
+			}
+		end
+		
 		resultData = {
 			showPopup = true,
 			emoji = "☠️",
@@ -13458,6 +14056,9 @@ function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
 			-- CRITICAL FIX #59: Include time machine options in death screen
 			hasTimeMachine = hasTimeMachineGamepass,
 			timeMachineData = timeMachineData,
+			-- CRITICAL FEATURE: Continue as kid option
+			canContinueAsKid = canContinueAsKid,
+			continueAsKidData = continueAsKidData,
 		}
 	end
 
@@ -13771,6 +14372,26 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	state.Flags = state.Flags or {}
 	if activity.blockedByFlag and state.Flags[activity.blockedByFlag] then
 		return { success = false, message = "You've already done this!" }
+	end
+	-- CRITICAL FIX: Handle second blockedByFlag check
+	if activity.blockedByFlag2 and state.Flags[activity.blockedByFlag2] then
+		return { success = false, message = "You've already done this!" }
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: ROMANCE ACTIVITY REQUIREMENTS
+	-- Check if the activity requires having a partner or being single
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local hasPartner = state.Flags.has_partner or state.Flags.dating or state.Flags.married or
+		(state.Relationships and state.Relationships.partner ~= nil) or
+		(state.Relationships and state.Relationships.spouse ~= nil)
+	
+	if activity.requiresPartner and not hasPartner then
+		return { success = false, message = "You need to be in a relationship first! Try looking for love." }
+	end
+	
+	if activity.requiresSingle and hasPartner then
+		return { success = false, message = "You're already in a relationship!" }
 	end
 	
 	-- CRITICAL FIX: Check if activity requires a specific flag (like dropout for GED)
@@ -14233,13 +14854,154 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: ROMANCE SEARCH ACTIVITIES (Look for Love, Online Dating, Flirt)
+	-- These have a chance to create a new partner relationship
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if activity.isRomanceSearch then
+		local looks = (state.Stats and state.Stats.Looks) or 50
+		local happiness = (state.Stats and state.Stats.Happiness) or 50
+		local baseChance = 0.25 -- 25% base chance to meet someone
+		local successChance = baseChance + (looks / 400) + (happiness / 500) -- Max ~55% with high stats
+		
+		if RANDOM:NextNumber() < successChance then
+			-- Success! Create a new partner
+			state.Relationships = state.Relationships or {}
+			state.Flags = state.Flags or {}
+			
+			-- Generate partner
+			local isMale = RANDOM:NextNumber() > 0.5
+			local maleNames = {"James", "Michael", "David", "John", "Alex", "Ryan", "Chris", "Brandon", "Tyler", "Jake", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Ben", "Sam", "Will", "Matt", "Nick"}
+			local femaleNames = {"Emma", "Olivia", "Sophia", "Ava", "Isabella", "Mia", "Emily", "Grace", "Lily", "Chloe", "Harper", "Aria", "Luna", "Zoe", "Riley", "Ella", "Scarlett", "Victoria", "Madison", "Hannah"}
+			local names = isMale and maleNames or femaleNames
+			local partnerName = names[RANDOM:NextInteger(1, #names)]
+			
+			state.Relationships.partner = {
+				id = "partner",
+				name = partnerName,
+				type = "romantic",
+				role = isMale and "Boyfriend" or "Girlfriend",
+				relationship = RANDOM:NextInteger(55, 75),
+				age = (state.Age or 20) + RANDOM:NextInteger(-5, 5),
+				gender = isMale and "male" or "female",
+				alive = true,
+				metAge = state.Age,
+				metYear = state.Year or 2025,
+			}
+			
+			state.Flags.has_partner = true
+			state.Flags.dating = true
+			
+			resultMessage = string.format("💕 You met %s! You're now dating!", partnerName)
+			self:applyStatChanges(state, { Happiness = 10 }) -- Extra happiness for finding love
+		else
+			resultMessage = "💔 No luck finding love this time. Keep trying!"
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: PARTNER RELATIONSHIP BOOST (Go on Date, Romantic Dinner, etc.)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if activity.relationshipBoostPartner then
+		local partner = state.Relationships and state.Relationships.partner
+		if partner then
+			partner.relationship = math.min(100, (partner.relationship or 50) + activity.relationshipBoostPartner)
+			local partnerName = partner.name or "your partner"
+			resultMessage = string.format("💕 You had a great time with %s! (Relationship +%d)", partnerName, activity.relationshipBoostPartner)
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: FRIEND MAKING ACTIVITY
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if activity.isFriendMaking then
+		state.Relationships = state.Relationships or {}
+		
+		-- Generate new friend
+		local isMale = RANDOM:NextNumber() > 0.5
+		local maleNames = {"Josh", "Kevin", "Marcus", "Derek", "Evan", "Austin", "Trevor", "Kyle", "Zack", "Blake"}
+		local femaleNames = {"Taylor", "Morgan", "Jordan", "Casey", "Alex", "Riley", "Avery", "Quinn", "Peyton", "Skyler"}
+		local names = isMale and maleNames or femaleNames
+		local friendName = names[RANDOM:NextInteger(1, #names)]
+		local friendId = "friend_" .. tostring(os.time()) .. "_" .. RANDOM:NextInteger(1, 9999)
+		
+		state.Relationships[friendId] = {
+			id = friendId,
+			name = friendName,
+			type = "friend",
+			role = "Friend",
+			relationship = RANDOM:NextInteger(50, 70),
+			age = (state.Age or 20) + RANDOM:NextInteger(-5, 5),
+			gender = isMale and "male" or "female",
+			alive = true,
+			metAge = state.Age,
+			lastContact = state.Age,
+		}
+		
+		resultMessage = string.format("👋 You made a new friend: %s!", friendName)
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: WEDDING ACTIVITY - Get married!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if activity.isWedding then
+		local partner = state.Relationships and state.Relationships.partner
+		if partner then
+			-- Convert partner to spouse
+			state.Relationships.spouse = partner
+			state.Relationships.spouse.type = "spouse"
+			state.Relationships.spouse.role = "Spouse"
+			state.Relationships.spouse.relationship = math.min(100, (partner.relationship or 70) + 20)
+			state.Relationships.partner = nil
+			
+			-- Set marriage flags
+			state.Flags = state.Flags or {}
+			state.Flags.married = true
+			state.Flags.engaged = nil
+			state.Flags.getting_married = nil
+			state.Flags.has_partner = true -- Still have a partner (spouse counts)
+			state.Flags.dating = nil -- Not dating anymore, married!
+			
+			local spouseName = state.Relationships.spouse.name or "your spouse"
+			resultMessage = string.format("💒 You married %s! Congratulations on your wedding!", spouseName)
+			self:applyStatChanges(state, { Happiness = 25 }) -- Wedding happiness boost
+		else
+			resultMessage = "You need to be engaged to someone first!"
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: ROYAL PROPOSAL - Become royalty through marriage!
 	-- This is the culmination of the dating royalty path
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	if activity.isProposal then
 		-- Check if royal partner exists and wants to marry
 		local partner = state.Relationships and state.Relationships.partner
-		if partner and partner.isRoyalty then
+		
+		-- First handle REGULAR (non-royal) proposals
+		if partner and not partner.isRoyalty then
+			local relationship = partner.relationship or 50
+			local successChance = 0.4 + (relationship / 200) -- 40% base + up to 50% from relationship
+			
+			if RANDOM:NextNumber() < successChance then
+				-- PROPOSAL ACCEPTED!
+				state.Flags = state.Flags or {}
+				state.Flags.engaged = true
+				state.Flags.getting_married = true
+				partner.type = "fiance"
+				partner.role = "Fiancé"
+				partner.relationship = math.min(100, (partner.relationship or 70) + 15)
+				
+				local partnerName = partner.name or "your partner"
+				resultMessage = string.format("💍 %s said YES! You're engaged!", partnerName)
+				self:applyStatChanges(state, { Happiness = 20 }) -- Engagement happiness
+			else
+				-- Proposal rejected
+				state.Flags.proposal_rejected = true
+				self:applyStatChanges(state, { Happiness = -15 })
+				resultMessage = "💔 They said they need more time... Your proposal was rejected."
+			end
+		-- Then handle royal proposals (existing logic)
+		elseif partner and partner.isRoyalty then
 			local relationship = partner.relationship or 50
 			local successChance = 0.3 + (relationship / 200) -- 30% base + up to 50% from relationship
 			
@@ -14292,7 +15054,7 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 				self:applyStatChanges(state, { Happiness = -15 })
 			end
 		else
-			resultMessage = "💔 You're not dating anyone royal to propose to!"
+			resultMessage = "💔 You're not dating anyone to propose to!"
 		end
 	end
 	
@@ -15080,11 +15842,15 @@ local JobRejectionMessages = {
 
 -- NOTE: PromotionOnlyJobs is defined earlier (after JobCatalog) to fix scope issues
 
-function LifeBackend:handleJobApplication(player, jobId)
+function LifeBackend:handleJobApplication(player, jobId, clientInterviewScore)
 	local state = self:getState(player)
 	if not state then
 		return { success = false, message = "Life data not loaded." }
 	end
+	
+	-- CRITICAL FIX: If client already conducted an interview and passed, use that score
+	-- clientInterviewScore is passed from OccupationScreen after the interview modal
+	local hasClientInterviewScore = clientInterviewScore ~= nil and type(clientInterviewScore) == "number"
 
 	-- CRITICAL FIX #512: Use findJobByInput for flexible job lookup
 	-- This allows the client to send job IDs, names, or partial matches
@@ -15548,31 +16314,58 @@ function LifeBackend:handleJobApplication(player, jobId)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- AAA FIX: INTERVIEW SCREEN SYSTEM
-	-- For competitive jobs (difficulty 4+), show an interview event first
-	-- This gives players choices that affect their chances, like the competition game
+	-- CRITICAL FIX: CLIENT-SIDE INTERVIEW INTEGRATION
+	-- If the client already conducted an interview (passed with a score), use that!
+	-- Otherwise, for competitive jobs, return interview event for server-side flow
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	local shouldShowInterview = difficulty >= 4 and (job.salary or 0) >= 40000
+	local accepted = false
 	
-	if shouldShowInterview then
-		-- Generate interview questions/scenarios based on job category
-		local interviewData = self:generateInterviewEvent(state, job, finalChance)
+	if hasClientInterviewScore then
+		-- Client already did the interview - use their score!
+		-- CRITICAL FIX: User reported "I JUST GOT 55% IT SAID I PASSED GOT JOB BUT IT DIDNT GIVE ME JOB"
+		-- The client shows "Interview Passed! They've decided to hire you!" at 50%+
+		-- Server MUST honor this and actually give the job! Cannot reject after client says hired!
 		
-		-- Return interview event for client to display
-		return {
-			success = true,
-			requiresInterview = true,
-			interviewEvent = interviewData,
-			jobId = actualJobId,
-			jobName = job.name or job.title,
-			company = job.company or "the company",
-			baseChance = finalChance,
-		}
+		-- If client interview passed (score >= 50), they ARE hired - no RNG!
+		-- The interview IS the RNG - passing means you got the job!
+		if clientInterviewScore >= 50 then
+			-- PASSED INTERVIEW = HIRED! No additional roll needed
+			-- This matches what the client displays to the user
+			accepted = true
+		elseif clientInterviewScore >= 40 then
+			-- Close to passing - give them a good chance
+			accepted = RANDOM:NextNumber() < 0.70
+		elseif clientInterviewScore >= 30 then
+			-- Poor interview - low chance
+			accepted = RANDOM:NextNumber() < 0.40
+		else
+			-- Failed interview badly
+			accepted = RANDOM:NextNumber() < 0.15
+		end
+	else
+		-- No client interview score - check if we should show server-side interview
+		local shouldShowInterview = difficulty >= 4 and (job.salary or 0) >= 40000
+		
+		if shouldShowInterview then
+			-- Generate interview questions/scenarios based on job category
+			local interviewData = self:generateInterviewEvent(state, job, finalChance)
+			
+			-- Return interview event for client to display
+			return {
+				success = true,
+				requiresInterview = true,
+				interviewEvent = interviewData,
+				jobId = actualJobId,
+				jobName = job.name or job.title,
+				company = job.company or "the company",
+				baseChance = finalChance,
+			}
+		end
+		
+		-- Roll for success (for jobs that skip interview)
+		local roll = RANDOM:NextNumber()
+		accepted = roll < finalChance
 	end
-	
-	-- Roll for success (for jobs that skip interview)
-	local roll = RANDOM:NextNumber()
-	local accepted = roll < finalChance
 	
 	-- Track application
 	state.JobApplications[jobId] = {
@@ -15785,7 +16578,16 @@ function LifeBackend:handleJobApplication(player, jobId)
 
 	local feed = string.format("🎉 Congratulations! You were hired as a %s at %s!", job.name, job.company)
 	self:pushState(player, feed)
-	return { success = true, message = feed }
+	-- CRITICAL FIX: Return job info for client display
+	return { 
+		success = true, 
+		message = feed,
+		jobName = job.name,
+		jobTitle = job.name,
+		company = job.company,
+		salary = job.salary,
+		category = job.category,
+	}
 end
 
 -- ═══════════════════════════════════════════════════════════════════════════════

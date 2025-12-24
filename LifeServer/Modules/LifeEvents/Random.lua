@@ -15,6 +15,15 @@ Random.events = {
 		title = "Lucky Find",
 		emoji = "💵",
 		text = "You found money on the ground!",
+		-- CRITICAL FIX: Added text variations for more variety
+		textVariants = {
+			"You spotted a $20 bill blowing across the sidewalk!",
+			"While walking, you noticed some cash someone dropped!",
+			"A wallet lay abandoned on a bench - it had money inside!",
+			"You kicked something and discovered it was cash!",
+			"Some crumpled bills caught your eye near a trash can!",
+			"A gust of wind blew money right toward you!",
+		},
 		question = "What do you do with it?",
 		minAge = 6, maxAge = 90,
 		baseChance = 0.45,
@@ -88,6 +97,14 @@ Random.events = {
 		title = "Unexpected Inheritance",
 		emoji = "📜",
 		text = "A distant relative you barely knew passed away and left you something in their will.",
+		-- CRITICAL FIX: Added text variations for more variety
+		textVariants = {
+			"Your great-uncle passed away, and you're named in his will!",
+			"A distant cousin you've never met left you an inheritance!",
+			"Your grandmother's estranged sister remembered you in her will!",
+			"A family member from overseas passed and left you something!",
+			"An old relative finally settled their estate - you're a beneficiary!",
+		},
 		question = "The lawyer calls you about the inheritance...",
 		minAge = 25, maxAge = 80,
 		baseChance = 0.4,
@@ -1176,7 +1193,8 @@ Random.events = {
 						end
 					elseif roll <= 75 then
 						-- Cut
-						state.Money = (state.Money or 0) - 200
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 200)
 						if state.ModifyStat then
 							state:ModifyStat("Health", -10)
 							state:ModifyStat("Happiness", -6)
@@ -2696,6 +2714,10 @@ Random.events = {
 					state.Flags.in_prison = true
 					state.Flags.incarcerated = true
 					state.Flags.criminal_record = true
+					-- CRITICAL FIX: Clear job when going to jail!
+					state.CurrentJob = nil
+					state.Flags.employed = nil
+					state.Flags.has_job = nil
 					state:AddFeed("🚔 You got caught! Arrested for theft.")
 				end
 				end,

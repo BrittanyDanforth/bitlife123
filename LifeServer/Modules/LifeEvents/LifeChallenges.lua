@@ -108,7 +108,8 @@ LifeChallenges.events = {
 						state:AddFeed("🔙 Major career hit but finding new path. Growth opportunity.")
 					else
 						state:ModifyStat("Happiness", -10)
-						state.Money = (state.Money or 0) - 500
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 500)
 						state.Flags = state.Flags or {}
 						state.Flags.career_crisis = true
 						state:AddFeed("🔙 Career in shambles. Starting over. Devastating but not impossible.")
