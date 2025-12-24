@@ -3038,10 +3038,28 @@ function RelationshipDecaySystem.processYearlyDecay(state)
 	local decayEvents = {}
 	state.Flags = state.Flags or {}
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Global cooldown to prevent spam!
+	-- User bug: "IT KEEP SPAM SAYING FRIEND SHIPS OVER"
+	-- Only ONE decay popup per year maximum!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	state._lastDecayPopupAge = state._lastDecayPopupAge or 0
+	local alreadyShownThisYear = (state._lastDecayPopupAge == currentAge)
+	local hasShownPopupThisCall = false
+	
+	-- Track friendships to remove AFTER iteration (can't modify during iteration)
+	local friendshipsToRemove = {}
+	
 	for relId, rel in pairs(state.Relationships) do
-		if type(rel) == "table" and rel.type == "friend" or relId:find("friend") then
-			-- Skip if deceased
-			if rel.deceased or rel.dead then continue end
+		if type(rel) == "table" and (rel.type == "friend" or (type(relId) == "string" and relId:find("friend"))) then
+			-- Skip if deceased or already estranged
+			if rel.deceased or rel.dead or rel.estranged or rel.formerFriend then 
+				-- Mark for removal if estranged
+				if rel.estranged or rel.formerFriend then
+					table.insert(friendshipsToRemove, relId)
+				end
+				continue 
+			end
 			
 			-- Initialize last contact if missing
 			if not rel.lastContact then
@@ -3056,63 +3074,102 @@ function RelationshipDecaySystem.processYearlyDecay(state)
 				local totalDecay = decayRate * yearsSinceContact
 				rel.relationship = math.max(0, (rel.relationship or 50) - totalDecay)
 				
-				-- Generate anger events
-				if yearsSinceContact >= RelationshipDecaySystem.ANGER_THRESHOLDS.annoyed and not rel._announcedAnnoyed then
-					table.insert(decayEvents, {
-						type = "friend_annoyed",
-						relId = relId,
-						name = rel.name or "Your friend",
-						message = string.format("😤 %s is annoyed you haven't reached out in %d years.", 
-							rel.name or "Your friend", yearsSinceContact),
-						yearsSince = yearsSinceContact,
-					})
-					rel._announcedAnnoyed = true
-				end
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				-- CRITICAL FIX: Only show ONE popup per year to prevent spam!
+				-- ═══════════════════════════════════════════════════════════════════════════════
 				
-				if yearsSinceContact >= RelationshipDecaySystem.ANGER_THRESHOLDS.angry and not rel._announcedAngry then
-					table.insert(decayEvents, {
-						type = "friend_angry",
-						relId = relId,
-						name = rel.name or "Your friend",
-						message = string.format("😡 %s is angry! They feel forgotten and hurt.", 
-							rel.name or "Your friend"),
-						yearsSince = yearsSinceContact,
-					})
-					rel._announcedAngry = true
-					rel.angry = true
-				end
-				
-				if yearsSinceContact >= RelationshipDecaySystem.ANGER_THRESHOLDS.furious and not rel._announcedFurious then
-					table.insert(decayEvents, {
-						type = "friend_furious",
-						relId = relId,
-						name = rel.name or "Your friend",
-						message = string.format("🔥 %s is FURIOUS! \"You never talk to me anymore!\"", 
-							rel.name or "Your friend"),
-						yearsSince = yearsSinceContact,
-						mayEndFriendship = true,
-					})
-					rel._announcedFurious = true
-					rel.furious = true
-				end
-				
-				-- Friendship ends after too much neglect
+				-- Friendship ends after too much neglect - PRIORITY CHECK FIRST
 				if yearsSinceContact >= RelationshipDecaySystem.ANGER_THRESHOLDS.estranged or rel.relationship <= 0 then
-					table.insert(decayEvents, {
-						type = "friendship_ended",
-						relId = relId,
-						name = rel.name or "Your friend",
-						message = string.format("💔 You and %s have drifted apart. The friendship is over.", 
-							rel.name or "your friend"),
-						yearsSince = yearsSinceContact,
-					})
-					rel.estranged = true
-					rel.formerFriend = true
-					rel.type = "ex_friend"
+					-- Mark for removal
+					table.insert(friendshipsToRemove, relId)
+					
+					-- Only generate popup if we haven't already shown one
+					if not alreadyShownThisYear and not hasShownPopupThisCall then
+						table.insert(decayEvents, {
+							type = "friendship_ended",
+							relId = relId,
+							name = rel.name or "Your friend",
+							message = string.format("💔 You and %s have drifted apart. The friendship is over.", 
+								rel.name or "your friend"),
+							yearsSince = yearsSinceContact,
+						})
+						hasShownPopupThisCall = true
+						state._lastDecayPopupAge = currentAge
+					end
+					
 					state.Flags.lost_friend = true
 					state.Flags.lost_friend_name = rel.name
+					
+				-- Generate anger events - only if no popup shown yet
+				elseif yearsSinceContact >= RelationshipDecaySystem.ANGER_THRESHOLDS.furious and not rel._announcedFurious then
+					if not alreadyShownThisYear and not hasShownPopupThisCall then
+						table.insert(decayEvents, {
+							type = "friend_furious",
+							relId = relId,
+							name = rel.name or "Your friend",
+							message = string.format("🔥 %s is FURIOUS! \"You never talk to me anymore!\"", 
+								rel.name or "Your friend"),
+							yearsSince = yearsSinceContact,
+							mayEndFriendship = true,
+						})
+						hasShownPopupThisCall = true
+						state._lastDecayPopupAge = currentAge
+					end
+					rel._announcedFurious = true
+					rel.furious = true
+					
+				elseif yearsSinceContact >= RelationshipDecaySystem.ANGER_THRESHOLDS.angry and not rel._announcedAngry then
+					if not alreadyShownThisYear and not hasShownPopupThisCall then
+						table.insert(decayEvents, {
+							type = "friend_angry",
+							relId = relId,
+							name = rel.name or "Your friend",
+							message = string.format("😡 %s is angry! They feel forgotten and hurt.", 
+								rel.name or "Your friend"),
+							yearsSince = yearsSinceContact,
+						})
+						hasShownPopupThisCall = true
+						state._lastDecayPopupAge = currentAge
+					end
+					rel._announcedAngry = true
+					rel.angry = true
+					
+				elseif yearsSinceContact >= RelationshipDecaySystem.ANGER_THRESHOLDS.annoyed and not rel._announcedAnnoyed then
+					if not alreadyShownThisYear and not hasShownPopupThisCall then
+						table.insert(decayEvents, {
+							type = "friend_annoyed",
+							relId = relId,
+							name = rel.name or "Your friend",
+							message = string.format("😤 %s is annoyed you haven't reached out in %d years.", 
+								rel.name or "Your friend", yearsSinceContact),
+							yearsSince = yearsSinceContact,
+						})
+						hasShownPopupThisCall = true
+						state._lastDecayPopupAge = currentAge
+					end
+					rel._announcedAnnoyed = true
 				end
 			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Actually REMOVE ended friendships from the relationships list!
+	-- User bug: "ENSURE IT ACTUALLY ENDS FRIENDSHIPS"
+	-- Previously we just set flags but the relationship stayed in the UI!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	for _, relId in ipairs(friendshipsToRemove) do
+		local rel = state.Relationships[relId]
+		if rel then
+			-- Store in former friends for reference (not shown in UI)
+			state.FormerFriends = state.FormerFriends or {}
+			state.FormerFriends[relId] = {
+				name = rel.name,
+				endedAt = currentAge,
+				reason = "drifted_apart",
+			}
+			-- Remove from active relationships
+			state.Relationships[relId] = nil
 		end
 	end
 	
@@ -18299,6 +18356,180 @@ local InteractionEffects = {
 		date = { delta = 8, cost = 100, message = "You went on a romantic date." },
 		gift = { delta = 9, cost = 200, message = "You surprised them with a gift." },
 		kiss = { delta = 5, message = "You shared a kiss." },
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: "Get Married" action for engaged couples!
+		-- After proposing and getting engaged, players need to actually get married!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		get_married = {
+			delta = 25,
+			cost = 10000,
+			isSpecial = true,
+			showResult = true,
+			message = function(state, relationship)
+				state.Flags = state.Flags or {}
+				
+				-- Must be engaged first!
+				if not state.Flags.engaged then
+					return "💭 You need to propose and get engaged first before getting married!"
+				end
+				
+				-- Check if we can afford the wedding
+				local weddingCost = 10000
+				if (state.Money or 0) < weddingCost then
+					return string.format("💸 You can't afford the wedding! You need $%d but only have $%d.", weddingCost, state.Money or 0)
+				end
+				
+				-- Deduct wedding cost
+				state.Money = (state.Money or 0) - weddingCost
+				
+				-- Get partner name
+				local partnerName = (relationship and relationship.name) or "your partner"
+				
+				-- Convert partner to spouse!
+				state.Relationships = state.Relationships or {}
+				if state.Relationships.partner then
+					state.Relationships.spouse = state.Relationships.partner
+					state.Relationships.spouse.type = "spouse"
+					state.Relationships.spouse.role = "Spouse"
+					state.Relationships.spouse.relationship = math.min(100, (state.Relationships.spouse.relationship or 80) + 20)
+					state.Relationships.spouse.marriedAt = state.Age or 25
+					state.Relationships.partner = nil -- Clear partner slot
+				end
+				
+				-- Also update the relationship passed to us
+				if relationship then
+					relationship.type = "spouse"
+					relationship.role = "Spouse"
+					relationship.relationship = math.min(100, (relationship.relationship or 80) + 20)
+					relationship.marriedAt = state.Age or 25
+				end
+				
+				-- Set marriage flags!
+				state.Flags.married = true
+				state.Flags.engaged = nil
+				state.Flags.has_partner = true
+				state.Flags.dating = nil
+				state.Flags.married_at_age = state.Age or 25
+				
+				-- Happiness boost!
+				if state.ModifyStat then
+					state:ModifyStat("Happiness", 30)
+				end
+				
+				return string.format("💒💍 You married %s! Congratulations! 💒💍\n\nThis is the happiest day of your life!", partnerName)
+			end,
+		},
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: "Have a Kid" action!
+		-- User bug: "I DONT HAVE A HAVE A KID OPTION IN RELASHONSHIP"
+		-- Partner can say yes or no based on relationship strength!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		try_baby = {
+			delta = 0, -- Delta applied based on outcome
+			isSpecial = true,
+			showResult = true,
+			cooldownYears = 1, -- Can only try once per year
+			message = function(state, relationship)
+				state.Flags = state.Flags or {}
+				
+				-- Must be in a committed relationship
+				if not (state.Flags.has_partner or state.Flags.married or state.Flags.engaged) then
+					return "💭 You're not in a relationship. Find a partner first!"
+				end
+				
+				-- Calculate if partner agrees
+				local relStrength = (relationship and relationship.relationship) or 50
+				local acceptChance = 0.2 + (relStrength / 200) -- 20% base + up to 50% from relationship
+				
+				-- Married couples more likely to agree
+				if state.Flags.married then
+					acceptChance = acceptChance + 0.25
+				elseif state.Flags.engaged then
+					acceptChance = acceptChance + 0.15
+				end
+				
+				-- Already have kids? Slightly less likely to want more
+				local childCount = state.Flags.child_count or 0
+				if childCount >= 3 then
+					acceptChance = acceptChance - 0.3
+				elseif childCount >= 1 then
+					acceptChance = acceptChance - 0.1
+				end
+				
+				local partnerName = (relationship and relationship.name) or "your partner"
+				
+				if RANDOM:NextNumber() < acceptChance then
+					-- Partner agrees! Now check if pregnancy happens
+					local pregnancyChance = 0.6 -- 60% base chance
+					
+					-- Age affects fertility
+					local playerAge = state.Age or 25
+					if playerAge > 40 then
+						pregnancyChance = pregnancyChance - 0.25
+					elseif playerAge > 35 then
+						pregnancyChance = pregnancyChance - 0.1
+					end
+					
+					if RANDOM:NextNumber() < pregnancyChance then
+						-- SUCCESS! Having a baby!
+						state.Flags.expecting_baby = true
+						state.Flags.baby_due_age = (state.Age or 25) + 1
+						state.Flags.child_count = (state.Flags.child_count or 0) + 1
+						
+						-- Create the baby in relationships!
+						state.Relationships = state.Relationships or {}
+						local babyId = "child_" .. tostring(state.Flags.child_count)
+						local babyGender = RANDOM:NextNumber() < 0.5 and "male" or "female"
+						local babyRole = babyGender == "male" and "Son" or "Daughter"
+						
+						-- Baby names
+						local boyNames = {"James", "Oliver", "William", "Benjamin", "Lucas", "Henry", "Alexander", "Mason", "Michael", "Ethan", "Daniel", "Noah", "Logan", "Jackson", "Sebastian"}
+						local girlNames = {"Emma", "Olivia", "Ava", "Isabella", "Sophia", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn", "Luna", "Aria", "Chloe", "Penelope", "Layla"}
+						local namePool = babyGender == "male" and boyNames or girlNames
+						local babyName = namePool[RANDOM:NextInteger(1, #namePool)]
+						
+						state.Relationships[babyId] = {
+							name = babyName,
+							type = "family",
+							role = babyRole,
+							isFamily = true,
+							relationship = 100,
+							age = 0,
+							gender = babyGender,
+							alive = true,
+							bornAt = state.Age or 25,
+						}
+						
+						-- Happiness boost!
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 30)
+						end
+						
+						return string.format("🎉 %s said yes! And... you're having a baby! 👶 Welcome %s to the family!", partnerName, babyName)
+					else
+						-- Agreed but no pregnancy this time
+						return string.format("💕 %s agreed! You're trying... but no baby yet. Keep trying!", partnerName)
+					end
+				else
+					-- Partner doesn't want kids right now
+					local declineReasons = {
+						"They're not ready for that commitment yet.",
+						"They want to focus on career first.",
+						"They think you should wait a bit longer.",
+						"They want to be more financially stable first.",
+						"They're not sure about having kids.",
+					}
+					local reason = declineReasons[RANDOM:NextInteger(1, #declineReasons)]
+					
+					-- Small relationship hit
+					if relationship then
+						relationship.relationship = math.max(0, (relationship.relationship or 50) - 5)
+					end
+					
+					return string.format("😔 %s said not right now. %s", partnerName, reason)
+				end
+			end,
+		},
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		-- CRITICAL FIX: Proposal now has proper acceptance/rejection logic!
 		-- User bug: "I CAN SPAM PROPOSE?? AND ITS NOT REALLY WORKING WELL HAVING A 

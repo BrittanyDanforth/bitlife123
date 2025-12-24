@@ -459,7 +459,18 @@ local RomanceActions = {
 	{ id = "date",       name = "Go on Date",   emoji = "Date",  effect = "+Relationship", cost = 100 },
 	{ id = "gift",       name = "Give Gift",    emoji = "Gift",  effect = "+Relationship", cost = 200 },
 	{ id = "kiss",       name = "Kiss",         emoji = "Kiss",  effect = "+Relationship" },
-	{ id = "propose",    name = "Propose",      emoji = "Ring",  effect = "Marriage", cost = 5000 },
+	{ id = "propose",    name = "Propose",      emoji = "Ring",  effect = "Engagement", cost = 5000 },
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Added "Get Married" option for engaged couples!
+	-- After proposing and getting engaged, players need to actually get married!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{ id = "get_married", name = "Get Married", emoji = "Wedding", effect = "Marriage!", cost = 10000, requiresEngaged = true },
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Added "Have a Kid" option!
+	-- User bug: "I DONT HAVE A HAVE A KID OPTION IN RELASHONSHIP"
+	-- Partner can accept or decline, then you have a baby!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{ id = "try_baby",   name = "Have a Kid",   emoji = "Baby",  effect = "Maybe Baby!" },
 	{ id = "breakup",    name = "Break Up",     emoji = "Break", effect = "End Relationship" },
 	{ id = "flirt",      name = "Flirt",        emoji = "Flirt", effect = "+Relationship" },
 	{ id = "compliment", name = "Compliment",   emoji = "Nice",  effect = "+Relationship" },
@@ -1187,6 +1198,210 @@ function RelationshipsScreen:populateFamily()
 			self:createPersonCard(section, person, i, C.Cyan, C.CyanPale, "family")
 		end
 	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Show pets at the bottom of the Family tab!
+	-- User bug: "FOR RELASHONSHIPS HAVE PETS BE IN FAMILY AT THE BOTTOM"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local pets = self:getPets()
+	if #pets > 0 then
+		-- Pet section header
+		local petSection = Instance.new("Frame")
+		petSection.Name = "PetSection"
+		petSection.Size = UDim2.new(1, 0, 0, 0)
+		petSection.AutomaticSize = Enum.AutomaticSize.Y
+		petSection.BackgroundColor3 = C.White
+		petSection.LayoutOrder = 100 -- Put at bottom
+		petSection.ZIndex = 82
+		petSection.Parent = self.contentScroll
+		UI.corner(petSection, 18)
+		UI.stroke(petSection, 1, 0.88, C.Gray200)
+		UI.pad(petSection, 14, 14, 14, 16)
+
+		local petLayout = Instance.new("UIListLayout")
+		petLayout.Padding = UDim.new(0, 10)
+		petLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		petLayout.Parent = petSection
+
+		-- Pet header
+		local petHeader = Instance.new("Frame")
+		petHeader.Size = UDim2.new(1, 0, 0, 36)
+		petHeader.BackgroundTransparency = 1
+		petHeader.LayoutOrder = 0
+		petHeader.ZIndex = 83
+		petHeader.Parent = petSection
+
+		local petBadge = Instance.new("Frame")
+		petBadge.Size = UDim2.new(0, 100, 0, 32)
+		petBadge.BackgroundColor3 = Color3.fromRGB(255, 152, 0) -- Orange for pets
+		petBadge.ZIndex = 84
+		petBadge.Parent = petHeader
+		UI.pill(petBadge)
+
+		local petBadgeLabel = Instance.new("TextLabel")
+		petBadgeLabel.Size = UDim2.fromScale(1, 1)
+		petBadgeLabel.BackgroundTransparency = 1
+		petBadgeLabel.Font = F.Button
+		petBadgeLabel.TextSize = 14
+		petBadgeLabel.TextColor3 = C.White
+		petBadgeLabel.Text = "🐾 Pets"
+		petBadgeLabel.ZIndex = 85
+		petBadgeLabel.Parent = petBadge
+
+		local petCountLabel = Instance.new("TextLabel")
+		petCountLabel.Size = UDim2.new(0, 80, 1, 0)
+		petCountLabel.Position = UDim2.new(0, 110, 0, 0)
+		petCountLabel.BackgroundTransparency = 1
+		petCountLabel.Font = F.Medium
+		petCountLabel.TextSize = 13
+		petCountLabel.TextColor3 = C.Gray400
+		petCountLabel.TextXAlignment = Enum.TextXAlignment.Left
+		petCountLabel.Text = #pets .. " pet" .. (#pets > 1 and "s" or "")
+		petCountLabel.ZIndex = 84
+		petCountLabel.Parent = petHeader
+
+		-- Create pet cards
+		for i, pet in ipairs(pets) do
+			self:createPetCard(petSection, pet, i)
+		end
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Get pets from player state
+-- User bug: "FOR RELASHONSHIPS HAVE PETS BE IN FAMILY AT THE BOTTOM"
+-- ═══════════════════════════════════════════════════════════════════════════════
+function RelationshipsScreen:getPets()
+	local pets = {}
+	local flags = (self.playerState and self.playerState.Flags) or {}
+	local petData = (self.playerState and self.playerState.PetData) or {}
+	
+	-- Check for dog
+	if flags.has_dog then
+		table.insert(pets, {
+			id = "dog",
+			name = petData.dogName or "Buddy",
+			type = "Dog",
+			emoji = "🐕",
+			age = petData.dogAge or 1,
+			alive = true,
+		})
+	end
+	
+	-- Check for cat
+	if flags.has_cat then
+		table.insert(pets, {
+			id = "cat",
+			name = petData.catName or "Whiskers",
+			type = "Cat",
+			emoji = "🐱",
+			age = petData.catAge or 1,
+			alive = true,
+		})
+	end
+	
+	-- Check for small pet
+	if flags.has_small_pet then
+		table.insert(pets, {
+			id = "small_pet",
+			name = petData.smallPetName or "Little One",
+			type = "Small Pet",
+			emoji = "🐹",
+			age = petData.smallPetAge or 1,
+			alive = true,
+		})
+	end
+	
+	-- Check for fish
+	if flags.has_fish then
+		table.insert(pets, {
+			id = "fish",
+			name = petData.fishName or "Goldie",
+			type = "Fish",
+			emoji = "🐠",
+			age = petData.fishAge or 1,
+			alive = true,
+		})
+	end
+	
+	-- Check for bird
+	if flags.has_bird then
+		table.insert(pets, {
+			id = "bird",
+			name = petData.birdName or "Tweety",
+			type = "Bird",
+			emoji = "🐦",
+			age = petData.birdAge or 1,
+			alive = true,
+		})
+	end
+	
+	return pets
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Create pet card for Family tab
+-- ═══════════════════════════════════════════════════════════════════════════════
+function RelationshipsScreen:createPetCard(parent, pet, index)
+	local card = Instance.new("Frame")
+	card.Name = "PetCard_" .. pet.id
+	card.Size = UDim2.new(1, 0, 0, 70)
+	card.BackgroundColor3 = Color3.fromRGB(255, 248, 225) -- Warm orange-ish
+	card.LayoutOrder = index
+	card.ZIndex = 83
+	card.Parent = parent
+	UI.corner(card, 14)
+	UI.stroke(card, 1, 0.85, Color3.fromRGB(255, 200, 100))
+
+	-- Pet emoji
+	local emojiLabel = Instance.new("TextLabel")
+	emojiLabel.Size = UDim2.new(0, 50, 0, 50)
+	emojiLabel.Position = UDim2.new(0, 12, 0.5, -25)
+	emojiLabel.BackgroundTransparency = 1
+	emojiLabel.Font = F.Body
+	emojiLabel.TextSize = 32
+	emojiLabel.Text = pet.emoji or "🐾"
+	emojiLabel.ZIndex = 84
+	emojiLabel.Parent = card
+
+	-- Pet name
+	local nameLabel = Instance.new("TextLabel")
+	nameLabel.Size = UDim2.new(0.5, -70, 0, 24)
+	nameLabel.Position = UDim2.new(0, 70, 0, 12)
+	nameLabel.BackgroundTransparency = 1
+	nameLabel.Font = F.Bold
+	nameLabel.TextSize = 16
+	nameLabel.TextColor3 = C.Black
+	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+	nameLabel.Text = pet.name or "Pet"
+	nameLabel.ZIndex = 84
+	nameLabel.Parent = card
+
+	-- Pet type and age
+	local infoLabel = Instance.new("TextLabel")
+	infoLabel.Size = UDim2.new(0.5, -70, 0, 18)
+	infoLabel.Position = UDim2.new(0, 70, 0, 38)
+	infoLabel.BackgroundTransparency = 1
+	infoLabel.Font = F.Medium
+	infoLabel.TextSize = 13
+	infoLabel.TextColor3 = C.Gray500
+	infoLabel.TextXAlignment = Enum.TextXAlignment.Left
+	infoLabel.Text = string.format("%s • %d year%s old", pet.type or "Pet", pet.age or 1, pet.age == 1 and "" or "s")
+	infoLabel.ZIndex = 84
+	infoLabel.Parent = card
+
+	-- Heart/love indicator
+	local loveLabel = Instance.new("TextLabel")
+	loveLabel.Size = UDim2.new(0, 30, 0, 30)
+	loveLabel.Position = UDim2.new(1, -50, 0.5, -15)
+	loveLabel.BackgroundTransparency = 1
+	loveLabel.Font = F.Body
+	loveLabel.TextSize = 24
+	loveLabel.Text = "❤️"
+	loveLabel.ZIndex = 84
+	loveLabel.Parent = card
+
+	return card
 end
 
 -- ROMANCE ----------------------------------------------------------------------
@@ -2283,8 +2498,36 @@ function RelationshipsScreen:showInteractionModal(person, relType, accentColor, 
 		actions = {}
 	end
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Filter actions based on requirements!
+	-- Some actions (like "Get Married") require specific conditions
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local flags = (self.playerState and self.playerState.Flags) or {}
+	local actionIndex = 0
+	
 	for i, action in ipairs(actions) do
-		self:createActionButton(action, i, accentColor, paleColor, person)
+		local shouldShow = true
+		
+		-- Check requiresEngaged
+		if action.requiresEngaged and not flags.engaged then
+			shouldShow = false
+		end
+		
+		-- Check requiresMarried
+		if action.requiresMarried and not flags.married then
+			shouldShow = false
+		end
+		
+		-- Check requiresSingle
+		if action.requiresSingle and (flags.married or flags.engaged or flags.has_partner) then
+			shouldShow = false
+		end
+		
+		-- Only create button if requirements are met
+		if shouldShow then
+			actionIndex = actionIndex + 1
+			self:createActionButton(action, actionIndex, accentColor, paleColor, person)
+		end
 	end
 
 	-- Animate show
