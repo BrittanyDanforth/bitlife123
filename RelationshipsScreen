@@ -1725,7 +1725,7 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 	-- CRITICAL UI FIX: Scaled text and position for small phones
 	local NAME_SIZE = IS_TINY_PHONE and 13 or (IS_SMALL_PHONE and 15 or 17)
 	local BADGE_HEIGHT = IS_TINY_PHONE and 18 or (IS_SMALL_PHONE and 22 or 26)
-	local BADGE_WIDTH = IS_TINY_PHONE and 65 or (IS_SMALL_PHONE and 80 or 95)
+	local ROLE_TEXT_SIZE = IS_TINY_PHONE and 9 or (IS_SMALL_PHONE and 10 or 11)
 	local nameY = IS_TINY_PHONE and 6 or (IS_SMALL_PHONE and 8 or 10)
 	local roleY = IS_TINY_PHONE and 26 or (IS_SMALL_PHONE and 32 or 36)
 
@@ -1743,23 +1743,31 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 	nameLabel.ZIndex = 85
 	nameLabel.Parent = card
 
-	-- Role badge (more prominent) - SCALED
+	-- Role badge (auto-sized to fit content) - SCALED
 	local roleBadge = Instance.new("Frame")
-	roleBadge.Size = UDim2.new(0, BADGE_WIDTH, 0, BADGE_HEIGHT)
+	roleBadge.AutomaticSize = Enum.AutomaticSize.X
+	roleBadge.Size = UDim2.new(0, 0, 0, BADGE_HEIGHT)
 	roleBadge.Position = UDim2.new(0, TEXT_START, 0, roleY)
 	roleBadge.BackgroundColor3 = isAlive and paleColor or C.Gray200
 	roleBadge.ZIndex = 85
 	roleBadge.Parent = card
 	UI.pill(roleBadge)
 
+	-- Add padding for auto-size
+	local badgePadding = Instance.new("UIPadding")
+	badgePadding.PaddingLeft = UDim.new(0, IS_TINY_PHONE and 6 or 8)
+	badgePadding.PaddingRight = UDim.new(0, IS_TINY_PHONE and 6 or 8)
+	badgePadding.Parent = roleBadge
+
 	local roleLabel = Instance.new("TextLabel")
-	roleLabel.Size = UDim2.fromScale(1, 1)
+	roleLabel.AutomaticSize = Enum.AutomaticSize.X
+	roleLabel.Size = UDim2.new(0, 0, 1, 0)
 	roleLabel.BackgroundTransparency = 1
 	roleLabel.Font = F.Button
-	roleLabel.TextSize = IS_TINY_PHONE and 9 or (IS_SMALL_PHONE and 10 or 11)
+	roleLabel.TextSize = ROLE_TEXT_SIZE
 	roleLabel.TextColor3 = isAlive and accentColor or C.Gray500
 	-- Show divorced/separated/deceased status
-	local roleText = person.role or ""
+	local roleText = person.role or "Family"
 	if person.divorced or person.maritalStatus == "Divorced" or person.status == "divorced" then
 		roleText = roleText .. " 💔"
 	elseif not isAlive then
@@ -1771,25 +1779,39 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: AGE DISPLAY - User wanted to see ages for all people!
-	-- Shows age badge next to role badge
+	-- Shows age badge next to role badge using horizontal layout
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local personAge = person.age or 0
 	if personAge > 0 then
-		local AGE_BADGE_WIDTH = IS_TINY_PHONE and 40 or (IS_SMALL_PHONE and 48 or 55)
+		-- Create age badge that positions itself after role badge
 		local ageBadge = Instance.new("Frame")
 		ageBadge.Name = "AgeBadge"
-		ageBadge.Size = UDim2.new(0, AGE_BADGE_WIDTH, 0, BADGE_HEIGHT)
-		ageBadge.Position = UDim2.new(0, TEXT_START + BADGE_WIDTH + 6, 0, roleY)
+		ageBadge.AutomaticSize = Enum.AutomaticSize.X
+		ageBadge.Size = UDim2.new(0, 0, 0, BADGE_HEIGHT)
 		ageBadge.BackgroundColor3 = isAlive and C.Gray200 or C.Gray100
 		ageBadge.ZIndex = 85
 		ageBadge.Parent = card
 		UI.pill(ageBadge)
-		
+
+		-- Position age badge after role badge (wait for layout to compute)
+		task.defer(function()
+			if roleBadge and roleBadge.Parent then
+				ageBadge.Position = UDim2.new(0, TEXT_START + roleBadge.AbsoluteSize.X + 6, 0, roleY)
+			end
+		end)
+
+		-- Add padding for auto-size
+		local agePadding = Instance.new("UIPadding")
+		agePadding.PaddingLeft = UDim.new(0, IS_TINY_PHONE and 6 or 8)
+		agePadding.PaddingRight = UDim.new(0, IS_TINY_PHONE and 6 or 8)
+		agePadding.Parent = ageBadge
+
 		local ageLabel = Instance.new("TextLabel")
-		ageLabel.Size = UDim2.fromScale(1, 1)
+		ageLabel.AutomaticSize = Enum.AutomaticSize.X
+		ageLabel.Size = UDim2.new(0, 0, 1, 0)
 		ageLabel.BackgroundTransparency = 1
 		ageLabel.Font = F.Button
-		ageLabel.TextSize = IS_TINY_PHONE and 9 or (IS_SMALL_PHONE and 10 or 11)
+		ageLabel.TextSize = ROLE_TEXT_SIZE
 		ageLabel.TextColor3 = isAlive and C.Gray600 or C.Gray400
 		ageLabel.Text = "Age " .. tostring(personAge)
 		ageLabel.ZIndex = 86

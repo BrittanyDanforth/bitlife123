@@ -87,11 +87,13 @@ local function serializeState(state)
 				serialized.Relationships[id] = {
 					id = rel.id,
 					type = rel.type,
+					role = rel.role,
 					name = rel.name,
 					age = rel.age,
 					relationship = rel.relationship,
 					alive = rel.alive,
 					gender = rel.gender,
+					isFamily = rel.isFamily,
 				}
 			end
 		end
