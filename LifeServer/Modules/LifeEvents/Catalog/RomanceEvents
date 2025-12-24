@@ -751,6 +751,783 @@ local events = {
 			},
 		},
 	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- MASSIVE EXPANSION: MORE ROMANCE EVENTS FOR VARIETY
+	-- User complaint: "EVERY LIFE IS THE SAME MY GODDDDDDD"
+	-- ══════════════════════════════════════════════════════════════════════════════
+	
+	{
+		id = "romance_long_distance",
+		emoji = "✈️",
+		title = "Long Distance Challenge",
+		text = "{{PARTNER_NAME}} got a job offer in another city. They want to try long distance. It's a big test for your relationship.",
+		category = "romance",
+		weight = 6,
+		minAge = 18,
+		requiresPartner = true,
+		cooldown = 4,
+		blockedByFlags = { married = true },
+		choices = {
+			{
+				index = 1,
+				text = "Support them - we can make it work",
+				effects = {},
+				feedText = "Long distance it is...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					local relationship = 50
+					if state.Relationships and state.Relationships.partner then
+						relationship = state.Relationships.partner.relationship or 50
+					end
+					local bonus = relationship > 70 and 15 or 0
+					
+					if roll + bonus <= 55 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
+						if state.AddFeed then
+							state:AddFeed("✈️ The distance is hard but you're making it work! Video calls every night.")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -15) end
+						state.Flags = state.Flags or {}
+						state.Flags.relationship_rocky = true
+						if state.AddFeed then
+							state:AddFeed("✈️ Long distance is killing the relationship. Growing apart.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Move with them",
+				effects = {},
+				feedText = "Following your heart...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
+						if state.AddFeed then
+							state:AddFeed("✈️ New city, new adventure together! Relationship stronger than ever.")
+						end
+						state.Flags = state.Flags or {}
+						state.Flags.relocated_for_love = true
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						if state.AddFeed then
+							state:AddFeed("✈️ Uprooted your life and struggling in the new city. Was it worth it?")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Break up - long distance never works",
+				effects = { Happiness = -12 },
+				feedText = "Ending things...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.has_partner = nil
+					state.Flags.dating = nil
+					state.Flags.recently_single = true
+					if state.Relationships then
+						state.Relationships.partner = nil
+					end
+					if state.AddFeed then
+						state:AddFeed("✈️ You both cried but agreed it was best. Still hurts.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "romance_meet_parents",
+		emoji = "👨‍👩‍👧",
+		title = "Meeting the Parents",
+		text = "{{PARTNER_NAME}} wants you to meet their parents. It's a big step. You're nervous.",
+		category = "romance",
+		weight = 8,
+		minAge = 16,
+		requiresPartner = true,
+		cooldown = 3,
+		choices = {
+			{
+				index = 1,
+				text = "Bring flowers and be charming",
+				effects = {},
+				feedText = "Making a good impression...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					local looks = (state.Stats and state.Stats.Looks) or 50
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local bonus = (looks > 60 and 10 or 0) + (smarts > 60 and 10 or 0)
+					
+					if roll + bonus <= 70 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
+						state.Flags = state.Flags or {}
+						state.Flags.parents_approve = true
+						if state.AddFeed then
+							state:AddFeed("👨‍👩‍👧 They LOVED you! 'You're always welcome here!'")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						if state.AddFeed then
+							state:AddFeed("👨‍👩‍👧 Awkward dinner. Mom asked too many questions. Dad barely spoke. Ouch.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Be yourself - no pretending",
+				effects = {},
+				feedText = "Authenticity approach...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.AddFeed then
+							state:AddFeed("👨‍👩‍👧 They appreciated your honesty! Good first impression.")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then
+							state:AddFeed("👨‍👩‍👧 Maybe should have tried harder. They seemed... underwhelmed.")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Not ready for that yet",
+				effects = { Happiness = -5 },
+				feedText = "👨‍👩‍👧 Your partner is disappointed but understanding... for now.",
+			},
+		},
+	},
+	
+	{
+		id = "romance_caught_texting",
+		emoji = "📱",
+		title = "Suspicious Texting",
+		text = "You saw {{PARTNER_NAME}} being very secretive with their phone. They quickly hid it when you walked in.",
+		category = "romance",
+		weight = 5,
+		minAge = 16,
+		requiresPartner = true,
+		cooldown = 3,
+		choices = {
+			{
+				index = 1,
+				text = "Ask them about it directly",
+				effects = {},
+				feedText = "Confronting the situation...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then
+							state:AddFeed("📱 They were planning a surprise party for you! False alarm!")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -20) end
+						state.Flags = state.Flags or {}
+						state.Flags.partner_cheating = true
+						if state.AddFeed then
+							state:AddFeed("📱 They've been texting their ex. A lot. This isn't good.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Snoop through their phone",
+				effects = {},
+				feedText = "Privacy invasion...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then
+							state:AddFeed("📱 Nothing suspicious. Feel guilty for snooping. Trust issues much?")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -15) end
+						state.Flags = state.Flags or {}
+						state.Flags.relationship_rocky = true
+						if state.AddFeed then
+							state:AddFeed("📱 They caught you snooping! Now YOU'RE the one in trouble!")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Trust them - probably nothing",
+				effects = { Happiness = 3 },
+				feedText = "📱 You chose trust. Whatever it was, you'll let it go.",
+			},
+		},
+	},
+	
+	{
+		id = "romance_coworker_flirt",
+		emoji = "💼",
+		title = "Office Admirer",
+		text = "An attractive coworker has been flirting with you lately. They just asked you to grab lunch, just the two of you.",
+		category = "romance",
+		weight = 6,
+		minAge = 20,
+		requiresPartner = true,
+		requiresJob = true,
+		cooldown = 4,
+		choices = {
+			{
+				index = 1,
+				text = "Politely decline - I'm taken",
+				effects = { Happiness = 3, Smarts = 2 },
+				feedText = "💼 Stayed faithful. The coworker respected your boundaries.",
+			},
+			{
+				index = 2,
+				text = "Go to lunch - it's just lunch",
+				effects = {},
+				feedText = "Just colleagues...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 2) end
+						if state.AddFeed then
+							state:AddFeed("💼 Just lunch. Nothing happened. But there was... chemistry.")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						state.Flags = state.Flags or {}
+						state.Flags.emotional_affair = true
+						if state.AddFeed then
+							state:AddFeed("💼 One lunch became many. You're developing feelings. This is dangerous.")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Flirt back - YOLO",
+				effects = {},
+				feedText = "Playing with fire...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+					state.Flags = state.Flags or {}
+					state.Flags.cheating = true
+					if roll <= 50 then
+						if state.AddFeed then
+							state:AddFeed("💼 Secret office romance. Exciting but wrong. Your partner doesn't know... yet.")
+						end
+					else
+						state.Flags.partner_found_out = true
+						if state.ModifyStat then state:ModifyStat("Happiness", -25) end
+						if state.AddFeed then
+							state:AddFeed("💼 Partner found flirty texts. All hell broke loose. What have you done?")
+						end
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "romance_partner_job_loss",
+		emoji = "💰",
+		title = "Partner Lost Their Job",
+		text = "{{PARTNER_NAME}} just got laid off. They're stressed and worried about money. The mood at home is tense.",
+		category = "romance",
+		weight = 7,
+		minAge = 20,
+		requiresPartner = true,
+		cooldown = 4,
+		choices = {
+			{
+				index = 1,
+				text = "Be supportive - we'll get through this",
+				effects = { Happiness = -3 },
+				feedText = "Standing by them...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.Relationships and state.Relationships.partner then
+							state.Relationships.partner.relationship = (state.Relationships.partner.relationship or 50) + 10
+						end
+						if state.AddFeed then
+							state:AddFeed("💰 Your support meant everything. They found a new job! Relationship stronger.")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						if state.AddFeed then
+							state:AddFeed("💰 Job search is taking forever. Money's tight. Both of you are stressed.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Pressure them to find work fast",
+				effects = {},
+				feedText = "Being pragmatic...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 3) end
+						if state.AddFeed then
+							state:AddFeed("💰 The pressure worked! They hustled and found something. Phew.")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						state.Flags = state.Flags or {}
+						state.Flags.relationship_rocky = true
+						if state.AddFeed then
+							state:AddFeed("💰 Your pressure made things worse. They feel unsupported and unloved.")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Consider if this relationship is worth it",
+				effects = { Happiness = -10 },
+				feedText = "💰 Having doubts. Is this person right for your future?",
+				setFlags = { relationship_doubts = true },
+			},
+		},
+	},
+	
+	{
+		id = "romance_vacation_together",
+		emoji = "🏝️",
+		title = "Romantic Getaway",
+		text = "{{PARTNER_NAME}} suggests a romantic vacation together. Just the two of you, somewhere beautiful.",
+		category = "romance",
+		weight = 8,
+		minAge = 18,
+		requiresPartner = true,
+		cooldown = 3,
+		choices = {
+			{
+				index = 1,
+				text = "Splurge on a luxury trip",
+				effects = {},
+				feedText = "Living large...",
+				onResolve = function(state)
+					local cost = 5000
+					if (state.Money or 0) >= cost then
+						state.Money = (state.Money or 0) - cost
+						if state.ModifyStat then state:ModifyStat("Happiness", 20) end
+						if state.Relationships and state.Relationships.partner then
+							state.Relationships.partner.relationship = (state.Relationships.partner.relationship or 50) + 15
+						end
+						if state.AddFeed then
+							state:AddFeed("🏝️ AMAZING trip! Sunsets, champagne, romantic dinners. Memories for life!")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then
+							state:AddFeed("🏝️ Can't afford it right now. Had to decline. Partner's disappointed.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Budget-friendly road trip",
+				effects = { Happiness = 12 },
+				feedText = "🏝️ Road trip adventure! It's not about the destination, it's about the journey!",
+				onResolve = function(state)
+					state.Money = (state.Money or 0) - 500
+					if state.Relationships and state.Relationships.partner then
+						state.Relationships.partner.relationship = (state.Relationships.partner.relationship or 50) + 8
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Staycation at home",
+				effects = { Happiness = 5 },
+				feedText = "🏝️ Netflix, takeout, and quality time. Simple but sweet.",
+			},
+		},
+	},
+	
+	{
+		id = "romance_baby_talk",
+		emoji = "👶",
+		title = "Baby Discussion",
+		text = "{{PARTNER_NAME}} brings up having kids. 'What do you think about starting a family?' This is big.",
+		category = "romance",
+		weight = 6,
+		minAge = 22,
+		maxAge = 45,
+		requiresPartner = true,
+		requiresFlags = { married = true },
+		blockedByFlags = { has_kids = true },
+		cooldown = 4,
+		choices = {
+			{
+				index = 1,
+				text = "Yes! Let's do it!",
+				effects = { Happiness = 10 },
+				feedText = "👶 You're both excited! Time to start trying!",
+				setFlags = { trying_for_baby = true },
+			},
+			{
+				index = 2,
+				text = "Not yet - let's wait",
+				effects = {},
+				feedText = "Timing matters...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 3) end
+						if state.AddFeed then
+							state:AddFeed("👶 Partner understands. You'll revisit this later.")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						state.Flags = state.Flags or {}
+						state.Flags.relationship_rocky = true
+						if state.AddFeed then
+							state:AddFeed("👶 Partner really wanted kids now. They're hurt by the delay.")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "I don't want kids ever",
+				effects = { Happiness = -15 },
+				feedText = "👶 This is a dealbreaker issue. Relationship on shaky ground.",
+				setFlags = { relationship_rocky = true, fundamental_disagreement = true },
+			},
+		},
+	},
+	
+	{
+		id = "romance_ex_reaches_out",
+		emoji = "📲",
+		title = "Ex Contacts You",
+		text = "Your ex just texted: 'Hey, I've been thinking about you. Can we talk?' This is complicated.",
+		category = "romance",
+		weight = 5,
+		minAge = 18,
+		requiresPartner = true,
+		cooldown = 4,
+		choices = {
+			{
+				index = 1,
+				text = "Ignore and block",
+				effects = { Happiness = 5, Smarts = 3 },
+				feedText = "📲 Blocked without hesitation. Your partner is your priority.",
+			},
+			{
+				index = 2,
+				text = "Reply but keep it friendly",
+				effects = {},
+				feedText = "Being civil...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 2) end
+						if state.AddFeed then
+							state:AddFeed("📲 Brief catch-up. Confirmed you made the right choice moving on.")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						state.Flags = state.Flags or {}
+						state.Flags.partner_suspicious = true
+						if state.AddFeed then
+							state:AddFeed("📲 Partner saw the texts. 'Why are you talking to your ex?!' Drama.")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Meet up with them in secret",
+				effects = {},
+				feedText = "Risky move...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						if state.AddFeed then
+							state:AddFeed("📲 Met up. Closure achieved. But the secrecy feels wrong.")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -20) end
+						state.Flags = state.Flags or {}
+						state.Flags.trust_broken = true
+						if state.AddFeed then
+							state:AddFeed("📲 Partner found out you met your ex in secret. Trust is shattered.")
+						end
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "romance_proposal_received",
+		emoji = "💍",
+		title = "The Big Question!",
+		text = "{{PARTNER_NAME}} gets down on one knee and pulls out a ring. 'Will you marry me?'",
+		category = "romance",
+		weight = 5,
+		minAge = 20,
+		requiresPartner = true,
+		requiresFlags = { dating = true },
+		blockedByFlags = { married = true, engaged = true },
+		cooldown = 6,
+		choices = {
+			{
+				index = 1,
+				text = "YES! A thousand times YES!",
+				effects = { Happiness = 25 },
+				feedText = "💍 You said yes! You're ENGAGED! Time to plan a wedding!",
+				setFlags = { engaged = true },
+				onResolve = function(state)
+					if state.Relationships and state.Relationships.partner then
+						state.Relationships.partner.relationship = 100
+						state.Relationships.partner.role = "Fiancé"
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "I need time to think...",
+				effects = { Happiness = -10 },
+				feedText = "💍 The disappointment on their face... This might have damaged things.",
+				setFlags = { relationship_rocky = true },
+			},
+			{
+				index = 3,
+				text = "No... I'm sorry",
+				effects = { Happiness = -20 },
+				feedText = "💍 Rejection. The ring goes back in the box. Relationship effectively over.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.has_partner = nil
+					state.Flags.dating = nil
+					state.Flags.recently_single = true
+					if state.Relationships then
+						state.Relationships.partner = nil
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "romance_social_media_argument",
+		emoji = "📸",
+		title = "Instagram Drama",
+		text = "{{PARTNER_NAME}} posted a photo with their 'work friend' looking very cozy. Your friends are asking questions.",
+		category = "romance",
+		weight = 6,
+		minAge = 16,
+		requiresPartner = true,
+		cooldown = 3,
+		choices = {
+			{
+				index = 1,
+				text = "Confront them about it",
+				effects = {},
+				feedText = "Addressing the issue...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then
+							state:AddFeed("📸 Innocent team building photo! They showed you all the other pics. Crisis averted.")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -12) end
+						state.Flags = state.Flags or {}
+						state.Flags.relationship_rocky = true
+						if state.AddFeed then
+							state:AddFeed("📸 'You don't trust me!' Big fight ensued. Not sure how this ends.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Post a passive-aggressive story",
+				effects = { Happiness = -5 },
+				feedText = "📸 'When you find out who your real ones are...' The pettiness is real.",
+				setFlags = { relationship_drama = true },
+			},
+			{
+				index = 3,
+				text = "Trust them - it's just a photo",
+				effects = { Happiness = 3 },
+				feedText = "📸 You chose to trust. Healthy relationship move.",
+			},
+		},
+	},
+	
+	{
+		id = "romance_dream_wedding",
+		emoji = "💒",
+		title = "Wedding Planning",
+		text = "Time to plan the wedding! {{PARTNER_NAME}} wants something big and fancy. Your families have... opinions.",
+		category = "romance",
+		weight = 7,
+		minAge = 20,
+		requiresPartner = true,
+		requiresFlags = { engaged = true },
+		blockedByFlags = { married = true },
+		cooldown = 5,
+		choices = {
+			{
+				index = 1,
+				text = "Dream wedding - spare no expense",
+				effects = {},
+				feedText = "Going all out...",
+				onResolve = function(state)
+					local cost = 30000
+					if (state.Money or 0) >= cost then
+						state.Money = (state.Money or 0) - cost
+						if state.ModifyStat then state:ModifyStat("Happiness", 25) end
+						state.Flags = state.Flags or {}
+						state.Flags.married = true
+						state.Flags.engaged = nil
+						if state.Relationships and state.Relationships.partner then
+							local partnerGender = state.Relationships.partner.gender or ""
+							state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
+						end
+						if state.AddFeed then
+							state:AddFeed("💒 MARRIED! Fairy tale wedding! 200 guests, live band, stunning venue!")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						if state.AddFeed then
+							state:AddFeed("💒 Can't afford the dream wedding. Need to either wait or scale down.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Courthouse wedding - save the money",
+				effects = { Happiness = 10 },
+				feedText = "💒 Quick, simple, legal! You're married! Money saved for the future!",
+				onResolve = function(state)
+					state.Money = (state.Money or 0) - 500
+					state.Flags = state.Flags or {}
+					state.Flags.married = true
+					state.Flags.engaged = nil
+					if state.Relationships and state.Relationships.partner then
+						local partnerGender = state.Relationships.partner.gender or ""
+						state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Elope - just us two",
+				effects = { Happiness = 15 },
+				feedText = "💒 Eloped to Vegas! Romantic and spontaneous! Families are... shocked.",
+				setFlags = { married = true },
+				onResolve = function(state)
+					state.Money = (state.Money or 0) - 2000
+					state.Flags = state.Flags or {}
+					state.Flags.engaged = nil
+					if state.Relationships and state.Relationships.partner then
+						local partnerGender = state.Relationships.partner.gender or ""
+						state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "romance_in_law_drama",
+		emoji = "👵",
+		title = "In-Law Problems",
+		text = "{{PARTNER_NAME}}'s mother has been criticizing everything about you. Your cooking, your job, your worth as a partner.",
+		category = "romance",
+		weight = 6,
+		minAge = 20,
+		requiresPartner = true,
+		requiresFlags = { married = true },
+		cooldown = 3,
+		choices = {
+			{
+				index = 1,
+				text = "Kill her with kindness",
+				effects = {},
+				feedText = "Taking the high road...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.AddFeed then
+							state:AddFeed("👵 She eventually warmed up! Maybe she just needed time.")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then
+							state:AddFeed("👵 Still rude. But you kept your dignity. Partner appreciates your patience.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Tell your partner to handle it",
+				effects = {},
+				feedText = "Their family, their problem...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then
+							state:AddFeed("👵 Partner had a talk with their mom. Things improved!")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						state.Flags = state.Flags or {}
+						state.Flags.relationship_rocky = true
+						if state.AddFeed then
+							state:AddFeed("👵 Partner defended their mom! 'That's just how she is!' Not taking your side.")
+						end
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "Confront her directly",
+				effects = {},
+				feedText = "Setting boundaries...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 35 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
+						if state.AddFeed then
+							state:AddFeed("👵 Respect earned! She admires someone who stands up for themselves.")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -15) end
+						state.Flags = state.Flags or {}
+						state.Flags.in_law_feud = true
+						if state.AddFeed then
+							state:AddFeed("👵 Full-blown family war. She's demanding your partner choose. Holidays will be awkward FOREVER.")
+						end
+					end
+				end,
+			},
+		},
+	},
 }
 
 return events

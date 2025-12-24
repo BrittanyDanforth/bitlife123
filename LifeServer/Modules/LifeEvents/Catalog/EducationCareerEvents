@@ -643,11 +643,10 @@ EducationCareerEvents.events = {
 	},
 }
 
-return EducationCareerEvents
-
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- COACH EVENTS - User requested "COACH JOB DOSENT HAVE ANY LIFEEVNTS"
 -- Sports coaches at schools and pro teams
+-- CRITICAL FIX: Moved return statement to END of file so these events load!
 -- ═══════════════════════════════════════════════════════════════════════════════
 local CoachCareerEvents = {
 	{
@@ -1129,3 +1128,9 @@ table.insert(EducationCareerEvents, {
 		},
 	},
 })
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Return at END of file so ALL events above get loaded properly
+-- The previous return was at line 646 making CoachCareerEvents and table.inserts unreachable!
+-- ═══════════════════════════════════════════════════════════════════════════════
+return EducationCareerEvents

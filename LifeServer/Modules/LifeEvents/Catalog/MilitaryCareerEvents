@@ -466,6 +466,703 @@ MilitaryCareerEvents.events = {
 			},
 		},
 	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- MASSIVE EXPANSION: MORE MILITARY EVENTS FOR VARIETY
+	-- User complaint: "EVERY LIFE IS THE SAME MY GODDDDDDD"
+	-- ══════════════════════════════════════════════════════════════════════════════
+	
+	{
+		id = "mil_fitness_test",
+		title = "Physical Fitness Test",
+		emoji = "💪",
+		text = "It's PT test day. You've been training but the standards are tough. Pushups, situps, and a two-mile run.",
+		category = "career_military",
+		weight = 16,
+		minAge = 18, maxAge = 50,
+		baseChance = 0.6,
+		cooldown = 2,
+		requiresJob = true,
+		eligibility = hasMilitaryJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Give it everything - max score attempt",
+				effects = {},
+				feedText = "Pushing to the limit...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					local health = (state.Stats and state.Stats.Health) or 50
+					local bonus = health > 70 and 15 or 0
+					if roll + bonus <= 55 then
+						state:ModifyStat("Health", 8)
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.pt_stud = true
+						state:AddFeed("💪 MAXED the PT test! Perfect scores across the board! Commanders noticed.")
+					elseif roll + bonus <= 85 then
+						state:ModifyStat("Health", 3)
+						state:AddFeed("💪 Passed! Solid score. Nothing exceptional but you're good to go.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:ModifyStat("Health", -3)
+						state:AddFeed("💪 Failed the run by 30 seconds. Remedial PT program for you.")
+					end
+				end,
+			},
+			{
+				text = "Pace yourself - just need to pass",
+				effects = { Health = 2 },
+				feedText = "Smart approach...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 80 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("💪 Passed comfortably. Not impressive but passing is passing.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("💪 Barely scraped by. Need to train harder next time.")
+					end
+				end,
+			},
+			{
+				text = "Claim minor injury - get medical waiver",
+				effects = {},
+				feedText = "Playing it safe...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:AddFeed("💪 Got a waiver. Have to test next cycle though.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state.Flags = state.Flags or {}
+						state.Flags.suspected_malingerer = true
+						state:AddFeed("💪 Doc didn't buy it. Now you're flagged AND have to test. Bad move.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "mil_secret_clearance",
+		title = "Security Clearance Investigation",
+		emoji = "🔒",
+		text = "You've been selected for a position requiring Top Secret clearance. Investigators are digging into your entire life.",
+		category = "career_military",
+		weight = 14,
+		minAge = 19, maxAge = 55,
+		baseChance = 0.35,
+		cooldown = 5,
+		requiresJob = true,
+		eligibility = hasMilitaryJob,
+		blockedByFlags = { in_prison = true, criminal_record = true },
+		
+		choices = {
+			{
+				text = "Be completely honest about everything",
+				effects = { Smarts = 2 },
+				feedText = "Full transparency...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 75 then
+						state:ModifyStat("Happiness", 15)
+						state.Money = (state.Money or 0) + 8000
+						state.Flags = state.Flags or {}
+						state.Flags.top_secret_clearance = true
+						state:AddFeed("🔒 Clearance GRANTED! Access to classified information. Career doors opening.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🔒 Investigation ongoing. Some friends/family said weird stuff. Delayed.")
+					end
+				end,
+			},
+			{
+				text = "Hide that one thing from your past",
+				effects = {},
+				feedText = "They probably won't find out...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.top_secret_clearance = true
+						state:AddFeed("🔒 Clearance granted! They didn't dig that deep. Lucky.")
+					else
+						state:ModifyStat("Happiness", -20)
+						state.Flags = state.Flags or {}
+						state.Flags.clearance_denied = true
+						state:AddFeed("🔒 DENIED. They found out you lied. Now you're flagged for dishonesty. Career damaged.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "mil_drill_sergeant",
+		title = "Drill Instructor Opportunity",
+		emoji = "🎖️",
+		text = "You've been offered the chance to become a drill instructor. It's prestigious but incredibly demanding.",
+		category = "career_military",
+		weight = 12,
+		minAge = 25, maxAge = 45,
+		baseChance = 0.3,
+		cooldown = 6,
+		requiresJob = true,
+		eligibility = hasMilitaryJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Accept - shape the next generation",
+				effects = { Health = -5 },
+				feedText = "Time to make soldiers...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 65 then
+						state:ModifyStat("Happiness", 10)
+						state:ModifyStat("Smarts", 5)
+						state.Flags = state.Flags or {}
+						state.Flags.drill_instructor = true
+						state:AddFeed("🎖️ You're a natural! Tough but fair. Recruits respect you.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:ModifyStat("Health", -5)
+						state:AddFeed("🎖️ It's breaking you. 4am wake-ups, constant yelling. Requested transfer.")
+					end
+				end,
+			},
+			{
+				text = "Decline - stay operational",
+				effects = { Happiness = 3 },
+				feedText = "🎖️ Training command isn't for everyone. Back to regular duties.",
+			},
+		},
+	},
+	
+	{
+		id = "mil_special_forces_selection",
+		title = "Special Forces Assessment",
+		emoji = "⚔️",
+		text = "You've been tapped for Special Forces selection. The washout rate is 70%. This will be the hardest thing you've ever done.",
+		category = "career_military",
+		weight = 10,
+		minAge = 21, maxAge = 35,
+		baseChance = 0.25,
+		cooldown = 8,
+		requiresJob = true,
+		eligibility = hasMilitaryJob,
+		blockedByFlags = { in_prison = true, wounded_in_action = true },
+		
+		choices = {
+			{
+				text = "Send it - I'm ready for this",
+				effects = { Health = -15 },
+				feedText = "Into the crucible...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					local health = (state.Stats and state.Stats.Health) or 50
+					local bonus = health > 80 and 15 or 0
+					if roll + bonus <= 35 then
+						state:ModifyStat("Happiness", 25)
+						state:ModifyStat("Health", 10)
+						state.Money = (state.Money or 0) + 25000
+						state.Flags = state.Flags or {}
+						state.Flags.special_forces = true
+						state.Flags.elite_soldier = true
+						state:AddFeed("⚔️ YOU MADE IT! One of the few. Green Beret/Ranger tab earned. Elite warrior status.")
+					elseif roll + bonus <= 70 then
+						state:ModifyStat("Happiness", -15)
+						state:ModifyStat("Health", -10)
+						state:AddFeed("⚔️ Washed out at week 3. Honorable release - this isn't failure. Most can't even try.")
+					else
+						state:ModifyStat("Health", -25)
+						state.Flags = state.Flags or {}
+						state.Flags.injured = true
+						state:AddFeed("⚔️ Training injury. Stress fractures in both legs. Medical discharge from selection.")
+					end
+				end,
+			},
+			{
+				text = "Not yet - need more preparation",
+				effects = { Smarts = 3 },
+				feedText = "⚔️ Smart call. You'll get another shot when you're truly ready.",
+			},
+		},
+	},
+	
+	{
+		id = "mil_friendly_fire_incident",
+		title = "Friendly Fire Incident",
+		emoji = "💥",
+		text = "During a night exercise, shots were fired and someone got hurt. The investigation is pointing fingers at your unit.",
+		category = "career_military",
+		weight = 8,
+		minAge = 18, maxAge = 50,
+		baseChance = 0.2,
+		cooldown = 6,
+		requiresJob = true,
+		eligibility = hasMilitaryJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Take responsibility if it was my team",
+				effects = { Smarts = 3 },
+				feedText = "Officers own their mistakes...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("💥 Letter of reprimand but integrity noted. Command respects accountability.")
+					else
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("💥 Investigation cleared you. Your honesty was appreciated.")
+					end
+				end,
+			},
+			{
+				text = "Deflect blame to another unit",
+				effects = {},
+				feedText = "Self-preservation...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:AddFeed("💥 Someone else took the fall. You're in the clear. But you know the truth.")
+					else
+						state:ModifyStat("Happiness", -20)
+						state.Flags = state.Flags or {}
+						state.Flags.dishonorable_conduct = true
+						state:AddFeed("💥 Evidence surfaced. You lied AND threw someone under the bus. Career over.")
+					end
+				end,
+			},
+			{
+				text = "Cooperate fully with investigation",
+				effects = { Happiness = -5 },
+				feedText = "💥 Investigation ongoing. Stressful waiting game.",
+			},
+		},
+	},
+	
+	{
+		id = "mil_military_ball",
+		title = "Military Ball",
+		emoji = "🎩",
+		text = "The annual military ball is coming up. It's formal, full of traditions, and a chance to network with brass.",
+		category = "career_military",
+		weight = 14,
+		minAge = 18, maxAge = 60,
+		baseChance = 0.5,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasMilitaryJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Attend in full dress uniform",
+				effects = { Happiness = 5 },
+				feedText = "Looking sharp...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("🎩 Great night! Met some important people. Traditions honored.")
+					else
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🎩 Good time. Food was mediocre but the camaraderie was real.")
+					end
+				end,
+			},
+			{
+				text = "Bring a date to impress",
+				effects = {},
+				feedText = "Plus one time...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("🎩 Date was impressed! Power couple of the evening. Photos went viral.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🎩 Date was bored by military talk. Awkward car ride home.")
+					end
+				end,
+			},
+			{
+				text = "Skip it - not into formal events",
+				effects = { Happiness = -3 },
+				feedText = "🎩 Skipped. CO noticed your absence. Might affect OER.",
+			},
+		},
+	},
+	
+	{
+		id = "mil_hazing_incident",
+		title = "Hazing Witness",
+		emoji = "⚠️",
+		text = "You witness senior members 'initiating' a new recruit. It's crossing lines. The recruit looks terrified.",
+		category = "career_military",
+		weight = 10,
+		minAge = 18, maxAge = 40,
+		baseChance = 0.3,
+		cooldown = 5,
+		requiresJob = true,
+		eligibility = hasMilitaryJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Report it to command",
+				effects = { Smarts = 5 },
+				feedText = "Doing the right thing...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.integrity_commendation = true
+						state:AddFeed("⚠️ Investigation launched. You're protected as a whistleblower. Respect earned.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.unit_outcast = true
+						state:AddFeed("⚠️ Labeled a snitch. Unit icing you out. Did the right thing but paying the price.")
+					end
+				end,
+			},
+			{
+				text = "Intervene directly - stop it now",
+				effects = { Health = -3 },
+				feedText = "Stepping in...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("⚠️ They backed off. Recruit thanked you. Senior guys are mad but know they were wrong.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:ModifyStat("Health", -5)
+						state:AddFeed("⚠️ It escalated. Now you're in a fight. Everyone getting NJP (Non-Judicial Punishment).")
+					end
+				end,
+			},
+			{
+				text = "Stay quiet - not your business",
+				effects = { Happiness = -10 },
+				feedText = "⚠️ You did nothing. The guilt is eating at you. That recruit's eyes haunt you.",
+			},
+		},
+	},
+	
+	{
+		id = "mil_promotion_board",
+		title = "Promotion Board",
+		emoji = "⭐",
+		text = "You're up for promotion! The board will review your record and interview you. Big day.",
+		category = "career_military",
+		weight = 15,
+		minAge = 20, maxAge = 55,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasMilitaryJob,
+		blockedByFlags = { in_prison = true, dishonorable_conduct = true },
+		
+		choices = {
+			{
+				text = "Prepare extensively - know everything",
+				effects = { Smarts = 3 },
+				feedText = "Studying hard...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 15)
+						state.Money = (state.Money or 0) + 5000
+						state.Flags = state.Flags or {}
+						state.Flags.promoted = true
+						state:AddFeed("⭐ PROMOTED! New rank, new responsibilities, better pay. Hard work paid off!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("⭐ Passed over this time. 'Consider again next cycle.' Frustrating but keep going.")
+					end
+				end,
+			},
+			{
+				text = "Wing it - experience speaks for itself",
+				effects = {},
+				feedText = "Confidence time...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 45 then
+						state:ModifyStat("Happiness", 12)
+						state.Money = (state.Money or 0) + 5000
+						state.Flags = state.Flags or {}
+						state.Flags.promoted = true
+						state:AddFeed("⭐ Promoted! Natural leadership came through. Didn't need to study!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("⭐ Board noted gaps in knowledge. Should have prepared. Not this time.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "mil_dangerous_mission",
+		title = "High-Risk Mission",
+		emoji = "🎯",
+		text = "A high-value target has been located. Your unit is tasked with the raid. Intel says heavy resistance expected.",
+		category = "career_military",
+		weight = 10,
+		minAge = 20, maxAge = 45,
+		baseChance = 0.25,
+		cooldown = 5,
+		requiresJob = true,
+		eligibility = hasMilitaryJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Lead from the front",
+				effects = { Health = -10 },
+				feedText = "First one through the door...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 20)
+						state.Money = (state.Money or 0) + 15000
+						state.Flags = state.Flags or {}
+						state.Flags.decorated_hero = true
+						state:AddFeed("🎯 Mission success! HVT captured. You're getting a commendation medal!")
+					elseif roll <= 80 then
+						state:ModifyStat("Health", -15)
+						state:ModifyStat("Happiness", 5)
+						state.Flags = state.Flags or {}
+						state.Flags.wounded_in_action = true
+						state:AddFeed("🎯 Mission complete but you took shrapnel. Purple Heart incoming.")
+					else
+						state:ModifyStat("Health", -30)
+						state:ModifyStat("Happiness", -20)
+						state.Flags = state.Flags or {}
+						state.Flags.severely_wounded = true
+						state:AddFeed("🎯 Ambush. Lost teammates. You barely made it out. Medevac.")
+					end
+				end,
+			},
+			{
+				text = "Support from a tactical position",
+				effects = {},
+				feedText = "Providing cover...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 75 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("🎯 Mission accomplished. Good support work. Team came back safe.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🎯 Mission failed. Target escaped. Debrief is going to be rough.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "mil_family_separation",
+		title = "Extended Deployment",
+		emoji = "✈️",
+		text = "New orders: 12-month deployment. Your family is devastated. Kids are crying. Spouse is struggling to cope.",
+		category = "career_military",
+		weight = 12,
+		minAge = 22, maxAge = 50,
+		baseChance = 0.4,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = hasMilitaryJob,
+		requiresFlags = { has_partner = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Mission first - family understands",
+				effects = { Happiness = -10 },
+				feedText = "Duty calls...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 5)
+						state.Money = (state.Money or 0) + 20000
+						state:AddFeed("✈️ Deployment complete. Family stayed strong. Reunion was emotional.")
+					else
+						state:ModifyStat("Happiness", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.marriage_strained = true
+						state:AddFeed("✈️ Came home to a cold house. Spouse is distant. Kids barely know you.")
+					end
+				end,
+			},
+			{
+				text = "Request reassignment - need to be closer",
+				effects = {},
+				feedText = "Trying to stay home...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("✈️ Request approved! Reassigned to nearby base. Family is relieved.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("✈️ Request denied. Needs of the service. Pack your bags.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "mil_honor_guard",
+		title = "Honor Guard Detail",
+		emoji = "🎖️",
+		text = "You've been selected for funeral honor guard duty. You'll be folding flags and presenting them to grieving families.",
+		category = "career_military",
+		weight = 12,
+		minAge = 19, maxAge = 45,
+		baseChance = 0.35,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = hasMilitaryJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Accept with honor",
+				effects = { Happiness = -5 },
+				feedText = "Bearing witness...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state:ModifyStat("Smarts", 3)
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🎖️ Heavy duty but meaningful. A widow thanked you for your dignity. Never forget these moments.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🎖️ It's taking a toll. So much death. Need to talk to chaplain.")
+					end
+				end,
+			},
+			{
+				text = "Request different assignment",
+				effects = {},
+				feedText = "🎖️ Declined. Someone else will carry the duty.",
+			},
+		},
+	},
+	
+	{
+		id = "mil_base_lockdown",
+		title = "Base Emergency",
+		emoji = "🚨",
+		text = "Base is on lockdown! Active threat reported. You're ordered to shelter in place but hear gunshots nearby.",
+		category = "career_military",
+		weight = 8,
+		minAge = 18, maxAge = 55,
+		baseChance = 0.2,
+		cooldown = 6,
+		requiresJob = true,
+		eligibility = hasMilitaryJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Grab weapon and respond",
+				effects = { Health = -5 },
+				feedText = "Running toward danger...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 20)
+						state.Flags = state.Flags or {}
+						state.Flags.hero_commendation = true
+						state:AddFeed("🚨 You helped neutralize the threat! Lives saved. Hero of the day.")
+					elseif roll <= 80 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🚨 Arrived as MPs secured the situation. All clear. Heart still pounding.")
+					else
+						state:ModifyStat("Health", -15)
+						state:AddFeed("🚨 Caught in crossfire. Wounded but ok. Could have been worse.")
+					end
+				end,
+			},
+			{
+				text = "Follow orders - shelter in place",
+				effects = { Happiness = -3 },
+				feedText = "🚨 Waited anxiously. All clear given after 2 hours. False alarm, thankfully.",
+			},
+			{
+				text = "Help evacuate others nearby",
+				effects = { Smarts = 3 },
+				feedText = "🚨 Got people to safety. Smart, measured response. Noted in report.",
+			},
+		},
+	},
+	
+	{
+		id = "mil_veteran_mentor",
+		title = "Mentoring a Rookie",
+		emoji = "🤝",
+		text = "A fresh-out-of-boot-camp soldier has been assigned to you for mentorship. They're nervous and making mistakes.",
+		category = "career_military",
+		weight = 14,
+		minAge = 22, maxAge = 50,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasMilitaryJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Be tough - build resilience",
+				effects = {},
+				feedText = "Hard love approach...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						state:ModifyStat("Happiness", 8)
+						state:ModifyStat("Smarts", 3)
+						state:AddFeed("🤝 The recruit toughened up! Now one of your best. They thank you later.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🤝 Too hard. Recruit requested transfer. Feel bad about it.")
+					end
+				end,
+			},
+			{
+				text = "Be patient - everyone starts somewhere",
+				effects = { Happiness = 3, Smarts = 2 },
+				feedText = "🤝 Good mentorship style. Recruit is improving steadily. Building trust.",
+			},
+			{
+				text = "Let them figure it out themselves",
+				effects = {},
+				feedText = "Sink or swim...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:AddFeed("🤝 Recruit became self-sufficient. Independent soldier. Maybe your style worked.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🤝 Recruit failed and blamed you for lack of guidance. Fair point.")
+					end
+				end,
+			},
+		},
+	},
 }
 
 return MilitaryCareerEvents

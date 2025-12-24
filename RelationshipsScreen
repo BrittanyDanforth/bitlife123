@@ -970,21 +970,149 @@ local FamilyEmojis = {
 	husband     = "👨",
 }
 
-function RelationshipsScreen:getFamilyEmoji(role)
+function RelationshipsScreen:getFamilyEmoji(role, gender, age)
 	local lowerRole = safeLower(role or "")
+	local lowerGender = safeLower(gender or "")
+	local personAge = age or 25
+	
+	-- Mother/Father
 	if lowerRole:find("mother")   or lowerRole:find("mom")   then return "👩" end
 	if lowerRole:find("father")   or lowerRole:find("dad")   then return "👨" end
+	-- Grandparents
 	if lowerRole:find("grandmother") or lowerRole:find("grandma") then return "👵" end
 	if lowerRole:find("grandfather") or lowerRole:find("grandpa") then return "👴" end
+	-- Siblings
 	if lowerRole:find("brother")  then return "👦" end
 	if lowerRole:find("sister")   then return "👧" end
-	if lowerRole:find("son")      then return "👦" end
-	if lowerRole:find("daughter") then return "👧" end
+	-- Children
+	if lowerRole:find("son")      then return personAge < 3 and "👶" or "👦" end
+	if lowerRole:find("daughter") then return personAge < 3 and "👶" or "👧" end
+	if lowerRole:find("child")    then return personAge < 3 and "👶" or "👧" end
 	if lowerRole:find("baby")     then return "👶" end
+	-- Spouse
 	if lowerRole:find("wife")     then return "👩" end
 	if lowerRole:find("husband")  then return "👨" end
 	if lowerRole:find("spouse")   then return "💑" end
+	-- Extended family
+	if lowerRole:find("aunt")     then return "👩" end
+	if lowerRole:find("uncle")    then return "👨" end
+	if lowerRole:find("cousin")   then return lowerGender == "female" and "👧" or "👦" end
+	if lowerRole:find("niece")    then return "👧" end
+	if lowerRole:find("nephew")   then return "👦" end
+	-- Step-relations
+	if lowerRole:find("step") and lowerRole:find("mother") then return "👩" end
+	if lowerRole:find("step") and lowerRole:find("father") then return "👨" end
+	if lowerRole:find("step") and lowerRole:find("brother") then return "👦" end
+	if lowerRole:find("step") and lowerRole:find("sister") then return "👧" end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Use gender field when role doesn't match
+	-- User bug: "FAMILY NOT LIKE DAD OR MOM... JUST SAYS FAMILY"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if lowerGender == "female" or lowerGender == "f" then return "👩" end
+	if lowerGender == "male" or lowerGender == "m" then return "👨" end
+	
 	return "👤"
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Helper to get proper emoji for romance partners
+-- User bug: "PARTNER... NO EMOJI IT JUST BLANK PERSON EMOJI INSTEAD OF GUY OR GIRL"
+-- ═══════════════════════════════════════════════════════════════════════════════
+function RelationshipsScreen:getPartnerEmoji(person)
+	local gender = safeLower(person.gender or person.Gender or "")
+	local role = safeLower(person.role or "")
+	
+	-- Check explicit gender field
+	if gender == "female" or gender == "f" then return "👩" end
+	if gender == "male" or gender == "m" then return "👨" end
+	
+	-- Check role for gender hints
+	if role:find("girlfriend") or role:find("wife") then return "👩" end
+	if role:find("boyfriend") or role:find("husband") then return "👨" end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Determine partner gender based on PLAYER's gender (opposite sex)
+	-- User bug: "ENSURE IF A GUY U GET A GIRL AND IF GIRL U GET GUYS"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local playerGender = safeLower(self.playerState and self.playerState.Gender or "")
+	if playerGender == "male" or playerGender == "m" then
+		return "👩"  -- Male player gets female partner
+	elseif playerGender == "female" or playerGender == "f" then
+		return "👨"  -- Female player gets male partner
+	end
+	
+	return "👤"
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Helper to determine proper family role label
+-- User bug: "OTHER FAMILY SAYS JUST FAMILY FAMILY FAMILY"
+-- ═══════════════════════════════════════════════════════════════════════════════
+function RelationshipsScreen:determineFamilyRole(rel, playerAge)
+	local role = rel.role or ""
+	local type_ = rel.type or ""
+	local id = safeLower(rel.id or "")
+	local name = safeLower(rel.name or "")
+	local gender = safeLower(rel.gender or rel.Gender or "")
+	local relAge = rel.age or 25
+	
+	-- If role is already set and meaningful, use it
+	if role ~= "" and role ~= "Family" and role ~= "family" then
+		return role
+	end
+	
+	-- Try to determine from type
+	if type_ ~= "" and type_ ~= "family" then
+		if type_:lower():find("mother") then return "Mother" end
+		if type_:lower():find("father") then return "Father" end
+		if type_:lower():find("son") then return "Son" end
+		if type_:lower():find("daughter") then return "Daughter" end
+		if type_:lower():find("brother") then return "Brother" end
+		if type_:lower():find("sister") then return "Sister" end
+	end
+	
+	-- Try to determine from id
+	if id:find("mother") or id:find("mom") then return "Mother" end
+	if id:find("father") or id:find("dad") then return "Father" end
+	if id:find("son") then return "Son" end
+	if id:find("daughter") then return "Daughter" end
+	if id:find("brother") then return "Brother" end
+	if id:find("sister") then return "Sister" end
+	if id:find("grandma") or id:find("grandmother") then return "Grandmother" end
+	if id:find("grandpa") or id:find("grandfather") then return "Grandfather" end
+	if id:find("child") or id:find("kid") then 
+		return gender == "female" and "Daughter" or "Son"
+	end
+	
+	-- Try to determine from name
+	if name:find("mom") or name:find("mother") then return "Mother" end
+	if name:find("dad") or name:find("father") then return "Father" end
+	
+	-- Try to determine from age difference
+	if playerAge then
+		local ageDiff = relAge - playerAge
+		if ageDiff >= 18 then
+			-- Could be a parent
+			return gender == "female" and "Mother" or "Father"
+		elseif ageDiff <= -18 then
+			-- Could be a child
+			return gender == "female" and "Daughter" or "Son"
+		elseif math.abs(ageDiff) <= 10 then
+			-- Could be a sibling
+			if ageDiff > 0 then
+				return gender == "female" and "Older Sister" or "Older Brother"
+			else
+				return gender == "female" and "Younger Sister" or "Younger Brother"
+			end
+		end
+	end
+	
+	-- Last resort - use gender for generic label
+	if gender == "female" then return "Female Relative" end
+	if gender == "male" then return "Male Relative" end
+	
+	return "Family"
 end
 
 function RelationshipsScreen:getFamily()
@@ -1002,13 +1130,20 @@ function RelationshipsScreen:getFamily()
 			log("  Checking:", id, "-> category:", cat, "name:", rel.name, "type:", rel.type, "isFamily:", rel.isFamily)
 			if cat == "family" then
 				log("    -> ADDING to family list")
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				-- CRITICAL FIX: Use improved role detection instead of defaulting to "Family"
+				-- User bug: "OTHER FAMILY SAYS JUST FAMILY FAMILY FAMILY"
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				local determinedRole = self:determineFamilyRole(rel, age)
+				local relAge = rel.age or age
+				local relGender = rel.gender or rel.Gender or ""
 				table.insert(family, {
 					id           = rel.id or id,
 					name         = rel.name,
-					role         = rel.role or "Family",
-					emoji        = self:getFamilyEmoji(rel.role or ""),
+					role         = determinedRole,
+					emoji        = self:getFamilyEmoji(determinedRole, relGender, relAge),
 					relationship = rel.relationship or 75,
-					age          = rel.age or age,
+					age          = relAge,
 					alive        = isAliveFromRel(rel),
 				})
 			end
@@ -1435,10 +1570,32 @@ function RelationshipsScreen:populateRomance()
 				local key = getRelKey(id, rel)
 				if key and not seen[key] then
 					seen[key] = true
+					-- ═══════════════════════════════════════════════════════════════════════════════
+					-- CRITICAL FIX: Determine partner role and emoji properly
+					-- User bug: "PARTNER... NO EMOJI IT JUST BLANK PERSON EMOJI INSTEAD OF GUY OR GIRL"
+					-- ═══════════════════════════════════════════════════════════════════════════════
+					local partnerRole = rel.role or "Partner"
+					local partnerGender = rel.gender or rel.Gender or ""
+					
+					-- If role is generic "Partner", try to make it more specific based on relationship state
+					if partnerRole == "Partner" or partnerRole == "" then
+						if rel.isSpouse or rel.married or flags.married then
+							partnerRole = safeLower(partnerGender) == "female" and "Wife" or "Husband"
+						elseif rel.isEngaged or rel.engaged or flags.engaged then
+							partnerRole = "Fiancé"
+						elseif safeLower(partnerGender) == "female" then
+							partnerRole = "Girlfriend"
+						elseif safeLower(partnerGender) == "male" then
+							partnerRole = "Boyfriend"
+						end
+					end
+					
 					table.insert(romances, {
 						id           = rel.id or id,
 						name         = rel.name,
-						role         = rel.role or "Partner",
+						role         = partnerRole,
+						emoji        = self:getPartnerEmoji(rel), -- CRITICAL FIX: Add emoji!
+						gender       = partnerGender, -- Store gender for later use
 						relationship = rel.relationship or 50,
 						age          = rel.age or age,
 						alive        = isAliveFromRel(rel),
@@ -1587,10 +1744,24 @@ function RelationshipsScreen:populateFriends()
 				local key = getRelKey(id, rel)
 				if key and not seen[key] then
 					seen[key] = true
+					-- ═══════════════════════════════════════════════════════════════════════════════
+					-- CRITICAL FIX: Add emoji for friends based on gender
+					-- User bug: "NO EMOJI IT JUST BLANK PERSON EMOJI"
+					-- ═══════════════════════════════════════════════════════════════════════════════
+					local friendGender = safeLower(rel.gender or rel.Gender or "")
+					local friendEmoji = "👤"
+					if friendGender == "female" or friendGender == "f" then
+						friendEmoji = "👩"
+					elseif friendGender == "male" or friendGender == "m" then
+						friendEmoji = "👨"
+					end
+					
 					table.insert(friends, {
 						id           = rel.id or id,
 						name         = rel.name,
 						role         = rel.role or "Friend",
+						emoji        = friendEmoji,  -- CRITICAL FIX: Add emoji!
+						gender       = friendGender,
 						relationship = rel.relationship or 60,
 						age          = rel.age or self:getAge(),
 						alive        = isAliveFromRel(rel),
@@ -1736,10 +1907,23 @@ function RelationshipsScreen:populateEnemies()
 				local key = getRelKey(id, rel)
 				if key and not seen[key] then
 					seen[key] = true
+					-- ═══════════════════════════════════════════════════════════════════════════════
+					-- CRITICAL FIX: Add emoji for enemies based on gender
+					-- ═══════════════════════════════════════════════════════════════════════════════
+					local enemyGender = safeLower(rel.gender or rel.Gender or "")
+					local enemyEmoji = "👤"
+					if enemyGender == "female" or enemyGender == "f" then
+						enemyEmoji = "👩"
+					elseif enemyGender == "male" or enemyGender == "m" then
+						enemyEmoji = "👨"
+					end
+					
 					table.insert(enemies, {
 						id           = rel.id or id,
 						name         = rel.name,
 						role         = "Enemy",
+						emoji        = enemyEmoji,  -- CRITICAL FIX: Add emoji!
+						gender       = enemyGender,
 						relationship = rel.relationship or 20,
 						age          = rel.age or self:getAge(),
 						alive        = isAliveFromRel(rel),
@@ -1985,7 +2169,18 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 		avatarGrad.Parent = avatarFrame
 	end
 
-	local emoji = person.emoji or self:getFamilyEmoji(person.role or "")
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Use proper emoji helper based on relationship type
+	-- User bug: "PARTNER... NO EMOJI IT JUST BLANK PERSON EMOJI INSTEAD OF GUY OR GIRL"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local emoji = person.emoji
+	if not emoji or emoji == "" or emoji == "👤" then
+		if relType == "romance" then
+			emoji = self:getPartnerEmoji(person)
+		else
+			emoji = self:getFamilyEmoji(person.role or "", person.gender, person.age)
+		end
+	end
 
 	local avatarLabel = Instance.new("TextLabel")
 	avatarLabel.Size = UDim2.fromScale(1, 1)

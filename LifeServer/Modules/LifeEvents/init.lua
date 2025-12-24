@@ -1714,6 +1714,114 @@ local function canEventTrigger(event, state)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Block career-specific events for players NOT in that career!
+	-- User bug: "RANDOM CARDS POPPIN UP AND IM NOT EVEN IN THOSE JOBS"
+	-- Career events should ONLY fire for players actually in that career!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local eventCategory = event.category or event._category or ""
+	local eventId = event.id or ""
+	
+	-- Define career-specific categories and their required job patterns
+	local careerSpecificCategories = {
+		career_military = { "military", "enlisted", "sergeant", "officer", "captain", "colonel", "general", "army", "navy", "marines", "air_force" },
+		career_medical = { "medical", "doctor", "nurse", "surgeon", "physician", "dentist", "therapist", "hospital", "clinic", "healthcare" },
+		career_education = { "education", "teacher", "professor", "principal", "dean", "instructor", "tutor", "school" },
+		career_tech = { "tech", "software", "developer", "programmer", "engineer", "it_", "data", "cyber", "web" },
+		career_finance = { "finance", "bank", "invest", "accountant", "analyst", "trader", "broker", "cfo", "financial" },
+		career_police = { "police", "cop", "detective", "officer", "sheriff", "law_enforcement", "fbi", "cia", "agent" },
+		career_sports = { "sport", "athlete", "player", "coach", "basketball", "football", "soccer", "baseball", "hockey", "tennis", "golf" },
+		career_gaming = { "game", "gamer", "esport", "streamer", "pro_gamer", "twitch" },
+		career_acting = { "actor", "actress", "acting", "movie", "film", "hollywood", "theater", "theatre", "tv_star" },
+		career_racing = { "racing", "racer", "driver", "formula", "nascar", "motorsport" },
+		career_hacker = { "hacker", "hack", "cyber_criminal", "black_hat" },
+		career_coach = { "coach", "coaching", "trainer", "manager_sports" },
+		career_trades = { "trade", "plumber", "electrician", "mechanic", "carpenter", "construction", "hvac", "welder" },
+		career_service = { "service", "fast_food", "retail", "cashier", "server", "waiter", "bartender", "barista" },
+		career_science = { "science", "scientist", "research", "lab", "chemistry", "biology", "physics" },
+		career_office = { "office", "corporate", "admin", "secretary", "receptionist", "clerk", "manager" },
+		career_creative = { "creative", "artist", "designer", "photographer", "writer", "author", "journalist" },
+		career_music = { "music", "musician", "singer", "rapper", "dj", "producer", "band", "rock_star" },
+		career_mafia = { "mafia", "mob", "crime_boss", "gangster", "organized_crime" },
+		career_intelligence = { "intelligence", "spy", "agent", "cia", "fbi", "secret_service" },
+	}
+	
+	-- Check if this is a career-specific event
+	for careerCat, jobPatterns in pairs(careerSpecificCategories) do
+		if eventCategory == careerCat or eventId:find(careerCat:gsub("career_", "")) then
+			-- This is a career-specific event - check if player is in this career!
+			if state.CurrentJob then
+				local playerJobId = (state.CurrentJob.id or ""):lower()
+				local playerJobCat = (state.CurrentJob.category or ""):lower()
+				
+				local jobMatch = false
+				for _, pattern in ipairs(jobPatterns) do
+					if playerJobId:find(pattern) or playerJobCat:find(pattern) then
+						jobMatch = true
+						break
+					end
+				end
+				
+				-- If no match AND event has requiresJob, block it
+				if not jobMatch and event.requiresJob then
+					-- Allow events that have custom eligibility functions (they do their own check)
+					if not event.eligibility then
+						return false -- Player is not in the required career!
+					end
+				end
+			else
+				-- No job but career event requires job
+				if event.requiresJob then
+					return false
+				end
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Block job-specific events based on event ID keywords
+	-- Events with keywords like "mechanic_", "teacher_", "doctor_" should only fire for those jobs
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local jobKeywords = {
+		["mechanic_"] = { "mechanic", "auto", "garage" },
+		["teacher_"] = { "teacher", "education", "school", "professor" },
+		["doctor_"] = { "doctor", "medical", "hospital", "physician" },
+		["nurse_"] = { "nurse", "medical", "hospital", "healthcare" },
+		["lawyer_"] = { "lawyer", "attorney", "legal", "law_firm" },
+		["cop_"] = { "police", "cop", "detective", "officer" },
+		["soldier_"] = { "military", "soldier", "army", "marine" },
+		["chef_"] = { "chef", "cook", "restaurant", "kitchen" },
+		["pilot_"] = { "pilot", "aviation", "airline", "flight" },
+		["plumber_"] = { "plumber", "plumbing", "trades" },
+		["electrician_"] = { "electrician", "electrical", "trades" },
+		["athlete_"] = { "athlete", "sports", "player", "basketball", "football" },
+		["actor_"] = { "actor", "actress", "acting", "hollywood" },
+		["gamer_"] = { "gamer", "esports", "streamer", "pro_gamer" },
+		["rapper_"] = { "rapper", "music", "hip_hop", "artist" },
+		["farmer_"] = { "farmer", "farm", "agriculture", "ranch" },
+		["firefighter_"] = { "firefighter", "fire_department", "emt" },
+	}
+	
+	if state.CurrentJob then
+		local playerJobId = (state.CurrentJob.id or ""):lower()
+		local playerJobCat = (state.CurrentJob.category or ""):lower()
+		
+		for keyword, allowedJobs in pairs(jobKeywords) do
+			if eventId:find(keyword) then
+				local jobMatch = false
+				for _, allowedJob in ipairs(allowedJobs) do
+					if playerJobId:find(allowedJob) or playerJobCat:find(allowedJob) then
+						jobMatch = true
+						break
+					end
+				end
+				if not jobMatch then
+					return false -- Event is for a different job type!
+				end
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- RELATIONSHIP REQUIREMENTS - No marriage events if single!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
