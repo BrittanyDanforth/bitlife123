@@ -38,19 +38,26 @@ HealthEvents.events = {
 					local recoveryChance = 0.40 + (health / 150)
 					
 					if roll < recoveryChance then
-						state:ModifyStat("Health", 2)
-						state:ModifyStat("Happiness", 3)
-						state:AddFeed("🤒 Quick recovery! Back on your feet!")
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then
+							state:ModifyStat("Health", 2)
+							state:ModifyStat("Happiness", 3)
+						end
+						if state.AddFeed then state:AddFeed("🤒 Quick recovery! Back on your feet!") end
 					elseif roll < 0.85 then
-						state:ModifyStat("Health", -2)
-						state:ModifyStat("Happiness", -3)
-						state:AddFeed("🤒 Rough few days but getting better.")
+						if state.ModifyStat then
+							state:ModifyStat("Health", -2)
+							state:ModifyStat("Happiness", -3)
+						end
+						if state.AddFeed then state:AddFeed("🤒 Rough few days but getting better.") end
 					else
-						state:ModifyStat("Health", -5)
-						state:ModifyStat("Happiness", -5)
+						if state.ModifyStat then
+							state:ModifyStat("Health", -5)
+							state:ModifyStat("Happiness", -5)
+						end
 						state.Flags = state.Flags or {}
 						state.Flags.prolonged_illness = true
-						state:AddFeed("🤒 This is lasting longer than expected. Worry setting in.")
+						if state.AddFeed then state:AddFeed("🤒 This is lasting longer than expected. Worry setting in.") end
 					end
 				end,
 			},
@@ -81,26 +88,35 @@ HealthEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.40 then
-						state:ModifyStat("Health", -2)
-						state:ModifyStat("Happiness", -2)
-						state:AddFeed("🩹 Minor injury. Bruises and scrapes. Ice and rest.")
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then
+							state:ModifyStat("Health", -2)
+							state:ModifyStat("Happiness", -2)
+						end
+						if state.AddFeed then state:AddFeed("🩹 Minor injury. Bruises and scrapes. Ice and rest.") end
 					elseif roll < 0.70 then
-						state:ModifyStat("Health", -5)
-						state:ModifyStat("Happiness", -4)
+						if state.ModifyStat then
+							state:ModifyStat("Health", -5)
+							state:ModifyStat("Happiness", -4)
+						end
 						-- CRITICAL FIX #532: Prevent money going negative
 						state.Money = math.max(0, (state.Money or 0) - 100)
-						state:AddFeed("🩹 Moderate injury. Sprain or strain. Weeks to heal.")
+						if state.AddFeed then state:AddFeed("🩹 Moderate injury. Sprain or strain. Weeks to heal.") end
 					elseif roll < 0.90 then
-						state:ModifyStat("Health", -10)
-						state:ModifyStat("Happiness", -8)
+						if state.ModifyStat then
+							state:ModifyStat("Health", -10)
+							state:ModifyStat("Happiness", -8)
+						end
 						-- CRITICAL FIX #533: Prevent money going negative
 						state.Money = math.max(0, (state.Money or 0) - 500)
 						state.Flags = state.Flags or {}
 						state.Flags.serious_injury = true
-						state:AddFeed("🩹 Serious injury. Broken bone. Surgery needed. Months of recovery.")
+						if state.AddFeed then state:AddFeed("🩹 Serious injury. Broken bone. Surgery needed. Months of recovery.") end
 					else
-						state:ModifyStat("Health", -15)
-						state:ModifyStat("Happiness", -12)
+						if state.ModifyStat then
+							state:ModifyStat("Health", -15)
+							state:ModifyStat("Happiness", -12)
+						end
 						-- CRITICAL FIX #534: Prevent money going negative, add medical debt flag
 						local medCost = 2000
 						if (state.Money or 0) < medCost then
@@ -110,7 +126,7 @@ HealthEvents.events = {
 						state.Money = math.max(0, (state.Money or 0) - medCost)
 						state.Flags = state.Flags or {}
 						state.Flags.major_injury = true
-						state:AddFeed("🩹 Major trauma. Emergency room. Long rehabilitation ahead.")
+						if state.AddFeed then state:AddFeed("🩹 Major trauma. Emergency room. Long rehabilitation ahead.") end
 					end
 				end,
 			},
@@ -143,11 +159,14 @@ HealthEvents.events = {
 					local goodResultChance = 0.45 + (health / 200) - (age / 250)
 					
 					if roll < goodResultChance then
-						state:ModifyStat("Happiness", 8)
-						state:ModifyStat("Health", 3)
-						state:AddFeed("🏥 All clear! Clean bill of health! Relief!")
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 8)
+							state:ModifyStat("Health", 3)
+						end
+						if state.AddFeed then state:AddFeed("🏥 All clear! Clean bill of health! Relief!") end
 					elseif roll < 0.70 then
-						state:ModifyStat("Happiness", 2)
+						if state.ModifyStat then state:ModifyStat("Happiness", 2) end
 						state:AddFeed("🏥 Minor concerns. Watch diet and exercise. Manageable.")
 					elseif roll < 0.90 then
 						state:ModifyStat("Happiness", -5)

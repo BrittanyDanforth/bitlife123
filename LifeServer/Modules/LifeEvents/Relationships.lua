@@ -458,8 +458,8 @@ Relationships.events = {
 				state.Flags.dating = nil
 			end,
 		},
+		},
 	},
-},
 
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- RELATIONSHIP CHALLENGES

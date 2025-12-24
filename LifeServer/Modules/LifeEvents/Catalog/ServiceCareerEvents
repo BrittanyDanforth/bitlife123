@@ -42,14 +42,15 @@ ServiceCareerEvents.events = {
 					if roll <= 60 then
 						local tip = math.random(200, 500)
 						state.Money = (state.Money or 0) + tip
-						state:ModifyStat("Happiness", 15)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
 						state.Flags = state.Flags or {}
 						state.Flags.served_celebrity = true
-						state:AddFeed(string.format("🍽️ They loved you! $%d tip and a photo together!", tip))
+						if state.AddFeed then state:AddFeed(string.format("🍽️ They loved you! $%d tip and a photo together!", tip)) end
 					else
 						local tip = math.random(50, 100)
 						state.Money = (state.Money or 0) + tip
-						state:AddFeed(string.format("🍽️ Standard service. $%d tip. They're just people after all.", tip))
+						if state.AddFeed then state:AddFeed(string.format("🍽️ Standard service. $%d tip. They're just people after all.", tip)) end
 					end
 				end,
 			},
@@ -60,11 +61,12 @@ ServiceCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 30 then
-						state:ModifyStat("Happiness", 20)
-						state:AddFeed("🍽️ They were cool about it! Photo goes viral!")
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 20) end
+						if state.AddFeed then state:AddFeed("🍽️ They were cool about it! Photo goes viral!") end
 					else
-						state:ModifyStat("Happiness", -10)
-						state:AddFeed("🍽️ They complained to management. No tip. Got written up.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						if state.AddFeed then state:AddFeed("🍽️ They complained to management. No tip. Got written up.") end
 					end
 				end,
 			},
@@ -75,10 +77,11 @@ ServiceCareerEvents.events = {
 				onResolve = function(state)
 					local tip = math.random(100, 300)
 					state.Money = (state.Money or 0) + tip
-					state:ModifyStat("Happiness", 10)
+					-- AAA FIX: Nil check for all state methods
+					if state.ModifyStat then state:ModifyStat("Happiness", 10) end
 					state.Flags = state.Flags or {}
 					state.Flags.discreet_server = true
-					state:AddFeed(string.format("🍽️ They appreciated not being treated special. $%d tip for 'respecting privacy'.", tip))
+					if state.AddFeed then state:AddFeed(string.format("🍽️ They appreciated not being treated special. $%d tip for 'respecting privacy'.", tip)) end
 				end,
 			},
 		},
@@ -109,13 +112,14 @@ ServiceCareerEvents.events = {
 					if roll <= 50 then
 						local tip = math.random(30, 80)
 						state.Money = (state.Money or 0) + tip
-						state:ModifyStat("Happiness", 8)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
 						state.Flags = state.Flags or {}
 						state.Flags.patient_server = true
-						state:AddFeed(string.format("😤 They eventually calmed down. $%d tip. Exhausting but handled.", tip))
+						if state.AddFeed then state:AddFeed(string.format("😤 They eventually calmed down. $%d tip. Exhausting but handled.", tip)) end
 					else
-						state:ModifyStat("Happiness", -5)
-						state:AddFeed("😤 They stiffed you on the tip. Some people just suck.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then state:AddFeed("😤 They stiffed you on the tip. Some people just suck.") end
 					end
 				end,
 			},
@@ -126,11 +130,12 @@ ServiceCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 60 then
-						state:ModifyStat("Happiness", 5)
-						state:AddFeed("😤 Manager comped their meal to shut them up. Not your problem anymore.")
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then state:AddFeed("😤 Manager comped their meal to shut them up. Not your problem anymore.") end
 					else
-						state:ModifyStat("Happiness", -8)
-						state:AddFeed("😤 Manager blamed you for not handling it. Unfair but that's the industry.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						if state.AddFeed then state:AddFeed("😤 Manager blamed you for not handling it. Unfair but that's the industry.") end
 					end
 				end,
 			},
@@ -141,13 +146,14 @@ ServiceCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 30 then
-						state:ModifyStat("Happiness", 15)
-						state:AddFeed("😤 You called out their rudeness. They actually apologized! Rare win.")
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
+						if state.AddFeed then state:AddFeed("😤 You called out their rudeness. They actually apologized! Rare win.") end
 					elseif roll <= 70 then
-						state:ModifyStat("Happiness", -5)
-						state:AddFeed("😤 They complained but manager had your back. Satisfying.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then state:AddFeed("😤 They complained but manager had your back. Satisfying.") end
 					else
-						state:ModifyStat("Happiness", -15)
+						if state.ModifyStat then state:ModifyStat("Happiness", -15) end
 						state:AddFeed("😤 Got in trouble with management. Worth it though.")
 					end
 				end,

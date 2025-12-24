@@ -183,17 +183,32 @@ AdultExpanded.events = {
 					local roll = math.random()
 					local successChance = 0.25 + (looks / 150)
 					if roll < successChance then
-						state:ModifyStat("Happiness", 8)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
 						state.Flags = state.Flags or {}
 						state.Flags.found_partner_apps = true
-						state:AddFeed("💕 Found someone special! Dating apps worked!")
-						state:AddRelationship("Partner", "romantic", 0.70)
+						state.Flags.has_partner = true
+						if state.AddFeed then state:AddFeed("💕 Found someone special! Dating apps worked!") end
+						-- AAA FIX: Check if AddRelationship exists before calling
+						if state.AddRelationship then
+							state:AddRelationship("Partner", "romantic", 0.70)
+						else
+							-- Fallback: Create partner directly
+							state.Relationships = state.Relationships or {}
+							state.Relationships.partner = {
+								id = "partner_" .. tostring(state.Age or 0),
+								name = "Partner",
+								type = "romantic",
+								relationship = 70,
+								alive = true,
+							}
+						end
 					elseif roll < 0.65 then
-						state:ModifyStat("Happiness", 2)
-						state:AddFeed("💕 Some okay dates. Nothing special yet.")
+						if state.ModifyStat then state:ModifyStat("Happiness", 2) end
+						if state.AddFeed then state:AddFeed("💕 Some okay dates. Nothing special yet.") end
 					else
-						state:ModifyStat("Happiness", -4)
-						state:AddFeed("💕 Dating app burnout. Soul-crushing experience.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -4) end
+						if state.AddFeed then state:AddFeed("💕 Dating app burnout. Soul-crushing experience.") end
 					end
 				end,
 			},
@@ -204,14 +219,29 @@ AdultExpanded.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.35 then
-						state:ModifyStat("Happiness", 10)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
 						state.Flags = state.Flags or {}
 						state.Flags.found_partner_organic = true
-						state:AddFeed("💕 Met someone amazing naturally! Real connection!")
-						state:AddRelationship("Partner", "romantic", 0.80)
+						state.Flags.has_partner = true
+						if state.AddFeed then state:AddFeed("💕 Met someone amazing naturally! Real connection!") end
+						-- AAA FIX: Check if AddRelationship exists before calling
+						if state.AddRelationship then
+							state:AddRelationship("Partner", "romantic", 0.80)
+						else
+							-- Fallback: Create partner directly
+							state.Relationships = state.Relationships or {}
+							state.Relationships.partner = {
+								id = "partner_" .. tostring(state.Age or 0),
+								name = "Partner",
+								type = "romantic",
+								relationship = 80,
+								alive = true,
+							}
+						end
 					else
-						state:ModifyStat("Happiness", 2)
-						state:AddFeed("💕 Still looking but enjoying life.")
+						if state.ModifyStat then state:ModifyStat("Happiness", 2) end
+						if state.AddFeed then state:AddFeed("💕 Still looking but enjoying life.") end
 					end
 				end,
 			},

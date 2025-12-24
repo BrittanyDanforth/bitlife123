@@ -552,18 +552,32 @@ SeniorExpanded.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.40 then
-						state:ModifyStat("Happiness", 15)
-						state:ModifyStat("Health", 3)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
+						if state.ModifyStat then state:ModifyStat("Health", 3) end
 						state.Flags = state.Flags or {}
 						state.Flags.senior_romance = true
-						state:AddFeed("❤️ Found someone special! Never too late for love!")
-						state:AddRelationship("Partner", "romantic", 0.75)
+						state.Flags.has_partner = true
+						if state.AddFeed then state:AddFeed("❤️ Found someone special! Never too late for love!") end
+						-- AAA FIX: Check if AddRelationship exists before calling
+						if state.AddRelationship then
+							state:AddRelationship("Partner", "romantic", 0.75)
+						else
+							state.Relationships = state.Relationships or {}
+							state.Relationships.partner = {
+								id = "partner_senior_" .. tostring(state.Age or 0),
+								name = "Partner",
+								type = "romantic",
+								relationship = 75,
+								alive = true,
+							}
+						end
 					elseif roll < 0.70 then
-						state:ModifyStat("Happiness", 4)
-						state:AddFeed("❤️ Some nice dates. Still looking for the right one.")
+						if state.ModifyStat then state:ModifyStat("Happiness", 4) end
+						if state.AddFeed then state:AddFeed("❤️ Some nice dates. Still looking for the right one.") end
 					else
-						state:ModifyStat("Happiness", -2)
-						state:AddFeed("❤️ Dating scene is different. Not easy at this age.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then state:AddFeed("❤️ Dating scene is different. Not easy at this age.") end
 					end
 				end,
 			},

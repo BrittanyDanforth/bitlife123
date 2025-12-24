@@ -60,16 +60,17 @@ EducationCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 50 then
-						state:ModifyStat("Happiness", 15)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
 						state.Flags = state.Flags or {}
 						state.Flags.mentor_teacher = true
-						state:AddFeed("😤 Breakthrough! They were struggling at home. With support, they turned around completely!")
+						if state.AddFeed then state:AddFeed("😤 Breakthrough! They were struggling at home. With support, they turned around completely!") end
 					elseif roll <= 80 then
-						state:ModifyStat("Happiness", 5)
-						state:AddFeed("😤 Some improvement. Building trust takes time.")
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then state:AddFeed("😤 Some improvement. Building trust takes time.") end
 					else
-						state:ModifyStat("Happiness", -5)
-						state:AddFeed("😤 They shut down. At least you tried.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then state:AddFeed("😤 They shut down. At least you tried.") end
 					end
 				end,
 			},
@@ -80,14 +81,15 @@ EducationCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 40 then
-						state:ModifyStat("Happiness", 10)
-						state:AddFeed("😤 Parents were supportive. Behavior improved significantly.")
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
+						if state.AddFeed then state:AddFeed("😤 Parents were supportive. Behavior improved significantly.") end
 					elseif roll <= 70 then
-						state:ModifyStat("Happiness", 3)
-						state:AddFeed("😤 Parents blamed you. Admin was no help. Typical.")
+						if state.ModifyStat then state:ModifyStat("Happiness", 3) end
+						if state.AddFeed then state:AddFeed("😤 Parents blamed you. Admin was no help. Typical.") end
 					else
-						state:ModifyStat("Happiness", -8)
-						state:AddFeed("😤 Student was removed from your class. Feels like failure.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						if state.AddFeed then state:AddFeed("😤 Student was removed from your class. Feels like failure.") end
 					end
 				end,
 			},
@@ -96,8 +98,9 @@ EducationCareerEvents.events = {
 				effects = { Happiness = -3 },
 				feedText = "Can't teach if they're disrupting...",
 				onResolve = function(state)
-					state:ModifyStat("Happiness", -5)
-					state:AddFeed("😤 Class is calmer but you're just passing the problem around.")
+					-- AAA FIX: Nil check for all state methods
+					if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+					if state.AddFeed then state:AddFeed("😤 Class is calmer but you're just passing the problem around.") end
 				end,
 			},
 		},
@@ -149,13 +152,14 @@ EducationCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 60 then
-						state:ModifyStat("Happiness", 5)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
 						state.Flags = state.Flags or {}
 						state.Flags.good_test_scores = true
-						state:AddFeed("📝 Scores went up! Admin is happy. Students? Bored.")
+						if state.AddFeed then state:AddFeed("📝 Scores went up! Admin is happy. Students? Bored.") end
 					else
-						state:ModifyStat("Happiness", -8)
-						state:AddFeed("📝 Scores barely moved. All that stress for nothing.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						if state.AddFeed then state:AddFeed("📝 Scores barely moved. All that stress for nothing.") end
 					end
 				end,
 			},
@@ -166,11 +170,12 @@ EducationCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 45 then
-						state:ModifyStat("Happiness", 12)
-						state:AddFeed("📝 Scores were fine AND students actually learned! Win-win!")
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
+						if state.AddFeed then state:AddFeed("📝 Scores were fine AND students actually learned! Win-win!") end
 					else
-						state:ModifyStat("Happiness", -5)
-						state:AddFeed("📝 Scores dipped. Getting heat from admin. Standing by your methods.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then state:AddFeed("📝 Scores dipped. Getting heat from admin. Standing by your methods.") end
 					end
 				end,
 			},
@@ -199,11 +204,12 @@ EducationCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 55 then
-						state:ModifyStat("Happiness", 8)
-						state:AddFeed("😡 Parent understood once they saw the evidence. Crisis averted.")
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.AddFeed then state:AddFeed("😡 Parent understood once they saw the evidence. Crisis averted.") end
 					else
-						state:ModifyStat("Happiness", -10)
-						state:AddFeed("😡 They still went to the board. Exhausting meetings ahead...")
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						if state.AddFeed then state:AddFeed("😡 They still went to the board. Exhausting meetings ahead...") end
 					end
 				end,
 			},
@@ -214,11 +220,12 @@ EducationCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 70 then
-						state:ModifyStat("Happiness", 5)
-						state:AddFeed("😡 Compromise accepted. Student earned a better grade legitimately.")
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then state:AddFeed("😡 Compromise accepted. Student earned a better grade legitimately.") end
 					else
-						state:ModifyStat("Happiness", -3)
-						state:AddFeed("😡 Now every parent expects special treatment. Precedent set.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then state:AddFeed("😡 Now every parent expects special treatment. Precedent set.") end
 					end
 				end,
 			},
@@ -229,13 +236,14 @@ EducationCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 40 then
-						state:ModifyStat("Happiness", 10)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
 						state.Flags = state.Flags or {}
 						state.Flags.principled_teacher = true
-						state:AddFeed("😡 Board backed you up. Your integrity was recognized!")
+						if state.AddFeed then state:AddFeed("😡 Board backed you up. Your integrity was recognized!") end
 					else
-						state:ModifyStat("Happiness", -15)
-						state:AddFeed("😡 Political pressure. Grade was overturned anyway. Demoralizing.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -15) end
+						if state.AddFeed then state:AddFeed("😡 Political pressure. Grade was overturned anyway. Demoralizing.") end
 					end
 				end,
 			},
@@ -264,8 +272,9 @@ EducationCareerEvents.events = {
 				onResolve = function(state)
 					local spent = math.random(200, 800)
 					state.Money = (state.Money or 0) - spent
-					state:ModifyStat("Happiness", 5)
-					state:AddFeed(string.format("💸 Spent $%d on classroom supplies. Tax write-off at least?", spent))
+					-- AAA FIX: Nil check for all state methods
+					if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+					if state.AddFeed then state:AddFeed(string.format("💸 Spent $%d on classroom supplies. Tax write-off at least?", spent)) end
 				end,
 			},
 			{
@@ -275,11 +284,12 @@ EducationCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 30 then
-						state:ModifyStat("Happiness", 15)
-						state:AddFeed("💸 Your advocacy helped! Some funding was restored!")
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
+						if state.AddFeed then state:AddFeed("💸 Your advocacy helped! Some funding was restored!") end
 					else
-						state:ModifyStat("Happiness", -5)
-						state:AddFeed("💸 Spoke at board meetings. Nothing changed. System is broken.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then state:AddFeed("💸 Spoke at board meetings. Nothing changed. System is broken.") end
 					end
 				end,
 			},
@@ -292,11 +302,12 @@ EducationCareerEvents.events = {
 					if roll <= 60 then
 						local raised = math.random(500, 2000)
 						state.Money = (state.Money or 0) + raised
-						state:ModifyStat("Happiness", 10)
-						state:AddFeed(string.format("💸 Community stepped up! Raised $%d for classroom!", raised))
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
+						if state.AddFeed then state:AddFeed(string.format("💸 Community stepped up! Raised $%d for classroom!", raised)) end
 					else
-						state:ModifyStat("Happiness", -3)
-						state:AddFeed("💸 Fundraiser didn't take off. Teachers shouldn't have to do this.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then state:AddFeed("💸 Fundraiser didn't take off. Teachers shouldn't have to do this.") end
 					end
 				end,
 			},
@@ -328,13 +339,14 @@ EducationCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 55 then
-						state:ModifyStat("Happiness", 15)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
 						state.Flags = state.Flags or {}
 						state.Flags.published_researcher = true
-						state:AddFeed("📚 Paper accepted in top journal! Tenure looking likely!")
+						if state.AddFeed then state:AddFeed("📚 Paper accepted in top journal! Tenure looking likely!") end
 					else
-						state:ModifyStat("Happiness", -10)
-						state:AddFeed("📚 Paper rejected. Teaching reviews tanked. Worst of both worlds.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						if state.AddFeed then state:AddFeed("📚 Paper rejected. Teaching reviews tanked. Worst of both worlds.") end
 					end
 				end,
 			},
@@ -345,12 +357,13 @@ EducationCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 40 then
-						state:ModifyStat("Happiness", 20)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 20) end
 						state.Money = (state.Money or 0) + math.random(5000, 15000)
-						state:AddFeed("📚 Published AND great student reviews! Exhausted but successful!")
+						if state.AddFeed then state:AddFeed("📚 Published AND great student reviews! Exhausted but successful!") end
 					else
-						state:ModifyStat("Happiness", -5)
-						state:AddFeed("📚 Did both mediocrely. Jack of all trades, master of none.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then state:AddFeed("📚 Did both mediocrely. Jack of all trades, master of none.") end
 					end
 				end,
 			},
@@ -361,11 +374,12 @@ EducationCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 35 then
-						state:ModifyStat("Happiness", 12)
-						state:AddFeed("📚 Teaching awards! But tenure committee wants publications...")
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
+						if state.AddFeed then state:AddFeed("📚 Teaching awards! But tenure committee wants publications...") end
 					else
-						state:ModifyStat("Happiness", -8)
-						state:AddFeed("📚 Tenure denied. 'Insufficient research output.' Teaching doesn't count?")
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						if state.AddFeed then state:AddFeed("📚 Tenure denied. 'Insufficient research output.' Teaching doesn't count?") end
 					end
 				end,
 			},
@@ -394,13 +408,14 @@ EducationCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 50 then
-						state:ModifyStat("Happiness", 15)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
 						state.Flags = state.Flags or {}
 						state.Flags.great_mentor = true
-						state:AddFeed("😰 They turned it around! Defended successfully! You saved a career!")
+						if state.AddFeed then state:AddFeed("😰 They turned it around! Defended successfully! You saved a career!") end
 					else
-						state:ModifyStat("Happiness", -10)
-						state:AddFeed("😰 Despite everything, they quit. Sometimes it's not meant to be.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						if state.AddFeed then state:AddFeed("😰 Despite everything, they quit. Sometimes it's not meant to be.") end
 					end
 				end,
 			},
@@ -411,11 +426,12 @@ EducationCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 60 then
-						state:ModifyStat("Happiness", 8)
-						state:AddFeed("😰 They appreciated the honesty. Found a non-academic path they love.")
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.AddFeed then state:AddFeed("😰 They appreciated the honesty. Found a non-academic path they love.") end
 					else
-						state:ModifyStat("Happiness", -5)
-						state:AddFeed("😰 They were devastated. Called you unsupportive. Awkward now.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then state:AddFeed("😰 They were devastated. Called you unsupportive. Awkward now.") end
 					end
 				end,
 			},
@@ -473,15 +489,16 @@ EducationCareerEvents.events = {
 					local bonus = (performance - 50) / 2 -- Up to +25% from performance
 					
 					if roll + bonus <= 65 then
-						state:ModifyStat("Happiness", 30)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 30) end
 						state.Money = (state.Money or 0) + math.random(10000, 30000)
 						state.Flags = state.Flags or {}
 						state.Flags.has_tenure = true
 						state.Flags.tenured_professor = true
-						state:AddFeed("🎓 TENURE GRANTED! Job security for life! Everything paid off!")
+						if state.AddFeed then state:AddFeed("🎓 TENURE GRANTED! Job security for life! Everything paid off!") end
 					else
-						state:ModifyStat("Happiness", -30)
-						state:AddFeed("🎓 Tenure denied. Years of work... Have to find another position.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -30) end
+						if state.AddFeed then state:AddFeed("🎓 Tenure denied. Years of work... Have to find another position.") end
 					end
 				end,
 			},
@@ -514,10 +531,11 @@ EducationCareerEvents.events = {
 						state.Fame = (state.Fame or 0) + 30
 						state.Flags = state.Flags or {}
 						state.Flags.renowned_researcher = true
-						state:AddFeed("🔬 Paper went viral in academic circles! Invitations to speak everywhere!")
+						-- AAA FIX: Nil check for all state methods
+						if state.AddFeed then state:AddFeed("🔬 Paper went viral in academic circles! Invitations to speak everywhere!") end
 					else
-						state:ModifyStat("Happiness", 5)
-						state:AddFeed("🔬 Published but didn't make the splash you hoped. Still good work.")
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then state:AddFeed("🔬 Published but didn't make the splash you hoped. Still good work.") end
 					end
 				end,
 			},
@@ -530,11 +548,12 @@ EducationCareerEvents.events = {
 					if roll <= 45 then
 						local licensing = math.random(50000, 200000)
 						state.Money = (state.Money or 0) + licensing
-						state:ModifyStat("Happiness", 25)
-						state:AddFeed(string.format("🔬 Patent granted! Licensing deal worth $%d!", licensing))
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 25) end
+						if state.AddFeed then state:AddFeed(string.format("🔬 Patent granted! Licensing deal worth $%d!", licensing)) end
 					else
-						state:ModifyStat("Happiness", 5)
-						state:AddFeed("🔬 Patent process is slow. Someone else published similar findings first.")
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then state:AddFeed("🔬 Patent process is slow. Someone else published similar findings first.") end
 					end
 				end,
 			},
@@ -592,13 +611,14 @@ EducationCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 30 then
-						state:ModifyStat("Happiness", 10)
-						state:AddFeed("😩 Made it through. Second wind found.")
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
+						if state.AddFeed then state:AddFeed("😩 Made it through. Second wind found.") end
 					else
-						state:ModifyStat("Happiness", -10)
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
 						state.Flags = state.Flags or {}
 						state.Flags.severe_burnout = true
-						state:AddFeed("😩 Crashed hard. Need extended leave. System is broken.")
+						if state.AddFeed then state:AddFeed("😩 Crashed hard. Need extended leave. System is broken.") end
 					end
 				end,
 			},

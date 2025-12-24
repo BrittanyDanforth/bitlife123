@@ -33,6 +33,8 @@ SocialMediaEvents.events = {
 		ageBand = "any",
 		category = "social_media",
 		tags = { "viral", "social_media", "fame" },
+		-- AAA FIX: Can't post to social media from prison!
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		
 		-- CRITICAL FIX: Require player to have posted before (content_creator flag)
 		eligibility = function(state)
@@ -55,21 +57,22 @@ SocialMediaEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.20 then
-						state:ModifyStat("Happiness", 15)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
 						state.Money = (state.Money or 0) + 500
 						state.Flags = state.Flags or {}
 						state.Flags.went_viral = true
-						state:AddFeed("📱 MEGA VIRAL! Millions of views! Brand deals incoming!")
+						if state.AddFeed then state:AddFeed("📱 MEGA VIRAL! Millions of views! Brand deals incoming!") end
 					elseif roll < 0.45 then
-						state:ModifyStat("Happiness", 10)
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
 						state.Money = (state.Money or 0) + 100
-						state:AddFeed("📱 Trending! Thousands of new followers! Internet famous!")
+						if state.AddFeed then state:AddFeed("📱 Trending! Thousands of new followers! Internet famous!") end
 					elseif roll < 0.75 then
-						state:ModifyStat("Happiness", 5)
-						state:AddFeed("📱 Decent engagement! More likes than usual!")
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+						if state.AddFeed then state:AddFeed("📱 Decent engagement! More likes than usual!") end
 					else
-						state:ModifyStat("Happiness", -2)
-						state:AddFeed("📱 False hope. Algorithm stopped pushing it.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then state:AddFeed("📱 False hope. Algorithm stopped pushing it.") end
 					end
 				end,
 			},
@@ -88,6 +91,8 @@ SocialMediaEvents.events = {
 		ageBand = "any",
 		category = "social_media",
 		tags = { "content", "creator", "social_media" },
+		-- AAA FIX: Can't create content from prison!
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		
 		-- CRITICAL: Random content success
 		choices = {
@@ -98,17 +103,20 @@ SocialMediaEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.25 then
-						state:ModifyStat("Happiness", 10)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
 						state.Flags = state.Flags or {}
 						state.Flags.content_creator = true
-						state:AddFeed("🎬 Video did well! Audience growing! Creator life!")
+						if state.AddFeed then state:AddFeed("🎬 Video did well! Audience growing! Creator life!") end
 					elseif roll < 0.60 then
-						state:ModifyStat("Happiness", 5)
-						state:ModifyStat("Smarts", 2)
-						state:AddFeed("🎬 Learning the craft. Small but engaged audience!")
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 5)
+							state:ModifyStat("Smarts", 2)
+						end
+						if state.AddFeed then state:AddFeed("🎬 Learning the craft. Small but engaged audience!") end
 					else
-						state:ModifyStat("Happiness", -2)
-						state:AddFeed("🎬 Flopped. Low views. Algorithm is cruel.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then state:AddFeed("🎬 Flopped. Low views. Algorithm is cruel.") end
 					end
 				end,
 			},
@@ -119,17 +127,18 @@ SocialMediaEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.20 then
-						state:ModifyStat("Happiness", 12)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
 						state.Money = (state.Money or 0) + 200
 						state.Flags = state.Flags or {}
 						state.Flags.streamer = true
-						state:AddFeed("🎬 Built a community! Donations rolling in! Streamer life!")
+						if state.AddFeed then state:AddFeed("🎬 Built a community! Donations rolling in! Streamer life!") end
 					elseif roll < 0.55 then
-						state:ModifyStat("Happiness", 6)
-						state:AddFeed("🎬 Small but loyal viewers. Building something!")
+						if state.ModifyStat then state:ModifyStat("Happiness", 6) end
+						if state.AddFeed then state:AddFeed("🎬 Small but loyal viewers. Building something!") end
 					else
-						state:ModifyStat("Happiness", -3)
-						state:AddFeed("🎬 Talking to empty room. Streaming is hard.")
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then state:AddFeed("🎬 Talking to empty room. Streaming is hard.") end
 					end
 				end,
 			},
@@ -148,6 +157,8 @@ SocialMediaEvents.events = {
 		stage = STAGE,
 		ageBand = "any",
 		category = "social_media",
+		-- AAA FIX: Can't have online drama from prison (no internet access)!
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		tags = { "drama", "conflict", "social_media" },
 		
 		-- CRITICAL: Random drama outcome

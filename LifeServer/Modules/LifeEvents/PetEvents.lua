@@ -56,15 +56,16 @@ PetEvents.events = {
 					state.PetData.dogAge = 1 -- Start at age 1
 					
 					if roll < 0.75 then
-						state:ModifyStat("Happiness", 15)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
 						state.Flags = state.Flags or {}
 						state.Flags.has_dog = true
-						state:AddFeed(string.format("🐾 BEST FRIEND! %s loves you unconditionally!", state.PetData.dogName))
+						if state.AddFeed then state:AddFeed(string.format("🐾 BEST FRIEND! %s loves you unconditionally!", state.PetData.dogName)) end
 					else
-						state:ModifyStat("Happiness", 8)
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
 						state.Flags = state.Flags or {}
 						state.Flags.has_dog = true
-						state:AddFeed(string.format("🐾 %s is adjusting. Puppy phase is challenging but worth it!", state.PetData.dogName))
+						if state.AddFeed then state:AddFeed(string.format("🐾 %s is adjusting. Puppy phase is challenging but worth it!", state.PetData.dogName)) end
 					end
 				end,
 			},
@@ -88,15 +89,16 @@ PetEvents.events = {
 					state.PetData.catAge = 1 -- Start at age 1
 					
 					if roll < 0.70 then
-						state:ModifyStat("Happiness", 12)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
 						state.Flags = state.Flags or {}
 						state.Flags.has_cat = true
-						state:AddFeed(string.format("🐾 Purrfect companion! %s has chosen you as servant!", state.PetData.catName))
+						if state.AddFeed then state:AddFeed(string.format("🐾 Purrfect companion! %s has chosen you as servant!", state.PetData.catName)) end
 					else
-						state:ModifyStat("Happiness", 6)
+						if state.ModifyStat then state:ModifyStat("Happiness", 6) end
 						state.Flags = state.Flags or {}
 						state.Flags.has_cat = true
-						state:AddFeed(string.format("🐾 %s is aloof but you love them anyway!", state.PetData.catName))
+						if state.AddFeed then state:AddFeed(string.format("🐾 %s is aloof but you love them anyway!", state.PetData.catName)) end
 					end
 				end,
 			},
@@ -138,15 +140,16 @@ PetEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.60 then
-						state:ModifyStat("Happiness", 12)
+						-- AAA FIX: Nil check for all state methods
+						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
 						state.Flags = state.Flags or {}
 						state.Flags.rescued_pet = true
-						state:AddFeed("🐕 Rescued! They're so grateful! Forever home found!")
+						if state.AddFeed then state:AddFeed("🐕 Rescued! They're so grateful! Forever home found!") end
 					elseif roll < 0.85 then
-						state:ModifyStat("Happiness", 6)
-						state:AddFeed("🐕 Temporary foster. Found them a good home!")
+						if state.ModifyStat then state:ModifyStat("Happiness", 6) end
+						if state.AddFeed then state:AddFeed("🐕 Temporary foster. Found them a good home!") end
 					else
-						state:ModifyStat("Happiness", 3)
+						if state.ModifyStat then state:ModifyStat("Happiness", 3) end
 						state.Money = (state.Money or 0) - 200
 						state:AddFeed("🐕 Needed lots of vet care. Worth it to help.")
 					end

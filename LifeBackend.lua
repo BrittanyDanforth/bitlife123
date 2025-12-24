@@ -1502,11 +1502,10 @@ function LifeBackend:validateRoyalMarriage(state)
 	-- ═══════════════════════════════════════════════════════════════════════
 	if flags.dating_royalty then
 		local hasRoyalPartner = false
-		if state.Relationships and state.Relationships.partner then
-			local partner = state.Relationships.partner
-			if partner.isRoyalty then
-				hasRoyalPartner = true
-			end
+		-- AAA FIX: Type check partner before accessing properties
+		local partner = state.Relationships and state.Relationships.partner
+		if partner and type(partner) == "table" and partner.isRoyalty then
+			hasRoyalPartner = true
 		end
 		
 		if not hasRoyalPartner then
