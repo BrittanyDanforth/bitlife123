@@ -814,6 +814,157 @@ FriendshipDecayEvents.events = {
 			},
 		},
 	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #703: CONSEQUENCE EVENTS
+	-- User feedback: "ensure stuff u do actually has stuff popup for it in future"
+	-- Events that reference past choices/actions from childhood!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+
+	{
+		id = "consequence_childhood_promise",
+		title = "The Forgotten Promise",
+		emoji = "😔",
+		text = "You remember promising your childhood friend you'd stay in touch forever. Years have passed, and you realize you never kept that promise.",
+		category = "relationships",
+		weight = 10,
+		minAge = 25, maxAge = 45,
+		baseChance = 0.4,
+		cooldown = 5,
+		oneTime = true,
+		-- CRITICAL: Only triggers if player made the promise!
+		requiresFlags = { promised_friend_letters = true },
+		blockedByFlags = { resolved_childhood_promise = true },
+		
+		choices = {
+			{
+				text = "Reach out now - it's never too late",
+				effects = {},
+				feedText = "Searching for their contact info...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.50 then
+						modStatIfPossible(state, "Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.reconnected_childhood_friend = true
+						state.Flags.resolved_childhood_promise = true
+						addFeed(state, "📱 They responded! 'I never forgot you either.' Tears. Friendship rekindled!")
+					else
+						modStatIfPossible(state, "Happiness", -3)
+						state.Flags.resolved_childhood_promise = true
+						addFeed(state, "📱 Couldn't find them. They've moved on with their life. Some promises fade.")
+					end
+				end,
+			},
+			{
+				text = "Let sleeping memories lie",
+				effects = { Happiness = -5 },
+				setFlags = { broken_promise_guilt = true, resolved_childhood_promise = true },
+				feedText = "😔 The guilt of broken promises weighs on you. But that's life...",
+			},
+		},
+	},
+	{
+		id = "consequence_sibling_blame",
+		title = "Sibling Remembers",
+		emoji = "😤",
+		text = "Your sibling brings up that time you blamed them for something YOU did. They've held onto that resentment for years.",
+		category = "family",
+		weight = 12,
+		minAge = 18, maxAge = 50,
+		baseChance = 0.35,
+		cooldown = 6,
+		oneTime = true,
+		-- CRITICAL: Only triggers if player blamed their sibling!
+		requiresFlags = { blamed_sibling = true },
+		blockedByFlags = { resolved_sibling_blame = true },
+		
+		choices = {
+			{
+				text = "Finally apologize - they deserve it",
+				effects = {},
+				feedText = "It's time to make amends...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.70 then
+						modStatIfPossible(state, "Happiness", 12)
+						state.Flags = state.Flags or {}
+						state.Flags.resolved_sibling_blame = true
+						state.Flags.sibling_forgave = true
+						addFeed(state, "😭 'I forgive you. But I'll never forget.' The healing begins.")
+					else
+						modStatIfPossible(state, "Happiness", -5)
+						state.Flags.resolved_sibling_blame = true
+						addFeed(state, "😤 'It's too late for sorry.' Some wounds don't heal.")
+					end
+				end,
+			},
+			{
+				text = "Deny it still",
+				effects = { Happiness = -10 },
+				setFlags = { sibling_estranged = true, resolved_sibling_blame = true },
+				feedText = "😤 They see through you. The relationship may never recover.",
+			},
+		},
+	},
+	{
+		id = "consequence_brave_defender",
+		title = "They Remember You",
+		emoji = "🦸",
+		text = "Someone approaches you: 'You probably don't remember me, but you stood up to a bully for me when we were kids. That meant everything.'",
+		category = "karma",
+		weight = 8,
+		minAge = 22, maxAge = 55,
+		baseChance = 0.3,
+		cooldown = 10,
+		oneTime = true,
+		-- CRITICAL: Only triggers if player stood up to a bully!
+		requiresFlags = { stood_up_to_bully = true },
+		blockedByFlags = { received_bully_thanks = true },
+		
+		choices = {
+			{
+				text = "Accept their gratitude warmly",
+				effects = { Happiness = 20, Fame = 1 },
+				setFlags = { remembered_hero = true, received_bully_thanks = true },
+				feedText = "🦸 'You gave me courage I didn't know I had.' Your past kindness echoes.",
+			},
+			{
+				text = "You barely remember it",
+				effects = { Happiness = 10 },
+				setFlags = { received_bully_thanks = true },
+				feedText = "🦸 What was a moment for you was life-changing for them. Good deeds matter.",
+			},
+		},
+	},
+	{
+		id = "consequence_artistic_talent",
+		title = "Your Childhood Drawings",
+		emoji = "🎨",
+		text = "Your parent shows you old drawings you made as a child. 'You were always so talented. Did you ever pursue art?'",
+		category = "nostalgia",
+		weight = 8,
+		minAge = 25, maxAge = 50,
+		baseChance = 0.35,
+		cooldown = 8,
+		oneTime = true,
+		-- CRITICAL: Only triggers if player had artistic talent!
+		requiresFlags = { artistic_talent = true },
+		
+		choices = {
+			{
+				text = "I should get back into it",
+				effects = { Happiness = 10, Smarts = 3 },
+				setFlags = { rekindled_artistic_passion = true },
+				feedText = "🎨 Looking at your old work inspires you. Maybe it's time to create again.",
+			},
+			{
+				text = "Life took me in a different direction",
+				effects = { Happiness = -2 },
+				feedText = "🎨 Some talents fade, but the memories remain. Bittersweet.",
+			},
+		},
+	},
 }
 
 -- ═══════════════════════════════════════════════════════════════════════════════

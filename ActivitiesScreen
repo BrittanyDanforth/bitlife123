@@ -2451,46 +2451,126 @@ function ActivitiesScreen:attemptLeaveMob()
 	end
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #704: Combat-based mafia operations from ActivitiesScreen
+-- User feedback: "minigames even if successful still jail me"
+-- Operations done from ActivitiesScreen MUST also support minigames!
+-- ═══════════════════════════════════════════════════════════════════════════════
+local CombatMafiaOpsFromActivities = {
+	enforcer_hit = true,
+	intimidation = true,
+	protection = true,
+	heist = true,
+}
+
 function ActivitiesScreen:doMobOperation(opId, opName)
 	-- CRITICAL FIX: Enhanced action logging for debugging
 	logAction("MOB_OPERATION", opId, opName, "Mafia activity")
 	
 	log("Doing mob operation:", opId)
 	local DoMobOp = getRemote("DoMobOperation")
-	if DoMobOp then
-		-- CRITICAL FIX #3: Add pcall protection for server calls
-		local success, result = pcall(function()
-			return DoMobOp:InvokeServer(opId)
-		end)
-		if success and result and result.success then
-			local msg = result.message or string.format("Operation successful! +$%s +%d respect", result.money or 0, result.respect or 0)
-			self:showActivityResult(true, msg, {id = opId, name = opName, emoji = "💰"}, "💰")
-			
-			-- CRITICAL FIX: Update local mob state after operation
-			if self.state and self.state.MobState then
-				if result.respect then
-					self.state.MobState.respect = (self.state.MobState.respect or 0) + result.respect
-				end
-				if result.promoted then
-					-- Refresh tab to show new rank
-					task.delay(0.5, function()
-						self:switchTab("crime")
-					end)
-				end
-			end
-		elseif success and result then
-			local msg = result.message or "The operation failed..."
-			-- CRITICAL FIX: If arrested, update local state
-			if result.arrested and self.state then
-				self.state.InJail = true
-			end
-			self:showActivityResult(false, msg, {id = opId, name = opName, emoji = result.arrested and "🚔" or "❌"}, result.arrested and "🚔" or "❌", result.arrested)
-		else
-			self:showActivityResult(false, "Connection error. Try again.", {id = opId, name = opName, emoji = "❌"}, "❌")
-		end
-	else
+	if not DoMobOp then
 		-- Fallback for testing
 		self:showActivityResult(true, opName .. " completed! You earned cash and respect.", {id = opId, name = opName, emoji = "💰"}, "💰")
+		return
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #704: Combat-based operations require minigame!
+	-- Without this, players doing operations from ActivitiesScreen get jailed randomly
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if CombatMafiaOpsFromActivities[opId] then
+		log("[ActivitiesScreen] Combat operation detected:", opId)
+		
+		local ReplicatedStorage = game:GetService("ReplicatedStorage")
+		local MinigamesModule = ReplicatedStorage:FindFirstChild("Minigames")
+		
+		if MinigamesModule then
+			local Minigames = require(MinigamesModule)
+			local minigameInstance = Minigames.new(self.screenGui)
+			
+			-- Determine minigame type
+			local minigameType = (opId == "heist") and "heist" or "combat"
+			
+			log("[ActivitiesScreen] Starting minigame for operation:", opId, "type:", minigameType)
+			minigameInstance:play(minigameType, function(won, minigameResult)
+				log("[ActivitiesScreen] Minigame result - Won:", won)
+				
+				-- Build modifiers with minigame result
+				local modifiers = {
+					combatCompleted = (minigameType == "combat"),
+					combatWon = (minigameType == "combat") and won or nil,
+					heistCompleted = (minigameType == "heist"),
+					heistSuccess = (minigameType == "heist") and won or nil,
+					minigameResult = minigameResult,
+				}
+				
+				-- Call server with minigame results
+				local success, result = pcall(function()
+					return DoMobOp:InvokeServer(opId, modifiers)
+				end)
+				
+				if success and result and result.success then
+					local msg = result.message or string.format("Operation successful! +$%s +%d respect", result.money or 0, result.respect or 0)
+					self:showActivityResult(true, msg, {id = opId, name = opName, emoji = "💰"}, "💰")
+					
+					-- Update local mob state
+					if self.state and self.state.MobState then
+						if result.respect then
+							self.state.MobState.respect = (self.state.MobState.respect or 0) + result.respect
+						end
+						if result.promoted then
+							task.delay(0.5, function()
+								self:switchTab("crime")
+							end)
+						end
+					end
+				elseif success and result then
+					local msg = result.message or "The operation failed..."
+					if result.arrested and self.state then
+						self.state.InJail = true
+					end
+					self:showActivityResult(false, msg, {id = opId, name = opName, emoji = result.arrested and "🚔" or "❌"}, result.arrested and "🚔" or "❌", result.arrested)
+				else
+					self:showActivityResult(false, "Connection error. Try again.", {id = opId, name = opName, emoji = "❌"}, "❌")
+				end
+				
+				self:updateInfoBar()
+				self:switchTab("crime")
+			end)
+			return -- Wait for minigame callback
+		end
+	end
+	
+	-- Standard operation (no minigame required)
+	local success, result = pcall(function()
+		return DoMobOp:InvokeServer(opId)
+	end)
+	
+	if success and result and result.success then
+		local msg = result.message or string.format("Operation successful! +$%s +%d respect", result.money or 0, result.respect or 0)
+		self:showActivityResult(true, msg, {id = opId, name = opName, emoji = "💰"}, "💰")
+		
+		-- CRITICAL FIX: Update local mob state after operation
+		if self.state and self.state.MobState then
+			if result.respect then
+				self.state.MobState.respect = (self.state.MobState.respect or 0) + result.respect
+			end
+			if result.promoted then
+				task.delay(0.5, function()
+					self:switchTab("crime")
+				end)
+			end
+		end
+	elseif success and result then
+		local msg = result.message or "The operation failed..."
+		-- CRITICAL FIX: If arrested, update local state
+		if result.arrested and self.state then
+			self.state.InJail = true
+		end
+		self:showActivityResult(false, msg, {id = opId, name = opName, emoji = result.arrested and "🚔" or "❌"}, result.arrested and "🚔" or "❌", result.arrested)
+	else
+		self:showActivityResult(false, "Connection error. Try again.", {id = opId, name = opName, emoji = "❌"}, "❌")
 	end
 	self:updateInfoBar()
 	self:switchTab("crime") -- Refresh

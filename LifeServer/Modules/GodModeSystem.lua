@@ -1608,6 +1608,191 @@ function GodModeSystem:getAddictions(lifeState)
 	return addictions
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #701: NEW POWERFUL GOD MODE ABILITIES
+-- User feedback: "GodModeSystem.lua isn't really great godmode"
+-- Adding more powerful and fun abilities that make God Mode worth it!
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- INSTANT BILLIONAIRE - Set money to $1 billion instantly
+function GodModeSystem:instantBillionaire(lifeState)
+	lifeState.Money = 1000000000 -- $1 billion
+	lifeState.Flags = lifeState.Flags or {}
+	lifeState.Flags.billionaire = true
+	lifeState.Flags.ultra_wealthy = true
+	return true, "💎 BILLIONAIRE MODE! You now have $1,000,000,000!"
+end
+
+-- PERFECT LIFE - Max all stats instantly
+function GodModeSystem:perfectLife(lifeState)
+	local stats = {"Happiness", "Health", "Smarts", "Looks"}
+	for _, stat in ipairs(stats) do
+		if lifeState.Stats then
+			lifeState.Stats[stat] = 100
+		end
+		lifeState[stat] = 100
+	end
+	lifeState.Fame = 100
+	lifeState.Fertility = 100
+	return true, "✨ PERFECT LIFE! All stats maxed to 100%!"
+end
+
+-- IMMORTAL MODE - Remove all death risks
+function GodModeSystem:enableImmortal(lifeState)
+	lifeState.Flags = lifeState.Flags or {}
+	lifeState.Flags.immortal = true
+	lifeState.Flags.cannot_die = true
+	lifeState.Flags.death_immune = true
+	-- Clear any terminal conditions
+	lifeState.Flags.terminal_illness = nil
+	lifeState.Flags.dying = nil
+	lifeState.Flags.near_death = nil
+	-- Max health
+	if lifeState.Stats then
+		lifeState.Stats.Health = 100
+	end
+	lifeState.Health = 100
+	return true, "🌟 IMMORTAL MODE ENABLED! You cannot die!"
+end
+
+-- MEGA FAME - Become instantly famous
+function GodModeSystem:megaFame(lifeState)
+	lifeState.Fame = 100
+	lifeState.Flags = lifeState.Flags or {}
+	lifeState.Flags.mega_famous = true
+	lifeState.Flags.a_list = true
+	lifeState.Flags.hollywood_royalty = true
+	lifeState.FameState = lifeState.FameState or {}
+	lifeState.FameState.socialFollowers = 50000000 -- 50 million followers
+	lifeState.FameState.isFamous = true
+	return true, "⭐ MEGA FAME! You're now an A-List celebrity with 50M followers!"
+end
+
+-- CRIME LORD - Become mafia boss instantly
+function GodModeSystem:crimeLord(lifeState)
+	lifeState.Flags = lifeState.Flags or {}
+	lifeState.Flags.in_mob = true
+	lifeState.Flags.mafia_member = true
+	lifeState.Flags.mob_boss = true
+	lifeState.Flags.crime_boss = true
+	lifeState.Flags.made_man = true
+	lifeState.Flags.initiated = true
+	lifeState.MobState = lifeState.MobState or {}
+	lifeState.MobState.inMob = true
+	lifeState.MobState.rank = "Boss"
+	lifeState.MobState.rankIndex = 5
+	lifeState.MobState.respect = 1000
+	lifeState.MobState.heat = 0 -- No heat for boss
+	lifeState.Money = (lifeState.Money or 0) + 10000000 -- $10M bonus
+	return true, "🔫 CRIME LORD! You're now the Boss of the family!"
+end
+
+-- ROYAL DESTINY - Become royalty instantly
+function GodModeSystem:royalDestiny(lifeState)
+	lifeState.Flags = lifeState.Flags or {}
+	lifeState.Flags.is_royalty = true
+	lifeState.Flags.royal_birth = true
+	lifeState.Flags.is_monarch = true
+	lifeState.RoyalState = lifeState.RoyalState or {}
+	lifeState.RoyalState.isRoyal = true
+	lifeState.RoyalState.isMonarch = true
+	lifeState.RoyalState.title = lifeState.Gender == "Female" and "Queen" or "King"
+	lifeState.RoyalState.country = "United Kingdom"
+	lifeState.RoyalState.popularity = 100
+	lifeState.Money = (lifeState.Money or 0) + 500000000 -- $500M royal fortune
+	return true, "👑 ROYAL DESTINY! You're now the ruling monarch!"
+end
+
+-- RESET LIFE - Keep skills but reset problems
+function GodModeSystem:resetLife(lifeState)
+	-- Clear all negative flags
+	local negativeFlags = {
+		"in_prison", "incarcerated", "in_jail", "on_probation", "on_parole",
+		"criminal_record", "convicted_felon", "fugitive", "warrant",
+		"has_std", "has_cancer", "chronic_illness", "terminal_illness",
+		"alcoholic", "drug_addict", "gambling_addict",
+		"depressed", "anxious", "stressed", "burned_out",
+		"homeless", "bankrupt", "bad_credit", "in_debt",
+		"fired", "unemployed", "blacklisted",
+		"divorced", "heartbroken", "lonely",
+	}
+	lifeState.Flags = lifeState.Flags or {}
+	for _, flag in ipairs(negativeFlags) do
+		lifeState.Flags[flag] = nil
+	end
+	-- Reset jail
+	lifeState.InJail = false
+	lifeState.JailYearsLeft = 0
+	-- Reset health
+	if lifeState.Stats then
+		lifeState.Stats.Health = 100
+		lifeState.Stats.Happiness = 75
+	end
+	lifeState.Health = 100
+	lifeState.Happiness = 75
+	return true, "🔄 LIFE RESET! All problems cleared, fresh start!"
+end
+
+-- SUPER INTELLIGENCE - Max smarts and give knowledge flags
+function GodModeSystem:superIntelligence(lifeState)
+	if lifeState.Stats then
+		lifeState.Stats.Smarts = 100
+	end
+	lifeState.Smarts = 100
+	lifeState.Flags = lifeState.Flags or {}
+	lifeState.Flags.genius = true
+	lifeState.Flags.prodigy = true
+	lifeState.Flags.mensa_member = true
+	lifeState.Flags.valedictorian = true
+	lifeState.Flags.graduated_honors = true
+	lifeState.Flags.phd = true
+	return true, "🧠 SUPER INTELLIGENCE! IQ off the charts! Genius-level intellect!"
+end
+
+-- SUPER MODEL - Max looks and give beauty flags
+function GodModeSystem:superModel(lifeState)
+	if lifeState.Stats then
+		lifeState.Stats.Looks = 100
+	end
+	lifeState.Looks = 100
+	lifeState.Flags = lifeState.Flags or {}
+	lifeState.Flags.beautiful = true
+	lifeState.Flags.model_looks = true
+	lifeState.Flags.stunning = true
+	lifeState.Flags.head_turner = true
+	return true, "💫 SUPERMODEL! You're stunningly beautiful!"
+end
+
+-- PERFECT HEALTH - Max health and clear all conditions
+function GodModeSystem:perfectHealth(lifeState)
+	self:cureDiseases(lifeState)
+	self:removeAddictions(lifeState)
+	if lifeState.Stats then
+		lifeState.Stats.Health = 100
+	end
+	lifeState.Health = 100
+	lifeState.Fertility = 100
+	lifeState.Flags = lifeState.Flags or {}
+	lifeState.Flags.peak_fitness = true
+	lifeState.Flags.olympic_athlete = true
+	return true, "❤️ PERFECT HEALTH! All conditions cured, peak physical condition!"
+end
+
+-- LOVE MAGNET - Fix all relationships
+function GodModeSystem:loveMagnet(lifeState)
+	self:maxAllRelationships(lifeState)
+	lifeState.Flags = lifeState.Flags or {}
+	lifeState.Flags.charming = true
+	lifeState.Flags.popular = true
+	lifeState.Flags.beloved = true
+	lifeState.Flags.great_friend = true
+	if lifeState.Stats then
+		lifeState.Stats.Happiness = math.max(lifeState.Stats.Happiness or 50, 90)
+	end
+	lifeState.Happiness = math.max(lifeState.Happiness or 50, 90)
+	return true, "💕 LOVE MAGNET! All relationships maxed, everyone loves you!"
+end
+
 -- ════════════════════════════════════════════════════════════════════════════
 -- SINGLETON INSTANCE
 -- ════════════════════════════════════════════════════════════════════════════

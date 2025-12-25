@@ -15569,22 +15569,57 @@ function LifeBackend:handleCrime(player, crimeId, minigameBonus)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX: Minigame bonus reduces risk of getting caught!
-	-- Completing the heist minigame (like cracking a safe) gives you an advantage
-	-- CRITICAL FIX: Also handle table format from combat minigames!
+	-- CRITICAL FIX #700: Minigame WIN = GUARANTEED SUCCESS!
+	-- User complaint: "crime ones even if successful still jail me"
+	-- When a player WINS the minigame, they've EARNED their success - NO JAIL!
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	local minigameWon = false
+	local minigameFailed = false
+	
 	if minigameBonus == true then
-		riskModifier = riskModifier - 20  -- 20% less likely to get caught
+		minigameWon = true
 	elseif type(minigameBonus) == "table" then
-		-- CRITICAL FIX: Handle table format { won = true, success = true, isCombat = true }
+		-- Handle table format { won = true, success = true, isCombat = true }
 		if minigameBonus.won or minigameBonus.success then
-			riskModifier = riskModifier - 25 -- Combat win = even bigger bonus!
+			minigameWon = true
 		elseif minigameBonus.escaped then
-			riskModifier = riskModifier - 10 -- Escaped = some bonus for getaway
+			riskModifier = riskModifier - 15 -- Escaped = significant bonus
+		elseif minigameBonus.won == false or minigameBonus.success == false then
+			minigameFailed = true
 		end
 	elseif minigameBonus == false and crime.hasMinigame then
-		-- Failed minigame for a crime that has one = higher risk
-		riskModifier = riskModifier + 15  -- 15% more likely to get caught
+		minigameFailed = true
+	end
+	
+	-- If player WON the minigame, they CANNOT get caught - period!
+	if minigameWon then
+		-- GUARANTEED SUCCESS - Player earned this through skill!
+		local reward = 0
+		if crime.reward then
+			reward = RANDOM:NextInteger(crime.reward[1] or 0, crime.reward[2] or 100)
+			-- Bonus for minigame win!
+			reward = math.floor(reward * 1.25)
+			self:addMoney(state, reward)
+		end
+		state.Flags.successful_criminal = true
+		state.Flags.criminal_experience = (state.Flags.criminal_experience or 0) + 1
+		if (state.Flags.criminal_experience or 0) >= 5 then
+			state.Flags.experienced_criminal = true
+		end
+		local message = string.format("💰 Perfect execution! You got away clean with $%d!", reward)
+		self:pushState(player, message)
+		return { 
+			success = true, 
+			caught = false, 
+			message = message, 
+			money = reward,
+			perfectExecution = true,
+		}
+	end
+	
+	-- If minigame was failed, higher risk
+	if minigameFailed then
+		riskModifier = riskModifier + 20  -- 20% more likely to get caught
 	end
 
 	local roll = RANDOM:NextInteger(0, 100)
