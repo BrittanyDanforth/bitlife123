@@ -1744,8 +1744,6 @@ function HealthEvents.getHealthSummary(state)
 	return summary
 end
 
-return HealthEvents
-
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- CHRONIC CONDITION TREATMENT EVENTS
 -- CRITICAL FIX: User requested "ENSURE IT LINKS TO BACKEND AND CAN HEAL IT OR NOT"
@@ -1999,3 +1997,5 @@ HealthEvents.events[#HealthEvents.events + 1] = {
 		},
 	},
 }
+
+return HealthEvents

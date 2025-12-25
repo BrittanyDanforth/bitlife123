@@ -1302,27 +1302,29 @@ local function canEventTrigger(event, state)
 		-- CRITICAL FIX #SPAM-1: Define category cooldowns (years between events of same category)
 		-- User complaint: "STUFF IS GETTING SPAMMED LIKE EVENTS"
 		-- This prevents the same types of events from firing back-to-back
+		-- CRITICAL FIX #SPAM-3: Increased cooldowns to reduce event spam
+		-- User complaint: "FIX SPAMMY LIFE EVENTS"
 		local categoryCooldowns = {
-			injury = 3,        -- At least 3 years between injury events
-			illness = 2,       -- At least 2 years between illness events
-			mental_health = 4, -- At least 4 years between mental health events
-			disaster = 5,      -- At least 5 years between disasters
-			crime = 2,         -- At least 2 years between crime events
-			social_media = 3,  -- CRITICAL FIX: Prevent viral post spam (was triggering every year!)
-			celebrity = 2,     -- At least 2 years between celebrity events
-			viral = 4,         -- At least 4 years between viral events
-			fame = 2,          -- At least 2 years between fame events
-			hater = 3,         -- At least 3 years between hater events
-			career_workplace = 4, -- CRITICAL FIX: At least 4 years between office drama events
-			career_office = 4,    -- CRITICAL FIX: At least 4 years between office-specific events
+			injury = 4,        -- At least 4 years between injury events (was 3)
+			illness = 3,       -- At least 3 years between illness events (was 2)
+			mental_health = 5, -- At least 5 years between mental health events (was 4)
+			disaster = 6,      -- At least 6 years between disasters (was 5)
+			crime = 3,         -- At least 3 years between crime events (was 2)
+			social_media = 4,  -- CRITICAL FIX: Prevent viral post spam (was 3)
+			celebrity = 3,     -- At least 3 years between celebrity events (was 2)
+			viral = 5,         -- At least 5 years between viral events (was 4)
+			fame = 3,          -- At least 3 years between fame events (was 2)
+			hater = 4,         -- At least 4 years between hater events (was 3)
+			career_workplace = 5, -- CRITICAL FIX: At least 5 years between office drama events (was 4)
+			career_office = 5,    -- CRITICAL FIX: At least 5 years between office-specific events (was 4)
 			-- CRITICAL FIX: Fast food / service career events were spamming
-			career_service = 2,   -- At least 2 years between fast food/service events
-			career_food = 2,      -- At least 2 years between food service events
-			career_retail = 2,    -- At least 2 years between retail events
-			career_entry = 2,     -- At least 2 years between entry-level job events
+			career_service = 3,   -- At least 3 years between fast food/service events (was 2)
+			career_food = 3,      -- At least 3 years between food service events (was 2)
+			career_retail = 3,    -- At least 3 years between retail events (was 2)
+			career_entry = 3,     -- At least 3 years between entry-level job events (was 2)
 			-- Other career categories
-			career_tech = 3,      -- At least 3 years between tech events
-			career_medical = 3,   -- At least 3 years between medical events
+			career_tech = 4,      -- At least 4 years between tech events (was 3)
+			career_medical = 4,   -- At least 4 years between medical events (was 3)
 			career_science = 3,   -- At least 3 years between science/lab events
 			career_military = 3,  -- At least 3 years between military events
 			career_police = 3,    -- At least 3 years between police events
@@ -1333,24 +1335,31 @@ local function canEventTrigger(event, state)
 			career_law = 3,       -- At least 3 years between law events
 			career_education = 3, -- At least 3 years between education events
 			career_racing = 3,    -- At least 3 years between racing events
-			career_hacker = 3,    -- At least 3 years between hacker events
-			career_gaming = 2,    -- At least 2 years between gaming/esports events
-			career_acting = 2,    -- At least 2 years between acting events
-			career_music = 2,     -- At least 2 years between music events
-			career_sports = 2,    -- At least 2 years between sports events
-			career_influencer = 2, -- At least 2 years between influencer events
-			career_streaming = 2,  -- At least 2 years between streaming events
+			career_hacker = 4,    -- At least 4 years between hacker events (was 3)
+			career_gaming = 3,    -- At least 3 years between gaming/esports events (was 2)
+			career_acting = 3,    -- At least 3 years between acting events (was 2)
+			career_music = 3,     -- At least 3 years between music events (was 2)
+			career_sports = 3,    -- At least 3 years between sports events (was 2)
+			career_influencer = 3, -- At least 3 years between influencer events (was 2)
+			career_streaming = 3,  -- At least 3 years between streaming events (was 2)
 			-- Life category cooldowns
-			family = 2,           -- At least 2 years between family events
-			romance = 2,          -- At least 2 years between romance events
-			friends = 2,          -- At least 2 years between friend events
-			pets = 3,             -- At least 3 years between pet events
-			hobbies = 2,          -- At least 2 years between hobby events
-			travel = 2,           -- At least 2 years between travel events
-			financial = 3,        -- At least 3 years between financial crisis events
-			legal = 4,            -- At least 4 years between legal events
-			housing = 3,          -- At least 3 years between housing events
-			homeless = 2,         -- At least 2 years between homeless events
+			family = 3,           -- At least 3 years between family events (was 2)
+			romance = 3,          -- At least 3 years between romance events (was 2)
+			friends = 3,          -- At least 3 years between friend events (was 2)
+			pets = 4,             -- At least 4 years between pet events (was 3)
+			hobbies = 3,          -- At least 3 years between hobby events (was 2)
+			travel = 3,           -- At least 3 years between travel events (was 2)
+			financial = 4,        -- At least 4 years between financial crisis events (was 3)
+			legal = 5,            -- At least 5 years between legal events (was 4)
+			housing = 4,          -- At least 4 years between housing events (was 3)
+			homeless = 3,         -- At least 3 years between homeless events (was 2)
+			-- NEW CATEGORY COOLDOWNS
+			consequence = 4,      -- At least 4 years between consequence/karma events
+			daily = 2,            -- At least 2 years between daily life events
+			experience = 3,       -- At least 3 years between life experience events
+			achievement = 4,      -- At least 4 years between achievement events
+			random = 2,           -- At least 2 years between random events
+			milestones = 3,       -- At least 3 years between milestone events
 		}
 		
 		local catCooldown = categoryCooldowns[eventCategory]

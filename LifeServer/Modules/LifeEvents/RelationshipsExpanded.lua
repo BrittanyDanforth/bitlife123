@@ -1365,13 +1365,439 @@ RelationshipsExpanded.events = {
 				effects = { Money = -5000, Happiness = 8 },
 				feedText = "🎉 Amazing night! Great food, music, and people!",
 			},
-			{
-				text = "Skip it - too fancy for me",
-				effects = { Happiness = -2 },
-				feedText = "🎉 Stayed home. Was it a missed opportunity?",
-			},
+		{
+			text = "Skip it - too fancy for me",
+			effects = { Happiness = -2 },
+			feedText = "🎉 Stayed home. Was it a missed opportunity?",
 		},
 	},
+},
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- DYNAMIC FRIEND EVENTS - Events that react to past friendship choices
+-- User requested: "FRIEND WISE LIKE JUST LIFE WISE HUGELY EXPANDED"
+-- These are NOT hardcoded - they use eligibility functions to react to player state
+-- ══════════════════════════════════════════════════════════════════════════════
+
+{
+	id = "rel_friend_remembers",
+	title = "A Friend Reaches Out",
+	emoji = "📱",
+	text = "An old friend you haven't talked to in a while sends you a message.",
+	question = "What do they want?",
+	minAge = 18, maxAge = 80,
+	baseChance = 0.45,
+	cooldown = 4,
+	stage = STAGE,
+	ageBand = "adult",
+	category = "relationships",
+	tags = { "friend", "reconnect", "dynamic" },
+	
+	-- Dynamic event - content changes based on past actions
+	choices = {
+		{
+			text = "They need help with something",
+			effects = {},
+			feedText = "Helping a friend...",
+			onResolve = function(state)
+				local flags = state.Flags or {}
+				local roll = math.random()
+				
+				-- If you've been a good friend, they ask for reasonable help
+				if flags.good_friend or flags.helped_friend or flags.supportive then
+					if roll < 0.5 then
+						state:ModifyStat("Happiness", 5)
+						state.Money = (state.Money or 0) - math.random(100, 500)
+						state:AddFeed("📱 They needed a small loan. You helped out. Good karma!")
+						state.Flags.helped_friend = true
+					else
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("📱 They just wanted advice. You talked for hours. Friendship strengthened!")
+					end
+				else
+					-- Neutral friend asks for more
+					if roll < 0.3 then
+						state.Money = (state.Money or 0) - math.random(500, 2000)
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("📱 They needed a big loan. Felt pressured to help. Hope they pay back...")
+					else
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("📱 They needed someone to listen. You were there.")
+					end
+				end
+			end,
+		},
+		{
+			text = "They have exciting news",
+			effects = { Happiness = 5 },
+			feedText = "📱 Great news from a friend! Sharing their joy with you.",
+		},
+		{
+			text = "They want to reconnect",
+			effects = {},
+			feedText = "Catching up...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.6 then
+					state:ModifyStat("Happiness", 10)
+					state.Flags = state.Flags or {}
+					state.Flags.rekindled_friendship = true
+					state:AddFeed("📱 You two reconnected! It's like no time has passed. Best feeling!")
+				else
+					state:ModifyStat("Happiness", 3)
+					state:AddFeed("📱 Nice to catch up, but you've both changed. Life moves on.")
+				end
+			end,
+		},
+		{
+			text = "Ignore the message",
+			effects = { Happiness = -2 },
+			feedText = "📱 Left them on read. Might regret that later.",
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags.ignored_friend = true
+			end,
+		},
+	},
+},
+
+{
+	id = "rel_friend_needs_you",
+	title = "Friend in Crisis",
+	emoji = "🆘",
+	text = "A friend is going through something really tough and reaches out to you.",
+	question = "How do you respond?",
+	minAge = 16, maxAge = 80,
+	baseChance = 0.4,
+	cooldown = 5,
+	stage = STAGE,
+	ageBand = "any",
+	category = "relationships",
+	tags = { "friend", "crisis", "support", "dynamic" },
+	
+	choices = {
+		{
+			text = "Drop everything to help",
+			effects = { Happiness = -3 },
+			feedText = "Being there for them...",
+			onResolve = function(state)
+				local roll = math.random()
+				state.Flags = state.Flags or {}
+				state.Flags.supportive = true
+				state.Flags.good_friend = true
+				
+				if roll < 0.7 then
+					state:ModifyStat("Happiness", 15)
+					state:AddFeed("🆘 You helped them through it. They'll never forget this. Friendship forever!")
+					state.Flags.friend_owes_you = true
+				else
+					state:ModifyStat("Happiness", 8)
+					state:AddFeed("🆘 You tried your best. They're still struggling but grateful you tried.")
+				end
+			end,
+		},
+		{
+			text = "Offer support when convenient",
+			effects = { Happiness = 2 },
+			feedText = "🆘 You helped when you could. Better than nothing.",
+		},
+		{
+			text = "Suggest professional help",
+			effects = {},
+			feedText = "Redirecting...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.5 then
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("🆘 They got professional help and are doing better! Good advice.")
+				else
+					state:ModifyStat("Happiness", -5)
+					state:AddFeed("🆘 They felt abandoned. 'I wanted a friend, not a referral.' Ouch.")
+				end
+			end,
+		},
+		{
+			text = "I have my own problems",
+			effects = { Happiness = -5 },
+			feedText = "🆘 You couldn't help. Hope that doesn't damage the friendship.",
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags.self_focused = true
+				if math.random() < 0.3 then
+					state.Flags.lost_friend = true
+					state:AddFeed("🆘 They stopped reaching out after that. Friendship may be over.")
+				end
+			end,
+		},
+	},
+},
+
+{
+	id = "rel_friend_success",
+	title = "Friend's Big Success",
+	emoji = "🎊",
+	text = "A close friend just achieved something incredible! They got their dream job/house/relationship!",
+	question = "How do you react?",
+	minAge = 20, maxAge = 70,
+	baseChance = 0.5,
+	cooldown = 4,
+	stage = STAGE,
+	ageBand = "adult",
+	category = "relationships",
+	tags = { "friend", "success", "jealousy", "support", "dynamic" },
+	
+	choices = {
+		{
+			text = "Genuinely celebrate with them",
+			effects = { Happiness = 8 },
+			feedText = "🎊 Their success is your joy! True friendship means sharing happiness!",
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags.good_friend = true
+				state.Flags.not_jealous = true
+				-- Their success might open doors for you later
+				if math.random() < 0.3 then
+					state.Flags.friend_connection = true
+					state:AddFeed("🎊 They want to help you succeed too! Connections incoming!")
+				end
+			end,
+		},
+		{
+			text = "Feel a twinge of jealousy",
+			effects = {},
+			feedText = "Mixed feelings...",
+			onResolve = function(state)
+				local happy = (state.Stats and state.Stats.Happiness) or 50
+				state.Flags = state.Flags or {}
+				
+				if happy < 40 then
+					state:ModifyStat("Happiness", -8)
+					state.Flags.jealous = true
+					state:AddFeed("🎊 Why not me? Their success makes yours feel smaller. Dark thoughts creep in.")
+				else
+					state:ModifyStat("Happiness", 3)
+					state:AddFeed("🎊 A little jealous, but mostly happy for them. Human nature.")
+				end
+			end,
+		},
+		{
+			text = "Use it as motivation",
+			effects = { Happiness = 5, Smarts = 2 },
+			feedText = "🎊 If they can do it, so can you! Time to level up!",
+			setFlags = { motivated = true, ambitious = true },
+		},
+		{
+			text = "Pull away from the friendship",
+			effects = { Happiness = -5 },
+			feedText = "🎊 Hard to be around their success right now. Distance grows.",
+			setFlags = { jealous = true, distancing_friend = true },
+		},
+	},
+},
+
+{
+	id = "rel_friend_toxic",
+	title = "Toxic Friend Behavior",
+	emoji = "☢️",
+	text = "A friend has been acting really poorly lately - gossiping, being negative, or taking advantage.",
+	question = "What do you do about this friendship?",
+	minAge = 16, maxAge = 70,
+	baseChance = 0.4,
+	cooldown = 5,
+	stage = STAGE,
+	ageBand = "any",
+	category = "relationships",
+	tags = { "friend", "toxic", "boundaries", "dynamic" },
+	
+	choices = {
+		{
+			text = "Confront them about it",
+			effects = {},
+			feedText = "Having the hard talk...",
+			onResolve = function(state)
+				local smarts = (state.Stats and state.Stats.Smarts) or 50
+				local roll = math.random(1, 100) - math.floor(smarts / 5)
+				
+				if roll < 40 then
+					state:ModifyStat("Happiness", 10)
+					state:AddFeed("☢️ They listened and apologized! The friendship is stronger now.")
+					state.Flags = state.Flags or {}
+					state.Flags.stood_up_for_self = true
+				elseif roll < 70 then
+					state:ModifyStat("Happiness", -5)
+					state:AddFeed("☢️ It got heated. Things are awkward now. Time will tell if it survives.")
+				else
+					state:ModifyStat("Happiness", -8)
+					state:AddFeed("☢️ They turned it around on YOU! Now you're the bad guy. Gaslighting much?")
+				end
+			end,
+		},
+		{
+			text = "Set strict boundaries",
+			effects = { Happiness = 3 },
+			feedText = "☢️ Limiting contact. Protecting your peace. Healthy choice.",
+			setFlags = { has_boundaries = true },
+		},
+		{
+			text = "End the friendship",
+			effects = {},
+			feedText = "Cutting them off...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.6 then
+					state:ModifyStat("Happiness", 8)
+					state:AddFeed("☢️ Weight lifted! Should have done this sooner. Peace restored.")
+				else
+					state:ModifyStat("Happiness", -3)
+					state:AddFeed("☢️ Ending it was hard. Mutual friends are awkward now. But necessary.")
+				end
+				state.Flags = state.Flags or {}
+				state.Flags.ended_toxic_friendship = true
+			end,
+		},
+		{
+			text = "Let it slide - avoid conflict",
+			effects = { Happiness = -5 },
+			feedText = "☢️ Ignoring the behavior. But the resentment builds...",
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags.conflict_avoidant = true
+			end,
+		},
+	},
+},
+
+{
+	id = "rel_unexpected_reunion",
+	title = "Unexpected Reunion",
+	emoji = "👥",
+	text = "You ran into someone from your past at the most unexpected place!",
+	question = "Who did you encounter?",
+	minAge = 20, maxAge = 80,
+	baseChance = 0.45,
+	cooldown = 4,
+	stage = STAGE,
+	ageBand = "adult",
+	category = "relationships",
+	tags = { "reunion", "past", "encounter", "dynamic" },
+	
+	choices = {
+		{
+			text = "A childhood friend",
+			effects = {},
+			feedText = "Blast from the past...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.5 then
+					state:ModifyStat("Happiness", 12)
+					state:AddFeed("👥 Instant connection! It's like you're kids again! Exchange numbers!")
+					state.Flags = state.Flags or {}
+					state.Flags.rekindled_friendship = true
+				else
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("👥 Nice to catch up but you've grown apart. Still, good memories.")
+				end
+			end,
+		},
+		{
+			text = "Someone you had a falling out with",
+			effects = {},
+			feedText = "Awkward encounter...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.3 then
+					state:ModifyStat("Happiness", 10)
+					state:AddFeed("👥 You both apologized. Water under the bridge. Closure at last!")
+					state.Flags = state.Flags or {}
+					state.Flags.made_amends = true
+				elseif roll < 0.6 then
+					state:ModifyStat("Happiness", -5)
+					state:AddFeed("👥 Icy stares. Neither of you spoke first. The wound is still fresh.")
+				else
+					state:ModifyStat("Happiness", -8)
+					state:AddFeed("👥 They made a scene. Everyone stared. Humiliating.")
+				end
+			end,
+		},
+		{
+			text = "A mentor who helped shape you",
+			effects = { Happiness = 10, Smarts = 2 },
+			feedText = "👥 Seeing them reminds you of how far you've come. They're proud of you!",
+		},
+		{
+			text = "Someone you'd rather forget",
+			effects = { Happiness = -5 },
+			feedText = "👥 Pretended not to see them. Heart racing. Memories flooding back.",
+		},
+	},
+},
+
+{
+	id = "rel_group_dynamics",
+	title = "Friend Group Drama",
+	emoji = "👯",
+	text = "There's tension in your friend group. Two friends are fighting and everyone's picking sides.",
+	question = "What's your role in this?",
+	minAge = 16, maxAge = 50,
+	baseChance = 0.4,
+	cooldown = 5,
+	stage = STAGE,
+	ageBand = "any",
+	category = "relationships",
+	tags = { "friends", "group", "drama", "conflict", "dynamic" },
+	
+	choices = {
+		{
+			text = "Be the mediator",
+			effects = {},
+			feedText = "Trying to make peace...",
+			onResolve = function(state)
+				local smarts = (state.Stats and state.Stats.Smarts) or 50
+				local roll = math.random(1, 100) - math.floor(smarts / 4)
+				
+				if roll < 35 then
+					state:ModifyStat("Happiness", 12)
+					state:AddFeed("👯 You brought them together! Both sides thank you. Group saved!")
+					state.Flags = state.Flags or {}
+					state.Flags.peacemaker = true
+				elseif roll < 65 then
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("👯 Tensions eased but not resolved. At least they're talking.")
+				else
+					state:ModifyStat("Happiness", -8)
+					state:AddFeed("👯 Both sides now mad at YOU for interfering! Backfired badly.")
+				end
+			end,
+		},
+		{
+			text = "Pick a side",
+			effects = {},
+			feedText = "Taking a stance...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.5 then
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("👯 Your side 'won'. But you lost some friends in the process.")
+				else
+					state:ModifyStat("Happiness", -5)
+					state:AddFeed("👯 Your side 'lost'. Awkward. Wish you'd stayed neutral.")
+				end
+				state.Flags = state.Flags or {}
+				state.Flags.picked_sides = true
+			end,
+		},
+		{
+			text = "Stay completely neutral",
+			effects = { Happiness = 2 },
+			feedText = "👯 Not your circus, not your monkeys. Staying out of it.",
+		},
+		{
+			text = "Distance from the whole group",
+			effects = { Happiness = -3 },
+			feedText = "👯 Too much drama. Taking a break from everyone. Lonely but peaceful.",
+		},
+	},
+},
 }
 
 -- CRITICAL FIX #136: Export events in standard format for LifeEvents loader
