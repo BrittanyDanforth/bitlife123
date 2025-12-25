@@ -1245,18 +1245,84 @@ ProgressiveLifeEvents.events = {
 		id = "late_20s_life_assessment",
 		title = "🤔 Life Assessment",
 		emoji = "🤔",
+		-- CRITICAL FIX #802: Dynamic text based on actual player state!
+		-- User complaint: "Life Assessment doesn't check if I'm famous"
 		text = "You're approaching 30. Time to assess where you are in life.",
 		minAge = 27, maxAge = 30,
 		oneTime = true,
 		isMilestone = true,
 		category = "adult",
 		tags = { "life", "reflection", "milestone" },
+		-- CRITICAL FIX: Generate dynamic text based on player's actual life
+		getDynamicText = function(state)
+			local money = state.Money or 0
+			local fame = state.Fame or 0
+			local happiness = (state.Stats and state.Stats.Happiness) or state.Happiness or 50
+			local hasJob = state.CurrentJob ~= nil
+			local jobName = hasJob and state.CurrentJob.name or nil
+			local isRich = money >= 100000
+			local isPoor = money < 5000
+			local isFamous = fame >= 30
+			local isHappy = happiness >= 70
+			local isSad = happiness < 40
+			
+			local text = "You're approaching 30. "
+			
+			-- Fame-based intro
+			if isFamous and fame >= 70 then
+				text = "As a famous figure approaching 30, you reflect on your incredible journey. "
+			elseif isFamous then
+				text = "With your growing fame, approaching 30 feels different. People know your name. "
+			end
+			
+			-- Money-based addition
+			if isRich and money >= 1000000 then
+				text = text .. string.format("With $%s in the bank, you've achieved financial success beyond your dreams. ", 
+					money >= 1000000 and string.format("%.1fM", money/1000000) or string.format("%.0fK", money/1000))
+			elseif isRich then
+				text = text .. "You've built a solid financial foundation. "
+			elseif isPoor then
+				text = text .. "Money is tight, and you're still figuring out financial stability. "
+			end
+			
+			-- Career-based addition
+			if hasJob then
+				text = text .. string.format("Your career as a %s defines much of your identity. ", jobName)
+			else
+				text = text .. "You're still searching for your career path. "
+			end
+			
+			-- Happiness-based addition
+			if isHappy then
+				text = text .. "Overall, life feels pretty good."
+			elseif isSad then
+				text = text .. "Something feels missing though."
+			else
+				text = text .. "Time to assess where you really are."
+			end
+			
+			return { text = text, money = money, fame = fame, happiness = happiness }
+		end,
 		choices = {
 			{
 				text = "I'm exactly where I want to be",
 				effects = { Happiness = 8 },
 				setFlags = { life_on_track = true },
 				feedText = "Things are going great! You're proud of your progress.",
+				-- CRITICAL FIX: Dynamic feedback based on actual status
+				onResolve = function(state)
+					local money = state.Money or 0
+					local fame = state.Fame or 0
+					if fame >= 50 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("⭐ You're famous AND happy with life! Living the dream!")
+					elseif money >= 500000 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("💰 Rich and content! You've made it!")
+					else
+						state:AddFeed("🤔 You're satisfied with your life at nearly 30.")
+					end
+				end,
 			},
 			{
 				text = "I need to make some changes",
@@ -1269,6 +1335,13 @@ ProgressiveLifeEvents.events = {
 				effects = { Happiness = -2, Smarts = 2 },
 				setFlags = { quarter_life_crisis = true },
 				feedText = "Everything felt clearer when you were younger...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money < 10000 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("😰 Broke and approaching 30... the panic is real.")
+					end
+				end,
 			},
 			{
 				text = "I'm just going with the flow",
@@ -1353,34 +1426,75 @@ ProgressiveLifeEvents.events = {
 		id = "late_20s_health_wake_up",
 		title = "⚕️ Health Wake-Up Call",
 		emoji = "⚕️",
+		-- CRITICAL FIX #803: Only show if health is actually low!
+		-- User complaint: "Health wake-up call keeps showing but I'm pretty healthy"
 		text = "Your body is reminding you that you're not a teenager anymore.",
 		minAge = 25, maxAge = 30,
-		cooldown = 4,
+		cooldown = 6, -- Increased cooldown
+		oneTime = true, -- Only once per life
 		category = "adult",
 		tags = { "health", "lifestyle", "awareness" },
+		-- CRITICAL FIX: Only trigger if health is actually concerning!
+		eligibility = function(state)
+			local health = (state.Stats and state.Stats.Health) or state.Health or 50
+			local looks = (state.Stats and state.Stats.Looks) or state.Looks or 50
+			-- Only show if health is below 60 OR looks dropped significantly
+			if health >= 70 and looks >= 60 then
+				return false, "Player is already healthy - no wake-up call needed"
+			end
+			return true
+		end,
+		blockedByFlags = { health_wake_up_done = true },
+		-- Dynamic text based on actual health
+		getDynamicText = function(state)
+			local health = (state.Stats and state.Stats.Health) or state.Health or 50
+			local looks = (state.Stats and state.Stats.Looks) or state.Looks or 50
+			
+			local text
+			if health < 40 then
+				text = "You're feeling exhausted and run down. At only " .. math.floor(health) .. "% health, something has to change."
+			elseif health < 60 then
+				text = "You've been neglecting your body. With " .. math.floor(health) .. "% health, you're not at your best."
+			elseif looks < 50 then
+				text = "You don't recognize yourself in the mirror lately. Stress and bad habits are showing."
+			else
+				text = "Your body is starting to send you subtle signals. You're not as invincible as you thought."
+			end
+			
+			return { text = text, currentHealth = health }
+		end,
 		choices = {
 			{
 				text = "Start taking health seriously",
 				effects = { Health = 5, Smarts = 2 },
-				setFlags = { health_conscious = true },
+				setFlags = { health_conscious = true, health_wake_up_done = true },
 				feedText = "Better eating, more sleep, regular checkups. You're on it!",
+				onResolve = function(state)
+					local health = (state.Stats and state.Stats.Health) or state.Health or 50
+					if health < 40 then
+						state:ModifyStat("Health", 10)
+						state:AddFeed("⚕️ Major lifestyle overhaul! You feel SO much better!")
+					else
+						state:AddFeed("⚕️ Good habits established. Health improving!")
+					end
+				end,
 			},
 			{
 				text = "Ignore it, you're still young",
 				effects = { Happiness = 2, Health = -2 },
-				setFlags = { ignores_health = true },
+				setFlags = { ignores_health = true, health_wake_up_done = true },
 				feedText = "You'll deal with it later... right?",
 			},
 			{
 				text = "Make small sustainable changes",
 				effects = { Health = 3, Happiness = 2 },
-				setFlags = { gradual_health = true },
+				setFlags = { gradual_health = true, health_wake_up_done = true },
 				feedText = "Little improvements add up over time.",
 			},
 			{
 				text = "Obsess over it",
 				effects = { Health = 3, Happiness = -2 },
-				setFlags = { health_obsessed = true },
+				setFlags = { health_obsessed = true, health_wake_up_done = true },
 				feedText = "You track everything. Maybe too much?",
 			},
 		},

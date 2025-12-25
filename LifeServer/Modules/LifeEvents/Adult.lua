@@ -410,35 +410,71 @@ Adult.events = {
 		question = "How do you respond?",
 		minAge = 35, maxAge = 50,
 		baseChance = 0.4,
-		cooldown = 5,
+		cooldown = 8,
+		oneTime = true, -- CRITICAL FIX: Only once!
 
 		-- META
 		stage = STAGE,
 		ageBand = "adult_midlife",
 		category = "health",
 		tags = { "doctor", "lifestyle", "midlife" },
+		
+		-- CRITICAL FIX #806: Only show if health is actually concerning!
+		-- User complaint: Health wake-up call showing when already healthy
+		eligibility = function(state)
+			local health = (state.Stats and state.Stats.Health) or state.Health or 50
+			-- Only show if health is below 65 at midlife
+			if health >= 75 then
+				return false, "Player is healthy - no wake-up call needed"
+			end
+			return true
+		end,
+		blockedByFlags = { midlife_health_done = true },
+		
+		-- Dynamic text based on actual health
+		getDynamicText = function(state)
+			local health = (state.Stats and state.Stats.Health) or state.Health or 50
+			local text
+			if health < 40 then
+				text = string.format("Your checkup results are concerning. At %d%% health, the doctor says major changes are needed.", math.floor(health))
+			elseif health < 55 then
+				text = string.format("A routine checkup reveals some issues. %d%% health at your age needs attention.", math.floor(health))
+			else
+				text = "A routine checkup reveals you could be doing better. Some preventive changes would help."
+			end
+			return { text = text, currentHealth = health }
+		end,
 
 		choices = {
 			{
 				text = "Complete lifestyle overhaul",
 				effects = { Health = 15, Happiness = 5, Money = -500 },
-				setFlags = { health_conscious = true },
-				feedText = "You transformed your lifestyle. Feeling great!"
+				setFlags = { health_conscious = true, midlife_health_done = true },
+				feedText = "You transformed your lifestyle. Feeling great!",
+				onResolve = function(state)
+					local health = (state.Stats and state.Stats.Health) or state.Health or 50
+					if health < 40 then
+						state:ModifyStat("Health", 20) -- Extra boost for very unhealthy
+						state:AddFeed("🏥 Major transformation! You feel like a new person!")
+					end
+				end,
 			},
 			{
 				text = "Make gradual improvements",
 				effects = { Health = 8, Happiness = 3 },
+				setFlags = { midlife_health_done = true },
 				feedText = "You're making steady health improvements."
 			},
 			{
 				text = "Ignore it and hope for the best",
 				effects = { Health = -10, Happiness = -5 },
+				setFlags = { midlife_health_done = true, ignores_health = true },
 				feedText = "You ignored the warning signs..."
 			},
 			{
 				text = "Become obsessive about health",
 				effects = { Health = 10, Happiness = -5, Money = -1000 },
-				setFlags = { health_obsessed = true },
+				setFlags = { health_obsessed = true, midlife_health_done = true },
 				feedText = "Health became your entire focus. Maybe too much."
 			},
 		},

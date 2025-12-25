@@ -1117,6 +1117,10 @@ EarlyLifeEvents.events = {
 		minAge = 11, maxAge = 14,
 		oneTime = true,
 		isMilestone = true,
+		-- CRITICAL FIX #800: Block if already had growth spurt - user complaint about spam
+		blockedByFlags = { had_growth_spurt = true, growth_spurt_complete = true },
+		cooldown = 99, -- Extra protection against respawning
+		maxOccurrences = 1, -- Can only happen once per life
 		
 		choices = {
 			{

@@ -360,38 +360,101 @@ Teen.events = {
 		oneTime = true,
 		-- CRITICAL FIX: Use blockedByFlags instead of requiresFlags with false value
 		-- Only show if haven't graduated yet (planning stage)
-		blockedByFlags = { graduated_high_school = true, high_school_graduate = true },
+		blockedByFlags = { graduated_high_school = true, high_school_graduate = true, future_planned = true },
 		choices = {
 			{
 				text = "Aim for a top university",
 				effects = { Smarts = 3, Happiness = -2 },
-				setFlags = { college_bound = true, ambitious = true, plans_for_college = true },
+				setFlags = { college_bound = true, ambitious = true, plans_for_college = true, future_planned = true },
 				feedText = "You're working hard for a prestigious school.",
+				-- CRITICAL FIX #805: Actually set up education path!
+				-- User complaint: "Planning Your Future does nothing"
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.ivy_league_aspirations = true
+					state.Flags.college_track = true
+					-- Set education intention
+					state.EducationPlan = state.EducationPlan or {}
+					state.EducationPlan.goal = "top_university"
+					state.EducationPlan.type = "university"
+					if state.AddFeed then
+						state:AddFeed("🎯 You're on the Ivy League track! Study hard!")
+					end
+				end,
 			},
 			{
 				text = "State school is fine",
 				effects = { Smarts = 2, Happiness = 2 },
-				setFlags = { college_bound = true, practical = true, plans_for_college = true },
+				setFlags = { college_bound = true, practical = true, plans_for_college = true, future_planned = true },
 				feedText = "You're taking a practical approach to higher ed.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.state_college_track = true
+					state.EducationPlan = state.EducationPlan or {}
+					state.EducationPlan.goal = "state_university"
+					state.EducationPlan.type = "university"
+					if state.AddFeed then
+						state:AddFeed("🎯 State school it is! Practical and affordable!")
+					end
+				end,
 			},
 			{
 				text = "Community college first",
 				effects = { Smarts = 1, Money = 50 },
-				setFlags = { college_bound = true, economical = true, plans_for_community_college = true },
+				setFlags = { college_bound = true, economical = true, plans_for_community_college = true, future_planned = true },
 				feedText = "You're saving money with community college.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.community_college_track = true
+					state.EducationPlan = state.EducationPlan or {}
+					state.EducationPlan.goal = "community_college"
+					state.EducationPlan.type = "community_college"
+					state.Money = (state.Money or 0) + 500 -- Scholarship for being smart
+					if state.AddFeed then
+						state:AddFeed("🎯 Community college first - smart financial move!")
+					end
+				end,
 			},
 			{
 				text = "Trade school / vocational",
 				effects = { Smarts = 2 },
-				setFlags = { trade_school_bound = true },
+				setFlags = { trade_school_bound = true, future_planned = true },
 				hintCareer = "trades",
 				feedText = "You're planning to learn a skilled trade.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.trade_school_track = true
+					state.Flags.practical_skills = true
+					state.EducationPlan = state.EducationPlan or {}
+					state.EducationPlan.goal = "trade_school"
+					state.EducationPlan.type = "vocational"
+					-- Trade skills start building
+					state.CareerSkills = state.CareerSkills or {}
+					state.CareerSkills.trades = (state.CareerSkills.trades or 0) + 10
+					if state.AddFeed then
+						state:AddFeed("🎯 Trade school path! You'll learn valuable hands-on skills!")
+					end
+				end,
 			},
 			{
 				text = "Skip college, start working",
 				effects = { Money = 100 },
-				setFlags = { no_college = true, workforce_bound = true },
+				setFlags = { no_college = true, workforce_bound = true, future_planned = true },
 				feedText = "You're ready to enter the workforce directly.",
+				-- CRITICAL FIX: Actually prepare them for work!
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.eager_to_work = true
+					state.Flags.job_ready = true
+					state.Money = (state.Money or 0) + 200 -- Already saving from odd jobs
+					-- Set up for job hunting at 18
+					state.EducationPlan = state.EducationPlan or {}
+					state.EducationPlan.goal = "work"
+					state.EducationPlan.type = "none"
+					if state.AddFeed then
+						state:AddFeed("🎯 No college for you - you're going straight to work!")
+					end
+				end,
 			},
 		},
 	},

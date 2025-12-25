@@ -1060,6 +1060,8 @@ Milestones.events = {
 		id = "turning_30",
 		title = "The Big 3-0",
 		emoji = "3️⃣0️⃣",
+		-- CRITICAL FIX #807: Dynamic text based on actual life status!
+		-- User complaint: "It doesn't check if I'm famous"
 		text = "You're turning 30! Welcome to a new decade.",
 		question = "How do you approach your 30s?",
 		minAge = 30, maxAge = 30,
@@ -1073,9 +1075,61 @@ Milestones.events = {
 		category = "decade_birthday",
 		milestoneKey = "TURNING_30",
 		tags = { "birthday", "decade", "reflection" },
+		
+		-- CRITICAL FIX: Dynamic text based on player's life
+		getDynamicText = function(state)
+			local money = state.Money or 0
+			local fame = state.Fame or 0
+			local hasJob = state.CurrentJob ~= nil
+			local jobName = hasJob and state.CurrentJob.name or "unemployed"
+			local happiness = (state.Stats and state.Stats.Happiness) or state.Happiness or 50
+			
+			local text = "You're turning 30! "
+			
+			-- Fame-based
+			if fame >= 70 then
+				text = "🌟 You're turning 30 as a FAMOUS celebrity! The world knows your name! "
+			elseif fame >= 40 then
+				text = "⭐ You're turning 30 with some fame under your belt. People recognize you! "
+			end
+			
+			-- Money-based
+			if money >= 1000000 then
+				text = text .. string.format("With $%.1fM in the bank, you're set for life! ", money/1000000)
+			elseif money >= 100000 then
+				text = text .. string.format("With $%.0fK saved, you're doing great! ", money/1000)
+			elseif money < 5000 then
+				text = text .. "Money is tight, but there's still time to build wealth. "
+			end
+			
+			-- Career-based
+			if hasJob and jobName then
+				text = text .. string.format("Your career as a %s defines this chapter.", jobName)
+			else
+				text = text .. "Career-wise, you're still figuring things out."
+			end
+			
+			return { 
+				text = text, 
+				money = money, 
+				fame = fame, 
+				isFamous = fame >= 40,
+				isRich = money >= 100000,
+			}
+		end,
 
 		choices = {
-			{ text = "Best years ahead", effects = { Happiness = 10 }, feedText = "Your 30s are going to be amazing!" },
+			{ 
+				text = "Best years ahead", 
+				effects = { Happiness = 10 }, 
+				feedText = "Your 30s are going to be amazing!",
+				onResolve = function(state)
+					if state.Fame and state.Fame >= 50 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🎉 You're famous AND turning 30! Life is incredible!")
+					end
+				end,
+			},
 			{ text = "Time to get serious", effects = { Smarts = 5, Happiness = 5 }, feedText = "Time to build your life." },
 			{ text = "Feeling old already", effects = { Happiness = -3 }, feedText = "Where did the time go?" },
 			{ text = "Just getting started", effects = { Happiness = 8, Health = 3 }, feedText = "Age is just a number!" },

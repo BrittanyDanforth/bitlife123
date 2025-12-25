@@ -2031,12 +2031,40 @@ PremiumIntegratedEvents.events = {
 				setFlags = { enjoying_youth = true, turning_point_complete = true },
 				feedText = "YOLO! These are the best years of your life!",
 			},
-			{
-				text = "💵 Start working and save money",
-				effects = { Money = 1500 },
-				setFlags = { young_earner = true, turning_point_complete = true },
-				feedText = "You get a part-time job. First paycheck feels AMAZING!",
-			},
+		{
+			text = "💵 Start working and save money",
+			effects = { Money = 1500 },
+			setFlags = { young_earner = true, turning_point_complete = true, has_part_time_job = true },
+			feedText = "You get a part-time job. First paycheck feels AMAZING!",
+			-- CRITICAL FIX #801: Actually give the player a job!
+			-- User complaint: "it said part-time job but I didn't get"
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags.employed = true
+				state.Flags.has_part_time_job = true
+				state.Flags.first_job = true
+				state.Flags.young_earner = true
+				-- Set actual job
+				state.CurrentJob = state.CurrentJob or {
+					id = "part_time_retail",
+					name = "Retail Associate (Part-Time)",
+					category = "service",
+					salary = 15000,
+					isPartTime = true,
+					yearsInJob = 0,
+				}
+				-- Add to job history
+				state.JobHistory = state.JobHistory or {}
+				table.insert(state.JobHistory, {
+					id = "part_time_retail",
+					name = "Retail Associate (Part-Time)",
+					startAge = state.Age,
+				})
+				if state.AddFeed then
+					state:AddFeed("💵 You got hired at a retail store! $15k/year part-time!")
+				end
+			end,
+		},
 			{
 				text = "💪 Work on self-improvement",
 				effects = { Health = 5, Looks = 3, Smarts = 2 },

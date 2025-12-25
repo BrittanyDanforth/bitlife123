@@ -5187,18 +5187,44 @@ function ActivitiesScreen:doPrisonActivityAfterMinigame(escaped)
 		return
 	end
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #804: Hide activities screen BEFORE showing escape result
+	-- User complaint: "escape card shows behind activity screen, I had to close it"
+	-- The result popup was appearing behind the ActivitiesScreen!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Hide the activities screen to prevent result showing behind it
+	if self.mainFrame then
+		self.mainFrame.Visible = false
+	end
+	if self.container then
+		self.container.Visible = false
+	end
+	
 	-- The server handles the actual escape logic, but we pass the minigame result
 	if escaped then
-		-- CRITICAL FIX: Don't show result popup here!
-		-- The server will send an event popup with escape choices.
-		-- Showing a popup here causes DOUBLE POPUP bug.
 		-- CRITICAL FIX: Add pcall protection
 		local success, result = pcall(function()
 			return DoPrisonAction:InvokeServer("prison_escape")
 		end)
 		if success and result then
 			log("Server response:", result.success, result.message)
-			-- Server handles the popup via presentEvent - don't show duplicate!
+			-- CRITICAL FIX #804: Show the result card ON TOP of everything
+			-- Create a high-ZIndex result popup
+			local message = result.message or "🔓 ESCAPE SUCCESSFUL! Against all odds, you made it over the wall and into freedom!"
+			self:showActivityResult(true, message, {id = "prison_escape", name = "Prison Escape", emoji = "🔓"}, "🔓", false)
+			
+			-- CRITICAL FIX: Update local state to reflect escape
+			if self.state then
+				self.state.InJail = false
+				self.state.JailYearsLeft = 0
+				if self.state.Flags then
+					self.state.Flags.in_prison = nil
+					self.state.Flags.incarcerated = nil
+					self.state.Flags.escaped_prison = true
+					self.state.Flags.on_the_run = true
+				end
+			end
 		else
 			self:showActivityResult(false, "Server error", {id = "prison_escape", name = "Prison Escape", emoji = "🚨"}, "Error")
 		end
