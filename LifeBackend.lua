@@ -13978,21 +13978,99 @@ function LifeBackend:handleContinueAsKid(player, childData)
 	newState.Year = (state.Year or 2025) -- Same year
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX: Adjust family member ages based on child's starting age
-	-- createInitialState generates family for age 0 newborn, so we need to age them up
-	-- This prevents grandparents being too young and siblings having weird ages
+	-- CRITICAL FIX #FAMILY-DUP: FIX FAMILY MEMBER DUPLICATION BUG!
+	-- User complaint: "WHEN FAMILYS LIKE FATHER OR MOTHER ANOTHER ONE SPAWNS IN SOMEHOW"
+	-- The old code was creating random NEW parents via createInitialState, but the
+	-- child's actual parent is the deceased player character + their partner!
+	-- 
+	-- Solution: Clear the randomly generated parents and properly set up:
+	-- 1. Deceased parent = the player who just died
+	-- 2. Living parent = the player's partner (if they had one)
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	if newState.Relationships then
-		for relId, rel in pairs(newState.Relationships) do
-			if type(rel) == "table" and rel.age then
-				-- Age up all family members by the child's starting age
+	
+	-- Clear the randomly generated parents from createInitialState
+	newState.Relationships = newState.Relationships or {}
+	newState.Relationships["mother"] = nil
+	newState.Relationships["father"] = nil
+	
+	-- Determine which parent the deceased player was (based on their gender)
+	local deceasedIsMotherOrFather = (state.Gender == "Female") and "mother" or "father"
+	local otherParentRole = (state.Gender == "Female") and "father" or "mother"
+	
+	-- Create the deceased parent (the player who just died)
+	newState.Relationships[deceasedIsMotherOrFather] = {
+		id = deceasedIsMotherOrFather,
+		name = parentName,
+		type = "family",
+		role = (state.Gender == "Female") and "Mother" or "Father",
+		relationship = child.relationship or 70,
+		age = parentAge,
+		gender = (state.Gender == "Female") and "female" or "male",
+		alive = false, -- DECEASED
+		deceased = true,
+		deathYear = state.Year or 2025,
+		isFamily = true,
+		wasPlayer = true, -- Mark that this was the previous player character
+	}
+	
+	-- Set up the other parent (player's spouse/partner if they had one)
+	local partnerData = state.Relationships and (state.Relationships.partner or state.Relationships.spouse)
+	if partnerData and type(partnerData) == "table" then
+		newState.Relationships[otherParentRole] = {
+			id = otherParentRole,
+			name = partnerData.name or "Parent",
+			type = "family",
+			role = (otherParentRole == "mother") and "Mother" or "Father",
+			relationship = math.max(40, (partnerData.relationship or 50)),
+			age = (partnerData.age or parentAge) + childAge, -- Age them up
+			gender = (otherParentRole == "mother") and "female" or "male",
+			alive = partnerData.alive ~= false, -- Assume alive unless marked dead
+			deceased = partnerData.alive == false,
+			isFamily = true,
+			wasPartner = true, -- Mark that this was the player's partner
+		}
+	else
+		-- No partner - create a generic other parent (could be unknown/absent)
+		local RANDOM = Random.new()
+		local nameList = (otherParentRole == "mother") and 
+			{"Sarah", "Jessica", "Emily", "Ashley", "Rachel", "Amanda", "Michelle", "Jennifer"} or
+			{"Michael", "David", "James", "Robert", "William", "Thomas", "Daniel", "Matthew"}
+		local genericName = nameList[RANDOM:NextInteger(1, #nameList)]
+		
+		newState.Relationships[otherParentRole] = {
+			id = otherParentRole,
+			name = genericName,
+			type = "family",
+			role = (otherParentRole == "mother") and "Mother" or "Father",
+			relationship = 50,
+			age = parentAge + RANDOM:NextInteger(-5, 5) + childAge,
+			gender = (otherParentRole == "mother") and "female" or "male",
+			alive = true,
+			isFamily = true,
+		}
+	end
+	
+	-- Adjust grandparent ages based on child's starting age
+	for relId, rel in pairs(newState.Relationships) do
+		if type(rel) == "table" and rel.age and relId:find("grand") then
+			-- Age up grandparents by child's age
+			rel.age = rel.age + childAge
+			
+			-- Check if grandparents should be dead at this age
+			if rel.age >= 85 then
+				rel.alive = false
+				rel.deceased = true
+			end
+		end
+	end
+	
+	-- Also adjust sibling ages
+	for relId, rel in pairs(newState.Relationships) do
+		if type(rel) == "table" and (relId:find("brother") or relId:find("sister")) then
+			if rel.ageOffset then
+				rel.age = childAge + rel.ageOffset
+			elseif rel.age then
 				rel.age = rel.age + childAge
-				
-				-- Check if grandparents should be dead at this age
-				if relId:find("grand") and rel.age >= 85 then
-					rel.alive = false
-					rel.deceased = true
-				end
 			end
 		end
 	end

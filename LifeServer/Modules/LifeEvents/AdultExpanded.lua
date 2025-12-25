@@ -47,18 +47,31 @@ AdultExpanded.events = {
 		choices = {
 			{
 				text = "Move out and thrive",
-				effects = {},
+				effects = { Money = -1000 }, -- CRITICAL FIX: Moving out costs money!
 				feedText = "On your own for the first time...",
+				-- CRITICAL FIX: Check if player can afford to move out
+				eligibility = function(state)
+					local money = state.Money or 0
+					if money < 1000 then
+						return false, "Need at least $1,000 to move out (deposit + first month)"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local money = state.Money or 0
-					if money < 500 then
+					state.Flags = state.Flags or {}
+					state.Flags.moved_out = true -- CRITICAL FIX: Set moved_out flag
+					state.Flags.has_own_place = true
+					state.Flags.renting = true
+					state.Flags.has_apartment = true
+					
+					if money < 1500 then
 						state:ModifyStat("Happiness", -6)
 						state:AddFeed("🏠 Moved out but struggling. Bills are real. Scary.")
 					else
 						local roll = math.random()
 						if roll < 0.50 then
 							state:ModifyStat("Happiness", 10)
-							state.Flags = state.Flags or {}
 							state.Flags.independent = true
 							state:AddFeed("🏠 FREEDOM! Your own place! Adult life begins!")
 						else
@@ -71,18 +84,31 @@ AdultExpanded.events = {
 			{
 				text = "Struggle and return home",
 				effects = { Happiness = -8 },
-				setFlags = { boomerang_kid = true },
+				setFlags = { boomerang_kid = true, lives_with_parents = true },
 				feedText = "Reality hit hard. Back to parents' house. Humbling.",
 			},
 			{
 				text = "Get roommates to afford it",
-				effects = {},
+				effects = { Money = -500 }, -- CRITICAL FIX: Shared costs
 				feedText = "Living with strangers...",
+				-- CRITICAL FIX: Check if player can afford roommate situation
+				eligibility = function(state)
+					local money = state.Money or 0
+					if money < 500 then
+						return false, "Need at least $500 for shared deposit"
+					end
+					return true
+				end,
 				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.moved_out = true -- CRITICAL FIX: Set moved_out flag
+					state.Flags.has_own_place = true
+					state.Flags.renting = true
+					state.Flags.has_roommates = true
+					
 					local roll = math.random()
 					if roll < 0.45 then
 						state:ModifyStat("Happiness", 6)
-						state.Flags = state.Flags or {}
 						state.Flags.good_roommates = true
 						state:AddFeed("🏠 Roommates are great! Like having friends around!")
 					elseif roll < 0.75 then
@@ -90,7 +116,6 @@ AdultExpanded.events = {
 						state:AddFeed("🏠 Roommates are... tolerable. Could be worse.")
 					else
 						state:ModifyStat("Happiness", -5)
-						state.Flags = state.Flags or {}
 						state.Flags.bad_roommates = true
 						state:AddFeed("🏠 NIGHTMARE roommates. Dishes everywhere. So loud.")
 					end

@@ -3165,10 +3165,73 @@ Adult.events = {
 		baseChance = 0.3,
 		oneTime = true,
 		maxOccurrences = 1,
-		blockedByFlags = { homeowner = true },
+		blockedByFlags = { homeowner = true, has_property = true },
+		-- CRITICAL FIX: Must have enough money for down payment!
+		-- User complaint: "IT SAYS IM A HOMEOWNER BUT THE POPUP FOR BUYING HOME I HAD NO MONEY"
+		eligibility = function(state)
+			local money = state.Money or 0
+			if money < 10000 then
+				return false, "Not enough money for a down payment"
+			end
+			local flags = state.Flags or {}
+			if flags.homeowner or flags.has_property then
+				return false, "Already owns a home"
+			end
+			return true
+		end,
 		choices = {
-			{ text = "Offer asking price immediately", effects = { Happiness = 15, Money = -50000 }, setFlags = { homeowner = true }, feedText = "🏠 Keys in hand! You're a homeowner!" },
-			{ text = "Negotiate aggressively", effects = { Happiness = 12, Money = -40000, Smarts = 3 }, setFlags = { homeowner = true }, feedText = "🏠 Saved $10k with your negotiating skills!" },
+			{ 
+				text = "Offer asking price immediately ($50k down)", 
+				effects = { Happiness = 15, Money = -50000 }, 
+				setFlags = { homeowner = true, has_property = true }, 
+				feedText = "🏠 Keys in hand! You're a homeowner!",
+				eligibility = function(state)
+					local money = state.Money or 0
+					if money < 50000 then
+						return false, "Can't afford $50,000 down payment"
+					end
+					return true
+				end,
+				onResolve = function(state)
+					if state.AddAsset then
+						state:AddAsset("Properties", {
+							id = "home_" .. tostring(state.Age or 0),
+							name = "House",
+							emoji = "🏠",
+							price = 250000,
+							value = 250000,
+							income = 0,
+							isEventAcquired = true,
+						})
+					end
+				end,
+			},
+			{ 
+				text = "Negotiate aggressively ($40k down)", 
+				effects = { Happiness = 12, Money = -40000, Smarts = 3 }, 
+				setFlags = { homeowner = true, has_property = true }, 
+				feedText = "🏠 Saved $10k with your negotiating skills!",
+				eligibility = function(state)
+					local money = state.Money or 0
+					if money < 40000 then
+						return false, "Can't afford $40,000 down payment"
+					end
+					return true
+				end,
+				onResolve = function(state)
+					if state.AddAsset then
+						state:AddAsset("Properties", {
+							id = "home_negotiated_" .. tostring(state.Age or 0),
+							name = "House",
+							emoji = "🏠",
+							price = 200000,
+							value = 200000,
+							income = 0,
+							isEventAcquired = true,
+						})
+					end
+				end,
+			},
 			{ text = "Keep renting for now", effects = { Happiness = -5 }, feedText = "Not ready for that commitment yet." },
 		},
 	},
