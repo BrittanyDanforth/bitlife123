@@ -536,7 +536,7 @@ RapperContentCreatorEvents.events = {
 		question = "How do you handle this opportunity?",
 		minAge = 16, maxAge = 50,
 		baseChance = 0.6, -- CRITICAL FIX #527: Increased from 0.3 to 0.6
-		cooldown = 2, -- CRITICAL FIX #528: Reduced from 4 to 2
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam -- CRITICAL FIX #528: Reduced from 4 to 2
 		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #529: Removed high listener requirement, just need to be a rapper
 		eligibility = function(state)
@@ -630,7 +630,7 @@ RapperContentCreatorEvents.events = {
 		question = "How do you respond?",
 		minAge = 16, maxAge = 50,
 		baseChance = 0.55, -- CRITICAL FIX #533: Increased from 0.25 to 0.55
-		cooldown = 2, -- CRITICAL FIX #534: Reduced from 5 to 2
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam -- CRITICAL FIX #534: Reduced from 5 to 2
 		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #535: Loosened requirements - just need rapper status
 		eligibility = function(state)
@@ -670,7 +670,7 @@ RapperContentCreatorEvents.events = {
 		question = "What kind of project do you release?",
 		minAge = 16, maxAge = 50,
 		baseChance = 0.65, -- CRITICAL FIX #538: Increased from 0.4 to 0.65
-		cooldown = 2, -- CRITICAL FIX #539: Reduced from 5 to 2
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam -- CRITICAL FIX #539: Reduced from 5 to 2
 		oneTime = false,
 		maxOccurrences = 10, -- CRITICAL FIX #540: Increased from 5 to 10
 		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
@@ -746,7 +746,7 @@ RapperContentCreatorEvents.events = {
 		question = "How do you respond?",
 		minAge = 18, maxAge = 50,
 		baseChance = 0.5, -- CRITICAL FIX #542: Increased from 0.2 to 0.5
-		cooldown = 2, -- CRITICAL FIX #543: Reduced from 6 to 2
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam -- CRITICAL FIX #543: Reduced from 6 to 2
 		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #544: Loosened eligibility - rappers can get label interest
 		eligibility = function(state)
@@ -870,7 +870,7 @@ RapperContentCreatorEvents.events = {
 		question = "How do you capitalize?",
 		minAge = 16, maxAge = 50,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		oneTime = false,
 		maxOccurrences = 5,
 		category = "career_rapper",
@@ -1010,7 +1010,7 @@ RapperContentCreatorEvents.events = {
 		question = "How do you respond?",
 		minAge = 18, maxAge = 50,
 		baseChance = 0.5, -- CRITICAL FIX #575: Increased from 0.25 to 0.5
-		cooldown = 2, -- CRITICAL FIX #576: Reduced from 5 to 2
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam -- CRITICAL FIX #576: Reduced from 5 to 2
 		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #577: Loosened eligibility - any rapper can get into beef
 		eligibility = function(state)
@@ -1357,7 +1357,7 @@ RapperContentCreatorEvents.events = {
 		question = "How do you approach your upload schedule?",
 		minAge = 13, maxAge = 50,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "career_creative",
 		-- CRITICAL FIX: Must be an actual content creator, not just have flags
 		eligibility = function(state)
@@ -1416,7 +1416,7 @@ RapperContentCreatorEvents.events = {
 		question = "How do you celebrate?",
 		minAge = 13, maxAge = 50,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		oneTime = true,
 		category = "career_creative",
 		requiresFlags = { first_video_posted = true },
@@ -1655,7 +1655,7 @@ RapperContentCreatorEvents.events = {
 		question = "Do you pull up?",
 		minAge = 14, maxAge = 45,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #509: Use isRapper helper instead of pursuing_rap flag
 		eligibility = function(state) return isRapper(state) end,
@@ -1748,7 +1748,7 @@ RapperContentCreatorEvents.events = {
 		question = "What's your game plan?",
 		minAge = 14, maxAge = 50,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		requiresFlags = { first_track_recorded = true },
 		
@@ -1804,7 +1804,7 @@ RapperContentCreatorEvents.events = {
 		question = "What's your budget approach?",
 		minAge = 16, maxAge = 50,
 		baseChance = 0.555,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		requiresFlags = { first_track_recorded = true },
 		
@@ -1850,7 +1850,7 @@ RapperContentCreatorEvents.events = {
 		question = "How do you respond?",
 		minAge = 14, maxAge = 50,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		requiresFlags = { first_track_recorded = true },
 		
@@ -1894,7 +1894,7 @@ RapperContentCreatorEvents.events = {
 		question = "What do you do?",
 		minAge = 16, maxAge = 50,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		requiresFlags = { has_mixtape = true },
 		
@@ -1943,7 +1943,7 @@ RapperContentCreatorEvents.events = {
 		question = "Do you take the slot?",
 		minAge = 16, maxAge = 50,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		requiresFlags = { stage_experience = true },
 		eligibility = function(state)
@@ -1988,7 +1988,7 @@ RapperContentCreatorEvents.events = {
 		question = "How do you celebrate?",
 		minAge = 16, maxAge = 55,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		oneTime = true,
 		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- REMOVED isCelebrityOnly - 10K is a milestone for ANY rapper!
@@ -2172,7 +2172,7 @@ RapperContentCreatorEvents.events = {
 		question = "How do you handle burnout?",
 		minAge = 15, maxAge = 50,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "career_creative",
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		-- CRITICAL FIX: Must check for actual content creator JOB, not just flags!
@@ -2228,7 +2228,7 @@ RapperContentCreatorEvents.events = {
 		question = "How do you approach this?",
 		minAge = 15, maxAge = 50,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "career_creative",
 		-- REMOVED isCelebrityOnly - Collabs happen to growing creators!
 		-- CRITICAL FIX: Must be an actual content creator
@@ -2278,7 +2278,7 @@ RapperContentCreatorEvents.events = {
 		question = "Do you take the sponsorship?",
 		minAge = 16, maxAge = 50,
 		baseChance = 0.555,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "career_creative",
 		-- CRITICAL FIX: Must be an actual content creator
 		eligibility = function(state)
@@ -2336,7 +2336,7 @@ RapperContentCreatorEvents.events = {
 		question = "How do you respond?",
 		minAge = 15, maxAge = 50,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "career_creative",
 		-- CRITICAL FIX: Must be an actual content creator
 		eligibility = function(state)

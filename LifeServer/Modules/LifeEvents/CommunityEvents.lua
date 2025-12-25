@@ -20,7 +20,7 @@ CommunityEvents.events = {
 		question = "How do you greet them?",
 		minAge = 18, maxAge = 90,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "community",
@@ -75,7 +75,7 @@ CommunityEvents.events = {
 		question = "What's the dispute about?",
 		minAge = 18, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "community",
@@ -116,7 +116,7 @@ CommunityEvents.events = {
 		question = "Do you participate?",
 		minAge = 8, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "community",
@@ -154,7 +154,7 @@ CommunityEvents.events = {
 		question = "What was the incident?",
 		minAge = 12, maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "crime",
@@ -246,7 +246,7 @@ CommunityEvents.events = {
 		question = "How do you participate?",
 		minAge = 15, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "charity",
@@ -283,7 +283,7 @@ CommunityEvents.events = {
 		question = "How do you help?",
 		minAge = 10, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "charity",
@@ -303,7 +303,7 @@ CommunityEvents.events = {
 		question = "How do you help the animals?",
 		minAge = 10, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "charity",
@@ -345,7 +345,7 @@ CommunityEvents.events = {
 		question = "Do you exercise your civic duty?",
 		minAge = 18, maxAge = 100,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "civic",
@@ -383,7 +383,7 @@ CommunityEvents.events = {
 		question = "Do you attend and participate?",
 		minAge = 18, maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "civic",
@@ -426,7 +426,7 @@ CommunityEvents.events = {
 		question = "Do you sign?",
 		minAge = 16, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "civic",
@@ -466,7 +466,7 @@ CommunityEvents.events = {
 		question = "What's happening?",
 		minAge = 15, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "community",
@@ -576,7 +576,7 @@ CommunityEvents.events = {
 		question = "What kind of group interests you?",
 		minAge = 15, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "social",
@@ -635,7 +635,7 @@ CommunityEvents.events = {
 		question = "Do you participate?",
 		minAge = 10, maxAge = 100,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "spiritual",
@@ -655,7 +655,7 @@ CommunityEvents.events = {
 		question = "Do you attend?",
 		minAge = 16, maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",
@@ -692,7 +692,7 @@ CommunityEvents.events = {
 		question = "Do you help out?",
 		minAge = 25, maxAge = 70,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "volunteer",

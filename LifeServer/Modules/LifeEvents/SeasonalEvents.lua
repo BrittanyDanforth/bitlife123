@@ -20,7 +20,7 @@ SeasonalEvents.events = {
 		question = "How do you celebrate?",
 		minAge = 5, maxAge = 100,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "seasonal",
@@ -61,7 +61,7 @@ SeasonalEvents.events = {
 		question = "How do you ring in the new year?",
 		minAge = 10, maxAge = 100,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "seasonal",
@@ -103,7 +103,7 @@ SeasonalEvents.events = {
 		question = "How do you handle being snowed in?",
 		minAge = 5, maxAge = 100,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "weather",
@@ -142,7 +142,7 @@ SeasonalEvents.events = {
 		question = "How do you approach the deep clean?",
 		minAge = 15, maxAge = 90,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "seasonal",
@@ -183,7 +183,7 @@ SeasonalEvents.events = {
 		question = "How do you celebrate spring?",
 		minAge = 3, maxAge = 100,
 		baseChance = 0.555,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "seasonal",
@@ -244,7 +244,7 @@ SeasonalEvents.events = {
 		question = "What's your summer adventure?",
 		minAge = 5, maxAge = 90,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "seasonal",
@@ -301,7 +301,7 @@ SeasonalEvents.events = {
 		question = "How do you celebrate?",
 		minAge = 5, maxAge = 100,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "seasonal",
@@ -335,7 +335,7 @@ SeasonalEvents.events = {
 		question = "How do you survive the heat?",
 		minAge = 5, maxAge = 100,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "weather",
@@ -376,7 +376,7 @@ SeasonalEvents.events = {
 		question = "How do you celebrate spooky season?",
 		minAge = 3, maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "seasonal",
@@ -416,7 +416,7 @@ SeasonalEvents.events = {
 		question = "How do you celebrate Thanksgiving?",
 		minAge = 5, maxAge = 100,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "seasonal",
@@ -480,7 +480,7 @@ SeasonalEvents.events = {
 		question = "How do you celebrate?",
 		minAge = 5, maxAge = 100,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "milestone",
@@ -581,7 +581,7 @@ SeasonalEvents.events = {
 		question = "How do you celebrate your relationship?",
 		minAge = 18, maxAge = 100,
 		baseChance = 0.555,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "relationships",
@@ -633,7 +633,7 @@ SeasonalEvents.events = {
 		question = "How do you handle Valentine's?",
 		minAge = 13, maxAge = 100,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "seasonal",

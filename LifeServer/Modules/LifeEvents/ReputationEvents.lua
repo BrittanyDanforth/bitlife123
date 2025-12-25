@@ -17,10 +17,18 @@ ReputationEvents.events = {
 		title = "Word Gets Around",
 		emoji = "🗣️",
 		text = "People are talking about you!",
+		-- CRITICAL FIX #942: Added text variations for variety
+		textVariants = {
+			"Your ears should be burning. People are talking about you...",
+			"You've heard whispers. Your name is on everyone's lips.",
+			"A friend tells you: 'People have been discussing you...'",
+			"Word travels fast in this town. You're the topic of conversation.",
+			"Something you did is being talked about. Good or bad?",
+		},
 		question = "What are they saying?",
 		minAge = 15, maxAge = 100,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "reputation",
@@ -60,7 +68,7 @@ ReputationEvents.events = {
 		question = "What are you being recognized for?",
 		minAge = 15, maxAge = 100,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "reputation",
@@ -138,7 +146,7 @@ ReputationEvents.events = {
 		question = "How did you earn their trust?",
 		minAge = 12, maxAge = 100,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "reputation",
@@ -158,7 +166,7 @@ ReputationEvents.events = {
 		question = "How do you handle the betrayal?",
 		minAge = 12, maxAge = 100,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "reputation",
@@ -198,7 +206,7 @@ ReputationEvents.events = {
 		question = "Do you seize the opportunity?",
 		minAge = 18, maxAge = 80,
 		baseChance = 0.38,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "reputation",
@@ -241,7 +249,7 @@ ReputationEvents.events = {
 		question = "How do you handle the rumor?",
 		minAge = 12, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "reputation",
@@ -280,7 +288,7 @@ ReputationEvents.events = {
 		question = "Do you give them a good recommendation?",
 		minAge = 20, maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "reputation",
@@ -315,7 +323,7 @@ ReputationEvents.events = {
 		question = "How do you handle being looked up to?",
 		minAge = 20, maxAge = 100,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "reputation",
@@ -335,7 +343,7 @@ ReputationEvents.events = {
 		question = "How do you handle their jealousy?",
 		minAge = 12, maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "reputation",

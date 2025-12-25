@@ -195,7 +195,7 @@ SocialMediaEvents.events = {
 		question = "Do you take the sponsorship?",
 		minAge = 16, maxAge = 60,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "social_media",
@@ -293,7 +293,7 @@ SocialMediaEvents.events = {
 		question = "How does the online friendship develop?",
 		minAge = 12, maxAge = 80,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "social",
@@ -347,7 +347,7 @@ SocialMediaEvents.events = {
 		question = "Do you resist?",
 		minAge = 16, maxAge = 90,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "shopping",
@@ -402,7 +402,7 @@ SocialMediaEvents.events = {
 		question = "Do you take the course?",
 		minAge = 14, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "education",
@@ -448,7 +448,7 @@ SocialMediaEvents.events = {
 		question = "What happened?",
 		minAge = 13, maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "security",
@@ -500,7 +500,7 @@ SocialMediaEvents.events = {
 		question = "What's the review situation?",
 		minAge = 18, maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "consumer",
@@ -537,7 +537,7 @@ SocialMediaEvents.events = {
 		question = "Can you survive without screens?",
 		minAge = 10, maxAge = 80,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "wellness",

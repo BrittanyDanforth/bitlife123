@@ -189,7 +189,7 @@ MusicianCareerEvents.events = {
 		weight = 15,
 		minAge = 18, maxAge = 50,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			-- CRITICAL: Must have a music career to receive label demands

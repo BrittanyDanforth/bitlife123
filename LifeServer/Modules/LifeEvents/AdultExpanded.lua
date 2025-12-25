@@ -17,6 +17,24 @@ AdultExpanded.events = {
 		title = "Leaving the Nest",
 		emoji = "🏠",
 		text = "Time to move out of your parents' house!",
+		-- CRITICAL FIX #943: Added text variations and dynamic text for variety
+		textVariants = {
+			"The boxes are packed. Keys in hand. Time to start a new chapter!",
+			"Your parents look at you with pride (and a little sadness). You're moving out!",
+			"Freedom is calling! Time to leave the nest and spread your wings!",
+			"This is it. Your own place. Real adulthood begins now.",
+			"Goodbye childhood bedroom. Hello independence (and bills)!",
+		},
+		getDynamicText = function(state)
+			local money = state.Money or 0
+			if money >= 5000 then
+				return "You've saved up enough! Time to move out and start your independent life. You're READY!"
+			elseif money >= 1000 then
+				return "Time to move out of your parents' house! You have some savings - hopefully enough..."
+			else
+				return "It's time to leave home, but money is tight. Can you make it on your own?"
+			end
+		end,
 		question = "How does moving out go?",
 		minAge = 18, maxAge = 24,
 		oneTime = true,
@@ -94,7 +112,7 @@ AdultExpanded.events = {
 		question = "What's your college experience like?",
 		minAge = 18, maxAge = 23,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { in_college = true },
 		stage = STAGE,
 		ageBand = "young_adult",
@@ -165,7 +183,7 @@ AdultExpanded.events = {
 		question = "How's your dating life going?",
 		minAge = 18, maxAge = 45,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresSingle = true,
 		stage = STAGE,
 		ageBand = "adult",
@@ -267,7 +285,7 @@ AdultExpanded.events = {
 		question = "Where is this relationship going?",
 		minAge = 22, maxAge = 45,
 		baseChance = 0.3,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresPartner = true,
 		stage = STAGE,
 		ageBand = "adult",
@@ -348,7 +366,7 @@ AdultExpanded.events = {
 		question = "How do you handle the breakup?",
 		minAge = 18, maxAge = 55,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresPartner = true,
 		stage = STAGE,
 		ageBand = "adult",
@@ -442,7 +460,7 @@ AdultExpanded.events = {
 		question = "What setback are you facing?",
 		minAge = 25, maxAge = 55,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		stage = STAGE,
 		ageBand = "adult",
@@ -465,7 +483,7 @@ AdultExpanded.events = {
 		question = "What's your achievement?",
 		minAge = 28, maxAge = 55,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		stage = STAGE,
 		ageBand = "adult",
@@ -619,7 +637,7 @@ AdultExpanded.events = {
 		question = "Do you invest?",
 		minAge = 25, maxAge = 60,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "adult",
 		category = "finance",
@@ -739,7 +757,7 @@ AdultExpanded.events = {
 		question = "How do you approach the negotiation?",
 		minAge = 22, maxAge = 55,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		stage = STAGE,
 		ageBand = "adult",
@@ -816,7 +834,7 @@ AdultExpanded.events = {
 		question = "What do the results show?",
 		minAge = 25, maxAge = 70,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "adult",
 		category = "health",
@@ -865,7 +883,7 @@ AdultExpanded.events = {
 		question = "How dedicated are you?",
 		minAge = 20, maxAge = 55,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "adult",
 		category = "health",
@@ -950,7 +968,7 @@ AdultExpanded.events = {
 		question = "What are you struggling with?",
 		minAge = 20, maxAge = 60,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "adult",
 		category = "health",
@@ -1024,7 +1042,7 @@ AdultExpanded.events = {
 		question = "How does it go?",
 		minAge = 20, maxAge = 60,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "adult",
 		category = "social",
@@ -1130,7 +1148,7 @@ AdultExpanded.events = {
 		question = "How do you feel about wedding season?",
 		minAge = 24, maxAge = 40,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "adult",
 		category = "social",
@@ -1151,7 +1169,7 @@ AdultExpanded.events = {
 		question = "What are your thoughts on kids?",
 		minAge = 25, maxAge = 45,
 		baseChance = 0.3,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "adult",
 		category = "family",
@@ -1185,7 +1203,7 @@ AdultExpanded.events = {
 		question = "What's your housing situation?",
 		minAge = 25, maxAge = 50,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "adult",
 		category = "finance",
@@ -1383,7 +1401,7 @@ AdultExpanded.events = {
 		question = "What's the car situation?",
 		minAge = 18, maxAge = 70,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "adult",
 		category = "expenses",
@@ -1446,7 +1464,7 @@ AdultExpanded.events = {
 		question = "Do you get a pet?",
 		minAge = 20, maxAge = 60,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "adult",
 		category = "lifestyle",
@@ -1551,7 +1569,7 @@ AdultExpanded.events = {
 		question = "How's your work-life balance?",
 		minAge = 25, maxAge = 55,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		stage = STAGE,
 		ageBand = "adult",
@@ -1578,7 +1596,7 @@ AdultExpanded.events = {
 		question = "How do you handle transportation?",
 		minAge = 21, maxAge = 60,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "adult",
 		category = "transportation",

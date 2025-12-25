@@ -126,7 +126,7 @@ SeniorExpanded.events = {
 		question = "What kind of volunteering interests you?",
 		minAge = 60, maxAge = 90,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "senior",
 		category = "purpose",
@@ -148,7 +148,7 @@ SeniorExpanded.events = {
 		question = "How do you bond with your grandchildren?",
 		minAge = 55, maxAge = 95,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "senior",
 		category = "family",
@@ -257,7 +257,7 @@ SeniorExpanded.events = {
 		question = "How involved are you in your community?",
 		minAge = 60, maxAge = 90,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "senior",
 		category = "social",
@@ -296,7 +296,7 @@ SeniorExpanded.events = {
 		question = "What's the diagnosis?",
 		minAge = 60, maxAge = 100,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "senior",
 		category = "health",
@@ -370,7 +370,7 @@ SeniorExpanded.events = {
 		question = "How serious was the fall?",
 		minAge = 65, maxAge = 100,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "senior",
 		category = "health",
@@ -422,7 +422,7 @@ SeniorExpanded.events = {
 		question = "How do you handle all the medications?",
 		minAge = 65, maxAge = 100,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "senior",
 		category = "health",
@@ -443,7 +443,7 @@ SeniorExpanded.events = {
 		question = "What's your fitness routine?",
 		minAge = 60, maxAge = 95,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "senior",
 		category = "health",
@@ -482,7 +482,7 @@ SeniorExpanded.events = {
 		question = "How do you address memory concerns?",
 		minAge = 65, maxAge = 100,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "senior",
 		category = "health",
@@ -582,7 +582,7 @@ SeniorExpanded.events = {
 		question = "What's happening in your love life?",
 		minAge = 60, maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresSingle = true,
 		stage = STAGE,
 		ageBand = "senior",
@@ -649,7 +649,7 @@ SeniorExpanded.events = {
 		question = "How does the family reunion go?",
 		minAge = 60, maxAge = 100,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "senior",
 		category = "family",
@@ -722,7 +722,7 @@ SeniorExpanded.events = {
 		question = "How do you feel about your life?",
 		minAge = 70, maxAge = 100,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "senior",
 		category = "reflection",
@@ -743,7 +743,7 @@ SeniorExpanded.events = {
 		question = "What wisdom do you share?",
 		minAge = 70, maxAge = 100,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "senior",
 		category = "legacy",
@@ -765,7 +765,7 @@ SeniorExpanded.events = {
 		question = "What's on your bucket list?",
 		minAge = 65, maxAge = 95,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "senior",
 		category = "experiences",
@@ -841,7 +841,7 @@ SeniorExpanded.events = {
 		question = "How do you handle modern technology?",
 		minAge = 65, maxAge = 100,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "senior",
 		category = "challenges",
@@ -892,7 +892,7 @@ SeniorExpanded.events = {
 		question = "What does a typical day look like?",
 		minAge = 62, maxAge = 100,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "senior",
 		category = "lifestyle",
@@ -913,7 +913,7 @@ SeniorExpanded.events = {
 		question = "How do you handle the scam attempt?",
 		minAge = 60, maxAge = 100,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "senior",
 		category = "challenges",

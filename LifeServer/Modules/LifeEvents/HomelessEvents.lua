@@ -330,7 +330,7 @@ events[#events + 1] = {
 	question = "How do you handle this?",
 	minAge = 18, maxAge = 75,
 	baseChance = 0.5,
-	cooldown = 2,
+	cooldown = 3, -- CRITICAL FIX: Increased from 2
 	requiresFlags = { homeless = true },
 	blockedByFlags = { in_prison = true },
 	
@@ -396,7 +396,7 @@ events[#events + 1] = {
 	question = "How do you stay safe?",
 	minAge = 18, maxAge = 80,
 	baseChance = 0.6,
-	cooldown = 2,
+	cooldown = 3, -- CRITICAL FIX: Increased from 2
 	requiresFlags = { homeless = true },
 	blockedByFlags = { in_prison = true },
 	textVariants = {
@@ -478,7 +478,7 @@ events[#events + 1] = {
 	question = "How do you respond?",
 	minAge = 18, maxAge = 80,
 	baseChance = 0.6,
-	cooldown = 2,
+	cooldown = 3, -- CRITICAL FIX: Increased from 2
 	requiresFlags = { homeless = true },
 	blockedByFlags = { in_prison = true },
 	
@@ -790,7 +790,7 @@ events[#events + 1] = {
 	question = "What do you do?",
 	minAge = 18, maxAge = 80,
 	baseChance = 0.5,
-	cooldown = 2,
+	cooldown = 3, -- CRITICAL FIX: Increased from 2
 	requiresFlags = { homeless = true },
 	blockedByFlags = { in_prison = true },
 	
@@ -832,7 +832,7 @@ events[#events + 1] = {
 	question = "How do you handle this?",
 	minAge = 18, maxAge = 80,
 	baseChance = 0.55,
-	cooldown = 2,
+	cooldown = 3, -- CRITICAL FIX: Increased from 2
 	requiresFlags = { homeless = true },
 	blockedByFlags = { in_prison = true },
 	
@@ -1321,7 +1321,7 @@ events[#events + 1] = {
 	question = "How do you get clean?",
 	minAge = 18, maxAge = 80,
 	baseChance = 0.5,
-	cooldown = 2,
+	cooldown = 3, -- CRITICAL FIX: Increased from 2
 	requiresFlags = { homeless = true },
 	blockedByFlags = { in_prison = true },
 	

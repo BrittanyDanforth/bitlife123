@@ -20,7 +20,7 @@ LegalEvents.events = {
 		question = "How do you handle the legal aspects?",
 		minAge = 18, maxAge = 90,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "legal",
@@ -83,7 +83,7 @@ LegalEvents.events = {
 		question = "How do you handle the dispute?",
 		minAge = 18, maxAge = 80,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "legal",
@@ -137,7 +137,7 @@ LegalEvents.events = {
 		question = "How does your case go?",
 		minAge = 18, maxAge = 80,
 		baseChance = 0.32,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "legal",
@@ -242,7 +242,7 @@ LegalEvents.events = {
 		question = "What's the dispute about?",
 		minAge = 18, maxAge = 80,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "legal",
@@ -325,7 +325,7 @@ LegalEvents.events = {
 		question = "What's the workplace issue?",
 		minAge = 18, maxAge = 70,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "legal",
@@ -403,7 +403,7 @@ LegalEvents.events = {
 		question = "What's the neighbor issue?",
 		minAge = 20, maxAge = 90,
 		baseChance = 0.38,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "legal",
@@ -500,7 +500,7 @@ LegalEvents.events = {
 		question = "How do you handle the traffic violation?",
 		minAge = 16, maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "legal",

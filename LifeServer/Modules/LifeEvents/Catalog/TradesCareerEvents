@@ -97,7 +97,7 @@ TradesCareerEvents.events = {
 		weight = 12,
 		minAge = 18, maxAge = 60,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		requiresJobCategory = "trades",
 		blockedByFlags = { in_prison = true },
@@ -210,7 +210,7 @@ TradesCareerEvents.events = {
 		weight = 14,
 		minAge = 20, maxAge = 60,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		requiresJobId = { "electrician", "electrician_apprentice" },
 		blockedByFlags = { in_prison = true },
@@ -329,7 +329,7 @@ TradesCareerEvents.events = {
 		weight = 15,
 		minAge = 20, maxAge = 60,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		requiresJobId = { "plumber", "plumber_apprentice" },
 		blockedByFlags = { in_prison = true },
@@ -378,7 +378,7 @@ TradesCareerEvents.events = {
 		weight = 12,
 		minAge = 18, maxAge = 60,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		requiresJobId = { "plumber", "plumber_apprentice" },
 		blockedByFlags = { in_prison = true },
@@ -551,7 +551,7 @@ TradesCareerEvents.events = {
 		weight = 14,
 		minAge = 21, maxAge = 65,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		requiresJobId = { "truck_driver" },
 		blockedByFlags = { in_prison = true },

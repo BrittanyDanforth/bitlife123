@@ -20,7 +20,7 @@ TravelEvents.events = {
 		question = "Do you take the trip?",
 		minAge = 15, maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "travel",
@@ -100,7 +100,7 @@ TravelEvents.events = {
 		question = "What's your mountain adventure?",
 		minAge = 15, maxAge = 80,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "travel",
@@ -209,7 +209,7 @@ TravelEvents.events = {
 		question = "Where do you go?",
 		minAge = 18, maxAge = 80,
 		baseChance = 0.12,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "travel",
@@ -318,7 +318,7 @@ TravelEvents.events = {
 		question = "Hit the open road?",
 		minAge = 16, maxAge = 80,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "travel",
@@ -377,7 +377,7 @@ TravelEvents.events = {
 		question = "Set sail?",
 		minAge = 18, maxAge = 90,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "travel",
@@ -432,7 +432,7 @@ TravelEvents.events = {
 		question = "Go camping?",
 		minAge = 8, maxAge = 75,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "travel",
@@ -493,7 +493,7 @@ TravelEvents.events = {
 		question = "What happened?",
 		minAge = 15, maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "travel",
@@ -556,7 +556,7 @@ TravelEvents.events = {
 		question = "Try something thrilling?",
 		minAge = 16, maxAge = 70,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "adventure",
@@ -633,7 +633,7 @@ TravelEvents.events = {
 		question = "Go on a solo adventure?",
 		minAge = 18, maxAge = 75,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "travel",
@@ -688,7 +688,7 @@ TravelEvents.events = {
 		question = "How does the business trip go?",
 		minAge = 20, maxAge = 70,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "career",
@@ -729,7 +729,7 @@ TravelEvents.events = {
 		question = "Immerse yourself in another culture?",
 		minAge = 16, maxAge = 80,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "travel",

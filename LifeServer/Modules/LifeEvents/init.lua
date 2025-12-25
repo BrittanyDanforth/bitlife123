@@ -1305,16 +1305,16 @@ local function canEventTrigger(event, state)
 		-- CRITICAL FIX #SPAM-3: Increased cooldowns to reduce event spam
 		-- User complaint: "FIX SPAMMY LIFE EVENTS"
 		local categoryCooldowns = {
-			injury = 4,        -- At least 4 years between injury events (was 3)
-			illness = 3,       -- At least 3 years between illness events (was 2)
-			mental_health = 5, -- At least 5 years between mental health events (was 4)
-			disaster = 6,      -- At least 6 years between disasters (was 5)
-			crime = 3,         -- At least 3 years between crime events (was 2)
-			social_media = 4,  -- CRITICAL FIX: Prevent viral post spam (was 3)
-			celebrity = 3,     -- At least 3 years between celebrity events (was 2)
-			viral = 5,         -- At least 5 years between viral events (was 4)
-			fame = 3,          -- At least 3 years between fame events (was 2)
-			hater = 4,         -- At least 4 years between hater events (was 3)
+			injury = 5,        -- CRITICAL FIX #910: At least 5 years between injury events (was 4)
+			illness = 4,       -- CRITICAL FIX #911: At least 4 years between illness events (was 3)
+			mental_health = 6, -- CRITICAL FIX #912: At least 6 years between mental health events (was 5)
+			disaster = 8,      -- CRITICAL FIX #913: At least 8 years between disasters (was 6)
+			crime = 4,         -- CRITICAL FIX #914: At least 4 years between crime events (was 3)
+			social_media = 5,  -- CRITICAL FIX #915: Prevent viral post spam (was 4)
+			celebrity = 4,     -- CRITICAL FIX #916: At least 4 years between celebrity events (was 3)
+			viral = 6,         -- CRITICAL FIX #917: At least 6 years between viral events (was 5)
+			fame = 4,          -- CRITICAL FIX #918: At least 4 years between fame events (was 3)
+			hater = 5,         -- CRITICAL FIX #919: At least 5 years between hater events (was 4)
 			career_workplace = 5, -- CRITICAL FIX: At least 5 years between office drama events (was 4)
 			career_office = 5,    -- CRITICAL FIX: At least 5 years between office-specific events (was 4)
 			-- CRITICAL FIX: Fast food / service career events were spamming
@@ -1342,24 +1342,24 @@ local function canEventTrigger(event, state)
 			career_sports = 3,    -- At least 3 years between sports events (was 2)
 			career_influencer = 3, -- At least 3 years between influencer events (was 2)
 			career_streaming = 3,  -- At least 3 years between streaming events (was 2)
-			-- Life category cooldowns
-			family = 3,           -- At least 3 years between family events (was 2)
-			romance = 3,          -- At least 3 years between romance events (was 2)
-			friends = 3,          -- At least 3 years between friend events (was 2)
-			pets = 4,             -- At least 4 years between pet events (was 3)
-			hobbies = 3,          -- At least 3 years between hobby events (was 2)
-			travel = 3,           -- At least 3 years between travel events (was 2)
-			financial = 4,        -- At least 4 years between financial crisis events (was 3)
-			legal = 5,            -- At least 5 years between legal events (was 4)
-			housing = 4,          -- At least 4 years between housing events (was 3)
-			homeless = 3,         -- At least 3 years between homeless events (was 2)
-			-- NEW CATEGORY COOLDOWNS
-			consequence = 4,      -- At least 4 years between consequence/karma events
-			daily = 2,            -- At least 2 years between daily life events
-			experience = 3,       -- At least 3 years between life experience events
-			achievement = 4,      -- At least 4 years between achievement events
-			random = 2,           -- At least 2 years between random events
-			milestones = 3,       -- At least 3 years between milestone events
+			-- Life category cooldowns - CRITICAL FIX #920-930: Increased to reduce spam
+			family = 4,           -- CRITICAL FIX: At least 4 years between family events (was 3)
+			romance = 4,          -- CRITICAL FIX: At least 4 years between romance events (was 3)
+			friends = 4,          -- CRITICAL FIX: At least 4 years between friend events (was 3)
+			pets = 5,             -- CRITICAL FIX: At least 5 years between pet events (was 4)
+			hobbies = 4,          -- CRITICAL FIX: At least 4 years between hobby events (was 3)
+			travel = 4,           -- CRITICAL FIX: At least 4 years between travel events (was 3)
+			financial = 5,        -- CRITICAL FIX: At least 5 years between financial events (was 4)
+			legal = 6,            -- CRITICAL FIX: At least 6 years between legal events (was 5)
+			housing = 5,          -- CRITICAL FIX: At least 5 years between housing events (was 4)
+			homeless = 4,         -- CRITICAL FIX: At least 4 years between homeless events (was 3)
+			-- NEW CATEGORY COOLDOWNS - CRITICAL FIX #931-936
+			consequence = 5,      -- CRITICAL FIX: At least 5 years between consequence events (was 4)
+			daily = 3,            -- CRITICAL FIX: At least 3 years between daily life events (was 2)
+			experience = 4,       -- CRITICAL FIX: At least 4 years between life experience events (was 3)
+			achievement = 5,      -- CRITICAL FIX: At least 5 years between achievement events (was 4)
+			random = 3,           -- CRITICAL FIX: At least 3 years between random events (was 2)
+			milestones = 4,       -- CRITICAL FIX: At least 4 years between milestone events (was 3)
 		}
 		
 		local catCooldown = categoryCooldowns[eventCategory]

@@ -20,7 +20,7 @@ LifeChallenges.events = {
 		question = "How do you fight this battle?",
 		minAge = 16, maxAge = 80,
 		baseChance = 0.32,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",
@@ -88,7 +88,7 @@ LifeChallenges.events = {
 		question = "How do you handle this blow?",
 		minAge = 18, maxAge = 80,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "challenge",
@@ -163,7 +163,7 @@ LifeChallenges.events = {
 		question = "How do you deal with impostor syndrome?",
 		minAge = 18, maxAge = 70,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "mental_health",
@@ -249,7 +249,7 @@ LifeChallenges.events = {
 		question = "How do you recover from burnout?",
 		minAge = 20, maxAge = 70,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "wellness",
@@ -298,7 +298,7 @@ LifeChallenges.events = {
 		question = "How do you find yourself?",
 		minAge = 16, maxAge = 70,
 		baseChance = 0.38,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "psychology",
@@ -342,7 +342,7 @@ LifeChallenges.events = {
 		question = "How do you overcome the fear?",
 		minAge = 15, maxAge = 70,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "psychology",
@@ -384,7 +384,7 @@ LifeChallenges.events = {
 		question = "How do you fight loneliness?",
 		minAge = 15, maxAge = 100,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "mental_health",
@@ -426,7 +426,7 @@ LifeChallenges.events = {
 		question = "How do you deal with regret?",
 		minAge = 25, maxAge = 100,
 		baseChance = 0.38,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "psychology",
@@ -514,7 +514,7 @@ LifeChallenges.events = {
 		question = "How do you overcome perfectionism?",
 		minAge = 15, maxAge = 70,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "psychology",
@@ -597,7 +597,7 @@ LifeChallenges.events = {
 		question = "How do you set boundaries?",
 		minAge = 15, maxAge = 80,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "psychology",
@@ -638,7 +638,7 @@ LifeChallenges.events = {
 		question = "How do you work on trust?",
 		minAge = 16, maxAge = 80,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "psychology",

@@ -20,7 +20,7 @@ PetEvents.events = {
 		question = "Do you adopt a furry friend?",
 		minAge = 10, maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "pets",
@@ -125,7 +125,7 @@ PetEvents.events = {
 		question = "What do you do?",
 		minAge = 8, maxAge = 90,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "pets",
@@ -222,7 +222,7 @@ PetEvents.events = {
 		question = "How is training going?",
 		minAge = 10, maxAge = 80,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "pets",
@@ -270,7 +270,7 @@ PetEvents.events = {
 		question = "What do you do together?",
 		minAge = 5, maxAge = 100,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "pets",
@@ -350,7 +350,7 @@ PetEvents.events = {
 		question = "How does pet socialization go?",
 		minAge = 10, maxAge = 80,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "pets",
@@ -396,7 +396,7 @@ PetEvents.events = {
 		question = "How serious is it?",
 		minAge = 10, maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "pets",
@@ -453,7 +453,7 @@ PetEvents.events = {
 		question = "How do you handle their golden years?",
 		minAge = 25, maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "pets",
@@ -548,7 +548,7 @@ PetEvents.events = {
 		question = "Do you open your heart to a new pet?",
 		minAge = 10, maxAge = 90,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "pets",

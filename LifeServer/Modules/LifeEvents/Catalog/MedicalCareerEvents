@@ -27,7 +27,7 @@ MedicalCareerEvents.events = {
 		weight = 14,
 		minAge = 18, maxAge = 55,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		requiresJobId = { "emt" },
 		blockedByFlags = { in_prison = true },
@@ -94,7 +94,7 @@ MedicalCareerEvents.events = {
 		weight = 16,
 		minAge = 18, maxAge = 55,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		requiresJobId = { "emt" },
 		blockedByFlags = { in_prison = true },
@@ -221,7 +221,7 @@ MedicalCareerEvents.events = {
 		weight = 16,
 		minAge = 20, maxAge = 60,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		requiresJobId = { "nurse_lpn", "nurse_rn", "nurse_practitioner" },
 		blockedByFlags = { in_prison = true },
@@ -702,7 +702,7 @@ MedicalCareerEvents.events = {
 		weight = 14,
 		minAge = 28, maxAge = 65,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		requiresJobId = { "dentist" },
 		blockedByFlags = { in_prison = true },

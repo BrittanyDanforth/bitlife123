@@ -192,7 +192,7 @@ TechCareerEvents.events = {
 		weight = 20,
 		minAge = 22, maxAge = 60,
 		baseChance = 0.60,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = hasDevOpsJob,
 		blockedByFlags = { in_prison = true },
@@ -269,7 +269,7 @@ TechCareerEvents.events = {
 		weight = 16,
 		minAge = 22, maxAge = 60,
 		baseChance = 0.52,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = hasDevOpsJob,
 		blockedByFlags = { in_prison = true },
@@ -853,7 +853,7 @@ TechCareerEvents.events = {
 		weight = 16,
 		minAge = 18, maxAge = 55,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = hasTechJob,
 		blockedByFlags = { in_prison = true },
@@ -922,7 +922,7 @@ TechCareerEvents.events = {
 		weight = 14,
 		minAge = 18, maxAge = 60,
 		baseChance = 0.50,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = hasDevJob,
 		blockedByFlags = { in_prison = true },
@@ -1537,7 +1537,7 @@ TechCareerEvents.events = {
 		weight = 15,
 		minAge = 22, maxAge = 55,
 		baseChance = 0.50,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = hasTechJob,
 		blockedByFlags = { in_prison = true },

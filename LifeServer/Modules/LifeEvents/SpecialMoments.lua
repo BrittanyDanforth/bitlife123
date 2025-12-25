@@ -146,7 +146,7 @@ SpecialMoments.events = {
 		question = "How does the reconnection go?",
 		minAge = 20, maxAge = 100,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "relationships",
@@ -204,7 +204,7 @@ SpecialMoments.events = {
 		question = "What was your personal record?",
 		minAge = 10, maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "achievement",
@@ -225,7 +225,7 @@ SpecialMoments.events = {
 		question = "What was the kind act?",
 		minAge = 5, maxAge = 100,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "experience",
@@ -246,7 +246,7 @@ SpecialMoments.events = {
 		question = "What made today perfect?",
 		minAge = 5, maxAge = 100,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "experience",
@@ -266,7 +266,7 @@ SpecialMoments.events = {
 		question = "What wisdom did they share?",
 		minAge = 15, maxAge = 100,
 		baseChance = 0.38,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "growth",
@@ -307,7 +307,7 @@ SpecialMoments.events = {
 		question = "How do you handle the farewell?",
 		minAge = 10, maxAge = 100,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "experience",
@@ -431,7 +431,7 @@ SpecialMoments.events = {
 		question = "How do you feel after forgiving?",
 		minAge = 12, maxAge = 100,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "growth",
@@ -451,7 +451,7 @@ SpecialMoments.events = {
 		question = "How do you feel about being forgiven?",
 		minAge = 12, maxAge = 100,
 		baseChance = 0.32,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "growth",

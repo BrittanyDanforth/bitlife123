@@ -20,7 +20,7 @@ MiscEvents.events = {
 		question = "What did you find?",
 		minAge = 8, maxAge = 100,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "luck",
@@ -105,7 +105,7 @@ MiscEvents.events = {
 		question = "How does it affect you?",
 		minAge = 5, maxAge = 100,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "experience",
@@ -163,7 +163,7 @@ MiscEvents.events = {
 		question = "What's the coincidence?",
 		minAge = 10, maxAge = 100,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "experience",
@@ -184,7 +184,7 @@ MiscEvents.events = {
 		question = "Do you help?",
 		minAge = 12, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "kindness",
@@ -283,7 +283,7 @@ MiscEvents.events = {
 		question = "What memory did the smell bring back?",
 		minAge = 10, maxAge = 100,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "experience",
@@ -399,7 +399,7 @@ MiscEvents.events = {
 		question = "What do you do with your free day?",
 		minAge = 18, maxAge = 80,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "opportunity",
@@ -420,7 +420,7 @@ MiscEvents.events = {
 		question = "How do you process it?",
 		minAge = 10, maxAge = 100,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "experience",
@@ -440,7 +440,7 @@ MiscEvents.events = {
 		question = "How does the wrong number go?",
 		minAge = 12, maxAge = 100,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "experience",
@@ -479,7 +479,7 @@ MiscEvents.events = {
 		question = "What is it?",
 		minAge = 5, maxAge = 100,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "luck",
@@ -519,7 +519,7 @@ MiscEvents.events = {
 		question = "How do you handle being in the dark?",
 		minAge = 5, maxAge = 100,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "inconvenience",

@@ -62,7 +62,7 @@ LifeExperiences.events = {
 		question = "How did the encounter go?",
 		minAge = 10, maxAge = 90,
 		baseChance = 0.08,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "experience",
@@ -117,7 +117,7 @@ LifeExperiences.events = {
 		question = "How did you process this experience?",
 		minAge = 16, maxAge = 90,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "experience",
@@ -138,7 +138,7 @@ LifeExperiences.events = {
 		question = "What did you achieve?",
 		minAge = 18, maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "achievement",
@@ -220,7 +220,7 @@ LifeExperiences.events = {
 		question = "What made today perfect?",
 		minAge = 8, maxAge = 100,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "experience",
@@ -262,7 +262,7 @@ LifeExperiences.events = {
 		question = "What was the déjà vu like?",
 		minAge = 10, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "experience",
@@ -283,7 +283,7 @@ LifeExperiences.events = {
 		question = "What kind act did you do?",
 		minAge = 8, maxAge = 100,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "kindness",
@@ -304,7 +304,7 @@ LifeExperiences.events = {
 		question = "What was the awkward situation?",
 		minAge = 10, maxAge = 80,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "experience",
@@ -326,7 +326,7 @@ LifeExperiences.events = {
 		question = "What was the coincidence?",
 		minAge = 10, maxAge = 100,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "experience",
@@ -373,7 +373,7 @@ LifeExperiences.events = {
 		question = "How is your skill development going?",
 		minAge = 8, maxAge = 90,
 		baseChance = 0.555,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "growth",
@@ -435,7 +435,7 @@ LifeExperiences.events = {
 		question = "How do you experience this historic moment?",
 		minAge = 10, maxAge = 100,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "experience",
@@ -460,7 +460,7 @@ LifeExperiences.events = {
 		question = "What happened by accident?",
 		minAge = 15, maxAge = 80,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "luck",
@@ -481,7 +481,7 @@ LifeExperiences.events = {
 		question = "What did they say?",
 		minAge = 15, maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "growth",
@@ -502,7 +502,7 @@ LifeExperiences.events = {
 		question = "What went wrong?",
 		minAge = 10, maxAge = 90,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "misfortune",
@@ -591,7 +591,7 @@ LifeExperiences.events = {
 		question = "How did confronting the fear go?",
 		minAge = 10, maxAge = 80,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "growth",
@@ -659,7 +659,7 @@ LifeExperiences.events = {
 		question = "How do you handle existential thoughts?",
 		minAge = 14, maxAge = 100,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "psychology",
@@ -680,7 +680,7 @@ LifeExperiences.events = {
 		question = "What did you hear?",
 		minAge = 12, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "experience",
@@ -927,7 +927,7 @@ LifeExperiences.events = {
 		question = "How do you handle life as a fugitive?",
 		minAge = 18, maxAge = 80,
 		baseChance = 0.8,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "consequence",

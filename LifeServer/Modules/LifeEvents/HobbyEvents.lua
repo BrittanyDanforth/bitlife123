@@ -20,7 +20,7 @@ HobbyEvents.events = {
 		question = "How is your musical hobby going?",
 		minAge = 8, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "hobbies",
@@ -196,7 +196,7 @@ HobbyEvents.events = {
 		question = "How is your photography hobby?",
 		minAge = 12, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "hobbies",
@@ -431,7 +431,7 @@ HobbyEvents.events = {
 		question = "How is your gaming going?",
 		minAge = 8, maxAge = 80,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "hobbies",
@@ -484,7 +484,7 @@ HobbyEvents.events = {
 		question = "How is your collection growing?",
 		minAge = 10, maxAge = 100,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "hobbies",
@@ -578,7 +578,7 @@ HobbyEvents.events = {
 		question = "What are you reading?",
 		minAge = 8, maxAge = 100,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "hobbies",
@@ -599,7 +599,7 @@ HobbyEvents.events = {
 		question = "How does the project go?",
 		minAge = 15, maxAge = 85,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "hobbies",

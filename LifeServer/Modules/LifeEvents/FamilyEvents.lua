@@ -20,7 +20,7 @@ FamilyEvents.events = {
 		question = "What's the situation?",
 		minAge = 18, maxAge = 45,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "adult",
 		category = "family",
@@ -348,7 +348,7 @@ FamilyEvents.events = {
 		question = "Do you attend?",
 		minAge = 10, maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "family",
@@ -385,7 +385,7 @@ FamilyEvents.events = {
 		question = "What's the in-law situation?",
 		minAge = 20, maxAge = 80,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "adult",
 		category = "family",
@@ -427,7 +427,7 @@ FamilyEvents.events = {
 		question = "What's the sibling situation?",
 		minAge = 15, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "family",
@@ -465,7 +465,7 @@ FamilyEvents.events = {
 		question = "How do you handle their aging?",
 		minAge = 30, maxAge = 70,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "adult",
 		category = "family",

@@ -179,7 +179,7 @@ AthleteCareerEvents.events = {
 		weight = 16,
 		minAge = 18, maxAge = 45,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = hasAthleteJob,
 		blockedByFlags = { in_prison = true },
@@ -647,7 +647,7 @@ AthleteCareerEvents.events = {
 		weight = 12,
 		minAge = 18, maxAge = 45,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = hasAthleteJob,
 		blockedByFlags = { in_prison = true },
@@ -708,7 +708,7 @@ AthleteCareerEvents.events = {
 		weight = 14,
 		minAge = 18, maxAge = 40,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = hasAthleteJob,
 		blockedByFlags = { in_prison = true },
@@ -774,7 +774,7 @@ AthleteCareerEvents.events = {
 		weight = 12,
 		minAge = 18, maxAge = 50,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = hasAthleteJob,
 		blockedByFlags = { in_prison = true },
@@ -948,7 +948,7 @@ AthleteCareerEvents.events = {
 		weight = 14,
 		minAge = 18, maxAge = 40,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = hasAthleteJob,
 		blockedByFlags = { in_prison = true },
@@ -1070,7 +1070,7 @@ AthleteCareerEvents.events = {
 		weight = 12,
 		minAge = 18, maxAge = 40,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = hasAthleteJob,
 		blockedByFlags = { in_prison = true },

@@ -283,7 +283,7 @@ local events = {
 		maxAge = 25,
 		requiresJob = true,
 		requiresJobCategory = "racing",
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{
 				index = 1,
@@ -527,7 +527,7 @@ local events = {
 		maxAge = 50,
 		requiresJob = true,
 		requiresJobCategory = "racing",
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{
 				index = 1,
@@ -578,7 +578,7 @@ local events = {
 		minAge = 18,
 		maxAge = 50,
 		requiresFlags = { pro_racer = true },
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{
 				index = 1,
@@ -646,7 +646,7 @@ local events = {
 		maxAge = 45,
 		requiresJob = true,
 		requiresJobCategory = "racing",
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{
 				index = 1,

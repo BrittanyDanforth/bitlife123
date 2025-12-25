@@ -850,7 +850,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "📸",
 		text = "Paparazzi are following you everywhere! They're getting dangerously close.",
 		minFame = 30,
-		cooldown = 2, -- CRITICAL FIX: 2 year cooldown between paparazzi events
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam -- CRITICAL FIX: 2 year cooldown between paparazzi events
 		choices = {
 			{
 				text = "Smile and wave professionally",
@@ -890,7 +890,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "😍",
 		text = "A fan recognizes you and wants a photo and autograph!",
 		minFame = 20,
-		cooldown = 2, -- CRITICAL FIX: 2 year cooldown
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam -- CRITICAL FIX: 2 year cooldown
 		choices = {
 			{
 				text = "Happily oblige",
@@ -1232,7 +1232,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "📱",
 		text = "Something you did went incredibly viral! Millions of people have seen it.",
 		minFame = 15,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{
 				text = "Lean into the attention",
@@ -1287,7 +1287,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "⚡",
 		text = "Another celebrity publicly called you out!",
 		minFame = 35,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{
 				text = "Clap back hard",
@@ -1338,7 +1338,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🏆",
 		text = "You've been nominated for a major award!",
 		minFame = 55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{
 				text = "Campaign hard to win",
@@ -1368,7 +1368,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "😔",
 		text = "The constant spotlight is taking its toll.",
 		minFame = 50,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{
 				text = "Speak openly about struggles",
@@ -1480,7 +1480,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "📱",
 		text = "Something you did just went viral! Millions are watching, sharing, and talking about you.",
 		minFame = 20,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 5,
 		choices = {
 			{
@@ -1563,7 +1563,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🎪",
 		text = "You've been asked to host the biggest charity gala of the year. All eyes will be on you.",
 		minFame = 60,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		choices = {
 			{
@@ -1603,7 +1603,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🤝",
 		text = "One of the biggest names in entertainment wants to collaborate with you. This could change everything.",
 		minFame = 50,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 4,
 		choices = {
 			{
@@ -1639,7 +1639,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🎤",
 		text = "You've been invited to perform at the biggest award show of the year. Billions will be watching.",
 		minFame = 55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 5,
 		choices = {
 			{
@@ -1681,7 +1681,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🎙️",
 		text = "A popular podcast wants a deep-dive interview. No scripts, no edits. Just real conversation.",
 		minFame = 40,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 6,
 		choices = {
 			{
@@ -1720,7 +1720,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🎬",
 		text = "A major studio wants you for their next blockbuster. But the role requires a dramatic transformation.",
 		minFame = 55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		conditions = { blockedFlags = { retired = true } },
 		choices = {
@@ -1932,7 +1932,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "📰",
 		text = "A major tabloid printed completely false stories about you. The lies are spreading everywhere.",
 		minFame = 35,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 5,
 		choices = {
 			{
@@ -1974,7 +1974,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "👋",
 		text = "Your fans organized a massive meetup hoping you'd show. Word got back to your team.",
 		minFame = 45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 8,
 		choices = {
 			{
@@ -2012,7 +2012,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🌟",
 		text = "A young rising star wants you to mentor them. You could shape the next generation.",
 		minFame = 60,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		choices = {
 			{
@@ -2079,7 +2079,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🎬",
 		text = "It's the world premiere of your biggest movie! The red carpet stretches endlessly.",
 		minFame = 50,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 8,
 		choices = {
 			{
@@ -2189,7 +2189,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🎪",
 		text = "Your PR team proposes an outrageous publicity stunt. It's risky but could get massive attention.",
 		minFame = 35,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 4,
 		choices = {
 			{
@@ -2257,7 +2257,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🔥",
 		text = "Another celebrity made shady comments about you. The internet is waiting for your response.",
 		minFame = 45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 4,
 		choices = {
 			{
@@ -2503,7 +2503,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🏟️",
 		text = "Your arena show sold out in minutes! Fans are reselling tickets for insane prices.",
 		minFame = 60,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 5,
 		choices = {
 			{
@@ -2537,7 +2537,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "📱",
 		text = "Something you posted online is causing a massive controversy! Your mentions are on fire.",
 		minFame = 35,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 5,
 		choices = {
 			{
@@ -2610,7 +2610,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "📰",
 		text = "A prestigious magazine wants you on their cover with an exclusive interview.",
 		minFame = 45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 8,
 		choices = {
 			{
@@ -4325,7 +4325,7 @@ local FamePathEvents = {
 		minAge = 13,
 		maxAge = 30,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		conditions = { requiresFlags = { pursuing_fame = true } },
 		choices = {
 			{
@@ -4627,7 +4627,7 @@ local ExclusivePremiumCelebrityEvents = {
 		minAge = 18,
 		maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		isCelebrityOnly = true,
 		conditions = { 
 			requiresFlags = { celebrity_career_chosen = true },
@@ -4781,7 +4781,7 @@ local ExclusivePremiumCelebrityEvents = {
 		minAge = 18,
 		maxAge = 80,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		isCelebrityOnly = true,
 		conditions = { 
 			requiresFlags = { celebrity_career_chosen = true },
@@ -4945,7 +4945,7 @@ local ExclusivePremiumCelebrityEvents = {
 		minAge = 21,
 		maxAge = 70,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		isCelebrityOnly = true,
 		conditions = { 
 			requiresFlags = { celebrity_career_chosen = true },
@@ -4987,7 +4987,7 @@ local ExclusivePremiumCelebrityEvents = {
 		minAge = 16,
 		maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		isCelebrityOnly = true,
 		conditions = { requiresFlags = { celebrity_career_chosen = true } },
 		choices = {

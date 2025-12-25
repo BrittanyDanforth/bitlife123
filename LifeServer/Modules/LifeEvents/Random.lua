@@ -42,7 +42,7 @@ Random.events = {
 		question = "How do you scratch it?",
 		minAge = 18, maxAge = 90,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		-- CRITICAL FIX: Can't gamble from prison!
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		-- CRITICAL FIX: Random outcome instead of player picking result
@@ -191,7 +191,7 @@ Random.events = {
 		question = "Do you seek medical attention?",
 		minAge = 5, maxAge = 80,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "random", -- CRITICAL FIX: Added explicit category
 		-- CRITICAL FIX: Can't have accidents in prison (different event set)
 		blockedByFlags = { in_prison = true, incarcerated = true },
@@ -262,7 +262,7 @@ Random.events = {
 		question = "How do you handle it?",
 		minAge = 16, maxAge = 90,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { has_car = true },
 		-- CRITICAL FIX: Can't have car trouble in prison!
 		blockedByFlags = { in_prison = true, incarcerated = true },
@@ -438,7 +438,7 @@ Random.events = {
 		question = "What do you do?",
 		minAge = 12, maxAge = 80,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		-- CRITICAL FIX #6: Can't lose phone in prison (no phones!)
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		choices = {
@@ -520,7 +520,7 @@ Random.events = {
 		question = "How do you handle being sick?",
 		minAge = 3, maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Rest up properly", effects = { Health = 3, Happiness = -2 }, feedText = "You took care of yourself." },
 			{ text = "Push through it", effects = { Health = -3, Happiness = -3 }, feedText = "You kept going. Probably not wise." },
@@ -556,7 +556,7 @@ Random.events = {
 		question = "What do you do?",
 		minAge = 10, maxAge = 80,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Ask for a selfie", effects = { Happiness = 10 }, feedText = "You got a photo with a celebrity!" },
 			{ text = "Play it cool", effects = { Happiness = 5, Smarts = 2 }, feedText = "You acted casual. Smooth." },
@@ -572,7 +572,7 @@ Random.events = {
 		question = "How did it make you feel?",
 		minAge = 5, maxAge = 90,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Restored faith in humanity", effects = { Happiness = 10 }, feedText = "People can be so good!" },
 			{ text = "Inspired to pay it forward", effects = { Happiness = 8 }, setFlags = { pays_it_forward = true }, feedText = "You'll do the same for someone else!" },
@@ -587,7 +587,7 @@ Random.events = {
 		question = "How do you handle it?",
 		minAge = 10, maxAge = 80,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Laugh it off", effects = { Happiness = 5 }, setFlags = { good_sport = true }, feedText = "You laughed at yourself. Best approach!" },
 			{ text = "Die of embarrassment", effects = { Happiness = -5 }, feedText = "You wanted to disappear." },
@@ -609,7 +609,7 @@ Random.events = {
 		question = "How do you handle it?",
 		minAge = 5, maxAge = 90,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ 
 				text = "Make the most of it", 
@@ -731,7 +731,7 @@ Random.events = {
 		question = "How do you handle the attention?",
 		minAge = 13, maxAge = 60,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		-- CRITICAL FIX #604: Viral events REQUIRE player to have actually posted content!
@@ -794,7 +794,7 @@ Random.events = {
 		question = "How did it feel?",
 		minAge = 12, maxAge = 90,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Incredibly rewarding", effects = { Happiness = 10 }, setFlags = { volunteer = true, community_minded = true }, feedText = "Helping others filled your heart." },
 			{ text = "Eye-opening experience", effects = { Happiness = 5, Smarts = 3 }, setFlags = { volunteer = true }, feedText = "You gained perspective." },
@@ -813,7 +813,7 @@ Random.events = {
 		question = "Do you go to the hospital?",
 		minAge = 3, maxAge = 85,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "injury",
 		-- CRITICAL FIX: Random injury location/severity
 		choices = {
@@ -903,7 +903,7 @@ Random.events = {
 		question = "How do you respond?",
 		minAge = 6, maxAge = 60,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "injury",
 		-- CRITICAL FIX: Random injury type and severity
 		choices = {
@@ -997,7 +997,7 @@ Random.events = {
 		question = "The ambulance arrives. What do you do?",
 		minAge = 16, maxAge = 90,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "injury",
 		-- CRITICAL FIX #1: MUST have a car to get in a car accident!
 		requiresFlags = { has_car = true },
@@ -1108,7 +1108,7 @@ Random.events = {
 		question = "How do you handle it?",
 		minAge = 16, maxAge = 70,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "injury",
 		requiresJob = true,
 
@@ -1179,7 +1179,7 @@ Random.events = {
 		question = "What do you do?",
 		minAge = 3, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "injury",
 
 		choices = {
@@ -1247,7 +1247,7 @@ Random.events = {
 		question = "What do you do?",
 		minAge = 12, maxAge = 80,
 		baseChance = 0.32,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "injury",
 		blockedByFlags = { in_prison = true },
 
@@ -1371,7 +1371,7 @@ Random.events = {
 		question = "The driver is approaching your car aggressively...",
 		minAge = 16, maxAge = 80,
 		baseChance = 0.25,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "confrontation",
 		blockedByFlags = { in_prison = true },
 		-- CRITICAL FIX: Eligibility check for vehicle ownership - can't have road rage without a car!
@@ -1510,7 +1510,7 @@ Random.events = {
 		question = "How do you react?",
 		minAge = 3, maxAge = 85,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "injury",
 		choices = {
 			{
@@ -1605,7 +1605,7 @@ Random.events = {
 		question = "How do you deal with it?",
 		minAge = 3, maxAge = 90,
 		baseChance = 0.555,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "illness",
 
 		choices = {
@@ -1688,7 +1688,7 @@ Random.events = {
 		question = "How do you handle it?",
 		minAge = 5, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "illness",
 
 		choices = {
@@ -1957,7 +1957,7 @@ Random.events = {
 		question = "How's the recovery going?",
 		minAge = 5, maxAge = 90,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { hospitalized = true },
 		category = "recovery",
 
@@ -2073,7 +2073,7 @@ Random.events = {
 		question = "What kind of pet?",
 		minAge = 10, maxAge = 80,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		choices = {
 			{ text = "Adopt a dog", effects = { Happiness = 15, Money = -500, Health = 3 }, setFlags = { has_pet = true, has_dog = true }, feedText = "You adopted a dog! Best friend for life." },
@@ -2416,7 +2416,7 @@ Random.events = {
 		question = "How do you respond?",
 		minAge = 16, maxAge = 90,
 		baseChance = 0.38,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{
 				text = "Investigate it - could be legit!",
@@ -2480,7 +2480,7 @@ Random.events = {
 		question = "Do you want to explore this talent?",
 		minAge = 8, maxAge = 70,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{
 				text = "Absolutely! Show me what I've got!",
@@ -2536,7 +2536,7 @@ Random.events = {
 		question = "What was your lucky break?",
 		minAge = 10, maxAge = 90,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		choices = {
 			{ text = "Found a valuable item", effects = { Money = 2000, Happiness = 10 }, feedText = "You found something valuable! What luck!" },
@@ -2617,7 +2617,7 @@ Random.events = {
 		question = "What do you do?",
 		minAge = 18, maxAge = 80,
 		baseChance = 0.8, -- High chance if triggered
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		-- CRITICAL FIX: Only triggers for people with bum_life flag AND low money
 		-- This prevents rich players from getting eviction notices!
 		requiresFlags = { bum_life = true },
@@ -2806,7 +2806,7 @@ Random.events = {
 		minAge = 18,
 		maxAge = 55,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresNoJob = true, -- Only for unemployed
 		blockedByFlags = { in_prison = true },
 		
@@ -3196,7 +3196,7 @@ Random.events = {
 		minAge = 10,
 		maxAge = 80,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -3401,7 +3401,7 @@ Random.events = {
 		minAge = 10,
 		maxAge = 80,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -3491,7 +3491,7 @@ Random.events = {
 		minAge = 16,
 		maxAge = 90,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		blockedByFlags = { in_prison = true },
 		requiresFlags = { has_vehicle = true },
 		
@@ -3709,7 +3709,7 @@ Random.events = {
 		minAge = 18,
 		maxAge = 65,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		blockedByFlags = { in_prison = true },
 		requiresFlags = { has_vehicle = true },
 		
@@ -3838,7 +3838,7 @@ Random.events = {
 		minAge = 16,
 		maxAge = 90,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		blockedByFlags = { in_prison = true },
 		requiresFlags = { has_vehicle = true },
 		
@@ -4049,7 +4049,7 @@ Random.events = {
 		minAge = 16,
 		maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		blockedByFlags = { in_prison = true },
 		requiresFlags = { has_vehicle = true },
 		

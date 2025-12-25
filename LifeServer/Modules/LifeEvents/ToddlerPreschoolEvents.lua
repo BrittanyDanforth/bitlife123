@@ -27,7 +27,7 @@ events[#events + 1] = {
 	question = "How did the other kids react?",
 	minAge = 3, maxAge = 6,
 	baseChance = 0.6,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	category = "childhood",
 
 	choices = {
@@ -98,7 +98,7 @@ events[#events + 1] = {
 	question = "What do you do?",
 	minAge = 3, maxAge = 6,
 	baseChance = 0.5,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	category = "childhood",
 
 	choices = {
@@ -248,7 +248,7 @@ events[#events + 1] = {
 	question = "What happened when you got there?",
 	minAge = 4, maxAge = 6,
 	baseChance = 0.5,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	category = "childhood",
 
 	choices = {
@@ -411,7 +411,7 @@ events[#events + 1] = {
 	question = "What do you do?",
 	minAge = 3, maxAge = 5,
 	baseChance = 0.7,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	category = "childhood",
 
 	choices = {
@@ -644,7 +644,7 @@ events[#events + 1] = {
 	question = "Do you share?",
 	minAge = 3, maxAge = 5,
 	baseChance = 0.7,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	category = "childhood",
 
 	choices = {
@@ -871,7 +871,7 @@ events[#events + 1] = {
 	question = "What do you do about lunch?",
 	minAge = 4, maxAge = 6,
 	baseChance = 0.5,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	category = "childhood",
 
 	choices = {
@@ -954,7 +954,7 @@ events[#events + 1] = {
 	question = "What happens?",
 	minAge = 3, maxAge = 6,
 	baseChance = 0.6,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	category = "childhood",
 
 	choices = {
@@ -1015,7 +1015,7 @@ events[#events + 1] = {
 	question = "How bad was the tantrum?",
 	minAge = 3, maxAge = 5,
 	baseChance = 0.6,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	category = "childhood",
 
 	choices = {
@@ -1212,7 +1212,7 @@ events[#events + 1] = {
 	question = "What do you create?",
 	minAge = 3, maxAge = 6,
 	baseChance = 0.7,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	category = "childhood",
 
 	choices = {
@@ -1353,7 +1353,7 @@ events[#events + 1] = {
 	question = "How do you feel?",
 	minAge = 3, maxAge = 6,
 	baseChance = 0.5,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	category = "childhood",
 
 	choices = {

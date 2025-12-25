@@ -805,7 +805,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 8,
 		maxAge = 14,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		-- CRITICAL FIX #43: Eligibility for tutor events
 		eligibility = function(state) return isActiveRoyal(state) end,
 		choices = {
@@ -881,7 +881,7 @@ RoyaltyEvents.LifeEvents = {
 		maxAge = 17,
 		isRoyalOnly = true,
 		requiresFlags = { in_boarding_school = true },
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		-- CRITICAL FIX #45: Eligibility for school events
 		eligibility = function(state) return isActiveRoyal(state) end,
 		choices = {
@@ -923,7 +923,7 @@ RoyaltyEvents.LifeEvents = {
 		maxAge = 19,
 		isRoyalOnly = true,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		-- CRITICAL FIX #46: Eligibility for teen scandal events
 		eligibility = function(state) return isActiveRoyal(state) end,
 		choices = {
@@ -2029,7 +2029,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 21,
 		maxAge = 70,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		choices = {
 			{
@@ -2102,7 +2102,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 70,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		choices = {
 			{
@@ -2226,7 +2226,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 21,
 		maxAge = 75,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 5,
 		choices = {
 			{
@@ -2294,7 +2294,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 80,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Issue dignified denial", effects = { Happiness = -10 }, royaltyEffect = { popularity = -5, scandals = 1 }, feed = "Your denial was measured." },
 			{ text = "Sue for defamation", effects = { Happiness = -15, Money = -500000 }, royaltyEffect = { popularity = -3, scandals = 1 }, feed = "You took legal action." },
@@ -2381,7 +2381,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 25,
 		maxAge = 90,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Mental health", effects = { Happiness = 15, Money = -2000000 }, royaltyEffect = { popularity = 20 }, feed = "Your campaign saved lives!" },
 			{ text = "Environment", effects = { Happiness = 12, Money = -3000000 }, royaltyEffect = { popularity = 18 }, feed = "You're protecting the planet!" },
@@ -2419,7 +2419,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 80,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		baseChance = 0.55,
 		choices = {
 			{ text = "Sue the tabloid for defamation", effects = { Happiness = -5, Money = -500000 }, royaltyEffect = { popularity = 5 }, feed = "You fought back legally!" },
@@ -2436,7 +2436,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 25,
 		maxAge = 90,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{
 				text = "Invest in sustainable energy",
@@ -2491,7 +2491,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 10,
 		maxAge = 80,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "The pet stays - hire more staff", effects = { Happiness = 10, Money = -50000 }, feed = "Your loyalty to your pet is admirable!" },
 			{ text = "Get professional training", effects = { Happiness = 5, Money = -20000 }, feed = "Your pet is now palace-worthy." },
@@ -2541,7 +2541,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 12, -- CRITICAL FIX #323: Was 5, now 12 - babies shouldn't wave to crowds independently
 		maxAge = 100,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Wave enthusiastically and blow kisses", effects = { Happiness = 12 }, royaltyEffect = { popularity = 10 }, feed = "The crowd went wild!" },
 			{ text = "Maintain dignified composure", effects = { Happiness = 5 }, royaltyEffect = { popularity = 5 }, feed = "Regal and refined as always." },
@@ -2573,7 +2573,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 16,
 		maxAge = 75,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Lead the traditional hunt", effects = { Health = 5, Happiness = 8 }, royaltyEffect = { popularity = -10 }, feed = "Traditionalists approved, activists didn't." },
 			{ text = "Convert it to a photography safari", effects = { Happiness = 10, Smarts = 3 }, royaltyEffect = { popularity = 15 }, feed = "Modern and environmentally conscious!" },
@@ -2636,7 +2636,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 20,
 		maxAge = 45,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 4,
 		conditions = { 
 			requiresFlags = { married = true },
@@ -2658,7 +2658,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 16,
 		maxAge = 85,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 5,
 		choices = {
 			{ text = "Roll up sleeves and help personally", effects = { Happiness = 15, Health = -5 }, royaltyEffect = { popularity = 30 }, setFlags = { hands_on_royal = true }, feed = "Photos of you helping went viral!" },
@@ -2715,7 +2715,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 16,
 		maxAge = 60,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		conditions = { blockedFlags = { only_child = true } },
 		choices = {
@@ -2975,7 +2975,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 10,
 		maxAge = 90,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		choices = {
 			{ text = "Feature them in official photos", effects = { Happiness = 15 }, royaltyEffect = { popularity = 12 }, setFlags = { pet_parent = true }, feed = "The nation has a new favorite royal pet!" },
@@ -4499,7 +4499,7 @@ RoyaltyEvents.RoyalEducationEvents = {
 		minAge = 14,
 		maxAge = 17,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		conditions = { requiresFlags = { in_boarding_school = true } },
 		choices = {
 			{
@@ -4790,7 +4790,7 @@ RoyaltyEvents.ExpandedRoyalEvents = {
 		minAge = 21,
 		maxAge = 70,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		conditions = { requiresFlags = { is_royalty = true, royal_adult = true } },
 		choices = {
 			{

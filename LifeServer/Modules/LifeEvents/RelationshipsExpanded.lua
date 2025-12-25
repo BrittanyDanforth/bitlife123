@@ -20,7 +20,7 @@ RelationshipsExpanded.events = {
 		question = "Do you pursue this connection?",
 		minAge = 16, maxAge = 70,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresSingle = true,
 		stage = STAGE,
 		ageBand = "any",
@@ -107,7 +107,7 @@ RelationshipsExpanded.events = {
 		question = "Pick the perfect date activity.",
 		minAge = 18, maxAge = 70,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresPartner = true,
 		stage = STAGE,
 		ageBand = "adult",
@@ -167,7 +167,7 @@ RelationshipsExpanded.events = {
 		question = "How does meeting the family go?",
 		minAge = 18, maxAge = 60,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresPartner = true,
 		stage = STAGE,
 		ageBand = "adult",
@@ -250,7 +250,7 @@ RelationshipsExpanded.events = {
 		question = "How do you handle the jealousy?",
 		minAge = 16, maxAge = 70,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresPartner = true,
 		stage = STAGE,
 		ageBand = "adult",
@@ -272,7 +272,7 @@ RelationshipsExpanded.events = {
 		question = "Can your relationship survive the distance?",
 		minAge = 18, maxAge = 55,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresPartner = true,
 		stage = STAGE,
 		ageBand = "adult",
@@ -319,7 +319,7 @@ RelationshipsExpanded.events = {
 		question = "What do you do?",
 		minAge = 22, maxAge = 50,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresPartner = true,
 		stage = STAGE,
 		ageBand = "adult",
@@ -354,7 +354,7 @@ RelationshipsExpanded.events = {
 		question = "How do you propose?",
 		minAge = 20, maxAge = 60,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresPartner = true,
 		blockedByFlags = { engaged = true, married = true },
 		stage = STAGE,
@@ -494,7 +494,7 @@ RelationshipsExpanded.events = {
 		question = "How do you handle the betrayal?",
 		minAge = 13, maxAge = 80,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "conflict",
@@ -682,7 +682,7 @@ RelationshipsExpanded.events = {
 		question = "How do you handle wanting parental approval?",
 		minAge = 15, maxAge = 50,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "family",
@@ -714,7 +714,7 @@ RelationshipsExpanded.events = {
 		question = "How do you handle sibling rivalry now?",
 		minAge = 22, maxAge = 60,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "adult",
 		category = "family",
@@ -737,7 +737,7 @@ RelationshipsExpanded.events = {
 		question = "How does the family gathering go?",
 		minAge = 8, maxAge = 90,
 		baseChance = 0.555,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "family",
@@ -805,7 +805,7 @@ RelationshipsExpanded.events = {
 		question = "How do you approach caregiving?",
 		minAge = 35, maxAge = 70,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "adult",
 		category = "family",
@@ -952,7 +952,7 @@ RelationshipsExpanded.events = {
 		question = "How do you deal with the toxic person?",
 		minAge = 15, maxAge = 80,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "conflict",
@@ -973,7 +973,7 @@ RelationshipsExpanded.events = {
 		question = "How do you handle social comparison?",
 		minAge = 13, maxAge = 50,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "psychology",
@@ -1029,7 +1029,7 @@ RelationshipsExpanded.events = {
 		question = "How do you handle your reputation being challenged?",
 		minAge = 14, maxAge = 70,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "social",
@@ -1296,7 +1296,7 @@ RelationshipsExpanded.events = {
 		question = "This is your chance to meet royalty!",
 		minAge = 21, maxAge = 45,
 		baseChance = 0.03, -- 3% chance per year
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresSingle = true,
 		stage = STAGE,
 		ageBand = "adult",

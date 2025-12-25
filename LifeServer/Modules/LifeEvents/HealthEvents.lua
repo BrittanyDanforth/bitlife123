@@ -29,7 +29,7 @@ HealthEvents.events = {
 		question = "What's wrong?",
 		minAge = 3, maxAge = 100,
 		baseChance = 0.555,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",
@@ -91,7 +91,7 @@ HealthEvents.events = {
 		question = "How bad is it?",
 		minAge = 5, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",
@@ -158,7 +158,7 @@ HealthEvents.events = {
 		question = "What do the results show?",
 		minAge = 18, maxAge = 100,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",
@@ -242,7 +242,7 @@ HealthEvents.events = {
 		question = "How are your teeth?",
 		minAge = 5, maxAge = 100,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",
@@ -351,7 +351,7 @@ HealthEvents.events = {
 		question = "How do you approach weight management?",
 		minAge = 14, maxAge = 90,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",
@@ -481,7 +481,7 @@ HealthEvents.events = {
 		question = "What do you do?",
 		minAge = 12, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "mental_health",
@@ -560,7 +560,7 @@ HealthEvents.events = {
 		question = "How is therapy going?",
 		minAge = 14, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "mental_health",
@@ -705,7 +705,7 @@ HealthEvents.events = {
 		question = "What kind of dreams?",
 		minAge = 8, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "experience",
@@ -730,7 +730,7 @@ HealthEvents.events = {
 		question = "What changes do you make?",
 		minAge = 15, maxAge = 90,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "wellness",
@@ -829,7 +829,7 @@ HealthEvents.events = {
 		question = "What's your approach to healthy living?",
 		minAge = 18, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "wellness",
@@ -859,7 +859,7 @@ HealthEvents.events = {
 		question = "Looks like a cold or flu virus. What do you want to do?",
 		minAge = 3, maxAge = 100,
 		baseChance = 0.35,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",
@@ -1310,7 +1310,7 @@ HealthEvents.events = {
 		question = "Your diagnosis: BACTERIAL INFECTION\n\n🔬 Status: Positive\n⚠️ Type: Bacterial infection detected\n💊 Treatment: Antibiotics available\n🩺 Follow-up: Required\n\nRest and take your medicine!",
 		minAge = 5, maxAge = 90,
 		baseChance = 0.30,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",
@@ -1847,7 +1847,7 @@ HealthEvents.events[#HealthEvents.events + 1] = {
 	question = "The doctor reviews your treatment progress...",
 	minAge = 18, maxAge = 100,
 	baseChance = 0.55,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	stage = STAGE,
 	ageBand = "any",
 	category = "health",
@@ -1992,7 +1992,7 @@ HealthEvents.events[#HealthEvents.events + 1] = {
 	question = "How are you managing your diabetes?",
 	minAge = 18, maxAge = 100,
 	baseChance = 0.50,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	stage = STAGE,
 	ageBand = "any",
 	category = "health",

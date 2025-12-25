@@ -624,7 +624,7 @@ local events = {
 		category = "romance",
 		weight = 6,
 		minAge = 18,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresPartner = true,
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		choices = {
@@ -686,7 +686,7 @@ local events = {
 		weight = 5,
 		minAge = 16,
 		requiresPartner = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{
 				index = 1,

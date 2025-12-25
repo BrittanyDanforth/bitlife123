@@ -124,7 +124,7 @@ local events = {
 		weight = 5,
 		minAge = 13,
 		maxAge = 25,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		blockedByFlags = { in_prison = true },
 		choices = {
@@ -182,7 +182,7 @@ local events = {
 		weight = 4,
 		minAge = 16,
 		maxAge = 40,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 4,
 		blockedByFlags = { in_prison = true },
 		choices = {
@@ -235,7 +235,7 @@ local events = {
 		weight = 6,
 		minAge = 16,
 		maxAge = 45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 5,
 		blockedByFlags = { in_prison = true },
 		choices = {
@@ -349,7 +349,7 @@ local events = {
 		weight = 4,
 		minAge = 18,
 		maxAge = 50,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		blockedByFlags = { in_prison = true },
 		-- CRITICAL FIX: Only show this event when player is ACTUALLY broke!
@@ -469,7 +469,7 @@ local events = {
 		weight = 5,
 		minAge = 16,
 		maxAge = 40,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 4,
 		blockedByFlags = { in_prison = true },
 		choices = {
@@ -534,7 +534,7 @@ local events = {
 		weight = 4,
 		minAge = 18,
 		maxAge = 50,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		blockedByFlags = { in_prison = true },
 		choices = {
@@ -590,7 +590,7 @@ local events = {
 		category = "crime",
 		weight = 3,
 		minAge = 25,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		requiresJob = true,
 		blockedByFlags = { in_prison = true },
@@ -757,7 +757,7 @@ local events = {
 		weight = 4,
 		minAge = 16,
 		maxAge = 50,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		blockedByFlags = { in_prison = true },
 		choices = {
@@ -983,7 +983,7 @@ local events = {
 		weight = 3,
 		minAge = 18,
 		maxAge = 50,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 2,
 		blockedByFlags = { in_prison = true },
 		choices = {
@@ -1039,7 +1039,7 @@ local events = {
 		weight = 8,
 		minAge = 18,
 		maxAge = 65,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		isMafiaOnly = true,
 		conditions = { requiresFlags = { in_mob = true, mafia_gamepass = true } },
 		blockedByFlags = { in_prison = true },
@@ -1418,7 +1418,7 @@ local events = {
 		weight = 4,
 		minAge = 16,
 		maxAge = 45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		blockedByFlags = { in_prison = true },
 		choices = {
@@ -1491,7 +1491,7 @@ local events = {
 		weight = 4,
 		minAge = 18,
 		maxAge = 55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		blockedByFlags = { in_prison = true },
 		choices = {
@@ -1561,7 +1561,7 @@ local events = {
 		weight = 4,
 		minAge = 16,
 		maxAge = 50,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		blockedByFlags = { in_prison = true },
 		choices = {

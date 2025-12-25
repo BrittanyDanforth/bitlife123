@@ -69,7 +69,7 @@ local events = {
 		minAge = 21,
 		maxAge = 60,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		eligibility = isPoliceJob, -- CRITICAL FIX: Use job ID check instead of category,
 		blockedByFlags = { in_prison = true, suspended = true },
 		
@@ -680,7 +680,7 @@ local events = {
 		minAge = 22,
 		maxAge = 55,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		priority = "high",
 		isMilestone = true,
 		eligibility = function(state)
@@ -1327,7 +1327,7 @@ events[#events + 1] = {
 	minAge = 21,
 	maxAge = 50, -- Younger cops for foot chases
 	baseChance = 0.50,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	eligibility = isPoliceJob,
 	blockedByFlags = { in_prison = true, suspended = true },
 	

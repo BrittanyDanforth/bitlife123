@@ -47,7 +47,7 @@ EducationCareerEvents.events = {
 		weight = 18,
 		minAge = 22, maxAge = 65,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Added requiresJobCategory as PRIMARY check
 		requiresJobCategory = "education",
@@ -141,7 +141,7 @@ EducationCareerEvents.events = {
 		weight = 14,
 		minAge = 22, maxAge = 60,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = isTeacher,
 		blockedByFlags = { in_prison = true },
@@ -193,7 +193,7 @@ EducationCareerEvents.events = {
 		weight = 14,
 		minAge = 22, maxAge = 65,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = isTeacher,
 		blockedByFlags = { in_prison = true },
@@ -658,7 +658,7 @@ local CoachCareerEvents = {
 		weight = 16,
 		minAge = 25, maxAge = 65,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			if not state.CurrentJob then return false end
@@ -779,7 +779,7 @@ local CoachCareerEvents = {
 		weight = 15,
 		minAge = 25, maxAge = 65,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			if not state.CurrentJob then return false end
@@ -815,7 +815,7 @@ local CoachCareerEvents = {
 		weight = 16,
 		minAge = 25, maxAge = 65,
 		baseChance = 0.50,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			if not state.CurrentJob then return false end
@@ -927,7 +927,7 @@ table.insert(EducationCareerEvents, {
 	weight = 15,
 	minAge = 23, maxAge = 65,
 	baseChance = 0.55,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	eligibility = hasEducationJob,
 	blockedByFlags = { in_prison = true },
@@ -997,7 +997,7 @@ table.insert(EducationCareerEvents, {
 	weight = 14,
 	minAge = 23, maxAge = 65,
 	baseChance = 0.50,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	eligibility = hasEducationJob,
 	blockedByFlags = { in_prison = true },
@@ -1045,7 +1045,7 @@ table.insert(EducationCareerEvents, {
 	weight = 13,
 	minAge = 23, maxAge = 65,
 	baseChance = 0.45,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	eligibility = hasEducationJob,
 	blockedByFlags = { in_prison = true },

@@ -1152,6 +1152,44 @@ Milestones.events = {
 		category = "decade_birthday",
 		milestoneKey = "TURNING_40",
 		tags = { "birthday", "midlife", "reflection" },
+		
+		-- CRITICAL FIX #900: Dynamic text based on player's life at 40!
+		getDynamicText = function(state)
+			local money = state.Money or 0
+			local fame = state.Fame or 0
+			local health = (state.Stats and state.Stats.Health) or 50
+			local happiness = (state.Stats and state.Stats.Happiness) or 50
+			local hasJob = state.CurrentJob ~= nil
+			local flags = state.Flags or {}
+			
+			local baseText = "You're 40! "
+			
+			-- Life status assessment
+			if fame >= 70 then
+				baseText = baseText .. "The cameras flash as you celebrate - you're FAMOUS at 40! "
+			elseif money >= 1000000 then
+				baseText = baseText .. "Champagne toast on your yacht - you're a MILLIONAIRE at 40! "
+			elseif money >= 100000 then
+				baseText = baseText .. "You've built real wealth by 40. The hard work paid off! "
+			elseif flags.homeless then
+				baseText = baseText .. "No home, no party. This birthday hits different when you're on the streets. "
+			elseif flags.in_prison then
+				baseText = baseText .. "Spending your 40th behind bars. Plenty of time to reflect. "
+			elseif hasJob and state.CurrentJob.salary and state.CurrentJob.salary > 100000 then
+				baseText = baseText .. "Your corner office has a great view for this milestone! "
+			end
+			
+			-- Health status
+			if health >= 80 then
+				baseText = baseText .. "You're in peak shape - 40 looks GOOD on you!"
+			elseif health < 40 then
+				baseText = baseText .. "Your body's starting to remind you it's not 20 anymore..."
+			else
+				baseText = baseText .. "Midlife is officially here."
+			end
+			
+			return baseText
+		end,
 
 		choices = {
 			{ text = "Life begins at 40", effects = { Happiness = 10 }, feedText = "The best is yet to come!" },
@@ -1212,6 +1250,45 @@ Milestones.events = {
 		category = "decade_birthday",
 		milestoneKey = "TURNING_50",
 		tags = { "birthday", "aging", "reflection" },
+		
+		-- CRITICAL FIX #901: Dynamic text based on player's life at 50!
+		getDynamicText = function(state)
+			local money = state.Money or 0
+			local fame = state.Fame or 0
+			local health = (state.Stats and state.Stats.Health) or 50
+			local flags = state.Flags or {}
+			local jobHistory = state.JobHistory or {}
+			
+			local baseText = "HALF A CENTURY! "
+			
+			-- Legacy assessment
+			if fame >= 80 then
+				baseText = baseText .. "You're a LEGEND! 50 years and still on top! "
+			elseif money >= 5000000 then
+				baseText = baseText .. "50 and worth MILLIONS! Your empire stands tall! "
+			elseif money >= 500000 then
+				baseText = baseText .. "Retirement fund looking GOOD at 50! "
+			elseif flags.retired then
+				baseText = baseText .. "Already retired - living the dream early! "
+			elseif flags.homeless then
+				baseText = baseText .. "50 years... and nowhere to call home. Time for change. "
+			elseif #jobHistory >= 5 then
+				baseText = baseText .. "5 decades, " .. #jobHistory .. " careers! What a journey! "
+			end
+			
+			-- Family assessment
+			if flags.has_grandchildren or flags.grandparent then
+				baseText = baseText .. "The grandkids make this birthday extra special!"
+			elseif flags.married or flags.has_spouse then
+				baseText = baseText .. "Celebrating with your partner of many years!"
+			elseif health >= 75 then
+				baseText = baseText .. "Still feeling young and vibrant!"
+			else
+				baseText = baseText .. "Half a century of experiences behind you."
+			end
+			
+			return baseText
+		end,
 
 		choices = {
 			{ text = "Wiser and happier", effects = { Happiness = 10, Smarts = 3 }, feedText = "Age brings wisdom and contentment." },

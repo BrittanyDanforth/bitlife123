@@ -20,7 +20,7 @@ FinancialEvents.events = {
 		question = "Where did it come from?",
 		minAge = 18, maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "finance",
@@ -83,7 +83,7 @@ FinancialEvents.events = {
 		question = "What's the side hustle?",
 		minAge = 16, maxAge = 70,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "finance",
@@ -163,7 +163,7 @@ FinancialEvents.events = {
 		question = "Did you get a bonus?",
 		minAge = 18, maxAge = 70,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "career",
@@ -211,7 +211,7 @@ FinancialEvents.events = {
 		question = "What's the big cost?",
 		minAge = 18, maxAge = 90,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "finance",
@@ -351,7 +351,7 @@ FinancialEvents.events = {
 		question = "How do you approach savings?",
 		minAge = 20, maxAge = 70,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		oneTime = true,
 		stage = STAGE,
 		ageBand = "any",
@@ -384,7 +384,7 @@ FinancialEvents.events = {
 		question = "Do you invest?",
 		minAge = 18, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "investment",
@@ -507,7 +507,7 @@ FinancialEvents.events = {
 		question = "Do you invest in crypto?",
 		minAge = 18, maxAge = 70,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "investment",
@@ -648,7 +648,7 @@ FinancialEvents.events = {
 		question = "How do you approach retirement?",
 		minAge = 25, maxAge = 60,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "finance",
@@ -681,7 +681,7 @@ FinancialEvents.events = {
 		question = "What's the debt situation?",
 		minAge = 18, maxAge = 70,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "finance",
@@ -751,7 +751,7 @@ FinancialEvents.events = {
 		question = "How do you handle it?",
 		minAge = 18, maxAge = 80,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "finance",
@@ -879,7 +879,7 @@ FinancialEvents.events = {
 		question = "Do you gamble?",
 		minAge = 21, maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "gambling",
@@ -1013,7 +1013,7 @@ FinancialEvents.events = {
 		question = "Do you invest?",
 		minAge = 18, maxAge = 80,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "scam",
@@ -1066,7 +1066,7 @@ FinancialEvents.events = {
 		question = "How do you approach taxes?",
 		minAge = 18, maxAge = 90,
 		baseChance = 0.555,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "finance",
@@ -1325,7 +1325,7 @@ FinancialEvents.events[#FinancialEvents.events + 1] = {
 	question = "Your rent is due. What do you do?",
 	minAge = 18, maxAge = 75,
 	baseChance = 0.65,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	stage = "adult",
 	ageBand = "any",
 	category = "finance",

@@ -146,7 +146,7 @@ PremiumIntegratedEvents.events = {
 		question = "How do you handle the money troubles?",
 		minAge = 20, maxAge = 70,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		category = "finance",
 		tags = { "money", "crisis", "debt" },
@@ -666,7 +666,7 @@ PremiumIntegratedEvents.events = {
 		question = "How do you handle the family feud?",
 		minAge = 16, maxAge = 80,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		category = "family",
 		tags = { "family", "drama", "conflict" },
@@ -1091,7 +1091,7 @@ PremiumIntegratedEvents.events = {
 		question = "How do you approach the party?",
 		minAge = 21, maxAge = 55,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		category = "social",
 		tags = { "party", "networking", "social" },
@@ -1141,7 +1141,7 @@ PremiumIntegratedEvents.events = {
 		question = "Do you invest?",
 		minAge = 25, maxAge = 60,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		category = "finance",
 		tags = { "business", "investment", "opportunity" },
@@ -1306,7 +1306,7 @@ PremiumIntegratedEvents.events = {
 		question = "How do you handle the bully?",
 		minAge = 10, maxAge = 17,
 		baseChance = 0.555,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = "teen",
 		category = "teen",
 		tags = { "bully", "school", "conflict" },
@@ -1391,7 +1391,7 @@ PremiumIntegratedEvents.events = {
 		question = "Check your numbers?",
 		minAge = 18, maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		category = "luck",
 		tags = { "money", "luck", "gambling" },
@@ -1722,7 +1722,7 @@ PremiumIntegratedEvents.events = {
 		question = "How do you handle it?",
 		minAge = 20, maxAge = 70,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		category = "social",
 		tags = { "public", "speech", "confidence" },
@@ -1780,7 +1780,7 @@ PremiumIntegratedEvents.events = {
 		question = "What do you plan?",
 		minAge = 18, maxAge = 70,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		category = "relationships",
 		tags = { "romance", "love", "partner" },

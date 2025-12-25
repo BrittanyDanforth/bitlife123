@@ -93,7 +93,7 @@ ChildhoodExpanded.events = {
 		question = "What's your eating situation?",
 		minAge = 2, maxAge = 5,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "baby_toddler",
 		category = "behavior",
@@ -204,7 +204,7 @@ ChildhoodExpanded.events = {
 		question = "How bad is your separation anxiety?",
 		minAge = 1, maxAge = 4,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "baby_toddler",
 		category = "psychology",
@@ -352,7 +352,7 @@ ChildhoodExpanded.events = {
 		question = "How serious is it?",
 		minAge = 4, maxAge = 10,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "early_childhood",
 		category = "health",
@@ -398,7 +398,7 @@ ChildhoodExpanded.events = {
 		question = "How are you doing with pet duties?",
 		minAge = 5, maxAge = 12,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { has_pet = true },
 		stage = STAGE,
 		ageBand = "childhood",
@@ -445,7 +445,7 @@ ChildhoodExpanded.events = {
 		question = "What happened?",
 		minAge = 6, maxAge = 12,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "childhood",
 		category = "conflict",
@@ -571,7 +571,7 @@ ChildhoodExpanded.events = {
 		question = "What kind of sick?",
 		minAge = 4, maxAge = 12,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "childhood",
 		category = "health",
@@ -913,7 +913,7 @@ ChildhoodExpanded.events = {
 		question = "What do you do?",
 		minAge = 7, maxAge = 12,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "childhood",
 		category = "moral_development",
@@ -1022,7 +1022,7 @@ ChildhoodExpanded.events = {
 		question = "What is the award for?",
 		minAge = 6, maxAge = 12,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "childhood",
 		category = "achievement",
@@ -1064,7 +1064,7 @@ ChildhoodExpanded.events = {
 		question = "What's your bedtime situation?",
 		minAge = 4, maxAge = 10,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "childhood",
 		category = "routine",
@@ -1105,7 +1105,7 @@ ChildhoodExpanded.events = {
 		question = "What's your progress like?",
 		minAge = 6, maxAge = 12,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { musical = true },
 		stage = STAGE,
 		ageBand = "childhood",
@@ -1174,7 +1174,7 @@ ChildhoodExpanded.events = {
 		question = "How does it go?",
 		minAge = 5, maxAge = 12,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "childhood",
 		category = "skills",
@@ -1233,7 +1233,7 @@ ChildhoodExpanded.events = {
 		question = "How bad is the obsession?",
 		minAge = 6, maxAge = 12,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { gamer = true },
 		stage = STAGE,
 		ageBand = "childhood",

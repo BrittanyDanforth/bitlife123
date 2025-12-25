@@ -139,7 +139,7 @@ OfficeCareerEvents.events = {
 		question = "How do you survive?",
 		minAge = 18, maxAge = 70,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "career_office",
 		requiresJob = true,
 		-- CRITICAL FIX: Must have office job, not entertainment career
@@ -196,7 +196,7 @@ OfficeCareerEvents.events = {
 		question = "How do you handle it?",
 		minAge = 18, maxAge = 70,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "career_office",
 		requiresJob = true,
 		eligibility = hasOfficeJob,
@@ -321,7 +321,7 @@ OfficeCareerEvents.events = {
 		question = "What's for lunch?",
 		minAge = 18, maxAge = 70,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "career_office",
 		requiresJob = true,
 		eligibility = hasOfficeJob,
@@ -762,7 +762,7 @@ OfficeCareerEvents.events = {
 		question = "How do you survive?",
 		minAge = 22, maxAge = 65,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "career_finance",
 		requiresJob = true,
 		eligibility = function(state)

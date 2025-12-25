@@ -48,7 +48,7 @@ JobSpecificEvents.events = {
 		question = "How do you handle this angry customer?",
 		minAge = 14, maxAge = 30,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"entry", "service", "retail"})
@@ -110,7 +110,7 @@ JobSpecificEvents.events = {
 		question = "Do you cover for them?",
 		minAge = 14, maxAge = 30,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"entry", "service", "retail"})
@@ -148,7 +148,7 @@ JobSpecificEvents.events = {
 		question = "How big was it?",
 		minAge = 16, maxAge = 35,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Added requiresJobCategory as PRIMARY check
 		requiresJobCategory = { "service", "entry" },
@@ -195,7 +195,7 @@ JobSpecificEvents.events = {
 		question = "How do you handle the pressure?",
 		minAge = 16, maxAge = 40,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"service", "entry"})
@@ -342,7 +342,7 @@ JobSpecificEvents.events = {
 		question = "How do you approach the big project?",
 		minAge = 20, maxAge = 55,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Added requiresJobCategory as PRIMARY check
 		requiresJobCategory = { "trades", "construction" },
@@ -410,7 +410,7 @@ JobSpecificEvents.events = {
 		question = "How do you handle the apprentice?",
 		minAge = 25, maxAge = 60,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Added requiresJobCategory as PRIMARY check
 		requiresJobCategory = { "trades", "construction" },
@@ -437,7 +437,7 @@ JobSpecificEvents.events = {
 		question = "How does weather impact your work?",
 		minAge = 18, maxAge = 60,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"trades", "construction"})
@@ -461,7 +461,7 @@ JobSpecificEvents.events = {
 		question = "Do you pursue the certification?",
 		minAge = 20, maxAge = 50,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"trades", "construction"})
@@ -614,7 +614,7 @@ JobSpecificEvents.events = {
 		question = "What happens with your side project?",
 		minAge = 20, maxAge = 50,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"tech", "technology"})
@@ -783,7 +783,7 @@ JobSpecificEvents.events = {
 		question = "How do you respond to the code?",
 		minAge = 22, maxAge = 65,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Added requiresJobCategory as PRIMARY check
 		requiresJobCategory = { "medical", "healthcare" },
@@ -838,7 +838,7 @@ JobSpecificEvents.events = {
 		question = "Do you take the extra shift?",
 		minAge = 20, maxAge = 60,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Added requiresJobCategory as PRIMARY check
 		requiresJobCategory = { "medical", "healthcare" },
@@ -889,7 +889,7 @@ JobSpecificEvents.events = {
 		question = "What do you do about the potential error?",
 		minAge = 22, maxAge = 65,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"medical", "healthcare"})
@@ -949,7 +949,7 @@ JobSpecificEvents.events = {
 		question = "How does the breakthrough affect you?",
 		minAge = 24, maxAge = 65,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"medical", "healthcare"})
@@ -977,7 +977,7 @@ JobSpecificEvents.events = {
 		question = "How do you handle the high-pressure deal?",
 		minAge = 24, maxAge = 55,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"finance", "banking"})
@@ -1053,7 +1053,7 @@ JobSpecificEvents.events = {
 		question = "What do you do about the ethical concern?",
 		minAge = 24, maxAge = 55,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"finance", "banking"})
@@ -1119,7 +1119,7 @@ JobSpecificEvents.events = {
 		question = "How do you handle the market chaos?",
 		minAge = 24, maxAge = 55,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"finance", "banking"})
@@ -1163,7 +1163,7 @@ JobSpecificEvents.events = {
 		question = "How do you approach this opportunity?",
 		minAge = 18, maxAge = 50,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"creative", "entertainment", "media"})
@@ -1297,7 +1297,7 @@ JobSpecificEvents.events = {
 		question = "What happens with your viral content?",
 		minAge = 18, maxAge = 50,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"creative", "entertainment", "media"})
@@ -1348,7 +1348,7 @@ JobSpecificEvents.events = {
 		question = "Do you accept the collaboration?",
 		minAge = 18, maxAge = 55,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"creative", "entertainment", "media"})
@@ -1404,7 +1404,7 @@ JobSpecificEvents.events = {
 		question = "How do you handle the difficult student?",
 		minAge = 24, maxAge = 65,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"education", "teaching"})
@@ -1470,7 +1470,7 @@ JobSpecificEvents.events = {
 		question = "How does this affect you?",
 		minAge = 28, maxAge = 70,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"education", "teaching"})
@@ -1494,7 +1494,7 @@ JobSpecificEvents.events = {
 		question = "How do you tackle the grading?",
 		minAge = 24, maxAge = 65,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"education", "teaching"})
@@ -1519,7 +1519,7 @@ JobSpecificEvents.events = {
 		question = "How do you adapt to the changes?",
 		minAge = 26, maxAge = 65,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"education", "teaching"})
@@ -1551,7 +1551,7 @@ JobSpecificEvents.events = {
 		minAge = 18, maxAge = 50,
 		oneTime = false,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"military"})
@@ -1626,7 +1626,7 @@ JobSpecificEvents.events = {
 		question = "How secure is your government job?",
 		minAge = 25, maxAge = 65,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"government"})
@@ -1678,7 +1678,7 @@ JobSpecificEvents.events = {
 		question = "How do you perform under pressure?",
 		minAge = 18, maxAge = 45,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"sports", "athletics"})
@@ -1731,7 +1731,7 @@ JobSpecificEvents.events = {
 		question = "How do you handle the injury situation?",
 		minAge = 20, maxAge = 45,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"sports", "athletics"})
@@ -2004,7 +2004,7 @@ JobSpecificEvents.events = {
 		question = "How do you handle this situation?",
 		minAge = 25, maxAge = 65,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"law", "legal"})
@@ -2044,7 +2044,7 @@ JobSpecificEvents.events = {
 		question = "How do you survive this meeting marathon?",
 		minAge = 20, maxAge = 65,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"office", "admin", "corporate"})
@@ -2098,7 +2098,7 @@ JobSpecificEvents.events = {
 		question = "What do you do with this information?",
 		minAge = 18, maxAge = 65,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"office", "admin", "corporate", "entry", "service"})
@@ -2359,7 +2359,7 @@ JobSpecificEvents.events = {
 		question = "How do you approach the grant application?",
 		minAge = 26, maxAge = 70,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Added requiresJobCategory as PRIMARY check
 		requiresJobCategory = { "science", "research", "education" },
@@ -2496,7 +2496,7 @@ JobSpecificEvents.events = {
 		question = "How do you respond?",
 		minAge = 26, maxAge = 70,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Added requiresJobCategory as PRIMARY check
 		requiresJobCategory = { "science", "research", "education" },

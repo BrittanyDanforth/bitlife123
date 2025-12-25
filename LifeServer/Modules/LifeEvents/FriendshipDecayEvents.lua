@@ -134,7 +134,7 @@ FriendshipDecayEvents.events = {
 		weight = 18,
 		minAge = 16, maxAge = 80,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		eligibility = hasNeglectedFriend,
 		blockedByFlags = { in_prison = true },
 		
@@ -649,7 +649,7 @@ FriendshipDecayEvents.events = {
 		weight = 14,
 		minAge = 16, maxAge = 80,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		eligibility = hasFriends,
 		blockedByFlags = { in_prison = true },
 		
@@ -962,6 +962,214 @@ FriendshipDecayEvents.events = {
 				text = "Life took me in a different direction",
 				effects = { Happiness = -2 },
 				feedText = "🎨 Some talents fade, but the memories remain. Bittersweet.",
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #905: MORE CONSEQUENCE EVENTS FOR PAST ACTIONS!
+	-- User complaint: "game is shallow, what you do has no impact"
+	-- Adding 6 new consequence events that trigger based on childhood/teen choices
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	{
+		id = "consequence_rebel_streak",
+		title = "Reputation Precedes You",
+		emoji = "😈",
+		text = "You run into your old teacher. 'I always knew you'd either end up famous or in jail. You were quite the troublemaker!'",
+		category = "consequence",
+		weight = 10,
+		minAge = 25, maxAge = 45,
+		baseChance = 0.35,
+		cooldown = 10,
+		oneTime = true,
+		requiresFlags = { rebellious_streak = true },
+		
+		choices = {
+			{
+				text = "Proudly own your wild past",
+				effects = { Happiness = 8 },
+				feedText = "😈 'Best years of my life!' Sometimes breaking rules teaches valuable lessons.",
+			},
+			{
+				text = "Cringe at the memories",
+				effects = { Happiness = -3 },
+				feedText = "😈 Some memories are better left buried. You've grown since then.",
+			},
+		},
+	},
+	{
+		id = "consequence_first_love",
+		title = "First Love Reunion",
+		emoji = "💔",
+		text = "You randomly bump into your first crush from school. The memories come flooding back.",
+		category = "consequence",
+		weight = 8,
+		minAge = 22, maxAge = 40,
+		baseChance = 0.3,
+		cooldown = 15,
+		oneTime = true,
+		requiresFlags = { had_first_crush = true },
+		
+		getDynamicText = function(state)
+			if state.Flags and state.Flags.married then
+				return "You bump into your first crush from school. You're married now, but the memories still make you smile. How different life could have been..."
+			else
+				return "You randomly bump into your first crush from school. They still look good. Your heart skips a beat."
+			end
+		end,
+		
+		choices = {
+			{
+				text = "Catch up over coffee",
+				effects = {},
+				feedText = "Reconnecting with your past...",
+				onResolve = function(state)
+					if state.Flags and state.Flags.married then
+						modStatIfPossible(state, "Happiness", 5)
+						addFeed(state, "💔 Nice to reminisce. But you love your current life. Some chapters close.")
+					else
+						local roll = math.random()
+						if roll < 0.40 then
+							modStatIfPossible(state, "Happiness", 15)
+							state.Flags = state.Flags or {}
+							state.Flags.rekindled_first_love = true
+							addFeed(state, "💕 Sparks fly again! Maybe fate brought you back together...")
+						else
+							modStatIfPossible(state, "Happiness", 5)
+							addFeed(state, "💔 Nice to catch up, but you've both changed. That chapter is closed.")
+						end
+					end
+				end,
+			},
+			{
+				text = "Wave and keep walking",
+				effects = { Happiness = 2 },
+				feedText = "💔 Some memories are best left as memories. You smile and move on.",
+			},
+		},
+	},
+	{
+		id = "consequence_pet_loss",
+		title = "Visiting Old Memories",
+		emoji = "🐾",
+		text = "You visit your childhood home and see the spot where your beloved pet is buried. The feelings hit you unexpectedly.",
+		category = "consequence",
+		weight = 8,
+		minAge = 20, maxAge = 50,
+		baseChance = 0.25,
+		cooldown = 15,
+		oneTime = true,
+		requiresFlags = { learned_about_loss = true },
+		
+		choices = {
+			{
+				text = "Let yourself grieve again",
+				effects = { Happiness = -5 },
+				feedText = "🐾 Tears flow. That pet taught you about unconditional love. And loss.",
+				onResolve = function(state)
+					modStatIfPossible(state, "Happiness", -5)
+					state.Flags = state.Flags or {}
+					state.Flags.processed_pet_grief = true
+					addFeed(state, "🐾 You plant a flower on the spot. Some loves never fade.")
+				end,
+			},
+			{
+				text = "Smile at the happy memories",
+				effects = { Happiness = 5 },
+				feedText = "🐾 So many good times. Grief fades but love remains forever.",
+			},
+		},
+	},
+	{
+		id = "consequence_sports_glory",
+		title = "Old Teammate Reunion",
+		emoji = "🏆",
+		text = "Your old sports teammate reaches out. 'Remember when we won that championship? Best days of my life!'",
+		category = "consequence",
+		weight = 10,
+		minAge = 25, maxAge = 50,
+		baseChance = 0.35,
+		cooldown = 10,
+		oneTime = true,
+		requiresFlags = { athletic_talent = true },
+		
+		choices = {
+			{
+				text = "Organize a team reunion",
+				effects = { Happiness = 15, Money = -100 },
+				feedText = "🏆 The whole gang together again! Laughing about old times. Priceless.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.had_team_reunion = true
+				end,
+			},
+			{
+				text = "Video call to catch up",
+				effects = { Happiness = 8 },
+				feedText = "🏆 Different paths, same bond. Sports friends are friends for life.",
+			},
+		},
+	},
+	{
+		id = "consequence_genius_kid",
+		title = "Your Old Report Cards",
+		emoji = "📚",
+		text = "While cleaning, you find your old report cards. Straight A's. 'Exceptional student' comments. Your parents kept everything.",
+		category = "consequence",
+		weight = 8,
+		minAge = 25, maxAge = 45,
+		baseChance = 0.3,
+		cooldown = 10,
+		oneTime = true,
+		requiresFlags = { math_science_talent = true },
+		
+		getDynamicText = function(state)
+			local currentJob = state.CurrentJob
+			if currentJob then
+				local jobName = currentJob.name or currentJob.title or "your job"
+				return "While cleaning, you find your old report cards. Straight A's. 'Exceptional student.' You ended up as a " .. jobName .. ". Did you live up to your potential?"
+			else
+				return "While cleaning, you find your old report cards. Straight A's. 'Exceptional student' comments. What happened to that kid?"
+			end
+		end,
+		
+		choices = {
+			{
+				text = "I'm proud of my journey",
+				effects = { Happiness = 10 },
+				feedText = "📚 Intelligence isn't just grades. You've learned things no classroom could teach.",
+			},
+			{
+				text = "I should have done more",
+				effects = { Happiness = -5 },
+				feedText = "📚 Potential is a heavy burden. But it's never too late to change course.",
+			},
+		},
+	},
+	{
+		id = "consequence_secret_spot",
+		title = "Your Secret Hideout",
+		emoji = "🏠",
+		text = "You revisit the neighborhood and find your old secret hideout from childhood. It's still there, somehow. Smaller than you remember.",
+		category = "consequence",
+		weight = 6,
+		minAge = 20, maxAge = 45,
+		baseChance = 0.25,
+		cooldown = 15,
+		oneTime = true,
+		requiresFlags = { had_secret_spot = true },
+		
+		choices = {
+			{
+				text = "Leave a note for future kids",
+				effects = { Happiness = 12 },
+				feedText = "🏠 'This was my secret spot. Now it's yours. Make good memories.' Passing the torch.",
+			},
+			{
+				text = "Take a moment alone there",
+				effects = { Happiness = 8 },
+				feedText = "🏠 For a few minutes, you're a kid again. Nothing else matters. Peace.",
 			},
 		},
 	},

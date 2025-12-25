@@ -165,7 +165,7 @@ TeenExpanded.events = {
 		question = "What do they want you to do?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "teen",
 		category = "social",
@@ -216,7 +216,7 @@ TeenExpanded.events = {
 		question = "How's your digital life?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "teen",
 		category = "technology",
@@ -326,7 +326,7 @@ TeenExpanded.events = {
 		question = "What's your romantic situation?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "teen",
 		category = "romance",
@@ -367,7 +367,7 @@ TeenExpanded.events = {
 		question = "How do you cope with the pain?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "teen",
 		category = "romance",
@@ -442,7 +442,7 @@ TeenExpanded.events = {
 		question = "What happens?",
 		minAge = 15, maxAge = 17,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "teen",
 		category = "romance",
@@ -491,7 +491,7 @@ TeenExpanded.events = {
 		question = "How are you handling the stress?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "teen",
 		category = "academics",
@@ -601,7 +601,7 @@ TeenExpanded.events = {
 		question = "Do you go for it?",
 		minAge = 16, maxAge = 17,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "teen",
 		category = "academics",
@@ -652,7 +652,7 @@ TeenExpanded.events = {
 		question = "What do you do?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "teen",
 		category = "social",
@@ -759,7 +759,7 @@ TeenExpanded.events = {
 		question = "What do you do behind the wheel?",
 		minAge = 16, maxAge = 17,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { has_license = true },
 		stage = STAGE,
 		ageBand = "teen",
@@ -812,7 +812,7 @@ TeenExpanded.events = {
 		question = "What do you do?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "teen",
 		category = "crime",
@@ -866,7 +866,7 @@ TeenExpanded.events = {
 		question = "How do you handle the pressure?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "teen",
 		category = "risky",
@@ -944,7 +944,7 @@ TeenExpanded.events = {
 		question = "How do you handle these feelings?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "teen",
 		category = "mental_health",
@@ -1011,7 +1011,7 @@ TeenExpanded.events = {
 		question = "What was it about?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "teen",
 		category = "family",
@@ -1262,7 +1262,7 @@ TeenExpanded.events = {
 		question = "How's your fitness journey going?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "teen",
 		category = "health",
@@ -1336,7 +1336,7 @@ TeenExpanded.events = {
 		question = "What's the job experience like?",
 		minAge = 15, maxAge = 17,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		stage = STAGE,
 		ageBand = "teen",
@@ -1380,7 +1380,7 @@ TeenExpanded.events = {
 		question = "What do you do with your idea?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "teen",
 		category = "business",
@@ -1525,7 +1525,7 @@ TeenExpanded.events = {
 		question = "How did it go?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "teen",
 		category = "skills",
@@ -1546,7 +1546,7 @@ TeenExpanded.events = {
 		question = "What was your independent moment?",
 		minAge = 15, maxAge = 17,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "teen",
 		category = "growth",

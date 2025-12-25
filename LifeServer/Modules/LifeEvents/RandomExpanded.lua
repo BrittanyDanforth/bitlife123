@@ -17,10 +17,18 @@ RandomExpanded.events = {
 		title = "Found Money!",
 		emoji = "💵",
 		text = "You found some money on the ground!",
+		-- CRITICAL FIX #940: Added text variations for variety
+		textVariants = {
+			"Walking down the street, you spot something green on the ground. Money!",
+			"There's cash just lying there on the sidewalk! No one's around...",
+			"You look down and see a crumpled bill. Finders keepers?",
+			"Holy cow! Someone dropped cash and you just found it!",
+			"Is that... money? Just sitting there? Your lucky day!",
+		},
 		question = "What do you do?",
 		minAge = 8, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "luck",
@@ -70,10 +78,18 @@ RandomExpanded.events = {
 		title = "Lost Wallet!",
 		emoji = "😱",
 		text = "You've lost your wallet/purse!",
+		-- CRITICAL FIX #941: Added text variations for variety
+		textVariants = {
+			"Where is it?! You've searched everywhere - your wallet is GONE!",
+			"That sinking feeling when you reach for your wallet and it's not there...",
+			"Panic sets in. Your wallet has disappeared. IDs, cards, cash - all gone!",
+			"You retrace your steps mentally. When did you last have it? WHERE IS IT?!",
+			"Oh no. Oh no no no. Your wallet is definitely missing.",
+		},
 		question = "What happens?",
 		minAge = 16, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "misfortune",
@@ -117,7 +133,7 @@ RandomExpanded.events = {
 		question = "How do you handle it?",
 		minAge = 16, maxAge = 85,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "vehicle",
@@ -175,7 +191,7 @@ RandomExpanded.events = {
 		question = "Why are you getting pulled over?",
 		minAge = 16, maxAge = 85,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "legal",
@@ -302,7 +318,7 @@ RandomExpanded.events = {
 		question = "How do you handle jury duty?",
 		minAge = 18, maxAge = 75,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "adult",
 		category = "civic",
@@ -520,7 +536,7 @@ RandomExpanded.events = {
 		question = "How bad is it?",
 		minAge = 5, maxAge = 100,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "disaster",
@@ -573,7 +589,7 @@ RandomExpanded.events = {
 		question = "What do you do?",
 		minAge = 10, maxAge = 90,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "encounter",
@@ -617,7 +633,7 @@ RandomExpanded.events = {
 		question = "What did they do?",
 		minAge = 10, maxAge = 100,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "kindness",
@@ -638,7 +654,7 @@ RandomExpanded.events = {
 		question = "How sick are you?",
 		minAge = 3, maxAge = 100,
 		baseChance = 0.555,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",
@@ -690,7 +706,7 @@ RandomExpanded.events = {
 		question = "How bad is it?",
 		minAge = 5, maxAge = 100,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",
@@ -731,7 +747,7 @@ RandomExpanded.events = {
 		question = "What was the good news?",
 		minAge = 10, maxAge = 100,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "luck",
@@ -752,7 +768,7 @@ RandomExpanded.events = {
 		question = "What happened?",
 		minAge = 12, maxAge = 100,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "hardship",
@@ -773,7 +789,7 @@ RandomExpanded.events = {
 		question = "Who did you run into?",
 		minAge = 18, maxAge = 100,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "social",
@@ -819,7 +835,7 @@ RandomExpanded.events = {
 		question = "What did you discover?",
 		minAge = 8, maxAge = 90,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "growth",
@@ -841,7 +857,7 @@ RandomExpanded.events = {
 		question = "How serious is it?",
 		minAge = 18, maxAge = 100,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "adult",
 		category = "crime",
@@ -913,7 +929,7 @@ RandomExpanded.events = {
 		question = "What's inside?",
 		minAge = 12, maxAge = 100,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "surprise",

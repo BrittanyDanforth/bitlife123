@@ -26,7 +26,7 @@ YoungLifeEvents.events = {
 		weight = 15,
 		minAge = 5, maxAge = 10,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
@@ -62,7 +62,7 @@ YoungLifeEvents.events = {
 		weight = 14,
 		minAge = 6, maxAge = 12,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
@@ -193,7 +193,7 @@ YoungLifeEvents.events = {
 		weight = 15,
 		minAge = 8, maxAge = 18,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
@@ -249,7 +249,7 @@ YoungLifeEvents.events = {
 		weight = 14,
 		minAge = 7, maxAge = 18,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
@@ -338,7 +338,7 @@ YoungLifeEvents.events = {
 		weight = 14,
 		minAge = 14, maxAge = 19,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		blockedByFlags = { in_prison = true },
 		
 		choices = {

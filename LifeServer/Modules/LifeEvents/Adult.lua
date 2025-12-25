@@ -804,7 +804,7 @@ Adult.events = {
 		question = "What's the biggest problem?",
 		minAge = 18, maxAge = 26,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { lives_alone = true },
 
 		choices = {
@@ -822,7 +822,7 @@ Adult.events = {
 		question = "What's the issue?",
 		minAge = 18, maxAge = 28,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { has_roommates = true },
 		-- CRITICAL FIX: Can't have roommate drama from prison!
 		blockedByFlags = { in_prison = true, incarcerated = true },
@@ -900,7 +900,7 @@ Adult.events = {
 		question = "How's your experience?",
 		minAge = 20, maxAge = 40,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresSingle = true,
 		blockedByFlags = { married = true, in_prison = true, incarcerated = true },
 
@@ -1301,7 +1301,7 @@ Adult.events = {
 		question = "How do you handle it?",
 		minAge = 22, maxAge = 60,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true, -- CRITICAL FIX: Only show for employed players!
 
 		choices = {
@@ -2305,7 +2305,7 @@ Adult.events = {
 		question = "How do you handle it?",
 		minAge = 60, maxAge = 95,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		choices = {
 			{ text = "Take a class to learn", effects = { Smarts = 5, Happiness = 5 }, setFlags = { tech_savvy_senior = true }, feedText = "You're learning! Video calls are great!" },
@@ -2937,7 +2937,7 @@ Adult.events = {
 		question = "Where do you go?",
 		minAge = 22, maxAge = 70,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		blockedByFlags = { in_prison = true, homeless = true },
 		-- CRITICAL FIX: Need at least some money for vacation
 		eligibility = function(state)
