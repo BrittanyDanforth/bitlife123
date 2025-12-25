@@ -26,8 +26,9 @@ local function shouldBlockCrimeForRoyalty(state, eventId)
 	
 	if isRoyal then
 		-- Block serious crimes but allow teen petty stuff for realism
+		-- CRITICAL FIX: Roblox TOS - Removed drug reference
 		local seriousCrimes = {
-			"drug_deal", "armed_robbery", "burglary", "car_theft", "fraud",
+			"smuggling", "armed_robbery", "burglary", "car_theft", "fraud",
 			"assault", "murder", "kidnapping", "heist", "gang"
 		}
 		eventId = (eventId or ""):lower()
@@ -1622,23 +1623,24 @@ local events = {
 		},
 	},
 	
-	-- DRUG DEALING
+	-- CRITICAL FIX: Roblox TOS - Replaced drug dealing with smuggling
+	-- SMUGGLING OPERATION
 	{
-		id = "drug_dealing_offer",
-		emoji = "💊",
-		title = "Drug Business",
-		text = "Someone offers you quick money selling drugs in your neighborhood.",
+		id = "smuggling_offer",
+		emoji = "📦",
+		title = "Shady Business",
+		text = "Someone offers you quick money moving contraband in your neighborhood.",
 		category = "crime",
 		weight = 3,
 		minAge = 16,
 		maxAge = 40,
 		cooldown = 3,
 		maxOccurrences = 2,
-		blockedByFlags = { in_prison = true, drug_dealer = true },
+		blockedByFlags = { in_prison = true, smuggler = true },
 		choices = {
 			{
 				index = 1,
-				text = "Start dealing",
+				text = "Start smuggling",
 				effects = { },
 				feedText = "Getting into the game...",
 				onResolve = function(state)
@@ -1647,17 +1649,17 @@ local events = {
 						local profit = RANDOM:NextInteger(2000, 8000)
 						state.Money = (state.Money or 0) + profit
 						if state.AddFeed then
-							state:AddFeed(string.format("💊 Made $%d your first week. Dangerous game.", profit))
+							state:AddFeed(string.format("📦 Made $%d your first week. Dangerous game.", profit))
 						end
 						state.Flags = state.Flags or {}
-						state.Flags.drug_dealer = true
+						state.Flags.smuggler = true
 					else
-						local years, isJuvie = incarceratePlayer(state, 3, 10, "Drug Distribution")
+						local years, isJuvie = incarceratePlayer(state, 3, 10, "Smuggling")
 						if state.AddFeed then
 							if isJuvie then
-								state:AddFeed(string.format("🚔 DEA sting! Juvie for %.1f years.", years))
+								state:AddFeed(string.format("🚔 Busted! Juvie for %.1f years.", years))
 							else
-								state:AddFeed(string.format("🚔 DEA sting! %d years in prison.", years))
+								state:AddFeed(string.format("🚔 Busted! %d years in prison.", years))
 							end
 						end
 					end

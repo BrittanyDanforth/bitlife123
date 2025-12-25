@@ -1602,11 +1602,18 @@ Teen.events = {
 							state.Flags = state.Flags or {}
 							state.Flags.has_car = true
 							state.Flags.owns_car = true
-							state:AddAsset("old_car", {
-								id = "old_car",
-								type = "vehicle",
+							-- CRITICAL FIX: Use "Vehicles" category so it shows in AssetScreen!
+							state:AddAsset("Vehicles", {
+								id = "beater_car_" .. tostring(os.time()),
+								type = "sedan",
 								name = "Beater Car",
+								emoji = "🚗",
+								price = 1500,
 								value = 1500,
+								condition = 65,
+								happiness = 3,
+								maintenance = 400,
+								acquiredAge = state.Age,
 								description = "Your first car! It runs... mostly.",
 							})
 							state:AddFeed("🚗 You bought your first car for $1,500! Freedom!")
@@ -1616,12 +1623,20 @@ Teen.events = {
 							state.Flags.has_car = true
 							state.Flags.owns_car = true
 							state.Flags.car_problems = true
-							state:AddAsset("old_car", {
-								id = "old_car",
-								type = "vehicle",
+							-- CRITICAL FIX: Use "Vehicles" category so it shows in AssetScreen!
+							state:AddAsset("Vehicles", {
+								id = "beater_car_problem_" .. tostring(os.time()),
+								type = "sedan",
 								name = "Beater Car",
+								emoji = "🚗",
+								price = 1500,
 								value = 800,
+								condition = 40,
+								happiness = 2,
+								maintenance = 700,
+								acquiredAge = state.Age,
 								description = "Your first car. Needs constant repairs.",
+								hasIssues = true,
 							})
 							state:AddFeed("🚗 Your new car already has problems... but it's yours!")
 						end
@@ -1650,11 +1665,18 @@ Teen.events = {
 						state.Flags = state.Flags or {}
 						state.Flags.has_car = true
 						state.Flags.owns_car = true
-						state:AddAsset("reliable_car", {
-							id = "reliable_car",
-							type = "vehicle",
+						-- CRITICAL FIX: Use "Vehicles" category so it shows in AssetScreen!
+						state:AddAsset("Vehicles", {
+							id = "reliable_car_" .. tostring(os.time()),
+							type = "sedan",
 							name = "Reliable Car",
+							emoji = "🚗",
+							price = 3000,
 							value = 3000,
+							condition = 80,
+							happiness = 4,
+							maintenance = 250,
+							acquiredAge = state.Age,
 							description = "Not flashy, but it works!",
 						})
 						state:AddFeed("🚗 You bought a reliable car for $3,000! Smart choice.")

@@ -42,28 +42,89 @@ SpecialMoments.events = {
 		end,
 		
 		-- CRITICAL: Random first car outcome
+		-- CRITICAL FIX: Actually add cars to Assets so they show in AssetScreen!
 		choices = {
 			{
-				text = "Buy a used beater",
+				text = "Buy a used beater ($1,500)",
 				effects = { Money = -1500 },
 				feedText = "Getting your first wheels...",
 				onResolve = function(state)
 					local roll = math.random()
+					-- CRITICAL FIX: Add car to Assets!
+					state.Assets = state.Assets or {}
+					state.Assets.Vehicles = state.Assets.Vehicles or {}
+					table.insert(state.Assets.Vehicles, {
+						id = "first_car_beater_" .. tostring(os.time()),
+						name = "Used Beater",
+						emoji = "🚗",
+						price = 1500,
+						value = 1500,
+						condition = roll < 0.55 and 65 or 45,
+						happiness = 3,
+						maintenance = 500,
+						acquiredAge = state.Age,
+						type = "sedan",
+					})
+					state.Flags = state.Flags or {}
+					state.Flags.has_first_car = true
+					state.Flags.has_car = true
+					state.Flags.has_vehicle = true
 					if roll < 0.55 then
 						state:ModifyStat("Happiness", 12)
-						state.Flags = state.Flags or {}
-						state.Flags.has_first_car = true
 						state:AddFeed("🚗 FREEDOM! She's not pretty but she runs! First car love!")
 					else
 						state:ModifyStat("Happiness", 6)
-						state.Flags = state.Flags or {}
-						state.Flags.has_first_car = true
 						state:AddFeed("🚗 It's a car! Needs work but yours! Independence!")
 					end
 				end,
 			},
-			{ text = "Reasonable reliable car", effects = { Money = -5000, Happiness = 10 }, setFlags = { has_first_car = true }, feedText = "🚗 Decent car! Should last years! Smart choice!" },
-			{ text = "Parents help with car", effects = { Money = -500, Happiness = 10 }, setFlags = { has_first_car = true }, feedText = "🚗 Parents helped! Lucky! Grateful for the assist!" },
+			{ 
+				text = "Reasonable reliable car ($5,000)", 
+				effects = { Money = -5000, Happiness = 10 }, 
+				setFlags = { has_first_car = true, has_car = true, has_vehicle = true }, 
+				feedText = "🚗 Decent car! Should last years! Smart choice!",
+				-- CRITICAL FIX: Add car to Assets!
+				onResolve = function(state)
+					state.Assets = state.Assets or {}
+					state.Assets.Vehicles = state.Assets.Vehicles or {}
+					table.insert(state.Assets.Vehicles, {
+						id = "first_car_reliable_" .. tostring(os.time()),
+						name = "Reliable Sedan",
+						emoji = "🚗",
+						price = 5000,
+						value = 5000,
+						condition = 80,
+						happiness = 4,
+						maintenance = 300,
+						acquiredAge = state.Age,
+						type = "sedan",
+					})
+				end,
+			},
+			{ 
+				text = "Parents help with car ($500)", 
+				effects = { Money = -500, Happiness = 10 }, 
+				setFlags = { has_first_car = true, has_car = true, has_vehicle = true }, 
+				feedText = "🚗 Parents helped! Lucky! Grateful for the assist!",
+				-- CRITICAL FIX: Add car to Assets!
+				onResolve = function(state)
+					state.Assets = state.Assets or {}
+					state.Assets.Vehicles = state.Assets.Vehicles or {}
+					table.insert(state.Assets.Vehicles, {
+						id = "first_car_gift_" .. tostring(os.time()),
+						name = "Hand-Me-Down Car",
+						emoji = "🚗",
+						price = 500,
+						value = 2500, -- Worth more than you paid
+						condition = 60,
+						happiness = 4,
+						maintenance = 400,
+						acquiredAge = state.Age,
+						type = "sedan",
+						wasGift = true,
+					})
+				end,
+			},
 		},
 	},
 	{

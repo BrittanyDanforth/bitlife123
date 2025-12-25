@@ -2525,18 +2525,28 @@ function ActivitiesScreen:doMobOperation(opId, opName)
 							end)
 						end
 					end
-				elseif success and result then
-					local msg = result.message or "The operation failed..."
-					if result.arrested and self.state then
-						self.state.InJail = true
-					end
-					self:showActivityResult(false, msg, {id = opId, name = opName, emoji = result.arrested and "🚔" or "❌"}, result.arrested and "🚔" or "❌", result.arrested)
-				else
-					self:showActivityResult(false, "Connection error. Try again.", {id = opId, name = opName, emoji = "❌"}, "❌")
+			elseif success and result then
+				local msg = result.message or "The operation failed..."
+				if result.arrested and self.state then
+					self.state.InJail = true
+					-- CRITICAL FIX: Update flags too for consistent jail detection
+					self.state.Flags = self.state.Flags or {}
+					self.state.Flags.in_prison = true
+					self.state.Flags.incarcerated = true
 				end
-				
-				self:updateInfoBar()
+				self:showActivityResult(false, msg, {id = opId, name = opName, emoji = result.arrested and "🚔" or "❌"}, result.arrested and "🚔" or "❌", result.arrested)
+			else
+				self:showActivityResult(false, "Connection error. Try again.", {id = opId, name = opName, emoji = "❌"}, "❌")
+			end
+			
+			self:updateInfoBar()
+			-- CRITICAL FIX: Switch to prison tab if arrested, not crime tab!
+			if result and result.arrested then
+				self:rebuildTabs()
+				self:switchTab("prison")
+			else
 				self:switchTab("crime")
+			end
 			end)
 			return -- Wait for minigame callback
 		end
@@ -2567,13 +2577,23 @@ function ActivitiesScreen:doMobOperation(opId, opName)
 		-- CRITICAL FIX: If arrested, update local state
 		if result.arrested and self.state then
 			self.state.InJail = true
+			-- CRITICAL FIX: Update flags too for consistent jail detection
+			self.state.Flags = self.state.Flags or {}
+			self.state.Flags.in_prison = true
+			self.state.Flags.incarcerated = true
 		end
 		self:showActivityResult(false, msg, {id = opId, name = opName, emoji = result.arrested and "🚔" or "❌"}, result.arrested and "🚔" or "❌", result.arrested)
 	else
 		self:showActivityResult(false, "Connection error. Try again.", {id = opId, name = opName, emoji = "❌"}, "❌")
 	end
 	self:updateInfoBar()
-	self:switchTab("crime") -- Refresh
+	-- CRITICAL FIX: Switch to prison tab if arrested, not crime tab!
+	if result and result.arrested then
+		self:rebuildTabs()
+		self:switchTab("prison")
+	else
+		self:switchTab("crime") -- Refresh
+	end
 end
 
 function ActivitiesScreen:getMobState()

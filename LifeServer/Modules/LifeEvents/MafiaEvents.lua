@@ -186,6 +186,8 @@ MafiaEvents.LifeEvents = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #190: Fixed blood oath spam
 	-- Added oneTime and proper blocking flags
+	-- CRITICAL FIX: Added eligibility function to ENSURE never shows for made members
+	-- User complaint: "Blood oath pops up even tho I been in mafia for awhile"
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "blood_oath",
@@ -199,10 +201,31 @@ MafiaEvents.LifeEvents = {
 		isMilestone = true,
 		oneTime = true, -- CRITICAL FIX: Only once!
 		maxOccurrences = 1,
+		cooldown = 99, -- CRITICAL FIX: Never again after first occurrence
+		-- CRITICAL FIX: Also use top-level blockedByFlags for extra safety
+		blockedByFlags = { made_member = true, blood_oath_taken = true, mob_fugitive = true, sworn_oath = true },
 		conditions = { 
 			requiresFlags = { in_mob = true, initiated = true },
 			blockedFlags = { made_member = true, blood_oath_taken = true, mob_fugitive = true },
 		},
+		-- CRITICAL FIX: Double-check with eligibility function
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- NEVER show if player already took blood oath or is made member
+			if flags.made_member or flags.blood_oath_taken or flags.sworn_oath then
+				return false, "Already took blood oath"
+			end
+			-- Must be initiated but NOT yet made
+			if not flags.in_mob or not flags.initiated then
+				return false, "Not initiated yet"
+			end
+			-- Check MobState for additional safety
+			local mobState = state.MobState or {}
+			if mobState.rankLevel and mobState.rankLevel >= 2 then
+				return false, "Already promoted past blood oath stage"
+			end
+			return true
+		end,
 		choices = {
 			{
 				text = "Swear the oath with conviction",
@@ -344,9 +367,10 @@ MafiaEvents.LifeEvents = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #246: Enhanced shipment event with maxOccurrences
+	-- CRITICAL FIX: Roblox TOS - Renamed from drug_shipment to contraband_shipment
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "drug_shipment",
+		id = "contraband_shipment",
 		title = "📦 The Shipment",
 		emoji = "📦",
 		text = "A major shipment is coming in. You've been trusted to oversee the operation. Everything needs to go smoothly.",
@@ -1569,13 +1593,14 @@ MafiaEvents.LifeEvents = {
 				setFlags = { owns_nightclub = true, legitimate_businessman = true },
 				feed = "The club is packed every night.",
 			},
-			{
-				text = "Use it for drug distribution",
-				effects = { Happiness = 8 },
-				mafiaEffect = { respect = 25, money = 150000, heat = 20 },
-				setFlags = { owns_nightclub = true, drug_distributor = true },
-				feed = "The VIP room has a very special menu.",
-			},
+		{
+			-- CRITICAL FIX: Roblox TOS - replaced drug reference with smuggling
+			text = "Use it for smuggling operations",
+			effects = { Happiness = 8 },
+			mafiaEffect = { respect = 25, money = 150000, heat = 20 },
+			setFlags = { owns_nightclub = true, smuggling_hub = true },
+			feed = "The VIP room has a very special storage area.",
+		},
 			{
 				text = "Money laundering hub",
 				effects = { Happiness = 10 },
@@ -1904,12 +1929,13 @@ MafiaEvents.LifeEvents = {
 		},
 	},
 	
-	-- DRUG EMPIRE
+	-- CRITICAL FIX: Roblox TOS - Replaced drug empire with smuggling empire
+	-- SMUGGLING EMPIRE
 	{
-		id = "drug_empire_opportunity",
-		title = "💊 The White Gold",
-		emoji = "💊",
-		text = "The Colombians are offering your family exclusive distribution rights in the city. It's the most profitable racket there is, but also the most dangerous.",
+		id = "smuggling_empire_opportunity",
+		title = "📦 The Big Shipment",
+		emoji = "📦",
+		text = "International contacts are offering your family exclusive smuggling routes in the city. It's the most profitable racket there is, but also the most dangerous.",
 		question = "How do you respond to their proposal?",
 		minAge = 25,
 		maxAge = 55,
@@ -1918,7 +1944,7 @@ MafiaEvents.LifeEvents = {
 		maxOccurrences = 1,
 		conditions = { 
 			requiresFlags = { in_mob = true, made_member = true },
-			blockedFlags = { drug_dealer = true },
+			blockedFlags = { smuggling_boss = true },
 			minRank = 3,
 		},
 		choices = {
@@ -1926,28 +1952,28 @@ MafiaEvents.LifeEvents = {
 				text = "Accept and run the operation",
 				effects = { Happiness = 10 },
 				mafiaEffect = { respect = 80, money = 500000, heat = 40 },
-				setFlags = { drug_dealer = true, runs_drugs = true },
+				setFlags = { smuggling_boss = true, runs_smuggling = true },
 				feed = "The money flows like water.",
 			},
 			{
 				text = "Accept but stay hands-off",
 				effects = { Happiness = 5 },
 				mafiaEffect = { respect = 40, money = 100000, heat = 20 },
-				setFlags = { drug_silent_partner = true },
+				setFlags = { smuggling_silent_partner = true },
 				feed = "You take a cut, but stay clean.",
 			},
 			{
 				text = "Decline on principle",
 				effects = { Happiness = -5 },
 				mafiaEffect = { respect = 10, loyalty = 10 },
-				setFlags = { no_drugs_rule = true },
+				setFlags = { no_smuggling_rule = true },
 				feed = "Old school. Some things are beneath the family.",
 			},
 			{
-				text = "Report them to the DEA",
+				text = "Report them to the authorities",
 				effects = { Happiness = -20 },
 				mafiaEffect = { heatDecay = 30, respect = -500, betrayal = true },
-				setFlags = { dea_informant = true },
+				setFlags = { federal_informant = true },
 				feed = "You've made powerful enemies on both sides.",
 			},
 		},
