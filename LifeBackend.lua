@@ -15878,7 +15878,75 @@ function LifeBackend:handleCrime(player, crimeId, minigameBonus)
 		}
 	end
 	
-	-- If minigame was failed, higher risk
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Combat-based crimes MUST fail if combat was lost!
+	-- User complaint: "I GOT KNOCKED OUT AND IT SAID CRIME SUCCESSFUL"
+	-- If you get knocked out trying to assault/mug someone, you LOST - the crime failed!
+	-- This is different from minigame-based crimes where failure just increases risk.
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local combatCrimes = { assault = true, mugging = true, prison_assault = true, prison_riot = true }
+	local isCombatCrime = combatCrimes[crimeId] or (type(minigameBonus) == "table" and minigameBonus.isCombat)
+	
+	if minigameFailed and isCombatCrime then
+		-- You got knocked out! Crime automatically fails + health damage
+		local healthLoss = RANDOM:NextInteger(10, 25)
+		state.Stats = state.Stats or {}
+		local currentHealth = state.Stats.Health or state.Health or 50
+		state.Stats.Health = math.max(0, currentHealth - healthLoss)
+		state.Health = state.Stats.Health
+		
+		-- Apply embarrassment/happiness loss
+		self:applyStatChanges(state, { Happiness = -15 })
+		
+		-- Random chance cops were called during the altercation
+		local copsCalled = RANDOM:NextInteger(1, 100) <= 25  -- 25% chance someone called cops
+		
+		if copsCalled then
+			local years = RANDOM:NextInteger(crime.jail.min, crime.jail.max)
+			state.InJail = true
+			state.JailYearsLeft = years
+			state.Flags.in_prison = true
+			state.Flags.incarcerated = true
+			state.Flags.criminal_record = true
+			
+			-- Lose job when going to prison
+			if state.CurrentJob then
+				state.CareerInfo = state.CareerInfo or {}
+				state.CareerInfo.lastJobBeforeJail = {
+					id = state.CurrentJob.id,
+					name = state.CurrentJob.name,
+					company = state.CurrentJob.company,
+					salary = state.CurrentJob.salary,
+				}
+				state.CurrentJob = nil
+				state.Flags.employed = nil
+				state.Flags.has_job = nil
+			end
+			
+			local message = string.format("😵 Embarrassing! They knocked you out cold! Lost %d health. Someone called the cops - you're sentenced to %.1f years!", healthLoss, years)
+			self:pushState(player, message)
+			return { 
+				success = false, 
+				caught = true, 
+				knockedOut = true,
+				message = message, 
+				healthLost = healthLoss,
+			}
+		else
+			-- Just got beat up, no cops
+			local message = string.format("😵 Humiliating defeat! They fought back and knocked you out! Lost %d health. You limped away embarrassed.", healthLoss)
+			self:pushState(player, message)
+			return { 
+				success = false, 
+				caught = false, 
+				knockedOut = true,
+				message = message, 
+				healthLost = healthLoss,
+			}
+		end
+	end
+	
+	-- If minigame was failed (non-combat), higher risk but still roll
 	if minigameFailed then
 		riskModifier = riskModifier + 20  -- 20% more likely to get caught
 	end

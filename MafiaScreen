@@ -1891,14 +1891,28 @@ function MafiaScreen:doOperation(operationId, modifiers)
 						local title = won and "Operation Complete!" or "Partial Success"
 						self:showResult(true, title, serverResult.message or "The job is done.", emoji)
 					else
-						local emoji = serverResult.arrested and "👮" or (won and "💨" or "😵")
-						self:showResult(false, "Operation Failed", serverResult.message or "Things went wrong.", emoji)
+						-- CRITICAL FIX: Properly show knocked out state with health loss
+						-- User complaint: "I GOT KNOCKED OUT AND IT SAID CRIME SUCCESSFUL"
+						local emoji = serverResult.arrested and "👮" or "😵"
+						local title = "Operation Failed"
+						
+						if serverResult.knockedOut then
+							title = "😵 Knocked Out!"
+							emoji = serverResult.arrested and "🚔" or "😵"
+						end
+						
+						local message = serverResult.message or "Things went wrong."
+						if serverResult.healthLost and serverResult.healthLost > 0 and not message:find("health") then
+							message = message .. string.format("\n\n💔 -%d Health", serverResult.healthLost)
+						end
+						
+						self:showResult(false, title, message, emoji)
 					end
 				else
-					local title = won and "👊 Victory" or "😵 Beaten"
+					local title = won and "👊 Victory" or "😵 Knocked Out!"
 					local message = won 
 						and "You dominated them! The family is impressed." 
-						or "You got beat up. This damages the family's reputation."
+						or "You got beat down hard! That's embarrassing for the family..."
 					self:showResult(won, title, message, won and "💪" or "😵")
 				end
 				

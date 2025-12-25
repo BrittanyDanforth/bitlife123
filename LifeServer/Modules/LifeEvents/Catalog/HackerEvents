@@ -203,6 +203,212 @@ local events = {
 	},
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: FREELANCE TO BLACK HAT PROGRESSION
+	-- User complaint: "NO HACKER FUN STUFF THAT LET U BE BLCKHAT"
+	-- Freelance hackers need a path to go full black hat!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "freelance_dark_offer",
+		emoji = "🕶️",
+		title = "Dark Side Calling",
+		text = "An underground syndicate has noticed your freelance work. They're offering big money to join them full-time as a Black Hat operative.",
+		category = "career_hacker",
+		weight = 15, -- Higher weight to trigger more often
+		minAge = 20,
+		maxAge = 45,
+		requiresFlags = { freelance_hacker = true },
+		blockedByFlags = { black_hat = true, declined_dark_side = true },
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "🖤 Join them - go full Black Hat!",
+				effects = { Money = 100000, Happiness = 10 },
+				setFlags = { black_hat = true, employed = true, has_job = true },
+				feedText = "You've crossed to the dark side!",
+				onResolve = function(state)
+					-- CRITICAL: Actually assign the Black Hat job!
+					state.Flags = state.Flags or {}
+					state.Flags.black_hat = true
+					state.Flags.freelance_hacker = nil
+					state.Flags.criminal = true
+					state.Flags.criminal_background = true
+					
+					-- Set the career explicitly
+					state.CurrentJob = {
+						id = "black_hat_hacker",
+						name = "Black Hat Hacker",
+						company = "Underground Syndicate",
+						salary = 200000,
+						category = "hacker",
+					}
+					state.Flags.employed = true
+					state.Flags.has_job = true
+					
+					if state.AddFeed then
+						state:AddFeed("🖤 Welcome to the dark side. You're now a Black Hat Hacker making $200K/year!")
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "💼 Stay freelance - keep my options open",
+				effects = { Happiness = 5 },
+				feedText = "You prefer the flexibility of freelancing.",
+			},
+			{
+				index = 3,
+				text = "🚫 Decline - this is too dangerous",
+				effects = { Happiness = -5 },
+				setFlags = { declined_dark_side = true },
+				feedText = "You turned them down. Hopefully they don't take offense...",
+			},
+		},
+	},
+
+	{
+		id = "quick_black_hat_start",
+		emoji = "💻",
+		title = "Underground Opportunity",
+		text = "Someone on the dark web saw your coding skills. They're recruiting hackers for a criminal operation. High pay, high risk.",
+		category = "career_hacker",
+		weight = 12,
+		minAge = 18,
+		maxAge = 35,
+		requiresStats = { Smarts = 55 },
+		blockedByFlags = { black_hat = true, white_hat = true, declined_hacking_career = true },
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "🖤 Join them as a Black Hat Hacker!",
+				effects = { Money = 50000, Happiness = 8 },
+				setFlags = { black_hat = true, hacker_discovered = true, first_hack_done = true, path_chosen = true },
+				feedText = "You're in the underground now!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.black_hat = true
+					state.Flags.hacker_discovered = true
+					state.Flags.first_hack_done = true
+					state.Flags.path_chosen = true
+					state.Flags.criminal = true
+					state.Flags.criminal_background = true
+					
+					-- Set the career explicitly
+					state.CurrentJob = {
+						id = "black_hat_hacker",
+						name = "Black Hat Hacker",
+						company = "Dark Web Collective",
+						salary = 150000,
+						category = "hacker",
+					}
+					state.Flags.employed = true
+					state.Flags.has_job = true
+					
+					if state.AddFeed then
+						state:AddFeed("🖤 You're now a Black Hat Hacker! Criminal, but incredibly lucrative.")
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "💼 Ask if they have legit security work instead",
+				effects = { Happiness = 5, Smarts = 3 },
+				setFlags = { white_hat = true, hacker_discovered = true, first_hack_done = true, path_chosen = true },
+				feedText = "They connected you with a legit security firm.",
+				onResolve = function(state)
+					state.CurrentJob = {
+						id = "pen_tester",
+						name = "Penetration Tester",
+						company = "CyberShield Security",
+						salary = 95000,
+						category = "tech",
+					}
+					state.Flags = state.Flags or {}
+					state.Flags.employed = true
+					state.Flags.has_job = true
+					state.Flags.white_hat = true
+					
+					if state.AddFeed then
+						state:AddFeed("💼 You're now a legit Penetration Tester! Good pay, no jail time.")
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "🚫 This is too risky for me",
+				effects = { Happiness = -3 },
+				setFlags = { declined_hacking_career = true },
+				feedText = "You decided hacking isn't your path.",
+			},
+		},
+	},
+
+	{
+		id = "cyber_crime_boss_ascension",
+		emoji = "👑",
+		title = "King of the Underground",
+		text = "After years of elite hacking, the criminal underworld recognizes you as a legend. You're being offered leadership of a cyber crime empire.",
+		category = "career_hacker",
+		weight = 8,
+		minAge = 30,
+		maxAge = 55,
+		requiresFlags = { elite_hacker = true },
+		blockedByFlags = { cyber_crime_boss = true },
+		requiresStats = { Smarts = 85 },
+		oneTime = true,
+		choices = {
+			{
+				index = 1,
+				text = "👑 Accept the crown - become a Cyber Crime Boss!",
+				effects = { Money = 1000000, Happiness = 20 },
+				setFlags = { cyber_crime_boss = true },
+				feedText = "You're now a Cyber Crime Boss!",
+				onResolve = function(state)
+					state.CurrentJob = {
+						id = "cyber_crime_boss",
+						name = "Cyber Crime Boss",
+						company = "International Syndicate",
+						salary = 1000000,
+						category = "hacker",
+					}
+					state.Flags = state.Flags or {}
+					state.Flags.employed = true
+					state.Flags.has_job = true
+					state.Flags.cyber_crime_boss = true
+					state.Flags.most_wanted = true
+					
+					if state.AddFeed then
+						state:AddFeed("👑 You are now a CYBER CRIME BOSS! $1M/year but Interpol is watching...")
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "🏝️ Retire - take your millions and disappear",
+				effects = { Happiness = 25 },
+				setFlags = { retired_hacker = true },
+				feedText = "You retired to a private island. Living the dream!",
+				onResolve = function(state)
+					state.CurrentJob = nil
+					state.Flags = state.Flags or {}
+					state.Flags.employed = nil
+					state.Flags.has_job = nil
+					state.Flags.retired_hacker = true
+					state.Flags.black_hat = nil
+					state.Flags.elite_hacker = nil
+					-- Give a big retirement bonus
+					state.Money = (state.Money or 0) + 500000
+					
+					if state.AddFeed then
+						state:AddFeed("🏝️ You retired from hacking with $500K bonus. Enjoying the beach life!")
+					end
+				end,
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- WHITE HAT PATH EVENTS
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{

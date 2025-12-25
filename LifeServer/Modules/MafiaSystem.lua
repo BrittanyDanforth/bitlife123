@@ -2142,9 +2142,36 @@ function MafiaSystem:doOperationWithForcedResult(lifeState, operationId, forcedS
 		return true, result.message, result
 	else
 		-- FAILED! Player lost the minigame
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Combat loss = health damage!
+		-- User complaint: "I GOT KNOCKED OUT AND IT SAID CRIME SUCCESSFUL"
+		-- If you lose a combat operation, you take damage from getting beaten!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		
 		result.heat = self:calculateHeat(lifeState, operation.risk / 5, riskMod)
 		self:addHeat(lifeState, result.heat)
 		mobState.operationsFailed = (mobState.operationsFailed or 0) + 1
+		
+		-- Combat operations deal health damage when lost
+		local combatOperations = { hitjob = true, intimidation = true, assault = true, protection = true }
+		local isCombatOp = combatOperations[operationId] or (modifiers and modifiers.combatCompleted)
+		local healthLost = 0
+		
+		if isCombatOp then
+			healthLost = math.random(10, 25)
+			lifeState.Stats = lifeState.Stats or {}
+			local currentHealth = lifeState.Stats.Health or lifeState.Health or 50
+			lifeState.Stats.Health = math.max(0, currentHealth - healthLost)
+			lifeState.Health = lifeState.Stats.Health
+			
+			-- Also lose some happiness from embarrassment
+			local currentHappiness = lifeState.Stats.Happiness or lifeState.Happiness or 50
+			lifeState.Stats.Happiness = math.max(0, currentHappiness - 15)
+			lifeState.Happiness = lifeState.Stats.Happiness
+		end
+		
+		result.healthLost = healthLost
+		result.knockedOut = isCombatOp and healthLost > 0
 		
 		-- Risk of arrest - but lower than normal since they at least tried the minigame
 		-- Only arrest if heat is very high or very unlucky
@@ -2157,14 +2184,26 @@ function MafiaSystem:doOperationWithForcedResult(lifeState, operationId, forcedS
 			local jailYears = math.max(1, math.ceil((operation.risk * riskMod) / 25))
 			lifeState.InJail = true
 			lifeState.JailYearsLeft = jailYears
-			result.message = string.format(
-				"%s Operation failed! You got caught and sentenced to %d years!",
-				operation.emoji,
-				jailYears
-			)
+			if isCombatOp then
+				result.message = string.format(
+					"😵 You got knocked out! Lost %d health. The cops found you and sentenced you to %d years!",
+					healthLost,
+					jailYears
+				)
+			else
+				result.message = string.format(
+					"%s Operation failed! You got caught and sentenced to %d years!",
+					operation.emoji,
+					jailYears
+				)
+			end
 			result.arrested = true
 		else
-			result.message = string.format("%s Operation failed! You barely escaped, but the heat is on.", operation.emoji)
+			if isCombatOp then
+				result.message = string.format("😵 Embarrassing! They beat you down - lost %d health. You limped away before the cops came.", healthLost)
+			else
+				result.message = string.format("%s Operation failed! You barely escaped, but the heat is on.", operation.emoji)
+			end
 		end
 		
 		return false, result.message, result

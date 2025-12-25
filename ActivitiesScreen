@@ -5577,20 +5577,40 @@ function ActivitiesScreen:doCrime(item)
 						emoji = "👊"
 					end
 				else
-					-- Lost the fight
-					resultTitle = "😵 Fight Lost!"
-					resultMessage = "Your victim fought back and won! You're the one who got beat up."
-					if serverResult and serverResult.caught then
-						resultMessage = resultMessage .. " And the cops got you too!"
-						emoji = "🚔"
+					-- Lost the fight - GOT KNOCKED OUT!
+					-- CRITICAL FIX: Show proper "knocked out" message with health loss
+					-- User feedback: "I GOT KNOCKED OUT AND IT SAID CRIME SUCCESSFUL INSTEAD OF BE LIKE DAMN EMBARESSING"
+					if serverResult and serverResult.knockedOut then
+						-- Server confirmed knockout - use server message which includes health loss
+						resultTitle = "😵 Knocked Out!"
+						resultMessage = serverResult.message or "They knocked you out cold!"
+						if serverResult.healthLost then
+							resultMessage = resultMessage .. string.format("\n\n💔 -%d Health", serverResult.healthLost)
+						end
+						if serverResult.caught then
+							emoji = "🚔"
+						else
+							emoji = "😵"
+						end
 					else
-						emoji = "😵"
+						-- Fallback if server didn't send knockedOut flag
+						resultTitle = "😵 Humiliating Defeat!"
+						resultMessage = "Your victim fought back and knocked you out! That's embarrassing..."
+						if serverResult and serverResult.caught then
+							resultMessage = resultMessage .. "\n\n🚔 And the cops got you too!"
+							emoji = "🚔"
+						else
+							emoji = "😵"
+						end
 					end
 				end
 				
 				-- Show proper result after combat
+				-- CRITICAL FIX: Use server's success value for display, NOT just combat win
+				-- If knocked out, crimeSuccess must be false even if server somehow says success
+				local actualSuccess = crimeSuccess and not (serverResult and serverResult.knockedOut)
 				self:show()
-				self:showActivityResult(crimeSuccess, resultMessage, item, emoji, serverResult and serverResult.caught)
+				self:showActivityResult(actualSuccess, resultMessage, item, emoji, serverResult and serverResult.caught)
 			end, { 
 				context = combatContext,
 				difficulty = item.id == "mugging" and "weak" or "average" -- Mugging targets are usually weaker
