@@ -45,6 +45,8 @@ MafiaSystem.Families = {
 			{ id = "loan_shark", name = "Shylock Loans", emoji = "💵", risk = 35, reward = { min = 3000, max = 12000 }, respect = 18, description = "Collect interest from desperate borrowers.", rankRequired = 2, category = "finance" },
 			{ id = "smuggling", name = "Smuggle Goods", emoji = "📦", risk = 40, reward = { min = 2000, max = 10000 }, respect = 20, description = "Sneak contraband through the docks.", rankRequired = 3, category = "logistics" },
 			{ id = "heist", name = "Plan a Heist", emoji = "🏦", risk = 60, reward = { min = 10000, max = 100000 }, respect = 50, description = "Coordinate a high-stakes robbery.", rankRequired = 4, category = "score" },
+			-- CRITICAL FIX: Added hitjob to match client fallback operations
+			{ id = "hitjob", name = "Hit Job", emoji = "🎯", risk = 80, reward = { min = 15000, max = 50000 }, respect = 80, description = "Take out a rival target.", rankRequired = 4, category = "enforcement" },
 			{ id = "silencer", name = "Silence a Witness", emoji = "🎯", risk = 80, reward = { min = 5000, max = 25000 }, respect = 100, description = "Make sure someone can't testify.", rankRequired = 5, category = "enforcement" },
 		},
 		initiation = "You must prove your loyalty by completing a task for the family.",
@@ -72,6 +74,8 @@ MafiaSystem.Families = {
 			{ id = "weapons", name = "Arms Dealing", emoji = "🔫", risk = 45, reward = { min = 3000, max = 15000 }, respect = 25, description = "Broker a weapons shipment.", rankRequired = 3, category = "logistics" },
 			-- CRITICAL FIX: Added heist operation so client fallback works!
 			{ id = "heist", name = "Bank Heist", emoji = "🏦", risk = 60, reward = { min = 10000, max = 100000 }, respect = 50, description = "Coordinate a high-stakes bank robbery.", rankRequired = 4, category = "score" },
+			-- CRITICAL FIX: Added hitjob to match client fallback operations
+			{ id = "hitjob", name = "Hit Job", emoji = "🎯", risk = 80, reward = { min = 15000, max = 50000 }, respect = 80, description = "Take out a rival target.", rankRequired = 4, category = "enforcement" },
 			{ id = "ransom", name = "High-Value Ransom", emoji = "💼", risk = 70, reward = { min = 15000, max = 75000 }, respect = 60, description = "Grab a VIP and negotiate ransom.", rankRequired = 4, category = "score" },
 			{ id = "enforcer_hit", name = "Enforcer Job", emoji = "🕶️", risk = 85, reward = { min = 10000, max = 50000 }, respect = 120, description = "Handle a problem for the boss.", rankRequired = 5, category = "enforcement" },
 		},
@@ -100,6 +104,8 @@ MafiaSystem.Families = {
 			{ id = "construction", name = "Construction Bid Rigging", emoji = "🏗️", risk = 25, reward = { min = 3000, max = 15000 }, respect = 15, description = "Control major contracts.", rankRequired = 3, category = "logistics" },
 			-- CRITICAL FIX: Added heist operation so client fallback works!
 			{ id = "heist", name = "Casino Heist", emoji = "🏦", risk = 60, reward = { min = 10000, max = 100000 }, respect = 50, description = "Hit a casino vault for major score.", rankRequired = 4, category = "score" },
+			-- CRITICAL FIX: Added hitjob to match client fallback operations
+			{ id = "hitjob", name = "Hit Job", emoji = "🎯", risk = 80, reward = { min = 15000, max = 50000 }, respect = 80, description = "Take out a rival target.", rankRequired = 4, category = "enforcement" },
 			{ id = "art_smuggling", name = "Art Smuggling", emoji = "🖼️", risk = 45, reward = { min = 7000, max = 30000 }, respect = 35, description = "Move stolen art overseas.", rankRequired = 4, category = "logistics" },
 			{ id = "international_smuggling", name = "International Smuggling", emoji = "🚢", risk = 75, reward = { min = 20000, max = 100000 }, respect = 80, description = "Massive contraband operation overseas.", rankRequired = 5, category = "score" },
 			{ id = "yubitsume", name = "Enforce Loyalty", emoji = "🩸", risk = 50, reward = { min = 0, max = 0 }, respect = 150, description = "Make an example with yubitsume.", rankRequired = 5, category = "discipline" },
@@ -129,6 +135,8 @@ MafiaSystem.Families = {
 			{ id = "production", name = "Run Operations", emoji = "⚗️", risk = 50, reward = { min = 10000, max = 50000 }, respect = 35, description = "Oversee the production facility.", rankRequired = 3, category = "finance" },
 			-- CRITICAL FIX: Added heist operation so client fallback works!
 			{ id = "heist", name = "Border Heist", emoji = "🏦", risk = 60, reward = { min = 10000, max = 100000 }, respect = 50, description = "Hit a border facility for major score.", rankRequired = 4, category = "score" },
+			-- CRITICAL FIX: Added hitjob to match client fallback operations
+			{ id = "hitjob", name = "Hit Job", emoji = "🎯", risk = 80, reward = { min = 15000, max = 50000 }, respect = 80, description = "Take out a rival target.", rankRequired = 4, category = "enforcement" },
 			{ id = "distribution", name = "Distribution Network", emoji = "📦", risk = 35, reward = { min = 8000, max = 30000 }, respect = 25, description = "Expand the regional network.", rankRequired = 4, category = "logistics" },
 			{ id = "facility_expansion", name = "Facility Expansion", emoji = "🏭", risk = 55, reward = { min = 12000, max = 60000 }, respect = 40, description = "Build a new hidden facility.", rankRequired = 4, category = "finance" },
 			{ id = "territorial", name = "Territory Takeover", emoji = "🌎", risk = 90, reward = { min = 25000, max = 150000 }, respect = 100, description = "Seize a rival's territory.", rankRequired = 5, category = "enforcement" },
@@ -158,6 +166,8 @@ MafiaSystem.Families = {
 			{ id = "nightclub_take", name = "Nightclub Takeover", emoji = "🎤", risk = 35, reward = { min = 5000, max = 22000 }, respect = 22, description = "Seize control of a nightclub.", rankRequired = 3, category = "violence" },
 			-- CRITICAL FIX: Added heist operation so client fallback works!
 			{ id = "heist", name = "Vault Heist", emoji = "🏦", risk = 60, reward = { min = 10000, max = 100000 }, respect = 50, description = "Hit a bank vault for major score.", rankRequired = 4, category = "score" },
+			-- CRITICAL FIX: Added hitjob to match client fallback operations
+			{ id = "hitjob", name = "Hit Job", emoji = "🎯", risk = 80, reward = { min = 15000, max = 50000 }, respect = 80, description = "Take out a rival target.", rankRequired = 4, category = "enforcement" },
 			{ id = "smuggling", name = "Smuggling Ring", emoji = "🚢", risk = 55, reward = { min = 15000, max = 60000 }, respect = 40, description = "Move contraband along the coast.", rankRequired = 4, category = "logistics" },
 			{ id = "ritual", name = "Blood Oath Ceremony", emoji = "🩸", risk = 40, reward = { min = 0, max = 0 }, respect = 200, description = "Enforce loyalty through ritual.", rankRequired = 5, category = "discipline" },
 		},

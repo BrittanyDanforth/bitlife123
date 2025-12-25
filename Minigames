@@ -1562,19 +1562,28 @@ function Minigames:createGetawayGame()
 	self.getawayCard.Size = UDim2.new(0.95, 0, 0.85, 0)  -- 85% of screen height
 	self.getawayCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.getawayCard.Position = UDim2.fromScale(0.5, 0.5)
-	self.getawayCard.BackgroundColor3 = Color3.fromRGB(25, 35, 45)
+	-- VISUAL FIX: More car-chase themed dark gradient background
+	self.getawayCard.BackgroundColor3 = Color3.fromRGB(15, 25, 40)
 	self.getawayCard.ZIndex = 201
 	self.getawayCard.ClipsDescendants = true  -- CRITICAL: Prevent content overflow
 	self.getawayCard.Parent = self.getawayOverlay
 	corner(self.getawayCard, 20)
+	
+	-- Add a subtle border glow effect
+	local cardStroke = Instance.new("UIStroke")
+	cardStroke.Color = Color3.fromRGB(255, 140, 0)  -- Orange glow
+	cardStroke.Thickness = 2
+	cardStroke.Transparency = 0.5
+	cardStroke.Parent = self.getawayCard
 
 	local getawayTitle = Instance.new("TextLabel")
 	getawayTitle.Size = UDim2.new(1, 0, 0, 60)
-	getawayTitle.BackgroundColor3 = Color3.fromRGB(180, 100, 50)
+	-- VISUAL FIX: More vibrant orange-red gradient for urgency
+	getawayTitle.BackgroundColor3 = Color3.fromRGB(220, 80, 30)
 	getawayTitle.Font = F.Title
-	getawayTitle.TextSize = 24
+	getawayTitle.TextSize = 26
 	getawayTitle.TextColor3 = C.White
-	getawayTitle.Text = "🚗 GETAWAY!"
+	getawayTitle.Text = "🚗💨 GRAND THEFT AUTO!"
 	getawayTitle.ZIndex = 202
 	getawayTitle.Parent = self.getawayCard
 	corner(getawayTitle, 20)
@@ -1582,20 +1591,21 @@ function Minigames:createGetawayGame()
 	local titleFix = Instance.new("Frame")
 	titleFix.Size = UDim2.new(1, 0, 0, 30)
 	titleFix.Position = UDim2.new(0, 0, 0, 35)
-	titleFix.BackgroundColor3 = Color3.fromRGB(180, 100, 50)
+	titleFix.BackgroundColor3 = Color3.fromRGB(220, 80, 30)
 	titleFix.ZIndex = 202
 	titleFix.Parent = getawayTitle
 
 	self.getawayInstructions = Instance.new("TextLabel")
-	self.getawayInstructions.Size = UDim2.new(0.9, 0, 0, 40)
+	self.getawayInstructions.Size = UDim2.new(0.9, 0, 0, 45)
 	self.getawayInstructions.AnchorPoint = Vector2.new(0.5, 0)
 	self.getawayInstructions.Position = UDim2.new(0.5, 0, 0, 70)
 	self.getawayInstructions.BackgroundTransparency = 1
-	self.getawayInstructions.Font = F.Body
-	self.getawayInstructions.TextSize = 14
-	self.getawayInstructions.TextColor3 = C.Gray300
+	self.getawayInstructions.Font = F.Medium
+	self.getawayInstructions.TextSize = 15
+	self.getawayInstructions.TextColor3 = Color3.fromRGB(255, 200, 100)  -- Yellow-orange for visibility
 	self.getawayInstructions.TextWrapped = true
-	self.getawayInstructions.Text = "TAP THE HIGHLIGHTED BUTTONS IN ORDER! Don't let the cops catch you!"
+	-- VISUAL FIX: Clearer, more exciting instructions
+	self.getawayInstructions.Text = "🔵 Watch the pattern → Repeat the directions → Escape before cops catch you!"
 	self.getawayInstructions.ZIndex = 202
 	self.getawayInstructions.Parent = self.getawayCard
 
@@ -1735,10 +1745,17 @@ function Minigames:handleGetawayInput(btnIndex)
 	local targetIndex = self.getawaySequence[self.currentSequenceIndex]
 
 	if btnIndex == targetIndex then
-		self.getawayBtns[btnIndex].BackgroundColor3 = C.Green
+		-- ═══════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Made getaway minigame EASIER and more visually rewarding
+		-- User complaint: "it's a bit weird kinda but ensure its pretty easy too"
+		-- - Increased progress per correct input from 0.1 to 0.15 (need ~7 to win vs 10)
+		-- - Better visual feedback with brighter colors
+		-- ═══════════════════════════════════════════════════════════════════════════
+		self.getawayBtns[btnIndex].BackgroundColor3 = Color3.fromRGB(50, 205, 50) -- Bright green
 		self.currentSequenceIndex += 1
 
-		self.getawayProgress = self.getawayProgress + 0.1
+		-- EASIER: More progress per correct input (0.15 = need ~7 to win instead of 10)
+		self.getawayProgress = self.getawayProgress + 0.15
 		tween(self.getawayProgressFill, TweenInfo.new(0.2), {
 			Size = UDim2.new(math.min(1, self.getawayProgress), 0, 1, 0),
 		})
@@ -1763,8 +1780,9 @@ function Minigames:handleGetawayInput(btnIndex)
 			end)
 		end
 	else
-		self.getawayBtns[btnIndex].BackgroundColor3 = C.Red
-		self.copProgress = self.copProgress + 0.15
+		-- EASIER: Reduced cop penalty from 0.15 to 0.10 (more forgiving mistakes)
+		self.getawayBtns[btnIndex].BackgroundColor3 = Color3.fromRGB(255, 50, 50) -- Bright red
+		self.copProgress = self.copProgress + 0.10
 		tween(self.copProgressFill, TweenInfo.new(0.2), {
 			Size = UDim2.new(math.min(1, self.copProgress), 0, 1, 0),
 		})
@@ -1780,12 +1798,19 @@ function Minigames:startCopChase()
 		pcall(function() task.cancel(self._getawayCopChaseThread) end)
 	end
 
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Made cop chase SLOWER for easier gameplay
+	-- User complaint: "ensure its pretty easy too"
+	-- - Increased wait from 2s to 2.5s between cop progress ticks
+	-- - Reduced cop progress from 0.05 to 0.04 per tick
+	-- This gives players more time to complete sequences without pressure
+	-- ═══════════════════════════════════════════════════════════════════════════
 	self._getawayCopChaseThread = task.spawn(function()
 		while self.activeGame == "getaway" do
-			task.wait(2)
+			task.wait(2.5)  -- EASIER: Was 2s, now 2.5s
 			if self.activeGame ~= "getaway" then break end
 
-			self.copProgress = self.copProgress + 0.05
+			self.copProgress = self.copProgress + 0.04  -- EASIER: Was 0.05, now 0.04
 			tween(self.copProgressFill, TweenInfo.new(0.3), {
 				Size = UDim2.new(math.min(1, self.copProgress), 0, 1, 0),
 			})
@@ -2495,52 +2520,58 @@ function Minigames:createHackingGame()
 	self.hackOverlay.Parent = self.screenGui
 
 	self.hackCard = Instance.new("Frame")
-	-- CRITICAL FIX: Responsive height for mobile
-	self.hackCard.Size = UDim2.new(0.95, 0, 0.85, 0)
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Mobile-responsive System Breach UI
+	-- User complaint: "bunched up" and doesn't work on mobile
+	-- Solution: Use percentage-based positioning for all elements
+	-- ═══════════════════════════════════════════════════════════════════════════
+	self.hackCard.Size = UDim2.new(0.95, 0, 0.88, 0)  -- Slightly taller for better fit
 	self.hackCard.ClipsDescendants = true
 	self.hackCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.hackCard.Position = UDim2.fromScale(0.5, 0.5)
-	self.hackCard.BackgroundColor3 = Color3.fromRGB(15, 25, 20)
+	self.hackCard.BackgroundColor3 = Color3.fromRGB(10, 20, 15)
 	self.hackCard.ZIndex = 201
 	self.hackCard.Parent = self.hackOverlay
-	corner(self.hackCard, 20)
+	corner(self.hackCard, 16)
+	
+	-- Matrix-style border glow
+	local hackStroke = Instance.new("UIStroke")
+	hackStroke.Color = Color3.fromRGB(0, 255, 100)
+	hackStroke.Thickness = 2
+	hackStroke.Transparency = 0.6
+	hackStroke.Parent = self.hackCard
 
+	-- Title - 10% of card height
 	local hackTitle = Instance.new("TextLabel")
-	hackTitle.Size = UDim2.new(1, 0, 0, 60)
-	hackTitle.BackgroundColor3 = Color3.fromRGB(0, 80, 60)
+	hackTitle.Size = UDim2.new(1, 0, 0.10, 0)
+	hackTitle.BackgroundColor3 = Color3.fromRGB(0, 70, 50)
 	hackTitle.Font = F.Title
-	hackTitle.TextSize = 24
-	hackTitle.TextColor3 = C.Green
+	hackTitle.TextSize = 22
+	hackTitle.TextColor3 = Color3.fromRGB(0, 255, 100)
 	hackTitle.Text = "💻 SYSTEM BREACH"
 	hackTitle.ZIndex = 202
 	hackTitle.Parent = self.hackCard
-	corner(hackTitle, 20)
+	corner(hackTitle, 16)
 
-	local titleFix = Instance.new("Frame")
-	titleFix.Size = UDim2.new(1, 0, 0, 30)
-	titleFix.Position = UDim2.new(0, 0, 0, 35)
-	titleFix.BackgroundColor3 = Color3.fromRGB(0, 80, 60)
-	titleFix.ZIndex = 202
-	titleFix.Parent = hackTitle
-
+	-- Instructions - 7% of card height
 	self.hackInstructions = Instance.new("TextLabel")
-	self.hackInstructions.Size = UDim2.new(0.9, 0, 0, 40)
+	self.hackInstructions.Size = UDim2.new(0.92, 0, 0.07, 0)
 	self.hackInstructions.AnchorPoint = Vector2.new(0.5, 0)
-	self.hackInstructions.Position = UDim2.new(0.5, 0, 0, 70)
+	self.hackInstructions.Position = UDim2.new(0.5, 0, 0.11, 0)
 	self.hackInstructions.BackgroundTransparency = 1
 	self.hackInstructions.Font = F.Body
-	self.hackInstructions.TextSize = 14
-	self.hackInstructions.TextColor3 = C.Green
+	self.hackInstructions.TextSize = 13
+	self.hackInstructions.TextColor3 = Color3.fromRGB(150, 255, 180)
 	self.hackInstructions.TextWrapped = true
-	self.hackInstructions.Text = "Enter the security codes before time runs out!"
+	self.hackInstructions.Text = "Match the security codes to breach the system!"
 	self.hackInstructions.ZIndex = 202
 	self.hackInstructions.Parent = self.hackCard
 
-	-- Timer bar
+	-- Timer bar - 3% of card height
 	self.hackTimerBg = Instance.new("Frame")
-	self.hackTimerBg.Size = UDim2.new(0.9, 0, 0, 12)
+	self.hackTimerBg.Size = UDim2.new(0.9, 0, 0.025, 0)
 	self.hackTimerBg.AnchorPoint = Vector2.new(0.5, 0)
-	self.hackTimerBg.Position = UDim2.new(0.5, 0, 0, 115)
+	self.hackTimerBg.Position = UDim2.new(0.5, 0, 0.19, 0)
 	self.hackTimerBg.BackgroundColor3 = C.Gray700
 	self.hackTimerBg.ZIndex = 202
 	self.hackTimerBg.Parent = self.hackCard
@@ -2548,81 +2579,99 @@ function Minigames:createHackingGame()
 
 	self.hackTimerFill = Instance.new("Frame")
 	self.hackTimerFill.Size = UDim2.new(1, 0, 1, 0)
-	self.hackTimerFill.BackgroundColor3 = C.Green
+	self.hackTimerFill.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
 	self.hackTimerFill.ZIndex = 203
 	self.hackTimerFill.Parent = self.hackTimerBg
 	pill(self.hackTimerFill)
 
-	-- Code display (what to type)
+	-- Code display (what to type) - 9% of card height
 	self.hackCodeDisplay = Instance.new("TextLabel")
-	self.hackCodeDisplay.Size = UDim2.new(0.9, 0, 0, 50)
+	self.hackCodeDisplay.Size = UDim2.new(0.85, 0, 0.09, 0)
 	self.hackCodeDisplay.AnchorPoint = Vector2.new(0.5, 0)
-	self.hackCodeDisplay.Position = UDim2.new(0.5, 0, 0, 140)
-	self.hackCodeDisplay.BackgroundColor3 = Color3.fromRGB(0, 40, 30)
+	self.hackCodeDisplay.Position = UDim2.new(0.5, 0, 0.23, 0)
+	self.hackCodeDisplay.BackgroundColor3 = Color3.fromRGB(0, 35, 25)
 	self.hackCodeDisplay.Font = Enum.Font.Code
-	self.hackCodeDisplay.TextSize = 28
-	self.hackCodeDisplay.TextColor3 = C.Green
+	self.hackCodeDisplay.TextSize = 26
+	self.hackCodeDisplay.TextColor3 = Color3.fromRGB(0, 255, 100)
 	self.hackCodeDisplay.Text = "####"
 	self.hackCodeDisplay.ZIndex = 202
 	self.hackCodeDisplay.Parent = self.hackCard
-	corner(self.hackCodeDisplay, 12)
+	corner(self.hackCodeDisplay, 10)
 
-	-- User input display
+	-- User input display - 9% of card height
 	self.hackInputDisplay = Instance.new("TextLabel")
-	self.hackInputDisplay.Size = UDim2.new(0.9, 0, 0, 50)
+	self.hackInputDisplay.Size = UDim2.new(0.85, 0, 0.09, 0)
 	self.hackInputDisplay.AnchorPoint = Vector2.new(0.5, 0)
-	self.hackInputDisplay.Position = UDim2.new(0.5, 0, 0, 200)
-	self.hackInputDisplay.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+	self.hackInputDisplay.Position = UDim2.new(0.5, 0, 0.335, 0)
+	self.hackInputDisplay.BackgroundColor3 = Color3.fromRGB(25, 30, 35)
 	self.hackInputDisplay.Font = Enum.Font.Code
-	self.hackInputDisplay.TextSize = 28
+	self.hackInputDisplay.TextSize = 26
 	self.hackInputDisplay.TextColor3 = C.Amber
 	self.hackInputDisplay.Text = "____"
 	self.hackInputDisplay.ZIndex = 202
 	self.hackInputDisplay.Parent = self.hackCard
-	corner(self.hackInputDisplay, 12)
+	corner(self.hackInputDisplay, 10)
 
-	-- Progress
+	-- Progress - 5% of card height
 	self.hackProgressLabel = Instance.new("TextLabel")
-	self.hackProgressLabel.Size = UDim2.new(0.9, 0, 0, 30)
+	self.hackProgressLabel.Size = UDim2.new(0.9, 0, 0.05, 0)
 	self.hackProgressLabel.AnchorPoint = Vector2.new(0.5, 0)
-	self.hackProgressLabel.Position = UDim2.new(0.5, 0, 0, 260)
+	self.hackProgressLabel.Position = UDim2.new(0.5, 0, 0.44, 0)
 	self.hackProgressLabel.BackgroundTransparency = 1
 	self.hackProgressLabel.Font = F.Medium
-	self.hackProgressLabel.TextSize = 14
-	self.hackProgressLabel.TextColor3 = C.Green
+	self.hackProgressLabel.TextSize = 13
+	self.hackProgressLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
 	self.hackProgressLabel.Text = "Codes: 0/5"
 	self.hackProgressLabel.ZIndex = 202
 	self.hackProgressLabel.Parent = self.hackCard
 
-	-- Keypad
+	-- Keypad - 45% of card height (large for easy mobile tapping)
 	self.hackKeypad = Instance.new("Frame")
-	self.hackKeypad.Size = UDim2.new(0.8, 0, 0, 180)
+	self.hackKeypad.Size = UDim2.new(0.9, 0, 0.45, 0)
 	self.hackKeypad.AnchorPoint = Vector2.new(0.5, 0)
-	self.hackKeypad.Position = UDim2.new(0.5, 0, 0, 300)
+	self.hackKeypad.Position = UDim2.new(0.5, 0, 0.50, 0)
 	self.hackKeypad.BackgroundTransparency = 1
 	self.hackKeypad.ZIndex = 202
 	self.hackKeypad.Parent = self.hackCard
 
 	local keypadLayout = Instance.new("UIGridLayout")
-	keypadLayout.CellSize = UDim2.new(0.3, 0, 0.22, 0)
-	keypadLayout.CellPadding = UDim2.new(0.025, 0, 0.04, 0)
+	keypadLayout.CellSize = UDim2.new(0.30, -4, 0.22, -4)  -- Responsive cells with slight padding
+	keypadLayout.CellPadding = UDim2.new(0.025, 0, 0.03, 0)
 	keypadLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	keypadLayout.Parent = self.hackKeypad
 
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Mobile-optimized keypad buttons
+	-- Larger text, better contrast, responsive sizing
+	-- ═══════════════════════════════════════════════════════════════════════════
 	local keyOrder = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0", "✓" }
 	self.hackKeyBtns = {}
 	for i, key in ipairs(keyOrder) do
 		local btn = Instance.new("TextButton")
-		btn.BackgroundColor3 = (key == "✓" and C.Green) or (key == "⌫" and C.Red) or Color3.fromRGB(0, 60, 45)
+		-- More vibrant colors for visibility
+		if key == "✓" then
+			btn.BackgroundColor3 = Color3.fromRGB(40, 180, 80)  -- Bright green
+		elseif key == "⌫" then
+			btn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)  -- Bright red
+		else
+			btn.BackgroundColor3 = Color3.fromRGB(0, 80, 60)  -- Matrix green
+		end
 		btn.Font = F.Title
-		btn.TextSize = 24
+		btn.TextSize = 28  -- Larger text for mobile
 		btn.TextColor3 = C.White
 		btn.Text = key
 		btn.AutoButtonColor = false
 		btn.LayoutOrder = i
 		btn.ZIndex = 203
 		btn.Parent = self.hackKeypad
-		corner(btn, 12)
+		corner(btn, 10)
+		
+		-- Add subtle border for better visibility
+		local btnStroke = Instance.new("UIStroke")
+		btnStroke.Color = Color3.fromRGB(0, 200, 120)
+		btnStroke.Thickness = 1
+		btnStroke.Transparency = 0.7
+		btnStroke.Parent = btn
 
 		self.hackKeyBtns[key] = btn
 	end

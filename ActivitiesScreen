@@ -2496,14 +2496,27 @@ function ActivitiesScreen:doMobOperation(opId, opName)
 			minigameInstance:play(minigameType, function(won, minigameResult)
 				log("[ActivitiesScreen] Minigame result - Won:", won)
 				
-				-- Build modifiers with minigame result
+				-- ═══════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX: Build modifiers with minigame result
+			-- User complaint: "plan heist still go jail even if correctly do minigame"
+			-- Issue: The `and won or nil` pattern returns `nil` when `won = false`
+			-- This causes server to fallback to random roll instead of respecting loss
+			-- Fix: Explicitly check minigameType and always pass the boolean result
+			-- ═══════════════════════════════════════════════════════════════════════════
 				local modifiers = {
-					combatCompleted = (minigameType == "combat"),
-					combatWon = (minigameType == "combat") and won or nil,
-					heistCompleted = (minigameType == "heist"),
-					heistSuccess = (minigameType == "heist") and won or nil,
 					minigameResult = minigameResult,
 				}
+				
+				if minigameType == "combat" then
+					modifiers.combatCompleted = true
+					modifiers.combatWon = won  -- Explicit boolean (true/false)
+				elseif minigameType == "heist" then
+					modifiers.heistCompleted = true
+					modifiers.heistSuccess = won  -- Explicit boolean (true/false)
+				end
+				
+				log(string.format("[MOB_MINIGAME] Type: %s | Won: %s | Sending heistSuccess: %s", 
+					tostring(minigameType), tostring(won), tostring(modifiers.heistSuccess)))
 				
 				-- Call server with minigame results
 				local success, result = pcall(function()

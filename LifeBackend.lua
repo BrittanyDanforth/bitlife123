@@ -6402,42 +6402,182 @@ local ActivityCatalog = {
 }
 
 local CrimeCatalog = {
-	-- PETTY CRIMES (low risk)
-	porch_pirate = { risk = 20, reward = { 30, 200 }, jail = { min = 0.2, max = 1 } },
-	shoplift = { risk = 25, reward = { 20, 150 }, jail = { min = 0.5, max = 2 } },
-	pickpocket = { risk = 35, reward = { 30, 300 }, jail = { min = 0.5, max = 2 }, hasMinigame = true, minigameType = "qte" },
-	-- PROPERTY CRIMES (medium risk)
-	burglary = { risk = 50, reward = { 500, 5000 }, jail = { min = 2, max = 5 }, hasMinigame = true, minigameType = "heist" },
-	gta = { risk = 60, reward = { 2000, 20000 }, jail = { min = 3, max = 7 }, hasMinigame = true, minigameType = "getaway" },
-	-- MAJOR CRIMES (high risk)
-	bank_robbery = { risk = 80, reward = { 10000, 500000 }, jail = { min = 5, max = 12 }, hasMinigame = true, minigameType = "heist" },
-	-- EXPANDED CRIMES (CRITICAL FIX: Added more variety)
-	tax_fraud = { risk = 35, reward = { 5000, 50000 }, jail = { min = 1, max = 5 } },
-	identity_theft = { risk = 40, reward = { 1000, 20000 }, jail = { min = 2, max = 6 } },
-	smuggling = { risk = 55, reward = { 500, 10000 }, jail = { min = 3, max = 10 } },
-	car_theft = { risk = 50, reward = { 3000, 15000 }, jail = { min = 2, max = 5 } },
-	arson = { risk = 70, reward = { 0, 1000 }, jail = { min = 5, max = 15 } },
-	intimidation = { risk = 60, reward = { 2000, 30000 }, jail = { min = 3, max = 8 } },
-	ransom = { risk = 85, reward = { 10000, 200000 }, jail = { min = 10, max = 25 } },
-	assault = { risk = 90, reward = { 0, 5000 }, jail = { min = 20, max = 100 } },
-	-- CRITICAL FIX: Added missing crimes from ActivitiesScreen (was causing "Unknown Crime" errors)
-	illegal_dealing = { risk = 55, reward = { 500, 10000 }, jail = { min = 3, max = 10 } }, -- Renamed from drug_dealing
-	extortion = { risk = 60, reward = { 2000, 30000 }, jail = { min = 3, max = 8 } },
-	kidnapping = { risk = 85, reward = { 10000, 200000 }, jail = { min = 10, max = 25 } },
-	murder = { risk = 95, reward = { 0, 5000 }, jail = { min = 25, max = 100 } },
-	hacking = { risk = 45, reward = { 5000, 50000 }, jail = { min = 2, max = 8 }, hasMinigame = true, minigameType = "hacking" },
-	counterfeiting = { risk = 50, reward = { 3000, 25000 }, jail = { min = 2, max = 7 } },
-	fraud = { risk = 40, reward = { 2000, 20000 }, jail = { min = 1, max = 5 } },
-	embezzlement = { risk = 45, reward = { 10000, 100000 }, jail = { min = 3, max = 10 } },
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- PETTY CRIMES (low risk) - These set basic criminal flags for career unlocks!
+	-- User complaint: "petty crimes like assault pick pocket let u become a smuggler"
+	-- ═══════════════════════════════════════════════════════════════════════════
+	porch_pirate = { 
+		risk = 20, reward = { 30, 200 }, jail = { min = 0.2, max = 1 },
+		name = "Porch Pirate", -- CRITICAL FIX: Added name to prevent "Unknown crime"
+		grantsFlags = { "petty_criminal", "crime_experience", "criminal_background" },
+	},
+	shoplift = { 
+		risk = 25, reward = { 20, 150 }, jail = { min = 0.5, max = 2 },
+		name = "Shoplifting",
+		grantsFlags = { "petty_criminal", "crime_experience", "criminal_background" },
+	},
+	pickpocket = { 
+		risk = 35, reward = { 30, 300 }, jail = { min = 0.5, max = 2 }, 
+		hasMinigame = true, minigameType = "qte",
+		name = "Pickpocketing",
+		grantsFlags = { "petty_criminal", "crime_experience", "criminal_background", "street_thief" },
+	},
 	
 	-- ═══════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX #8: PRISON CRIMES - Can be committed while incarcerated
-	-- Getting caught adds years to sentence instead of starting new sentence
+	-- VIOLENCE CRIMES - Combat-based
 	-- ═══════════════════════════════════════════════════════════════════════════
-	prison_assault = { risk = 60, reward = { 0, 200 }, jail = { min = 1, max = 3 }, isPrisonCrime = true },
-	prison_riot = { risk = 80, reward = { 0, 0 }, jail = { min = 2, max = 5 }, isPrisonCrime = true },
-	prison_contraband = { risk = 50, reward = { 100, 1000 }, jail = { min = 1, max = 2 }, isPrisonCrime = true },
-	prison_gang_violence = { risk = 70, reward = { 0, 500 }, jail = { min = 2, max = 4 }, isPrisonCrime = true },
+	assault = { 
+		risk = 45, reward = { 0, 500 }, jail = { min = 1, max = 5 }, -- FIXED: Reduced from insane 20-100 years
+		name = "Assault",
+		hasMinigame = true, minigameType = "combat",
+		grantsFlags = { "violent_criminal", "crime_experience", "criminal_background", "assault_record" },
+	},
+	mugging = { -- CRITICAL FIX: Was missing! Client sends this ID
+		risk = 55, reward = { 50, 500 }, jail = { min = 1, max = 4 },
+		name = "Mugging",
+		hasMinigame = true, minigameType = "combat",
+		grantsFlags = { "violent_criminal", "crime_experience", "criminal_background", "robbery_record" },
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- PROPERTY CRIMES (medium risk)
+	-- ═══════════════════════════════════════════════════════════════════════════
+	burglary = { 
+		risk = 50, reward = { 500, 5000 }, jail = { min = 2, max = 5 }, 
+		hasMinigame = true, minigameType = "heist",
+		name = "Burglary",
+		grantsFlags = { "property_criminal", "crime_experience", "criminal_background", "burglary_record" },
+	},
+	gta = { 
+		risk = 60, reward = { 2000, 20000 }, jail = { min = 3, max = 7 }, 
+		hasMinigame = true, minigameType = "getaway",
+		name = "Grand Theft Auto",
+		grantsFlags = { "car_thief", "crime_experience", "criminal_background", "gta_record" },
+	},
+	car_theft = { 
+		risk = 50, reward = { 3000, 15000 }, jail = { min = 2, max = 5 },
+		name = "Car Theft",
+		hasMinigame = true, minigameType = "getaway",
+		grantsFlags = { "car_thief", "crime_experience", "criminal_background" },
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- WHITE COLLAR CRIMES
+	-- ═══════════════════════════════════════════════════════════════════════════
+	tax_fraud = { 
+		risk = 35, reward = { 5000, 50000 }, jail = { min = 1, max = 5 },
+		name = "Tax Fraud",
+		grantsFlags = { "white_collar_criminal", "crime_experience", "criminal_background", "fraud_record" },
+	},
+	identity_theft = { 
+		risk = 40, reward = { 1000, 20000 }, jail = { min = 2, max = 6 },
+		name = "Identity Theft",
+		hasMinigame = true, minigameType = "hacking",
+		grantsFlags = { "white_collar_criminal", "crime_experience", "criminal_background", "hacker" },
+	},
+	fraud = { 
+		risk = 40, reward = { 2000, 20000 }, jail = { min = 1, max = 5 },
+		name = "Fraud",
+		grantsFlags = { "white_collar_criminal", "crime_experience", "criminal_background", "fraud_record" },
+	},
+	embezzlement = { 
+		risk = 45, reward = { 10000, 100000 }, jail = { min = 3, max = 10 },
+		name = "Embezzlement",
+		grantsFlags = { "white_collar_criminal", "crime_experience", "criminal_background" },
+	},
+	counterfeiting = { 
+		risk = 50, reward = { 3000, 25000 }, jail = { min = 2, max = 7 },
+		name = "Counterfeiting",
+		grantsFlags = { "white_collar_criminal", "crime_experience", "criminal_background" },
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- SERIOUS CRIMES
+	-- ═══════════════════════════════════════════════════════════════════════════
+	illegal_dealing = { 
+		risk = 55, reward = { 500, 10000 }, jail = { min = 3, max = 10 },
+		name = "Illegal Dealing",
+		grantsFlags = { "dealer", "crime_experience", "criminal_background", "smuggler_potential" },
+	},
+	smuggling = { 
+		risk = 55, reward = { 500, 10000 }, jail = { min = 3, max = 10 },
+		name = "Smuggling",
+		grantsFlags = { "smuggler", "crime_experience", "criminal_background" },
+	},
+	extortion = { 
+		risk = 60, reward = { 2000, 30000 }, jail = { min = 3, max = 8 },
+		name = "Extortion",
+		hasMinigame = true, minigameType = "debate",
+		grantsFlags = { "extortionist", "crime_experience", "criminal_background", "intimidation_skills" },
+	},
+	intimidation = { 
+		risk = 60, reward = { 2000, 30000 }, jail = { min = 3, max = 8 },
+		name = "Intimidation",
+		grantsFlags = { "intimidator", "crime_experience", "criminal_background" },
+	},
+	arson = { 
+		risk = 70, reward = { 0, 1000 }, jail = { min = 5, max = 15 },
+		name = "Arson",
+		hasMinigame = true, minigameType = "qte",
+		grantsFlags = { "arsonist", "crime_experience", "criminal_background" },
+	},
+	hacking = { 
+		risk = 45, reward = { 5000, 50000 }, jail = { min = 2, max = 8 }, 
+		hasMinigame = true, minigameType = "hacking",
+		name = "Hacking",
+		grantsFlags = { "hacker", "crime_experience", "criminal_background", "tech_criminal" },
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- MAJOR CRIMES (high risk)
+	-- ═══════════════════════════════════════════════════════════════════════════
+	bank_robbery = { 
+		risk = 80, reward = { 10000, 500000 }, jail = { min = 5, max = 12 }, 
+		hasMinigame = true, minigameType = "heist",
+		name = "Bank Robbery",
+		grantsFlags = { "bank_robber", "crime_experience", "criminal_background", "major_criminal" },
+	},
+	kidnapping = { 
+		risk = 85, reward = { 10000, 200000 }, jail = { min = 10, max = 25 },
+		name = "Kidnapping",
+		hasMinigame = true, minigameType = "combat",
+		grantsFlags = { "kidnapper", "crime_experience", "criminal_background", "major_criminal" },
+	},
+	ransom = { 
+		risk = 85, reward = { 10000, 200000 }, jail = { min = 10, max = 25 },
+		name = "Ransom",
+		grantsFlags = { "kidnapper", "crime_experience", "criminal_background", "major_criminal" },
+	},
+	murder = { 
+		risk = 95, reward = { 0, 5000 }, jail = { min = 25, max = 100 },
+		name = "Murder",
+		hasMinigame = true, minigameType = "combat",
+		grantsFlags = { "murderer", "crime_experience", "criminal_background", "violent_criminal" },
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- PRISON CRIMES - Can be committed while incarcerated
+	-- ═══════════════════════════════════════════════════════════════════════════
+	prison_assault = { 
+		risk = 60, reward = { 0, 200 }, jail = { min = 1, max = 3 }, 
+		isPrisonCrime = true,
+		name = "Prison Assault",
+	},
+	prison_riot = { 
+		risk = 80, reward = { 0, 0 }, jail = { min = 2, max = 5 }, 
+		isPrisonCrime = true,
+		name = "Prison Riot",
+	},
+	prison_contraband = { 
+		risk = 50, reward = { 100, 1000 }, jail = { min = 1, max = 2 }, 
+		isPrisonCrime = true,
+		name = "Prison Contraband",
+	},
+	prison_gang_violence = { 
+		risk = 70, reward = { 0, 500 }, jail = { min = 2, max = 4 }, 
+		isPrisonCrime = true,
+		name = "Prison Gang Violence",
+	},
 }
 
 local PrisonActions = {
@@ -15709,7 +15849,24 @@ function LifeBackend:handleCrime(player, crimeId, minigameBonus)
 		if (state.Flags.criminal_experience or 0) >= 5 then
 			state.Flags.experienced_criminal = true
 		end
-		local message = string.format("💰 Perfect execution! You got away clean with $%d!", reward)
+		
+		-- ═══════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Apply grantsFlags from crime catalog!
+		-- User complaint: "petty crimes should let u become a smuggler"
+		-- This sets criminal_background, crime_experience, etc. for career unlocks
+		-- ═══════════════════════════════════════════════════════════════════════════
+		if crime.grantsFlags then
+			for _, flagName in ipairs(crime.grantsFlags) do
+				state.Flags[flagName] = true
+			end
+		end
+		-- Always set these on successful crime
+		state.Flags.criminal_record = true
+		state.Flags.crime_experience = true
+		state.Flags.criminal_background = true
+		
+		local crimeName = crime.name or crimeId
+		local message = string.format("💰 Perfect execution! %s succeeded - you got away clean with $%d!", crimeName, reward)
 		self:pushState(player, message)
 		return { 
 			success = true, 
@@ -15717,6 +15874,7 @@ function LifeBackend:handleCrime(player, crimeId, minigameBonus)
 			message = message, 
 			money = reward,
 			perfectExecution = true,
+			crimeName = crimeName,
 		}
 	end
 	
@@ -15783,10 +15941,30 @@ function LifeBackend:handleCrime(player, crimeId, minigameBonus)
 		local payout = RANDOM:NextInteger(crime.reward[1], crime.reward[2])
 		self:addMoney(state, payout)
 		self:applyStatChanges(state, { Happiness = 4 })
-		local message = string.format("Crime succeeded! You gained %s.", formatMoney(payout))
+		
+		-- ═══════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Apply grantsFlags from crime catalog on success!
+		-- User complaint: "petty crimes should let u become a smuggler"
+		-- ═══════════════════════════════════════════════════════════════════════════
+		if crime.grantsFlags then
+			for _, flagName in ipairs(crime.grantsFlags) do
+				state.Flags[flagName] = true
+			end
+		end
+		-- Always set these on successful crime
+		state.Flags.criminal_record = true
+		state.Flags.crime_experience = true
+		state.Flags.criminal_background = true
+		state.Flags.criminal_experience = (state.Flags.criminal_experience or 0) + 1
+		if (state.Flags.criminal_experience or 0) >= 3 then
+			state.Flags.experienced_criminal = true
+		end
+		
+		local crimeName = crime.name or crimeId
+		local message = string.format("%s succeeded! You gained %s.", crimeName, formatMoney(payout))
 		-- CRITICAL FIX: Don't use showPopup - client shows its own result
 		self:pushState(player, message)
-		return { success = true, caught = false, message = message, money = payout }
+		return { success = true, caught = false, message = message, money = payout, crimeName = crimeName }
 	end
 end
 
