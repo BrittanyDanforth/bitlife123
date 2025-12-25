@@ -418,6 +418,13 @@ function ActivitiesScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc
 		CELEBRITY = 1626461980,
 	}
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #520: Store reference for direct gamepass prompting
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	self._marketplaceService = MarketplaceService
+	self._player = player
+	self._GAMEPASS_IDS = GAMEPASS_IDS
+	
 	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(plr, gamePassId, wasPurchased)
 		if plr ~= player or not wasPurchased then return end
 		
@@ -2686,10 +2693,21 @@ function ActivitiesScreen:showGamepassPrompt(gamepassKey, title, description)
 	end)
 	
 	buyBtn.MouseButton1Click:Connect(function()
-		-- Prompt actual Roblox purchase
-		local PromptPurchase = getRemote("PromptGamepass")
-		if PromptPurchase then
-			PromptPurchase:FireServer(gamepassKey)
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #521: Use direct client-side MarketplaceService prompt!
+		-- This bypasses the server's cooldown and ALWAYS shows the Roblox purchase popup!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local gamepassId = self._GAMEPASS_IDS and self._GAMEPASS_IDS[gamepassKey]
+		if gamepassId and self._marketplaceService and self._player then
+			pcall(function()
+				self._marketplaceService:PromptGamePassPurchase(self._player, gamepassId)
+			end)
+		else
+			-- Fallback to server if direct prompt not available
+			local PromptPurchase = getRemote("PromptGamepass")
+			if PromptPurchase then
+				PromptPurchase:FireServer(gamepassKey, true)
+			end
 		end
 		overlay:Destroy()
 	end)

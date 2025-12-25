@@ -239,6 +239,59 @@ local GAMEPASS_IDS = {
 	TIME_MACHINE = 1630681215,
 }
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #509: DIRECT CLIENT-SIDE GAMEPASS PROMPT FUNCTION!
+-- This bypasses the server's cooldown system entirely for user-initiated clicks!
+-- User complaint: "clicking gamepass button doesn't popup again after first try"
+-- Solution: Call MarketplaceService directly from client - no server cooldown!
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function promptGamepassDirect(gamepassKey)
+	local gamepassId = GAMEPASS_IDS[gamepassKey]
+	if not gamepassId then
+		warn("[LifeClient] Unknown gamepass key:", gamepassKey)
+		return false
+	end
+	
+	-- Check if already owned (from cache)
+	if gamepassKey == "GOD_MODE" and hasGodMode then
+		print("[LifeClient] Already owns GOD_MODE")
+		return false
+	elseif gamepassKey == "ROYALTY" and hasRoyalty then
+		print("[LifeClient] Already owns ROYALTY")
+		return false
+	elseif gamepassKey == "MAFIA" and hasMafia then
+		print("[LifeClient] Already owns MAFIA")
+		return false
+	elseif gamepassKey == "CELEBRITY" and hasCelebrity then
+		print("[LifeClient] Already owns CELEBRITY")
+		return false
+	elseif gamepassKey == "TIME_MACHINE" and hasTimeMachine then
+		print("[LifeClient] Already owns TIME_MACHINE")
+		return false
+	end
+	
+	-- CRITICAL: Call MarketplaceService DIRECTLY from client!
+	-- This bypasses the server's cooldown system entirely!
+	local success, err = pcall(function()
+		MarketplaceService:PromptGamePassPurchase(player, gamepassId)
+	end)
+	
+	if success then
+		print("[LifeClient] ✅ Prompted", gamepassKey, "purchase (ID:", gamepassId, ")")
+	else
+		warn("[LifeClient] Failed to prompt", gamepassKey, "purchase:", err)
+	end
+	
+	-- Also notify server (for tracking purposes, but don't wait for response)
+	task.spawn(function()
+		if PromptGamepass then
+			pcall(function() PromptGamepass:FireServer(gamepassKey, true) end)
+		end
+	end)
+	
+	return success
+end
+
 local function onGamepassPurchaseFinished(plr, gamePassId, wasPurchased)
 	if plr ~= player or not wasPurchased then return end
 	
@@ -2077,9 +2130,10 @@ end
 showGodModeModal = function()
 	refreshGodModeStatus()
 	if not hasGodMode then
-		if PromptGamepass then
-			PromptGamepass:FireServer("GOD_MODE")
-		end
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #513: Use direct client-side prompt instead of server!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		promptGamepassDirect("GOD_MODE")
 		return
 	end
 	
@@ -3535,10 +3589,10 @@ local function buildDeathUI()
 	
 	-- CRITICAL FIX: Promo button prompts gamepass purchase
 	tmPromoBtn.MouseButton1Click:Connect(function()
-		local PromptGamepass = remotesFolder:FindFirstChild("PromptGamepass")
-		if PromptGamepass then
-			PromptGamepass:FireServer("TIME_MACHINE")
-		end
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #514: Use direct client-side prompt instead of server!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		promptGamepassDirect("TIME_MACHINE")
 	end)
 	
 	local tmOptions = { {5, "5 Years"}, {10, "10 Years"}, {20, "20 Years"}, {-1, "Baby"} }
@@ -3596,11 +3650,10 @@ local function buildDeathUI()
 				elseif ok and result and result.needsGamepass then
 					-- CRITICAL FIX: Player needs to purchase the gamepass for unlimited uses
 					tmBtn.Text = "👑 " .. opt[2]
-					-- Prompt the gamepass purchase
-					local PromptGamepass = remotesFolder:FindFirstChild("PromptGamepass")
-					if PromptGamepass then
-						PromptGamepass:FireServer("TIME_MACHINE")
-					end
+					-- ═══════════════════════════════════════════════════════════════════════════════
+					-- CRITICAL FIX #515: Use direct client-side prompt instead of server!
+					-- ═══════════════════════════════════════════════════════════════════════════════
+					promptGamepassDirect("TIME_MACHINE")
 				else
 					tmBtn.Text = "⏰ " .. opt[2]
 				end
@@ -4523,13 +4576,11 @@ showEvent = function(payload)
 					end
 					
 					if not ownsPass then
-						-- Player doesn't own the required gamepass - prompt purchase!
+						-- ═══════════════════════════════════════════════════════════════════════════════
+						-- CRITICAL FIX #524: Use direct client-side prompt for premium choices!
+						-- ═══════════════════════════════════════════════════════════════════════════════
 						print("[LifeClient] Premium choice requires gamepass:", gamepassKey)
-						if PromptGamepass then
-							pcall(function()
-								PromptGamepass:FireServer(gamepassKey)
-							end)
-						end
+						promptGamepassDirect(gamepassKey)
 						-- Don't process the choice - they need to buy the gamepass first
 						return
 					end
@@ -5288,9 +5339,10 @@ end)()
 				if wealthData.requiresGamepass then
 					local hasPass = checkRoyalty()
 					if not hasPass then
-						if PromptGamepass then
-							pcall(function() PromptGamepass:FireServer("ROYALTY") end)
-						end
+						-- ═══════════════════════════════════════════════════════════════════════════════
+						-- CRITICAL FIX #525: Use direct client-side prompt for wealth selector!
+						-- ═══════════════════════════════════════════════════════════════════════════════
+						promptGamepassDirect("ROYALTY")
 						return
 					end
 				end
@@ -5547,9 +5599,11 @@ local function showGodModeIntroCustomize()
 	refreshGodModeStatus()
 	
 	if not hasGodMode then
-		if PromptGamepass then
-			PromptGamepass:FireServer("GOD_MODE")
-		end
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #511: Use direct client-side prompt instead of server!
+		-- This bypasses the server's cooldown and ALWAYS shows the Roblox purchase popup!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		promptGamepassDirect("GOD_MODE")
 		return
 	end
 	
@@ -5846,10 +5900,11 @@ do
 		if hasGodMode then
 			showGodModeIntroCustomize()
 		else
-			-- Prompt to purchase
-			if PromptGamepass then
-				PromptGamepass:FireServer("GOD_MODE")
-			end
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX #512: Use direct client-side prompt instead of server!
+			-- This bypasses the server's cooldown and ALWAYS shows the Roblox purchase popup!
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			promptGamepassDirect("GOD_MODE")
 		end
 	end)
 	
@@ -5972,10 +6027,12 @@ do
 				IntroUI.showRoyalCountrySelection()
 			end
 		else
-			-- CRITICAL FIX: Use FireServer not InvokeServer (PromptGamepass is RemoteEvent)
-			if PromptGamepass then
-				pcall(function() PromptGamepass:FireServer("ROYALTY") end)
-			end
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX #510: Use direct client-side prompt instead of server!
+			-- This bypasses the server's cooldown and ALWAYS shows the Roblox purchase popup!
+			-- User complaint: "clicking royalty button only pops up once then never again"
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			promptGamepassDirect("ROYALTY")
 		end
 	end)
 	

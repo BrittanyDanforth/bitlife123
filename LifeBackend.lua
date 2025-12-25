@@ -278,18 +278,25 @@ function LifeBackend:checkGamepassOwnership(player, gamepassKey)
 	return owns
 end
 
-function LifeBackend:promptGamepassPurchase(player, gamepassKey)
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #507: Added forceBypassCooldown parameter for direct user clicks!
+-- When user clicks a gamepass button, they should ALWAYS see the Roblox prompt!
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:promptGamepassPurchase(player, gamepassKey, forceBypassCooldown)
 	if not player then
-		return
+		return false, "no_player"
 	end
 
-	local success, err = pcall(function()
-		GamepassSystem:promptGamepass(player, gamepassKey)
+	local success, promptSuccess, reason, extra = pcall(function()
+		return GamepassSystem:promptGamepass(player, gamepassKey, forceBypassCooldown)
 	end)
 
 	if not success then
-		warn(string.format("[LifeBackend] Failed to prompt %s purchase: %s", tostring(gamepassKey), tostring(err)))
+		warn(string.format("[LifeBackend] Failed to prompt %s purchase: %s", tostring(gamepassKey), tostring(promptSuccess)))
+		return false, "error"
 	end
+	
+	return promptSuccess, reason, extra
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
@@ -8606,8 +8613,14 @@ function LifeBackend:setupRemotes()
 		return self:checkGamepassOwnership(player, gamepassKey)
 	end
 	
-	self.remotes.PromptGamepass.OnServerEvent:Connect(function(player, gamepassKey)
-		self:promptGamepassPurchase(player, gamepassKey)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #508: Pass forceBypassCooldown = true for ALL user-initiated prompts!
+	-- When a player clicks a gamepass button, they ALWAYS want to buy - never block them!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	self.remotes.PromptGamepass.OnServerEvent:Connect(function(player, gamepassKey, forceBypassCooldown)
+		-- CRITICAL: Default to true for user-initiated prompts!
+		local bypass = (forceBypassCooldown ~= false) -- true unless explicitly false
+		self:promptGamepassPurchase(player, gamepassKey, bypass)
 	end)
 	
 	-- CRITICAL FIX #358: Developer Product purchase handler

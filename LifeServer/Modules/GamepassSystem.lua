@@ -33,12 +33,17 @@ local GAMEPASS_IDS = {
 	GOD_MODE = 1628050729,     -- God Mode gamepass
 	MAFIA = 1626238769,        -- Join the Mafia gamepass
 	CELEBRITY = 1626461980,    -- Celebrity/Fame gamepass
-	-- Additional gamepasses (set to 0 until real IDs are provided)
-	BITIZENSHIP = 0,
-	-- CRITICAL FIX: Time Machine gamepass with correct ID
-	TIME_MACHINE = 1630681215,  -- Time Machine gamepass (unlimited rewinds)
-	BOSS_MODE = 0,
-	DARK_MODE = 0,
+	TIME_MACHINE = 1630681215, -- Time Machine gamepass (unlimited rewinds)
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- ⚠️ CRITICAL WARNING: These gamepasses have ID=0 and CANNOT BE PURCHASED!
+	-- You need to create these gamepasses on Roblox and add their IDs here!
+	-- To create a gamepass: Go to Game Settings → Monetization → Passes → Create
+	-- Then copy the ID from the URL and paste it below.
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	BITIZENSHIP = 0,  -- ⚠️ NEEDS REAL ID - Ad-free + bonus features
+	BOSS_MODE = 0,    -- ⚠️ NEEDS REAL ID - Start businesses
+	DARK_MODE = 0,    -- ⚠️ NEEDS REAL ID - Dark theme UI
 }
 
 -- ════════════════════════════════════════════════════════════════════════════
@@ -699,11 +704,19 @@ end
 -- Track when we last showed a prompt for each player/gamepass combo
 GamepassSystem.promptHistory = {}
 
--- Minimum cooldown between prompts (in seconds)
--- CRITICAL FIX: Increased from 5 minutes to 30 minutes to prevent annoying spam
-GamepassSystem.PROMPT_COOLDOWN = 1800 -- 30 minutes
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #500: REDUCED COOLDOWN FROM 30 MINUTES TO 3 SECONDS!
+-- The old 30-minute cooldown was KILLING sales!
+-- User complaint: "clicking gamepass button doesn't popup again after first try"
+-- Problem: After clicking once, users had to wait 30 MINUTES to try again!
+-- Now: 3-second cooldown just to prevent accidental double-clicks
+-- ═══════════════════════════════════════════════════════════════════════════════
+GamepassSystem.PROMPT_COOLDOWN = 3 -- 3 seconds (was 1800 = 30 minutes!)
 
-function GamepassSystem:canShowPrompt(player, gamepassKey, requiresFatalCondition, playerState)
+-- CRITICAL FIX #501: Track if prompt was triggered by direct user click (bypasses cooldown)
+GamepassSystem.COOLDOWN_BYPASS_FLAG = "_user_click"
+
+function GamepassSystem:canShowPrompt(player, gamepassKey, requiresFatalCondition, playerState, forceBypassCooldown)
 	local playerId = player.UserId
 	local cacheKey = playerId .. "_prompt_" .. gamepassKey
 	
@@ -712,7 +725,17 @@ function GamepassSystem:canShowPrompt(player, gamepassKey, requiresFatalConditio
 		return false, "already_owns"
 	end
 	
-	-- Check prompt cooldown
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #502: Allow bypass of cooldown for direct user clicks!
+	-- When a user INTENTIONALLY clicks a purchase button, ALWAYS show the prompt!
+	-- The cooldown should only prevent auto-prompts from spamming, not block purchases!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if forceBypassCooldown == true then
+		-- User clicked button intentionally - ALWAYS show prompt!
+		return true, nil
+	end
+	
+	-- Check prompt cooldown (only for auto-prompts, not user clicks)
 	local lastPrompt = self.promptHistory[cacheKey]
 	if lastPrompt then
 		local timeSince = os.time() - lastPrompt
@@ -722,10 +745,10 @@ function GamepassSystem:canShowPrompt(player, gamepassKey, requiresFatalConditio
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX: GOD_MODE can only be prompted on FATAL CONDITIONS
-	-- This prevents random prompts without a death event
+	-- CRITICAL FIX #503: GOD_MODE fatal condition check ONLY for death-screen prompts
+	-- NOT for intro screen or direct button clicks!
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	if gamepassKey == "GOD_MODE" and requiresFatalCondition then
+	if gamepassKey == "GOD_MODE" and requiresFatalCondition == true then
 		if not playerState then
 			return false, "no_state"
 		end
@@ -752,22 +775,30 @@ function GamepassSystem:recordPromptShown(player, gamepassKey)
 	self.promptHistory[cacheKey] = os.time()
 end
 
-function GamepassSystem:promptGamepass(player, gamepassKey)
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #504: Added forceBypassCooldown parameter!
+-- When true, bypasses the cooldown check for direct user clicks
+-- This ensures users can ALWAYS attempt to buy when they click a button
+-- ═══════════════════════════════════════════════════════════════════════════════
+function GamepassSystem:promptGamepass(player, gamepassKey, forceBypassCooldown)
 	local gamepass = self.Gamepasses[gamepassKey]
 	if not gamepass or gamepass.id == 0 then
 		warn("[GamepassSystem] Cannot prompt purchase - invalid ID for:", gamepassKey)
-		return false
+		-- CRITICAL FIX #505: Return detailed error info so client can show feedback
+		return false, "invalid_gamepass", gamepassKey
 	end
 	
-	-- CRITICAL FIX: Check if we should show the prompt (cooldown + ownership check)
-	local canShow, reason, timeRemaining = self:canShowPrompt(player, gamepassKey)
+	-- CRITICAL FIX #506: Pass forceBypassCooldown to canShowPrompt
+	local canShow, reason, timeRemaining = self:canShowPrompt(player, gamepassKey, false, nil, forceBypassCooldown)
 	if not canShow then
 		if reason == "already_owns" then
 			print("[GamepassSystem] Player already owns", gamepassKey, "- not showing prompt")
+			return false, "already_owns", gamepassKey
 		elseif reason == "cooldown" then
 			print("[GamepassSystem] Prompt cooldown active for", gamepassKey, "- wait", timeRemaining, "seconds")
+			return false, "cooldown", timeRemaining
 		end
-		return false
+		return false, reason, gamepassKey
 	end
 	
 	-- Record that we showed this prompt
@@ -779,9 +810,11 @@ function GamepassSystem:promptGamepass(player, gamepassKey)
 	
 	if not success then
 		warn("[GamepassSystem] Failed to prompt purchase:", err)
+		return false, "roblox_error", tostring(err)
 	end
 	
-	return success
+	print("[GamepassSystem] ✅ Successfully prompted", gamepassKey, "purchase for", player.Name)
+	return true, nil, nil
 end
 
 function GamepassSystem:promptProduct(player, productKey)
