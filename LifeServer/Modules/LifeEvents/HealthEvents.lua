@@ -879,10 +879,21 @@ HealthEvents.events = {
 		diagnosisType = "diabetes",
 		oneTime = true,
 		maxOccurrences = 1,
+		-- CRITICAL FIX: Only show if player visited doctor or has symptoms
 		eligibility = function(state)
 			local health = (state.Stats and state.Stats.Health) or 50
 			local flags = state.Flags or {}
-			return health < 60 and not flags.diabetes
+			-- Already have diabetes? Don't show again
+			if flags.diabetes then return false end
+			-- CRITICAL FIX: Must have visited doctor OR have symptoms
+			local visitedDoctor = flags.went_to_doctor or flags.doctor_checkup or flags.recent_checkup
+			local hasSymptoms = flags.feeling_sick or flags.frequent_urination or flags.excessive_thirst
+				or flags.unexplained_weight_loss or flags.fatigue or health < 40
+			-- Only show if visited doctor with low health OR has specific symptoms
+			if not visitedDoctor and not hasSymptoms then
+				return false
+			end
+			return health < 60
 		end,
 		
 		choices = {
@@ -978,15 +989,52 @@ HealthEvents.events = {
 				setFlags = { has_cancer = true, cancer = true, in_treatment = true, fighting_cancer = true },
 				feedText = "🎗️ Cancer diagnosis. Starting chemotherapy. Fight of your life.",
 				onResolve = function(state)
-					-- 60% chance of survival with treatment
+					-- CRITICAL FIX: Treatment doesn't immediately resolve - it takes time
+					-- First treatment has 40% chance to show improvement
+					-- Patient can try again at doctor later
 					local roll = math.random()
-					if roll < 0.60 then
-						state.Flags.cancer_survivor = true
-						state.Flags.in_remission = true
-						state:AddFeed("🎗️ After months of treatment, you're in remission! You beat it!")
+					state.Flags = state.Flags or {}
+					if roll < 0.40 then
+						-- Treatment showing early promise
+						state.Flags.treatment_responding = true
+						state.Flags.cancer_treatment_rounds = 1
+						state:AddFeed("🎗️ First round of chemo complete. Early signs are promising!")
+					elseif roll < 0.70 then
+						-- Treatment uncertain - need more rounds
+						state.Flags.treatment_uncertain = true
+						state.Flags.cancer_treatment_rounds = 1
+						state:AddFeed("🎗️ First round complete. Results inconclusive. More treatment needed.")
 					else
-						state.Flags.terminal_illness = true
-						state:AddFeed("🎗️ Treatment isn't working as hoped. This is serious.")
+						-- Treatment not working well
+						state.Flags.treatment_struggling = true
+						state.Flags.cancer_treatment_rounds = 1
+						state:AddFeed("🎗️ Treatment is hard on your body. Doctors are concerned. Don't give up!")
+					end
+				end,
+			},
+			{
+				text = "Get second opinion first",
+				effects = { Happiness = -5, Money = -500 },
+				feedText = "🎗️ Seeking another doctor's perspective...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					state.Flags.has_cancer = true
+					state.Flags.cancer = true
+					if roll < 0.15 then
+						-- Misdiagnosis (rare)
+						state.Flags.cancer_misdiagnosis = true
+						state:ModifyStat("Happiness", 20)
+						state:AddFeed("🎗️ INCREDIBLE NEWS! Second opinion says it's NOT cancer! Just a benign growth!")
+					elseif roll < 0.50 then
+						-- Earlier stage than thought
+						state.Flags.early_stage_cancer = true
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🎗️ Second doctor says it was caught earlier than thought. Better prognosis!")
+					else
+						-- Diagnosis confirmed
+						state.Flags.confirmed_cancer = true
+						state:AddFeed("🎗️ Second doctor confirmed the diagnosis. Time to start treatment.")
 					end
 				end,
 			},
@@ -995,6 +1043,113 @@ HealthEvents.events = {
 				effects = { Happiness = -30, Health = -40 },
 				setFlags = { has_cancer = true, terminal_illness = true, refusing_treatment = true },
 				feedText = "🎗️ Choosing to live remaining time without treatment.",
+			},
+		},
+	},
+	-- CRITICAL FIX: Cancer follow-up treatment events - allow retry at doctor
+	{
+		id = "health_cancer_treatment_followup",
+		title = "🎗️ Cancer Treatment Update",
+		emoji = "🎗️",
+		text = "Time for your cancer treatment check-up. The doctors have the latest results.",
+		question = "How is your treatment going?",
+		minAge = 20, maxAge = 100,
+		baseChance = 0.70,
+		cooldown = 1,
+		stage = STAGE,
+		ageBand = "any",
+		category = "health",
+		tags = { "cancer", "treatment", "followup" },
+		-- Only show for people actively fighting cancer
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			return flags.has_cancer and flags.in_treatment and not flags.cancer_survivor and not flags.terminal_illness
+		end,
+		
+		choices = {
+			{
+				text = "Continue aggressive treatment",
+				effects = { Money = -5000, Health = -10, Happiness = -5 },
+				feedText = "🎗️ Pushing through more treatment...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					local rounds = (state.Flags.cancer_treatment_rounds or 1) + 1
+					state.Flags.cancer_treatment_rounds = rounds
+					
+					-- Each round has a chance to beat it, improved by previous rounds
+					local baseChance = 0.25 + (rounds * 0.10) -- More rounds = better odds
+					local roll = math.random()
+					
+					if roll < baseChance then
+						-- REMISSION!
+						state.Flags.cancer_survivor = true
+						state.Flags.in_remission = true
+						state.Flags.in_treatment = nil
+						state.Flags.treatment_responding = nil
+						state.Flags.treatment_uncertain = nil
+						state.Flags.treatment_struggling = nil
+						state:ModifyStat("Happiness", 30)
+						state:ModifyStat("Health", 10)
+						state:AddFeed("🎗️ REMISSION! After " .. rounds .. " rounds of treatment, you beat cancer! 🎉")
+					elseif roll < baseChance + 0.30 then
+						-- Improving
+						state.Flags.treatment_responding = true
+						state.Flags.treatment_uncertain = nil
+						state.Flags.treatment_struggling = nil
+						state:AddFeed("🎗️ Good news! Treatment round " .. rounds .. " is working. Keep fighting!")
+					elseif roll < baseChance + 0.55 then
+						-- Stable
+						state.Flags.treatment_uncertain = true
+						state:AddFeed("🎗️ Holding steady after round " .. rounds .. ". Not worse, not better yet.")
+					else
+						-- Getting worse
+						state.Flags.treatment_struggling = true
+						state:ModifyStat("Health", -5)
+						if rounds >= 5 and math.random() < 0.30 then
+							-- After many rounds, might become terminal
+							state.Flags.terminal_illness = true
+							state.Flags.in_treatment = nil
+							state:AddFeed("🎗️ After " .. rounds .. " rounds... doctors say treatment isn't working. 💔")
+						else
+							state:AddFeed("🎗️ Round " .. rounds .. " was tough. Cancer is stubborn. Don't give up!")
+						end
+					end
+				end,
+			},
+			{
+				text = "Try alternative treatments",
+				effects = { Money = -3000, Happiness = 2 },
+				feedText = "🎗️ Exploring other options...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					
+					if roll < 0.20 then
+						-- Alternative worked! (rare)
+						state.Flags.cancer_survivor = true
+						state.Flags.in_remission = true
+						state.Flags.in_treatment = nil
+						state:ModifyStat("Happiness", 25)
+						state:AddFeed("🎗️ The alternative approach worked! You're in remission! 🌟")
+					elseif roll < 0.50 then
+						-- Helped a bit
+						state.Flags.treatment_responding = true
+						state:AddFeed("🎗️ Alternative therapies giving you strength. Combining with regular treatment.")
+					else
+						-- Didn't help
+						state:AddFeed("🎗️ Alternative treatment didn't show results. Back to traditional methods.")
+					end
+				end,
+			},
+			{
+				text = "Take a break from treatment",
+				effects = { Happiness = 5, Health = -5 },
+				feedText = "🎗️ Your body needs rest...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.treatment_paused = true
+					state:AddFeed("🎗️ Taking a break to recover strength. Will resume treatment later.")
+				end,
 			},
 		},
 	},

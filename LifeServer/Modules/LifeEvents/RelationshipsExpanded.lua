@@ -811,6 +811,45 @@ RelationshipsExpanded.events = {
 		category = "family",
 		tags = { "parents", "caregiving", "aging" },
 		
+		-- CRITICAL FIX: Only show if parents are still alive!
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Check if parents are dead
+			if flags.parents_dead or flags.both_parents_dead then
+				return false
+			end
+			-- Check if mother and father are both dead
+			if flags.mother_dead and flags.father_dead then
+				return false
+			end
+			-- At least one parent should be alive
+			-- Also check Relationships for parent status
+			if state.Relationships then
+				local hasLivingParent = false
+				for _, rel in ipairs(state.Relationships) do
+					if (rel.type == "parent" or rel.role == "Parent" or rel.role == "Mother" or rel.role == "Father")
+					   and not rel.deceased and not rel.dead then
+						hasLivingParent = true
+						break
+					end
+				end
+				-- If we have relationship data but no living parents, don't show event
+				if not hasLivingParent then
+					-- Only block if we actually have parent data (player is old enough)
+					local parentCount = 0
+					for _, rel in ipairs(state.Relationships) do
+						if rel.type == "parent" or rel.role == "Parent" or rel.role == "Mother" or rel.role == "Father" then
+							parentCount = parentCount + 1
+						end
+					end
+					if parentCount > 0 then
+						return false
+					end
+				end
+			end
+			return true
+		end,
+		
 		choices = {
 			{ text = "Move them in with you", effects = { Happiness = 3, Money = -200, Health = -2 }, setFlags = { live_in_caregiver = true }, feedText = "👴 They live with you now. Hard but right." },
 			{ text = "Hire professional help", effects = { Money = -500, Happiness = 2 }, setFlags = { hired_caregiver = true }, feedText = "👴 Professional care. Expensive but quality." },

@@ -1102,17 +1102,40 @@ Milestones.events = {
 		choices = {
 			{ text = "Life begins at 40", effects = { Happiness = 10 }, feedText = "The best is yet to come!" },
 			{ text = "Time for a midlife check-in", effects = { Smarts = 3, Happiness = 5 }, feedText = "You're reflecting on where you are." },
-			-- CRITICAL FIX: Show price in choice text and add eligibility check!
+			-- CRITICAL FIX: Sports car actually adds a vehicle to your Assets!
 			{ 
-				text = "Buy a sports car ($5,000)", 
-				effects = { Happiness = 8, Money = -5000 }, 
-				setFlags = { midlife_crisis = true }, 
-				feedText = "Midlife crisis? Or just having fun?",
+				text = "Buy a used sports car ($8,000)", 
+				effects = { Happiness = 12, Money = -8000 }, 
+				setFlags = { midlife_crisis = true, has_car = true, has_sports_car = true }, 
+				feedText = "🚗 Midlife crisis? Maybe. But you look GOOD!",
 				eligibility = function(state)
-					if (state.Money or 0) < 5000 then
-						return false, "Can't afford a $5,000 sports car"
+					if (state.Money or 0) < 8000 then
+						return false, "Can't afford a sports car"
 					end
 					return true
+				end,
+				onResolve = function(state)
+					-- CRITICAL FIX: Actually add the car to Assets!
+					state.Assets = state.Assets or {}
+					state.Assets.Vehicles = state.Assets.Vehicles or {}
+					table.insert(state.Assets.Vehicles, {
+						id = "midlife_sports_car_" .. tostring(os.time()),
+						name = "Used Sports Car",
+						emoji = "🏎️",
+						price = 8000,
+						value = 8000,
+						happiness = 5,
+						maintenance = 1500,
+						acquiredAge = state.Age,
+						acquiredYear = state.Year,
+						resaleModifier = 0.65,
+						type = "sports_car",
+					})
+					state.Flags = state.Flags or {}
+					state.Flags.has_vehicle = true
+					state.Flags.has_car = true
+					state.Flags.has_sports_car = true
+					state:AddFeed("🏎️ You bought a used sports car! Feel that engine roar!")
 				end,
 			},
 			{ text = "Content with where I am", effects = { Happiness = 8 }, feedText = "You're at peace with your life." },

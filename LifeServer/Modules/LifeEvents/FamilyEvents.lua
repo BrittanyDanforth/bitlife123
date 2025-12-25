@@ -618,6 +618,328 @@ FamilyEvents.events = {
 			{ text = "Just enjoy their company", effects = { Happiness = 10, Health = 2 }, feedText = "👴👶 Pure joy. Kids keep you young at heart!" },
 		},
 	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- INHERITANCE / CONTINUE AS KID EVENTS
+	-- Special events that trigger when playing as a character who inherited
+	-- User requested: "ENSURE CONTINUE AS KID WORKS BETTER AND ISN'T BORING"
+	-- ══════════════════════════════════════════════════════════════════════════════
+	
+	{
+		id = "fam_inheritance_grief",
+		title = "Grieving Your Parent",
+		emoji = "🕯️",
+		text = "The loss of your parent still weighs heavily on you. The house feels empty.",
+		question = "How do you cope with the grief?",
+		minAge = 18, maxAge = 60,
+		baseChance = 0.8,
+		cooldown = 3,
+		oneTime = true,
+		stage = STAGE,
+		ageBand = "adult",
+		category = "family",
+		tags = { "inheritance", "grief", "loss", "parent" },
+		requiresFlags = { inherited_from_parent = true, grieving = true },
+		
+		choices = {
+			{
+				text = "Honor their memory with a charity donation",
+				effects = { Money = -2000, Happiness = 8 },
+				feedText = "🕯️ Donated to their favorite cause. They would be proud.",
+				onResolve = function(state)
+					state.Flags.charitable = true
+					state.Flags.honoring_parent = true
+					state.Flags.grieving = nil
+					state:AddFeed("🕯️ Your generosity in their name brought peace to your heart.")
+				end,
+			},
+			{
+				text = "Throw yourself into work to distract",
+				effects = { Happiness = -3, Smarts = 3 },
+				feedText = "🕯️ Burying yourself in work. Not healthy, but keeps you going.",
+				onResolve = function(state)
+					state.Flags.workaholic = true
+					local roll = math.random()
+					if roll < 0.3 then
+						state:AddFeed("🕯️ Your work ethic impressed your boss. Promotion incoming?")
+						state.Flags.hard_worker = true
+					end
+				end,
+			},
+			{
+				text = "See a therapist",
+				effects = { Money = -500, Happiness = 6, Health = 3 },
+				feedText = "🕯️ Professional help. Processing grief properly.",
+				onResolve = function(state)
+					state.Flags.grieving = nil
+					state.Flags.in_therapy = true
+					state.Flags.mental_health_aware = true
+					state:AddFeed("🕯️ Therapy helped. You're learning to carry the grief, not be crushed by it.")
+				end,
+			},
+			{
+				text = "Isolate and process alone",
+				effects = { Happiness = -5 },
+				feedText = "🕯️ Shutting everyone out. The grief is overwhelming.",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.5 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🕯️ Depression is setting in. You need help.")
+						state.Flags.depressed = true
+					else
+						state:ModifyStat("Happiness", 5)
+						state.Flags.grieving = nil
+						state:AddFeed("🕯️ After weeks alone, you finally cried it out. Healing begins.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "fam_parent_legacy_choice",
+		title = "Your Parent's Legacy",
+		emoji = "📜",
+		text = "Going through your late parent's belongings, you found something that reveals a side of them you never knew.",
+		question = "What did you discover?",
+		minAge = 18, maxAge = 80,
+		baseChance = 0.7,
+		cooldown = 5,
+		oneTime = true,
+		stage = STAGE,
+		ageBand = "adult",
+		category = "family",
+		tags = { "inheritance", "legacy", "parent", "discovery" },
+		requiresFlags = { inherited_from_parent = true },
+		
+		choices = {
+			{
+				text = "Hidden savings account",
+				effects = {},
+				feedText = "A surprise nest egg...",
+				onResolve = function(state)
+					local amount = math.random(5000, 25000)
+					state.Money = (state.Money or 0) + amount
+					state:ModifyStat("Happiness", 12)
+					state:AddFeed("📜 Found $" .. amount .. " in a hidden account! They were saving for your future!")
+					state.Flags.parent_secret_gift = true
+				end,
+			},
+			{
+				text = "Letters from a secret admirer",
+				effects = { Happiness = 5 },
+				feedText = "📜 Your parent had a romantic side you never knew. Bittersweet discovery.",
+				onResolve = function(state)
+					if math.random() < 0.3 then
+						state:AddFeed("📜 The letters reveal you might have a half-sibling out there...")
+						state.Flags.potential_sibling = true
+					end
+				end,
+			},
+			{
+				text = "A business opportunity they never pursued",
+				effects = { Smarts = 3 },
+				feedText = "📜 An unfinished dream. Maybe you can complete it for them?",
+				setFlags = { parent_dream_opportunity = true, has_business_idea = true },
+			},
+			{
+				text = "Debts you didn't know about",
+				effects = { Happiness = -10 },
+				feedText = "📜 Bills, loans, IOUs... Your parent was struggling more than you knew.",
+				onResolve = function(state)
+					local debt = math.random(5000, 20000)
+					state.Money = math.max(0, (state.Money or 0) - debt)
+					state.Flags.inherited_debt = true
+					state:AddFeed("📜 Had to pay off $" .. debt .. " in hidden debts. Inheritance reduced significantly.")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "fam_carrying_on_tradition",
+		title = "Carrying On the Family Name",
+		emoji = "🏛️",
+		text = "People in town keep mentioning your late parent. Their reputation lives on.",
+		question = "How does the community remember them?",
+		minAge = 18, maxAge = 70,
+		baseChance = 0.6,
+		cooldown = 4,
+		stage = STAGE,
+		ageBand = "adult",
+		category = "family",
+		tags = { "inheritance", "legacy", "reputation", "community" },
+		requiresFlags = { inherited_from_parent = true },
+		
+		choices = {
+			{
+				text = "They were beloved - doors open for you",
+				effects = { Happiness = 10 },
+				feedText = "🏛️ Everyone loved your parent. Their reputation is now your advantage.",
+				setFlags = { good_family_name = true, community_connections = true },
+			},
+			{
+				text = "They were respected for their work",
+				effects = { Happiness = 6, Smarts = 2 },
+				feedText = "🏛️ Professionals remember your parent's skill. Expectations are high.",
+				setFlags = { parent_reputation = true },
+			},
+			{
+				text = "They had a complicated past",
+				effects = { Happiness = -3 },
+				feedText = "🏛️ Some people give you strange looks. Not everyone has fond memories.",
+				onResolve = function(state)
+					if math.random() < 0.5 then
+						state.Flags.family_secrets = true
+						state:AddFeed("🏛️ Someone muttered something about 'old debts'... What did your parent do?")
+					end
+				end,
+			},
+			{
+				text = "They were a stranger here - you're on your own",
+				effects = { Happiness = -2 },
+				feedText = "🏛️ No one really knew your parent. You're starting fresh with no legacy.",
+			},
+		},
+	},
+	
+	{
+		id = "fam_sibling_inheritance_dispute",
+		title = "Sibling Dispute",
+		emoji = "💢",
+		text = "Your sibling is contesting the inheritance! They think they deserve more.",
+		question = "How do you handle this family conflict?",
+		minAge = 18, maxAge = 80,
+		baseChance = 0.5,
+		cooldown = 6,
+		oneTime = true,
+		stage = STAGE,
+		ageBand = "adult",
+		category = "family",
+		tags = { "inheritance", "conflict", "sibling", "money" },
+		requiresFlags = { inherited_from_parent = true },
+		-- Only if player has siblings
+		eligibility = function(state)
+			if not state.Relationships then return false end
+			for _, rel in pairs(state.Relationships) do
+				if type(rel) == "table" and rel.type == "sibling" and rel.alive ~= false then
+					return true
+				end
+			end
+			return false
+		end,
+		
+		choices = {
+			{
+				text = "Split it evenly - family peace matters",
+				effects = { Happiness = 5 },
+				feedText = "💢 You gave up half. But your relationship with your sibling survived.",
+				onResolve = function(state)
+					state.Money = math.floor((state.Money or 0) / 2)
+					state.Flags.generous = true
+					state.Flags.sibling_harmony = true
+					state:AddFeed("💢 Money is money, but family is family. You did the right thing.")
+				end,
+			},
+			{
+				text = "Fight it in court - you were the executor",
+				effects = { Money = -3000, Happiness = -5 },
+				feedText = "Lawyer up...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.6 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("💢 Won the case! But your sibling will never forgive you.")
+						state.Flags.won_lawsuit = true
+						state.Flags.sibling_enemy = true
+					else
+						state.Money = math.floor((state.Money or 0) / 2)
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("💢 Lost the case. Had to split it AND pay legal fees. Double loss.")
+						state.Flags.sibling_enemy = true
+					end
+				end,
+			},
+			{
+				text = "Offer a compromise - give them one asset",
+				effects = { Happiness = 2 },
+				feedText = "💢 You kept most of it but gave them something. Tense but tolerable.",
+				onResolve = function(state)
+					-- Remove one property if any
+					if state.Assets and state.Assets.Properties and #state.Assets.Properties > 1 then
+						table.remove(state.Assets.Properties)
+						state:AddFeed("💢 Gave them one of the properties. Fair enough?")
+					elseif state.Assets and state.Assets.Vehicles and #state.Assets.Vehicles > 0 then
+						table.remove(state.Assets.Vehicles)
+						state:AddFeed("💢 Gave them the car. Hopefully that's enough.")
+					else
+						state.Money = math.floor((state.Money or 0) * 0.8)
+						state:AddFeed("💢 Gave them 20% cash. They're not happy but accepted.")
+					end
+					state.Flags.sibling_tension = true
+				end,
+			},
+			{
+				text = "Cut them off entirely",
+				effects = { Happiness = -3 },
+				feedText = "💢 You kept everything. But you may never speak to your sibling again.",
+				setFlags = { sibling_estranged = true, selfish = true },
+			},
+		},
+	},
+	
+	{
+		id = "fam_making_them_proud",
+		title = "Would They Be Proud?",
+		emoji = "👻",
+		text = "On the anniversary of your parent's death, you reflect on how you've been living.",
+		question = "Would your parent be proud of who you've become?",
+		minAge = 19, maxAge = 80,
+		baseChance = 0.7,
+		cooldown = 5,
+		stage = STAGE,
+		ageBand = "adult",
+		category = "family",
+		tags = { "inheritance", "reflection", "legacy", "memory" },
+		requiresFlags = { inherited_from_parent = true },
+		
+		choices = {
+			{
+				text = "Yes - I've done well",
+				effects = { Happiness = 10 },
+				feedText = "👻 Living your best life. They'd be so proud.",
+				eligibility = function(state)
+					local happy = (state.Stats and state.Stats.Happiness) or 50
+					local money = state.Money or 0
+					return happy >= 60 or money >= 50000 or state.Flags.successful
+				end,
+			},
+			{
+				text = "I'm trying my best",
+				effects = { Happiness = 5 },
+				feedText = "👻 Life is hard but you're fighting. They'd understand.",
+			},
+			{
+				text = "I've made some mistakes",
+				effects = { Happiness = -3 },
+				feedText = "👻 Regrets. But there's still time to turn things around.",
+				onResolve = function(state)
+					state.Flags.seeking_redemption = true
+					state:AddFeed("👻 Time to make some changes. For them. For you.")
+				end,
+			},
+			{
+				text = "I've failed them completely",
+				effects = { Happiness = -10 },
+				feedText = "👻 Rock bottom. They would be disappointed. But disappointment comes from love.",
+				eligibility = function(state)
+					local happy = (state.Stats and state.Stats.Happiness) or 50
+					return happy < 30 or state.Flags.homeless or state.Flags.in_prison or state.Flags.addicted
+				end,
+			},
+		},
+	},
 }
 
 return FamilyEvents

@@ -8598,8 +8598,8 @@ function LifeBackend:setupRemotes()
 		return self:handleLeaveMob(player)
 	end
 	
-	self.remotes.DoMobOperation.OnServerInvoke = function(player, operationId)
-		return self:handleMobOperation(player, operationId)
+	self.remotes.DoMobOperation.OnServerInvoke = function(player, operationId, modifiers)
+		return self:handleMobOperation(player, operationId, modifiers)
 	end
 	
 	self.remotes.CheckGamepass.OnServerInvoke = function(player, gamepassKey)
@@ -14125,6 +14125,73 @@ function LifeBackend:handleContinueAsKid(player, childData)
 	newState.Flags.parent_deceased = true
 	newState.Flags.grieving = true
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #INHERIT-1: Add more variety and depth to inheritance experience
+	-- User requested: "ENSURE CONTINUE AS KID WORKS BETTER AND ISN'T BORING"
+	-- Add special starting flags that create unique events for inherited characters
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Track the size of inheritance (affects story)
+	if inheritance >= 500000 then
+		newState.Flags.large_inheritance = true
+		newState.Flags.wealthy_background = true
+	elseif inheritance >= 100000 then
+		newState.Flags.moderate_inheritance = true
+		newState.Flags.comfortable_background = true
+	elseif inheritance >= 10000 then
+		newState.Flags.small_inheritance = true
+	else
+		newState.Flags.minimal_inheritance = true
+		newState.Flags.starting_from_scratch = true
+	end
+	
+	-- Track relationship with parent (affects grief events)
+	local childRelationship = child.relationship or 50
+	if childRelationship >= 80 then
+		newState.Flags.close_with_parent = true
+		newState.Flags.intense_grief = true
+	elseif childRelationship >= 50 then
+		newState.Flags.normal_parent_relationship = true
+	elseif childRelationship >= 30 then
+		newState.Flags.distant_from_parent = true
+		newState.Flags.complicated_grief = true
+	else
+		newState.Flags.estranged_from_parent = true
+		newState.Flags.guilt_feelings = true
+	end
+	
+	-- If parent was famous/notorious, child inherits that legacy
+	if state.Flags and (state.Flags.famous or state.Flags.celebrity or state.Flags.is_famous) then
+		newState.Flags.famous_parent = true
+		newState.Flags.celebrity_child = true
+	end
+	
+	if state.Flags and (state.Flags.criminal or state.Flags.has_criminal_record or state.Flags.notorious) then
+		newState.Flags.criminal_parent = true
+		newState.Flags.parents_shadow = true
+	end
+	
+	if state.Flags and (state.Flags.philanthropist or state.Flags.charitable or state.Flags.community_pillar) then
+		newState.Flags.respected_parent = true
+		newState.Flags.good_family_name = true
+	end
+	
+	-- Career legacy potential
+	if state.CurrentJob and state.CurrentJob.id then
+		local parentJob = state.CurrentJob.id:lower()
+		if parentJob:find("doctor") or parentJob:find("surgeon") or parentJob:find("medical") then
+			newState.Flags.medical_family = true
+		elseif parentJob:find("lawyer") or parentJob:find("attorney") then
+			newState.Flags.legal_family = true
+		elseif parentJob:find("business") or parentJob:find("ceo") or parentJob:find("executive") then
+			newState.Flags.business_family = true
+		elseif parentJob:find("military") or parentJob:find("army") or parentJob:find("marine") then
+			newState.Flags.military_family = true
+		elseif parentJob:find("teacher") or parentJob:find("professor") then
+			newState.Flags.education_family = true
+		end
+	end
+	
 	-- Store the new state
 	self.playerStates[player] = newState
 	
@@ -18170,6 +18237,33 @@ function LifeBackend:handleAssetSale(player, assetId, assetType)
 					state.Flags.mortgage_debt = nil
 					state.Flags.mortgage_trouble = nil
 				end
+				
+				-- CRITICAL FIX: Update HousingState when selling last property
+				-- Player is now homeless or needs to find a new place!
+				state.HousingState = state.HousingState or {}
+				local age = state.Age or 18
+				if age < 18 then
+					-- Underage - back to living with parents
+					state.HousingState.status = "with_parents"
+					state.HousingState.type = "family_home"
+					state.HousingState.rent = 0
+				elseif state.Money and state.Money >= 1000 then
+					-- Has money - assume they'll rent
+					state.HousingState.status = "renter"
+					state.HousingState.type = "apartment"
+					state.HousingState.rent = math.max(500, math.min(2000, math.floor(state.Money / 20)))
+					state.HousingState.moveInYear = state.Year or 2025
+					state.HousingState.yearsWithoutPayingRent = 0
+					state.Flags.renter = true
+				else
+					-- No money and sold their home - homeless!
+					state.HousingState.status = "homeless"
+					state.HousingState.type = "street"
+					state.HousingState.rent = 0
+					state.Flags.homeless = true
+					state.Flags.renter = nil
+				end
+				state.HousingState.value = nil -- No longer own property
 			elseif normalizedType == "Properties" and #bucket > 0 then
 				-- CRITICAL FIX #25: If selling one property but have mortgage, clear if this was the mortgaged one
 				if asset.hasMortgage then
@@ -19459,7 +19553,7 @@ function LifeBackend:handleLeaveMob(player)
 	return { success = true, message = msg }
 end
 
-function LifeBackend:handleMobOperation(player, operationId)
+function LifeBackend:handleMobOperation(player, operationId, modifiers)
 	-- CRITICAL FIX #12: Check MAFIA gamepass before operations
 	if not self:checkGamepassOwnership(player, "MAFIA") then
 		self:promptGamepassPurchase(player, "MAFIA")
@@ -19475,7 +19569,32 @@ function LifeBackend:handleMobOperation(player, operationId)
 	if not state then
 		return { success = false, message = "State not found." }
 	end
-	local success, message, opResult = MafiaSystem:doOperation(state, operationId)
+	
+	modifiers = modifiers or {}
+	
+	-- CRITICAL FIX: If client already completed a minigame (combat/heist), respect that result!
+	-- Don't re-roll success - the minigame already determined the outcome
+	local forcedSuccess = nil
+	if modifiers.combatCompleted then
+		-- Combat minigame was played - respect that result
+		forcedSuccess = modifiers.combatWon
+		print("[MobOperation] Combat minigame completed. Won:", forcedSuccess)
+	elseif modifiers.heistCompleted then
+		-- Heist minigame was played - respect that result
+		forcedSuccess = modifiers.heistSuccess
+		print("[MobOperation] Heist minigame completed. Won:", forcedSuccess)
+	end
+	
+	local success, message, opResult
+	
+	if forcedSuccess ~= nil then
+		-- CRITICAL FIX: Use forced success from minigame result instead of re-rolling!
+		success, message, opResult = MafiaSystem:doOperationWithForcedResult(state, operationId, forcedSuccess, modifiers)
+	else
+		-- Normal operation - roll for success
+		success, message, opResult = MafiaSystem:doOperation(state, operationId)
+	end
+	
 	if success then
 		local resp = {
 			success = true,

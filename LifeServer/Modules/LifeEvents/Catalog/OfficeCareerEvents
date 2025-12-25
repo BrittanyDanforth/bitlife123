@@ -664,6 +664,534 @@ OfficeCareerEvents.events = {
 			},
 		},
 	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- ACCOUNTANT-SPECIFIC EVENTS
+	-- More engaging events for accounting/finance careers
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "accountant_audit_crisis",
+		title = "Audit Emergency",
+		emoji = "📊",
+		textVariants = {
+			"A major client's books don't add up. The audit is tomorrow!",
+			"The IRS is investigating one of your biggest clients!",
+			"You found a $500,000 discrepancy in a client's financials!",
+		},
+		text = "A major client's books don't add up. The audit is tomorrow!",
+		question = "How do you handle this crisis?",
+		minAge = 22, maxAge = 65,
+		baseChance = 0.45,
+		cooldown = 3,
+		category = "career_finance",
+		requiresJob = true,
+		eligibility = function(state)
+			if not state.CurrentJob then return false end
+			local jobId = (state.CurrentJob.id or ""):lower()
+			return jobId:find("account") or jobId:find("cpa") or jobId:find("auditor")
+				or jobId:find("finance") or jobId:find("bookkeeper")
+		end,
+		
+		choices = {
+			{
+				text = "Pull an all-nighter to fix it",
+				effects = { Health = -3 },
+				feedText = "You won't sleep until this is solved...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random(1, 100) - math.floor(smarts / 10)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 12)
+						state.Money = (state.Money or 0) + math.random(2000, 5000)
+						state.Flags = state.Flags or {}
+						state.Flags.crisis_solver = true
+						state:AddFeed("📊 Found the error at 4am! Client saved! Bonus incoming!")
+					elseif roll <= 75 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("📊 Fixed most issues. Client barely passed audit. Exhausted.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state.Flags = state.Flags or {}
+						state.Flags.audit_failure = true
+						state:AddFeed("📊 Couldn't fix it in time. Client got fined. They're furious.")
+					end
+				end,
+			},
+			{
+				text = "Report the discrepancy honestly",
+				effects = { Smarts = 2 },
+				feedText = "You document everything properly...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("📊 Client appreciated your honesty. They fixed the issue.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("📊 Client blamed you for not catching it sooner. Unfair!")
+					end
+				end,
+			},
+			{
+				text = "Escalate to senior partner",
+				effects = {},
+				feedText = "Not your problem alone...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("📊 Partner handled it. Crisis averted. Team effort!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("📊 Partner threw you under the bus. Should've handled it yourself.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "accountant_tax_season",
+		title = "Tax Season Madness",
+		emoji = "💰",
+		textVariants = {
+			"It's tax season! Your workload just tripled!",
+			"April is coming... the deadline looms!",
+			"Your desk is buried in 1099s and W-2s!",
+		},
+		text = "It's tax season! The deadline is approaching fast!",
+		question = "How do you survive?",
+		minAge = 22, maxAge = 65,
+		baseChance = 0.55,
+		cooldown = 2,
+		category = "career_finance",
+		requiresJob = true,
+		eligibility = function(state)
+			if not state.CurrentJob then return false end
+			local jobId = (state.CurrentJob.id or ""):lower()
+			return jobId:find("account") or jobId:find("cpa") or jobId:find("tax")
+				or jobId:find("finance") or jobId:find("bookkeeper")
+		end,
+		
+		choices = {
+			{
+				text = "Work 80-hour weeks",
+				effects = { Health = -5, Happiness = -3 },
+				feedText = "Living at the office...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Money = (state.Money or 0) + math.random(3000, 8000) -- Overtime pay
+					if roll <= 50 then
+						state.Flags = state.Flags or {}
+						state.Flags.tax_season_hero = true
+						state:AddFeed("💰 Survived tax season! Overtime pay: $" .. math.random(3000, 8000) .. "!")
+					else
+						state:ModifyStat("Health", -3)
+						state:AddFeed("💰 Made it through but you're running on fumes. Need a vacation.")
+					end
+				end,
+			},
+			{
+				text = "Hire temp help",
+				effects = { Money = -1000 },
+				feedText = "Can't do this alone...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 65 then
+						state:ModifyStat("Happiness", 6)
+						state:AddFeed("💰 Temps saved you! Manageable workload. Smart move!")
+					else
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("💰 Temps made mistakes. Had to redo their work. Wasted money.")
+					end
+				end,
+			},
+			{
+				text = "Set client expectations early",
+				effects = { Smarts = 2 },
+				feedText = "Communication is key...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("💰 Clients were understanding. Extensions filed. Stress managed!")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("💰 Some clients were upset. But you're not burned out at least.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "accountant_embezzlement_discovery",
+		title = "Suspicious Activity",
+		emoji = "🚨",
+		textVariants = {
+			"You've discovered irregularities in a coworker's accounts!",
+			"Someone's been cooking the books... you have proof!",
+			"There's money missing and you know where it went!",
+		},
+		text = "You've discovered evidence that someone is embezzling funds!",
+		question = "This is serious. What do you do?",
+		minAge = 22, maxAge = 65,
+		baseChance = 0.25,
+		cooldown = 5,
+		category = "career_finance",
+		requiresJob = true,
+		eligibility = function(state)
+			if not state.CurrentJob then return false end
+			local jobId = (state.CurrentJob.id or ""):lower()
+			return jobId:find("account") or jobId:find("cpa") or jobId:find("auditor")
+				or jobId:find("finance") or jobId:find("controller")
+		end,
+		
+		choices = {
+			{
+				text = "Report to authorities immediately",
+				effects = {},
+				feedText = "Doing the right thing...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 15)
+						state.Money = (state.Money or 0) + math.random(5000, 20000) -- Whistleblower reward
+						state.Flags = state.Flags or {}
+						state.Flags.whistleblower_hero = true
+						state:AddFeed("🚨 HERO! Embezzler caught! Whistleblower reward: $" .. math.random(5000, 20000) .. "!")
+					else
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🚨 Right thing done but investigation dragged on. Stressful process.")
+					end
+				end,
+			},
+			{
+				text = "Confront the person privately",
+				effects = {},
+				feedText = "Maybe there's an explanation...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🚨 It was an accounting error! Crisis averted. Phew!")
+					elseif roll <= 60 then
+						state:ModifyStat("Happiness", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.threatened_at_work = true
+						state:AddFeed("🚨 They threatened you to keep quiet. Now what?!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🚨 They tried to frame YOU! Had to fight to clear your name!")
+					end
+				end,
+			},
+			{
+				text = "Document everything and wait",
+				effects = { Smarts = 3 },
+				feedText = "Building your case...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.has_embezzlement_evidence = true
+					state:AddFeed("🚨 Evidence documented. Waiting for the right moment to act.")
+				end,
+			},
+		},
+	},
+	{
+		id = "accountant_client_dispute",
+		title = "Client Dispute",
+		emoji = "💢",
+		textVariants = {
+			"A client is disputing your work on their taxes!",
+			"Someone claims you made a costly mistake!",
+			"A client is threatening to sue over their audit!",
+		},
+		text = "A client is disputing your work and threatening legal action!",
+		question = "How do you respond?",
+		minAge = 22, maxAge = 65,
+		baseChance = 0.35,
+		cooldown = 4,
+		category = "career_finance",
+		requiresJob = true,
+		eligibility = function(state)
+			if not state.CurrentJob then return false end
+			local jobId = (state.CurrentJob.id or ""):lower()
+			return jobId:find("account") or jobId:find("cpa") or jobId:find("auditor")
+				or jobId:find("finance")
+		end,
+		
+		choices = {
+			{
+				text = "Review your work thoroughly",
+				effects = { Smarts = 2 },
+				feedText = "Checking everything...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("💢 Your work was perfect! Client backed down. Vindicated!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", -3)
+						state.Money = (state.Money or 0) - math.random(500, 2000)
+						state:AddFeed("💢 Small error found. Fixed it. Client satisfied but you paid a fee.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state.Money = (state.Money or 0) - math.random(2000, 10000)
+						state:AddFeed("💢 Major mistake discovered. Malpractice insurance kicked in. Ouch.")
+					end
+				end,
+			},
+			{
+				text = "Offer a settlement",
+				effects = { Money = -2000 },
+				feedText = "Sometimes paying is easier...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("💢 They accepted the settlement. Expensive lesson learned.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("💢 They rejected settlement! Going to arbitration now.")
+					end
+				end,
+			},
+			{
+				text = "Stand your ground",
+				effects = {},
+				feedText = "You did nothing wrong...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.stood_ground = true
+						state:AddFeed("💢 Client was bluffing! They dropped the case. Integrity intact!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state.Money = (state.Money or 0) - math.random(3000, 8000)
+						state:AddFeed("💢 They sued anyway. Legal fees piling up. Stressful!")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "accountant_certification_opportunity",
+		title = "Certification Opportunity",
+		emoji = "📜",
+		textVariants = {
+			"There's a chance to get an advanced certification!",
+			"Your firm will pay for your CPA exam!",
+			"A certification program could boost your career!",
+		},
+		text = "You have an opportunity to pursue an advanced certification!",
+		question = "Do you go for it?",
+		minAge = 22, maxAge = 50,
+		baseChance = 0.35,
+		cooldown = 5,
+		category = "career_finance",
+		requiresJob = true,
+		eligibility = function(state)
+			if not state.CurrentJob then return false end
+			local jobId = (state.CurrentJob.id or ""):lower()
+			local flags = state.Flags or {}
+			return (jobId:find("account") or jobId:find("finance") or jobId:find("bookkeeper"))
+				and not flags.cpa_certified
+		end,
+		
+		choices = {
+			{
+				text = "Study hard and take the exam",
+				effects = { Smarts = 3 },
+				feedText = "Hitting the books...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random(1, 100) - math.floor(smarts / 10)
+					if roll <= 45 then
+						state:ModifyStat("Happiness", 15)
+						state:ModifyStat("Smarts", 5)
+						state.Money = (state.Money or 0) + math.random(5000, 15000) -- Raise with certification
+						state.Flags = state.Flags or {}
+						state.Flags.cpa_certified = true
+						state.Flags.certified_professional = true
+						state:AddFeed("📜 PASSED! You're now a Certified Public Accountant! Big raise incoming!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.cpa_attempt = true
+						state:AddFeed("📜 Failed the exam. Can retake it. Don't give up!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("📜 Bombed the exam badly. Need more study time. Humiliating.")
+					end
+				end,
+			},
+			{
+				text = "Wait until you're more prepared",
+				effects = { Happiness = -2 },
+				feedText = "Maybe next year...",
+				onResolve = function(state)
+					state:AddFeed("📜 Opportunity passed. Maybe next time you'll feel ready.")
+				end,
+			},
+		},
+	},
+	{
+		id = "accountant_big_client",
+		title = "Landing a Big Fish",
+		emoji = "🐋",
+		textVariants = {
+			"A Fortune 500 company wants you to handle their account!",
+			"A celebrity approached you for financial management!",
+			"A major corporation is interested in your services!",
+		},
+		text = "A major client wants to hire you! This could be huge!",
+		question = "How do you approach this opportunity?",
+		minAge = 25, maxAge = 60,
+		baseChance = 0.25,
+		cooldown = 5,
+		category = "career_finance",
+		requiresJob = true,
+		eligibility = function(state)
+			if not state.CurrentJob then return false end
+			local jobId = (state.CurrentJob.id or ""):lower()
+			return jobId:find("account") or jobId:find("cpa") or jobId:find("finance")
+				or jobId:find("controller") or jobId:find("cfo")
+		end,
+		
+		choices = {
+			{
+				text = "Pitch your best presentation",
+				effects = {},
+				feedText = "This is your shot...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random(1, 100) - math.floor(smarts / 8)
+					if roll <= 35 then
+						state:ModifyStat("Happiness", 20)
+						state.Money = (state.Money or 0) + math.random(10000, 50000)
+						state.Flags = state.Flags or {}
+						state.Flags.has_major_client = true
+						state.Flags.high_profile_accountant = true
+						state:AddFeed("🐋 LANDED THE WHALE! Your career just skyrocketed! Massive bonus!")
+					elseif roll <= 65 then
+						state:ModifyStat("Happiness", 5)
+						state.Money = (state.Money or 0) + math.random(2000, 8000)
+						state:AddFeed("🐋 Got a smaller contract. Not the big one, but still great!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🐋 They went with a competitor. So close! Next time.")
+					end
+				end,
+			},
+			{
+				text = "Partner with a colleague",
+				effects = {},
+				feedText = "Strength in numbers...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 12)
+						state.Money = (state.Money or 0) + math.random(5000, 15000)
+						state:AddFeed("🐋 Team effort paid off! Split the commission but landed the client!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🐋 Partner took credit for your work. Won the client but you got less.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "accountant_work_life_balance",
+		title = "Burnout Warning",
+		emoji = "😰",
+		textVariants = {
+			"You haven't taken a vacation in 2 years...",
+			"Your family says they never see you anymore...",
+			"The spreadsheets are haunting your dreams...",
+		},
+		text = "Work is consuming your life. You're burning out.",
+		question = "Something needs to change. What do you do?",
+		minAge = 25, maxAge = 60,
+		baseChance = 0.4,
+		cooldown = 3,
+		category = "career_finance",
+		requiresJob = true,
+		eligibility = function(state)
+			if not state.CurrentJob then return false end
+			local jobId = (state.CurrentJob.id or ""):lower()
+			return jobId:find("account") or jobId:find("cpa") or jobId:find("finance")
+		end,
+		
+		choices = {
+			{
+				text = "Take a mental health day",
+				effects = { Happiness = 5, Health = 3 },
+				feedText = "You need this...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("😰 Much needed rest! Feel human again. Back at it tomorrow.")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("😰 Couldn't stop thinking about work. Didn't really rest.")
+					end
+				end,
+			},
+			{
+				text = "Request to work from home",
+				effects = {},
+				feedText = "Flexibility might help...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.remote_worker = true
+						state:AddFeed("😰 Approved! Work from home 3 days a week now. Life changing!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("😰 Denied. The firm needs 'butts in seats'. Old school.")
+					end
+				end,
+			},
+			{
+				text = "Push through - it'll get better",
+				effects = { Happiness = -5, Health = -5 },
+				feedText = "Just keep grinding...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:AddFeed("😰 Eventually found your rhythm. The hustle never stops.")
+					else
+						state:ModifyStat("Health", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.burned_out = true
+						state:AddFeed("😰 Burned out badly. Doctor says you need to slow down. Seriously.")
+					end
+				end,
+			},
+			{
+				text = "Look for a new job",
+				effects = {},
+				feedText = "Fresh start needed...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 12)
+						state.Flags = state.Flags or {}
+						state.Flags.job_hunting = true
+						state:AddFeed("😰 Started interviewing. Some promising leads! Excited again!")
+					else
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("😰 Market is tough but you're exploring options. Hope on the horizon.")
+					end
+				end,
+			},
+		},
+	},
 }
 
 return OfficeCareerEvents

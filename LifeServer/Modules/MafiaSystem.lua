@@ -2007,6 +2007,121 @@ function MafiaSystem:doEnhancedOperation(lifeState, operationId, scenarioMods)
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: OPERATION WITH FORCED RESULT
+-- When a minigame (combat/heist) is completed, respect the minigame result
+-- Don't re-roll success - the player already earned it through gameplay
+-- ════════════════════════════════════════════════════════════════════════════
+
+function MafiaSystem:doOperationWithForcedResult(lifeState, operationId, forcedSuccess, modifiers)
+	local mobState = self:getMobState(lifeState)
+	
+	if not mobState.inMob then
+		return false, "You're not in a crime family!", nil
+	end
+	
+	if lifeState.InJail then
+		return false, "You can't do operations from jail!", nil
+	end
+	
+	local family = self.Families[mobState.familyId]
+	local operation = nil
+	
+	for _, op in ipairs(family.operations) do
+		if op.id == operationId then
+			operation = op
+			break
+		end
+	end
+	
+	if not operation then
+		return false, "Unknown operation.", nil
+	end
+	
+	-- Apply modifiers from choices (if any)
+	modifiers = modifiers or {}
+	local rankMultiplier = self:getRankRewardMultiplier(lifeState)
+	local crewSuccessBonus, crewRewardBonus = self:getCrewBonus(lifeState, operation.category)
+	
+	local rewardMod = (modifiers.rewardMod or 1.0) * rankMultiplier * crewRewardBonus
+	local riskMod = modifiers.riskMod or 1.0
+	local respectBonus = modifiers.respectBonus or 0
+	
+	local result = {
+		operation = operation.name,
+		operationEmoji = operation.emoji,
+		success = forcedSuccess, -- CRITICAL: Use the forced result from minigame!
+		money = 0,
+		respect = 0,
+		heat = 0,
+		message = "",
+		rankMultiplier = rankMultiplier,
+	}
+	
+	if forcedSuccess then
+		-- SUCCESS! Player won the minigame, they get the rewards
+		local baseReward = math.random(operation.reward.min, operation.reward.max)
+		result.money = math.floor(baseReward * rewardMod)
+		result.respect = math.floor((operation.respect + math.random(0, 10) + respectBonus))
+		result.heat = self:calculateHeat(lifeState, operation.risk / 10, riskMod)
+		
+		-- Apply rewards
+		lifeState.Money = (lifeState.Money or 0) + result.money
+		self:addRespect(lifeState, result.respect)
+		self:addHeat(lifeState, result.heat)
+		mobState.earnings = (mobState.earnings or 0) + result.money
+		mobState.operationsCompleted = (mobState.operationsCompleted or 0) + 1
+		
+		result.message = string.format(
+			"%s Operation successful! You earned $%s and gained %d respect.",
+			operation.emoji,
+			self:formatMoney(result.money),
+			result.respect
+		)
+		
+		if rankMultiplier > 1 then
+			result.message = result.message .. string.format(" (%.0f%% rank bonus!)", (rankMultiplier - 1) * 100)
+		end
+		
+		-- Check for rank up
+		local rankUpMsg = self:checkRankUp(lifeState)
+		if rankUpMsg then
+			result.message = result.message .. "\n\n" .. rankUpMsg
+			result.promoted = true
+		end
+		
+		return true, result.message, result
+	else
+		-- FAILED! Player lost the minigame
+		result.heat = self:calculateHeat(lifeState, operation.risk / 5, riskMod)
+		self:addHeat(lifeState, result.heat)
+		mobState.operationsFailed = (mobState.operationsFailed or 0) + 1
+		
+		-- Risk of arrest - but lower than normal since they at least tried the minigame
+		-- Only arrest if heat is very high or very unlucky
+		local arrestChance = (operation.risk * riskMod) / 4 -- Lower chance than normal failure
+		if mobState.heat >= 70 then
+			arrestChance = arrestChance * 1.5 -- Higher chance if already hot
+		end
+		
+		if math.random(100) <= arrestChance then
+			local jailYears = math.max(1, math.ceil((operation.risk * riskMod) / 25))
+			lifeState.InJail = true
+			lifeState.JailYearsLeft = jailYears
+			result.message = string.format(
+				"%s Operation failed! You got caught and sentenced to %d years!",
+				operation.emoji,
+				jailYears
+			)
+			result.arrested = true
+		else
+			result.message = string.format("%s Operation failed! You barely escaped, but the heat is on.", operation.emoji)
+		end
+		
+		return false, result.message, result
+	end
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
 -- SINGLETON INSTANCE
 -- ════════════════════════════════════════════════════════════════════════════
 

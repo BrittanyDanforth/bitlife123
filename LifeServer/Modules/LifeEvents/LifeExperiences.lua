@@ -725,6 +725,594 @@ LifeExperiences.events = {
 			{ text = "Financial milestone", effects = { Happiness = 8, Money = 100 }, setFlags = { financial_milestone = true }, feedText = "🏅 Money goals! Saved/earned more than ever!" },
 		},
 	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CONSEQUENTIAL EVENTS - Dynamic events based on PAST player choices
+	-- User complaint: "game so boring and shallow, what you do has no impact"
+	-- These events reference past decisions and create ripple effects!
+	-- ══════════════════════════════════════════════════════════════════════════════
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- FRIEND BETRAYAL CONSEQUENCES
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "conseq_friend_revenge",
+		title = "An Old Friend Remembers",
+		emoji = "😤",
+		text = "Someone you wronged in the past has found a way to get back at you...",
+		question = "How do you respond?",
+		minAge = 16, maxAge = 80,
+		baseChance = 0.6,
+		cooldown = 4,
+		stage = STAGE,
+		ageBand = "any",
+		category = "consequence",
+		tags = { "consequence", "revenge", "past_actions" },
+		-- Only shows if player betrayed a friend
+		requiresAnyFlags = { betrayed_friend = true, wronged_friend = true, stole_from_friend = true, bad_friend = true },
+		
+		choices = {
+			{
+				text = "Apologize sincerely",
+				effects = { Happiness = -3 },
+				feedText = "Eating humble pie...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.4 then
+						state:ModifyStat("Happiness", 8)
+						state.Flags.made_amends = true
+						state.Flags.betrayed_friend = nil
+						state:AddFeed("😤 They accepted your apology. Friendship might be salvageable.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("😤 They didn't forgive you. The damage is done. They spread rumors.")
+					end
+				end,
+			},
+			{
+				text = "Deny everything",
+				effects = {},
+				feedText = "Playing innocent...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.3 then
+						state:AddFeed("😤 They couldn't prove it. You got away... for now.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state.Money = (state.Money or 0) - math.random(500, 2000)
+						state:AddFeed("😤 Your reputation took a hit! They told everyone what you did.")
+					end
+				end,
+			},
+			{
+				text = "Make it right financially",
+				effects = { Money = -1000 },
+				feedText = "Money talks...",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 5)
+					state.Flags.betrayed_friend = nil
+					state:AddFeed("😤 It cost you, but you've made amends. Debt settled.")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "conseq_kindness_returned",
+		title = "A Friend Remembers Your Kindness",
+		emoji = "🤝",
+		text = "Someone you helped in the past wants to return the favor!",
+		question = "What kind of help do they offer?",
+		minAge = 18, maxAge = 80,
+		baseChance = 0.6,
+		cooldown = 3,
+		stage = STAGE,
+		ageBand = "any",
+		category = "consequence",
+		tags = { "consequence", "reward", "past_actions", "friendship" },
+		-- Only shows if player was a good friend
+		requiresAnyFlags = { helped_friend = true, good_friend = true, generous = true, supported_friend = true, gave_money_to_friend = true },
+		
+		choices = {
+			{
+				text = "They offer financial help",
+				effects = {},
+				feedText = "Friends help friends...",
+				onResolve = function(state)
+					local amount = math.random(1000, 5000)
+					state.Money = (state.Money or 0) + amount
+					state:ModifyStat("Happiness", 10)
+					state:AddFeed("🤝 They paid you back and then some! $" .. amount .. " received. Karma is real!")
+				end,
+			},
+			{
+				text = "They provide a valuable connection",
+				effects = { Smarts = 3 },
+				setFlags = { powerful_connection = true },
+				feedText = "🤝 They introduced you to someone important. Doors opening!",
+			},
+			{
+				text = "They share an opportunity with you",
+				effects = {},
+				feedText = "Opportunity knocking...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.5 then
+						state.Money = (state.Money or 0) + math.random(2000, 8000)
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("🤝 The opportunity paid off! Your kindness has returned tenfold!")
+					else
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🤝 Good opportunity! Didn't work out financially but you made a new contact.")
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRIME HISTORY CONSEQUENCES
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "conseq_criminal_past_haunts",
+		title = "Your Past Catches Up",
+		emoji = "👮",
+		text = "Someone recognized you from your criminal days...",
+		question = "What happens?",
+		minAge = 21, maxAge = 80,
+		baseChance = 0.5,
+		cooldown = 5,
+		stage = STAGE,
+		ageBand = "any",
+		category = "consequence",
+		tags = { "consequence", "crime", "past_actions" },
+		-- Only shows if player has criminal history
+		requiresAnyFlags = { has_criminal_record = true, ex_convict = true, committed_crime = true, went_to_prison = true },
+		
+		choices = {
+			{
+				text = "It's a former victim",
+				effects = {},
+				feedText = "Face to face with the past...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.3 then
+						state:ModifyStat("Happiness", -10)
+						state:ModifyStat("Health", -5)
+						state:AddFeed("👮 They attacked you! The confrontation was ugly. You deserved it.")
+					elseif roll < 0.6 then
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("👮 They called the cops. Old charges reopened. Lawyer fees incoming.")
+						state.Money = (state.Money or 0) - math.random(2000, 5000)
+					else
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("👮 They've forgiven you. A weight lifted from your conscience.")
+						state.Flags.redeemed = true
+					end
+				end,
+			},
+			{
+				text = "A detective is digging into cold cases",
+				effects = { Happiness = -5 },
+				feedText = "👮 You're being watched. Old crimes don't always stay buried...",
+				setFlags = { being_investigated = true },
+			},
+			{
+				text = "A former accomplice resurfaces",
+				effects = {},
+				feedText = "Old partner in crime...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.4 then
+						state:AddFeed("👮 They want to do 'one more job.' Danger ahead.")
+						state.Flags.recruited_for_crime = true
+					elseif roll < 0.7 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("👮 They're threatening to talk unless you pay up. Blackmail.")
+						state.Flags.being_blackmailed = true
+					else
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("👮 They just wanted to catch up. Going straight now, like you.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "conseq_escaped_prison_life",
+		title = "Life on the Run",
+		emoji = "🏃",
+		text = "Being an escaped convict is exhausting. Every day is a struggle to stay hidden.",
+		question = "How do you handle life as a fugitive?",
+		minAge = 18, maxAge = 80,
+		baseChance = 0.8,
+		cooldown = 2,
+		stage = STAGE,
+		ageBand = "any",
+		category = "consequence",
+		tags = { "consequence", "prison", "escape", "fugitive" },
+		-- Only shows for escaped prisoners
+		requiresFlags = { escaped_prison = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Keep moving - new city",
+				effects = { Happiness = -3, Money = -500 },
+				feedText = "🏃 Another bus ticket. Another cheap motel. The running never stops.",
+			},
+			{
+				text = "Get fake papers",
+				effects = { Money = -2000 },
+				feedText = "Buying a new identity...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.6 then
+						state:ModifyStat("Happiness", 8)
+						state.Flags.new_identity = true
+						state:AddFeed("🏃 New identity acquired! You can breathe easier... for now.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🏃 The forger was an undercover cop! You've been caught!")
+						state.Flags.escaped_prison = nil
+						state.Flags.in_prison = true
+						state.JailYearsLeft = (state.JailYearsLeft or 0) + 5
+					end
+				end,
+			},
+			{
+				text = "Turn yourself in",
+				effects = { Happiness = -5 },
+				feedText = "🏃 The running is over. You're going back to face the music.",
+				onResolve = function(state)
+					state.Flags.escaped_prison = nil
+					state.Flags.in_prison = true
+					state.JailYearsLeft = (state.JailYearsLeft or 0) + 2
+					state:AddFeed("🏃 Surrendered to authorities. Extra time added for the escape.")
+				end,
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CAREER DECISION CONSEQUENCES
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "conseq_quit_dramatically",
+		title = "Your Old Boss Remembers",
+		emoji = "😠",
+		text = "That dramatic exit from your last job? It's coming back to haunt you.",
+		question = "What's the fallout?",
+		minAge = 21, maxAge = 65,
+		baseChance = 0.55,
+		cooldown = 4,
+		stage = STAGE,
+		ageBand = "adult",
+		category = "consequence",
+		tags = { "consequence", "career", "past_actions" },
+		-- Only shows if player quit badly
+		requiresAnyFlags = { quit_dramatically = true, burned_bridges = true, bad_exit = true },
+		
+		choices = {
+			{
+				text = "Bad reference costs you a new job",
+				effects = { Happiness = -10 },
+				feedText = "😠 They told your new potential employer EVERYTHING. Offer rescinded.",
+			},
+			{
+				text = "You run into your old boss",
+				effects = {},
+				feedText = "Face to face again...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.5 then
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("😠 Awkward! They made a scene. Embarrassing confrontation.")
+					else
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("😠 They've moved on. Nodded politely. Water under the bridge?")
+						state.Flags.burned_bridges = nil
+					end
+				end,
+			},
+			{
+				text = "Industry blacklist",
+				effects = { Happiness = -15 },
+				feedText = "😠 Word got around. You're unofficially blacklisted in the industry.",
+				setFlags = { industry_blacklist = true },
+			},
+		},
+	},
+	
+	{
+		id = "conseq_mentor_success",
+		title = "Your Protégé Thrives",
+		emoji = "🌟",
+		text = "That person you mentored at work? They're now incredibly successful and remember you!",
+		question = "How does this help you?",
+		minAge = 30, maxAge = 80,
+		baseChance = 0.5,
+		cooldown = 5,
+		oneTime = true,
+		stage = STAGE,
+		ageBand = "adult",
+		category = "consequence",
+		tags = { "consequence", "career", "past_actions", "mentor" },
+		-- Only shows if player mentored someone
+		requiresAnyFlags = { mentored_someone = true, was_mentor = true, trained_successor = true },
+		
+		choices = {
+			{
+				text = "They offer you a position",
+				effects = {},
+				feedText = "Student becomes the master...",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 15)
+					state.Money = (state.Money or 0) + 10000
+					state:AddFeed("🌟 They offered you a senior role at their company! Signing bonus included!")
+					state.Flags.great_job_offer = true
+				end,
+			},
+			{
+				text = "They invest in your venture",
+				effects = { Money = 50000 },
+				feedText = "🌟 They believed in you! $50,000 investment to help you start something!",
+			},
+			{
+				text = "They publicly credit you",
+				effects = { Happiness = 12 },
+				setFlags = { industry_respect = true, famous_mentor = true },
+				feedText = "🌟 In interviews, they always mention you. Your reputation soars!",
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- RELATIONSHIP CONSEQUENCES
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "conseq_ex_encounter",
+		title = "Blast From the Past",
+		emoji = "💔",
+		text = "You ran into your ex. The one who got away... or the one you ran from?",
+		question = "How does it go?",
+		minAge = 20, maxAge = 70,
+		baseChance = 0.5,
+		cooldown = 3,
+		stage = STAGE,
+		ageBand = "adult",
+		category = "consequence",
+		tags = { "consequence", "romance", "past_actions" },
+		-- Only shows if player had a breakup
+		requiresAnyFlags = { has_ex = true, divorced = true, broke_someones_heart = true, was_heartbroken = true },
+		
+		choices = {
+			{
+				text = "They're doing better than you",
+				effects = { Happiness = -8 },
+				feedText = "💔 They look amazing. Happy. Successful. Without you. Ouch.",
+			},
+			{
+				text = "Closure at last",
+				effects = { Happiness = 8 },
+				feedText = "💔 A mature conversation. Both of you have grown. Healing complete.",
+				onResolve = function(state)
+					state.Flags.has_closure = true
+					state.Flags.heartbreak = nil
+				end,
+			},
+			{
+				text = "Old feelings resurface",
+				effects = { Happiness = -3 },
+				feedText = "💔 Your heart flutters. Your mind races. Do you still...? Complicated.",
+				setFlags = { unresolved_feelings = true },
+			},
+			{
+				text = "They want you back",
+				effects = {},
+				feedText = "Second chances...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.5 then
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("💔 You reunited! Maybe this time it'll work...")
+						state.Flags.reconciled_with_ex = true
+					else
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("💔 You politely declined. That chapter is closed. It felt good to be wanted though.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "conseq_cheating_exposed",
+		title = "Your Secret is Out",
+		emoji = "💣",
+		text = "That affair you thought no one knew about? Someone found out...",
+		question = "What happens now?",
+		minAge = 21, maxAge = 70,
+		baseChance = 0.7,
+		cooldown = 5,
+		oneTime = true,
+		stage = STAGE,
+		ageBand = "adult",
+		category = "consequence",
+		tags = { "consequence", "romance", "past_actions", "cheating" },
+		-- Only shows if player cheated
+		requiresFlags = { cheated = true },
+		blockedByFlags = { affair_exposed = true },
+		
+		choices = {
+			{
+				text = "Your partner confronts you",
+				effects = { Happiness = -15 },
+				setFlags = { affair_exposed = true },
+				feedText = "💣 The trust is shattered. Your relationship may not survive this.",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.6 then
+						state:AddFeed("💣 They left you. The affair cost you your marriage.")
+						state.Flags.divorced = true
+						state.Flags.married = nil
+					else
+						state:AddFeed("💣 They're devastated but want to try counseling. Trust will take years to rebuild.")
+						state.Flags.in_couples_therapy = true
+					end
+				end,
+			},
+			{
+				text = "The other person's partner finds out",
+				effects = { Happiness = -10 },
+				setFlags = { affair_exposed = true },
+				feedText = "💣 They showed up at your door. Scene was made. Everyone knows now.",
+			},
+			{
+				text = "Blackmail attempt",
+				effects = { Happiness = -8 },
+				feedText = "💣 Someone knows and wants money to stay quiet. Pay or be exposed?",
+				setFlags = { being_blackmailed = true },
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- GENERAL KARMA EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "conseq_good_karma",
+		title = "The Universe Pays Back",
+		emoji = "✨",
+		text = "Something wonderful happened to you out of nowhere!",
+		question = "What stroke of luck?",
+		minAge = 16, maxAge = 100,
+		baseChance = 0.5,
+		cooldown = 4,
+		stage = STAGE,
+		ageBand = "any",
+		category = "consequence",
+		tags = { "consequence", "karma", "luck", "reward" },
+		-- Only shows if player has been generally good
+		requiresAnyFlags = { good_person = true, charitable = true, helped_stranger = true, volunteer = true, kind_soul = true },
+		blockedByFlags = { evil = true, cruel = true },
+		
+		choices = {
+			{
+				text = "Anonymous gift",
+				effects = {},
+				feedText = "Mysterious benefactor...",
+				onResolve = function(state)
+					local amount = math.random(1000, 10000)
+					state.Money = (state.Money or 0) + amount
+					state:ModifyStat("Happiness", 15)
+					state:AddFeed("✨ A check arrived in the mail! $" .. amount .. "! No return address. Just 'Thank you'.")
+				end,
+			},
+			{
+				text = "Perfect timing",
+				effects = { Happiness = 10 },
+				feedText = "✨ You were in exactly the right place at the right time. Life just worked out perfectly today.",
+			},
+			{
+				text = "Dream opportunity",
+				effects = { Happiness = 12 },
+				setFlags = { lucky_break = true },
+				feedText = "✨ The opportunity you'd been waiting for just fell into your lap! Stars aligned!",
+			},
+		},
+	},
+	
+	{
+		id = "conseq_bad_karma",
+		title = "The Universe Remembers",
+		emoji = "⚡",
+		text = "Bad luck keeps finding you. Almost like... karma?",
+		question = "What goes wrong?",
+		minAge = 16, maxAge = 100,
+		baseChance = 0.5,
+		cooldown = 4,
+		stage = STAGE,
+		ageBand = "any",
+		category = "consequence",
+		tags = { "consequence", "karma", "bad_luck" },
+		-- Only shows if player has been generally bad
+		requiresAnyFlags = { cruel = true, selfish = true, mean = true, hurt_innocent = true, evil = true },
+		blockedByFlags = { good_person = true, redeemed = true },
+		
+		choices = {
+			{
+				text = "Everything breaks down",
+				effects = { Happiness = -8, Money = -500 },
+				feedText = "⚡ Car troubles, phone died, lost wallet. All in the same day. The universe is sending a message.",
+			},
+			{
+				text = "Public humiliation",
+				effects = { Happiness = -10 },
+				feedText = "⚡ Something embarrassing happened in front of everyone. People are talking.",
+			},
+			{
+				text = "Lost something valuable",
+				effects = { Happiness = -8 },
+				feedText = "⚡ Something important to you is just... gone. Can't find it anywhere.",
+				onResolve = function(state)
+					state.Money = (state.Money or 0) - math.random(200, 1000)
+					state:AddFeed("⚡ Had to replace it. Expensive and frustrating.")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "conseq_reputation_precedes",
+		title = "Your Reputation Precedes You",
+		emoji = "📢",
+		text = "Everywhere you go, people seem to already know about you...",
+		question = "What have they heard?",
+		minAge = 21, maxAge = 80,
+		baseChance = 0.45,
+		cooldown = 3,
+		stage = STAGE,
+		ageBand = "adult",
+		category = "consequence",
+		tags = { "consequence", "reputation", "past_actions" },
+		
+		choices = {
+			{
+				text = "Your success story",
+				effects = { Happiness = 10 },
+				feedText = "📢 They've heard how you climbed from nothing. Inspiration!",
+				eligibility = function(state)
+					return state.Flags and (state.Flags.rags_to_riches or state.Flags.self_made or state.Flags.successful_entrepreneur)
+				end,
+			},
+			{
+				text = "Your generous acts",
+				effects = { Happiness = 8 },
+				feedText = "📢 Word of your charity work has spread. People thank you!",
+				eligibility = function(state)
+					return state.Flags and (state.Flags.charitable or state.Flags.philanthropist or state.Flags.generous)
+				end,
+			},
+			{
+				text = "Your dark past",
+				effects = { Happiness = -8 },
+				feedText = "📢 They know what you did. The whispers follow you everywhere.",
+				eligibility = function(state)
+					return state.Flags and (state.Flags.has_criminal_record or state.Flags.scandal or state.Flags.controversial)
+				end,
+			},
+			{
+				text = "Your professional expertise",
+				effects = { Happiness = 6, Smarts = 2 },
+				feedText = "📢 You're known as an expert in your field. Respect!",
+				eligibility = function(state)
+					return state.Flags and (state.Flags.industry_expert or state.Flags.accomplished or state.Flags.promoted_multiple_times)
+				end,
+			},
+		},
+	},
 }
 
 return LifeExperiences

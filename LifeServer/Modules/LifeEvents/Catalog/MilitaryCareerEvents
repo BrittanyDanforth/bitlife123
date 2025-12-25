@@ -18,9 +18,45 @@ local function hasMilitaryJob(state)
 	if not state.CurrentJob then return false end
 	local jobId = (state.CurrentJob.id or ""):lower()
 	local category = (state.CurrentJob.category or ""):lower()
-	return category == "military" or jobId:find("enlisted") or jobId:find("sergeant") 
-		or jobId:find("officer") or jobId:find("captain") or jobId:find("colonel")
-		or jobId:find("general") or jobId:find("military")
+	
+	-- CRITICAL FIX: Check category first - most reliable indicator
+	if category == "military" then return true end
+	
+	-- CRITICAL FIX: More specific military job detection
+	-- The old check used "officer" which matched Loan Officer, Parole Officer, etc.
+	-- Now we use more specific patterns for military ranks/roles
+	local militaryPatterns = {
+		"enlisted",        -- Enlisted Soldier
+		"sergeant",        -- Sergeant
+		"army_officer",    -- Military officer (specific)
+		"military_officer",
+		"navy_officer",
+		"air_force_officer",
+		"marines_officer",
+		"captain_military", -- Military Captain (not boat captain)
+		"colonel",         -- Colonel
+		"general",         -- General
+		"military",        -- Generic military
+		"army",            -- Army
+		"navy",            -- Navy  
+		"marines",         -- Marines
+		"air_force",       -- Air Force
+		"coast_guard",     -- Coast Guard
+		"soldier",         -- Soldier
+		"private_",        -- Private (rank)
+		"corporal",        -- Corporal
+		"lieutenant",      -- Lieutenant
+		"major_",          -- Major (rank, not major like "major client")
+		"warrant_officer", -- Warrant Officer (military specific)
+	}
+	
+	for _, pattern in ipairs(militaryPatterns) do
+		if jobId:find(pattern) then
+			return true
+		end
+	end
+	
+	return false
 end
 
 local function isOfficer(state)

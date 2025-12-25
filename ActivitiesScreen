@@ -6803,10 +6803,13 @@ end
 -- This creates a proper event-style card for activity completion, matching the
 -- look and feel of the main life event cards for a premium experience
 -- ═══════════════════════════════════════════════════════════════════════════════
-function ActivitiesScreen:showActivityResult(success, message, item, emoji, wasCaught)
+function ActivitiesScreen:showActivityResult(success, message, item, emoji, wasCaught, serverStatChanges)
 	-- CRITICAL: Log the result for debugging
 	log("=== SHOWING ACTIVITY RESULT ===")
 	log("Success:", success, "Message:", message, "Item:", item and item.name or "nil", "Emoji:", emoji, "wasCaught:", wasCaught)
+	if serverStatChanges then
+		log("Server stat changes received:", serverStatChanges)
+	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: If wasCaught is true, ALWAYS show RED card (failure)
@@ -6898,15 +6901,63 @@ function ActivitiesScreen:showActivityResult(success, message, item, emoji, wasC
 	-- Build stat changes display string
 	local statChangesText = ""
 	
-	-- Check if we have stat changes data (passed as extra arg)
-	-- NOTE: The statChanges are passed via item.statChanges temporarily or extra params
-	local statChanges = nil
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: PRIORITIZE SERVER STAT CHANGES!
+	-- User complaint: "Activities like happiness or any stat doesn't actually give it 
+	-- nicely to me like how LifeClient cardpop ups do"
+	-- Now we use actual server-provided stat changes when available!
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- Check if the item has effect text we can display
+	-- First priority: Use actual stat changes from server if available
+	if serverStatChanges and type(serverStatChanges) == "table" and isActualSuccess then
+		local statParts = {}
+		for stat, amount in pairs(serverStatChanges) do
+			if type(amount) == "number" and amount ~= 0 then
+				local sign = amount >= 0 and "+" or ""
+				-- Emoji mapping for all stat types
+				local statEmoji = ""
+				if stat == "Happiness" then statEmoji = "😊"
+				elseif stat == "Health" then statEmoji = "💪"
+				elseif stat == "Smarts" then statEmoji = "🧠"
+				elseif stat == "Looks" then statEmoji = "✨"
+				elseif stat == "Popularity" then statEmoji = "👥"
+				elseif stat == "Fame" then statEmoji = "⭐"
+				elseif stat == "Respect" then statEmoji = "🤝"
+				elseif stat == "Money" then statEmoji = "💰"
+				elseif stat == "Diplomacy" then statEmoji = "🌍"
+				elseif stat == "Heat" then statEmoji = "🔥"
+				elseif stat == "Karma" then statEmoji = "☯️"
+				elseif stat == "Followers" then statEmoji = "📱"
+				elseif stat == "Charisma" then statEmoji = "💬"
+				elseif stat == "Fitness" then statEmoji = "🏃"
+				elseif stat == "Willpower" then statEmoji = "🧘"
+				elseif stat == "Craziness" then statEmoji = "🤪"
+				elseif stat == "Crime" then statEmoji = "💣"
+				else statEmoji = "📊"
+				end
+				-- Format money differently (with $ and commas)
+				local valueText
+				if stat == "Money" then
+					if math.abs(amount) >= 1000000 then
+						valueText = string.format("%s$%.1fM", sign, amount / 1000000)
+					elseif math.abs(amount) >= 1000 then
+						valueText = string.format("%s$%dk", sign, math.floor(amount / 1000))
+					else
+						valueText = string.format("%s$%d", sign, amount)
+					end
+				else
+					valueText = string.format("%s%d %s", sign, amount, stat)
+				end
+				table.insert(statParts, string.format("%s %s", statEmoji, valueText))
+			end
+		end
+		if #statParts > 0 then
+			statChangesText = "\n\n" .. table.concat(statParts, "  ")
+			log("Using server stat changes:", statChangesText)
+		end
+	-- Second priority: Check if the item has effect text we can display
 	-- CRITICAL FIX: Only show effect text if it doesn't contain ranges like "$50K-500K"
-	-- User complained: "EARNED $50K-500K +40 HEAT" showing after crime completed
-	-- The effect field is for PRE-activity description, not post-activity results
-	if item and item.effect and isActualSuccess then
+	elseif item and item.effect and isActualSuccess then
 		local effectText = item.effect
 		-- Don't show effects that have ranges (indicated by "-" in dollar amounts)
 		-- or are just descriptions of what MIGHT happen
@@ -6917,10 +6968,9 @@ function ActivitiesScreen:showActivityResult(success, message, item, emoji, wasC
 		end
 	end
 	
-	-- If we have actual stat changes from server, show them
-	-- This requires the statChanges to be stored somewhere accessible
-	-- For now, show the effect from item definition which matches what the server applied
-	if item and item.id then
+	-- Third priority: Use hardcoded effectItems mapping as fallback
+	-- This is used when server doesn't provide stat changes but we know what they should be
+	if statChangesText == "" and item and item.id then
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		-- CRITICAL FIX: EXPANDED effectItems mapping for ALL activities!
 		-- User complaint: "Royal activities show +Popularity not +5 Popularity"

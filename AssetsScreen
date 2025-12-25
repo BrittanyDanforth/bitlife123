@@ -1520,9 +1520,11 @@ function AssetsScreen:populateProperty()
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX #603: Show current residence in properties list even if not "owned"
-	-- User complaint: "I moved out and it says rent is 1300 but doesn't show my apartment!"
-	-- When player is renting, they should see their residence in the property list
+	-- CRITICAL FIX #DUPLICATE-1: Prevent living situation duplication
+	-- User complaint: "Living situation duplicated sometimes"
+	-- The Living Situation card already shows rental/housing status
+	-- Only add actual OWNED properties to the My Properties section - not rentals!
+	-- Rentals are NOT manageable properties (can't sell them) so they shouldn't be listed
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local alreadyHasResidence = false
 	for _, prop in ipairs(ownedProperties) do
@@ -1532,7 +1534,8 @@ function AssetsScreen:populateProperty()
 		end
 	end
 	
-	-- If player moved out but no residence shown, add their current residence
+	-- CRITICAL FIX: Only add OWNED properties to the list, NOT rentals!
+	-- Rentals are shown in the Living Situation card only - no need to duplicate
 	if not alreadyHasResidence then
 		local flags = self.playerState and self.playerState.Flags or {}
 		local housingState = self.playerState and self.playerState.HousingState or {}
@@ -1554,24 +1557,15 @@ function AssetsScreen:populateProperty()
 			}
 			table.insert(ownedProperties, 1, residenceEntry)
 			log("  Added royal palace to property list")
-		-- Check if player has housing arrangement that should be shown
-		elseif flags.moved_out or flags.renting or flags.has_apartment or housingState.status == "renter" then
-			local rent = housingState.rent or 900
-			local residenceEntry = {
-				id = "current_residence",
-				name = housingState.type == "shared_apartment" and "Shared Apartment" or "Rental Apartment",
-				emoji = "🏢",
-				price = 0, -- Rentals don't have purchase price
-				monthlyRent = rent,
-				minAge = 0,
-				isRental = true,
-				isEventAcquired = true,
-				description = string.format("Monthly rent: $%s", self:formatMoney(rent))
-			}
-			table.insert(ownedProperties, 1, residenceEntry) -- Add at beginning
-			log("  Added current rental residence to property list")
+		-- CRITICAL FIX: DO NOT add rental apartments to the property list!
+		-- They are already shown in the Living Situation card and adding them
+		-- creates the duplication bug the user complained about.
+		-- Rentals are not manageable (can't sell) so they don't belong in "My Properties"
+		-- elseif flags.moved_out or flags.renting or flags.has_apartment or housingState.status == "renter" then
+		--     (REMOVED - this caused duplication)
 		elseif flags.homeowner or flags.has_house or housingState.status == "owner" then
 			-- Player owns home but it's not in list - add placeholder
+			-- This IS an actual owned property that can be sold/managed
 			local propValue = housingState.value or 150000
 			local residenceEntry = {
 				id = "current_home",
@@ -1584,69 +1578,10 @@ function AssetsScreen:populateProperty()
 			}
 			table.insert(ownedProperties, 1, residenceEntry)
 			log("  Added current owned home to property list")
-		elseif flags.in_college or flags.in_university then
-			-- ═══════════════════════════════════════════════════════════════════════════════
-			-- CRITICAL FIX: Only show college dorm if player is ACTUALLY in college
-			-- BUG: Dorm was showing for age 42 players with partners because:
-			--   1. in_college flag wasn't being cleared on graduation
-			--   2. Partner living situation wasn't being checked
-			-- FIX: Add multiple validation checks before showing dorm
-			-- ═══════════════════════════════════════════════════════════════════════════════
-			local shouldShowDorm = true
-
-			-- Check 1: Player has graduated (these flags mean they completed college)
-			if flags.college_graduate or flags.has_degree or flags.has_bachelors or
-			   flags.has_associates or flags.masters_degree or flags.doctorate then
-				shouldShowDorm = false
-				log("  Dorm NOT shown: Player has graduated (has degree flags)")
-			end
-
-			-- Check 2: Player is too old to realistically be in college dorm
-			if age > 25 then
-				shouldShowDorm = false
-				log("  Dorm NOT shown: Player age > 25 (" .. tostring(age) .. ")")
-			end
-
-			-- Check 3: Player has spouse/partner (they would live together, not in dorm)
-			if flags.married or flags.has_spouse or flags.has_partner or flags.cohabiting then
-				shouldShowDorm = false
-				log("  Dorm NOT shown: Player has spouse/partner flag")
-			end
-
-			-- Check 4: Look in Relationships for romance-type partner
-			local relationships = self.playerState and self.playerState.Relationships or {}
-			for id, rel in pairs(relationships) do
-				local relType = rel and (rel.type or "")
-				local relRole = rel and (rel.role or "")
-				local relAlive = rel and rel.alive
-				if relAlive then
-					relType = string.lower(tostring(relType))
-					relRole = string.lower(tostring(relRole))
-					if relType == "romance" or relType == "spouse" or relType == "partner" or
-					   relRole:find("spouse") or relRole:find("partner") or
-					   relRole:find("wife") or relRole:find("husband") or
-					   relRole:find("boyfriend") or relRole:find("girlfriend") then
-						shouldShowDorm = false
-						log("  Dorm NOT shown: Found romance/partner in Relationships: " .. tostring(rel.name))
-						break
-					end
-				end
-			end
-
-			-- Only add dorm if all checks passed
-			if shouldShowDorm then
-				local residenceEntry = {
-					id = "college_dorm",
-					name = "College Dorm Room",
-					emoji = "🏫",
-					price = 0,
-					minAge = 0,
-					isEventAcquired = true,
-					description = "Student housing (included with tuition)"
-				}
-				table.insert(ownedProperties, 1, residenceEntry)
-				log("  Added college dorm to property list")
-			end
+		-- CRITICAL FIX: Don't show dorm rooms in property list either - they're temporary housing
+		-- shown in Living Situation card already. Adding them here causes duplication.
+		-- elseif flags.in_college or flags.in_university then
+		--     (REMOVED - dorms are shown in Living Situation card, not My Properties)
 		end
 	end
 
@@ -2153,8 +2088,22 @@ function AssetsScreen:createOwnedAssetCard(parent, item, order, itemType, accent
 	ownedLabel.ZIndex = 86
 	ownedLabel.Parent = ownedBadge
 
-	-- Value badge (sell price = 70% of purchase price) - CRITICAL UI FIX: Responsive
-	local sellPrice = math.floor(item.price * 0.7)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #SELL-VALUE: Use CURRENT value not purchase price!
+	-- User complaint: "sell value showing wrong amounts"
+	-- The issue was using item.price (purchase) instead of item.value (current)
+	-- Also account for resaleModifier (different assets depreciate differently)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local currentValue = item.value or item.price or 0
+	local resaleModifier = item.resaleModifier or 0.70  -- Default 70% of value
+	local sellPrice = math.floor(currentValue * resaleModifier)
+	
+	-- Log for debugging
+	log("Sell value calculation:", item.name)
+	log("  - item.value:", item.value, "item.price:", item.price)
+	log("  - currentValue:", currentValue, "resaleModifier:", resaleModifier)
+	log("  - sellPrice:", sellPrice)
+	
 	local valueBadge = Instance.new("Frame")
 	valueBadge.Size = UDim2.new(0, IS_TINY_PHONE and 88 or 100, 0, IS_TINY_PHONE and 20 or 22)
 	valueBadge.Position = UDim2.new(0, IS_TINY_PHONE and 68 or 80, 0, IS_TINY_PHONE and 54 or 64)
@@ -2169,7 +2118,7 @@ function AssetsScreen:createOwnedAssetCard(parent, item, order, itemType, accent
 	valueLabel.Font = F.Medium
 	valueLabel.TextSize = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 11 or 12)
 	valueLabel.TextColor3 = C.Gray600
-	valueLabel.Text = "💎 Value: " .. UI.formatMoney(sellPrice)
+	valueLabel.Text = "💰 Sell: " .. UI.formatMoney(sellPrice)  -- Changed from "Value" to "Sell" for clarity
 	valueLabel.ZIndex = 86
 	valueLabel.Parent = valueBadge
 
