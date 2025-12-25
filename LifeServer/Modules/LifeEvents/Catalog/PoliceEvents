@@ -1245,70 +1245,71 @@ local events = {
 				text = "Take cover and return fire!",
 				feedText = "Bullets flying everywhere!",
 				triggerMinigame = "qte", -- Combat minigame
-				minigameOptions = { difficulty = "hard" },
+					minigameOptions = { difficulty = "hard" },
 				onResolve = function(state, minigameResult)
-				if minigameResult and minigameResult.success then
-					state.Flags = state.Flags or {}
-					state.Flags.ambush_survivor = true
-					state.Stats = state.Stats or {}
-					state.Stats.Health = math.max(30, (state.Stats.Health or 50) - 20)
-					if state.AddFeed then
-						state:AddFeed("🔫 You survived the ambush! Attackers fled when backup arrived.")
-					end
-				else
-					-- Didn't survive the minigame
-					local deathRoll = math.random(1, 100)
-					if deathRoll <= 40 then
+					if minigameResult and minigameResult.success then
 						state.Flags = state.Flags or {}
-						state.Flags.dead = true
-						state.Flags.cause_of_death = "Killed in Ambush"
+						state.Flags.ambush_survivor = true
 						state.Stats = state.Stats or {}
-						state.Stats.Health = 0
+						state.Stats.Health = math.max(30, (state.Stats.Health or 50) - 20)
 						if state.AddFeed then
-							state:AddFeed("☠️ Killed in ambush. Your name will be on the memorial wall.")
+							state:AddFeed("🔫 You survived the ambush! Attackers fled when backup arrived.")
 						end
 					else
-						state.Stats = state.Stats or {}
-						state.Stats.Health = 5
-						state.Flags = state.Flags or {}
-						state.Flags.critically_wounded = true
-						state.Flags.hospitalized = true
-						state.Flags.medical_retirement = true
-						state.CurrentJob = nil
-						state.Flags.employed = nil
-						if state.AddFeed then
-							state:AddFeed("🏥 Critical injuries. Medical retirement forced. Your career is over.")
+						-- Didn't survive the minigame
+						local deathRoll = math.random(1, 100)
+						if deathRoll <= 40 then
+							state.Flags = state.Flags or {}
+							state.Flags.dead = true
+							state.Flags.cause_of_death = "Killed in Ambush"
+							state.Stats = state.Stats or {}
+							state.Stats.Health = 0
+							if state.AddFeed then
+								state:AddFeed("☠️ Killed in ambush. Your name will be on the memorial wall.")
+							end
+						else
+							state.Stats = state.Stats or {}
+							state.Stats.Health = 5
+							state.Flags = state.Flags or {}
+							state.Flags.critically_wounded = true
+							state.Flags.hospitalized = true
+							state.Flags.medical_retirement = true
+							state.CurrentJob = nil
+							state.Flags.employed = nil
+							if state.AddFeed then
+								state:AddFeed("🏥 Critical injuries. Medical retirement forced. Your career is over.")
+							end
 						end
 					end
-				end
-			end,
-		},
-		{
-			index = 2,
-			text = "Call for backup and retreat!",
-			feedText = "Running for cover...",
-			effects = { Health = -10 },
-			onResolve = function(state)
-				local roll = math.random()
-				if roll < 0.7 then
-					-- Escaped
-					state.Stats = state.Stats or {}
-					state.Stats.Health = math.max(30, (state.Stats.Health or 50) - 15)
-					if state.AddFeed then
-						state:AddFeed("🚔 You escaped the kill zone. Wounded but alive. Backup arrived in time.")
+				end,
+			},
+			{
+				index = 2,
+				text = "Call for backup and retreat!",
+				feedText = "Running for cover...",
+				effects = { Health = -10 },
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.7 then
+						-- Escaped
+						state.Stats = state.Stats or {}
+						state.Stats.Health = math.max(30, (state.Stats.Health or 50) - 15)
+						if state.AddFeed then
+							state:AddFeed("🚔 You escaped the kill zone. Wounded but alive. Backup arrived in time.")
+						end
+					else
+						-- Shot while retreating
+						state.Stats = state.Stats or {}
+						state.Stats.Health = math.max(10, (state.Stats.Health or 50) - 35)
+						state.Flags = state.Flags or {}
+						state.Flags.shot_in_back = true
+						state.Flags.hospitalized = true
+						if state.AddFeed then
+							state:AddFeed("🏥 Hit while retreating. Vest stopped most rounds. You'll recover.")
+						end
 					end
-				else
-					-- Shot while retreating
-					state.Stats = state.Stats or {}
-					state.Stats.Health = math.max(10, (state.Stats.Health or 50) - 35)
-					state.Flags = state.Flags or {}
-					state.Flags.shot_in_back = true
-					state.Flags.hospitalized = true
-					if state.AddFeed then
-						state:AddFeed("🏥 Hit while retreating. Vest stopped most rounds. You'll recover.")
-					end
-				end
-			end,
+				end,
+			},
 		},
 	},
 	
@@ -1367,11 +1368,11 @@ local events = {
 							state.Flags = state.Flags or {}
 							state.Flags.caught_felon = true
 							state.Stats = state.Stats or {}
-						state.Stats.Health = math.max(35, (state.Stats.Health or 50) - 10)
-						if state.AddFeed then
-							state:AddFeed("🏃 Suspect surrendered when cornered. A bit banged up but good arrest!")
+							state.Stats.Health = math.max(35, (state.Stats.Health or 50) - 10)
+							if state.AddFeed then
+								state:AddFeed("🏃 Suspect surrendered when cornered. A bit banged up but good arrest!")
+							end
 						end
-					end
 					end
 				end,
 			},
