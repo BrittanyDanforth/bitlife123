@@ -2,6 +2,10 @@
     Hobby & Interest Events
     Events related to hobbies, interests, and leisure activities
     All events use randomized outcomes - NO god mode
+    
+    CRITICAL FIX #1000+: Hobbies now require DISCOVERY events first!
+    User complaint: "I never did a musical option or hobby and it says Musical Journey"
+    Players must now discover/start hobbies before progress events trigger!
 ]]
 
 local HobbyEvents = {}
@@ -9,26 +13,275 @@ local HobbyEvents = {}
 local STAGE = "random"
 
 HobbyEvents.events = {
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- HOBBY DISCOVERY EVENTS - These introduce hobbies to the player!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "hobby_general_discovery",
+		title = "Looking for a Hobby",
+		emoji = "🎯",
+		text = "You've got some free time and want to pick up a new hobby. What interests you?",
+		question = "What hobby catches your attention?",
+		minAge = 10, maxAge = 70,
+		baseChance = 0.35,
+		cooldown = 10,
+		stage = STAGE,
+		ageBand = "any",
+		category = "hobbies",
+		tags = { "hobby", "discovery", "lifestyle" },
+		blockedByFlags = { in_prison = true, incarcerated = true },
+		
+		choices = {
+			{
+				text = "🎮 Video games!",
+				effects = { Happiness = 5, Money = -150 },
+				setFlags = { gamer = true, plays_video_games = true, owns_console = true },
+				feedText = "🎮 You bought a gaming console! Time to play!",
+				eligibility = function(state) return (state.Money or 0) >= 150, "Can't afford gaming setup" end,
+			},
+			{
+				text = "📚 Reading more",
+				effects = { Happiness = 4, Smarts = 2 },
+				setFlags = { bookworm = true, reading_hobby = true },
+				feedText = "📚 You joined the library and got a library card! So many books!",
+			},
+			{
+				text = "👨‍🍳 Cooking/baking",
+				effects = { Happiness = 4, Money = -30 },
+				setFlags = { pursuing_cooking = true, interested_in_cooking = true },
+				feedText = "👨‍🍳 You bought a cookbook and some kitchen supplies! Let's cook!",
+			},
+			{
+				text = "💪 Fitness/exercise",
+				effects = { Health = 3, Happiness = 3 },
+				setFlags = { fitness_focused = true, athletic = true, sports_lover = true },
+				feedText = "💪 You're committed to getting fit! Time to exercise!",
+			},
+			{
+				text = "Nothing right now",
+				effects = {},
+				feedText = "🤷 Not the right time for a new hobby. Maybe later.",
+			},
+		},
+	},
+	{
+		id = "hobby_discover_writing",
+		title = "The Writing Itch",
+		emoji = "✍️",
+		text = "You've always had stories in your head. Maybe it's time to write them down?",
+		question = "Do you want to try writing?",
+		minAge = 12, maxAge = 80,
+		baseChance = 0.2,
+		cooldown = 10,
+		oneTime = true,
+		stage = STAGE,
+		ageBand = "any",
+		category = "hobbies",
+		tags = { "writing", "discovery", "creative" },
+		blockedByFlags = { pursuing_writing = true, writer = true, blogger = true },
+		
+		choices = {
+			{
+				text = "Start writing a novel",
+				effects = { Happiness = 5, Smarts = 2 },
+				setFlags = { pursuing_writing = true, aspiring_novelist = true },
+				feedText = "✍️ You opened a blank document. 'Chapter 1...'",
+			},
+			{
+				text = "Start a blog/journal",
+				effects = { Happiness = 4 },
+				setFlags = { pursuing_writing = true, journaling = true },
+				feedText = "✍️ You started writing regularly. Therapeutic!",
+			},
+			{
+				text = "Writing's not for me",
+				effects = {},
+				feedText = "✍️ Not everyone's a writer. That's okay!",
+			},
+		},
+	},
+	{
+		id = "hobby_discover_photography",
+		title = "Capturing Moments",
+		emoji = "📷",
+		text = "You've been taking great photos with your phone. Maybe invest in a real camera?",
+		question = "Do you want to pursue photography?",
+		minAge = 14, maxAge = 70,
+		baseChance = 0.2,
+		cooldown = 10,
+		oneTime = true,
+		stage = STAGE,
+		ageBand = "any",
+		category = "hobbies",
+		tags = { "photography", "discovery", "creative" },
+		blockedByFlags = { pursuing_photography = true, photographer = true, has_camera = true },
+		
+		choices = {
+			{
+				text = "Buy a camera! ($300)",
+				effects = { Happiness = 6, Money = -300 },
+				setFlags = { pursuing_photography = true, has_camera = true },
+				feedText = "📷 New camera! Time to learn about aperture and shutter speed!",
+				eligibility = function(state) return (state.Money or 0) >= 300, "Can't afford a camera" end,
+			},
+			{
+				text = "Just keep using my phone",
+				effects = { Happiness = 3 },
+				setFlags = { phone_photographer = true },
+				feedText = "📷 Phone cameras are good enough. You keep snapping!",
+			},
+			{
+				text = "Not interested",
+				effects = {},
+				feedText = "📷 Photography's not your thing.",
+			},
+		},
+	},
+	{
+		id = "hobby_discover_yoga",
+		title = "Mind-Body Connection",
+		emoji = "🧘",
+		text = "A friend invited you to try yoga. It could be relaxing...",
+		question = "Do you want to try yoga?",
+		minAge = 15, maxAge = 85,
+		baseChance = 0.2,
+		cooldown = 10,
+		oneTime = true,
+		stage = STAGE,
+		ageBand = "any",
+		category = "hobbies",
+		tags = { "yoga", "wellness", "discovery" },
+		blockedByFlags = { pursuing_yoga = true, yoga_practitioner = true, in_prison = true },
+		
+		choices = {
+			{
+				text = "Yes! Sign me up!",
+				effects = { Happiness = 5, Health = 2, Money = -50 },
+				setFlags = { pursuing_yoga = true, wellness_focused = true },
+				feedText = "🧘 First class was challenging but peaceful!",
+				eligibility = function(state) return (state.Money or 0) >= 50, "Can't afford yoga class" end,
+			},
+			{
+				text = "I'll try it at home with videos",
+				effects = { Happiness = 3, Health = 1 },
+				setFlags = { pursuing_yoga = true },
+				feedText = "🧘 Downloaded a yoga app. Namaste at home!",
+			},
+			{
+				text = "Not my thing",
+				effects = {},
+				feedText = "🧘 Yoga's not for everyone.",
+			},
+		},
+	},
+	{
+		id = "hobby_discover_collecting",
+		title = "Collector's Spark",
+		emoji = "🏆",
+		text = "You found an interesting item and wondered if it's valuable. Maybe start a collection?",
+		question = "Do you want to start collecting?",
+		minAge = 10, maxAge = 90,
+		baseChance = 0.2,
+		cooldown = 10,
+		oneTime = true,
+		stage = STAGE,
+		ageBand = "any",
+		category = "hobbies",
+		tags = { "collecting", "discovery", "hobby" },
+		blockedByFlags = { collector = true, has_collection = true },
+		
+		choices = {
+			{
+				text = "Start collecting!",
+				effects = { Happiness = 5, Money = -50 },
+				setFlags = { collector = true, has_collection = true, likes_collecting = true },
+				feedText = "🏆 Your first piece! The start of a collection!",
+			},
+			{
+				text = "Maybe just this one item",
+				effects = { Happiness = 2 },
+				feedText = "🏆 Nice find, but collecting's not your thing.",
+			},
+		},
+	},
+	
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- CREATIVE HOBBIES
 	-- ══════════════════════════════════════════════════════════════════════════════
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #1000: HOBBY DISCOVERY EVENT (Must happen BEFORE pursuing hobbies!)
+	-- User complaint: "I never did a musical option or hobby and it says Musical Journey"
+	-- This event INTRODUCES hobbies to the player first!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "hobby_discover_music",
+		title = "Musical Curiosity",
+		emoji = "🎵",
+		text = "You've been hearing music that really moves you. Maybe you should try learning an instrument?",
+		question = "Do you want to pursue music as a hobby?",
+		minAge = 8, maxAge = 50,
+		baseChance = 0.25,
+		cooldown = 8,
+		oneTime = true,
+		stage = STAGE,
+		ageBand = "any",
+		category = "hobbies",
+		tags = { "music", "discovery", "hobby" },
+		blockedByFlags = { in_prison = true, incarcerated = true, pursuing_music = true, musician = true },
+		
+		choices = {
+			{
+				text = "Yes! I want to learn an instrument!",
+				effects = { Happiness = 5, Money = -100 },
+				setFlags = { pursuing_music = true, started_music_hobby = true },
+				feedText = "🎵 You bought a beginner instrument! Time to learn!",
+				eligibility = function(state) return (state.Money or 0) >= 100, "Can't afford an instrument" end,
+			},
+			{
+				text = "Maybe some singing lessons",
+				effects = { Happiness = 5, Money = -50 },
+				setFlags = { pursuing_music = true, pursuing_singing = true },
+				feedText = "🎵 You signed up for voice lessons! La la la!",
+				eligibility = function(state) return (state.Money or 0) >= 50, "Can't afford lessons" end,
+			},
+			{
+				text = "Just enjoy listening for now",
+				effects = { Happiness = 3 },
+				setFlags = { music_appreciator = true },
+				feedText = "🎵 Not for you right now, but you love listening to music!",
+			},
+			{
+				text = "Not interested in music",
+				effects = {},
+				feedText = "🎵 Music's not your thing. That's okay!",
+			},
+		},
+	},
 	{
 		id = "hobby_music_pursuit",
 		title = "Musical Journey",
 		emoji = "🎵",
-		text = "You're pursuing music as a hobby!",
+		text = "Time to practice your music!",
 		question = "How is your musical hobby going?",
 		minAge = 8, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		cooldown = 5,
 		stage = STAGE,
 		ageBand = "any",
 		category = "hobbies",
 		tags = { "music", "instrument", "creative" },
-		-- AAA FIX: Can't pursue music hobbies in prison!
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		
-		-- CRITICAL: Random music progress
+		-- CRITICAL FIX #1001: REQUIRE player to have started music hobby first!
+		requiresFlags = { pursuing_music = true },
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			if not (flags.pursuing_music or flags.musician or flags.started_music_hobby or flags.in_a_band) then
+				return false, "Not pursuing music as a hobby"
+			end
+			return true
+		end,
+		
 		choices = {
 			{
 				text = "Practice an instrument",
@@ -37,7 +290,6 @@ HobbyEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.45 then
-						-- AAA FIX: Nil check for all state methods
 						if state.ModifyStat then
 							state:ModifyStat("Happiness", 10)
 							state:ModifyStat("Smarts", 3)
@@ -58,10 +310,60 @@ HobbyEvents.events = {
 				end,
 			},
 			{ text = "Join a band/ensemble", effects = { Happiness = 8, Smarts = 2 }, setFlags = { in_a_band = true }, feedText = "🎵 Making music with others! Collaborative magic!" },
-			-- MINOR FIX: Show price in choice text
-		{ text = "Take lessons ($100)", effects = { Money = -100, Happiness = 6, Smarts = 4 }, feedText = "🎵 Professional instruction accelerating learning!",
-			eligibility = function(state) return (state.Money or 0) >= 100, "Can't afford $100 lessons" end,
+			{ text = "Take lessons ($100)", effects = { Money = -100, Happiness = 6, Smarts = 4 }, feedText = "🎵 Professional instruction accelerating learning!",
+				eligibility = function(state) return (state.Money or 0) >= 100, "Can't afford $100 lessons" end,
+			},
+			{ 
+				text = "Give up music",
+				effects = { Happiness = -3 },
+				setFlags = { pursuing_music = false, quit_music = true },
+				feedText = "🎵 Music just isn't for you. Time to move on.",
+			},
 		},
+	},
+	-- CRITICAL FIX #1002: Art discovery event
+	{
+		id = "hobby_discover_art",
+		title = "Artistic Curiosity",
+		emoji = "🎨",
+		text = "You've been admiring art and wondering if you could create something yourself...",
+		question = "Do you want to try art as a hobby?",
+		minAge = 5, maxAge = 60,
+		baseChance = 0.25,
+		cooldown = 8,
+		oneTime = true,
+		stage = STAGE,
+		ageBand = "any",
+		category = "hobbies",
+		tags = { "art", "discovery", "hobby" },
+		blockedByFlags = { in_prison = true, incarcerated = true, pursuing_art = true, artist = true },
+		
+		choices = {
+			{
+				text = "Yes! Get me some art supplies!",
+				effects = { Happiness = 5, Money = -50 },
+				setFlags = { pursuing_art = true, started_art_hobby = true },
+				feedText = "🎨 You bought paints, brushes, canvas! Let's create!",
+				eligibility = function(state) return (state.Money or 0) >= 50, "Can't afford art supplies" end,
+			},
+			{
+				text = "Maybe just some drawing",
+				effects = { Happiness = 4, Money = -20 },
+				setFlags = { pursuing_art = true, pursuing_drawing = true },
+				feedText = "🎨 You got a sketchbook and pencils! Simple but fun!",
+				eligibility = function(state) return (state.Money or 0) >= 20, "Can't afford supplies" end,
+			},
+			{
+				text = "I prefer to appreciate art, not create it",
+				effects = { Happiness = 2 },
+				setFlags = { art_appreciator = true },
+				feedText = "🎨 You love visiting galleries but making art isn't for you.",
+			},
+			{
+				text = "Art's not my thing",
+				effects = {},
+				feedText = "🎨 Not everyone's an artist. That's perfectly fine!",
+			},
 		},
 	},
 	{
@@ -72,13 +374,22 @@ HobbyEvents.events = {
 		question = "How is your art going?",
 		minAge = 5, maxAge = 100,
 		baseChance = 0.45,
-		cooldown = 3,
+		cooldown = 5,
 		stage = STAGE,
 		ageBand = "any",
 		category = "hobbies",
 		tags = { "art", "painting", "creative" },
-		-- AAA FIX: Can't do art hobbies in prison!
 		blockedByFlags = { in_prison = true, incarcerated = true },
+		
+		-- CRITICAL FIX #1003: REQUIRE player to have started art hobby first!
+		requiresFlags = { pursuing_art = true },
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			if not (flags.pursuing_art or flags.artist or flags.started_art_hobby or flags.pursuing_drawing) then
+				return false, "Not pursuing art as a hobby"
+			end
+			return true
+		end,
 		
 		-- CRITICAL: Random art creation outcome
 		choices = {
@@ -134,10 +445,20 @@ HobbyEvents.events = {
 		question = "How is your writing going?",
 		minAge = 12, maxAge = 100,
 		baseChance = 0.45,
-		cooldown = 3,
+		cooldown = 5,
 		stage = STAGE,
 		ageBand = "any",
 		category = "hobbies",
+		
+		-- CRITICAL FIX #1004: Require player to have started writing hobby first!
+		requiresFlags = { pursuing_writing = true },
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			if not (flags.pursuing_writing or flags.writer or flags.blogger or flags.journaling) then
+				return false, "Not pursuing writing as a hobby"
+			end
+			return true
+		end,
 		tags = { "writing", "creative", "author" },
 		-- AAA FIX: Can't pursue writing hobbies in prison (different events for prison writing)
 		blockedByFlags = { in_prison = true, incarcerated = true },
@@ -196,10 +517,20 @@ HobbyEvents.events = {
 		question = "How is your photography hobby?",
 		minAge = 12, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		cooldown = 5,
 		stage = STAGE,
 		ageBand = "any",
 		category = "hobbies",
+		
+		-- CRITICAL FIX #1005: Require player to have started photography hobby first!
+		requiresFlags = { pursuing_photography = true },
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			if not (flags.pursuing_photography or flags.photographer or flags.has_camera) then
+				return false, "Not pursuing photography as a hobby"
+			end
+			return true
+		end,
 		tags = { "photography", "camera", "creative" },
 		
 		choices = {
@@ -257,10 +588,20 @@ HobbyEvents.events = {
 		question = "How is your garden growing?",
 		minAge = 10, maxAge = 100,
 		baseChance = 0.45,
-		cooldown = 3,
+		cooldown = 5,
 		stage = STAGE,
 		ageBand = "any",
 		category = "hobbies",
+		
+		-- CRITICAL FIX #1006: Require player to have a garden first!
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Must have a place to garden (homeowner or has access to land)
+			if not (flags.gardener or flags.has_garden or flags.homeowner or flags.has_backyard) then
+				return false, "No garden to tend"
+			end
+			return true
+		end,
 		tags = { "gardening", "plants", "nature" },
 		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },  -- CRITICAL FIX: Can't garden in prison/homeless!
 		
@@ -298,10 +639,19 @@ HobbyEvents.events = {
 		question = "What are you cooking?",
 		minAge = 12, maxAge = 100,
 		baseChance = 0.455,
-		cooldown = 3,
+		cooldown = 5,
 		stage = STAGE,
 		ageBand = "any",
 		category = "hobbies",
+		
+		-- CRITICAL FIX #1007: Require player to have started cooking hobby!
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			if not (flags.pursuing_cooking or flags.home_chef or flags.interested_in_cooking) then
+				return false, "Not pursuing cooking as a hobby"
+			end
+			return true
+		end,
 		tags = { "cooking", "food", "kitchen" },
 		
 		-- CRITICAL: Random cooking outcome
@@ -341,10 +691,22 @@ HobbyEvents.events = {
 		question = "How is your sports hobby going?",
 		minAge = 10, maxAge = 75,
 		baseChance = 0.455,
-		cooldown = 3,
+		cooldown = 5,
 		stage = STAGE,
 		ageBand = "any",
 		category = "hobbies",
+		
+		-- CRITICAL FIX #1008: Require player to be interested in sports!
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			local health = (state.Stats and state.Stats.Health) or 50
+			-- Must have interest in sports OR be healthy enough
+			if flags.in_prison or flags.incarcerated then return false, "Can't play sports in prison" end
+			if not (flags.sports_lover or flags.athletic or flags.plays_sports or health >= 40) then
+				return false, "Not interested in sports"
+			end
+			return true
+		end,
 		tags = { "sports", "recreation", "fitness" },
 		
 		-- CRITICAL: Random sports outcome
@@ -386,10 +748,20 @@ HobbyEvents.events = {
 		question = "How is your practice?",
 		minAge = 15, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 3,
+		cooldown = 5,
 		stage = STAGE,
 		ageBand = "any",
 		category = "hobbies",
+		
+		-- CRITICAL FIX #1009: Require player to be pursuing yoga!
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			if flags.in_prison or flags.incarcerated then return false, "Can't do yoga in prison" end
+			if not (flags.pursuing_yoga or flags.yoga_practitioner or flags.wellness_focused) then
+				return false, "Not pursuing yoga/wellness"
+			end
+			return true
+		end,
 		tags = { "yoga", "wellness", "mindfulness" },
 		
 		choices = {
@@ -431,10 +803,21 @@ HobbyEvents.events = {
 		question = "How is your gaming going?",
 		minAge = 8, maxAge = 80,
 		baseChance = 0.55,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		cooldown = 5,
 		stage = STAGE,
 		ageBand = "any",
 		category = "hobbies",
+		
+		-- CRITICAL FIX #1010: Require player to be a gamer!
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			if flags.in_prison or flags.incarcerated then return false, "Can't game in prison" end
+			-- Gaming is pretty accessible - just need to have played before
+			if not (flags.gamer or flags.plays_video_games or flags.owns_console or flags.pc_gamer) then
+				return false, "Not a gamer"
+			end
+			return true
+		end,
 		tags = { "gaming", "video_games", "entertainment" },
 		
 		-- CRITICAL: Random gaming outcome
@@ -484,10 +867,19 @@ HobbyEvents.events = {
 		question = "How is your collection growing?",
 		minAge = 10, maxAge = 100,
 		baseChance = 0.4,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		cooldown = 5,
 		stage = STAGE,
 		ageBand = "any",
 		category = "hobbies",
+		
+		-- CRITICAL FIX #1011: Require player to be a collector!
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			if not (flags.collector or flags.has_collection or flags.likes_collecting) then
+				return false, "Not a collector"
+			end
+			return true
+		end,
 		tags = { "collecting", "hobby", "treasure" },
 		
 		-- CRITICAL: Random collecting outcome

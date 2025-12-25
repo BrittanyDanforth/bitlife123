@@ -157,7 +157,7 @@ DailyLifeEvents.events = {
 			return false, "Need a car to drive to work"
 		end,
 		
-		-- CRITICAL: Random commute outcome
+		-- CRITICAL FIX #1013: Added more choice options!
 		choices = {
 			{
 				text = "Hit the road",
@@ -176,11 +176,20 @@ DailyLifeEvents.events = {
 						if state.AddFeed then state:AddFeed("🚗 Traffic nightmare! Late to work! Stressed!") end
 					else
 						if state.ModifyStat then state:ModifyStat("Happiness", -6) end
-						-- CRITICAL FIX: Prevent negative money
 						state.Money = math.max(0, (state.Money or 0) - 50)
 						if state.AddFeed then state:AddFeed("🚗 Fender bender! Minor accident. Insurance claim incoming.") end
 					end
 				end,
+			},
+			{
+				text = "Leave extra early",
+				effects = { Happiness = 2 },
+				feedText = "🚗 Beat the traffic! Arrived early and relaxed!",
+			},
+			{
+				text = "Call in - work from home today",
+				effects = { Happiness = 3 },
+				feedText = "🚗 Stayed home instead. No commute stress!",
 			},
 		},
 	},
@@ -199,7 +208,7 @@ DailyLifeEvents.events = {
 		tags = { "transit", "commute", "public" },
 		blockedByFlags = { in_prison = true, incarcerated = true },  -- CRITICAL FIX: Can't take transit from prison!
 		
-		-- CRITICAL: Random transit outcome
+		-- CRITICAL FIX #1014: Added more choice options!
 		choices = {
 			{
 				text = "Ride the bus/train",
@@ -222,6 +231,17 @@ DailyLifeEvents.events = {
 						state:AddFeed("🚌 Missed the bus/train! Had to wait forever! Late!")
 					end
 				end,
+			},
+			{
+				text = "Take an Uber instead ($15)",
+				effects = { Money = -15, Happiness = 3 },
+				feedText = "🚌 Skipped the bus. Comfortable ride in an Uber!",
+				eligibility = function(state) return (state.Money or 0) >= 15, "Can't afford Uber" end,
+			},
+			{
+				text = "Walk/bike instead",
+				effects = { Health = 3, Happiness = 2 },
+				feedText = "🚌 Fresh air and exercise! Good for you!",
 			},
 		},
 	},

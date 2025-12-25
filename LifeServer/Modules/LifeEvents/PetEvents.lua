@@ -270,11 +270,20 @@ PetEvents.events = {
 		question = "What do you do together?",
 		minAge = 5, maxAge = 100,
 		baseChance = 0.55,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		cooldown = 5,
 		stage = STAGE,
 		ageBand = "any",
 		category = "pets",
 		tags = { "bonding", "pet", "love" },
+		
+		-- CRITICAL FIX #1015: Require having a pet!
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			if not (flags.has_dog or flags.has_cat or flags.has_small_pet or flags.has_pet) then
+				return false, "Need a pet for bonding events"
+			end
+			return true
+		end,
 		
 		eligibility = function(state)
 			local hasPet = state.Flags and (state.Flags.has_dog or state.Flags.has_cat or state.Flags.has_small_pet)
