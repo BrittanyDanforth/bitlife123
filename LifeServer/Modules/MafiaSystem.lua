@@ -2058,7 +2058,21 @@ function MafiaSystem:doOperationWithForcedResult(lifeState, operationId, forcedS
 	}
 	
 	if forcedSuccess then
-		-- SUCCESS! Player won the minigame, they get the rewards
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- SUCCESS! Player WON the minigame - they EARNED this success!
+		-- CRITICAL FIX #541: GUARANTEED NO JAIL when minigame is won!
+		-- User complaint: "crime successful but still went to jail"
+		-- When player WINS combat minigame, they CANNOT go to jail!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		
+		-- CRITICAL: Clear any jail state that might exist (safety check)
+		lifeState.InJail = false
+		lifeState.JailYearsLeft = 0
+		if lifeState.Flags then
+			lifeState.Flags.in_prison = nil
+			lifeState.Flags.incarcerated = nil
+		end
+		
 		local baseReward = math.random(operation.reward.min, operation.reward.max)
 		result.money = math.floor(baseReward * rewardMod)
 		result.respect = math.floor((operation.respect + math.random(0, 10) + respectBonus))
@@ -2088,6 +2102,10 @@ function MafiaSystem:doOperationWithForcedResult(lifeState, operationId, forcedS
 			result.message = result.message .. "\n\n" .. rankUpMsg
 			result.promoted = true
 		end
+		
+		-- CRITICAL: Absolutely NO jail on minigame success!
+		result.arrested = false
+		result.success = true
 		
 		return true, result.message, result
 	else

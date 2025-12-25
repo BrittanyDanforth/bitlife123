@@ -4821,38 +4821,32 @@ local JobCatalogList = {
 		difficulty = 1, grantsFlags = { "content_creator", "social_media_presence", "influencer" }, isFameCareer = true,
 		description = "Just starting your content creation journey" },
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX #526: Influencer higher tiers require CELEBRITY GAMEPASS!
-	-- User feedback: "celebrity gamepass does nothing, influencer jobs are free!"
-	-- Entry-level (new_creator, new_influencer) stays FREE to get players hooked
-	-- But higher tiers REQUIRE the Celebrity gamepass to progress!
+	-- INFLUENCER CAREER PATH - COMPLETELY FREE!
+	-- CRITICAL FIX #540: User feedback "FREE PLAYERS CANT GET BORED"
+	-- Influencer is FREE - everyone wants to be an influencer, keeps them playing!
+	-- Celebrity gamepass is for HOLLYWOOD (actors, rappers, musicians)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{ id = "micro_influencer", name = "Micro-Influencer", company = "Social Media", emoji = "📊", salary = 15000, minAge = 14, requirement = nil, category = "entertainment",
 		difficulty = 3, requiresFlags = { "content_creator" }, grantsFlags = { "influencer", "small_following" }, isFameCareer = true,
-		requiresCelebrityGamepass = true,
-		description = "Building a small but engaged following - requires Celebrity Gamepass" },
+		description = "Building a small but engaged following" },
 	{ id = "rising_influencer", name = "Rising Influencer", company = "Social Media", emoji = "📈", salary = 25000, minAge = 15, requirement = nil, category = "entertainment",
 		difficulty = 4, requiresFlags = { "influencer" }, grantsFlags = { "growing_audience", "brand_potential" }, isFameCareer = true,
-		requiresCelebrityGamepass = true,
-		description = "Your audience is growing fast - requires Celebrity Gamepass" },
+		description = "Your audience is growing fast!" },
 	{ id = "established_influencer", name = "Established Influencer", company = "Brand Partnerships", emoji = "🤝", salary = 150000, minAge = 17, requirement = nil, category = "entertainment",
 		difficulty = 6, requiresFlags = { "growing_audience" }, grantsFlags = { "brand_deals", "influencer_marketing" }, isFameCareer = true,
-		requiresCelebrityGamepass = true,
-		description = "Brands want to work with you - requires Celebrity Gamepass" },
+		description = "Brands want to work with you!" },
 	{ id = "major_influencer", name = "Major Influencer", company = "Management Agency", emoji = "⭐", salary = 750000, minAge = 18, requirement = nil, category = "entertainment",
 		difficulty = 7, requiresFlags = { "brand_deals" }, grantsFlags = { "major_following", "celebrity_status" }, isFameCareer = true,
-		requiresCelebrityGamepass = true,
-		description = "Millions of followers - requires Celebrity Gamepass" },
+		description = "Millions of followers!" },
 	{ id = "mega_influencer", name = "Mega Influencer", company = "Global Brand", emoji = "🌟", salary = 5000000, minAge = 20, requirement = nil, category = "entertainment",
 		difficulty = 9, requiresFlags = { "major_following" }, grantsFlags = { "mega_fame", "household_name" }, isFameCareer = true,
-		requiresCelebrityGamepass = true,
-		description = "A household name on social media - requires Celebrity Gamepass" },
+		description = "A household name on social media!" },
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- STREAMER CAREER PATH - REQUIRES CELEBRITY GAMEPASS for higher tiers
-	-- CRITICAL FIX #527: Streamer careers were COMPLETELY FREE! 
-	-- User feedback: "celebrity gamepass does nothing, streamers are free too!"
-	-- Entry-level (hobbyist, new_streamer, affiliate) FREE to hook players
-	-- But partner_streamer and above REQUIRE Celebrity gamepass!
+	-- STREAMER CAREER PATH - COMPLETELY FREE!
+	-- CRITICAL FIX #540: User feedback "FREE PLAYERS CANT GET BORED"
+	-- Streaming is FREE - super popular with young players, keeps them engaged!
+	-- They'll want God Mode when stats are low, or Time Machine for mistakes
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{ id = "hobbyist_streamer", name = "Hobbyist Streamer", company = "Twitch", emoji = "🎥", salary = 1000, minAge = 13, requirement = nil, category = "entertainment",
 		difficulty = 1, grantsFlags = { "streamer", "broadcaster", "pursuing_streaming" }, isFameCareer = true,
@@ -4862,23 +4856,19 @@ local JobCatalogList = {
 		description = "Just started streaming" },
 	{ id = "affiliate_streamer", name = "Affiliate Streamer", company = "Twitch", emoji = "💜", salary = 8000, minAge = 14, requirement = nil, category = "entertainment",
 		difficulty = 3, requiresFlags = { "streamer" }, grantsFlags = { "affiliate", "monetized" }, isFameCareer = true,
-		description = "Earned affiliate status - taste of monetization!" },
+		description = "Earned affiliate status!" },
 	{ id = "partner_streamer", name = "Partner Streamer", company = "Twitch", emoji = "✅", salary = 15000, minAge = 16, requirement = nil, category = "entertainment",
 		difficulty = 5, requiresFlags = { "affiliate" }, grantsFlags = { "partner", "verified_streamer" }, isFameCareer = true,
-		requiresCelebrityGamepass = true,
-		description = "Full partner with perks - requires Celebrity Gamepass" },
+		description = "Full partner with perks!" },
 	{ id = "popular_streamer", name = "Popular Streamer", company = "Multi-Platform", emoji = "📺", salary = 150000, minAge = 17, requirement = nil, category = "entertainment",
 		difficulty = 6, requiresFlags = { "partner" }, grantsFlags = { "popular_broadcaster", "streaming_income" }, isFameCareer = true,
-		requiresCelebrityGamepass = true,
-		description = "Thousands watch your streams - requires Celebrity Gamepass" },
+		description = "Thousands watch your streams!" },
 	{ id = "famous_streamer", name = "Famous Streamer", company = "Exclusive Contract", emoji = "⭐", salary = 1000000, minAge = 18, requirement = nil, category = "entertainment",
 		difficulty = 8, requiresFlags = { "popular_broadcaster" }, grantsFlags = { "famous_streamer", "platform_face" }, isFameCareer = true,
-		requiresCelebrityGamepass = true,
-		description = "One of the biggest streamers - requires Celebrity Gamepass" },
+		description = "One of the biggest streamers!" },
 	{ id = "streaming_legend", name = "Streaming Legend", company = "Hall of Fame", emoji = "👑", salary = 10000000, minAge = 22, requirement = nil, category = "entertainment",
 		difficulty = 10, requiresFlags = { "famous_streamer" }, grantsFlags = { "streaming_legend", "icon" }, isFameCareer = true,
-		requiresCelebrityGamepass = true,
-		description = "A legend of the streaming world - requires Celebrity Gamepass" },
+		description = "A legend of the streaming world!" },
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- MUSIC CAREER PATH - REQUIRES CELEBRITY GAMEPASS
@@ -4953,34 +4943,29 @@ local JobCatalogList = {
 		description = "An icon of cinema" },
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- ATHLETE CAREER PATH - REQUIRES CELEBRITY GAMEPASS for higher tiers
-	-- CRITICAL FIX #528: Athlete careers were COMPLETELY FREE!
-	-- User feedback: "celebrity gamepass does nothing, athletes are free too!"
-	-- Entry-level (amateur, college) FREE to hook players
-	-- But pro_prospect and above REQUIRE Celebrity gamepass!
+	-- ATHLETE CAREER PATH - COMPLETELY FREE!
+	-- CRITICAL FIX #540: User feedback "THATS SO BORING FOR FREE PLAYERS"
+	-- Athletes are FREE to keep players engaged and having fun!
+	-- This hooks players into the game - they buy God Mode/Time Machine later
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{ id = "amateur_athlete", name = "Amateur", company = "Local Leagues", emoji = "🏃", salary = 250, minAge = 14, requirement = nil, category = "entertainment",
 		difficulty = 2, minStats = { Health = 60 }, grantsFlags = { "athlete", "amateur_status" }, isFameCareer = true,
-		description = "Competing at amateur level - FREE entry!" },
+		description = "Competing at amateur level" },
 	{ id = "college_athlete", name = "College Athlete", company = "University", emoji = "🎓", salary = 0, minAge = 18, requirement = nil, category = "entertainment",
 		difficulty = 4, minStats = { Health = 70 }, requiresFlags = { "amateur_status" }, grantsFlags = { "college_sports", "scholarship" }, isFameCareer = true,
-		description = "Playing for your college team - FREE!" },
+		description = "Playing for your college team" },
 	{ id = "pro_prospect", name = "Pro Prospect", company = "Draft Pool", emoji = "📋", salary = 50000, minAge = 20, requirement = nil, category = "entertainment",
 		difficulty = 6, minStats = { Health = 75 }, requiresFlags = { "college_sports" }, grantsFlags = { "draft_eligible", "pro_potential" }, isFameCareer = true,
-		requiresCelebrityGamepass = true,
-		description = "Scouts are watching - requires Celebrity Gamepass to go pro!" },
+		description = "Scouts are watching!" },
 	{ id = "pro_athlete_fame", name = "Professional Athlete", company = "Pro Team", emoji = "🏆", salary = 1000000, minAge = 21, requirement = nil, category = "entertainment",
 		difficulty = 7, minStats = { Health = 80 }, requiresFlags = { "pro_potential" }, grantsFlags = { "pro_athlete", "team_player" }, isFameCareer = true,
-		requiresCelebrityGamepass = true,
-		description = "Playing professionally - requires Celebrity Gamepass" },
+		description = "Playing professionally" },
 	{ id = "star_player", name = "Star Player", company = "Champion Team", emoji = "⭐", salary = 15000000, minAge = 23, requirement = nil, category = "entertainment",
-		requiresCelebrityGamepass = true,
 		difficulty = 8, minStats = { Health = 85 }, requiresFlags = { "pro_athlete" }, grantsFlags = { "star_athlete", "mvp_candidate" }, isFameCareer = true,
 		description = "One of the best in the league" },
 	{ id = "sports_legend", name = "Sports Legend", company = "Hall of Fame", emoji = "👑", salary = 50000000, minAge = 28, requirement = nil, category = "entertainment",
 		difficulty = 10, minStats = { Health = 80 }, requiresFlags = { "star_athlete" }, grantsFlags = { "sports_legend", "hall_of_famer" }, isFameCareer = true,
-		requiresCelebrityGamepass = true,
-		description = "A legend of the sport - requires Celebrity Gamepass" },
+		description = "A legend of the sport" },
 	
 	-- MODEL CAREER PATH (Celebrity gamepass)
 	{ id = "amateur_model", name = "Amateur Model", company = "Local Agency", emoji = "📸", salary = 550, minAge = 14, requirement = nil, category = "entertainment",
