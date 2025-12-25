@@ -1124,128 +1124,129 @@ local events = {
 	-- Police work is inherently dangerous - officers can be killed in the line of duty
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
-	id = "police_active_shooter",
-	emoji = "💀",
-	title = "ACTIVE SHOOTER CALL",
-	textVariants = {
-		"Dispatch: ACTIVE SHOOTER at local mall! Multiple victims! You're the first on scene!",
-		"Shots fired at a school! Children are in danger! You're closest to the scene!",
-		"Armed robbery in progress - suspects have opened fire on civilians! You're responding!",
-		"Domestic violence call escalated - subject has barricaded with hostages and a gun!",
-	},
-	text = "A life-or-death situation! Do you enter or wait for backup?",
-	category = "career_police",
-	weight = 3, -- Rare but realistic
-	minAge = 21,
-	maxAge = 60,
-	baseChance = 0.35,
-	cooldown = 5,
-	eligibility = isPoliceJob,
-	blockedByFlags = { in_prison = true, suspended = true },
-	
-	choices = {
-		{
-			index = 1,
-			text = "Go in NOW - lives are at stake!",
-			feedText = "You charge in alone...",
-			effects = {},
-			onResolve = function(state)
-				local health = (state.Stats and state.Stats.Health) or 50
-				local smarts = (state.Stats and state.Stats.Smarts) or 50
-				local survivalChance = 0.50 + (health / 200) + (smarts / 300)
-				local roll = math.random()
-				
-				if roll < survivalChance then
-					-- HERO! Stopped the shooter
-					state.Flags = state.Flags or {}
-					state.Flags.police_hero = true
-					state.Flags.medal_of_valor = true
-					state.Stats = state.Stats or {}
-					state.Stats.Happiness = math.min(100, (state.Stats.Happiness or 50) + 25)
-					state.Stats.Health = math.max(30, (state.Stats.Health or 50) - 15) -- Minor injuries possible
-					state.Money = (state.Money or 0) + 5000 -- Bonus
-					if state.AddFeed then
-						state:AddFeed("🏅 HERO! You neutralized the threat and saved lives! Medal of Valor!")
-					end
-				elseif roll < survivalChance + 0.3 then
-					-- Wounded but survived
-					state.Stats = state.Stats or {}
-					state.Stats.Health = math.max(10, (state.Stats.Health or 50) - 40)
-					state.Stats.Happiness = (state.Stats.Happiness or 50) - 15
-					state.Flags = state.Flags or {}
-					state.Flags.wounded_in_action = true
-					state.Flags.hospitalized = true
-					if state.AddFeed then
-						state:AddFeed("🏥 You stopped the shooter but took several rounds. Hospitalized with serious injuries.")
-					end
-				else
-					-- KILLED IN LINE OF DUTY - 20% chance when going in alone
-					state.Flags = state.Flags or {}
-					state.Flags.dead = true
-					state.Flags.cause_of_death = "Killed in Line of Duty"
-					state.Stats = state.Stats or {}
-					state.Stats.Health = 0
-					if state.AddFeed then
-						state:AddFeed("☠️ END OF WATCH. You gave your life protecting others. A hero's death.")
-					end
-				end
-			end,
+		id = "police_active_shooter",
+		emoji = "💀",
+		title = "ACTIVE SHOOTER CALL",
+		textVariants = {
+			"Dispatch: ACTIVE SHOOTER at local mall! Multiple victims! You're the first on scene!",
+			"Shots fired at a school! Children are in danger! You're closest to the scene!",
+			"Armed robbery in progress - suspects have opened fire on civilians! You're responding!",
+			"Domestic violence call escalated - subject has barricaded with hostages and a gun!",
 		},
-		{
-			index = 2,
-			text = "Wait for backup - we need a tactical approach",
-			feedText = "Establishing perimeter and waiting...",
-			effects = { Happiness = -10 },
-			onResolve = function(state)
-				local roll = math.random()
-				if roll < 0.3 then
-					-- Shooter escaped or more victims
-					state.Stats = state.Stats or {}
-					state.Stats.Happiness = (state.Stats.Happiness or 50) - 25
-					state.Flags = state.Flags or {}
-					state.Flags.guilt = true
-					if state.AddFeed then
-						state:AddFeed("😔 More victims while you waited. The guilt is crushing. Did you make the right call?")
+		text = "A life-or-death situation! Do you enter or wait for backup?",
+		category = "career_police",
+		weight = 3, -- Rare but realistic
+		minAge = 21,
+		maxAge = 60,
+		baseChance = 0.35,
+		cooldown = 5,
+		eligibility = isPoliceJob,
+		blockedByFlags = { in_prison = true, suspended = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Go in NOW - lives are at stake!",
+				feedText = "You charge in alone...",
+				effects = {},
+				onResolve = function(state)
+					local health = (state.Stats and state.Stats.Health) or 50
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local survivalChance = 0.50 + (health / 200) + (smarts / 300)
+					local roll = math.random()
+					
+					if roll < survivalChance then
+						-- HERO! Stopped the shooter
+						state.Flags = state.Flags or {}
+						state.Flags.police_hero = true
+						state.Flags.medal_of_valor = true
+						state.Stats = state.Stats or {}
+						state.Stats.Happiness = math.min(100, (state.Stats.Happiness or 50) + 25)
+						state.Stats.Health = math.max(30, (state.Stats.Health or 50) - 15) -- Minor injuries possible
+						state.Money = (state.Money or 0) + 5000 -- Bonus
+						if state.AddFeed then
+							state:AddFeed("🏅 HERO! You neutralized the threat and saved lives! Medal of Valor!")
+						end
+					elseif roll < survivalChance + 0.3 then
+						-- Wounded but survived
+						state.Stats = state.Stats or {}
+						state.Stats.Health = math.max(10, (state.Stats.Health or 50) - 40)
+						state.Stats.Happiness = (state.Stats.Happiness or 50) - 15
+						state.Flags = state.Flags or {}
+						state.Flags.wounded_in_action = true
+						state.Flags.hospitalized = true
+						if state.AddFeed then
+							state:AddFeed("🏥 You stopped the shooter but took several rounds. Hospitalized with serious injuries.")
+						end
+					else
+						-- KILLED IN LINE OF DUTY - 20% chance when going in alone
+						state.Flags = state.Flags or {}
+						state.Flags.dead = true
+						state.Flags.cause_of_death = "Killed in Line of Duty"
+						state.Stats = state.Stats or {}
+						state.Stats.Health = 0
+						if state.AddFeed then
+							state:AddFeed("☠️ END OF WATCH. You gave your life protecting others. A hero's death.")
+						end
 					end
-				elseif roll < 0.7 then
-					-- SWAT resolved it
-					if state.AddFeed then
-						state:AddFeed("✅ SWAT team resolved the situation. Proper protocol worked.")
+				end,
+			},
+			{
+				index = 2,
+				text = "Wait for backup - we need a tactical approach",
+				feedText = "Establishing perimeter and waiting...",
+				effects = { Happiness = -10 },
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.3 then
+						-- Shooter escaped or more victims
+						state.Stats = state.Stats or {}
+						state.Stats.Happiness = (state.Stats.Happiness or 50) - 25
+						state.Flags = state.Flags or {}
+						state.Flags.guilt = true
+						if state.AddFeed then
+							state:AddFeed("😔 More victims while you waited. The guilt is crushing. Did you make the right call?")
+						end
+					elseif roll < 0.7 then
+						-- SWAT resolved it
+						if state.AddFeed then
+							state:AddFeed("✅ SWAT team resolved the situation. Proper protocol worked.")
+						end
+					else
+						-- You helped tactically
+						state.Stats = state.Stats or {}
+						state.Stats.Smarts = (state.Stats.Smarts or 50) + 3
+						if state.AddFeed then
+							state:AddFeed("✅ Your tactical setup helped SWAT resolve it safely. Good police work.")
+						end
 					end
-				else
-					-- You helped tactically
-					state.Stats = state.Stats or {}
-					state.Stats.Smarts = (state.Stats.Smarts or 50) + 3
-					if state.AddFeed then
-						state:AddFeed("✅ Your tactical setup helped SWAT resolve it safely. Good police work.")
-					end
-				end
-			end,
+				end,
+			},
 		},
 	},
 	
 	{
 		id = "police_ambush",
-	emoji = "⚠️",
-	title = "OFFICER DOWN - AMBUSH!",
-	text = "You respond to a routine call. It's a trap! Gunfire erupts from multiple directions!",
-	category = "career_police",
-	weight = 2, -- Very rare but real
-	minAge = 21,
-	maxAge = 60,
-	baseChance = 0.25,
-	cooldown = 5,
-	eligibility = isPoliceJob,
-	blockedByFlags = { in_prison = true, suspended = true },
-	
-	choices = {
-		{
-			index = 1,
-			text = "Take cover and return fire!",
-			feedText = "Bullets flying everywhere!",
-			triggerMinigame = "qte", -- Combat minigame
-			minigameOptions = { difficulty = "hard" },
-			onResolve = function(state, minigameResult)
+		emoji = "⚠️",
+		title = "OFFICER DOWN - AMBUSH!",
+		text = "You respond to a routine call. It's a trap! Gunfire erupts from multiple directions!",
+		category = "career_police",
+		weight = 2, -- Very rare but real
+		minAge = 21,
+		maxAge = 60,
+		baseChance = 0.25,
+		cooldown = 5,
+		eligibility = isPoliceJob,
+		blockedByFlags = { in_prison = true, suspended = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Take cover and return fire!",
+				feedText = "Bullets flying everywhere!",
+				triggerMinigame = "qte", -- Combat minigame
+				minigameOptions = { difficulty = "hard" },
+				onResolve = function(state, minigameResult)
 				if minigameResult and minigameResult.success then
 					state.Flags = state.Flags or {}
 					state.Flags.ambush_survivor = true
@@ -1310,90 +1311,90 @@ local events = {
 			end,
 		},
 	},
-}
-
-events[#events + 1] = {
-	id = "police_foot_chase",
-	emoji = "🏃",
-	title = "Foot Chase - Armed Suspect!",
-	text = "You spot a wanted armed felon! They're running through alleys and over fences!",
-	category = "career_police",
-	weight = 7,
-	minAge = 21,
-	maxAge = 50, -- Younger cops for foot chases
-	baseChance = 0.50,
-	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
-	eligibility = isPoliceJob,
-	blockedByFlags = { in_prison = true, suspended = true },
 	
-	choices = {
-		{
-			index = 1,
-			text = "Chase them down!",
-			feedText = "Heart pounding, you pursue...",
-			effects = { Health = -3 },
-			onResolve = function(state)
-				local health = (state.Stats and state.Stats.Health) or 50
-				local successChance = 0.40 + (health / 150)
-				local roll = math.random()
-				
-				if roll < successChance then
-					state.Flags = state.Flags or {}
-					state.Flags.caught_felon = true
-					state.CareerInfo = state.CareerInfo or {}
-					state.CareerInfo.arrests = (state.CareerInfo.arrests or 0) + 1
-					if state.AddFeed then
-						state:AddFeed("🏃 GOT HIM! You tackled the suspect after a three-block chase!")
-					end
-				elseif roll < successChance + 0.3 then
-					-- Got away
-					state.Stats = state.Stats or {}
-					state.Stats.Happiness = (state.Stats.Happiness or 50) - 5
-					if state.AddFeed then
-						state:AddFeed("🏃 Lost them in the maze of alleys. Suspect escaped.")
-					end
-				else
-					-- Dangerous confrontation
-					local dangerRoll = math.random(1, 100)
-					if dangerRoll <= 20 then
-						state.Stats = state.Stats or {}
-						state.Stats.Health = math.max(20, (state.Stats.Health or 50) - 25)
-						state.Flags = state.Flags or {}
-						state.Flags.injured_on_duty = true
-						if state.AddFeed then
-							state:AddFeed("⚠️ Suspect turned and fired! You're hit but backup arrived. Will recover.")
-						end
-					else
+	{
+		id = "police_foot_chase",
+		emoji = "🏃",
+		title = "Foot Chase - Armed Suspect!",
+		text = "You spot a wanted armed felon! They're running through alleys and over fences!",
+		category = "career_police",
+		weight = 7,
+		minAge = 21,
+		maxAge = 50, -- Younger cops for foot chases
+		baseChance = 0.50,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		eligibility = isPoliceJob,
+		blockedByFlags = { in_prison = true, suspended = true },
+		
+		choices = {
+			{
+				index = 1,
+				text = "Chase them down!",
+				feedText = "Heart pounding, you pursue...",
+				effects = { Health = -3 },
+				onResolve = function(state)
+					local health = (state.Stats and state.Stats.Health) or 50
+					local successChance = 0.40 + (health / 150)
+					local roll = math.random()
+					
+					if roll < successChance then
 						state.Flags = state.Flags or {}
 						state.Flags.caught_felon = true
+						state.CareerInfo = state.CareerInfo or {}
+						state.CareerInfo.arrests = (state.CareerInfo.arrests or 0) + 1
+						if state.AddFeed then
+							state:AddFeed("🏃 GOT HIM! You tackled the suspect after a three-block chase!")
+						end
+					elseif roll < successChance + 0.3 then
+						-- Got away
 						state.Stats = state.Stats or {}
+						state.Stats.Happiness = (state.Stats.Happiness or 50) - 5
+						if state.AddFeed then
+							state:AddFeed("🏃 Lost them in the maze of alleys. Suspect escaped.")
+						end
+					else
+						-- Dangerous confrontation
+						local dangerRoll = math.random(1, 100)
+						if dangerRoll <= 20 then
+							state.Stats = state.Stats or {}
+							state.Stats.Health = math.max(20, (state.Stats.Health or 50) - 25)
+							state.Flags = state.Flags or {}
+							state.Flags.injured_on_duty = true
+							if state.AddFeed then
+								state:AddFeed("⚠️ Suspect turned and fired! You're hit but backup arrived. Will recover.")
+							end
+						else
+							state.Flags = state.Flags or {}
+							state.Flags.caught_felon = true
+							state.Stats = state.Stats or {}
 						state.Stats.Health = math.max(35, (state.Stats.Health or 50) - 10)
 						if state.AddFeed then
 							state:AddFeed("🏃 Suspect surrendered when cornered. A bit banged up but good arrest!")
 						end
 					end
-				end
-			end,
-		},
-		{
-			index = 2,
-			text = "Call for K-9 and air support",
-			feedText = "Setting up a perimeter...",
-			effects = { Smarts = 3 },
-			onResolve = function(state)
-				local roll = math.random()
-				if roll < 0.6 then
-					state.Flags = state.Flags or {}
-					state.Flags.smart_cop = true
-					if state.AddFeed then
-						state:AddFeed("🐕 K-9 tracked them down. Safe arrest, no injuries. Smart policing.")
 					end
-				else
-					if state.AddFeed then
-						state:AddFeed("🚁 Suspect escaped the perimeter. At least no one got hurt.")
+				end,
+			},
+			{
+				index = 2,
+				text = "Call for K-9 and air support",
+				feedText = "Setting up a perimeter...",
+				effects = { Smarts = 3 },
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.6 then
+						state.Flags = state.Flags or {}
+						state.Flags.smart_cop = true
+						if state.AddFeed then
+							state:AddFeed("🐕 K-9 tracked them down. Safe arrest, no injuries. Smart policing.")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("🚁 Suspect escaped the perimeter. At least no one got hurt.")
+						end
 					end
-				end
-			end,
+				end,
+			},
 		},
 	},
 }

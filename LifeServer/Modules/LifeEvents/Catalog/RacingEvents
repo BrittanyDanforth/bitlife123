@@ -835,115 +835,116 @@ local events = {
 	-- Racing is a dangerous sport - death is a real possibility!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
-	id = "racing_fatal_incident",
-	emoji = "💀",
-	title = "Catastrophic Crash!",
-	textVariants = {
-		"At 220 mph, your tire blows out sending you into the wall at an impossible angle!",
-		"Rain makes the track slick. Your car hydroplanes and spins directly into the barrier!",
-		"A competitor clips your rear wheel - you're sent tumbling through the air!",
-		"Brake failure at the fastest section of the track! The wall is coming fast!",
-	},
-	text = "A catastrophic accident on the track! Your life hangs in the balance!",
-	category = "career_racing",
-	weight = 2, -- Rare but possible
-	minAge = 18,
-	maxAge = 50,
-	requiresJob = true,
-	requiresJobCategory = "racing",
-	cooldown = 5,
-	blockedByFlags = { in_prison = true },
-	-- CRITICAL: Only trigger for active pro racers
-	eligibility = function(state)
-		if not state.CurrentJob then return false end
-		local jobId = (state.CurrentJob.id or ""):lower()
-		return jobId:find("racer") or jobId:find("f1") or jobId:find("racing")
-	end,
-	
-	choices = {
-		{
-			index = 1,
-			text = "React instantly!",
-			feedText = "Everything slows down... you have one chance!",
-			triggerMinigame = "qte",
-			minigameOptions = { difficulty = "hard" },
-			onResolve = function(state, minigameResult)
-				if minigameResult and minigameResult.success then
-					-- SURVIVED! Barely.
-					state.Flags = state.Flags or {}
-					state.Flags.cheated_death = true
-					state.Stats = state.Stats or {}
-					state.Stats.Health = math.max(20, (state.Stats.Health or 50) - 20)
-					state.Stats.Happiness = (state.Stats.Happiness or 50) - 10
-					if state.AddFeed then
-						state:AddFeed("💀 You walked away from what should have been fatal! Racing gods were watching!")
+		id = "racing_fatal_incident",
+		emoji = "💀",
+		title = "Catastrophic Crash!",
+		textVariants = {
+			"At 220 mph, your tire blows out sending you into the wall at an impossible angle!",
+			"Rain makes the track slick. Your car hydroplanes and spins directly into the barrier!",
+			"A competitor clips your rear wheel - you're sent tumbling through the air!",
+			"Brake failure at the fastest section of the track! The wall is coming fast!",
+		},
+		text = "A catastrophic accident on the track! Your life hangs in the balance!",
+		category = "career_racing",
+		weight = 2, -- Rare but possible
+		minAge = 18,
+		maxAge = 50,
+		requiresJob = true,
+		requiresJobCategory = "racing",
+		cooldown = 5,
+		blockedByFlags = { in_prison = true },
+		-- CRITICAL: Only trigger for active pro racers
+		eligibility = function(state)
+			if not state.CurrentJob then return false end
+			local jobId = (state.CurrentJob.id or ""):lower()
+			return jobId:find("racer") or jobId:find("f1") or jobId:find("racing")
+		end,
+		
+		choices = {
+			{
+				index = 1,
+				text = "React instantly!",
+				feedText = "Everything slows down... you have one chance!",
+				triggerMinigame = "qte",
+				minigameOptions = { difficulty = "hard" },
+				onResolve = function(state, minigameResult)
+					if minigameResult and minigameResult.success then
+						-- SURVIVED! Barely.
+						state.Flags = state.Flags or {}
+						state.Flags.cheated_death = true
+						state.Stats = state.Stats or {}
+						state.Stats.Health = math.max(20, (state.Stats.Health or 50) - 20)
+						state.Stats.Happiness = (state.Stats.Happiness or 50) - 10
+						if state.AddFeed then
+							state:AddFeed("💀 You walked away from what should have been fatal! Racing gods were watching!")
+						end
+					else
+						-- FATAL CRASH or CAREER ENDING
+						local deathRoll = math.random(1, 100)
+						if deathRoll <= 25 then
+							-- ACTUAL DEATH - 25% chance of dying on failure
+							state.Flags = state.Flags or {}
+							state.Flags.dead = true
+							state.Flags.cause_of_death = "Racing Accident"
+							state.Stats = state.Stats or {}
+							state.Stats.Health = 0
+							if state.AddFeed then
+								state:AddFeed("☠️ FATAL CRASH. You died doing what you loved, but you died.")
+							end
+						else
+							-- Career ending injury
+							state.Stats = state.Stats or {}
+							state.Stats.Health = 5
+							state.Flags = state.Flags or {}
+							state.Flags.career_ended = true
+							state.Flags.hospitalized = true
+							state.Flags.paralyzed = math.random() < 0.3 -- 30% chance of paralysis
+							state.CurrentJob = nil
+							state.Flags.employed = nil
+							state.Flags.has_job = nil
+							if state.AddFeed then
+								if state.Flags.paralyzed then
+									state:AddFeed("🏥 Catastrophic injuries. Paralyzed. Your racing career is over forever.")
+								else
+									state:AddFeed("🏥 Multiple broken bones and internal injuries. You'll never race again.")
+								end
+							end
+						end
 					end
-				else
-					-- FATAL CRASH or CAREER ENDING
+				end,
+			},
+			{
+				index = 2,
+				text = "Accept fate",
+				effects = {},
+				feedText = "You close your eyes...",
+				onResolve = function(state)
+					-- Without trying, higher death chance
 					local deathRoll = math.random(1, 100)
-					if deathRoll <= 25 then
-						-- ACTUAL DEATH - 25% chance of dying on failure
+					if deathRoll <= 50 then
+						-- 50% death when not trying
 						state.Flags = state.Flags or {}
 						state.Flags.dead = true
 						state.Flags.cause_of_death = "Racing Accident"
 						state.Stats = state.Stats or {}
 						state.Stats.Health = 0
 						if state.AddFeed then
-							state:AddFeed("☠️ FATAL CRASH. You died doing what you loved, but you died.")
+							state:AddFeed("☠️ You didn't fight. The crash was fatal.")
 						end
 					else
-						-- Career ending injury
+						-- Survived but badly hurt
 						state.Stats = state.Stats or {}
-						state.Stats.Health = 5
+						state.Stats.Health = 10
 						state.Flags = state.Flags or {}
-						state.Flags.career_ended = true
 						state.Flags.hospitalized = true
-						state.Flags.paralyzed = math.random() < 0.3 -- 30% chance of paralysis
+						state.Flags.career_ended = true
 						state.CurrentJob = nil
-						state.Flags.employed = nil
-						state.Flags.has_job = nil
 						if state.AddFeed then
-							if state.Flags.paralyzed then
-								state:AddFeed("🏥 Catastrophic injuries. Paralyzed. Your racing career is over forever.")
-							else
-								state:AddFeed("🏥 Multiple broken bones and internal injuries. You'll never race again.")
-							end
+							state:AddFeed("🏥 Somehow you survived. But racing is over for you.")
 						end
 					end
-				end
-			end,
-		},
-		{
-			index = 2,
-			text = "Accept fate",
-			effects = {},
-			feedText = "You close your eyes...",
-			onResolve = function(state)
-				-- Without trying, higher death chance
-				local deathRoll = math.random(1, 100)
-				if deathRoll <= 50 then
-					-- 50% death when not trying
-					state.Flags = state.Flags or {}
-					state.Flags.dead = true
-					state.Flags.cause_of_death = "Racing Accident"
-					state.Stats = state.Stats or {}
-					state.Stats.Health = 0
-					if state.AddFeed then
-						state:AddFeed("☠️ You didn't fight. The crash was fatal.")
-					end
-				else
-					-- Survived but badly hurt
-					state.Stats = state.Stats or {}
-					state.Stats.Health = 10
-					state.Flags = state.Flags or {}
-					state.Flags.hospitalized = true
-					state.Flags.career_ended = true
-					state.CurrentJob = nil
-					if state.AddFeed then
-						state:AddFeed("🏥 Somehow you survived. But racing is over for you.")
-					end
-				end
-			end,
+				end,
+			},
 		},
 	},
 }
