@@ -471,6 +471,46 @@ FamilyEvents.events = {
 		category = "family",
 		tags = { "parents", "aging", "caregiving" },
 		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #537: Only show if parents are still alive!
+		-- User complaint: "IT SAYS CARING FOR PARENTS WHEN IM 70 AND MY PARENTS ARE DEAD"
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Check if parents are dead
+			if flags.parents_dead or flags.both_parents_dead then
+				return false
+			end
+			-- Check if mother and father are both dead
+			if flags.mother_dead and flags.father_dead then
+				return false
+			end
+			-- Check Relationships for parent status
+			if state.Relationships then
+				local hasLivingParent = false
+				for _, rel in ipairs(state.Relationships) do
+					if (rel.type == "parent" or rel.role == "Parent" or rel.role == "Mother" or rel.role == "Father")
+					   and not rel.deceased and not rel.dead then
+						hasLivingParent = true
+						break
+					end
+				end
+				-- If we have relationship data but no living parents, don't show event
+				if not hasLivingParent then
+					local parentCount = 0
+					for _, rel in ipairs(state.Relationships) do
+						if rel.type == "parent" or rel.role == "Parent" or rel.role == "Mother" or rel.role == "Father" then
+							parentCount = parentCount + 1
+						end
+					end
+					if parentCount > 0 then
+						return false
+					end
+				end
+			end
+			return true
+		end,
+		
 		-- CRITICAL: Random aging parent situation
 		choices = {
 			{

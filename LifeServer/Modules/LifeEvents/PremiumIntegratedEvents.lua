@@ -3080,6 +3080,91 @@ PremiumIntegratedEvents.events = {
 			},
 		},
 	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #539: Premium Teaser Events - Show free players what they're missing!
+	-- These events give everyone a FUN experience but make premium look amazing
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	{
+		id = "premium_teaser_viral_video",
+		title = "🎥 Your Video Went Viral!",
+		emoji = "🎥",
+		text = "You posted a video online and it BLEW UP! Millions of views! Brands are reaching out!",
+		question = "What do you do with this moment of fame?",
+		minAge = 13, maxAge = 40,
+		baseChance = 0.3,
+		cooldown = 10,
+		oneTime = true,
+		stage = STAGE,
+		category = "random",
+		tags = { "fame", "social_media", "viral", "teaser" },
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			return not flags.celebrity_gamepass and not flags.celebrity_career_chosen
+		end,
+		choices = {
+			{
+				text = "Try to capitalize on it! 💰",
+				effects = { Happiness = 10, Money = 500 },
+				feedText = "🎥 You made a few bucks from sponsors... but the fame faded quickly.",
+			},
+			{
+				text = "⭐ Pursue REAL fame! (Celebrity Gamepass)",
+				effects = { Happiness = 15 },
+				requiresGamepass = "CELEBRITY",
+				setFlags = { celebrity_gamepass = true, content_creator = true },
+				feedText = "⭐ With the Celebrity Gamepass, you can turn this into a CAREER!",
+			},
+			{
+				text = "Enjoy the moment and move on 🤷",
+				effects = { Happiness = 5 },
+				feedText = "🎥 Nice while it lasted!",
+			},
+		},
+	},
+	
+	{
+		id = "premium_teaser_overwhelming_problems",
+		title = "😩 Everything Is Going Wrong!",
+		emoji = "😩",
+		text = "Your health is declining, you're stressed, nothing seems right. If only you could just FIX everything!",
+		question = "How do you handle this?",
+		minAge = 18, maxAge = 80,
+		baseChance = 0.3,
+		cooldown = 5,
+		oneTime = false,
+		maxOccurrences = 2,
+		stage = STAGE,
+		category = "random",
+		tags = { "stress", "problems", "godmode", "teaser" },
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			if flags.god_mode_gamepass then return false end
+			local health = (state.Stats and state.Stats.Health) or 50
+			local happiness = (state.Stats and state.Stats.Happiness) or 50
+			return health < 50 or happiness < 40
+		end,
+		choices = {
+			{
+				text = "Try to fix things one at a time... 😤",
+				effects = { Happiness = 3, Health = 2, Smarts = 1 },
+				feedText = "😤 You're working on it slowly...",
+			},
+			{
+				text = "⚡ Take TOTAL Control! (God Mode Gamepass)",
+				effects = { Happiness = 25, Health = 25, Smarts = 5, Looks = 5 },
+				requiresGamepass = "GOD_MODE",
+				setFlags = { god_mode_gamepass = true },
+				feedText = "⚡ With GOD MODE, you have COMPLETE CONTROL! Edit your stats - everything!",
+			},
+			{
+				text = "Accept life as it is 😔",
+				effects = { Happiness = -5 },
+				feedText = "😔 Sometimes life is just hard...",
+			},
+		},
+	},
 }
 
 return PremiumIntegratedEvents

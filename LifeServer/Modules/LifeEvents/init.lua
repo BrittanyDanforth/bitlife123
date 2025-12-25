@@ -1773,12 +1773,15 @@ local function canEventTrigger(event, state)
 					end
 				end
 				
-				-- If no match AND event has requiresJob, block it
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				-- CRITICAL FIX #536: If no match AND event requires job, ALWAYS block it!
+				-- OLD BUG: Was allowing events through if they had eligibility functions,
+				-- but eligibility functions could error or not check job properly.
+				-- User complaint: "Military ball showing when I'm not in military"
+				-- Now: requiresJob is STRICT - if job doesn't match category, block!
+				-- ═══════════════════════════════════════════════════════════════════════════════
 				if not jobMatch and event.requiresJob then
-					-- Allow events that have custom eligibility functions (they do their own check)
-					if not event.eligibility then
-						return false -- Player is not in the required career!
-					end
+					return false -- Player is not in the required career!
 				end
 			else
 				-- No job but career event requires job
