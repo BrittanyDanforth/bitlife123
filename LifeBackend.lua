@@ -2841,7 +2841,11 @@ local function debugPrint(...)
 end
 
 local function clamp(value, minValue, maxValue)
-	return math.clamp(value, minValue or 0, maxValue or 100)
+	-- CRITICAL FIX: Handle nil values to prevent type errors
+	local safeValue = tonumber(value) or 0
+	local safeMin = tonumber(minValue) or 0
+	local safeMax = tonumber(maxValue) or 100
+	return math.clamp(safeValue, safeMin, safeMax)
 end
 
 local function shallowCopy(source)
@@ -9714,7 +9718,7 @@ function LifeBackend:setLifeInfo(player, nameOrPayload, genderArg, countryArg)
 			state.Flags.famous_family = true
 			
 			-- Send royal birth message
-			self:pushState(player, string.format("👑 %s %s of %s takes their first breath in %s!", title, state.Name or "Your Highness", country.name, country.palace))
+			self:pushState(player, string.format("👑 %s %s of %s takes their first breath in %s!", tostring(title or "Prince/Princess"), tostring(state.Name or "Your Highness"), tostring(country.name or "the Kingdom"), tostring(country.palace or "the Palace")))
 			return
 		end
 	end
@@ -11343,44 +11347,48 @@ function LifeBackend:applyRelationshipDecay(state)
 		local popupData = nil
 		
 		if event.type == "friend_annoyed" then
+			local safeName = tostring(event.name or "Your friend")
 			popupData = {
 				emoji = "😤",
 				title = "Friend Annoyed",
 				body = string.format("%s is annoyed that you haven't reached out in %d years.\n\nThey feel like you've been neglecting the friendship.", 
-					event.name, event.yearsSince or 2),
+					safeName, tonumber(event.yearsSince) or 2),
 				happiness = -3,
 			}
 		elseif event.type == "friend_angry" then
+			local safeName = tostring(event.name or "Your friend")
 			popupData = {
 				emoji = "😡",
 				title = "Friend is Angry!",
 				body = string.format("%s is really upset with you!\n\n\"You haven't talked to me in years! Do you even care about our friendship anymore?\"", 
-					event.name),
+					safeName),
 				happiness = -8,
 			}
 			state.Flags = state.Flags or {}
 			state.Flags.has_angry_friend = true
-			state.Flags.angry_friend_name = event.name
+			state.Flags.angry_friend_name = safeName
 			state.Flags.angry_friend_id = event.relId
 		elseif event.type == "friend_furious" then
+			local safeName = tostring(event.name or "Your friend")
 			popupData = {
 				emoji = "🔥",
-				title = string.format("%s is FURIOUS!", event.name),
+				title = string.format("%s is FURIOUS!", safeName),
 				body = string.format("%s confronted you, absolutely livid:\n\n\"You NEVER talk to me anymore! I'm always the one reaching out! What kind of friend are you?!\"\n\nThis friendship is on the verge of ending.", 
-					event.name),
+					safeName),
 				happiness = -15,
 			}
 		elseif event.type == "friendship_ended" then
+			local safeName = tostring(event.name or "Your friend")
 			popupData = {
 				emoji = "💔",
 				title = "Friendship Over",
 				body = string.format("After %d years of no contact, you and %s have completely drifted apart.\n\nThe friendship that once meant so much... is now just a memory.", 
-					event.yearsSince or 8, event.name),
+					tonumber(event.yearsSince) or 8, safeName),
 				happiness = -20,
 			}
 			state.Flags = state.Flags or {}
 			state.Flags.lost_friend = true
-			state.Flags.lost_friend_name = event.name
+			state.Flags.lost_friend_name = safeName
 		end
 		
 		-- Queue the popup if it's a significant event
@@ -17070,7 +17078,7 @@ function LifeBackend:handleJobApplication(player, jobId, clientInterviewScore)
 	-- Clear application history for this job (fresh start)
 	state.JobApplications[actualJobId] = nil
 
-	local feed = string.format("🎉 Congratulations! You were hired as a %s at %s!", job.name, job.company)
+	local feed = string.format("🎉 Congratulations! You were hired as a %s at %s!", tostring(job.name or "employee"), tostring(job.company or "a company"))
 	self:pushState(player, feed)
 	-- CRITICAL FIX: Return job info for client display
 	return { 
@@ -17352,14 +17360,14 @@ function LifeBackend:applyJobOffer(state, job, player)
 	end
 	
 	-- Push state to client
-	if player then
+	if player and state.CurrentJob then
 		self:pushState(player, string.format("🎉 Congratulations! You're now a %s at %s!", 
-			state.CurrentJob.name, state.CurrentJob.company))
+			tostring(state.CurrentJob.name or "employee"), tostring(state.CurrentJob.company or "a company")))
 	end
 	
 	return {
 		success = true,
-		message = string.format("You're now a %s at %s!", state.CurrentJob.name, state.CurrentJob.company),
+		message = string.format("You're now a %s at %s!", tostring(state.CurrentJob and state.CurrentJob.name or "employee"), tostring(state.CurrentJob and state.CurrentJob.company or "a company")),
 		job = state.CurrentJob,
 	}
 end
@@ -17408,8 +17416,8 @@ function LifeBackend:handleQuitJob(player, quitStyle)
 	-- Track total years worked for experience bonuses
 	state.CareerInfo.totalYearsWorked = (state.CareerInfo.totalYearsWorked or 0) + (state.CareerInfo.yearsAtJob or 0)
 
-	local jobName = state.CurrentJob.name
-	local companyName = state.CurrentJob.company or "your employer"
+	local jobName = (state.CurrentJob and state.CurrentJob.name) or "your job"
+	local companyName = (state.CurrentJob and state.CurrentJob.company) or "your employer"
 	state.CurrentJob = nil
 	state.CareerInfo.performance = 0
 	state.CareerInfo.promotionProgress = 0
@@ -17859,13 +17867,13 @@ function LifeBackend:enrollEducation(player, programId, options)
 	local playerAge = state.Age or 0
 	local minAge = program.minAge or 18
 	if playerAge < minAge then
-		return { success = false, message = string.format("You must be at least %d years old to enroll in %s.", minAge, program.name) }
+		return { success = false, message = string.format("You must be at least %d years old to enroll in %s.", minAge, tostring(program.name or "this program")) }
 	end
 
 	if not self:meetsEducationRequirement(state, program.requirement) then
 		-- MINOR FIX: More helpful error message with specific requirement
 		local requiredText = program.requirement or "a prerequisite degree"
-		return { success = false, message = string.format("You need %s to enroll in %s.", requiredText, program.name) }
+		return { success = false, message = string.format("You need %s to enroll in %s.", tostring(requiredText or "prerequisites"), tostring(program.name or "this program")) }
 	end
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -18034,7 +18042,8 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 	end
 
 	-- Money check
-	if (state.Money or 0) < asset.price then
+	local assetPrice = tonumber(asset.price) or 0
+	if (state.Money or 0) < assetPrice then
 		return { success = false, message = "You can't afford that." }
 	end
 
@@ -18260,7 +18269,7 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 		end
 	end
 
-	self:addMoney(state, -asset.price)
+	self:addMoney(state, -(tonumber(asset.price) or 0))
 	
 	-- Generate feed with tier-specific messaging
 	local tierMessages = {
@@ -18277,7 +18286,7 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 		investment = "Smart investment:",
 	}
 	local tierMsg = tierMessages[asset.tier or "basic"] or "You purchased"
-	local feed = string.format("%s %s for %s!", tierMsg, asset.name, formatMoney(asset.price))
+	local feed = string.format("%s %s for %s!", tierMsg, tostring(asset.name or "an item"), formatMoney(asset.price or 0))
 	
 	-- Debug: Check assets before push
 	debugPrint("  Before pushState:")
@@ -19465,7 +19474,7 @@ function LifeBackend:startStoryPath(player, pathId)
 		-- Player must marry into royalty or be born royal to become royalty
 	end
 
-	local feed = string.format("🌟 You began the %s path!", path.name)
+	local feed = string.format("🌟 You began the %s path!", tostring(path.name or "new"))
 	self:pushState(player, feed)
 	return { success = true, message = feed }
 end
@@ -19531,7 +19540,7 @@ function LifeBackend:performPathAction(player, pathId, actionId)
 		state.Paths[pathId] = #stages
 		state.Paths.active = nil
 		state.ActivePath = nil
-		local feed = string.format("You completed the %s path!", path.name)
+		local feed = string.format("You completed the %s path!", tostring(path.name or ""))
 		self:pushState(player, feed, {
 			showPopup = true,
 			emoji = "🌟",
@@ -20008,7 +20017,7 @@ function LifeBackend:handleGodModeEdit(player, payload)
 			state.Flags.famous_family = true
 			state.Flags.royalty_gamepass = true
 			
-			table.insert(summaries, string.format("👑 Born as %s of %s %s with $%s inheritance!", title, country.emoji, country.name, formatMoney(royalWealth)))
+			table.insert(summaries, string.format("👑 Born as %s of %s %s with %s inheritance!", tostring(title or "Royal"), tostring(country.emoji or "👑"), tostring(country.name or "the Kingdom"), formatMoney(royalWealth or 0)))
 		else
 			-- No gamepass, prompt purchase
 			self:promptGamepassPurchase(player, "ROYALTY")
@@ -20064,7 +20073,7 @@ function LifeBackend:handleGodModeEdit(player, payload)
 				state.Flags.has_job = true
 				state.Flags.celebrity_gamepass = true
 				
-				table.insert(summaries, string.format("%s Started %s career as %s!", path.emoji, path.name, path.firstStage))
+				table.insert(summaries, string.format("%s Started %s career as %s!", tostring(path.emoji or "⭐"), tostring(path.name or "new"), tostring(path.firstStage or "beginner")))
 			end
 		else
 			self:promptGamepassPurchase(player, "CELEBRITY")
