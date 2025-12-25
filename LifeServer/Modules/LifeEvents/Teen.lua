@@ -2638,6 +2638,24 @@ Teen.events = {
 		oneTime = true,
 		priority = "high",
 		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #605: Viral events REQUIRE player to have actually posted content!
+		-- User complaint: "Video went viral but I never posted any videos"
+		-- A video of you can only go viral if you've been posting/creating content
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Player MUST have some form of content creation or social media activity!
+			local hasCreatedContent = flags.content_creator or flags.streamer or flags.influencer
+				or flags.first_video_posted or flags.first_video_uploaded or flags.youtube_started
+				or flags.social_media_active or flags.pursuing_streaming or flags.youtube_channel
+				or flags.gaming_content or flags.vlogger or flags.social_media_star or flags.talent_social
+			if not hasCreatedContent then
+				return false, "Player hasn't created any content yet"
+			end
+			return true
+		end,
+		
 		choices = {
 			{
 				text = "An awesome talent video!",

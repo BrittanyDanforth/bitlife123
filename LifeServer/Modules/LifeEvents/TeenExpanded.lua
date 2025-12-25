@@ -263,6 +263,23 @@ TeenExpanded.events = {
 		category = "technology",
 		tags = { "viral", "fame", "social_media" },
 		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #602: Viral events REQUIRE player to have actually posted content!
+		-- User complaint: "Video went viral but I never posted any videos"
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Player MUST have some form of social media/content activity!
+			local hasPostedContent = flags.content_creator or flags.streamer or flags.influencer
+				or flags.first_video_posted or flags.first_video_uploaded or flags.youtube_started
+				or flags.social_media_active or flags.pursuing_streaming or flags.youtube_channel
+				or flags.gaming_content or flags.vlogger or flags.social_media_star
+			if not hasPostedContent then
+				return false, "Player hasn't posted content yet"
+			end
+			return true
+		end,
+		
 		-- CRITICAL: Random viral outcome - not all fame is good
 		choices = {
 			{

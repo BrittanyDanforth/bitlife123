@@ -3099,9 +3099,27 @@ PremiumIntegratedEvents.events = {
 		stage = STAGE,
 		category = "random",
 		tags = { "fame", "social_media", "viral", "teaser" },
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #601: Viral video REQUIRES player to have actually posted content!
+		-- User complaint: "Video went viral but I never posted any videos"
+		-- This event should ONLY fire if player has content creator flags!
+		-- ═══════════════════════════════════════════════════════════════════════════════
 		eligibility = function(state)
 			local flags = state.Flags or {}
-			return not flags.celebrity_gamepass and not flags.celebrity_career_chosen
+			-- CRITICAL: Must NOT have celebrity gamepass (this is a teaser event)
+			if flags.celebrity_gamepass or flags.celebrity_career_chosen then
+				return false
+			end
+			-- CRITICAL FIX: Player MUST have actually created content!
+			-- Check for any flag indicating they've posted videos/content
+			local hasCreatedContent = flags.content_creator or flags.streamer or flags.influencer
+				or flags.first_video_posted or flags.first_video_uploaded or flags.youtube_started
+				or flags.youtube_channel or flags.pursuing_streaming or flags.social_media_active
+				or flags.gaming_content or flags.vlog_content or flags.vlogger or flags.daily_uploader
+			if not hasCreatedContent then
+				return false, "Player hasn't created any content yet"
+			end
+			return true
 		end,
 		choices = {
 			{

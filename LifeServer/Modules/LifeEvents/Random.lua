@@ -732,6 +732,24 @@ Random.events = {
 		minAge = 13, maxAge = 60,
 		baseChance = 0.4,
 		cooldown = 2,
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #604: Viral events REQUIRE player to have actually posted content!
+		-- User complaint: "Video went viral but I never posted any videos"
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Player MUST have some form of online activity!
+			local hasOnlinePresence = flags.content_creator or flags.streamer or flags.influencer
+				or flags.first_video_posted or flags.first_video_uploaded or flags.youtube_started
+				or flags.social_media_active or flags.pursuing_streaming or flags.youtube_channel
+				or flags.internet_famous or flags.gaming_content or flags.vlogger
+			if not hasOnlinePresence then
+				return false, "Player hasn't posted content yet"
+			end
+			return true
+		end,
+		
 		choices = {
 			{ text = "Embrace the fame", effects = { Happiness = 10, Money = 100 }, setFlags = { internet_famous = true }, feedText = "You're internet famous!" },
 			{ text = "Stay humble", effects = { Happiness = 5, Smarts = 2 }, feedText = "You kept perspective." },
@@ -3292,6 +3310,24 @@ Random.events = {
 		maxAge = 50,
 		baseChance = 0.1,
 		cooldown = 20,
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #603: Viral events REQUIRE player to have actually posted content!
+		-- User complaint: "Video went viral but I never posted any videos"
+		-- Can't go viral if you've never posted anything online!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Player MUST have some form of online presence/content creation!
+			local hasOnlinePresence = flags.content_creator or flags.streamer or flags.influencer
+				or flags.first_video_posted or flags.first_video_uploaded or flags.youtube_started
+				or flags.social_media_active or flags.pursuing_streaming or flags.youtube_channel
+				or flags.internet_famous or flags.went_viral or flags.gaming_content or flags.vlogger
+			if not hasOnlinePresence then
+				return false, "Player hasn't posted content yet"
+			end
+			return true
+		end,
 		
 		choices = {
 			{
