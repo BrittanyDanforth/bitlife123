@@ -1079,8 +1079,10 @@ function LifeBackend:clearGhostRelationships(state)
 			end
 			
 			-- AAA FIX: Bound relationship to 0-100
-			if rel.relationship then
+			if rel.relationship and type(rel.relationship) == "number" then
 				rel.relationship = math.max(0, math.min(100, rel.relationship))
+			elseif not rel.relationship then
+				rel.relationship = 50 -- Default relationship value
 			end
 			
 			-- AAA FIX: Validate yearsKnown
@@ -2877,10 +2879,16 @@ local function chooseRandom(list)
 end
 
 local function formatMoney(amount)
+	-- CRITICAL FIX: Handle nil and invalid values
+	if not amount or type(amount) ~= "number" then
+		return "$0"
+	end
 	if amount >= 1_000_000 then
 		return string.format("$%.1fM", amount / 1_000_000)
 	elseif amount >= 1_000 then
 		return string.format("$%.1fK", amount / 1_000)
+	elseif amount < 0 then
+		return string.format("-$%.0f", math.abs(amount))
 	else
 		return "$" .. tostring(math.floor(amount + 0.5))
 	end
@@ -9838,8 +9846,8 @@ function LifeBackend:advanceRelationships(state)
 							table.insert(state.YearLog, {
 								type = "inheritance",
 								emoji = "💰",
-								text = string.format("Inherited $%s from %s's estate", formatMoney(inheritanceAmount), rel.name or "your parent"),
-								amount = inheritanceAmount,
+								text = string.format("Inherited %s from %s's estate", formatMoney(inheritanceAmount) or "$0", tostring(rel.name or "your parent")),
+								amount = inheritanceAmount or 0,
 							})
 						end
 					elseif relRole:find("grandmother") or relRole:find("grandfather") or relRole:find("grandparent") then
@@ -9853,7 +9861,7 @@ function LifeBackend:advanceRelationships(state)
 							table.insert(state.YearLog, {
 								type = "inheritance",
 								emoji = "💰",
-								text = string.format("Received $%s from %s's will", formatMoney(inheritanceAmount), rel.name or "your grandparent"),
+								text = string.format("Received %s from %s's will", formatMoney(inheritanceAmount or 0) or "$0", tostring(rel.name or "your grandparent")),
 								amount = inheritanceAmount,
 							})
 						end
@@ -9936,8 +9944,9 @@ function LifeBackend:advanceRelationships(state)
 			state.Stats = state.Stats or {}
 			state.Stats.Happiness = clamp((state.Stats.Happiness or 50) - 35, 0, 100)
 			
+			-- CRITICAL FIX: Ensure all values are safe for string.format
 			state.PendingFeed = string.format("💔 Your %s, %s, passed away at age %d. You are now widowed.", 
-				partnerRole, partnerName, partnerAge)
+				tostring(partnerRole or "partner"), tostring(partnerName or "spouse"), tonumber(partnerAge) or 0)
 		end
 	end
 	
@@ -9967,7 +9976,11 @@ function LifeBackend:advanceRelationships(state)
 			"🕯️ Your %s, %s, passed away at %d years old.",
 		}
 		local msgTemplate = messages[RANDOM:NextInteger(1, #messages)]
-		local formattedMsg = string.format(msgTemplate, death.name, roleName, death.age)
+		-- CRITICAL FIX: Ensure all values are safe for string.format
+		local safeName = tostring(death.name or "family member")
+		local safeRole = tostring(roleName or "relative")
+		local safeAge = tonumber(death.age) or 0
+		local formattedMsg = string.format(msgTemplate, safeName, safeRole, safeAge)
 		
 		state.PendingFeed = formattedMsg
 		state.Flags = state.Flags or {}
@@ -10190,13 +10203,15 @@ function LifeBackend:tickCareer(state)
 			info.lastAutoPromoAttemptAge = state.Age
 
 			-- CRITICAL FIX: Higher auto-promotion chance, ESPECIALLY for talent-based careers
-			local baseChance = (info.promotionProgress - 50) / 100  -- 10% at 60%, 50% at 100%
+			-- Ensure promotionProgress is a valid number
+			local safeProgress = tonumber(info.promotionProgress) or 0
+			local baseChance = math.max(0, (safeProgress - 50) / 100)  -- 10% at 60%, 50% at 100%
 
 			if isTalentCareer then
 				baseChance = baseChance * 3.0  -- 30% at 60%, 150% (capped to 95%) at 100% for talent careers
 			end
 
-			local autoPromoChance = math.min(0.95, baseChance)  -- Cap at 95%
+			local autoPromoChance = math.min(0.95, math.max(0, baseChance))  -- Cap at 95%, floor at 0%
 			
 			if RANDOM:NextNumber() < autoPromoChance then
 				-- Find next job in career track
@@ -10328,7 +10343,9 @@ function LifeBackend:tickCareer(state)
 	for skill, maxGain in pairs(skillGrowth) do
 		local currentLevel = info.skills[skill] or 0
 		-- Diminishing returns at higher levels
-		local gain = math.max(1, math.floor(maxGain * (1 - currentLevel / 100)))
+		-- CRITICAL FIX: Ensure maxGain is a valid number
+		local safeMaxGain = (type(maxGain) == "number" and maxGain > 0) and maxGain or 1
+		local gain = math.max(1, math.floor(safeMaxGain * (1 - currentLevel / 100)))
 		info.skills[skill] = math.min(100, currentLevel + RANDOM:NextInteger(0, gain))
 	end
 	
@@ -10360,13 +10377,13 @@ function LifeBackend:tickCareer(state)
 		-- YearLog entries need 'text' field, not 'message' - that's what generateYearSummary looks for
 		state.YearLog = state.YearLog or {}
 		table.insert(state.YearLog, {
-			type = "salary",
-			emoji = "💰",
-			text = string.format("Earned $%s from your job as %s", 
-				formatMoney(salary), 
-				state.CurrentJob.name or "employee"),
-			amount = salary,
-		})
+		type = "salary",
+		emoji = "💰",
+		text = string.format("Earned %s from your job as %s", 
+			formatMoney(salary or 0) or "$0", 
+			tostring(state.CurrentJob.name or "employee")),
+		amount = salary or 0,
+	})
 	end
 end
 
