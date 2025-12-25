@@ -828,16 +828,13 @@ local events = {
 			},
 		},
 	},
-}
-
-return events
-
--- ═══════════════════════════════════════════════════════════════════════════════
--- CRITICAL FIX: Added actual FATAL crash possibility for racers
--- User requested: "IF IM A RACER LIKE I CAN CRASH AND DIE IF I ACCEPT RACING"
--- Racing is a dangerous sport - death is a real possibility!
--- ═══════════════════════════════════════════════════════════════════════════════
-events[#events + 1] = {
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Added actual FATAL crash possibility for racers
+	-- User requested: "IF IM A RACER LIKE I CAN CRASH AND DIE IF I ACCEPT RACING"
+	-- Racing is a dangerous sport - death is a real possibility!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
 	id = "racing_fatal_incident",
 	emoji = "💀",
 	title = "Catastrophic Crash!",
@@ -950,3 +947,5 @@ events[#events + 1] = {
 		},
 	},
 }
+
+return events

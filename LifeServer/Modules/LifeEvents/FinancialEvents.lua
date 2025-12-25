@@ -1189,18 +1189,14 @@ FinancialEvents.events = {
 			},
 		},
 	},
-}
-
-return FinancialEvents
-
--- ═══════════════════════════════════════════════════════════════════════════════
--- HOUSING-RELATED FINANCIAL EVENTS
--- CRITICAL FIX: User complained events suggest buying house but don't link to assets
--- "IT SAYS IM A COLLEGE STUDEND LIKE LIVING IN COLLEGE DORM ROOM STILL EVEN THO IM LIKE 40"
--- "ENSURE THE CARD POP UPS ARE ACTUALLY LINKED TO THE ASSETS IN BUYING"
--- ═══════════════════════════════════════════════════════════════════════════════
-
-FinancialEvents.events[#FinancialEvents.events + 1] = {
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- HOUSING-RELATED FINANCIAL EVENTS
+	-- CRITICAL FIX: User complained events suggest buying house but don't link to assets
+	-- "IT SAYS IM A COLLEGE STUDEND LIKE LIVING IN COLLEGE DORM ROOM STILL EVEN THO IM LIKE 40"
+	-- "ENSURE THE CARD POP UPS ARE ACTUALLY LINKED TO THE ASSETS IN BUYING"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
 	id = "fin_housing_suggestion",
 	title = "Housing Situation Check",
 	emoji = "🏠",
@@ -1315,10 +1311,10 @@ FinancialEvents.events[#FinancialEvents.events + 1] = {
 			feedText = "🏠 Putting off housing decisions. It'll catch up eventually.",
 		},
 	},
-}
+},
 
-FinancialEvents.events[#FinancialEvents.events + 1] = {
-	id = "fin_rent_due",
+	{
+		id = "fin_rent_due",
 	title = "Rent is Due!",
 	emoji = "💸",
 	text = "It's the first of the month. Your landlord is expecting the rent payment.",
@@ -1415,3 +1411,5 @@ FinancialEvents.events[#FinancialEvents.events + 1] = {
 		},
 	},
 }
+
+return FinancialEvents

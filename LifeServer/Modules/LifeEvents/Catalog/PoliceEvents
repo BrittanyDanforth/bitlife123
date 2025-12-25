@@ -1117,17 +1117,13 @@ local events = {
 			},
 		},
 	},
-}
-
-return events
-
--- ═══════════════════════════════════════════════════════════════════════════════
--- CRITICAL FIX: Added LIFE-THREATENING events for police officers
--- User requested: "IF IM POLICE I CAN DIE FROM A MISSION"
--- Police work is inherently dangerous - officers can be killed in the line of duty
--- ═══════════════════════════════════════════════════════════════════════════════
-
-events[#events + 1] = {
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Added LIFE-THREATENING events for police officers
+	-- User requested: "IF IM POLICE I CAN DIE FROM A MISSION"
+	-- Police work is inherently dangerous - officers can be killed in the line of duty
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
 	id = "police_active_shooter",
 	emoji = "💀",
 	title = "ACTIVE SHOOTER CALL",
@@ -1227,10 +1223,9 @@ events[#events + 1] = {
 			end,
 		},
 	},
-}
-
-events[#events + 1] = {
-	id = "police_ambush",
+	
+	{
+		id = "police_ambush",
 	emoji = "⚠️",
 	title = "OFFICER DOWN - AMBUSH!",
 	text = "You respond to a routine call. It's a trap! Gunfire erupts from multiple directions!",
@@ -1402,3 +1397,5 @@ events[#events + 1] = {
 		},
 	},
 }
+
+return events
