@@ -7699,6 +7699,36 @@ local function pulseAge()
 end
 
 ageButton.MouseButton1Click:Connect(function()
+	-- ULTRA AGGRESSIVE FIX: Log everything to debug stuck state
+	print("[LifeClient] 🔘 Age button clicked!")
+	print("[LifeClient]   awaitingEvent:", awaitingEvent)
+	print("[LifeClient]   introComplete:", introComplete)
+	print("[LifeClient]   currentState.Name:", currentState.Name)
+	print("[LifeClient]   EventUI.overlay.Visible:", EventUI and EventUI.overlay and EventUI.overlay.Visible)
+
+	-- CRITICAL FIX: If intro is complete OR we have saved data, FORCE allow aging
+	local hasName = currentState.Name and currentState.Name ~= ""
+	local hasSavedData = currentState.Flags and currentState.Flags.data_restored
+	local hasAge = currentState.Age and currentState.Age > 0
+
+	-- If player has any sign of being a returning player, force through
+	if hasSavedData or hasAge or (hasName and introComplete) then
+		-- Force reset any blocking flags
+		if awaitingEvent then
+			local overlayVisible = EventUI and EventUI.overlay and EventUI.overlay.Visible
+			if not overlayVisible then
+				print("[LifeClient] ⚠️ Force resetting awaitingEvent for returning player")
+				awaitingEvent = false
+				if EventUI then EventUI.currentEventId = nil end
+			end
+		end
+
+		-- Force introComplete if we have saved data
+		if hasSavedData or hasAge then
+			introComplete = true
+		end
+	end
+
 	-- CRITICAL FIX: Aggressive safety check for stuck awaitingEvent
 	-- If awaitingEvent is true but intro is complete and no visible event overlay,
 	-- force reset the stuck state (common after rejoin)
@@ -7708,7 +7738,7 @@ ageButton.MouseButton1Click:Connect(function()
 			print("[LifeClient] ⚠️ Resetting stuck awaitingEvent - no visible overlay")
 			awaitingEvent = false
 			if EventUI then EventUI.currentEventId = nil end
-		elseif introComplete and currentState.Name then
+		elseif introComplete and hasName then
 			-- Double check - if intro is done and we have a name, overlay should be visible
 			-- Give it a small grace period then force through
 			print("[LifeClient] ⚠️ awaitingEvent=true but intro complete, checking overlay...")
@@ -7729,14 +7759,20 @@ ageButton.MouseButton1Click:Connect(function()
 		end
 	end
 
-	-- Block if no name set yet (intro not complete)
-	if not currentState.Name then
-		print("[LifeClient] Age blocked - no name set")
-		return
+	-- Block if no name set yet (intro not complete) - BUT allow if we have saved data!
+	if not hasName then
+		-- Check if we have ANY sign of saved data - if so, allow anyway
+		if hasSavedData or hasAge then
+			print("[LifeClient] ⚠️ No name but have saved data - allowing age up anyway")
+		else
+			print("[LifeClient] Age blocked - no name set and no saved data")
+			return
+		end
 	end
 
 	hideTutorial()
 	pulseAge()
+	print("[LifeClient] ✅ Firing RequestAgeUp!")
 	RequestAgeUp:FireServer()
 end)
 
@@ -7911,21 +7947,38 @@ end
 
 ageBtnContainer.Visible = false
 
+-- CRITICAL FIX: Wait longer for SyncState to fire, then check state
+-- Also add multiple retry checks in case of race condition
 task.delay(0.5, function()
 	ageBtnContainer.Visible = true
+
+	-- Wait a bit more for SyncState to populate
+	task.wait(0.3)
+
 	-- Check if this is a returning player with saved data
 	local dataRestored = currentState.Flags and currentState.Flags.data_restored
-	local isFirstTime = not currentState.Name or currentState.Name == ""
+	local hasName = currentState.Name and currentState.Name ~= ""
+	local hasAge = currentState.Age and currentState.Age > 0
+	local isFirstTime = not hasName and not hasAge
 
-	if dataRestored and currentState.Name and currentState.Name ~= "" then
+	print("[LifeClient] Initial state check:")
+	print("[LifeClient]   dataRestored:", dataRestored)
+	print("[LifeClient]   hasName:", hasName, "Name:", currentState.Name)
+	print("[LifeClient]   hasAge:", hasAge, "Age:", currentState.Age)
+	print("[LifeClient]   isFirstTime:", isFirstTime)
+
+	-- CRITICAL FIX: If we have ANY age > 0, treat as returning player
+	if dataRestored or hasAge then
 		-- RETURNING PLAYER: Skip intro, show updates popup
 		introComplete = true
 		-- CRITICAL FIX: Reset awaitingEvent for returning players!
 		-- This ensures the Age button works immediately after rejoin
 		awaitingEvent = false
 		if EventUI then EventUI.currentEventId = nil end
-		print("[LifeClient] ✅ Returning player - showing updates!")
-		showWelcomeScreen(false) -- false = show updates, not welcome
+		print("[LifeClient] ✅ Returning player (age:", currentState.Age, ") - resetting state!")
+		if hasName then
+			showWelcomeScreen(false) -- false = show updates, not welcome
+		end
 	elseif isFirstTime then
 		-- FIRST TIME PLAYER: Show welcome screen first, then intro!
 		print("[LifeClient] 🎉 First-time player detected - showing welcome screen!")
@@ -7937,6 +7990,28 @@ task.delay(0.5, function()
 			end
 			showIntro()
 		end)
+	end
+end)
+
+-- CRITICAL FIX: Secondary check after more time has passed
+-- This catches cases where SyncState was slow
+task.delay(2, function()
+	local hasAge = currentState.Age and currentState.Age > 0
+	local hasSavedData = currentState.Flags and currentState.Flags.data_restored
+
+	if hasAge or hasSavedData then
+		if not introComplete then
+			print("[LifeClient] ⚠️ Late fix: Detected returning player, forcing introComplete=true")
+			introComplete = true
+		end
+		if awaitingEvent then
+			local overlayVisible = EventUI and EventUI.overlay and EventUI.overlay.Visible
+			if not overlayVisible then
+				print("[LifeClient] ⚠️ Late fix: Resetting stuck awaitingEvent")
+				awaitingEvent = false
+				if EventUI then EventUI.currentEventId = nil end
+			end
+		end
 	end
 end)
 
