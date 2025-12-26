@@ -9858,12 +9858,19 @@ function LifeBackend:setLifeInfo(player, nameOrPayload, genderArg, countryArg)
 			state.Flags.famous_family = true
 			
 			-- Send royal birth message
-			self:pushState(player, string.format("👑 %s %s of %s takes their first breath in %s!", tostring(title or "Prince/Princess"), tostring(state.Name or "Your Highness"), tostring(country.name or "the Kingdom"), tostring(country.palace or "the Palace")))
+			-- CRITICAL FIX: Properly handle nil values to prevent string.format errors
+			local safeTitle = tostring(title or "Prince/Princess")
+			local safeName = tostring(state.Name or "Your Highness")
+			local safeCountryName = (country and country.name) and tostring(country.name) or "the Kingdom"
+			local safePalace = (country and country.palace) and tostring(country.palace) or "the Palace"
+			self:pushState(player, string.format("👑 %s %s of %s takes their first breath in %s!", safeTitle, safeName, safeCountryName, safePalace))
 			return
 		end
 	end
 	
-	self:pushState(player, string.format("%s takes their first breath.", state.Name or "Your character"))
+	-- CRITICAL FIX: Properly handle nil Name
+	local safeBirthName = tostring(state.Name or "Your character")
+	self:pushState(player, string.format("%s takes their first breath.", safeBirthName))
 end
 
 -- ============================================================================
@@ -10432,12 +10439,15 @@ function LifeBackend:tickCareer(state)
 											end
 											
 											-- Log the promotion
+											-- CRITICAL FIX: Handle nil values
 											state.YearLog = state.YearLog or {}
+											local safeOldName = tostring(oldJobName or "previous position")
+											local safeNextName = tostring(nextJob.name or "new position")
+											local safeSalary = formatMoney((state.CurrentJob and state.CurrentJob.salary) or 0)
 											table.insert(state.YearLog, {
 												type = "promotion",
 												emoji = "🎉",
-												text = string.format("Promoted from %s to %s! New salary: $%s", 
-													oldJobName, nextJob.name, formatMoney(state.CurrentJob.salary)),
+												text = string.format("Promoted from %s to %s! New salary: $%s", safeOldName, safeNextName, safeSalary),
 											})
 											
 											promoted = true
@@ -13125,17 +13135,19 @@ function LifeBackend:generateYearSummary(state)
 	if age >= 18 then
 		if state.CurrentJob then
 			local job = state.CurrentJob
+			-- CRITICAL FIX: Nil safety for job.company
+			local safeCompany = tostring(job.company or "your workplace")
 			if state.CareerInfo and (state.CareerInfo.yearsAtJob or 0) > 0 then
 				local years = state.CareerInfo.yearsAtJob
 				if years >= 10 then
-					table.insert(summaryParts, string.format("You've been at %s for %d years now.", job.company, years))
+					table.insert(summaryParts, string.format("You've been at %s for %d years now.", safeCompany, years))
 				elseif years >= 5 then
-					table.insert(summaryParts, string.format("You're well established at %s.", job.company))
+					table.insert(summaryParts, string.format("You're well established at %s.", safeCompany))
 				end
 			else
 				-- Just mention they have a job occasionally
 				if RANDOM:NextNumber() < 0.3 then
-					table.insert(summaryParts, string.format("Work at %s keeps you busy.", job.company))
+					table.insert(summaryParts, string.format("Work at %s keeps you busy.", safeCompany))
 				end
 			end
 		elseif age < 65 and not (state.Flags and (state.Flags.retired or state.Flags.in_school)) then
@@ -13326,8 +13338,11 @@ function LifeBackend:handleAgeUp(player)
 				mobState.rankName = rankNames[mobState.rankIndex]
 				mobState.rankEmoji = rankEmojis[mobState.rankIndex]
 				
-				appendFeed(state, string.format("%s You've been promoted from %s to %s!", 
-					mobState.rankEmoji, oldRankName, mobState.rankName))
+				-- CRITICAL FIX: Properly handle nil values to prevent string.format errors
+				local safeEmoji = tostring(mobState.rankEmoji or "🎉")
+				local safeOldRank = tostring(oldRankName or "Associate")
+				local safeNewRank = tostring(mobState.rankName or "Soldier")
+				appendFeed(state, string.format("%s You've been promoted from %s to %s!", safeEmoji, safeOldRank, safeNewRank))
 				state.Flags.got_promotion = true
 				state.Flags.mob_promoted = true
 			end
@@ -14720,7 +14735,10 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 			minigameRemote:FireClient(player, minigamePayload)
 		end
 		
-		debugPrint(string.format("Minigame triggered for %s: %s", player.Name, choice.triggerMinigame))
+		-- CRITICAL FIX: Handle nil values safely
+		local safePlayerName = tostring((player and player.Name) or "Unknown")
+		local safeMinigame = tostring(choice.triggerMinigame or "unknown")
+		debugPrint(string.format("Minigame triggered for %s: %s", safePlayerName, safeMinigame))
 		return -- Wait for minigame result
 	end
 
@@ -15268,8 +15286,10 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #302: Handle mafia-specific effects from mob operations
-	-- CRITICAL FIX: Minigame success NOW reduces risk! Also fixed "success but jailed" bug
-	-- User complaint: "Crime successful but still sentenced?!"
+	-- CRITICAL FIX #800: MINIGAME WIN = GUARANTEED SUCCESS, NO ARREST!
+	-- User complaint: "Plan a Heist shows crime successful but says you got caught"
+	-- BUG: Code was reducing risk by 80% but STILL rolling for arrest. WRONG!
+	-- FIX: If player WON the minigame, they EARNED their success - NO RISK CHECK!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	if activity.mafiaEffect then
 		state.MobState = state.MobState or {}
@@ -15290,34 +15310,34 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 		state.MobState.operationsCompleted = (state.MobState.operationsCompleted or 0) + 1
 		
 		-- ═══════════════════════════════════════════════════════════════════════════════
-		-- CRITICAL FIX: Risk check - minigame success REDUCES risk!
-		-- Without this, winning the minigame does nothing and you still get jailed
+		-- CRITICAL FIX #800: CHECK IF MINIGAME WAS WON FIRST!
+		-- If player WON the minigame, they get GUARANTEED SUCCESS with NO ARREST!
+		-- Only do risk check if minigame was NOT won or no minigame was played
 		-- ═══════════════════════════════════════════════════════════════════════════════
-		if activity.risk then
+		local minigameWasWon = false
+		
+		-- Check all possible ways minigame win can be communicated
+		if minigameBonus == true then
+			minigameWasWon = true
+		elseif type(minigameBonus) == "table" then
+			if minigameBonus.won or minigameBonus.success or minigameBonus.heistSuccess or minigameBonus.combatWon then
+				minigameWasWon = true
+			end
+		end
+		
+		-- CRITICAL FIX #801: If minigame was won, SKIP risk check entirely!
+		if minigameWasWon then
+			-- Player WON the minigame - GUARANTEED success, NO risk of arrest!
+			resultMessage = "🎯 " .. resultMessage .. " Your skills paid off - perfect execution!"
+			-- Bonus respect for winning the minigame
+			state.MobState.respect = (state.MobState.respect or 0) + 10
+			-- EXPLICIT: NO JAIL POSSIBLE WHEN MINIGAME IS WON!
+			-- Do NOT set gotCaught = true, do NOT check risk, do NOT pass Go, do NOT go to jail!
+		elseif activity.risk then
+			-- ONLY check risk if minigame was NOT won (or no minigame was played)
 			local actualRisk = activity.risk
 			
-			-- CRITICAL FIX: If minigame was WON, MASSIVELY reduce risk
-			-- minigameBonus can be: { won = true, success = true } from client
-			-- CRITICAL FIX: Also handle simple boolean `true` from client!
-			-- User complaint: "Crime successful but still sentenced?!"
-			-- The client was passing `true` but server only checked for table/number
-			if minigameBonus == true then
-				-- Simple boolean true = won the minigame = 80% risk reduction!
-				actualRisk = math.floor(actualRisk * 0.2)
-			elseif type(minigameBonus) == "table" then
-				if minigameBonus.won or minigameBonus.success then
-					-- Won minigame = 80% reduction in risk
-					actualRisk = math.floor(actualRisk * 0.2)
-				elseif minigameBonus.failed == false then
-					-- Passed minigame but not perfectly = 50% reduction
-					actualRisk = math.floor(actualRisk * 0.5)
-				end
-			elseif type(minigameBonus) == "number" then
-				-- Old-style bonus: subtract from risk
-				actualRisk = math.max(1, actualRisk - minigameBonus)
-			end
-			
-			-- Also reduce risk based on player's stats and experience
+			-- Reduce risk based on player's stats and experience
 			local smarts = (state.Stats and state.Stats.Smarts) or 50
 			if smarts > 70 then
 				actualRisk = actualRisk - math.floor((smarts - 70) / 5)
@@ -15326,8 +15346,13 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 				actualRisk = actualRisk - 5 -- Experienced mobster bonus
 			end
 			
-			-- CRITICAL: Make sure actualRisk doesn't go negative
-			actualRisk = math.max(1, actualRisk)
+			-- If minigame was failed, increase risk
+			if minigameBonus == false or (type(minigameBonus) == "table" and minigameBonus.failed) then
+				actualRisk = actualRisk + 20 -- Failed minigame = higher risk
+			end
+			
+			-- CRITICAL: Make sure actualRisk stays in valid range
+			actualRisk = math.max(5, math.min(95, actualRisk))
 			
 			-- Roll for getting caught
 			if RANDOM:NextInteger(1, 100) <= actualRisk then
@@ -16885,9 +16910,11 @@ function LifeBackend:handleJobApplication(player, jobId, clientInterviewScore)
 	
 	-- Cooldown: Can't spam applications to the same job within the same year
 	if appHistory.lastAttempt == (state.Age or 0) and appHistory.rejectedThisYear then
+		-- CRITICAL FIX: Nil safety for job.company
+		local safeCompany = tostring(job.company or "this company")
 		return { 
 			success = false, 
-			message = string.format("You already applied to %s this year. Wait until next year to try again.", job.company)
+			message = string.format("You already applied to %s this year. Wait until next year to try again.", safeCompany)
 		}
 	end
 	
@@ -17798,11 +17825,17 @@ function LifeBackend:handlePromotion(player)
 	-- Use CareerTracks to find the next job in the career path
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #126: Nil safety for job ID access
-	local currentJobId = state.CurrentJob and state.CurrentJob.id
+	-- CRITICAL FIX #802: Full nil safety check before accessing CurrentJob properties
+	if not state.CurrentJob then
+		return { success = false, message = "You don't have a job to be promoted from!" }
+	end
+	
+	local currentJobId = state.CurrentJob.id
 	if not currentJobId then
 		-- Fallback: just do salary promotion
 		state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 30000) * 1.15)
-		local feed = string.format("🎉 Salary promotion! You now earn %s.", formatMoney(state.CurrentJob.salary))
+		local safeSalary = formatMoney(state.CurrentJob.salary or 0)
+		local feed = string.format("🎉 Salary promotion! You now earn %s.", safeSalary)
 		self:pushState(player, feed)
 		return { success = true, message = feed }
 	end
@@ -17949,14 +17982,24 @@ function LifeBackend:handlePromotion(player)
 	
 	local feed
 	if promotedToNewTitle and newJobName then
+		-- CRITICAL FIX: Handle nil values safely
+		local safeOldName = tostring(oldJobName or "previous position")
+		local safeNewName = tostring(newJobName or "new position")
+		local safeSalary = formatMoney((state.CurrentJob and state.CurrentJob.salary) or 0)
 		feed = string.format("🎉 MAJOR PROMOTION! You've been promoted from %s to %s! New salary: %s", 
-			oldJobName, newJobName, formatMoney(state.CurrentJob.salary))
+			safeOldName, safeNewName, safeSalary)
 		-- Add a flag for major promotion
 		state.Flags.major_promotion = true
 	else
 		-- No title change available (top of career track) - just salary bump
-		state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 1.15)
-		feed = string.format("🎉 Salary promotion! You now earn %s.", formatMoney(state.CurrentJob.salary))
+		-- CRITICAL FIX: Nil safety for CurrentJob
+		if state.CurrentJob then
+			state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 1.15)
+			local safeSalary = formatMoney(state.CurrentJob.salary or 0)
+			feed = string.format("🎉 Salary promotion! You now earn %s.", safeSalary)
+		else
+			feed = "🎉 You received a promotion!"
+		end
 	end
 	
 	info.performance = clamp((info.performance or 60) + 5, 0, 100)
@@ -18000,11 +18043,15 @@ function LifeBackend:handleRaise(player)
 		return { success = false, message = "Raise denied. 'Budget constraints' they said. Maybe next year." }
 	end
 
-	state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 1.08) -- 8% raise instead of 10%
+	-- CRITICAL FIX: Nil safety for CurrentJob
+	if state.CurrentJob then
+		state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 1.08) -- 8% raise instead of 10%
+	end
 	info.raises = (info.raises or 0) + 1
 	info.performance = clamp((info.performance or 60) + 3, 0, 100)
 
-	local feed = string.format("💰 Raise approved! Salary is now %s.", formatMoney(state.CurrentJob.salary))
+	local safeSalary = formatMoney((state.CurrentJob and state.CurrentJob.salary) or 0)
+	local feed = string.format("💰 Raise approved! Salary is now %s.", safeSalary)
 	self:pushState(player, feed)
 	return { success = true, message = feed }
 end
@@ -20263,7 +20310,12 @@ function LifeBackend:handleGodModeEdit(player, payload)
 			state.Flags.famous_family = true
 			state.Flags.royalty_gamepass = true
 			
-			table.insert(summaries, string.format("👑 Born as %s of %s %s with %s inheritance!", tostring(title or "Royal"), tostring(country.emoji or "👑"), tostring(country.name or "the Kingdom"), formatMoney(royalWealth or 0)))
+			-- CRITICAL FIX: Properly handle nil values to prevent string.format errors
+			local safeTitle = tostring(title or "Royal")
+			local safeEmoji = (country and country.emoji) and tostring(country.emoji) or "👑"
+			local safeCountryName = (country and country.name) and tostring(country.name) or "the Kingdom"
+			local safeWealth = formatMoney(royalWealth or 0)
+			table.insert(summaries, string.format("👑 Born as %s of %s %s with %s inheritance!", safeTitle, safeEmoji, safeCountryName, safeWealth))
 		else
 			-- No gamepass, prompt purchase
 			self:promptGamepassPurchase(player, "ROYALTY")
