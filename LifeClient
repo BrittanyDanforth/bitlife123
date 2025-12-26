@@ -180,9 +180,6 @@ local lastStatBoostWarningAge = -1  -- Age when we last showed stat boost warnin
 local shownPrisonPopupThisSentence = false  -- Only show prison popup ONCE per jail sentence
 local wasInJailLastSync = false     -- Track jail state to detect entering jail
 local lastEventResolvedTime = 0     -- Timestamp when last event was resolved (for popup cooldown)
--- CRITICAL FIX: Track stuck age-up attempts and death overlay state
-local stuckAgeUpAttempts = 0        -- Count of failed age-up attempts (server ignoring)
-local stuckDeathOverlayShown = false  -- Prevent SyncState from hiding stuck-detection overlay
 
 -- Developer Product ID for one-time jail release (NOT gamepass, user pays once per use)
 local PRISON_FREEDOM_PRODUCT_ID = 3477466850  -- TODO: Update with actual product ID from Roblox
@@ -7130,8 +7127,6 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 		lastStatBoostWarningAge = -1  -- Reset stat boost warning tracker
 		shownPrisonPopupThisSentence = false  -- Reset prison popup tracker
 		wasInJailLastSync = false     -- Reset jail state tracker
-		stuckAgeUpAttempts = 0        -- Reset stuck detection for new life
-		stuckDeathOverlayShown = false  -- Allow death overlay to be hidden normally
 
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		-- CRITICAL FIX: Reset selectedCountry on new life!
@@ -7588,13 +7583,7 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 	elseif currentState.Health and currentState.Health <= 0 then
 		showDeathOverlay("Health depleted.", state.Age, false, nil)
 	else
-		-- CRITICAL FIX: Don't hide death overlay if it was shown due to stuck detection
-		-- The stuckDeathOverlayShown flag prevents SyncState from flickering away the overlay
-		if not stuckDeathOverlayShown then
-			hideDeathOverlay()
-		else
-			print("[LifeClient] ⚠️ Skipping hideDeathOverlay - stuck detection overlay is showing")
-		end
+		hideDeathOverlay()
 	end
 
 	-- Update UI from state
@@ -7849,40 +7838,7 @@ ageButton.MouseButton1Click:Connect(function()
 	hideTutorial()
 	pulseAge()
 	print("[LifeClient] ✅ Firing RequestAgeUp!")
-
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX: Track age-up attempts to detect stuck dead player
-	-- If server ignores 3+ age-up requests, player is probably dead (server-side flag)
-	-- Show death overlay so they can start a new life!
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	local ageBeforeRequest = currentState.Age or 0
-	local ResetLife = remotesFolder:FindFirstChild("ResetLife")
-
 	RequestAgeUp:FireServer()
-
-	-- Check if age actually changed after a delay
-	task.delay(2, function()
-		local ageAfterRequest = currentState.Age or 0
-		if ageAfterRequest == ageBeforeRequest then
-			-- Age didn't change - server likely rejected it
-			stuckAgeUpAttempts = (stuckAgeUpAttempts or 0) + 1
-			print("[LifeClient] ⚠️ Age didn't change after RequestAgeUp! Stuck attempts:", stuckAgeUpAttempts)
-
-			if stuckAgeUpAttempts >= 2 then
-				-- Player is stuck - probably dead on server side
-				print("[LifeClient] ☠️ STUCK DETECTED! Player likely dead on server. Showing death overlay...")
-				local deathOverlayVisible = DeathUI and DeathUI.overlay and DeathUI.overlay.Visible
-				if not deathOverlayVisible then
-					stuckDeathOverlayShown = true  -- Prevent SyncState from hiding this overlay!
-					showDeathOverlay("You appear to have died. Start a new life!", currentState.Age, false, nil)
-				end
-				stuckAgeUpAttempts = 0  -- Reset counter
-			end
-		else
-			-- Age changed successfully - reset counter
-			stuckAgeUpAttempts = 0
-		end
-	end)
 end)
 
 ageButton.MouseEnter:Connect(function()
