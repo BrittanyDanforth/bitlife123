@@ -1,0 +1,2358 @@
+-- MafiaScreen.lua
+-- Premium Organized Crime UI for BitLife-style game
+-- Dedicated Mafia gamepass screen with choice-based minigames and heists
+
+local TweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+
+local UI = require(ReplicatedStorage:WaitForChild("UIComponents"))
+local C = UI.Colors
+local F = UI.Fonts
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- COLOR SAFETY - Ensure ALL colors exist
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+C.Pink       = C.Pink       or Color3.fromRGB(236, 72, 153)
+C.Green      = C.Green      or Color3.fromRGB(34, 197, 94)
+C.Red        = C.Red        or Color3.fromRGB(239, 68, 68)
+C.Purple     = C.Purple     or Color3.fromRGB(139, 92, 246)
+C.Cyan       = C.Cyan       or Color3.fromRGB(6, 182, 212)
+C.Blue       = C.Blue       or Color3.fromRGB(59, 130, 246)
+C.Orange     = C.Orange     or Color3.fromRGB(249, 115, 22)
+C.Yellow     = C.Yellow     or Color3.fromRGB(234, 179, 8)
+C.White      = C.White      or Color3.fromRGB(255, 255, 255)
+C.Black      = C.Black      or Color3.fromRGB(0, 0, 0)
+C.Amber      = C.Amber      or Color3.fromRGB(245, 158, 11)
+
+C.PinkDark   = C.PinkDark   or Color3.fromRGB(190, 24, 93)
+C.GreenDark  = C.GreenDark  or Color3.fromRGB(22, 163, 74)
+C.RedDark    = C.RedDark    or Color3.fromRGB(185, 28, 28)
+C.PurpleDark = C.PurpleDark or Color3.fromRGB(109, 40, 217)
+C.CyanDark   = C.CyanDark   or Color3.fromRGB(14, 116, 144)
+C.BlueDark   = C.BlueDark   or Color3.fromRGB(29, 78, 216)
+C.AmberDark  = C.AmberDark  or Color3.fromRGB(217, 119, 6)
+
+C.Gray100    = C.Gray100    or Color3.fromRGB(243, 244, 246)
+C.Gray200    = C.Gray200    or Color3.fromRGB(229, 231, 235)
+C.Gray300    = C.Gray300    or Color3.fromRGB(209, 213, 219)
+C.Gray400    = C.Gray400    or Color3.fromRGB(156, 163, 175)
+C.Gray500    = C.Gray500    or Color3.fromRGB(107, 114, 128)
+C.Gray600    = C.Gray600    or Color3.fromRGB(75, 85, 99)
+C.Gray700    = C.Gray700    or Color3.fromRGB(55, 65, 81)
+C.Gray800    = C.Gray800    or Color3.fromRGB(31, 41, 55)
+C.Gray900    = C.Gray900    or Color3.fromRGB(17, 24, 39)
+C.Bg         = C.Bg         or Color3.fromRGB(246, 248, 252)
+
+-- Mafia-specific dark theme colors
+local MafiaColors = {
+	Dark = Color3.fromRGB(15, 15, 20),
+	DarkCard = Color3.fromRGB(25, 25, 35),
+	DarkBorder = Color3.fromRGB(45, 45, 55),
+	Blood = Color3.fromRGB(139, 0, 0),
+	Gold = Color3.fromRGB(212, 175, 55),
+	GoldDark = Color3.fromRGB(170, 140, 45),
+}
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- MOBILE RESPONSIVE SYSTEM
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local Camera = workspace.CurrentCamera or workspace:WaitForChild("Camera", 5)
+if not Camera then
+	Camera = workspace:FindFirstChildOfClass("Camera")
+end
+
+-- Safe viewport size fallback if camera still unavailable
+local ViewportSize = Camera and Camera.ViewportSize or Vector2.new(400, 800)
+
+local IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local IS_TABLET = IS_MOBILE and (ViewportSize.X >= 768 or ViewportSize.Y >= 768)
+local IS_SMALL_PHONE = IS_MOBILE and not IS_TABLET and (ViewportSize.X < 400 or ViewportSize.Y < 700)
+local IS_TINY_PHONE = IS_MOBILE and not IS_TABLET and (ViewportSize.X <= 380 or ViewportSize.Y <= 680)
+
+local function getScale()
+	local minDim = math.min(ViewportSize.X, ViewportSize.Y)
+	if minDim < 350 then return 0.55 end
+	if minDim < 380 then return 0.65 end
+	if minDim < 400 then return 0.72 end
+	if minDim < 500 then return 0.85 end
+	if minDim < 768 then return 0.95 end
+	return 1.0
+end
+
+local function px(baseValue) return math.floor(baseValue * getScale()) end
+
+local function textSize(baseSize) 
+	local minSize = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 11 or 12)
+	return math.max(minSize, math.floor(baseSize * getScale())) 
+end
+
+local function padSize(base) 
+	if IS_TINY_PHONE then return math.max(4, math.floor(base * 0.6)) end
+	if IS_SMALL_PHONE then return math.max(5, math.floor(base * 0.75)) end
+	return math.floor(base * getScale())
+end
+
+local function btnHeight(baseHeight) 
+	local scaled = math.floor(baseHeight * getScale())
+	local minTarget = IS_TINY_PHONE and 36 or (IS_SMALL_PHONE and 40 or 44)
+	return IS_MOBILE and math.max(minTarget, scaled) or scaled
+end
+
+local function cardWidth()
+	if IS_TINY_PHONE then return ViewportSize.X - 8 end
+	if IS_SMALL_PHONE then return ViewportSize.X - 12 end
+	if IS_MOBILE then return math.min(ViewportSize.X - 20, 380) end
+	return 380
+end
+
+local function formatMoney(amount)
+	amount = tonumber(amount) or 0
+	if amount >= 1000000000 then
+		return string.format("$%.1fB", amount / 1000000000)
+	elseif amount >= 1000000 then
+		return string.format("$%.1fM", amount / 1000000)
+	elseif amount >= 1000 then
+		return string.format("$%.1fK", amount / 1000)
+	end
+	return string.format("$%d", amount)
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- MODULE DEFINITION
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local MafiaScreen = {}
+MafiaScreen.__index = MafiaScreen
+
+-- Get remotes
+local remotesFolder = ReplicatedStorage:FindFirstChild("LifeRemotes") or ReplicatedStorage:WaitForChild("LifeRemotes", 3)
+local function getRemote(name)
+	return remotesFolder and (remotesFolder:FindFirstChild(name) or remotesFolder:WaitForChild(name, 1))
+end
+
+local JoinMob = getRemote("JoinMob")
+local LeaveMob = getRemote("LeaveMob")
+local DoMobOperation = getRemote("DoMobOperation")
+local CheckGamepass = getRemote("CheckGamepass")
+local PromptGamepass = getRemote("PromptGamepass")
+local GamepassPurchased = getRemote("GamepassPurchased")
+
+-- CRITICAL FIX #445: Track if Mafia gamepass is owned (cached)
+local hasMafiaGamepass = false
+
+-- CRITICAL FIX #446: Gamepass IDs for purchase detection
+local MAFIA_GAMEPASS_ID = 1626238769
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #516: DIRECT CLIENT-SIDE GAMEPASS PROMPT FUNCTION!
+-- This bypasses the server's cooldown system entirely for user-initiated clicks!
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function promptMafiaGamepassDirect()
+	if hasMafiaGamepass then
+		return false  -- Already owns
+	end
+	
+	local success, err = pcall(function()
+		MarketplaceServiceModule:PromptGamePassPurchase(localPlayer, MAFIA_GAMEPASS_ID)
+	end)
+	
+	if success then
+		print("[MafiaScreen] ✅ Prompted Mafia gamepass purchase directly")
+	else
+		warn("[MafiaScreen] Failed to prompt Mafia purchase:", err)
+	end
+	
+	-- Also notify server (for tracking)
+	task.spawn(function()
+		if PromptGamepass then
+			pcall(function() PromptGamepass:FireServer("MAFIA", true) end)
+		end
+	end)
+	
+	return success
+end
+
+-- CRITICAL FIX #457: Track pending family join for auto-retry after purchase
+local pendingFamilyJoin = nil
+
+-- CRITICAL FIX #466: Module-level purchase callbacks for reliable detection
+local mafiaScreenInstance = nil
+local purchaseCallbacks = {}
+
+-- Set up module-level purchase listener (runs once when module loads)
+local MarketplaceServiceModule = game:GetService("MarketplaceService")
+local PlayersModule = game:GetService("Players")
+local localPlayer = PlayersModule.LocalPlayer
+
+MarketplaceServiceModule.PromptGamePassPurchaseFinished:Connect(function(plr, gamePassId, wasPurchased)
+	if plr ~= localPlayer then return end
+	
+	print("[MafiaScreen] PromptGamePassPurchaseFinished:", gamePassId, wasPurchased)
+	
+	if gamePassId == MAFIA_GAMEPASS_ID and wasPurchased then
+		hasMafiaGamepass = true
+		print("[MafiaScreen] Mafia gamepass purchased via module listener!")
+		
+		-- Fire all registered callbacks
+		for _, callback in ipairs(purchaseCallbacks) do
+			task.spawn(callback)
+		end
+	end
+end)
+
+-- Crime Family data (matches MobSystem.lua)
+local CrimeFamilies = {
+	{
+		id = "italian",
+		name = "Italian Mafia",
+		fullName = "La Cosa Nostra",
+		emoji = "🇮🇹",
+		description = "The traditional organized crime family. Honor, loyalty, and family above all.",
+		color = Color3.fromRGB(239, 68, 68),
+		colorDark = Color3.fromRGB(185, 28, 28),
+	},
+	{
+		id = "russian",
+		name = "Russian Bratva",
+		fullName = "Bratva (The Brotherhood)",
+		emoji = "🇷🇺",
+		description = "The ruthless eastern European syndicate. Strength and fear are your weapons.",
+		color = Color3.fromRGB(59, 130, 246),
+		colorDark = Color3.fromRGB(29, 78, 216),
+	},
+	{
+		id = "yakuza",
+		name = "Japanese Yakuza",
+		fullName = "The Yamaguchi-gumi",
+		emoji = "🇯🇵",
+		description = "Honor and tradition guide the way. The path of the samurai lives on.",
+		color = Color3.fromRGB(139, 92, 246),
+		colorDark = Color3.fromRGB(109, 40, 217),
+	},
+	{
+		id = "cartel",
+		name = "Mexican Cartel",
+		fullName = "El Cartel de Sinaloa",
+		emoji = "🇲🇽",
+		description = "Control the smuggling empire. Money flows like water.",
+		color = Color3.fromRGB(34, 197, 94),
+		colorDark = Color3.fromRGB(22, 163, 74),
+	},
+	{
+		id = "triad",
+		name = "Chinese Triad",
+		fullName = "The 14K Triad",
+		emoji = "🇨🇳",
+		description = "The Heaven and Earth Society. Ancient traditions meet modern crime.",
+		color = Color3.fromRGB(249, 115, 22),
+		colorDark = Color3.fromRGB(194, 65, 12),
+	},
+}
+
+-- Bank Robbery Scenarios (choice-based minigame)
+local BankRobberyScenarios = {
+	{
+		id = "entry",
+		title = "🏦 THE HEIST BEGINS",
+		description = "You're outside the bank. Security guard is at the door. How do you approach?",
+		choices = {
+			{ text = "Walk in casually, act like a customer", success = 70, risk = 10, next = "lobby" },
+			{ text = "Wait for shift change, slip in the back", success = 85, risk = 25, next = "vault_access" },
+			{ text = "Knock out the guard quickly", success = 60, risk = 40, next = "lobby_loud" },
+		}
+	},
+	{
+		id = "lobby",
+		title = "🏛️ INSIDE THE BANK",
+		description = "You're in the lobby. Tellers are busy with customers. The vault is in the back.",
+		choices = {
+			{ text = "Approach a teller, pass a threatening note", success = 65, risk = 20, next = "teller" },
+			{ text = "Spot the manager, follow them to the vault", success = 75, risk = 15, next = "vault_access" },
+			{ text = "Create a distraction, head to the safe deposit boxes", success = 55, risk = 30, next = "safe_boxes" },
+		}
+	},
+	{
+		id = "lobby_loud",
+		title = "⚠️ THINGS ARE GETTING HOT",
+		description = "The guard is down but someone saw you! Alarms could trigger any second.",
+		choices = {
+			{ text = "Announce the robbery, take control", success = 70, risk = 50, next = "vault_force" },
+			{ text = "Grab what you can from tellers and run", success = 80, risk = 30, next = "escape_early", reward = 5000 },
+			{ text = "Take a hostage to the vault", success = 55, risk = 60, next = "vault_hostage" },
+		}
+	},
+	{
+		id = "teller",
+		title = "💰 THE TELLER",
+		description = "The teller reads your note, hands shaking. They're reaching under the counter...",
+		choices = {
+			{ text = "Tell them not to touch anything", success = 80, risk = 15, next = "teller_success" },
+			{ text = "Demand they open the vault too", success = 50, risk = 35, next = "vault_access" },
+			{ text = "Grab the cash and leave immediately", success = 90, risk = 10, next = "escape", reward = 15000 },
+		}
+	},
+	{
+		id = "vault_access",
+		title = "🔐 THE VAULT",
+		description = "You've made it to the vault area. Heavy door, time-locked. The manager has the codes.",
+		choices = {
+			{ text = "Convince the manager to cooperate", success = 70, risk = 25, next = "vault_open" },
+			{ text = "Start cracking the safe yourself", success = 40, risk = 20, next = "vault_crack" },
+			{ text = "Wait for the time-lock to expire", success = 85, risk = 45, next = "vault_open" },
+		}
+	},
+	{
+		id = "vault_open",
+		title = "💎 JACKPOT!",
+		description = "The vault is open! Stacks of cash, safety deposit boxes, gold bars. But you hear sirens...",
+		choices = {
+			{ text = "Grab everything you can carry!", success = 75, risk = 35, next = "escape_loaded", reward = 75000 },
+			{ text = "Take only the cash, move fast", success = 90, risk = 20, next = "escape", reward = 45000 },
+			{ text = "Go for the safe deposit boxes - diamonds!", success = 50, risk = 40, next = "escape_diamonds", reward = 150000 },
+		}
+	},
+	{
+		id = "vault_force",
+		title = "🔫 FORCED ENTRY",
+		description = "You've taken control of the bank. Staff are cooperating. Vault door is being opened.",
+		choices = {
+			{ text = "Stay calm, get the money, get out", success = 70, risk = 40, next = "escape_loaded", reward = 60000 },
+			{ text = "Demand they empty everything", success = 55, risk = 55, next = "escape_loaded", reward = 100000 },
+			{ text = "Take hostages for safe passage", success = 60, risk = 50, next = "escape_hostage" },
+		}
+	},
+	{
+		id = "escape",
+		title = "🚗 THE GETAWAY",
+		description = "You're out the door with the loot. Your getaway driver is waiting...",
+		choices = {
+			{ text = "Jump in and floor it!", success = 85, risk = 20, final = true },
+			{ text = "Blend into the crowd, walk away", success = 90, risk = 10, final = true },
+			{ text = "Split up with the driver, meet later", success = 75, risk = 25, final = true },
+		}
+	},
+	{
+		id = "escape_loaded",
+		title = "🚗 HEAVY LOAD",
+		description = "You're loaded with cash but it's slowing you down. Cops are closing in!",
+		choices = {
+			{ text = "Dump half the cash and run!", success = 80, risk = 25, final = true, rewardMod = 0.5 },
+			{ text = "Push through - keep everything!", success = 55, risk = 45, final = true },
+			{ text = "Take the subway, blend in", success = 70, risk = 30, final = true },
+		}
+	},
+}
+
+-- Heist Operation Scenarios (for mafia operations)
+local OperationScenarios = {
+	heist = {
+		{
+			title = "🎯 THE SETUP",
+			description = "Your contact gave you the intel. The target has weak security tonight. How do you proceed?",
+			choices = {
+				{ text = "Scout the location first", successMod = 1.2, riskMod = 0.8 },
+				{ text = "Go in now while we have the advantage", successMod = 1.0, riskMod = 1.0 },
+				{ text = "Bribe an insider for access", successMod = 1.3, riskMod = 0.7, costMod = 0.2 },
+			}
+		},
+		{
+			title = "⚠️ UNEXPECTED COMPLICATION",
+			description = "There's more security than expected. A guard patrol is approaching your position.",
+			choices = {
+				{ text = "Wait for them to pass", successMod = 1.1, riskMod = 0.9 },
+				{ text = "Create a distraction", successMod = 1.0, riskMod = 1.1 },
+				{ text = "Take them out quietly", successMod = 0.9, riskMod = 1.3 },
+			}
+		},
+	},
+	ransom = {
+		{
+			title = "🎯 THE GRAB",
+			description = "The target is alone. This is your chance. How do you approach?",
+			choices = {
+				{ text = "Van ambush - quick and clean", successMod = 1.1, riskMod = 1.0 },
+				{ text = "Pose as a driver, gain trust", successMod = 1.2, riskMod = 0.8 },
+				{ text = "Follow them home, take them there", successMod = 1.0, riskMod = 1.2 },
+			}
+		},
+		{
+			title = "💰 THE NEGOTIATION",
+			description = "The family is on the phone. They're scared but the cops might be tracing.",
+			choices = {
+				{ text = "Keep it short, demand wire transfer", successMod = 1.1, riskMod = 0.9 },
+				{ text = "Demand crypto, untraceable", successMod = 1.3, riskMod = 0.7 },
+				{ text = "Set up a cash drop", successMod = 0.9, riskMod = 1.2 },
+			}
+		},
+	},
+}
+
+-- Debug logging
+-- CRITICAL FIX: Debug enabled for action tracking
+local DEBUG = true
+local function log(...)
+	if DEBUG then print("[MafiaScreen]", ...) end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- HELPER FUNCTIONS
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local function corner(p, r)
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(0, r)
+	c.Parent = p
+	return c
+end
+
+local function stroke(p, t, tr, col)
+	local s = Instance.new("UIStroke")
+	s.Thickness = t
+	s.Transparency = tr or 0
+	s.Color = col or C.White
+	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	s.Parent = p
+	return s
+end
+
+local function pad(p, l, r, t, b)
+	local pd = Instance.new("UIPadding")
+	pd.PaddingLeft   = UDim.new(0, l or 0)
+	pd.PaddingRight  = UDim.new(0, r or 0)
+	pd.PaddingTop    = UDim.new(0, t or 0)
+	pd.PaddingBottom = UDim.new(0, b or 0)
+	pd.Parent = p
+	return pd
+end
+
+local function tween(o, i, p)
+	local t = TweenService:Create(o, i, p)
+	t:Play()
+	return t
+end
+
+local function createShadow(parent, offset, blur, color, transparency)
+	local shadow = Instance.new("ImageLabel")
+	shadow.Name = "Shadow"
+	shadow.Size = UDim2.new(1, blur*2, 1, blur*2)
+	shadow.Position = UDim2.new(0, -blur + (offset or 0), 0, -blur + (offset or 4))
+	shadow.BackgroundTransparency = 1
+	shadow.Image = "rbxassetid://5554236805"
+	shadow.ImageColor3 = color or C.Black
+	shadow.ImageTransparency = transparency or 0.85
+	shadow.ScaleType = Enum.ScaleType.Slice
+	shadow.SliceCenter = Rect.new(23, 23, 277, 277)
+	shadow.ZIndex = parent.ZIndex - 1
+	shadow.Parent = parent
+	return shadow
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CONSTRUCTOR
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+function MafiaScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, playerState, onShowEventCard)
+	log("=== CREATING MafiaScreen ===")
+	local self = setmetatable({}, MafiaScreen)
+	self.screenGui = screenGui
+	self.playerState = playerState or {}
+	self.showBlur = showBlurFunc
+	self.hideBlur = hideBlurFunc
+	self.isVisible = false
+	self.currentView = "main" -- main, families, operation
+	self.operationModal = nil
+	self.heistProgress = nil
+	-- CRITICAL FIX #320: Callback to show event card in main UI (like BitLife)
+	self.onShowEventCard = onShowEventCard
+	
+	self:createUI()
+	
+	-- CRITICAL FIX #467: Store instance reference for module-level callbacks
+	mafiaScreenInstance = self
+	
+	-- CRITICAL FIX #468: Register callback for module-level purchase detection
+	local function onMafiaPurchased()
+		log("Purchase callback fired!")
+		
+		-- Hide any result popup first
+		if self.resultOverlay and self.resultOverlay.Visible then
+			self:hideResult()
+		end
+		
+		-- Auto-retry joining the family if we were trying to join
+		if pendingFamilyJoin and self.isVisible then
+			local familyId = pendingFamilyJoin
+			pendingFamilyJoin = nil
+			
+			-- Small delay to ensure server cache is updated
+			task.delay(0.5, function()
+				if self.isVisible then
+					log("Auto-retrying join for family:", familyId)
+					self:attemptJoinFamily(familyId)
+				end
+			end)
+		else
+			-- Just refresh the screen
+			if self.isVisible then
+				task.delay(0.3, function()
+					self:refreshContent()
+				end)
+			end
+		end
+	end
+	
+	table.insert(purchaseCallbacks, onMafiaPurchased)
+	
+	-- Also listen for server confirmation
+	if GamepassPurchased then
+		GamepassPurchased.OnClientEvent:Connect(function(gamepassKey)
+			if gamepassKey == "MAFIA" then
+				hasMafiaGamepass = true
+				log("Server confirmed Mafia gamepass!")
+				onMafiaPurchased()
+			end
+		end)
+	end
+	
+	log("✅ MafiaScreen created successfully")
+	return self
+end
+
+function MafiaScreen:updateState(newState)
+	if newState then 
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #27: Detect new life and reset mafia state display
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local wasAge = self.playerState and self.playerState.Age or 0
+		local newAge = newState.Age or 0
+		local isNewLife = (wasAge > 5 and newAge <= 1)
+		
+		self.playerState = newState 
+		
+		-- Force refresh on new life to show correct mafia status (should be not in mob)
+		if isNewLife or self.isVisible then
+			self:refreshContent()
+		end
+	end
+end
+
+function MafiaScreen:getMobState()
+	local state = self.playerState
+	if not state then return nil end
+	return state.MobState
+end
+
+function MafiaScreen:isInMob()
+	local mobState = self:getMobState()
+	return mobState and mobState.inMob
+end
+
+function MafiaScreen:getAge()
+	local state = self.playerState
+	if not state then return 18 end
+	return state.Age or 18
+end
+
+function MafiaScreen:getMoney()
+	local state = self.playerState
+	if not state then return 0 end
+	return state.Money or 0
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- UI CREATION
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+function MafiaScreen:createUI()
+	-- Main overlay (dark theme for mafia)
+	self.overlay = Instance.new("Frame")
+	self.overlay.Name = "MafiaScreen"
+	self.overlay.Size = UDim2.fromScale(1, 1)
+	self.overlay.Position = UDim2.fromScale(0, 0)
+	self.overlay.BackgroundColor3 = MafiaColors.Dark
+	self.overlay.BorderSizePixel = 0
+	self.overlay.Visible = false
+	self.overlay.ZIndex = 100
+	self.overlay.Parent = self.screenGui
+
+	-- Main container
+	self.container = Instance.new("Frame")
+	self.container.Name = "Container"
+	self.container.Size = UDim2.new(1, 0, 1, -px(50)) -- Leave room for header
+	self.container.Position = UDim2.new(0, 0, 0, px(50))
+	self.container.BackgroundTransparency = 1
+	self.container.Parent = self.overlay
+	
+	-- Header
+	self:createHeader()
+	
+	-- Scrolling content
+	self:createScrollContent()
+	
+	-- Operation modal (for choice-based scenarios)
+	self:createOperationModal()
+	
+	-- Result popup
+	self:createResultPopup()
+end
+
+function MafiaScreen:createHeader()
+	local header = Instance.new("Frame")
+	header.Name = "Header"
+	header.Size = UDim2.new(1, 0, 0, px(50))
+	header.Position = UDim2.fromScale(0, 0)
+	header.BackgroundColor3 = MafiaColors.DarkCard
+	header.BorderSizePixel = 0
+	header.ZIndex = 101
+	header.Parent = self.overlay
+	
+	-- Close button
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Name = "CloseBtn"
+	closeBtn.Size = UDim2.new(0, px(40), 0, px(40))
+	closeBtn.Position = UDim2.new(0, px(5), 0.5, 0)
+	closeBtn.AnchorPoint = Vector2.new(0, 0.5)
+	closeBtn.BackgroundColor3 = MafiaColors.DarkBorder
+	closeBtn.Text = "✕"
+	closeBtn.TextColor3 = C.White
+	closeBtn.TextSize = textSize(18)
+	closeBtn.Font = Enum.Font.GothamBold
+	closeBtn.ZIndex = 102
+	closeBtn.Parent = header
+	corner(closeBtn, 8)
+	
+	closeBtn.MouseButton1Click:Connect(function()
+		self:hide()
+	end)
+	
+	-- Title
+	self.headerTitle = Instance.new("TextLabel")
+	self.headerTitle.Name = "Title"
+	self.headerTitle.Size = UDim2.new(1, -px(100), 1, 0)
+	self.headerTitle.Position = UDim2.new(0.5, 0, 0, 0)
+	self.headerTitle.AnchorPoint = Vector2.new(0.5, 0)
+	self.headerTitle.BackgroundTransparency = 1
+	self.headerTitle.Text = "🔫 ORGANIZED CRIME"
+	self.headerTitle.TextColor3 = MafiaColors.Gold
+	self.headerTitle.TextSize = textSize(22)
+	self.headerTitle.Font = Enum.Font.GothamBold
+	self.headerTitle.ZIndex = 102
+	self.headerTitle.Parent = header
+end
+
+function MafiaScreen:createScrollContent()
+	self.scroll = Instance.new("ScrollingFrame")
+	self.scroll.Name = "ContentScroll"
+	self.scroll.Size = UDim2.new(1, 0, 1, 0)
+	self.scroll.Position = UDim2.fromScale(0, 0)
+	self.scroll.BackgroundTransparency = 1
+	self.scroll.BorderSizePixel = 0
+	self.scroll.ScrollBarThickness = 4
+	self.scroll.ScrollBarImageColor3 = MafiaColors.Gold
+	self.scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+	self.scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	self.scroll.Parent = self.container
+	
+	local layout = Instance.new("UIListLayout")
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Padding = UDim.new(0, padSize(12))
+	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	layout.Parent = self.scroll
+	
+	pad(self.scroll, padSize(12), padSize(12), padSize(12), padSize(12))
+end
+
+function MafiaScreen:createOperationModal()
+	-- Full-screen modal for choice-based operations
+	self.modalOverlay = Instance.new("Frame")
+	self.modalOverlay.Name = "OperationModal"
+	self.modalOverlay.Size = UDim2.fromScale(1, 1)
+	self.modalOverlay.BackgroundColor3 = C.Black
+	self.modalOverlay.BackgroundTransparency = 0.5
+	self.modalOverlay.Visible = false
+	self.modalOverlay.ZIndex = 200
+	self.modalOverlay.Parent = self.screenGui
+	
+	self.modalContainer = Instance.new("Frame")
+	self.modalContainer.Name = "ModalContent"
+	self.modalContainer.Size = UDim2.new(0, cardWidth(), 0, px(400))
+	self.modalContainer.Position = UDim2.fromScale(0.5, 0.5)
+	self.modalContainer.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.modalContainer.BackgroundColor3 = MafiaColors.DarkCard
+	self.modalContainer.ZIndex = 201
+	self.modalContainer.Parent = self.modalOverlay
+	corner(self.modalContainer, 16)
+	stroke(self.modalContainer, 2, 0, MafiaColors.Gold)
+	createShadow(self.modalContainer, 0, 20, C.Black, 0.7)
+	
+	-- Modal title
+	self.modalTitle = Instance.new("TextLabel")
+	self.modalTitle.Name = "ModalTitle"
+	self.modalTitle.Size = UDim2.new(1, -px(24), 0, px(50))
+	self.modalTitle.Position = UDim2.new(0, px(12), 0, px(12))
+	self.modalTitle.BackgroundTransparency = 1
+	self.modalTitle.Text = "🏦 THE HEIST"
+	self.modalTitle.TextColor3 = MafiaColors.Gold
+	self.modalTitle.TextSize = textSize(24)
+	self.modalTitle.Font = Enum.Font.GothamBold
+	self.modalTitle.TextXAlignment = Enum.TextXAlignment.Center
+	self.modalTitle.ZIndex = 202
+	self.modalTitle.Parent = self.modalContainer
+	
+	-- Modal description
+	self.modalDesc = Instance.new("TextLabel")
+	self.modalDesc.Name = "ModalDesc"
+	self.modalDesc.Size = UDim2.new(1, -px(24), 0, px(80))
+	self.modalDesc.Position = UDim2.new(0, px(12), 0, px(70))
+	self.modalDesc.BackgroundTransparency = 1
+	self.modalDesc.Text = "Description goes here..."
+	self.modalDesc.TextColor3 = C.White
+	self.modalDesc.TextSize = textSize(16)
+	self.modalDesc.Font = Enum.Font.Gotham
+	self.modalDesc.TextWrapped = true
+	self.modalDesc.TextXAlignment = Enum.TextXAlignment.Center
+	self.modalDesc.ZIndex = 202
+	self.modalDesc.Parent = self.modalContainer
+	
+	-- Choice buttons container
+	self.choicesContainer = Instance.new("Frame")
+	self.choicesContainer.Name = "Choices"
+	self.choicesContainer.Size = UDim2.new(1, -px(24), 0, px(200))
+	self.choicesContainer.Position = UDim2.new(0, px(12), 0, px(160))
+	self.choicesContainer.BackgroundTransparency = 1
+	self.choicesContainer.ZIndex = 202
+	self.choicesContainer.Parent = self.modalContainer
+	
+	local choiceLayout = Instance.new("UIListLayout")
+	choiceLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	choiceLayout.Padding = UDim.new(0, px(10))
+	choiceLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	choiceLayout.Parent = self.choicesContainer
+end
+
+function MafiaScreen:createResultPopup()
+	self.resultOverlay = Instance.new("Frame")
+	self.resultOverlay.Name = "ResultPopup"
+	self.resultOverlay.Size = UDim2.fromScale(1, 1)
+	self.resultOverlay.BackgroundColor3 = C.Black
+	self.resultOverlay.BackgroundTransparency = 0.6
+	self.resultOverlay.Visible = false
+	self.resultOverlay.ZIndex = 300
+	self.resultOverlay.Parent = self.screenGui
+	
+	self.resultCard = Instance.new("Frame")
+	self.resultCard.Name = "ResultCard"
+	self.resultCard.Size = UDim2.new(0, cardWidth(), 0, px(250))
+	self.resultCard.Position = UDim2.fromScale(0.5, 0.5)
+	self.resultCard.AnchorPoint = Vector2.new(0.5, 0.5)
+	self.resultCard.BackgroundColor3 = MafiaColors.DarkCard
+	self.resultCard.ZIndex = 301
+	self.resultCard.Parent = self.resultOverlay
+	corner(self.resultCard, 16)
+	stroke(self.resultCard, 2, 0, MafiaColors.Gold)
+	
+	self.resultEmoji = Instance.new("TextLabel")
+	self.resultEmoji.Size = UDim2.new(1, 0, 0, px(60))
+	self.resultEmoji.Position = UDim2.new(0, 0, 0, px(20))
+	self.resultEmoji.BackgroundTransparency = 1
+	self.resultEmoji.Text = "💰"
+	self.resultEmoji.TextSize = textSize(48)
+	self.resultEmoji.ZIndex = 302
+	self.resultEmoji.Parent = self.resultCard
+	
+	self.resultTitle = Instance.new("TextLabel")
+	self.resultTitle.Size = UDim2.new(1, -px(24), 0, px(40))
+	self.resultTitle.Position = UDim2.new(0, px(12), 0, px(85))
+	self.resultTitle.BackgroundTransparency = 1
+	self.resultTitle.Text = "SUCCESS!"
+	self.resultTitle.TextColor3 = C.Green
+	self.resultTitle.TextSize = textSize(28)
+	self.resultTitle.Font = Enum.Font.GothamBold
+	self.resultTitle.ZIndex = 302
+	self.resultTitle.Parent = self.resultCard
+	
+	self.resultMessage = Instance.new("TextLabel")
+	self.resultMessage.Size = UDim2.new(1, -px(24), 0, px(60))
+	self.resultMessage.Position = UDim2.new(0, px(12), 0, px(125))
+	self.resultMessage.BackgroundTransparency = 1
+	self.resultMessage.Text = "You earned $50,000!"
+	self.resultMessage.TextColor3 = C.White
+	self.resultMessage.TextSize = textSize(16)
+	self.resultMessage.Font = Enum.Font.Gotham
+	self.resultMessage.TextWrapped = true
+	self.resultMessage.ZIndex = 302
+	self.resultMessage.Parent = self.resultCard
+	
+	local okBtn = Instance.new("TextButton")
+	okBtn.Name = "OKBtn"
+	okBtn.Size = UDim2.new(0.8, 0, 0, btnHeight(44))
+	okBtn.Position = UDim2.new(0.5, 0, 1, -px(60))
+	okBtn.AnchorPoint = Vector2.new(0.5, 0)
+	okBtn.BackgroundColor3 = MafiaColors.Gold
+	okBtn.Text = "Continue"
+	okBtn.TextColor3 = C.Black
+	okBtn.TextSize = textSize(18)
+	okBtn.Font = Enum.Font.GothamBold
+	okBtn.ZIndex = 302
+	okBtn.Parent = self.resultCard
+	corner(okBtn, 10)
+	
+	-- CRITICAL FIX #470: Store reference for retry functionality
+	self.resultOkBtn = okBtn
+	
+	okBtn.MouseButton1Click:Connect(function()
+		-- CRITICAL FIX #471: If there's a pending family join, retry it
+		if pendingFamilyJoin then
+			local familyId = pendingFamilyJoin
+			self:hideResult()
+			task.delay(0.2, function()
+				self:attemptJoinFamily(familyId)
+			end)
+		else
+			self:hideResult()
+		end
+	end)
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CONTENT BUILDING
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+function MafiaScreen:refreshContent()
+	-- Clear existing content
+	for _, child in ipairs(self.scroll:GetChildren()) do
+		if child:IsA("Frame") then
+			child:Destroy()
+		end
+	end
+	
+	local mobState = self:getMobState()
+	
+	if mobState and mobState.inMob then
+		self:buildMobDashboard(mobState)
+	else
+		self:buildFamilySelection()
+	end
+end
+
+function MafiaScreen:buildFamilySelection()
+	-- Title card
+	local titleCard = self:createCard("Join the Underworld", 1)
+	
+	local desc = Instance.new("TextLabel")
+	desc.Size = UDim2.new(1, 0, 0, px(60))
+	desc.BackgroundTransparency = 1
+	desc.Text = "Choose a crime family to join. Each family has unique operations, ranks, and culture. Once you join, leaving is... difficult."
+	desc.TextColor3 = C.Gray400
+	desc.TextSize = textSize(14)
+	desc.Font = Enum.Font.Gotham
+	desc.TextWrapped = true
+	desc.TextXAlignment = Enum.TextXAlignment.Center
+	desc.Parent = titleCard
+	
+	-- Age requirement check
+	if self:getAge() < 18 then
+		local ageWarning = self:createCard("⚠️ Too Young", 2)
+		local ageText = Instance.new("TextLabel")
+		ageText.Size = UDim2.new(1, 0, 0, px(40))
+		ageText.BackgroundTransparency = 1
+		ageText.Text = "You must be at least 18 years old to join organized crime."
+		ageText.TextColor3 = C.Red
+		ageText.TextSize = textSize(16)
+		ageText.Font = Enum.Font.GothamMedium
+		ageText.TextWrapped = true
+		ageText.Parent = ageWarning
+		return
+	end
+	
+	-- Family cards
+	for i, family in ipairs(CrimeFamilies) do
+		self:createFamilyCard(family, i + 1)
+	end
+end
+
+function MafiaScreen:createFamilyCard(family, order)
+	local card = Instance.new("Frame")
+	card.Name = "Family_" .. family.id
+	card.Size = UDim2.new(0, cardWidth(), 0, px(140))
+	card.BackgroundColor3 = MafiaColors.DarkCard
+	card.LayoutOrder = order
+	card.Parent = self.scroll
+	corner(card, 12)
+	stroke(card, 2, 0.5, family.color)
+	
+	-- Emoji
+	local emoji = Instance.new("TextLabel")
+	emoji.Size = UDim2.new(0, px(60), 0, px(60))
+	emoji.Position = UDim2.new(0, px(12), 0, px(12))
+	emoji.BackgroundTransparency = 1
+	emoji.Text = family.emoji
+	emoji.TextSize = textSize(40)
+	emoji.Parent = card
+	
+	-- Name
+	local name = Instance.new("TextLabel")
+	name.Size = UDim2.new(1, -px(90), 0, px(28))
+	name.Position = UDim2.new(0, px(80), 0, px(12))
+	name.BackgroundTransparency = 1
+	name.Text = family.name
+	name.TextColor3 = family.color
+	name.TextSize = textSize(20)
+	name.Font = Enum.Font.GothamBold
+	name.TextXAlignment = Enum.TextXAlignment.Left
+	name.Parent = card
+	
+	-- Full name
+	local fullName = Instance.new("TextLabel")
+	fullName.Size = UDim2.new(1, -px(90), 0, px(20))
+	fullName.Position = UDim2.new(0, px(80), 0, px(38))
+	fullName.BackgroundTransparency = 1
+	fullName.Text = family.fullName
+	fullName.TextColor3 = C.Gray400
+	fullName.TextSize = textSize(14)
+	fullName.Font = Enum.Font.Gotham
+	fullName.TextXAlignment = Enum.TextXAlignment.Left
+	fullName.Parent = card
+	
+	-- Description
+	local descLabel = Instance.new("TextLabel")
+	descLabel.Size = UDim2.new(1, -px(24), 0, px(40))
+	descLabel.Position = UDim2.new(0, px(12), 0, px(65))
+	descLabel.BackgroundTransparency = 1
+	descLabel.Text = family.description
+	descLabel.TextColor3 = C.Gray300
+	descLabel.TextSize = textSize(13)
+	descLabel.Font = Enum.Font.Gotham
+	descLabel.TextWrapped = true
+	descLabel.TextXAlignment = Enum.TextXAlignment.Left
+	descLabel.Parent = card
+	
+	-- Join button
+	local joinBtn = Instance.new("TextButton")
+	joinBtn.Size = UDim2.new(0, px(100), 0, btnHeight(36))
+	joinBtn.Position = UDim2.new(1, -px(112), 1, -px(48))
+	joinBtn.BackgroundColor3 = family.color
+	joinBtn.Text = "JOIN"
+	joinBtn.TextColor3 = C.White
+	joinBtn.TextSize = textSize(14)
+	joinBtn.Font = Enum.Font.GothamBold
+	joinBtn.Parent = card
+	corner(joinBtn, 8)
+	
+	joinBtn.MouseButton1Click:Connect(function()
+		self:attemptJoinFamily(family.id)
+	end)
+	
+	-- Hover effect
+	joinBtn.MouseEnter:Connect(function()
+		tween(joinBtn, TweenInfo.new(0.15), { BackgroundColor3 = family.colorDark })
+	end)
+	joinBtn.MouseLeave:Connect(function()
+		tween(joinBtn, TweenInfo.new(0.15), { BackgroundColor3 = family.color })
+	end)
+end
+
+function MafiaScreen:buildMobDashboard(mobState)
+	-- Status card
+	self:createStatusCard(mobState)
+	
+	-- Stats card
+	self:createStatsCard(mobState)
+	
+	-- Operations header
+	local opsHeader = self:createCard("⚔️ OPERATIONS", 3)
+	opsHeader.BackgroundColor3 = MafiaColors.DarkBorder
+	
+	-- Operations list
+	if mobState.operations and #mobState.operations > 0 then
+		for i, op in ipairs(mobState.operations) do
+			self:createOperationCard(op, 3 + i)
+		end
+	else
+		local noOps = self:createCard("No operations available", 4)
+		local noOpsText = Instance.new("TextLabel")
+		noOpsText.Size = UDim2.new(1, 0, 0, px(30))
+		noOpsText.BackgroundTransparency = 1
+		noOpsText.Text = "Gain more respect to unlock operations."
+		noOpsText.TextColor3 = C.Gray500
+		noOpsText.TextSize = textSize(14)
+		noOpsText.Font = Enum.Font.Gotham
+		noOpsText.Parent = noOps
+	end
+	
+	-- Special operations header
+	local specialHeader = self:createCard("💎 SPECIAL JOBS", 100)
+	specialHeader.BackgroundColor3 = MafiaColors.Blood
+	
+	-- Bank Robbery (always available if rank >= 3)
+	if mobState.rankLevel >= 3 then
+		self:createBankRobberyCard(101)
+	else
+		local lockedCard = self:createCard("🔒 Rank Up Required", 101)
+		local lockedText = Instance.new("TextLabel")
+		lockedText.Size = UDim2.new(1, 0, 0, px(30))
+		lockedText.BackgroundTransparency = 1
+		lockedText.Text = "Reach rank 3 to unlock special jobs."
+		lockedText.TextColor3 = C.Gray500
+		lockedText.TextSize = textSize(14)
+		lockedText.Font = Enum.Font.Gotham
+		lockedText.Parent = lockedCard
+	end
+	
+	-- Leave family button
+	self:createLeaveButton(200)
+end
+
+function MafiaScreen:createStatusCard(mobState)
+	local card = Instance.new("Frame")
+	card.Name = "StatusCard"
+	card.Size = UDim2.new(0, cardWidth(), 0, px(100))
+	card.BackgroundColor3 = MafiaColors.DarkCard
+	card.LayoutOrder = 1
+	card.Parent = self.scroll
+	corner(card, 12)
+	
+	-- Family color accent
+	local familyColor = Color3.fromRGB(255, 255, 255)
+	if mobState.familyColor then
+		familyColor = Color3.new(mobState.familyColor[1], mobState.familyColor[2], mobState.familyColor[3])
+	end
+	stroke(card, 3, 0, familyColor)
+	
+	-- Family emoji and name
+	local familyLabel = Instance.new("TextLabel")
+	familyLabel.Size = UDim2.new(1, -px(24), 0, px(30))
+	familyLabel.Position = UDim2.new(0, px(12), 0, px(12))
+	familyLabel.BackgroundTransparency = 1
+	familyLabel.Text = (mobState.familyEmoji or "🔫") .. " " .. (mobState.familyName or "Crime Family")
+	familyLabel.TextColor3 = familyColor
+	familyLabel.TextSize = textSize(22)
+	familyLabel.Font = Enum.Font.GothamBold
+	familyLabel.TextXAlignment = Enum.TextXAlignment.Left
+	familyLabel.Parent = card
+	
+	-- Rank
+	local rankLabel = Instance.new("TextLabel")
+	rankLabel.Size = UDim2.new(0.5, -px(12), 0, px(24))
+	rankLabel.Position = UDim2.new(0, px(12), 0, px(48))
+	rankLabel.BackgroundTransparency = 1
+	rankLabel.Text = (mobState.rankEmoji or "👤") .. " " .. (mobState.rankName or "Associate")
+	rankLabel.TextColor3 = MafiaColors.Gold
+	rankLabel.TextSize = textSize(18)
+	rankLabel.Font = Enum.Font.GothamMedium
+	rankLabel.TextXAlignment = Enum.TextXAlignment.Left
+	rankLabel.Parent = card
+	
+	-- Respect bar
+	local respectLabel = Instance.new("TextLabel")
+	respectLabel.Size = UDim2.new(0.5, -px(12), 0, px(20))
+	respectLabel.Position = UDim2.new(0.5, 0, 0, px(48))
+	respectLabel.BackgroundTransparency = 1
+	respectLabel.Text = "Respect: " .. (mobState.respect or 0)
+	respectLabel.TextColor3 = C.White
+	respectLabel.TextSize = textSize(14)
+	respectLabel.Font = Enum.Font.Gotham
+	respectLabel.TextXAlignment = Enum.TextXAlignment.Right
+	respectLabel.Parent = card
+	
+	-- Heat indicator
+	local heat = mobState.heat or 0
+	local heatColor = heat > 70 and C.Red or (heat > 40 and C.Orange or C.Green)
+	local heatLabel = Instance.new("TextLabel")
+	heatLabel.Size = UDim2.new(1, -px(24), 0, px(20))
+	heatLabel.Position = UDim2.new(0, px(12), 0, px(74))
+	heatLabel.BackgroundTransparency = 1
+	heatLabel.Text = "🔥 Heat: " .. heat .. "%"
+	heatLabel.TextColor3 = heatColor
+	heatLabel.TextSize = textSize(14)
+	heatLabel.Font = Enum.Font.GothamMedium
+	heatLabel.TextXAlignment = Enum.TextXAlignment.Left
+	heatLabel.Parent = card
+end
+
+function MafiaScreen:createStatsCard(mobState)
+	local card = Instance.new("Frame")
+	card.Name = "StatsCard"
+	card.Size = UDim2.new(0, cardWidth(), 0, px(80))
+	card.BackgroundColor3 = MafiaColors.DarkCard
+	card.LayoutOrder = 2
+	card.Parent = self.scroll
+	corner(card, 12)
+	
+	-- Stats grid
+	local stats = {
+		{ label = "Years", value = mobState.yearsInMob or 0 },
+		{ label = "Ops Done", value = mobState.operationsCompleted or 0 },
+		{ label = "Earnings", value = formatMoney(mobState.earnings or 0) },
+		{ label = "Loyalty", value = (mobState.loyalty or 100) .. "%" },
+	}
+	
+	for i, stat in ipairs(stats) do
+		local statFrame = Instance.new("Frame")
+		statFrame.Size = UDim2.new(0.25, 0, 1, 0)
+		statFrame.Position = UDim2.new((i-1) * 0.25, 0, 0, 0)
+		statFrame.BackgroundTransparency = 1
+		statFrame.Parent = card
+		
+		local valueLabel = Instance.new("TextLabel")
+		valueLabel.Size = UDim2.new(1, 0, 0.5, 0)
+		valueLabel.Position = UDim2.new(0, 0, 0.1, 0)
+		valueLabel.BackgroundTransparency = 1
+		valueLabel.Text = tostring(stat.value)
+		valueLabel.TextColor3 = MafiaColors.Gold
+		valueLabel.TextSize = textSize(18)
+		valueLabel.Font = Enum.Font.GothamBold
+		valueLabel.Parent = statFrame
+		
+		local labelLabel = Instance.new("TextLabel")
+		labelLabel.Size = UDim2.new(1, 0, 0.4, 0)
+		labelLabel.Position = UDim2.new(0, 0, 0.55, 0)
+		labelLabel.BackgroundTransparency = 1
+		labelLabel.Text = stat.label
+		labelLabel.TextColor3 = C.Gray400
+		labelLabel.TextSize = textSize(12)
+		labelLabel.Font = Enum.Font.Gotham
+		labelLabel.Parent = statFrame
+	end
+end
+
+function MafiaScreen:createOperationCard(op, order)
+	local card = Instance.new("Frame")
+	card.Name = "Op_" .. op.id
+	card.Size = UDim2.new(0, cardWidth(), 0, px(100))
+	card.BackgroundColor3 = MafiaColors.DarkCard
+	card.LayoutOrder = order
+	card.Parent = self.scroll
+	corner(card, 10)
+	stroke(card, 1, 0.6, MafiaColors.DarkBorder)
+	
+	-- Emoji
+	local emoji = Instance.new("TextLabel")
+	emoji.Size = UDim2.new(0, px(50), 0, px(50))
+	emoji.Position = UDim2.new(0, px(10), 0, px(10))
+	emoji.BackgroundTransparency = 1
+	emoji.Text = op.emoji or "⚔️"
+	emoji.TextSize = textSize(32)
+	emoji.Parent = card
+	
+	-- Name
+	local name = Instance.new("TextLabel")
+	name.Size = UDim2.new(1, -px(140), 0, px(24))
+	name.Position = UDim2.new(0, px(65), 0, px(10))
+	name.BackgroundTransparency = 1
+	name.Text = op.name
+	name.TextColor3 = C.White
+	name.TextSize = textSize(16)
+	name.Font = Enum.Font.GothamBold
+	name.TextXAlignment = Enum.TextXAlignment.Left
+	name.Parent = card
+	
+	-- Description
+	local desc = Instance.new("TextLabel")
+	desc.Size = UDim2.new(1, -px(140), 0, px(30))
+	desc.Position = UDim2.new(0, px(65), 0, px(34))
+	desc.BackgroundTransparency = 1
+	desc.Text = op.description or ""
+	desc.TextColor3 = C.Gray400
+	desc.TextSize = textSize(12)
+	desc.Font = Enum.Font.Gotham
+	desc.TextWrapped = true
+	desc.TextXAlignment = Enum.TextXAlignment.Left
+	desc.Parent = card
+	
+	-- Risk/Reward
+	local riskColor = op.risk > 60 and C.Red or (op.risk > 40 and C.Orange or C.Green)
+	local infoLabel = Instance.new("TextLabel")
+	infoLabel.Size = UDim2.new(1, -px(24), 0, px(18))
+	infoLabel.Position = UDim2.new(0, px(12), 1, -px(28))
+	infoLabel.BackgroundTransparency = 1
+	infoLabel.Text = string.format("Risk: %d%% • Reward: %s-%s • +%d Respect", 
+		op.risk, 
+		formatMoney(op.minReward or 0), 
+		formatMoney(op.maxReward or 0),
+		op.respect or 0
+	)
+	infoLabel.TextColor3 = riskColor
+	infoLabel.TextSize = textSize(11)
+	infoLabel.Font = Enum.Font.Gotham
+	infoLabel.TextXAlignment = Enum.TextXAlignment.Left
+	infoLabel.Parent = card
+	
+	-- Do operation button
+	local doBtn = Instance.new("TextButton")
+	doBtn.Size = UDim2.new(0, px(70), 0, btnHeight(50))
+	doBtn.Position = UDim2.new(1, -px(80), 0.5, 0)
+	doBtn.AnchorPoint = Vector2.new(0, 0.5)
+	doBtn.BackgroundColor3 = MafiaColors.Gold
+	doBtn.Text = "DO IT"
+	doBtn.TextColor3 = C.Black
+	doBtn.TextSize = textSize(14)
+	doBtn.Font = Enum.Font.GothamBold
+	doBtn.Parent = card
+	corner(doBtn, 8)
+	
+	doBtn.MouseButton1Click:Connect(function()
+		-- CRITICAL FIX #320: All operations now use scenario-based event cards
+		-- Check if this operation has scenarios (most do now)
+		local scenarioOps = {
+			"intimidation", "black_market", "cyber", "weapons", "ransom", 
+			"enforcer_hit", "protection", "smuggling", "heist"  -- gambling removed (TOS)
+		}
+		
+		local hasScenario = false
+		for _, scenarioOp in ipairs(scenarioOps) do
+			if op.id == scenarioOp then
+				hasScenario = true
+				break
+			end
+		end
+		
+		if hasScenario then
+			-- CRITICAL FIX #320: Close mafia screen and show event card in main UI
+			self:startScenarioOperation(op)
+		else
+			-- Fallback to direct operation for ops without scenarios
+			self:doOperation(op.id)
+		end
+	end)
+end
+
+function MafiaScreen:createBankRobberyCard(order)
+	local card = Instance.new("Frame")
+	card.Name = "BankRobbery"
+	card.Size = UDim2.new(0, cardWidth(), 0, px(120))
+	card.BackgroundColor3 = MafiaColors.DarkCard
+	card.LayoutOrder = order
+	card.Parent = self.scroll
+	corner(card, 12)
+	stroke(card, 2, 0, MafiaColors.Gold)
+	
+	-- Big emoji
+	local emoji = Instance.new("TextLabel")
+	emoji.Size = UDim2.new(0, px(60), 0, px(60))
+	emoji.Position = UDim2.new(0, px(12), 0.5, 0)
+	emoji.AnchorPoint = Vector2.new(0, 0.5)
+	emoji.BackgroundTransparency = 1
+	emoji.Text = "🏦"
+	emoji.TextSize = textSize(48)
+	emoji.Parent = card
+	
+	-- Title
+	local title = Instance.new("TextLabel")
+	title.Size = UDim2.new(1, -px(160), 0, px(28))
+	title.Position = UDim2.new(0, px(80), 0, px(20))
+	title.BackgroundTransparency = 1
+	title.Text = "BANK HEIST"
+	title.TextColor3 = MafiaColors.Gold
+	title.TextSize = textSize(22)
+	title.Font = Enum.Font.GothamBold
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.Parent = card
+	
+	-- Description
+	local desc = Instance.new("TextLabel")
+	desc.Size = UDim2.new(1, -px(160), 0, px(40))
+	desc.Position = UDim2.new(0, px(80), 0, px(50))
+	desc.BackgroundTransparency = 1
+	desc.Text = "High-risk, high-reward. Make critical choices that determine your fate!"
+	desc.TextColor3 = C.Gray300
+	desc.TextSize = textSize(13)
+	desc.Font = Enum.Font.Gotham
+	desc.TextWrapped = true
+	desc.TextXAlignment = Enum.TextXAlignment.Left
+	desc.Parent = card
+	
+	-- Potential reward
+	local rewardLabel = Instance.new("TextLabel")
+	rewardLabel.Size = UDim2.new(1, -px(160), 0, px(20))
+	rewardLabel.Position = UDim2.new(0, px(80), 0, px(90))
+	rewardLabel.BackgroundTransparency = 1
+	rewardLabel.Text = "💰 Potential: $15K - $150K"
+	rewardLabel.TextColor3 = C.Green
+	rewardLabel.TextSize = textSize(14)
+	rewardLabel.Font = Enum.Font.GothamMedium
+	rewardLabel.TextXAlignment = Enum.TextXAlignment.Left
+	rewardLabel.Parent = card
+	
+	-- Start button
+	local startBtn = Instance.new("TextButton")
+	startBtn.Size = UDim2.new(0, px(70), 0, px(70))
+	startBtn.Position = UDim2.new(1, -px(85), 0.5, 0)
+	startBtn.AnchorPoint = Vector2.new(0, 0.5)
+	startBtn.BackgroundColor3 = MafiaColors.Blood
+	startBtn.Text = "🔫"
+	startBtn.TextSize = textSize(32)
+	startBtn.Parent = card
+	corner(startBtn, 10)
+	
+	startBtn.MouseButton1Click:Connect(function()
+		self:startBankRobbery()
+	end)
+end
+
+function MafiaScreen:createLeaveButton(order)
+	local card = Instance.new("Frame")
+	card.Name = "LeaveCard"
+	card.Size = UDim2.new(0, cardWidth(), 0, px(60))
+	card.BackgroundTransparency = 1
+	card.LayoutOrder = order
+	card.Parent = self.scroll
+	
+	local leaveBtn = Instance.new("TextButton")
+	leaveBtn.Size = UDim2.new(1, 0, 0, btnHeight(50))
+	leaveBtn.Position = UDim2.new(0.5, 0, 0.5, 0)
+	leaveBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+	leaveBtn.BackgroundColor3 = C.RedDark
+	leaveBtn.Text = "⚠️ Leave the Family"
+	leaveBtn.TextColor3 = C.White
+	leaveBtn.TextSize = textSize(16)
+	leaveBtn.Font = Enum.Font.GothamBold
+	leaveBtn.Parent = card
+	corner(leaveBtn, 10)
+	
+	leaveBtn.MouseButton1Click:Connect(function()
+		self:attemptLeaveFamily()
+	end)
+end
+
+function MafiaScreen:createCard(title, order)
+	local card = Instance.new("Frame")
+	card.Name = "Card"
+	card.Size = UDim2.new(0, cardWidth(), 0, px(60))
+	card.BackgroundColor3 = MafiaColors.DarkCard
+	card.LayoutOrder = order
+	card.Parent = self.scroll
+	corner(card, 10)
+	
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -px(24), 0, px(28))
+	titleLabel.Position = UDim2.new(0, px(12), 0, px(10))
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Text = title
+	titleLabel.TextColor3 = C.White
+	titleLabel.TextSize = textSize(18)
+	titleLabel.Font = Enum.Font.GothamBold
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Center
+	titleLabel.Parent = card
+	
+	return card
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- BANK ROBBERY MINIGAME (Choice-based scenarios)
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+function MafiaScreen:startBankRobbery()
+	self.heistProgress = {
+		currentScenario = "entry",
+		reward = 0,
+		totalRisk = 0,
+		choices = {},
+	}
+	
+	self:showScenario("entry")
+end
+
+function MafiaScreen:showScenario(scenarioId)
+	local scenario = nil
+	for _, s in ipairs(BankRobberyScenarios) do
+		if s.id == scenarioId then
+			scenario = s
+			break
+		end
+	end
+	
+	if not scenario then
+		-- End the heist
+		self:endHeist()
+		return
+	end
+	
+	-- Update modal
+	self.modalTitle.Text = scenario.title
+	self.modalDesc.Text = scenario.description
+	
+	-- Clear old choices
+	for _, child in ipairs(self.choicesContainer:GetChildren()) do
+		if child:IsA("TextButton") then
+			child:Destroy()
+		end
+	end
+	
+	-- Create choice buttons
+	for i, choice in ipairs(scenario.choices) do
+		local choiceBtn = Instance.new("TextButton")
+		choiceBtn.Name = "Choice" .. i
+		choiceBtn.Size = UDim2.new(1, 0, 0, btnHeight(50))
+		choiceBtn.BackgroundColor3 = MafiaColors.DarkBorder
+		choiceBtn.Text = choice.text
+		choiceBtn.TextColor3 = C.White
+		choiceBtn.TextSize = textSize(14)
+		choiceBtn.Font = Enum.Font.GothamMedium
+		choiceBtn.TextWrapped = true
+		choiceBtn.LayoutOrder = i
+		choiceBtn.Parent = self.choicesContainer
+		corner(choiceBtn, 8)
+		
+		-- Risk indicator
+		local riskColor = choice.risk > 40 and C.Red or (choice.risk > 20 and C.Orange or C.Green)
+		stroke(choiceBtn, 2, 0.5, riskColor)
+		
+		choiceBtn.MouseButton1Click:Connect(function()
+			self:makeChoice(choice, scenario)
+		end)
+		
+		choiceBtn.MouseEnter:Connect(function()
+			tween(choiceBtn, TweenInfo.new(0.1), { BackgroundColor3 = MafiaColors.Gold })
+			choiceBtn.TextColor3 = C.Black
+		end)
+		choiceBtn.MouseLeave:Connect(function()
+			tween(choiceBtn, TweenInfo.new(0.1), { BackgroundColor3 = MafiaColors.DarkBorder })
+			choiceBtn.TextColor3 = C.White
+		end)
+	end
+	
+	-- Show modal
+	self.modalOverlay.Visible = true
+	self.modalContainer.Position = UDim2.new(0.5, 0, 0.6, 0)
+	tween(self.modalContainer, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+		Position = UDim2.fromScale(0.5, 0.5)
+	})
+end
+
+function MafiaScreen:makeChoice(choice, scenario)
+	-- Calculate success
+	local roll = math.random(100)
+	local success = roll <= choice.success
+	
+	-- Track progress
+	self.heistProgress.totalRisk = self.heistProgress.totalRisk + choice.risk
+	table.insert(self.heistProgress.choices, {
+		scenario = scenario.id,
+		choice = choice.text,
+		success = success,
+	})
+	
+	if success then
+		-- Add reward if present
+		if choice.reward then
+			local rewardMod = choice.rewardMod or 1
+			self.heistProgress.reward = self.heistProgress.reward + math.floor(choice.reward * rewardMod)
+		end
+		
+		-- Continue to next scenario or end
+		if choice.final then
+			self:endHeist(true)
+		elseif choice.next then
+			task.delay(0.3, function()
+				self:showScenario(choice.next)
+			end)
+		else
+			self:endHeist(true)
+		end
+	else
+		-- Failed - determine consequences
+		local arrest = math.random(100) <= choice.risk
+		self:endHeist(false, arrest)
+	end
+end
+
+function MafiaScreen:endHeist(success, arrested)
+	self.modalOverlay.Visible = false
+	
+	if success then
+		local finalReward = self.heistProgress.reward
+		if finalReward < 5000 then
+			finalReward = math.random(5000, 15000) -- Minimum reward
+		end
+		
+		-- Send to server
+		if DoMobOperation then
+			pcall(function()
+				DoMobOperation:InvokeServer("heist_special", {
+					reward = finalReward,
+					choices = self.heistProgress.choices,
+				})
+			end)
+		end
+		
+		self:showResult(true, "HEIST SUCCESSFUL!", 
+			string.format("You got away with %s!\n\nYour skills impressed the family.", formatMoney(finalReward)),
+			"💰"
+		)
+	else
+		if arrested then
+			self:showResult(false, "BUSTED!", 
+				"The cops got you! You're going to prison.\n\nThe family is not pleased.",
+				"👮"
+			)
+		else
+			self:showResult(false, "HEIST FAILED", 
+				"Something went wrong and you had to abort.\n\nBetter luck next time.",
+				"💨"
+			)
+		end
+	end
+	
+	self.heistProgress = nil
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- OPERATION SCENARIOS (for heist/ransom operations)
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+function MafiaScreen:startOperationScenario(op)
+	local scenarios = OperationScenarios[op.id]
+	if not scenarios or #scenarios == 0 then
+		self:doOperation(op.id)
+		return
+	end
+	
+	self.operationContext = {
+		operation = op,
+		currentStep = 1,
+		successMod = 1.0,
+		riskMod = 1.0,
+		rewardMod = 1.0,
+	}
+	
+	self:showOperationStep()
+end
+
+function MafiaScreen:showOperationStep()
+	local ctx = self.operationContext
+	if not ctx then return end
+	
+	local scenarios = OperationScenarios[ctx.operation.id]
+	local step = scenarios[ctx.currentStep]
+	
+	if not step then
+		-- All steps complete, execute operation with modifiers
+		self:executeModifiedOperation()
+		return
+	end
+	
+	self.modalTitle.Text = step.title
+	self.modalDesc.Text = step.description
+	
+	-- Clear old choices
+	for _, child in ipairs(self.choicesContainer:GetChildren()) do
+		if child:IsA("TextButton") then
+			child:Destroy()
+		end
+	end
+	
+	-- Create choice buttons
+	for i, choice in ipairs(step.choices) do
+		local choiceBtn = Instance.new("TextButton")
+		choiceBtn.Name = "Choice" .. i
+		choiceBtn.Size = UDim2.new(1, 0, 0, btnHeight(50))
+		choiceBtn.BackgroundColor3 = MafiaColors.DarkBorder
+		choiceBtn.Text = choice.text
+		choiceBtn.TextColor3 = C.White
+		choiceBtn.TextSize = textSize(14)
+		choiceBtn.Font = Enum.Font.GothamMedium
+		choiceBtn.TextWrapped = true
+		choiceBtn.LayoutOrder = i
+		choiceBtn.Parent = self.choicesContainer
+		corner(choiceBtn, 8)
+		
+		choiceBtn.MouseButton1Click:Connect(function()
+			-- Apply modifiers
+			ctx.successMod = ctx.successMod * (choice.successMod or 1.0)
+			ctx.riskMod = ctx.riskMod * (choice.riskMod or 1.0)
+			ctx.rewardMod = ctx.rewardMod * (1 - (choice.costMod or 0))
+			
+			ctx.currentStep = ctx.currentStep + 1
+			task.delay(0.2, function()
+				self:showOperationStep()
+			end)
+		end)
+	end
+	
+	self.modalOverlay.Visible = true
+end
+
+function MafiaScreen:executeModifiedOperation()
+	self.modalOverlay.Visible = false
+	
+	local ctx = self.operationContext
+	if not ctx then return end
+	
+	-- Execute operation with modifiers
+	self:doOperation(ctx.operation.id, {
+		successMod = ctx.successMod,
+		riskMod = ctx.riskMod,
+		rewardMod = ctx.rewardMod,
+	})
+	
+	self.operationContext = nil
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- SERVER COMMUNICATION
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+function MafiaScreen:attemptJoinFamily(familyId)
+	if not JoinMob then
+		self:showResult(false, "Error", "Could not connect to server.", "❌")
+		return
+	end
+	
+	local success, result = pcall(function()
+		return JoinMob:InvokeServer(familyId)
+	end)
+	
+	if success and result then
+		if result.success then
+			-- Clear pending join since we succeeded
+			pendingFamilyJoin = nil
+			
+			-- CRITICAL FIX: Update local state immediately with the returned mobState
+			if result.mobState and self.playerState then
+				self.playerState.MobState = result.mobState
+				log("✅ MobState updated: inMob =", result.mobState.inMob)
+			end
+			
+			self:showResult(true, "Welcome to the Family!", result.message or "You've joined.", "🤝")
+			task.delay(1.5, function()
+				self:hideResult() -- CRITICAL FIX: Hide result overlay before refreshing
+				self:refreshContent()
+			end)
+		elseif result.needsGamepass then
+			-- CRITICAL FIX #462: Store pending family for auto-retry after purchase
+			pendingFamilyJoin = familyId
+			log("Storing pending family join:", familyId)
+			
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX #517: Use direct client-side prompt instead of server!
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			promptMafiaGamepassDirect()
+			-- CRITICAL FIX #472: Show retry button for gamepass required
+			self:showResult(false, "Gamepass Required", result.message or "Purchase the Mafia gamepass to join!", "💎", true)
+		else
+			pendingFamilyJoin = nil
+			self:showResult(false, "Rejected", result.message or "The family rejected you.", "❌")
+		end
+	else
+		pendingFamilyJoin = nil
+		self:showResult(false, "Error", "Failed to contact the family.", "❌")
+	end
+end
+
+function MafiaScreen:attemptLeaveFamily()
+	if not LeaveMob then return end
+	
+	local success, result = pcall(function()
+		return LeaveMob:InvokeServer()
+	end)
+	
+	if success and result then
+		if result.success then
+			-- CRITICAL FIX: Update local state immediately
+			if self.playerState and self.playerState.MobState then
+				self.playerState.MobState.inMob = false
+				self.playerState.MobState.familyId = nil
+				self.playerState.MobState.familyName = nil
+			end
+			
+			self:showResult(true, "You're Out", result.message or "You left the family.", "🚪")
+			task.delay(1.5, function()
+				self:hideResult() -- CRITICAL FIX: Hide result overlay before refreshing
+				self:refreshContent()
+			end)
+		elseif result.death then
+			self:showResult(false, "💀 ELIMINATED", result.message or "The family doesn't let people leave...", "☠️")
+		else
+			self:showResult(false, "Can't Leave", result.message or "You can't leave right now.", "⚠️")
+		end
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #320: START SCENARIO OPERATION
+-- Close MafiaScreen and show event card in main UI like BitLife
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+function MafiaScreen:startScenarioOperation(op)
+	-- Hide the mafia screen first
+	self:hide()
+	
+	-- Get the operation scenario from server (if available)
+	-- Or create a local event card format
+	local mobState = self:getMobState()
+	local familyEmoji = mobState and mobState.familyEmoji or "🔫"
+	local familyName = mobState and mobState.familyName or "Crime Family"
+	local familyColor = mobState and mobState.familyColor
+	
+	-- Create event card data in the format LifeClient expects
+	local eventCard = {
+		id = "mafia_scenario_" .. op.id,
+		title = op.emoji .. " " .. op.name,
+		emoji = op.emoji,
+		text = self:getScenarioText(op),
+		isMafiaOperation = true,
+		operationId = op.id,
+		familyName = familyName,
+		familyEmoji = familyEmoji,
+		choices = self:getScenarioChoices(op),
+	}
+	
+	-- Call the callback to show event card in main UI
+	if self.onShowEventCard then
+		self.onShowEventCard(eventCard, function(choiceIndex, accumulatedMods)
+			-- This callback is called when player makes a choice
+			self:processScenarioChoice(op, choiceIndex, accumulatedMods)
+		end)
+	else
+		-- Fallback: just do the operation directly
+		self:doOperation(op.id)
+	end
+end
+
+-- Generate scenario text based on operation type
+function MafiaScreen:getScenarioText(op)
+	local texts = {
+		intimidation = "Time to collect protection money. A local shopkeeper owes the family. You approach the establishment...",
+		black_market = "A shipment of counterfeit goods needs to move through the port. Your contact is waiting. How do you handle this?",
+		cyber = "The tech team has found a vulnerable target. Ransomware is ready to deploy. What's your move?",
+		weapons = "A weapons shipment needs to change hands. The buyer is getting impatient. Execute the deal carefully.",
+		ransom = "Intelligence has identified a high-value target. This is your big score if you pull it off.",
+		enforcer_hit = "The boss has a problem that needs to disappear. This is a test of your loyalty to the family.",
+		protection = "Collection day. Several businesses owe the family money. Time to make the rounds.",
+		smuggling = "Tonight's shipment is coming in. You're running the operation.",
+		heist = "A major score awaits. The target has been scouted. Now it's time to execute.",
+	}
+	return texts[op.id] or op.description or "The family needs you to handle an operation."
+end
+
+-- Generate scenario choices
+function MafiaScreen:getScenarioChoices(op)
+	local defaultChoices = {
+		{
+			text = "Approach carefully and professionally",
+			successMod = 1.1,
+			riskMod = 0.8,
+			feed = "You handled it like a pro.",
+		},
+		{
+			text = "Go in hard - show them who's boss",
+			successMod = 1.0,
+			riskMod = 1.2,
+			rewardMod = 1.2,
+			feed = "Your reputation precedes you.",
+		},
+		{
+			text = "Find an alternative approach",
+			successMod = 1.2,
+			riskMod = 0.6,
+			rewardMod = 0.9,
+			feed = "Smart thinking kept you safe.",
+		},
+	}
+	
+	-- Custom choices for specific operations (with combat options!)
+	local customChoices = {
+		intimidation = {
+			{ text = "🗣️ Talk first, threaten only if needed", successMod = 1.2, riskMod = 0.7, feed = "Diplomacy worked." },
+			{ text = "👊 Beat them up as a warning", successMod = 1.0, riskMod = 1.0, rewardMod = 1.2, feed = "Physical intimidation!", triggersCombat = true },
+			{ text = "😤 Make an example - rough them up good", successMod = 0.9, riskMod = 1.3, rewardMod = 1.4, respectBonus = 15, feed = "Fear is a powerful tool.", triggersCombat = true },
+			{ text = "🤝 Offer protection genuinely", successMod = 1.1, riskMod = 0.5, rewardMod = 0.8, feed = "A long-term relationship begins." },
+		},
+		black_market = {
+			{ text = "💵 Bribe the dock workers", successMod = 1.2, riskMod = 0.6, costMod = 0.15, feed = "Money talks." },
+			{ text = "📦 Use a legitimate shipping front", successMod = 1.1, riskMod = 0.8, feed = "Hidden in plain sight." },
+			{ text = "🌙 Night operation, high speed", successMod = 0.8, riskMod = 1.4, rewardMod = 1.1, feed = "Risky but thrilling." },
+		},
+		cyber = {
+			{ text = "🏢 Target a vulnerable company", successMod = 1.2, riskMod = 0.8, feed = "Easy target, good payout." },
+			{ text = "💰 Go after a bigger fish", successMod = 0.8, riskMod = 1.2, rewardMod = 1.5, feed = "High risk, high reward." },
+			{ text = "🌙 Deploy during off-hours", successMod = 1.3, riskMod = 0.6, feed = "Perfect timing." },
+		},
+		weapons = {
+			{ text = "👁️ Inspect merchandise personally", successMod = 1.0, riskMod = 1.0, feed = "You trust no one but yourself." },
+			{ text = "🤝 Send trusted soldiers", successMod = 1.1, riskMod = 0.9, feed = "Delegating like a boss." },
+			{ text = "📍 Neutral location exchange", successMod = 1.2, riskMod = 0.7, costMod = 0.1, feed = "Professional arrangement." },
+		},
+		ransom = {
+			{ text = "🎭 Quick grab at the nightclub", successMod = 1.0, riskMod = 1.2, feed = "Bold move in public.", triggersCombat = true },
+			{ text = "🚗 Pose as trusted transportation", successMod = 1.2, riskMod = 0.8, feed = "Deception is an art." },
+			{ text = "🕵️ Infiltrate security first", successMod = 1.3, riskMod = 0.6, costMod = 0.15, feed = "Patience pays off." },
+		},
+		enforcer_hit = {
+			{ text = "🔫 Quick and clean - confront them", successMod = 1.1, riskMod = 0.9, feed = "Professional.", triggersCombat = true, targetStrength = "average" },
+			{ text = "🎭 Make it look accidental", successMod = 0.9, riskMod = 0.5, feed = "Clever cover-up." },
+			{ text = "👊 Send a brutal message to others", successMod = 1.0, riskMod = 1.6, respectBonus = 25, feed = "Fear spreads through the streets.", triggersCombat = true, targetStrength = "strong" },
+			{ text = "🏃 Ambush them", successMod = 1.2, riskMod = 0.7, feed = "They never saw it coming.", triggersCombat = true, targetStrength = "weak" },
+		},
+		protection = {
+			{ text = "🗣️ Polite but firm collection", successMod = 1.2, riskMod = 0.6, feed = "Business as usual." },
+			{ text = "👊 Rough up the reluctant ones", successMod = 1.0, riskMod = 1.0, rewardMod = 1.3, feed = "They paid up quick!", triggersCombat = true },
+			{ text = "🔥 Destroy property as a warning", successMod = 0.9, riskMod = 1.4, respectBonus = 10, feed = "Message received loud and clear." },
+			{ text = "📱 Let them slide this week", successMod = 1.0, riskMod = 0.3, rewardMod = 0.5, feed = "Show of mercy... or weakness?" },
+		},
+		heist = {
+			{ text = "🎯 Lead the crew - biggest cut", successMod = 0.8, riskMod = 1.2, rewardMod = 1.5, feed = "High risk, highest reward!" },
+			{ text = "🚗 Getaway driver - safer role", successMod = 1.2, riskMod = 0.6, rewardMod = 0.7, feed = "Fast and clean escape." },
+			{ text = "🔓 Safecracker specialist", successMod = 1.0, riskMod = 0.9, rewardMod = 1.0, feed = "The technical expert." },
+			{ text = "🔫 Armed backup", successMod = 1.1, riskMod = 1.0, rewardMod = 0.9, feed = "Ready for anything.", triggersCombat = true },
+		},
+		smuggling = {
+			{ text = "🚤 Speed boat at night", successMod = 0.9, riskMod = 1.3, rewardMod = 1.2, feed = "Fast and dangerous." },
+			{ text = "🚚 Hidden compartment in trucks", successMod = 1.2, riskMod = 0.7, feed = "Slow but reliable." },
+			{ text = "✈️ Private airfield drop", successMod = 1.1, riskMod = 0.9, costMod = 0.2, feed = "High altitude, low profile." },
+		},
+	}
+	
+	return customChoices[op.id] or defaultChoices
+end
+
+-- Process scenario choice and execute operation
+function MafiaScreen:processScenarioChoice(op, choiceIndex, accumulatedMods)
+	-- Get the actual choice data to check for combat triggers
+	local choices = self:getScenarioChoices(op)
+	local chosenOption = choices[choiceIndex]
+	
+	-- Merge choice-specific modifiers
+	if chosenOption then
+		accumulatedMods = accumulatedMods or {}
+		accumulatedMods.triggersCombat = chosenOption.triggersCombat
+		accumulatedMods.targetStrength = chosenOption.targetStrength
+		accumulatedMods.respectBonus = chosenOption.respectBonus
+		accumulatedMods.feed = chosenOption.feed
+	end
+	
+	-- Execute the operation with modifiers
+	self:doOperation(op.id, accumulatedMods)
+end
+
+-- Combat-based mafia operations
+local CombatMafiaOperations = {
+	enforcer_hit = true,
+	intimidation = true,
+	protection = true, -- When they resist
+}
+
+function MafiaScreen:doOperation(operationId, modifiers)
+	if not DoMobOperation then return end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- COMBAT-BASED MAFIA OPERATIONS
+	-- Some operations may involve physical confrontation - trigger combat minigame
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if CombatMafiaOperations[operationId] and modifiers and modifiers.triggersCombat then
+		print("[MafiaScreen] Combat operation detected:", operationId)
+		
+		-- Hide mafia screen for combat
+		if self.hide then
+			self:hide()
+		end
+		
+		-- Determine combat context and difficulty
+		local combatContext = "defense"
+		local combatDifficulty = "average"
+		
+		if operationId == "enforcer_hit" then
+			combatContext = "revenge"
+			combatDifficulty = modifiers.targetStrength or "strong"
+		elseif operationId == "protection" then
+			combatContext = "bar"
+			combatDifficulty = "weak"
+		elseif operationId == "intimidation" then
+			combatContext = "street"
+			combatDifficulty = "average"
+		end
+		
+		-- Get minigames and start combat
+		local MinigamesModule = ReplicatedStorage:FindFirstChild("Minigames")
+		if MinigamesModule then
+			local Minigames = require(MinigamesModule)
+			local minigameInstance = Minigames.new(self.screenGui)
+			
+			print("[MafiaScreen] Starting combat for operation:", operationId)
+			minigameInstance:play("combat", function(won, combatResult)
+				print("[MafiaScreen] Combat result - Won:", won)
+				
+				-- Call server with combat results
+				local serverSuccess, serverResult = pcall(function()
+					return DoMobOperation:InvokeServer(operationId, {
+						combatCompleted = true,
+						combatWon = won,
+						combatResult = combatResult,
+						originalModifiers = modifiers,
+					})
+				end)
+				
+				-- Show result
+				self:show()
+				
+				if serverSuccess and serverResult then
+					if serverResult.success then
+						local emoji = serverResult.promoted and "🎉" or "💰"
+						local title = won and "Operation Complete!" or "Partial Success"
+						self:showResult(true, title, serverResult.message or "The job is done.", emoji)
+					else
+						-- CRITICAL FIX: Properly show knocked out state with health loss
+						-- User complaint: "I GOT KNOCKED OUT AND IT SAID CRIME SUCCESSFUL"
+						local emoji = serverResult.arrested and "👮" or "😵"
+						local title = "Operation Failed"
+						
+						if serverResult.knockedOut then
+							title = "😵 Knocked Out!"
+							emoji = serverResult.arrested and "🚔" or "😵"
+						end
+						
+						local message = serverResult.message or "Things went wrong."
+						if serverResult.healthLost and serverResult.healthLost > 0 and not message:find("health") then
+							message = message .. string.format("\n\n💔 -%d Health", serverResult.healthLost)
+						end
+						
+						self:showResult(false, title, message, emoji)
+					end
+				else
+					local title = won and "👊 Victory" or "😵 Knocked Out!"
+					local message = won 
+						and "You dominated them! The family is impressed." 
+						or "You got beat down hard! That's embarrassing for the family..."
+					self:showResult(won, title, message, won and "💪" or "😵")
+				end
+				
+				task.delay(1.5, function()
+					self:hideResult()
+					self:refreshContent()
+				end)
+			end, {
+				context = combatContext,
+				difficulty = combatDifficulty,
+			})
+		else
+			-- Fallback if minigames not available
+			self:show()
+			self:showResult(false, "Error", "Combat system unavailable.", "❌")
+		end
+		return
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- HEIST OPERATIONS - Trigger heist minigame
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if operationId == "heist" and modifiers and not modifiers.heistCompleted then
+		print("[MafiaScreen] Heist operation - launching heist minigame!")
+		
+		if self.hide then
+			self:hide()
+		end
+		
+		local MinigamesModule = ReplicatedStorage:FindFirstChild("Minigames")
+		if MinigamesModule then
+			local Minigames = require(MinigamesModule)
+			local minigameInstance = Minigames.new(self.screenGui)
+			
+			print("[MafiaScreen] Starting heist minigame")
+			minigameInstance:play("heist", function(won, heistResult)
+				print("[MafiaScreen] Heist result - Won:", won)
+				
+				-- Call server with heist results
+				local serverSuccess, serverResult = pcall(function()
+					return DoMobOperation:InvokeServer(operationId, {
+						heistCompleted = true,
+						heistSuccess = won,
+						heistResult = heistResult,
+						originalModifiers = modifiers,
+					})
+				end)
+				
+				self:show()
+				
+				if serverSuccess and serverResult then
+					if serverResult.success then
+						local money = serverResult.money or 0
+						local emoji = serverResult.promoted and "🎉" or "💰"
+						local message = won 
+							and string.format("The heist was a success! Your cut: $%d", money)
+							or "You got away but the score was small."
+						self:showResult(true, "💰 SCORE!", message, emoji)
+					else
+						local emoji = serverResult.arrested and "👮" or "💨"
+						self:showResult(false, "Heist Failed", serverResult.message or "The heist went wrong.", emoji)
+					end
+				else
+					self:showResult(won, won and "Heist Complete" or "Heist Failed", 
+						won and "Big score!" or "Things went sideways.", won and "💰" or "💨")
+				end
+				
+				task.delay(1.5, function()
+					self:hideResult()
+					self:refreshContent()
+				end)
+			end)
+		else
+			self:show()
+			self:showResult(false, "Error", "Heist system unavailable.", "❌")
+		end
+		return
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- STANDARD OPERATIONS - Normal server call
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local success, result = pcall(function()
+		return DoMobOperation:InvokeServer(operationId, modifiers)
+	end)
+	
+	if success and result then
+		if result.success then
+			local emoji = result.promoted and "🎉" or "💰"
+			self:showResult(true, "Operation Complete!", result.message or "Success!", emoji)
+			
+			-- MINOR FIX #4: Update local MobState immediately after successful operation
+			if self.playerState and self.playerState.MobState then
+				if result.respect then
+					self.playerState.MobState.respect = (self.playerState.MobState.respect or 0) + result.respect
+				end
+				if result.money and self.playerState.Money then
+					self.playerState.Money = self.playerState.Money + result.money
+				end
+				if result.promoted then
+					self.playerState.MobState.rankLevel = (self.playerState.MobState.rankLevel or 1) + 1
+				end
+			end
+		else
+			local emoji = result.arrested and "👮" or "💨"
+			self:showResult(false, "Operation Failed", result.message or "Things went wrong.", emoji)
+		end
+		
+		task.delay(1.5, function()
+			self:hideResult() -- CRITICAL FIX: Hide result overlay before refreshing
+			self:refreshContent()
+		end)
+	elseif success and result and result.needsGamepass then
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #518: Use direct client-side prompt instead of server!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		promptMafiaGamepassDirect()
+		self:showResult(false, "Gamepass Required", result.message or "You need the Mafia gamepass.", "💎")
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- RESULT POPUP
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+function MafiaScreen:showResult(isSuccess, title, message, emoji, showRetry)
+	self.resultEmoji.Text = emoji or (isSuccess and "✅" or "❌")
+	self.resultTitle.Text = title
+	self.resultTitle.TextColor3 = isSuccess and C.Green or C.Red
+	self.resultMessage.Text = message
+	
+	-- CRITICAL FIX #469: Update button text based on context
+	local okBtn = self.resultCard:FindFirstChild("OKBtn")
+	if okBtn then
+		if showRetry and pendingFamilyJoin then
+			okBtn.Text = "🔄 Retry Join"
+			okBtn.BackgroundColor3 = MafiaColors.Blood
+			okBtn.TextColor3 = C.White
+		else
+			okBtn.Text = "Continue"
+			okBtn.BackgroundColor3 = MafiaColors.Gold
+			okBtn.TextColor3 = C.Black
+		end
+	end
+	
+	self.resultOverlay.Visible = true
+	self.resultCard.Position = UDim2.new(0.5, 0, 0.6, 0)
+	tween(self.resultCard, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+		Position = UDim2.fromScale(0.5, 0.5)
+	})
+end
+
+function MafiaScreen:hideResult()
+	tween(self.resultCard, TweenInfo.new(0.2), {
+		Position = UDim2.new(0.5, 0, 0.6, 0)
+	})
+	task.delay(0.2, function()
+		self.resultOverlay.Visible = false
+	end)
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Premium BitLife-style purchase prompt for Mafia gamepass
+-- Matches the ActivitiesScreen style exactly as user requested
+-- ═══════════════════════════════════════════════════════════════════════════════
+function MafiaScreen:showGamepassPrompt()
+	if self.gamepassPromptOverlay then
+		self.gamepassPromptOverlay:Destroy()
+	end
+	
+	-- Mobile-responsive dimensions
+	local modalWidth = IS_TINY_PHONE and 280 or (IS_SMALL_PHONE and 300 or 340)
+	local modalHeight = IS_TINY_PHONE and 300 or (IS_SMALL_PHONE and 320 or 360)
+	local padX = IS_TINY_PHONE and 12 or (IS_SMALL_PHONE and 16 or 20)
+	local padY = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 14 or 18)
+	local iconSize = IS_TINY_PHONE and 44 or (IS_SMALL_PHONE and 52 or 64)
+	local titleSz = textSize(IS_TINY_PHONE and 16 or 20)
+	local descSz = textSize(IS_TINY_PHONE and 12 or 14)
+	local btnTextSz = textSize(IS_TINY_PHONE and 14 or 16)
+	local btnH = IS_TINY_PHONE and 40 or (IS_SMALL_PHONE and 44 or 50)
+	
+	-- Dark mafia theme colors
+	local accentColor = Color3.fromRGB(55, 55, 55)
+	local accentDark = Color3.fromRGB(30, 30, 30)
+	local accentPale = Color3.fromRGB(80, 80, 80)
+	
+	-- Overlay background
+	local overlay = Instance.new("Frame")
+	overlay.Name = "GamepassPromptOverlay"
+	overlay.Size = UDim2.fromScale(1, 1)
+	overlay.BackgroundColor3 = C.Black
+	overlay.BackgroundTransparency = 0.35
+	overlay.ZIndex = 200
+	overlay.Parent = self.screenGui
+	self.gamepassPromptOverlay = overlay
+	
+	-- Click outside to close
+	local closeArea = Instance.new("TextButton")
+	closeArea.Size = UDim2.fromScale(1, 1)
+	closeArea.BackgroundTransparency = 1
+	closeArea.Text = ""
+	closeArea.ZIndex = 200
+	closeArea.Parent = overlay
+	closeArea.MouseButton1Click:Connect(function()
+		overlay:Destroy()
+	end)
+	
+	-- Premium shadow
+	local shadowOffset = IS_TINY_PHONE and 6 or 10
+	local shadow = Instance.new("Frame")
+	shadow.Size = UDim2.new(0, modalWidth + shadowOffset, 0, modalHeight + shadowOffset)
+	shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+	shadow.Position = UDim2.new(0.5, shadowOffset/2, 0.5, shadowOffset/2)
+	shadow.BackgroundColor3 = C.Black
+	shadow.BackgroundTransparency = 0.65
+	shadow.ZIndex = 201
+	shadow.Parent = overlay
+	corner(shadow, IS_TINY_PHONE and 22 or 28)
+	
+	-- Dark outer shell (Mafia style)
+	local shell = Instance.new("Frame")
+	shell.Size = UDim2.new(0, modalWidth, 0, modalHeight)
+	shell.AnchorPoint = Vector2.new(0.5, 0.5)
+	shell.Position = UDim2.fromScale(0.5, 0.5)
+	shell.BackgroundColor3 = accentColor
+	shell.ZIndex = 202
+	shell.Parent = overlay
+	corner(shell, IS_TINY_PHONE and 20 or 26)
+	
+	-- Stroke for extra premium
+	local shellStroke = Instance.new("UIStroke")
+	shellStroke.Color = accentDark
+	shellStroke.Thickness = 2
+	shellStroke.Parent = shell
+	
+	-- White inner card
+	local inner = Instance.new("Frame")
+	inner.Size = UDim2.new(1, -8, 1, -8)
+	inner.Position = UDim2.new(0, 4, 0, 4)
+	inner.BackgroundColor3 = C.White
+	inner.ZIndex = 203
+	inner.Parent = shell
+	corner(inner, IS_TINY_PHONE and 18 or 24)
+	
+	-- Gun icon frame
+	local iconFrame = Instance.new("Frame")
+	iconFrame.Size = UDim2.new(0, iconSize, 0, iconSize)
+	iconFrame.AnchorPoint = Vector2.new(0.5, 0)
+	iconFrame.Position = UDim2.new(0.5, 0, 0, padY)
+	iconFrame.BackgroundColor3 = accentPale
+	iconFrame.ZIndex = 204
+	iconFrame.Parent = inner
+	corner(iconFrame, iconSize/2)
+	
+	local iconLabel = Instance.new("TextLabel")
+	iconLabel.Size = UDim2.fromScale(1, 1)
+	iconLabel.BackgroundTransparency = 1
+	iconLabel.Font = F.Body
+	iconLabel.TextSize = IS_TINY_PHONE and 28 or (IS_SMALL_PHONE and 34 or 40)
+	iconLabel.Text = "🔫"
+	iconLabel.ZIndex = 205
+	iconLabel.Parent = iconFrame
+	
+	-- "PREMIUM FEATURE" badge
+	local badgeFrame = Instance.new("Frame")
+	badgeFrame.Size = UDim2.new(0, IS_TINY_PHONE and 110 or 130, 0, IS_TINY_PHONE and 20 or 24)
+	badgeFrame.AnchorPoint = Vector2.new(0.5, 0)
+	badgeFrame.Position = UDim2.new(0.5, 0, 0, padY + iconSize + 6)
+	badgeFrame.BackgroundColor3 = accentColor
+	badgeFrame.ZIndex = 204
+	badgeFrame.Parent = inner
+	corner(badgeFrame, 12)
+	
+	local badgeLabel = Instance.new("TextLabel")
+	badgeLabel.Size = UDim2.fromScale(1, 1)
+	badgeLabel.BackgroundTransparency = 1
+	badgeLabel.Font = F.Bold
+	badgeLabel.TextSize = textSize(IS_TINY_PHONE and 10 or 12)
+	badgeLabel.TextColor3 = C.White
+	badgeLabel.Text = "🔒 MAFIA BOSS PACK"
+	badgeLabel.ZIndex = 205
+	badgeLabel.Parent = badgeFrame
+	
+	-- Title
+	local titleY = padY + iconSize + (IS_TINY_PHONE and 32 or 40)
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -padX*2, 0, titleSz + 8)
+	titleLabel.Position = UDim2.new(0, padX, 0, titleY)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = titleSz
+	titleLabel.TextColor3 = C.Gray900
+	titleLabel.Text = "Unlock Mafia Boss Pack"
+	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	titleLabel.ZIndex = 204
+	titleLabel.Parent = inner
+	
+	-- Description
+	local descY = titleY + titleSz + (IS_TINY_PHONE and 6 or 12)
+	local descLabel = Instance.new("TextLabel")
+	descLabel.Size = UDim2.new(1, -padX*2, 0, IS_TINY_PHONE and 50 or 70)
+	descLabel.Position = UDim2.new(0, padX, 0, descY)
+	descLabel.BackgroundTransparency = 1
+	descLabel.Font = F.Body
+	descLabel.TextSize = descSz
+	descLabel.TextColor3 = C.Gray500
+	descLabel.TextWrapped = true
+	descLabel.TextYAlignment = Enum.TextYAlignment.Top
+	descLabel.Text = "Rise through the ranks of organized crime! Join families, run operations, order hits, and become The Don!"
+	descLabel.ZIndex = 204
+	descLabel.Parent = inner
+	
+	-- Buy button
+	local btnGap = IS_TINY_PHONE and 8 or 12
+	local buyBtn = Instance.new("TextButton")
+	buyBtn.Size = UDim2.new(1, -padX*2, 0, btnH)
+	buyBtn.Position = UDim2.new(0, padX, 1, -(btnH*2 + btnGap + padY))
+	buyBtn.BackgroundColor3 = accentColor
+	buyBtn.Font = F.Button
+	buyBtn.TextSize = btnTextSz
+	buyBtn.TextColor3 = C.White
+	buyBtn.Text = "🔫 Unlock Mafia Pack"
+	buyBtn.AutoButtonColor = false
+	buyBtn.ZIndex = 204
+	buyBtn.Parent = inner
+	corner(buyBtn, IS_TINY_PHONE and 10 or 14)
+	
+	-- Hover effect
+	buyBtn.MouseEnter:Connect(function()
+		tween(buyBtn, TweenInfo.new(0.12), { BackgroundColor3 = accentDark })
+	end)
+	buyBtn.MouseLeave:Connect(function()
+		tween(buyBtn, TweenInfo.new(0.12), { BackgroundColor3 = accentColor })
+	end)
+	
+	buyBtn.MouseButton1Click:Connect(function()
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #519: Use direct client-side prompt instead of server!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		promptMafiaGamepassDirect()
+		overlay:Destroy()
+	end)
+	
+	-- Close button
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Size = UDim2.new(1, -padX*2, 0, btnH - 8)
+	closeBtn.Position = UDim2.new(0, padX, 1, -(btnH - 8 + padY))
+	closeBtn.BackgroundColor3 = C.Gray100
+	closeBtn.Font = F.Button
+	closeBtn.TextSize = textSize(IS_TINY_PHONE and 12 or 14)
+	closeBtn.TextColor3 = C.Gray500
+	closeBtn.Text = "Maybe Later"
+	closeBtn.AutoButtonColor = false
+	closeBtn.ZIndex = 204
+	closeBtn.Parent = inner
+	corner(closeBtn, IS_TINY_PHONE and 8 or 12)
+	
+	closeBtn.MouseEnter:Connect(function()
+		tween(closeBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Gray200 })
+	end)
+	closeBtn.MouseLeave:Connect(function()
+		tween(closeBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Gray100 })
+	end)
+	
+	closeBtn.MouseButton1Click:Connect(function()
+		overlay:Destroy()
+	end)
+	
+	log("Showing Mafia gamepass prompt")
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- SHOW/HIDE
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+function MafiaScreen:show()
+	if self.isVisible then return end
+	
+	-- CRITICAL FIX #448: Check gamepass ownership - use cache first, then server
+	local hasGamepass = hasMafiaGamepass
+	
+	if not hasGamepass and CheckGamepass then
+		local success, owns = pcall(function()
+			return CheckGamepass:InvokeServer("MAFIA")
+		end)
+		if success then
+			hasGamepass = owns
+			if owns then
+				hasMafiaGamepass = true  -- Update cache
+			end
+		end
+	end
+	
+	-- If no gamepass, show purchase prompt with nice card UI
+	if not hasGamepass then
+		-- CRITICAL FIX: Show nice card-style prompt instead of just server call
+		self:showGamepassPrompt()
+		-- Still show the screen but with locked content
+	end
+	
+	self.isVisible = true
+	self:refreshContent()
+	
+	self.overlay.Visible = true
+	self.overlay.BackgroundTransparency = 1
+	tween(self.overlay, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
+	
+	if self.showBlur then
+		self.showBlur()
+	end
+end
+
+function MafiaScreen:hide()
+	if not self.isVisible then return end
+	self.isVisible = false
+	
+	-- Hide any modals
+	self.modalOverlay.Visible = false
+	self.resultOverlay.Visible = false
+	
+	tween(self.overlay, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
+	task.delay(0.2, function()
+		self.overlay.Visible = false
+	end)
+	
+	if self.hideBlur then
+		self.hideBlur()
+	end
+end
+
+function MafiaScreen:toggle()
+	if self.isVisible then
+		self:hide()
+	else
+		self:show()
+	end
+end
+
+return MafiaScreen
