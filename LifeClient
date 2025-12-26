@@ -179,6 +179,7 @@ local lastLowHealthWarningAge = -1  -- Age when we last showed the warning
 local lastStatBoostWarningAge = -1  -- Age when we last showed stat boost warning
 local lastPrisonPopupAge = -1       -- Age when we last showed prison popup
 local wasInJailLastSync = false     -- Track jail state to detect entering jail
+local lastEventResolvedTime = 0     -- Timestamp when last event was resolved (for popup cooldown)
 
 local ScreenInstances = {
 	occupation = nil,
@@ -4778,6 +4779,7 @@ end
 hideEvent = function()
 	awaitingEvent  = false
 	EventUI.currentEventId = nil
+	lastEventResolvedTime = tick()  -- Track when event was resolved for popup cooldown
 
 	-- Create the hide tween and track it
 	EventUI.currentHideTween = tween(EventUI.shadowFrame, TweenInfo.new(0.2), {
@@ -7399,13 +7401,16 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- LOW HEALTH WARNING: Critical health popup (<=20%) - death imminent!
+	-- COOLDOWN: Wait at least 2 seconds after an event resolves before showing
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	local timeSinceLastEvent = tick() - lastEventResolvedTime
 	if currentHealth > 0 and currentHealth <= 20
 		and lastLowHealthWarningAge ~= currentAge
 		and currentState.Name and currentState.Name ~= ""
 		and not awaitingEvent
 		and not isDead
-		and not isInJail then
+		and not isInJail
+		and timeSinceLastEvent > 2 then  -- Wait 2 seconds after event before showing
 
 		lastLowHealthWarningAge = currentAge
 
@@ -7430,6 +7435,7 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- STAT BOOST WARNING: Any stat critically low (<=25%) - offer cheap boost!
 	-- User request: "STATS ARE LOW I CAN BOOST THEM ALL FOR CHEAP 30 ROBUX"
+	-- COOLDOWN: Wait at least 2 seconds after an event resolves before showing
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	elseif (currentHappiness <= 25 or currentSmarts <= 25 or currentLooks <= 25)
 		and currentHealth > 20  -- Don't overlap with health warning
@@ -7438,7 +7444,8 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 		and not awaitingEvent
 		and not isDead
 		and not isInJail
-		and not hasGodMode then  -- Don't show if already has God Mode
+		and not hasGodMode  -- Don't show if already has God Mode
+		and timeSinceLastEvent > 2 then  -- Wait 2 seconds after event before showing
 
 		lastStatBoostWarningAge = currentAge
 
