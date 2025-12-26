@@ -2374,15 +2374,18 @@ function ActivitiesScreen:attemptJoinMob(familyId)
 		self:showActivityResult(
 			false,
 			"You can't join the Mafia while on the " .. conflictPathName .. " path! " .. conflictEmoji .. "\n\n" ..
-			"These are mutually exclusive story paths. Purchase God Mode to unlock ALL paths and play however you want!",
+			"These story paths are normally mutually exclusive.",
 			{id = "join_mob", name = "Join Crime Family", emoji = "🔫"},
 			"🔒"
 		)
 
-		-- Prompt God Mode purchase after showing the result
-		task.delay(0.5, function()
-			self:promptGamepassPurchase("GOD_MODE", "⚡ God Mode", "Unlock ALL story paths including Mafia, Celebrity, and Royalty! Play any way you want!")
-		end)
+		-- Set callback to show God Mode prompt AFTER user clicks OK on the conflict message
+		self.pendingResultCallback = function()
+			self:promptGamepassPurchase("GOD_MODE", "⚡ God Mode",
+				"Want to COMBINE story paths?\n\n" ..
+				"God Mode lets you play Mafia + " .. conflictPathName .. " at the same time!\n\n" ..
+				"Be a Royal Mobster, Celebrity Criminal, or anything you want!")
+		end
 		return -- Don't proceed to server call
 	end
 
@@ -4209,6 +4212,7 @@ function ActivitiesScreen:createResultModal()
 	end)
 	
 	-- CRITICAL FIX #3: When dismissing result modal, ALWAYS rebuild tabs and update UI
+	-- Also run any pending callback (e.g., show God Mode prompt after path conflict message)
 	local function onResultDismiss()
 		local inJail = self:isInJail()
 		log("Result modal dismissed - checking state. InJail:", inJail)
@@ -4220,6 +4224,13 @@ function ActivitiesScreen:createResultModal()
 			self.currentTab = "mindbody"
 		end
 		self:switchTab(self.currentTab)
+
+		-- Run pending callback if one was set (e.g., God Mode prompt after conflict message)
+		if self.pendingResultCallback then
+			local callback = self.pendingResultCallback
+			self.pendingResultCallback = nil  -- Clear it first to avoid loops
+			task.defer(callback)  -- Defer to next frame so modal fully closes
+		end
 	end
 	
 	-- Custom show/hide methods (CRITICAL FIX: IS_TINY_PHONE responsive animation sizes)
