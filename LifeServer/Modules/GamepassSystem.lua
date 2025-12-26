@@ -493,6 +493,37 @@ GamepassSystem.Products = {
 		price = 50,
 		type = "consumable",
 	},
+	
+	-- CRITICAL FIX #900: Get Out of Jail Developer Product
+	-- Users REALLY want this when they get caught!
+	GET_OUT_OF_JAIL = {
+		id = 3489751054,  -- REAL PRODUCT ID provided by user
+		name = "Get Out of Jail FREE!",
+		emoji = "🔓",
+		description = "Instantly released from prison! All charges dropped!",
+		price = 49,  -- Premium price for instant freedom
+		type = "consumable",
+	},
+	
+	-- Extra life/death prevention
+	EXTRA_LIFE = {
+		id = 0,  -- Needs real ID
+		name = "Extra Life",
+		emoji = "💖",
+		description = "Survive a fatal event once!",
+		price = 99,
+		type = "consumable",
+	},
+	
+	-- Instant wealth boost
+	LOTTERY_WIN = {
+		id = 0,  -- Needs real ID
+		name = "Win the Lottery!",
+		emoji = "🎰",
+		description = "Instantly win $500,000!",
+		price = 199,
+		type = "consumable",
+	},
 }
 
 -- ════════════════════════════════════════════════════════════════════════════
@@ -1373,6 +1404,14 @@ GamepassSystem.productIdToYears = {
 	[3477466778] = -1,  -- Baby (restart)
 }
 
+-- CRITICAL FIX #904: Special product IDs that need custom handling
+GamepassSystem.specialProductIds = {
+	[3489751054] = "GET_OUT_OF_JAIL",  -- Instant jail release
+}
+
+-- Pending jail release actions (player -> true)
+GamepassSystem.pendingJailRelease = {}
+
 function GamepassSystem:getProductKeyForYears(years)
 	if years == 5 then return "TIME_5_YEARS"
 	elseif years == 10 then return "TIME_10_YEARS"
@@ -1393,7 +1432,7 @@ end
 
 -- Called when a developer product is purchased
 -- Returns: Enum.ProductPurchaseDecision
-function GamepassSystem:processProductReceipt(receiptInfo, getPlayerState, executeTimeMachine)
+function GamepassSystem:processProductReceipt(receiptInfo, getPlayerState, executeTimeMachine, executeJailRelease)
 	local player = Players:GetPlayerByUserId(receiptInfo.PlayerId)
 	if not player then
 		-- Player left, but purchase succeeded - we should still grant it
@@ -1403,6 +1442,33 @@ function GamepassSystem:processProductReceipt(receiptInfo, getPlayerState, execu
 	
 	local productId = receiptInfo.ProductId
 	local years = self.productIdToYears[productId]
+	
+	-- CRITICAL FIX #905: Check for special products (GET_OUT_OF_JAIL, etc.)
+	local specialProduct = self.specialProductIds[productId]
+	if specialProduct == "GET_OUT_OF_JAIL" then
+		print("[GamepassSystem] Processing GET OUT OF JAIL product for:", player.Name)
+		
+		-- Execute the jail release action immediately
+		if executeJailRelease then
+			local success, result = pcall(function()
+				return executeJailRelease(player)
+			end)
+			
+			if success and result and result.success then
+				print("[GamepassSystem] GET OUT OF JAIL successful for player:", player.Name)
+				return Enum.ProductPurchaseDecision.PurchaseGranted
+			else
+				warn("[GamepassSystem] GET OUT OF JAIL failed:", result and result.message or "Unknown error")
+				-- Still grant since payment was taken - mark as pending
+				self.pendingJailRelease[player.UserId] = true
+				return Enum.ProductPurchaseDecision.PurchaseGranted
+			end
+		else
+			-- Mark as pending for this player
+			self.pendingJailRelease[player.UserId] = true
+			return Enum.ProductPurchaseDecision.PurchaseGranted
+		end
+	end
 	
 	if years then
 		-- This is a time machine product
@@ -1432,6 +1498,15 @@ function GamepassSystem:processProductReceipt(receiptInfo, getPlayerState, execu
 	-- Unknown product
 	warn("[GamepassSystem] Unknown product ID:", productId)
 	return Enum.ProductPurchaseDecision.NotProcessedYet
+end
+
+-- CRITICAL FIX #906: Check if player has a pending jail release
+function GamepassSystem:hasPendingJailRelease(player)
+	return self.pendingJailRelease[player.UserId] == true
+end
+
+function GamepassSystem:clearPendingJailRelease(player)
+	self.pendingJailRelease[player.UserId] = nil
 end
 
 -- Check if player has a pending time machine action from product purchase

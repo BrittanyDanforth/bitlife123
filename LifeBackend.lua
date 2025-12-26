@@ -472,6 +472,12 @@ function LifeBackend:validateStateConsistency(state)
 			state.HousingState.yearsWithoutPayingRent = 0
 			state.HousingState.yearsBroke = nil
 		end
+	elseif money < 100 and age >= 18 then
+		-- CRITICAL FIX #912: Player is BROKE - prompt money boost!
+		-- This is a HIGH CONVERSION moment - they need money!
+		flags.broke = true
+		flags.struggling_financially = true
+		-- Note: Actual prompt happens in advanceYear to avoid spam
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════
@@ -2613,11 +2619,56 @@ function LifeBackend:setupProcessReceipt()
 		local result = GamepassSystem:processProductReceipt(
 			receiptInfo,
 			function(player) return self:getState(player) end,
-			function(player, years) return self:executeTimeMachineAction(player, years) end
+			function(player, years) return self:executeTimeMachineAction(player, years) end,
+			function(player) return self:executeJailRelease(player) end  -- CRITICAL FIX #907: Jail release handler
 		)
 		return result
 	end
 	print("[LifeBackend] ProcessReceipt handler set up for Developer Products")
+end
+
+-- CRITICAL FIX #908: Execute jail release (called from ProcessReceipt after GET_OUT_OF_JAIL purchase)
+function LifeBackend:executeJailRelease(player)
+	local state = self:getState(player)
+	if not state then
+		return { success = false, message = "State not found." }
+	end
+	
+	-- Check if actually in jail
+	if not state.InJail then
+		return { success = false, message = "You're not in jail!" }
+	end
+	
+	-- Release from jail immediately!
+	state.InJail = false
+	state.JailYearsLeft = 0
+	
+	-- Clear ALL prison flags (AAA exhaustive list)
+	state.Flags = state.Flags or {}
+	state.Flags.in_prison = nil
+	state.Flags.incarcerated = nil
+	state.Flags.jailed = nil
+	state.Flags.serving_time = nil
+	state.Flags.prison_sentence = nil
+	state.Flags.awaiting_trial = nil
+	state.Flags.convicted = nil
+	
+	-- Clear any prison-related pending events
+	if state.PendingEvent and state.PendingEvent.id then
+		local eventId = state.PendingEvent.id
+		if eventId:find("prison") or eventId:find("jail") or eventId:find("incarcerat") then
+			state.PendingEvent = nil
+		end
+	end
+	
+	-- Good reputation boost for purchasing freedom
+	state.Flags.purchased_freedom = true
+	
+	-- Push notification to player
+	self:pushState(player, "🔓 GET OUT OF JAIL FREE! All charges dropped - you're a free person!")
+	
+	print("[LifeBackend] GET OUT OF JAIL executed for:", player.Name)
+	return { success = true, message = "You're free! All charges dropped." }
 end
 
 -- CRITICAL FIX #361: Set up gamepass purchase listener for UI refresh
@@ -12384,10 +12435,35 @@ function LifeBackend:checkNaturalDeath(state)
 			"⚠️ Health is critical! Seek medical attention immediately.", "🏥")
 		
 		-- ═══════════════════════════════════════════════════════════════════════════════
-		-- STRATEGIC GAMEPASS PROMPT: When health is critical, offer God Mode!
+		-- STRATEGIC GAMEPASS PROMPT #910: When health is critical, offer God Mode!
 		-- Perfect conversion moment - they're about to die and want to save their character
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		state.Flags.near_death = true -- For God Mode eligibility check
+		
+		-- CRITICAL FIX #911: Prompt God Mode when health is critical (HIGH CONVERSION!)
+		if state.player and self.gamepassSystem then
+			if not self:checkGamepassOwnership(state.player, "GOD_MODE") then
+				task.delay(1, function()
+					if state.player and state.player.Parent then
+						self.gamepassSystem:promptGamepass(state.player, "GOD_MODE")
+					end
+				end)
+			end
+		end
+	elseif health <= 25 then
+		-- Health low but not critical - still prompt
+		if state.player and self.gamepassSystem then
+			if not self:checkGamepassOwnership(state.player, "GOD_MODE") then
+				-- 30% chance to prompt (not spam)
+				if RANDOM:NextNumber() < 0.3 then
+					task.delay(2, function()
+						if state.player and state.player.Parent then
+							self.gamepassSystem:promptGamepass(state.player, "GOD_MODE")
+						end
+					end)
+				end
+			end
+		end
 	end
 	
 	-- Age-based death chance (increases with age)
@@ -14618,6 +14694,16 @@ function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
 			timeMachineData = TimeMachine.getDeathScreenData(player, state, hasTimeMachineGamepass)
 		end
 		
+		-- CRITICAL FIX #913: Prompt Time Machine purchase for non-owners on death!
+		-- This is THE HIGHEST CONVERSION moment - player just died and wants to save their character!
+		if not hasTimeMachineGamepass and self.gamepassSystem then
+			task.delay(2, function()
+				if player and player.Parent then
+					self.gamepassSystem:promptGamepass(player, "TIME_MACHINE")
+				end
+			end)
+		end
+		
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		-- CRITICAL FEATURE: "Continue as Your Kid" on death!
 		-- User requested: "I WANT A CONTINUE AS YOUR KID BUTTON WHEN YOU DIE"
@@ -15430,6 +15516,14 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 				end
 				resultMessage = "🚔 You got caught! Sentenced to " .. jailYears .. " years in prison."
 				gotCaught = true
+				
+				-- CRITICAL FIX #901: Prompt GET OUT OF JAIL purchase when player gets arrested!
+				-- This is a PERFECT moment to offer - player just lost everything!
+				task.delay(1.5, function()
+					if player and player.Parent and self.gamepassSystem then
+						self.gamepassSystem:promptProduct(player, "GET_OUT_OF_JAIL")
+					end
+				end)
 			else
 				-- CRITICAL: Explicitly show that crime succeeded with NO jail
 				resultMessage = "💰 " .. resultMessage .. " Got away clean!"
@@ -16010,6 +16104,13 @@ function LifeBackend:handleCrime(player, crimeId, minigameBonus)
 				state.Flags.has_job = nil
 			end
 			
+			-- CRITICAL FIX #902: Prompt GET OUT OF JAIL when arrested from fight!
+			task.delay(1.5, function()
+				if player and player.Parent and self.gamepassSystem then
+					self.gamepassSystem:promptProduct(player, "GET_OUT_OF_JAIL")
+				end
+			end)
+			
 			local message = string.format("😵 Embarrassing! They knocked you out cold! Lost %d health. Someone called the cops - you're sentenced to %.1f years!", healthLoss, years)
 			self:pushState(player, message)
 			return { 
@@ -16058,6 +16159,14 @@ function LifeBackend:handleCrime(player, crimeId, minigameBonus)
 			state.Flags.was_in_mob_before_jail = true
 			debugPrint("Preserved mob membership for jail duration:", player.Name)
 		end
+		
+		-- CRITICAL FIX #903: Prompt GET OUT OF JAIL when arrested from crime!
+		-- Player just got caught - PERFECT time to offer instant freedom!
+		task.delay(1.5, function()
+			if player and player.Parent and self.gamepassSystem then
+				self.gamepassSystem:promptProduct(player, "GET_OUT_OF_JAIL")
+			end
+		end)
 		
 		-- CRITICAL FIX: Lose job when going to prison!
 		-- In BitLife, you get fired when incarcerated. Save last job for potential re-employment.
