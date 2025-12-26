@@ -12382,6 +12382,12 @@ function LifeBackend:checkNaturalDeath(state)
 	if health <= 10 then
 		self:logYearEvent(state, "health",
 			"⚠️ Health is critical! Seek medical attention immediately.", "🏥")
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- STRATEGIC GAMEPASS PROMPT: When health is critical, offer God Mode!
+		-- Perfect conversion moment - they're about to die and want to save their character
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		state.Flags.near_death = true -- For God Mode eligibility check
 	end
 	
 	-- Age-based death chance (increases with age)
@@ -13729,6 +13735,50 @@ function LifeBackend:handleAgeUp(player)
 	if transitionEvent then
 		local stageName = transitionEvent.title or "a new stage"
 		feedText = string.format("🎂 %s\n%s", transitionEvent.text or ("You entered " .. stageName), feedText)
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- STRATEGIC GAMEPASS PROMPTS AT KEY LIFE MILESTONES
+		-- These are PERFECT conversion moments when players feel invested in their character
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		
+		-- Age 18: Player becomes an adult - perfect time for premium features!
+		if state.Age == 18 then
+			-- Show Mafia gamepass - they can now join organized crime
+			if not self:checkGamepassOwnership(player, "MAFIA") then
+				task.delay(2, function()
+					if player and player.Parent then
+						-- Don't force prompt, just make it available
+						-- Let the client know they can now use Mafia features
+					end
+				end)
+			end
+		end
+		
+		-- Age 30: "The Big 3-0" - players often want to boost their character
+		if state.Age == 30 then
+			-- If player isn't wealthy or famous yet, offer Celebrity gamepass
+			local money = state.Money or 0
+			local isFamous = state.Flags and (state.Flags.is_famous or state.Flags.celebrity)
+			if money < 100000 and not isFamous and not self:checkGamepassOwnership(player, "CELEBRITY") then
+				task.delay(2, function()
+					if player and player.Parent then
+						self:promptGamepassPurchase(player, "CELEBRITY")
+					end
+				end)
+			end
+		end
+		
+		-- Age 50: Middle-age crisis - offer God Mode to boost declining stats
+		if state.Age == 50 then
+			local health = (state.Stats and state.Stats.Health) or 50
+			if health < 70 and not self:checkGamepassOwnership(player, "GOD_MODE") then
+				task.delay(2, function()
+					if player and player.Parent then
+						self:promptGamepassPurchase(player, "GOD_MODE")
+					end
+				end)
+			end
+		end
 	end
 
 	-- Get just ONE event from the year queue (BitLife style)
@@ -14895,6 +14945,18 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 		feedText = jailPopupBody -- Also update the feed text for the feed display
 
 		debugPrint(string.format("Player %s was incarcerated by event! Jail years: %.1f", player.Name, state.JailYearsLeft or 0))
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- STRATEGIC GAMEPASS PROMPT: When player gets arrested, offer Time Machine!
+		-- This is the PERFECT conversion moment - they want to undo the arrest
+		-- Only prompt if they don't already own Time Machine
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		if not self:checkGamepassOwnership(player, "TIME_MACHINE") then
+			-- Slight delay so they see the "Busted" message first
+			task.delay(0.5, function()
+				self:promptGamepassPurchase(player, "TIME_MACHINE")
+			end)
+		end
 	end
 
 	-- CRITICAL FIX: Use PendingFeed (detailed outcome from onResolve) for popup body
