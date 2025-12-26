@@ -2363,7 +2363,40 @@ end
 function ActivitiesScreen:attemptJoinMob(familyId)
 	-- CRITICAL FIX: Enhanced action logging for debugging
 	logAction("JOIN_MOB", familyId, "Join Crime Family", string.format("Age: %d", self:getAge()))
-	
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Check for premium path conflict BEFORE calling server
+	-- If player is on another premium path (celebrity/royalty), show conflict popup
+	-- User bug report: "when i tried to become mafia when i was famous it didnt let me
+	-- but it didnt pop a card up saying i cannot be mafia and celebert at same time
+	-- unless i purchase god mode"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local flags = self.playerState and self.playerState.Flags or {}
+	local primaryWish = flags.primary_wish_type
+	local hasGodMode = self:checkGamepassOwnership("GOD_MODE")
+
+	-- Check if player is on a conflicting premium path
+	if not hasGodMode and (primaryWish == "celebrity" or primaryWish == "royalty") then
+		-- Get the conflicting path name for display
+		local conflictPathName = primaryWish == "celebrity" and "Celebrity" or "Royalty"
+		local conflictEmoji = primaryWish == "celebrity" and "⭐" or "👑"
+
+		-- Show conflict popup explaining why they can't join
+		self:showActivityResult(
+			false,
+			"You can't join the Mafia while on the " .. conflictPathName .. " path! " .. conflictEmoji .. "\n\n" ..
+			"These are mutually exclusive story paths. Purchase God Mode to unlock ALL paths and play however you want!",
+			{id = "join_mob", name = "Join Crime Family", emoji = "🔫"},
+			"🔒"
+		)
+
+		-- Prompt God Mode purchase after showing the result
+		task.delay(0.5, function()
+			self:promptGamepassPurchase("GOD_MODE", "⚡ God Mode", "Unlock ALL story paths including Mafia, Celebrity, and Royalty! Play any way you want!")
+		end)
+		return -- Don't proceed to server call
+	end
+
 	log("Attempting to join mob:", familyId)
 	local JoinMob = getRemote("JoinMob")
 	if JoinMob then
