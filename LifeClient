@@ -7704,7 +7704,28 @@ ageButton.MouseButton1Click:Connect(function()
 	print("[LifeClient]   awaitingEvent:", awaitingEvent)
 	print("[LifeClient]   introComplete:", introComplete)
 	print("[LifeClient]   currentState.Name:", currentState.Name)
+	print("[LifeClient]   currentState.Health:", currentState.Health)
 	print("[LifeClient]   EventUI.overlay.Visible:", EventUI and EventUI.overlay and EventUI.overlay.Visible)
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Check if player is DEAD before allowing age up
+	-- If dead, show death overlay instead of trying to age (server will reject anyway)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local playerHealth = currentState.Health or 100
+	if playerHealth <= 0 then
+		print("[LifeClient] ☠️ Age blocked - player is DEAD! Showing death overlay...")
+		local deathOverlayVisible = DeathUI and DeathUI.overlay and DeathUI.overlay.Visible
+		if not deathOverlayVisible then
+			local deathCause = "You died in your previous life."
+			if currentState.Flags and currentState.Flags.last_death_cause then
+				deathCause = currentState.Flags.last_death_cause
+			elseif currentState.DeathCause then
+				deathCause = currentState.DeathCause
+			end
+			showDeathOverlay(deathCause, currentState.Age, false, nil)
+		end
+		return
+	end
 
 	-- CRITICAL FIX: If intro is complete OR we have saved data, FORCE allow aging
 	local hasName = currentState.Name and currentState.Name ~= ""
@@ -7976,6 +7997,30 @@ task.delay(0.5, function()
 		awaitingEvent = false
 		if EventUI then EventUI.currentEventId = nil end
 		print("[LifeClient] ✅ Returning player (age:", currentState.Age, ") - resetting state!")
+
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Check if returning player is DEAD
+		-- If they died and left the game, they rejoin in a dead state but the death
+		-- overlay wasn't shown. The server will reject age-up with "Age up ignored for dead player".
+		-- We need to show the death overlay so they can start a new life!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local playerHealth = currentState.Health or 100
+		local playerIsDead = playerHealth <= 0
+		print("[LifeClient] 💀 Death check: Health =", playerHealth, "isDead =", playerIsDead)
+
+		if playerIsDead then
+			print("[LifeClient] ☠️ RETURNING PLAYER IS DEAD! Showing death overlay...")
+			-- Determine death cause from saved data or use generic message
+			local deathCause = "You died in your previous life."
+			if currentState.Flags and currentState.Flags.last_death_cause then
+				deathCause = currentState.Flags.last_death_cause
+			elseif currentState.DeathCause then
+				deathCause = currentState.DeathCause
+			end
+			showDeathOverlay(deathCause, currentState.Age, false, nil)
+			return -- Don't show welcome screen, show death screen instead
+		end
+
 		if hasName then
 			showWelcomeScreen(false) -- false = show updates, not welcome
 		end
@@ -8000,6 +8045,23 @@ task.delay(2, function()
 	local hasSavedData = currentState.Flags and currentState.Flags.data_restored
 
 	if hasAge or hasSavedData then
+		-- CRITICAL FIX: Check for dead player in late sync too
+		local playerHealth = currentState.Health or 100
+		local playerIsDead = playerHealth <= 0
+		local deathOverlayVisible = DeathUI and DeathUI.overlay and DeathUI.overlay.Visible
+
+		if playerIsDead and not deathOverlayVisible then
+			print("[LifeClient] ☠️ Late fix: Player is DEAD, showing death overlay!")
+			local deathCause = "You died in your previous life."
+			if currentState.Flags and currentState.Flags.last_death_cause then
+				deathCause = currentState.Flags.last_death_cause
+			elseif currentState.DeathCause then
+				deathCause = currentState.DeathCause
+			end
+			showDeathOverlay(deathCause, currentState.Age, false, nil)
+			return
+		end
+
 		if not introComplete then
 			print("[LifeClient] ⚠️ Late fix: Detected returning player, forcing introComplete=true")
 			introComplete = true
