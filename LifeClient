@@ -22,31 +22,45 @@ local OccupationScreen, AssetsScreen, RelationshipsScreen, ActivitiesScreen, Sto
 local MinigamesModule
 
 if ScreensFolder then
-	-- Load modules in parallel using coroutines for faster startup
+	print("[LifeClient] 📂 Found ScreensFolder, loading screen modules...")
+	
+	-- Load modules with detailed error logging
 	local function safeRequire(name)
+		print("[LifeClient] 🔄 Loading screen module:", name)
 		local child = ScreensFolder:FindFirstChild(name)
 		if child then
+			print("[LifeClient] ✓ Found module:", name)
 			local s, r = pcall(require, child)
-			if not s then
-				warn("[LifeClient] ❌ Failed to require", name, ":", r)
+			if s then
+				if r then
+					print("[LifeClient] ✅ Successfully required:", name)
+					return r
+				else
+					warn("[LifeClient] ❌ Module", name, "returned nil from require")
+				end
+			else
+				warn("[LifeClient] ❌ Failed to require", name, ":", tostring(r))
 			end
-			return s and r or nil
 		else
 			-- Don't warn for optional modules like MafiaScreen
 			if name ~= "MafiaScreen" then
-				warn("[LifeClient] ❌ Module not found:", name)
+				warn("[LifeClient] ❌ Module not found in Screens folder:", name)
 			end
 		end
 		return nil
 	end
 
-	-- Fast parallel loading - no WaitForChild delays
+	-- Sequential loading with logging (for debugging)
 	OccupationScreen    = safeRequire("OccupationScreen")
 	AssetsScreen        = safeRequire("AssetsScreen")
 	RelationshipsScreen = safeRequire("RelationshipsScreen")
 	ActivitiesScreen    = safeRequire("ActivitiesScreen")
 	StoryPathsScreen    = safeRequire("StoryPathsScreen")
 	MafiaScreen         = safeRequire("MafiaScreen")
+	
+	print("[LifeClient] 📂 Screen modules loaded. AssetsScreen is:", AssetsScreen and "OK" or "NIL")
+else
+	warn("[LifeClient] ❌ ScreensFolder not found! Screens will not work!")
 end
 
 -- Minigames module (directly in ReplicatedStorage) - wait for it!
@@ -2650,16 +2664,36 @@ local function createNavButton(info, parent, order)
 			return
 		end
 		
-		if info.screen == "occupation" and ScreenInstances.occupation then
-			ScreenInstances.occupation:show()
-		elseif info.screen == "assets" and ScreenInstances.assets then
-			ScreenInstances.assets:show()
-		elseif info.screen == "relationships" and ScreenInstances.relationships then
-			ScreenInstances.relationships:show()
-		elseif info.screen == "activities" and ScreenInstances.activities then
-			ScreenInstances.activities:show()
-		elseif info.screen == "storypaths" and ScreenInstances.storypaths then
-			ScreenInstances.storypaths:show()
+		if info.screen == "occupation" then
+			if ScreenInstances.occupation then
+				ScreenInstances.occupation:show()
+			else
+				warn("[LifeClient] ❌ OccupationScreen not available!")
+			end
+		elseif info.screen == "assets" then
+			if ScreenInstances.assets then
+				ScreenInstances.assets:show()
+			else
+				warn("[LifeClient] ❌ AssetsScreen not available - failed to initialize!")
+			end
+		elseif info.screen == "relationships" then
+			if ScreenInstances.relationships then
+				ScreenInstances.relationships:show()
+			else
+				warn("[LifeClient] ❌ RelationshipsScreen not available!")
+			end
+		elseif info.screen == "activities" then
+			if ScreenInstances.activities then
+				ScreenInstances.activities:show()
+			else
+				warn("[LifeClient] ❌ ActivitiesScreen not available!")
+			end
+		elseif info.screen == "storypaths" then
+			if ScreenInstances.storypaths then
+				ScreenInstances.storypaths:show()
+			else
+				warn("[LifeClient] ❌ StoryPathsScreen not available!")
+			end
 		end
 	end)
 
@@ -7436,9 +7470,22 @@ end)
 ----------------------------------------------------------------
 
 local function safeNew(mod, name, ...)
-	if mod and mod.new then
-		local s, r = pcall(mod.new, ...)
-		if s and r then return r end
+	if not mod then
+		warn("[LifeClient] ❌ Module " .. tostring(name) .. " is nil - failed to require")
+		return nil
+	end
+	if not mod.new then
+		warn("[LifeClient] ❌ Module " .. tostring(name) .. " has no .new function")
+		return nil
+	end
+	local s, r = pcall(mod.new, ...)
+	if s and r then 
+		print("[LifeClient] ✅ Created " .. tostring(name) .. " successfully")
+		return r 
+	elseif not s then
+		warn("[LifeClient] ❌ Failed to create " .. tostring(name) .. ":", tostring(r))
+	else
+		warn("[LifeClient] ❌ " .. tostring(name) .. ".new returned nil")
 	end
 	return nil
 end
