@@ -4666,8 +4666,25 @@ showEvent = function(payload)
 				if payload.isLowHealthWarning then
 					hideEvent()
 					if choiceIndex == 2 then
-						-- Player chose "Get God Mode!" - prompt purchase
-						promptGamepassDirect("GOD_MODE")
+						-- Player chose "Get God Mode!" - check if they already own it
+						refreshGodModeStatus()
+						if hasGodMode then
+							-- Already owns God Mode - max all stats directly!
+							print("[LifeClient] Player owns God Mode - maxing health!")
+							if GodModeEdit then
+								task.spawn(function()
+									pcall(function()
+										GodModeEdit:InvokeServer({
+											action = "max_all_stats",
+											Health = 100, Happiness = 100, Smarts = 100, Looks = 100,
+										})
+									end)
+								end)
+							end
+						else
+							-- Doesn't own God Mode - prompt purchase
+							promptGamepassDirect("GOD_MODE")
+						end
 					end
 					-- Choice 1 just dismisses the warning (already hidden above)
 					return
@@ -4679,8 +4696,25 @@ showEvent = function(payload)
 				if payload.isStatBoostWarning then
 					hideEvent()
 					if choiceIndex == 2 then
-						-- Player chose "Boost Stats!" - prompt God Mode purchase
-						promptGamepassDirect("GOD_MODE")
+						-- Player chose "Boost Stats!" - check if they already own God Mode
+						refreshGodModeStatus()
+						if hasGodMode then
+							-- Already owns God Mode - max all stats directly!
+							print("[LifeClient] Player owns God Mode - maxing all stats!")
+							if GodModeEdit then
+								task.spawn(function()
+									pcall(function()
+										GodModeEdit:InvokeServer({
+											action = "max_all_stats",
+											Health = 100, Happiness = 100, Smarts = 100, Looks = 100,
+										})
+									end)
+								end)
+							end
+						else
+							-- Doesn't own God Mode - prompt purchase
+							promptGamepassDirect("GOD_MODE")
+						end
 					end
 					return
 				end
@@ -4692,9 +4726,32 @@ showEvent = function(payload)
 				if payload.isPrisonPopup then
 					hideEvent()
 					if choiceIndex == 2 then
-						-- Player chose "Get Out FREE!" - prompt prison freedom gamepass
-						-- This will trigger server to release from prison and clear record
-						promptGamepassDirect("GOD_MODE")  -- God Mode includes prison freedom
+						-- Player chose "Get Out FREE!" - check if they already own God Mode
+						refreshGodModeStatus()
+						if hasGodMode then
+							-- Already owns God Mode - directly release from prison!
+							print("[LifeClient] Player owns God Mode - releasing from prison!")
+							if GodModeEdit then
+								task.spawn(function()
+									local ok, result = pcall(function()
+										return GodModeEdit:InvokeServer({
+											action = "release_from_prison",
+											releaseFromPrison = true,
+											clearCriminalRecord = true,
+										})
+									end)
+									if ok and result then
+										print("[LifeClient] Prison release successful!")
+									else
+										warn("[LifeClient] Prison release failed:", result)
+									end
+								end)
+							end
+						else
+							-- Doesn't own God Mode - prompt purchase
+							print("[LifeClient] Prompting God Mode purchase for prison release")
+							promptGamepassDirect("GOD_MODE")
+						end
 					end
 					-- Choice 1 = serve time, just dismiss
 					return
