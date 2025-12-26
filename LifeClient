@@ -176,6 +176,9 @@ local selectedGender         = nil
 -- CRITICAL FIX: Track low health warning to avoid spam
 -- Reset when health goes back above threshold or on new life
 local lastLowHealthWarningAge = -1  -- Age when we last showed the warning
+local lastStatBoostWarningAge = -1  -- Age when we last showed stat boost warning
+local lastPrisonPopupAge = -1       -- Age when we last showed prison popup
+local wasInJailLastSync = false     -- Track jail state to detect entering jail
 
 local ScreenInstances = {
 	occupation = nil,
@@ -269,22 +272,12 @@ local function promptGamepassDirect(gamepassKey)
 		return false
 	end
 	
-	-- Check if already owned (from cache)
-	if gamepassKey == "GOD_MODE" and hasGodMode then
-		print("[LifeClient] Already owns GOD_MODE")
-		return false
-	elseif gamepassKey == "ROYALTY" and hasRoyalty then
-		print("[LifeClient] Already owns ROYALTY")
-		return false
-	elseif gamepassKey == "MAFIA" and hasMafia then
-		print("[LifeClient] Already owns MAFIA")
-		return false
-	elseif gamepassKey == "CELEBRITY" and hasCelebrity then
-		print("[LifeClient] Already owns CELEBRITY")
-		return false
-	elseif gamepassKey == "TIME_MACHINE" and hasTimeMachine then
-		print("[LifeClient] Already owns TIME_MACHINE")
-		return false
+	-- Check if already owned (from cache) - silently return to avoid spam
+	if gamepassKey == "GOD_MODE" and hasGodMode then return false
+	elseif gamepassKey == "ROYALTY" and hasRoyalty then return false
+	elseif gamepassKey == "MAFIA" and hasMafia then return false
+	elseif gamepassKey == "CELEBRITY" and hasCelebrity then return false
+	elseif gamepassKey == "TIME_MACHINE" and hasTimeMachine then return false
 	end
 	
 	-- CRITICAL: Call MarketplaceService DIRECTLY from client!
@@ -320,6 +313,24 @@ local function onGamepassPurchaseFinished(plr, gamePassId, wasPurchased)
 	if gamePassId == GAMEPASS_IDS.GOD_MODE then
 		hasGodMode = true
 		print("[LifeClient] God Mode gamepass purchased - immediately enabling!")
+
+		-- CRITICAL: Set all stats to MAX and release from prison!
+		-- User request: "GIVES MAX HEALTH AND ALL STATS WHEN PURCHASED"
+		if GodModeEdit then
+			task.spawn(function()
+				pcall(function()
+					GodModeEdit:InvokeServer({
+						action = "max_all_stats",
+						Health = 100,
+						Happiness = 100,
+						Smarts = 100,
+						Looks = 100,
+						releaseFromPrison = true,  -- Also release from prison
+						clearCriminalRecord = true, -- Clear criminal record
+					})
+				end)
+			end)
+		end
 	elseif gamePassId == GAMEPASS_IDS.ROYALTY then
 		hasRoyalty = true
 		print("[LifeClient] Royalty gamepass purchased - immediately enabling!")
@@ -4662,6 +4673,33 @@ showEvent = function(payload)
 				end
 
 				-- ═══════════════════════════════════════════════════════════════════════════════
+				-- STAT BOOST WARNING: Player stats are low, offer God Mode
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				if payload.isStatBoostWarning then
+					hideEvent()
+					if choiceIndex == 2 then
+						-- Player chose "Boost Stats!" - prompt God Mode purchase
+						promptGamepassDirect("GOD_MODE")
+					end
+					return
+				end
+
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				-- PRISON POPUP: Player just entered jail, offer freedom gamepass
+				-- User request: "GET OUT FREE AND LOSE CRIMINAL RECORD"
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				if payload.isPrisonPopup then
+					hideEvent()
+					if choiceIndex == 2 then
+						-- Player chose "Get Out FREE!" - prompt prison freedom gamepass
+						-- This will trigger server to release from prison and clear record
+						promptGamepassDirect("GOD_MODE")  -- God Mode includes prison freedom
+					end
+					-- Choice 1 = serve time, just dismiss
+					return
+				end
+
+				-- ═══════════════════════════════════════════════════════════════════════════════
 				-- CRITICAL FIX: Handle activity events with callback
 				-- User feedback: "I CLICK ONE OF THE CHOICES AND IT JUST DISAPPEARS NUN ELSE POPUPS"
 				-- This was missing - activity choices need to call back to show results!
@@ -6987,7 +7025,10 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 		awaitingEvent = false
 		hasShownAgeHint = false
 		lastLowHealthWarningAge = -1  -- Reset low health warning tracker
-		
+		lastStatBoostWarningAge = -1  -- Reset stat boost warning tracker
+		lastPrisonPopupAge = -1       -- Reset prison popup tracker
+		wasInJailLastSync = false     -- Reset jail state tracker
+
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		-- CRITICAL FIX: Reset selectedCountry on new life!
 		-- User bug report: "countries IS VISIBLE LIKE ITS BUGGED SHOWING THE COUNTRIES 
@@ -7304,42 +7345,78 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 	end
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX: Show low health warning popup BEFORE death!
-	-- User bug report: "when I GOT LOW HEALTH IT DIDNT EVEN POP ANYTHING UP FOR
-	-- PROMPTING THE PURCHASE BOOST AND NO STAT BOOST"
-	-- This shows a warning when health is critically low (<=20) and offers options
+	-- CRITICAL FIX: Get current stats for warnings
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local currentHealth = currentState.Health or state.Health or 50
+	local currentHappiness = currentState.Happiness or state.Happiness or 50
+	local currentSmarts = currentState.Smarts or state.Smarts or 50
+	local currentLooks = currentState.Looks or state.Looks or 50
 	local currentAge = currentState.Age or state.Age or 0
 	local isDead = (resultData and resultData.fatal) or currentHealth <= 0
+	local isInJail = state.InJail or currentState.InJail or false
+	local jailYears = state.JailYearsLeft or currentState.JailYearsLeft or 0
 
-	-- Reset warning tracker if health recovered above threshold
-	if currentHealth > 25 then
-		lastLowHealthWarningAge = -1
+	-- Reset warning trackers if stats recovered above threshold
+	if currentHealth > 25 then lastLowHealthWarningAge = -1 end
+	if currentHappiness > 30 and currentSmarts > 30 and currentLooks > 30 then
+		lastStatBoostWarningAge = -1
 	end
+	if not isInJail then lastPrisonPopupAge = -1 end
 
-	-- Show low health warning if:
-	-- 1. Health is critically low (<=20) but not dead (>0)
-	-- 2. We haven't already shown the warning this life year
-	-- 3. Player has completed intro (has a name)
-	-- 4. Not currently showing another event
-	if currentHealth > 0 and currentHealth <= 20
-		and lastLowHealthWarningAge ~= currentAge
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- PRISON POPUP: Show when player ENTERS jail (not already in jail)
+	-- User request: "ONCE IN JAIL IT SAYS YOUR SENTENCE AND YOU CAN DO YOUR YEARS
+	-- OR GET OUT FREE AND LOSE CRIMINAL RECORD"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if isInJail and not wasInJailLastSync
+		and lastPrisonPopupAge ~= currentAge
 		and currentState.Name and currentState.Name ~= ""
 		and not awaitingEvent
 		and not isDead then
 
+		lastPrisonPopupAge = currentAge
+
+		task.defer(function()
+			showEvent({
+				id = "prison_sentence",
+				title = "⛓️ You've Been Incarcerated!",
+				emoji = "🔒",
+				text = "You have been sentenced to " .. jailYears .. " years in prison!\n\n" ..
+					"You can serve your time, attempt a risky escape, or...\n\n" ..
+					"🌟 Get Out of Jail FREE and clear your entire criminal record instantly!",
+				question = "What will you do?",
+				choices = {
+					{ text = "😔 Serve my time (" .. jailYears .. " years)", index = 1 },
+					{ text = "🔓 Get Out FREE! (Clear Record)", index = 2 },
+				},
+				category = "jail",
+				isPrisonPopup = true,
+				jailYears = jailYears,
+			})
+		end)
+	end
+	wasInJailLastSync = isInJail
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- LOW HEALTH WARNING: Critical health popup (<=20%) - death imminent!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if currentHealth > 0 and currentHealth <= 20
+		and lastLowHealthWarningAge ~= currentAge
+		and currentState.Name and currentState.Name ~= ""
+		and not awaitingEvent
+		and not isDead
+		and not isInJail then
+
 		lastLowHealthWarningAge = currentAge
 
-		-- Show warning event with choices
 		task.defer(function()
 			showEvent({
 				id = "low_health_warning",
 				title = "⚠️ Critical Health!",
 				emoji = "💔",
 				text = "Your health is dangerously low at " .. currentHealth .. "%!\n\n" ..
-					"You could die at any moment. Consider visiting a doctor or taking better care of yourself.\n\n" ..
-					"God Mode gives you unlimited health and stats - you'll never die from low health again!",
+					"You could die at any moment!\n\n" ..
+					"⚡ God Mode gives you MAX health and stats instantly!",
 				question = "What will you do?",
 				choices = {
 					{ text = "😰 I'll be careful", index = 1 },
@@ -7347,6 +7424,46 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 				},
 				category = "danger",
 				isLowHealthWarning = true,
+			})
+		end)
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- STAT BOOST WARNING: Any stat critically low (<=25%) - offer cheap boost!
+	-- User request: "STATS ARE LOW I CAN BOOST THEM ALL FOR CHEAP 30 ROBUX"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	elseif (currentHappiness <= 25 or currentSmarts <= 25 or currentLooks <= 25)
+		and currentHealth > 20  -- Don't overlap with health warning
+		and lastStatBoostWarningAge ~= currentAge
+		and currentState.Name and currentState.Name ~= ""
+		and not awaitingEvent
+		and not isDead
+		and not isInJail
+		and not hasGodMode then  -- Don't show if already has God Mode
+
+		lastStatBoostWarningAge = currentAge
+
+		-- Build list of low stats
+		local lowStats = {}
+		if currentHappiness <= 25 then table.insert(lowStats, "Happiness: " .. currentHappiness .. "%") end
+		if currentSmarts <= 25 then table.insert(lowStats, "Smarts: " .. currentSmarts .. "%") end
+		if currentLooks <= 25 then table.insert(lowStats, "Looks: " .. currentLooks .. "%") end
+		if currentHealth <= 40 then table.insert(lowStats, "Health: " .. currentHealth .. "%") end
+
+		task.defer(function()
+			showEvent({
+				id = "stat_boost_warning",
+				title = "📉 Stats Running Low!",
+				emoji = "⚡",
+				text = "Your stats are suffering:\n" .. table.concat(lowStats, "\n") .. "\n\n" ..
+					"Life is getting tough! Boost ALL your stats to MAX instantly!\n\n" ..
+					"🌟 God Mode = Unlimited stats forever!",
+				question = "What will you do?",
+				choices = {
+					{ text = "😤 I'll manage", index = 1 },
+					{ text = "⚡ Boost Stats! (God Mode)", index = 2 },
+				},
+				category = "warning",
+				isStatBoostWarning = true,
 			})
 		end)
 	end

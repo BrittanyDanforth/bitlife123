@@ -1784,9 +1784,9 @@ function Minigames:handleGetawayInput(btnIndex)
 			end)
 		end
 	else
-		-- EASIER: Reduced cop penalty from 0.15 to 0.10 (more forgiving mistakes)
+		-- HARDER: Increased cop penalty from 0.10 to 0.125 (25% harsher for mistakes)
 		self.getawayBtns[btnIndex].BackgroundColor3 = Color3.fromRGB(255, 50, 50) -- Bright red
-		self.copProgress = self.copProgress + 0.10
+		self.copProgress = self.copProgress + 0.125
 		tween(self.copProgressFill, TweenInfo.new(0.2), {
 			Size = UDim2.new(math.min(1, self.copProgress), 0, 1, 0),
 		})
@@ -1803,18 +1803,17 @@ function Minigames:startCopChase()
 	end
 
 	-- ═══════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX: Made cop chase SLOWER for easier gameplay
-	-- User complaint: "ensure its pretty easy too"
-	-- - Increased wait from 2s to 2.5s between cop progress ticks
-	-- - Reduced cop progress from 0.05 to 0.04 per tick
-	-- This gives players more time to complete sequences without pressure
+	-- HARDER: Made cop chase faster to encourage gamepass purchase
+	-- User request: "MAKE THE PRISON ESCAPE A BIT HARDER LIKE 25% HARDER"
+	-- - Reduced wait from 2.5s to 2.0s (cops catch up faster)
+	-- - Increased cop progress from 0.04 to 0.05 per tick
 	-- ═══════════════════════════════════════════════════════════════════════════
 	self._getawayCopChaseThread = task.spawn(function()
 		while self.activeGame == "getaway" do
-			task.wait(2.5)  -- EASIER: Was 2s, now 2.5s
+			task.wait(2.0)  -- HARDER: Was 2.5s, now 2.0s (25% faster)
 			if self.activeGame ~= "getaway" then break end
 
-			self.copProgress = self.copProgress + 0.04  -- EASIER: Was 0.05, now 0.04
+			self.copProgress = self.copProgress + 0.05  -- HARDER: Was 0.04, now 0.05 (25% more)
 			tween(self.copProgressFill, TweenInfo.new(0.3), {
 				Size = UDim2.new(math.min(1, self.copProgress), 0, 1, 0),
 			})
@@ -2244,7 +2243,8 @@ function Minigames:handlePrisonInput(btnIndex)
 		end)
 	else
 		self.prisonArrowBtns[btnIndex].BackgroundColor3 = C.Red
-		self.guardAlert = self.guardAlert + 0.2
+		-- HARDER: Increased penalty from 0.2 to 0.25 (25% bigger mistake penalty)
+		self.guardAlert = self.guardAlert + 0.25
 
 		tween(self.guardAlertFill, TweenInfo.new(0.2), {
 			Size = UDim2.new(math.min(1, self.guardAlert), 0, 1, 0),
@@ -2263,10 +2263,12 @@ function Minigames:startGuardPatrol()
 
 	self._prisonGuardThread = task.spawn(function()
 		while self.activeGame == "prison_escape" do
-			task.wait(3)
+			-- HARDER: Reduced wait from 3s to 2.4s (25% faster guard patrol)
+			task.wait(2.4)
 			if self.activeGame ~= "prison_escape" then break end
 
-			self.guardAlert = self.guardAlert + 0.08
+			-- HARDER: Increased from 0.08 to 0.10 (25% more alert per patrol)
+			self.guardAlert = self.guardAlert + 0.10
 			tween(self.guardAlertFill, TweenInfo.new(0.3), {
 				Size = UDim2.new(math.min(1, self.guardAlert), 0, 1, 0),
 			})
