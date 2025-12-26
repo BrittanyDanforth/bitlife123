@@ -177,9 +177,12 @@ local selectedGender         = nil
 -- Reset when health goes back above threshold or on new life
 local lastLowHealthWarningAge = -1  -- Age when we last showed the warning
 local lastStatBoostWarningAge = -1  -- Age when we last showed stat boost warning
-local lastPrisonPopupAge = -1       -- Age when we last showed prison popup
+local shownPrisonPopupThisSentence = false  -- Only show prison popup ONCE per jail sentence
 local wasInJailLastSync = false     -- Track jail state to detect entering jail
 local lastEventResolvedTime = 0     -- Timestamp when last event was resolved (for popup cooldown)
+
+-- Developer Product ID for one-time jail release (NOT gamepass, user pays once per use)
+local PRISON_FREEDOM_PRODUCT_ID = 3477466850  -- TODO: Update with actual product ID from Roblox
 
 local ScreenInstances = {
 	occupation = nil,
@@ -480,9 +483,9 @@ end
 -- The server will send a SyncState update which triggers hideDeathOverlay
 MarketplaceService.PromptProductPurchaseFinished:Connect(function(userId, productId, wasPurchased)
 	if userId ~= player.UserId or not wasPurchased then return end
-	
+
 	print("[LifeClient] Developer Product purchased:", productId)
-	
+
 	-- Time Machine product IDs
 	local TIME_PRODUCTS = {
 		[3477466389] = 5,   -- 5 years
@@ -490,11 +493,19 @@ MarketplaceService.PromptProductPurchaseFinished:Connect(function(userId, produc
 		[3477466619] = 20,  -- 20 years
 		[3477466778] = -1,  -- Baby
 	}
-	
+
 	if TIME_PRODUCTS[productId] then
 		print("[LifeClient] Time Machine product purchased, waiting for server to process...")
 		-- Server's ProcessReceipt will handle the time travel and send SyncState
 		-- The SyncState handler will update the UI and hide death overlay
+	end
+
+	-- Prison Freedom product - release from jail and clear record
+	if productId == PRISON_FREEDOM_PRODUCT_ID then
+		print("[LifeClient] Prison Freedom product purchased! Server will release from prison...")
+		-- Server's ProcessReceipt will handle the prison release
+		-- Reset the popup flag so we don't show it again
+		shownPrisonPopupThisSentence = false
 	end
 end)
 
@@ -4720,40 +4731,21 @@ showEvent = function(payload)
 				end
 
 				-- ═══════════════════════════════════════════════════════════════════════════════
-				-- PRISON POPUP: Player just entered jail, offer freedom gamepass
+				-- PRISON POPUP: Player just entered jail, offer one-time freedom purchase
 				-- User request: "GET OUT FREE AND LOSE CRIMINAL RECORD"
+				-- Uses DEVELOPER PRODUCT (one-time purchase) not gamepass
 				-- ═══════════════════════════════════════════════════════════════════════════════
 				if payload.isPrisonPopup then
 					hideEvent()
+					shownPrisonPopupThisSentence = true  -- Mark as shown for this sentence
 					if choiceIndex == 2 then
-						-- Player chose "Get Out FREE!" - check if they already own God Mode
-						refreshGodModeStatus()
-						if hasGodMode then
-							-- Already owns God Mode - directly release from prison!
-							print("[LifeClient] Player owns God Mode - releasing from prison!")
-							if GodModeEdit then
-								task.spawn(function()
-									local ok, result = pcall(function()
-										return GodModeEdit:InvokeServer({
-											action = "release_from_prison",
-											releaseFromPrison = true,
-											clearCriminalRecord = true,
-										})
-									end)
-									if ok and result then
-										print("[LifeClient] Prison release successful!")
-									else
-										warn("[LifeClient] Prison release failed:", result)
-									end
-								end)
-							end
-						else
-							-- Doesn't own God Mode - prompt purchase
-							print("[LifeClient] Prompting God Mode purchase for prison release")
-							promptGamepassDirect("GOD_MODE")
-						end
+						-- Player chose "Get Out FREE!" - prompt developer product purchase
+						print("[LifeClient] Prompting Prison Freedom developer product purchase")
+						pcall(function()
+							MarketplaceService:PromptProductPurchase(player, PRISON_FREEDOM_PRODUCT_ID)
+						end)
 					end
-					-- Choice 1 = serve time, just dismiss
+					-- Choice 1 = serve time, just dismiss (popup won't show again this sentence)
 					return
 				end
 
@@ -7085,7 +7077,7 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 		hasShownAgeHint = false
 		lastLowHealthWarningAge = -1  -- Reset low health warning tracker
 		lastStatBoostWarningAge = -1  -- Reset stat boost warning tracker
-		lastPrisonPopupAge = -1       -- Reset prison popup tracker
+		shownPrisonPopupThisSentence = false  -- Reset prison popup tracker
 		wasInJailLastSync = false     -- Reset jail state tracker
 
 		-- ═══════════════════════════════════════════════════════════════════════════════
@@ -7420,20 +7412,24 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 	if currentHappiness > 30 and currentSmarts > 30 and currentLooks > 30 then
 		lastStatBoostWarningAge = -1
 	end
-	if not isInJail then lastPrisonPopupAge = -1 end
+	-- Reset prison popup flag when player LEAVES jail (for next sentence)
+	if not isInJail then
+		shownPrisonPopupThisSentence = false
+	end
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- PRISON POPUP: Show when player ENTERS jail (not already in jail)
-	-- User request: "ONCE IN JAIL IT SAYS YOUR SENTENCE AND YOU CAN DO YOUR YEARS
-	-- OR GET OUT FREE AND LOSE CRIMINAL RECORD"
+	-- PRISON POPUP: Show ONCE when player ENTERS jail
+	-- Only shows the FIRST time you enter jail for this sentence
+	-- If you decline, it won't show again until you leave and re-enter jail
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	if isInJail and not wasInJailLastSync
-		and lastPrisonPopupAge ~= currentAge
+		and not shownPrisonPopupThisSentence
 		and currentState.Name and currentState.Name ~= ""
 		and not awaitingEvent
 		and not isDead then
 
-		lastPrisonPopupAge = currentAge
+		-- Don't set shownPrisonPopupThisSentence here - set it in the handler
+		-- This way we only mark it shown after the popup actually appears
 
 		task.defer(function()
 			showEvent({
@@ -7441,12 +7437,11 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 				title = "⛓️ You've Been Incarcerated!",
 				emoji = "🔒",
 				text = "You have been sentenced to " .. jailYears .. " years in prison!\n\n" ..
-					"You can serve your time, attempt a risky escape, or...\n\n" ..
-					"🌟 Get Out of Jail FREE and clear your entire criminal record instantly!",
+					"Serve your time or pay to get out instantly!",
 				question = "What will you do?",
 				choices = {
 					{ text = "😔 Serve my time (" .. jailYears .. " years)", index = 1 },
-					{ text = "🔓 Get Out FREE! (Clear Record)", index = 2 },
+					{ text = "💰 Get Out FREE! (R$)", index = 2 },
 				},
 				category = "jail",
 				isPrisonPopup = true,
