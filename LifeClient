@@ -7062,6 +7062,10 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 	if dataRestored and state.Name and state.Name ~= "" then
 		isNewLife = false
 		introComplete = true  -- Skip intro entirely
+		-- CRITICAL FIX: Reset awaitingEvent for returning players!
+		-- Without this, the Age button is permanently blocked after rejoin
+		awaitingEvent = false
+		EventUI.currentEventId = nil
 		print("[LifeClient] 📂 Data restored from save - NOT a new life. Name:", state.Name, "Age:", state.Age)
 	end
 
@@ -7695,20 +7699,39 @@ local function pulseAge()
 end
 
 ageButton.MouseButton1Click:Connect(function()
-	-- Safety check: if awaitingEvent is true but the event overlay is NOT visible,
-	-- something went wrong - reset the flag
-	if awaitingEvent and not EventUI.overlay.Visible then
-		awaitingEvent = false
-		EventUI.currentEventId = nil
+	-- CRITICAL FIX: Aggressive safety check for stuck awaitingEvent
+	-- If awaitingEvent is true but intro is complete and no visible event overlay,
+	-- force reset the stuck state (common after rejoin)
+	if awaitingEvent then
+		local overlayVisible = EventUI and EventUI.overlay and EventUI.overlay.Visible
+		if not overlayVisible then
+			print("[LifeClient] ⚠️ Resetting stuck awaitingEvent - no visible overlay")
+			awaitingEvent = false
+			if EventUI then EventUI.currentEventId = nil end
+		elseif introComplete and currentState.Name then
+			-- Double check - if intro is done and we have a name, overlay should be visible
+			-- Give it a small grace period then force through
+			print("[LifeClient] ⚠️ awaitingEvent=true but intro complete, checking overlay...")
+		end
 	end
 
-	-- Block age up if waiting for event choice
+	-- Block age up if waiting for event choice (only if overlay is actually visible)
 	if awaitingEvent then
-		return
+		local overlayVisible = EventUI and EventUI.overlay and EventUI.overlay.Visible
+		if overlayVisible then
+			print("[LifeClient] Age blocked - event overlay visible")
+			return
+		else
+			-- Force reset if overlay not visible but flag still set
+			print("[LifeClient] ⚠️ Force resetting awaitingEvent - overlay not visible")
+			awaitingEvent = false
+			if EventUI then EventUI.currentEventId = nil end
+		end
 	end
 
 	-- Block if no name set yet (intro not complete)
 	if not currentState.Name then
+		print("[LifeClient] Age blocked - no name set")
 		return
 	end
 
@@ -7897,6 +7920,10 @@ task.delay(0.5, function()
 	if dataRestored and currentState.Name and currentState.Name ~= "" then
 		-- RETURNING PLAYER: Skip intro, show updates popup
 		introComplete = true
+		-- CRITICAL FIX: Reset awaitingEvent for returning players!
+		-- This ensures the Age button works immediately after rejoin
+		awaitingEvent = false
+		if EventUI then EventUI.currentEventId = nil end
 		print("[LifeClient] ✅ Returning player - showing updates!")
 		showWelcomeScreen(false) -- false = show updates, not welcome
 	elseif isFirstTime then
