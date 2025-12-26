@@ -685,21 +685,22 @@ AdultExpanded.events = {
 				feedText = "You put money in...",
 				onResolve = function(state)
 					local investment = 500
-					-- CRITICAL FIX: Prevent negative money
-					state.Money = math.max(0, (state.Money or 0) - investment)
+					-- CRITICAL FIX: Prevent negative money and ensure nil safety
+					local currentMoney = state.Money or 0
+					state.Money = math.max(0, currentMoney - investment)
 					local roll = math.random()
 					if roll < 0.35 then
-						state.Money = state.Money + 1200
+						state.Money = (state.Money or 0) + 1200  -- CRITICAL FIX: nil safety
 						state:ModifyStat("Happiness", 10)
 						state.Flags = state.Flags or {}
 						state.Flags.good_investment = true
 						state:AddFeed("📈 INVESTMENT DOUBLED! Great call! $1200 profit!")
 					elseif roll < 0.60 then
-						state.Money = state.Money + 650
+						state.Money = (state.Money or 0) + 650  -- CRITICAL FIX: nil safety
 						state:ModifyStat("Happiness", 4)
 						state:AddFeed("📈 Modest return. $150 profit. Not bad.")
 					elseif roll < 0.85 then
-						state.Money = state.Money + 500
+						state.Money = (state.Money or 0) + 500  -- CRITICAL FIX: nil safety
 						state:AddFeed("📈 Broke even. At least didn't lose money.")
 					else
 						state:ModifyStat("Happiness", -8)

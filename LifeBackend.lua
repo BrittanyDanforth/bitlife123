@@ -15586,6 +15586,9 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Some mischief activities have risk of getting caught
 	-- E.g., vandalism, bullying, underage drinking may have consequences
+	-- CRITICAL FIX #942: SKIP early risk check for activities with minigames!
+	-- The minigame result determines success/failure - don't pre-roll risk here!
+	-- This was causing "Plan a Heist success but got caught" bug!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local resultMessage = ""
 	local gotCaught = false
@@ -15597,7 +15600,12 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 		end
 		resultMessage = enrollResult.message or "You enrolled in a new program."
 	else
-		if activity.risk and RANDOM:NextInteger(1, 100) <= activity.risk then
+		-- CRITICAL FIX #942: Skip early risk check for minigame activities!
+		-- For activities with hasMinigame=true, the risk check happens AFTER minigame result
+		-- in the mafiaEffect section below (lines 15769+)
+		local skipEarlyRiskCheck = activity.hasMinigame or activity.mafiaEffect
+		
+		if activity.risk and not skipEarlyRiskCheck and RANDOM:NextInteger(1, 100) <= activity.risk then
 			gotCaught = true
 			-- Risk-based consequence (usually for teen mischief)
 			if activity.riskConsequence then

@@ -215,7 +215,7 @@ events[#events + 1] = {
 				if math.random() < 0.1 then
 					-- Someone was very generous
 					local bonus = math.random(20, 100)
-					state.Money = state.Money + bonus
+					state.Money = (state.Money or 0) + bonus  -- CRITICAL FIX: nil safety
 					state:AddFeed(string.format("💰 Made $%d panhandling. Someone gave you an extra $%d!", earned, bonus))
 				else
 					state:AddFeed(string.format("💰 Made $%d panhandling today.", earned))
