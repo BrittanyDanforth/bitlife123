@@ -3,6 +3,9 @@
     Car-based events that depend on what vehicle you own
     Includes: Racing, traffic incidents, customization, road trips, breakdowns
     
+    CRITICAL: These events ONLY trigger when player owns a vehicle!
+    All events have proper eligibility checks to prevent random popups.
+    
     Vehicle quality tiers:
     - Economy: Old beaters, basic cars (value < 15000)
     - Standard: Normal cars (value 15000-40000)
@@ -13,8 +16,12 @@
 
 local VehicleEvents = {}
 
+-- Stage for event system
+local STAGE = "vehicle"
+
 -- Helper function to get player's best vehicle and tier
 local function getPlayerVehicle(state)
+    if not state then return nil, nil end
     if not state.Assets or not state.Assets.Vehicles then
         return nil, nil
     end
@@ -26,8 +33,10 @@ local function getPlayerVehicle(state)
     
     -- Find the best/most valuable vehicle
     local bestVehicle = vehicles[1]
+    if not bestVehicle then return nil, nil end
+    
     for _, v in ipairs(vehicles) do
-        if v.value and bestVehicle.value and v.value > bestVehicle.value then
+        if v and v.value and bestVehicle.value and v.value > bestVehicle.value then
             bestVehicle = v
         end
     end
@@ -48,23 +57,67 @@ local function getPlayerVehicle(state)
     return bestVehicle, tier
 end
 
--- Check if player has any car
+-- CRITICAL: Check if player ACTUALLY has a car before showing ANY vehicle event
 local function hasVehicle(state)
+    if not state then return false end
+    
     local flags = state.Flags or {}
+    
+    -- Check flags first
     if flags.has_car or flags.owns_car or flags.has_vehicle or flags.has_first_car then
+        -- Double-check that they actually have a vehicle in Assets
+        if state.Assets and state.Assets.Vehicles then
+            if type(state.Assets.Vehicles) == "table" and #state.Assets.Vehicles > 0 then
+                return true
+            end
+        end
+        -- If flag is set but no vehicle in Assets, still allow (they might have bought recently)
         return true
     end
+    
+    -- Check Assets.Vehicles directly
     if state.Assets and state.Assets.Vehicles then
         if type(state.Assets.Vehicles) == "table" and #state.Assets.Vehicles > 0 then
             return true
         end
     end
+    
     return false
+end
+
+-- CRITICAL: Master eligibility check that ALL vehicle events must pass
+local function masterVehicleEligibility(state)
+    if not state then return false, "No state" end
+    
+    -- Must have a vehicle
+    if not hasVehicle(state) then
+        return false, "No vehicle owned"
+    end
+    
+    -- Can't be in prison
+    local flags = state.Flags or {}
+    if flags.in_prison or flags.incarcerated or flags.jailed then
+        return false, "In prison"
+    end
+    
+    -- Can't be dead
+    if flags.dead or flags.is_dead then
+        return false, "Dead"
+    end
+    
+    -- Must be old enough to drive (16+)
+    local age = state.Age or 0
+    if age < 16 then
+        return false, "Too young to drive"
+    end
+    
+    return true, nil
 end
 
 VehicleEvents.events = {
     -- ══════════════════════════════════════════════════════════════════════════════
     -- STREET RACING EVENTS - Outcomes depend on car quality!
+    -- CRITICAL: All events check masterVehicleEligibility to prevent wrong triggers
     -- ══════════════════════════════════════════════════════════════════════════════
     {
         id = "vehicle_street_race_challenge",
@@ -79,13 +132,17 @@ VehicleEvents.events = {
         },
         question = "Do you accept the street race?",
         minAge = 18, maxAge = 55,
-        baseChance = 0.35,
-        cooldown = 4,
+        baseChance = 0.25,  -- REDUCED: Don't spam racing events
+        cooldown = 5,       -- INCREASED: Space out vehicle events
+        stage = STAGE,
         category = "vehicle",
         tags = { "racing", "car", "risk", "street" },
-        blockedByFlags = { in_prison = true, incarcerated = true },
+        blockedByFlags = { in_prison = true, incarcerated = true, dead = true, is_dead = true },
+        -- CRITICAL: Master eligibility check ensures player has a car
         eligibility = function(state)
-            return hasVehicle(state), "Need a car to race"
+            local canTrigger, reason = masterVehicleEligibility(state)
+            if not canTrigger then return false, reason end
+            return true
         end,
         
         choices = {
@@ -165,13 +222,15 @@ VehicleEvents.events = {
         text = "You hear about an underground street racing event happening tonight. Big money on the line.",
         question = "Entry fee is $500. Your car determines your class. Join?",
         minAge = 18, maxAge = 50,
-        baseChance = 0.25,
-        cooldown = 5,
+        baseChance = 0.15,  -- REDUCED: Rare event
+        cooldown = 8,       -- INCREASED: Don't spam
+        stage = STAGE,
         category = "vehicle",
         tags = { "racing", "underground", "gambling", "risk" },
-        blockedByFlags = { in_prison = true, incarcerated = true },
+        blockedByFlags = { in_prison = true, incarcerated = true, dead = true, is_dead = true },
         eligibility = function(state)
-            if not hasVehicle(state) then return false, "Need a car to race" end
+            local canTrigger, reason = masterVehicleEligibility(state)
+            if not canTrigger then return false, reason end
             if (state.Money or 0) < 500 then return false, "Need $500 entry fee" end
             return true
         end,
@@ -270,13 +329,16 @@ VehicleEvents.events = {
         },
         question = "How do you respond?",
         minAge = 18, maxAge = 70,
-        baseChance = 0.35,
-        cooldown = 4,
+        baseChance = 0.20,  -- REDUCED
+        cooldown = 6,       -- INCREASED
+        stage = STAGE,
         category = "vehicle",
         tags = { "traffic", "conflict", "anger" },
-        blockedByFlags = { in_prison = true, incarcerated = true },
+        blockedByFlags = { in_prison = true, incarcerated = true, dead = true, is_dead = true },
         eligibility = function(state)
-            return hasVehicle(state), "Need a car"
+            local canTrigger, reason = masterVehicleEligibility(state)
+            if not canTrigger then return false, reason end
+            return true
         end,
         
         choices = {
@@ -339,13 +401,16 @@ VehicleEvents.events = {
         },
         question = "What do you do?",
         minAge = 18, maxAge = 80,
-        baseChance = 0.25,
-        cooldown = 5,
+        baseChance = 0.15,  -- REDUCED
+        cooldown = 7,       -- INCREASED
+        stage = STAGE,
         category = "vehicle",
         tags = { "accident", "insurance", "traffic" },
-        blockedByFlags = { in_prison = true, incarcerated = true },
+        blockedByFlags = { in_prison = true, incarcerated = true, dead = true, is_dead = true },
         eligibility = function(state)
-            return hasVehicle(state), "Need a car"
+            local canTrigger, reason = masterVehicleEligibility(state)
+            if not canTrigger then return false, reason end
+            return true
         end,
         
         choices = {
@@ -401,13 +466,16 @@ VehicleEvents.events = {
         },
         question = "What do you do?",
         minAge = 18, maxAge = 80,
-        baseChance = 0.30,
-        cooldown = 5,
+        baseChance = 0.18,  -- REDUCED
+        cooldown = 7,       -- INCREASED
+        stage = STAGE,
         category = "vehicle",
         tags = { "breakdown", "repair", "emergency" },
-        blockedByFlags = { in_prison = true, incarcerated = true },
+        blockedByFlags = { in_prison = true, incarcerated = true, dead = true, is_dead = true },
         eligibility = function(state)
-            return hasVehicle(state), "Need a car"
+            local canTrigger, reason = masterVehicleEligibility(state)
+            if not canTrigger then return false, reason end
+            return true
         end,
         
         choices = {
@@ -486,13 +554,16 @@ VehicleEvents.events = {
         text = "You've got a flat tire!",
         question = "How do you handle it?",
         minAge = 18, maxAge = 80,
-        baseChance = 0.35,
-        cooldown = 4,
+        baseChance = 0.20,  -- REDUCED
+        cooldown = 6,       -- INCREASED
+        stage = STAGE,
         category = "vehicle",
         tags = { "tire", "repair", "roadside" },
-        blockedByFlags = { in_prison = true, incarcerated = true },
+        blockedByFlags = { in_prison = true, incarcerated = true, dead = true, is_dead = true },
         eligibility = function(state)
-            return hasVehicle(state), "Need a car"
+            local canTrigger, reason = masterVehicleEligibility(state)
+            if not canTrigger then return false, reason end
+            return true
         end,
         
         choices = {
@@ -550,13 +621,15 @@ VehicleEvents.events = {
         text = "There's a local car show this weekend. Want to enter your ride?",
         question = "Entry fee is $100. Prizes for winners!",
         minAge = 18, maxAge = 70,
-        baseChance = 0.30,
-        cooldown = 5,
+        baseChance = 0.15,  -- REDUCED
+        cooldown = 8,       -- INCREASED
+        stage = STAGE,
         category = "vehicle",
         tags = { "car_show", "hobby", "competition" },
-        blockedByFlags = { in_prison = true, incarcerated = true },
+        blockedByFlags = { in_prison = true, incarcerated = true, dead = true, is_dead = true },
         eligibility = function(state)
-            if not hasVehicle(state) then return false, "Need a car" end
+            local canTrigger, reason = masterVehicleEligibility(state)
+            if not canTrigger then return false, reason end
             if (state.Money or 0) < 100 then return false, "Need $100 entry fee" end
             return true
         end,
@@ -624,13 +697,15 @@ VehicleEvents.events = {
         text = "A mechanic friend offers to upgrade your car's performance for a good price.",
         question = "Upgrade costs $800. Could improve your car's value and speed.",
         minAge = 18, maxAge = 60,
-        baseChance = 0.25,
-        cooldown = 6,
+        baseChance = 0.15,  -- REDUCED
+        cooldown = 8,       -- INCREASED
+        stage = STAGE,
         category = "vehicle",
         tags = { "upgrade", "modification", "performance" },
-        blockedByFlags = { in_prison = true, incarcerated = true },
+        blockedByFlags = { in_prison = true, incarcerated = true, dead = true, is_dead = true },
         eligibility = function(state)
-            if not hasVehicle(state) then return false, "Need a car" end
+            local canTrigger, reason = masterVehicleEligibility(state)
+            if not canTrigger then return false, reason end
             if (state.Money or 0) < 800 then return false, "Need $800" end
             return true
         end,
@@ -691,13 +766,15 @@ VehicleEvents.events = {
         },
         question = "Take a road trip?",
         minAge = 18, maxAge = 70,
-        baseChance = 0.35,
-        cooldown = 4,
+        baseChance = 0.20,  -- REDUCED
+        cooldown = 6,       -- INCREASED
+        stage = STAGE,
         category = "vehicle",
         tags = { "travel", "adventure", "road_trip" },
-        blockedByFlags = { in_prison = true, incarcerated = true },
+        blockedByFlags = { in_prison = true, incarcerated = true, dead = true, is_dead = true },
         eligibility = function(state)
-            if not hasVehicle(state) then return false, "Need a car" end
+            local canTrigger, reason = masterVehicleEligibility(state)
+            if not canTrigger then return false, reason end
             if (state.Money or 0) < 200 then return false, "Need at least $200 for gas and food" end
             return true
         end,
@@ -758,13 +835,16 @@ VehicleEvents.events = {
         text = "Police lights in your rearview mirror! You were going a bit fast...",
         question = "How do you handle the traffic stop?",
         minAge = 18, maxAge = 80,
-        baseChance = 0.35,
-        cooldown = 4,
+        baseChance = 0.20,  -- REDUCED
+        cooldown = 6,       -- INCREASED
+        stage = STAGE,
         category = "vehicle",
         tags = { "police", "speeding", "ticket" },
-        blockedByFlags = { in_prison = true, incarcerated = true },
+        blockedByFlags = { in_prison = true, incarcerated = true, dead = true, is_dead = true },
         eligibility = function(state)
-            return hasVehicle(state), "Need a car"
+            local canTrigger, reason = masterVehicleEligibility(state)
+            if not canTrigger then return false, reason end
+            return true
         end,
         
         choices = {
@@ -830,13 +910,16 @@ VehicleEvents.events = {
         text = "You catch someone trying to break into your car!",
         question = "What do you do?",
         minAge = 18, maxAge = 70,
-        baseChance = 0.20,
-        cooldown = 6,
+        baseChance = 0.12,  -- REDUCED - rare event
+        cooldown = 8,       -- INCREASED
+        stage = STAGE,
         category = "vehicle",
         tags = { "crime", "theft", "confrontation" },
-        blockedByFlags = { in_prison = true, incarcerated = true },
+        blockedByFlags = { in_prison = true, incarcerated = true, dead = true, is_dead = true },
         eligibility = function(state)
-            return hasVehicle(state), "Need a car"
+            local canTrigger, reason = masterVehicleEligibility(state)
+            if not canTrigger then return false, reason end
+            return true
         end,
         
         choices = {

@@ -3,6 +3,9 @@
     Home and property-based events
     Includes: Break-ins, renovations, parties, neighbors, maintenance, etc.
     
+    CRITICAL: These events ONLY trigger when player has a home!
+    All events have proper eligibility checks to prevent random popups.
+    
     Property tiers:
     - Rental: Apartments, rented homes (HousingState.status == "renter")
     - Starter: Basic homes (value < 150000)
@@ -14,8 +17,13 @@
 
 local PropertyEvents = {}
 
+-- Stage for event system
+local STAGE = "property"
+
 -- Helper function to check if player owns property
 local function ownsProperty(state)
+    if not state then return false end
+    
     local housing = state.HousingState or {}
     local flags = state.Flags or {}
     
@@ -36,7 +44,8 @@ end
 
 -- Helper to get property tier
 local function getPropertyTier(state)
-    if not ownsProperty(state) then return nil end
+    if not state then return nil, nil end
+    if not ownsProperty(state) then return nil, nil end
     
     local housing = state.HousingState or {}
     if housing.status == "royal_palace" then
@@ -46,6 +55,8 @@ local function getPropertyTier(state)
     -- Check Assets.Properties
     if state.Assets and state.Assets.Properties and #state.Assets.Properties > 0 then
         local property = state.Assets.Properties[1]
+        if not property then return "standard", "your home" end
+        
         local value = property.value or property.price or 100000
         local name = property.name or "your home"
         
@@ -61,13 +72,55 @@ end
 
 -- Check if player is a renter
 local function isRenter(state)
+    if not state then return false end
     local housing = state.HousingState or {}
     return housing.status == "renter" or housing.status == "renting"
+end
+
+-- Check if player has ANY housing (owner or renter)
+local function hasHousing(state)
+    if not state then return false end
+    return ownsProperty(state) or isRenter(state)
+end
+
+-- CRITICAL: Master eligibility check that ALL property events must pass
+local function masterPropertyEligibility(state)
+    if not state then return false, "No state" end
+    
+    -- Must have housing
+    if not hasHousing(state) then
+        return false, "No housing"
+    end
+    
+    -- Can't be in prison
+    local flags = state.Flags or {}
+    if flags.in_prison or flags.incarcerated or flags.jailed then
+        return false, "In prison"
+    end
+    
+    -- Can't be dead
+    if flags.dead or flags.is_dead then
+        return false, "Dead"
+    end
+    
+    -- Can't be homeless
+    if flags.homeless then
+        return false, "Homeless"
+    end
+    
+    -- Must be adult (18+)
+    local age = state.Age or 0
+    if age < 18 then
+        return false, "Too young"
+    end
+    
+    return true, nil
 end
 
 PropertyEvents.events = {
     -- ══════════════════════════════════════════════════════════════════════════════
     -- HOME BREAK-IN EVENTS
+    -- CRITICAL: All events use masterPropertyEligibility to prevent wrong triggers
     -- ══════════════════════════════════════════════════════════════════════════════
     {
         id = "property_home_invasion",
@@ -82,13 +135,16 @@ PropertyEvents.events = {
         },
         question = "What do you find?",
         minAge = 18, maxAge = 90,
-        baseChance = 0.20,
-        cooldown = 6,
+        baseChance = 0.10,  -- REDUCED - rare event
+        cooldown = 10,      -- INCREASED - don't spam break-ins
+        stage = STAGE,
         category = "property",
         tags = { "crime", "home", "burglary" },
-        blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
+        blockedByFlags = { in_prison = true, incarcerated = true, homeless = true, dead = true, is_dead = true },
         eligibility = function(state)
-            return ownsProperty(state) or isRenter(state), "Need a home"
+            local canTrigger, reason = masterPropertyEligibility(state)
+            if not canTrigger then return false, reason end
+            return true
         end,
         
         choices = {
@@ -166,12 +222,15 @@ PropertyEvents.events = {
         },
         question = "Renovate your home?",
         minAge = 25, maxAge = 80,
-        baseChance = 0.30,
-        cooldown = 5,
+        baseChance = 0.15,  -- REDUCED
+        cooldown = 8,       -- INCREASED
+        stage = STAGE,
         category = "property",
         tags = { "renovation", "home", "investment" },
-        blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
+        blockedByFlags = { in_prison = true, incarcerated = true, homeless = true, dead = true, is_dead = true },
         eligibility = function(state)
+            local canTrigger, reason = masterPropertyEligibility(state)
+            if not canTrigger then return false, reason end
             if not ownsProperty(state) then return false, "Need to own a home" end
             if (state.Money or 0) < 5000 then return false, "Need at least $5000" end
             return true
@@ -246,13 +305,16 @@ PropertyEvents.events = {
         },
         question = "Host a party?",
         minAge = 21, maxAge = 60,
-        baseChance = 0.35,
-        cooldown = 4,
+        baseChance = 0.20,  -- REDUCED
+        cooldown = 6,       -- INCREASED
+        stage = STAGE,
         category = "property",
         tags = { "party", "social", "home" },
-        blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
+        blockedByFlags = { in_prison = true, incarcerated = true, homeless = true, dead = true, is_dead = true },
         eligibility = function(state)
-            return ownsProperty(state) or isRenter(state), "Need a place to host"
+            local canTrigger, reason = masterPropertyEligibility(state)
+            if not canTrigger then return false, reason end
+            return true
         end,
         
         choices = {
@@ -331,13 +393,16 @@ PropertyEvents.events = {
         },
         question = "How do you handle the conflict?",
         minAge = 18, maxAge = 90,
-        baseChance = 0.30,
-        cooldown = 5,
+        baseChance = 0.15,  -- REDUCED
+        cooldown = 7,       -- INCREASED
+        stage = STAGE,
         category = "property",
         tags = { "neighbor", "conflict", "home" },
-        blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
+        blockedByFlags = { in_prison = true, incarcerated = true, homeless = true, dead = true, is_dead = true },
         eligibility = function(state)
-            return ownsProperty(state) or isRenter(state), "Need a home"
+            local canTrigger, reason = masterPropertyEligibility(state)
+            if not canTrigger then return false, reason end
+            return true
         end,
         
         choices = {
@@ -391,13 +456,16 @@ PropertyEvents.events = {
         text = "A moving truck is parked next door - you're getting new neighbors!",
         question = "Do you introduce yourself?",
         minAge = 18, maxAge = 90,
-        baseChance = 0.30,
-        cooldown = 5,
+        baseChance = 0.15,  -- REDUCED
+        cooldown = 8,       -- INCREASED
+        stage = STAGE,
         category = "property",
         tags = { "neighbor", "social", "home" },
-        blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
+        blockedByFlags = { in_prison = true, incarcerated = true, homeless = true, dead = true, is_dead = true },
         eligibility = function(state)
-            return ownsProperty(state) or isRenter(state), "Need a home"
+            local canTrigger, reason = masterPropertyEligibility(state)
+            if not canTrigger then return false, reason end
+            return true
         end,
         
         choices = {
@@ -452,13 +520,16 @@ PropertyEvents.events = {
         },
         question = "How do you handle it?",
         minAge = 18, maxAge = 90,
-        baseChance = 0.35,
-        cooldown = 4,
+        baseChance = 0.20,  -- REDUCED
+        cooldown = 6,       -- INCREASED
+        stage = STAGE,
         category = "property",
         tags = { "maintenance", "emergency", "home" },
-        blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
+        blockedByFlags = { in_prison = true, incarcerated = true, homeless = true, dead = true, is_dead = true },
         eligibility = function(state)
-            return ownsProperty(state) or isRenter(state), "Need a home"
+            local canTrigger, reason = masterPropertyEligibility(state)
+            if not canTrigger then return false, reason end
+            return true
         end,
         
         choices = {
@@ -521,13 +592,17 @@ PropertyEvents.events = {
         text = "There's been a change in the local real estate market...",
         question = "What happened?",
         minAge = 25, maxAge = 90,
-        baseChance = 0.25,
-        cooldown = 5,
+        baseChance = 0.12,  -- REDUCED
+        cooldown = 8,       -- INCREASED
+        stage = STAGE,
         category = "property",
         tags = { "investment", "real_estate", "market" },
-        blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
+        blockedByFlags = { in_prison = true, incarcerated = true, homeless = true, dead = true, is_dead = true },
         eligibility = function(state)
-            return ownsProperty(state), "Need to own property"
+            local canTrigger, reason = masterPropertyEligibility(state)
+            if not canTrigger then return false, reason end
+            if not ownsProperty(state) then return false, "Need to own property" end
+            return true
         end,
         
         choices = {
@@ -587,13 +662,19 @@ PropertyEvents.events = {
         },
         question = "The rent is going up $100/month. What do you do?",
         minAge = 18, maxAge = 70,
-        baseChance = 0.35,
-        cooldown = 4,
+        baseChance = 0.20,  -- REDUCED
+        cooldown = 6,       -- INCREASED
+        stage = STAGE,
         category = "property",
         tags = { "rent", "housing", "cost" },
-        blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
+        blockedByFlags = { in_prison = true, incarcerated = true, homeless = true, dead = true, is_dead = true },
         eligibility = function(state)
-            return isRenter(state), "Must be renting"
+            -- CRITICAL: Only for renters
+            if not state then return false, "No state" end
+            local flags = state.Flags or {}
+            if flags.in_prison or flags.dead or flags.is_dead then return false, "Invalid state" end
+            if not isRenter(state) then return false, "Must be renting" end
+            return true
         end,
         
         choices = {
