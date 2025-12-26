@@ -2620,11 +2620,231 @@ function LifeBackend:setupProcessReceipt()
 			receiptInfo,
 			function(player) return self:getState(player) end,
 			function(player, years) return self:executeTimeMachineAction(player, years) end,
-			function(player) return self:executeJailRelease(player) end  -- CRITICAL FIX #907: Jail release handler
+			function(player) return self:executeJailRelease(player) end,
+			function(player) return self:executeStatBoost(player) end,  -- CRITICAL FIX #922: Stat boost handler
+			function(player, action) return self:executeExtraLife(player, action) end  -- CRITICAL FIX #923: Extra life handler
 		)
 		return result
 	end
 	print("[LifeBackend] ProcessReceipt handler set up for Developer Products")
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #922: STAT BOOST - Instantly boost all stats by +25!
+-- Called when player purchases STAT_BOOST product
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:executeStatBoost(player)
+	local state = self:getState(player)
+	if not state then
+		return { success = false, message = "State not found." }
+	end
+	
+	-- Initialize stats if needed
+	state.Stats = state.Stats or { Health = 50, Happiness = 50, Smarts = 50, Looks = 50 }
+	
+	-- Boost ALL stats by 25!
+	local boostAmount = 25
+	local oldHealth = state.Stats.Health or 50
+	local oldHappiness = state.Stats.Happiness or 50
+	local oldSmarts = state.Stats.Smarts or 50
+	local oldLooks = state.Stats.Looks or 50
+	
+	state.Stats.Health = math.min(100, oldHealth + boostAmount)
+	state.Stats.Happiness = math.min(100, oldHappiness + boostAmount)
+	state.Stats.Smarts = math.min(100, oldSmarts + boostAmount)
+	state.Stats.Looks = math.min(100, oldLooks + boostAmount)
+	
+	-- Also sync to state.Health etc for consistency
+	state.Health = state.Stats.Health
+	state.Happiness = state.Stats.Happiness
+	state.Smarts = state.Stats.Smarts
+	state.Looks = state.Stats.Looks
+	
+	-- Set flag
+	state.Flags = state.Flags or {}
+	state.Flags.stat_boosted = true
+	state.Flags.times_stat_boosted = (state.Flags.times_stat_boosted or 0) + 1
+	
+	-- Create dramatic message
+	local message = string.format(
+		"📈 MIRACLE BOOST! 💪\n\n" ..
+		"❤️ Health: %d → %d (+%d)\n" ..
+		"😊 Happiness: %d → %d (+%d)\n" ..
+		"🧠 Smarts: %d → %d (+%d)\n" ..
+		"✨ Looks: %d → %d (+%d)\n\n" ..
+		"You feel AMAZING!",
+		oldHealth, state.Stats.Health, state.Stats.Health - oldHealth,
+		oldHappiness, state.Stats.Happiness, state.Stats.Happiness - oldHappiness,
+		oldSmarts, state.Stats.Smarts, state.Stats.Smarts - oldSmarts,
+		oldLooks, state.Stats.Looks, state.Stats.Looks - oldLooks
+	)
+	
+	-- Push state with the boost message
+	self:pushState(player, "📈 MIRACLE BOOST! All stats increased by +25! You feel INCREDIBLE!")
+	
+	print("[LifeBackend] STAT_BOOST executed for:", player.Name)
+	return { 
+		success = true, 
+		message = message,
+		showPopup = true,
+		emoji = "📈",
+		title = "💪 MIRACLE BOOST!",
+		body = message,
+	}
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #923: EXTRA LIFE - The AMAZING Second Chance System!
+-- 
+-- When purchased: Notifies player they have an extra life
+-- When used (on death): 
+--   - Prevents death entirely
+--   - Rolls back age 5-10 years (was in coma/recovery)
+--   - Restores health to 100%
+--   - Keeps ALL money, assets, relationships
+--   - Grants "survivor" flag for unique events
+--   - +10 Smarts (near-death wisdom)
+--   - Creates dramatic narrative
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:executeExtraLife(player, action)
+	local state = self:getState(player)
+	if not state then
+		return { success = false, message = "State not found." }
+	end
+	
+	-- If just purchased, notify the player
+	if action == "purchased" then
+		local lives = GamepassSystem:getExtraLives(player)
+		self:pushState(player, string.format("💖 EXTRA LIFE ACQUIRED! You now have %d extra %s ready!", lives, lives == 1 and "life" or "lives"))
+		return { success = true, message = "Extra life stored for when you need it most!" }
+	end
+	
+	-- If being used (called from death prevention), do the revival
+	if action == "use" then
+		return self:performExtraLifeRevival(player, state)
+	end
+	
+	return { success = true, message = "Extra life ready." }
+end
+
+-- The actual revival logic - called when player would die but has extra life
+function LifeBackend:performExtraLifeRevival(player, state)
+	-- Use one extra life
+	local used = GamepassSystem:useExtraLife(player)
+	if not used then
+		return { success = false, message = "No extra lives remaining!" }
+	end
+	
+	-- Calculate how much to roll back age (5-10 years recovery time)
+	local currentAge = state.Age or 25
+	local yearsInRecovery = RANDOM:NextInteger(5, 10)
+	local newAge = math.max(18, currentAge - yearsInRecovery) -- Can't go below 18
+	local actualYearsBack = currentAge - newAge
+	
+	-- Save old values for narrative
+	local oldAge = currentAge
+	local oldHealth = (state.Stats and state.Stats.Health) or 50
+	local deathCause = state.DeathReason or state.CauseOfDeath or "the accident"
+	
+	-- REVIVE THE CHARACTER!
+	state.Age = newAge
+	state.Year = (state.Year or 2024) - actualYearsBack
+	
+	-- Full health restoration
+	state.Stats = state.Stats or {}
+	state.Stats.Health = 100
+	state.Health = 100
+	
+	-- Boost happiness (glad to be alive!)
+	state.Stats.Happiness = math.min(100, (state.Stats.Happiness or 50) + 20)
+	
+	-- Wisdom from near-death experience (+10 Smarts)
+	state.Stats.Smarts = math.min(100, (state.Stats.Smarts or 50) + 10)
+	
+	-- Clear death flags
+	state.Flags = state.Flags or {}
+	state.Flags.dead = nil
+	state.Flags.is_dead = nil
+	state.Flags.is_alive = true
+	state.DeathReason = nil
+	state.DeathAge = nil
+	state.DeathYear = nil
+	state.CauseOfDeath = nil
+	
+	-- Grant survivor flags for unique events!
+	state.Flags.survivor = true
+	state.Flags.near_death_survivor = true
+	state.Flags.cheated_death = true
+	state.Flags.second_chance = true
+	state.Flags.times_revived = (state.Flags.times_revived or 0) + 1
+	state.Flags.last_revival_age = oldAge
+	state.Flags.years_lost_to_coma = actualYearsBack
+	
+	-- Keep ALL money and assets (they're yours!)
+	-- Keep ALL relationships (they waited for you!)
+	
+	-- Generate dramatic revival narrative
+	local survivalStories = {
+		string.format("💖 MIRACLE! After %d years in a coma, you woke up! The doctors called it a medical miracle.", actualYearsBack),
+		string.format("💖 SECOND CHANCE! You flatlined but were revived. After %d years of recovery, you're back stronger than ever!", actualYearsBack),
+		string.format("💖 SURVIVOR! Against all odds, you survived %s. %d years of rehabilitation later, you've made a full recovery!", deathCause, actualYearsBack),
+		string.format("💖 BACK FROM THE BRINK! You spent %d years fighting for your life. Now you're ready to live it to the fullest!", actualYearsBack),
+		string.format("💖 REBORN! What should have killed you only made you stronger. After %d years, you emerged with a new perspective on life.", actualYearsBack),
+	}
+	local survivalMessage = survivalStories[RANDOM:NextInteger(1, #survivalStories)]
+	
+	-- Add to year log
+	state.YearLog = state.YearLog or {}
+	table.insert(state.YearLog, {
+		type = "miracle",
+		emoji = "💖",
+		text = survivalMessage,
+		isSpecial = true,
+	})
+	
+	-- Full message for CardPopup
+	local fullMessage = string.format(
+		"%s\n\n" ..
+		"📊 Your Second Chance:\n" ..
+		"• Age: %d → %d (-%d years in recovery)\n" ..
+		"• Health: %d%% → 100%%\n" ..
+		"• Wisdom: +10 🧠 (Near-death insight)\n" ..
+		"• All your money, assets & relationships preserved!\n\n" ..
+		"🌟 You've unlocked special 'Survivor' life events!",
+		survivalMessage, oldAge, newAge, actualYearsBack, oldHealth
+	)
+	
+	-- Push state update
+	self:pushState(player, survivalMessage)
+	
+	print("[LifeBackend] EXTRA_LIFE REVIVAL executed for:", player.Name, "Age rolled back from", oldAge, "to", newAge)
+	
+	return {
+		success = true,
+		message = fullMessage,
+		revived = true,
+		showPopup = true,
+		emoji = "💖",
+		title = "💖 SECOND CHANCE AT LIFE!",
+		body = fullMessage,
+		newAge = newAge,
+		oldAge = oldAge,
+		yearsBack = actualYearsBack,
+	}
+end
+
+-- Check if player should be saved by extra life (called before death)
+function LifeBackend:checkExtraLifeSave(player, state)
+	if not player or not GamepassSystem then return false end
+	
+	-- Check if player has an extra life
+	if GamepassSystem:hasExtraLife(player) then
+		-- Use the extra life to save them!
+		local result = self:performExtraLifeRevival(player, state)
+		return result.success, result
+	end
+	
+	return false, nil
 end
 
 -- CRITICAL FIX #908: Execute jail release (called from ProcessReceipt after GET_OUT_OF_JAIL purchase)
@@ -12422,10 +12642,37 @@ function LifeBackend:checkNaturalDeath(state)
 	
 	-- Health-based death (very low health)
 	if health <= 0 then
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #924: Check for EXTRA_LIFE before death!
+		-- If player has an extra life, use it to save them!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local player = state.player
+		if player and GamepassSystem and GamepassSystem:hasExtraLife(player) then
+			-- EXTRA LIFE SAVE!
+			state.DeathReason = state.DeathReason or "Health complications"
+			local saved, result = self:checkExtraLifeSave(player, state)
+			if saved then
+				-- Don't die - extra life was used!
+				print("[checkNaturalDeath] Player saved by EXTRA_LIFE!")
+				return -- Exit without setting dead flag
+			end
+		end
+		
+		-- No extra life - player dies
 		state.Flags.dead = true
 		state.DeathReason = state.DeathReason or "Health complications"
 		state.DeathAge = age
 		state.DeathYear = state.Year
+		
+		-- CRITICAL FIX #925: Prompt EXTRA_LIFE purchase for next time!
+		-- They just died - they might want one for their next character
+		if player and self.gamepassSystem then
+			task.delay(2, function()
+				if player and player.Parent then
+					self.gamepassSystem:promptProduct(player, "EXTRA_LIFE")
+				end
+			end)
+		end
 		return
 	end
 	
@@ -12463,6 +12710,34 @@ function LifeBackend:checkNaturalDeath(state)
 					end)
 				end
 			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #937: Prompt STAT_BOOST when multiple stats are low
+	-- This is a strategic monetization moment - player is struggling and wants help
+	-- Only prompt occasionally to avoid being annoying
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local happiness = state.Stats and state.Stats.Happiness or 50
+	local smarts = state.Stats and state.Stats.Smarts or 50
+	local looks = state.Stats and state.Stats.Looks or 50
+	
+	local lowStatCount = 0
+	if health < 40 then lowStatCount = lowStatCount + 1 end
+	if happiness < 40 then lowStatCount = lowStatCount + 1 end
+	if smarts < 40 then lowStatCount = lowStatCount + 1 end
+	if looks < 40 then lowStatCount = lowStatCount + 1 end
+	
+	-- If 2+ stats are below 40, consider prompting STAT_BOOST
+	if lowStatCount >= 2 and state.player and self.gamepassSystem then
+		-- 15% chance per year to prompt (non-annoying)
+		if RANDOM:NextNumber() < 0.15 then
+			task.delay(3, function()
+				if state.player and state.player.Parent then
+					-- Use the cooldown-aware prompt
+					self.gamepassSystem:promptProduct(state.player, "STAT_BOOST")
+				end
+			end)
 		end
 	end
 	
@@ -12514,11 +12789,13 @@ function LifeBackend:checkNaturalDeath(state)
 		local finalMortality = baseMortality * healthModifier * lifestyleModifier
 		
 		if RANDOM:NextNumber() < finalMortality then
-			state.Flags.dead = true
-			state.DeathAge = age
-			state.DeathYear = state.Year
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX #926: Check for EXTRA_LIFE before age-based death!
+			-- Even old age can be cheated with an extra life!
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			local player = state.player
 			
-			-- Generate death reason based on age/health
+			-- Generate death reason first (needed for revival message)
 			local deathReasons
 			if age >= 90 then
 				deathReasons = {
@@ -12542,8 +12819,33 @@ function LifeBackend:checkNaturalDeath(state)
 					"Unexpected illness",
 				}
 			end
-			
 			state.DeathReason = deathReasons[RANDOM:NextInteger(1, #deathReasons)]
+			
+			-- Check for extra life BEFORE dying!
+			if player and GamepassSystem and GamepassSystem:hasExtraLife(player) then
+				local saved, result = self:checkExtraLifeSave(player, state)
+				if saved then
+					-- EXTRA LIFE USED! Player survives the age-related death!
+					print("[checkNaturalDeath] Player survived age-based death via EXTRA_LIFE!")
+					return -- Exit without completing death
+				end
+			end
+			
+			-- No extra life - proceed with death
+			state.Flags.dead = true
+			state.DeathAge = age
+			state.DeathYear = state.Year
+			
+			-- CRITICAL FIX #927: Prompt EXTRA_LIFE and TIME_MACHINE at death!
+			-- This is THE HIGHEST conversion moment
+			if player and self.gamepassSystem then
+				task.delay(1.5, function()
+					if player and player.Parent then
+						-- Prompt Extra Life for future use
+						self.gamepassSystem:promptProduct(player, "EXTRA_LIFE")
+					end
+				end)
+			end
 			
 			-- AAA FIX: Comprehensive death cleanup
 			self:processDeathCleanup(state)
@@ -13330,6 +13632,8 @@ function LifeBackend:handleAgeUp(player)
 	state.Flags.just_fired = nil    -- Allow job events again after being fired
 	state.Flags.just_promoted = nil -- Allow promotion events again
 	state.Flags.just_hired = nil    -- Allow new hire events again
+	state.Flags.worked_hard_this_year = nil  -- CRITICAL FIX #931: Reset work hard flag for new year
+	state.Flags.noticed_by_boss = nil        -- Reset boss notice flag
 	
 	-- AAA FIX: Clear feed message tracking for new year (prevents duplicate prevention from persisting)
 	state._feedMessages = nil
@@ -17906,6 +18210,13 @@ function LifeBackend:handleQuitJob(player, quitStyle)
 	return { success = true, message = feed }
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #930: "Work Hard" was paying EXTRA salary on top of annual salary!
+-- This caused players to earn 13+ months of pay per year if they clicked Work Hard.
+-- FIX: Work Hard now ONLY boosts performance (which leads to raises/promotions)
+-- and gives small happiness variations. NO EXTRA SALARY.
+-- Your annual salary is paid automatically during age-up.
+-- ═══════════════════════════════════════════════════════════════════════════════
 function LifeBackend:handleWork(player)
 	local state = self:getState(player)
 	if not state or not state.CurrentJob then
@@ -17916,22 +18227,57 @@ function LifeBackend:handleWork(player)
 	end
 
 	state.CareerInfo = state.CareerInfo or {}
+	state.Flags = state.Flags or {}
+	
+	-- Check if already worked hard this year (prevent spam clicking)
+	if state.Flags.worked_hard_this_year then
+		return { success = false, message = "You've already put in extra effort this year! Your dedication will show at your next review." }
+	end
+	
+	-- Mark that we worked hard this year
+	state.Flags.worked_hard_this_year = true
 
-	local salary = state.CurrentJob.salary or 0
-	local bonus = math.floor(((state.CareerInfo.performance or 50) / 100) * 0.2 * salary)
-	local payday = math.floor(salary / 12 + bonus)
-	self:addMoney(state, payday)
-	self:applyStatChanges(state, { Happiness = RANDOM:NextInteger(-2, 2) })
-
-	-- CRITICAL FIX: Working hard improves performance, but not guaranteed
-	-- Performance is the key metric for promotions now (see handlePromotion)
-	state.CareerInfo.performance = clamp((state.CareerInfo.performance or 60) + RANDOM:NextInteger(1, 5), 0, 100)
-
-	local message = string.format("Payday! You earned %s.", formatMoney(payday))
-	-- CRITICAL FIX: Don't use showPopup here - client already shows result from return value
-	-- This was causing DOUBLE popup issue!
+	-- Working hard improves performance significantly!
+	-- Performance affects raises and promotion chances
+	local oldPerformance = state.CareerInfo.performance or 60
+	local performanceGain = RANDOM:NextInteger(5, 12)
+	state.CareerInfo.performance = math.min(100, oldPerformance + performanceGain)
+	
+	-- Working hard also builds skills
+	local skills = state.CareerInfo.skills or {}
+	skills.dedication = math.min(100, (skills.dedication or 0) + RANDOM:NextInteger(2, 5))
+	skills.work_ethic = math.min(100, (skills.work_ethic or 0) + RANDOM:NextInteger(2, 5))
+	state.CareerInfo.skills = skills
+	
+	-- Small stat changes - hard work can be tiring but sometimes satisfying
+	local happinessChange = RANDOM:NextInteger(-3, 5)
+	local healthChange = RANDOM:NextInteger(-2, 1) -- Work can be draining
+	self:applyStatChanges(state, { Happiness = happinessChange, Health = healthChange })
+	
+	-- Chance of getting noticed by boss (could lead to faster promotion)
+	if RANDOM:NextNumber() < 0.25 then
+		state.Flags.noticed_by_boss = true
+	end
+	
+	-- Build the feedback message
+	local messages = {
+		"💼 You put in extra effort at work! Your performance improved (+%d%%). Your boss takes notice.",
+		"💼 You stayed late and went above and beyond! Performance +%d%%. This could help at your next review.",
+		"💼 Your dedication is paying off! Performance improved by %d%%. Keep it up!",
+		"💼 You worked your hardest! +%d%% performance. Your efforts won't go unnoticed.",
+		"💼 Extra hours, extra effort! Performance +%d%%. Promotion material!",
+	}
+	local message = string.format(messages[RANDOM:NextInteger(1, #messages)], performanceGain)
+	
+	-- Add tip about how salary works
+	if state.CareerInfo.performance >= 85 then
+		message = message .. "\n\n⭐ Your performance is excellent! You're due for a raise or promotion soon."
+	elseif state.CareerInfo.performance >= 70 then
+		message = message .. "\n\n📈 Good performance! Keep working hard for that promotion."
+	end
+	
 	self:pushState(player, message)
-	return { success = true, message = message, money = payday }
+	return { success = true, message = message, performanceGain = performanceGain }
 end
 
 function LifeBackend:handlePromotion(player)
