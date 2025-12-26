@@ -878,36 +878,87 @@ local function canEventTrigger(event, state)
 			-- Royal event - explicitly allow it
 		else
 			-- ═══════════════════════════════════════════════════════════════════════════════
-			-- CRITICAL: List of "commoner" events that royals should NOT see
-			-- Royals have private tutors, security, chauffeurs, etc.
+			-- CRITICAL FIX: MASSIVELY EXPANDED list of "commoner" events royals should NOT see
+			-- User complaint: "THE ROYALTY BARELY CHANGES STUFF BRUH"
+			-- Royals have private tutors, security, chauffeurs, servants, palaces, etc.
 			-- ═══════════════════════════════════════════════════════════════════════════════
 			local normalLifeEventIds = {
-				-- School events (royals have private education)
+				-- ALL School/Education events (royals have private tutors at palace)
 				"starting_school", "first_day_school", "elementary_start", "middle_school_start",
 				"high_school_start", "public_school", "first_grade", "kindergarten",
 				"school_bully", "homework_help", "cafeteria", "school_detention",
 				"school_play", "school_dance", "school_suspension", "normal_education",
 				"public_education", "regular_school", "school_registration",
+				"preschool_start", "preschool", "kindergarten_simple", "elementary",
+				"school_picture", "school_field_trip", "school_lunch", "school_project",
+				"sick_day_school", "school_nurse", "class_clown", "school_bus",
+				"new_school", "school_talent", "spelling_bee", "show_and_tell",
+				"science_fair", "group_project", "recess", "playground",
+				-- Childhood events that are for "normal" kids
+				"lemonade_stand", "paper_route", "babysitting_job", "mowing_lawns",
+				"allowance", "chores", "pocket_money", "garage_sale",
 				-- Life assessment events (royals have different life milestones)
 				"life_assessment", "approaching_30", "quarter_life_crisis", "midlife_reflection",
 				"life_crossroads", "turning_30", "turning_40", "dirty_thirty",
+				"late_20s_life", "late_20s_health", "health_wake_up",
 				-- Driving events (royals have chauffeurs)
 				"learning_to_drive", "driver_ed", "first_drive", "parking_disaster",
+				"driving_test", "car_accident_minor", "road_rage", "speeding_ticket",
+				"first_car", "used_car", "car_payment", "car_broke_down",
 				-- Job hunting (royals don't need normal jobs)
 				"job_interview", "job_search", "unemployment", "fired", "laid_off",
+				"first_job", "part_time", "minimum_wage", "fast_food",
+				"retail_job", "office_job", "temp_job", "internship_unpaid",
+				"coworker_drama", "workplace_gossip", "slacking_coworker",
+				"boss_yelling", "overtime", "promotion_denied", "work_stress",
 				-- Housing struggles (royals have palaces)
 				"eviction", "rent_due", "homeless", "apartment_hunting", "roommate",
-				-- Money struggles (royals are wealthy)
+				"first_apartment", "landlord", "moving_out", "rent_increase",
+				"studio_apartment", "shared_bathroom", "noisy_neighbors",
+				-- Money struggles (royals are wealthy from birth)
 				"financial_crisis", "broke", "debt_collector", "payday_loan",
+				"bounced_check", "overdraft", "credit_card_debt", "bill_overdue",
+				"student_loan", "asking_parents_money", "pawn_shop",
+				-- Public transport (royals have private transport)
+				"public_transit", "bus_ride", "subway", "commute", "carpool",
+				-- Dating app / regular dating (royals have arranged meetings, galas, etc.)
+				"dating_app", "online_dating", "tinder", "blind_date",
+				"speed_dating", "singles_bar", "meet_cute",
+				-- Street crime (royals have security)
+				"mugged", "pickpocket", "car_stolen", "home_burglary",
+				-- Everyday mundane (royals have staff for this)
+				"grocery_shopping", "laundromat", "doing_laundry", "cooking_dinner",
+				"cleaning_house", "mowing_lawn", "taking_trash", "diy_repair",
 			}
 			
 			local eventId = event.id and event.id:lower() or ""
 			local eventTitle = event.title and event.title:lower() or ""
 			
-			-- Check if this is a "normal life" event
+			-- Check if this is a "normal life" event by ID
 			for _, normalId in ipairs(normalLifeEventIds) do
 				if eventId:find(normalId) then
 					return false -- Royals don't experience commoner life events!
+				end
+			end
+			
+			-- CRITICAL FIX: Also block by event category/tags
+			if event.category then
+				local cat = event.category:lower()
+				if cat == "school" or cat == "public_school" or cat == "normal_school" then
+					return false -- Block all school-category events for royalty
+				end
+			end
+			
+			-- CRITICAL FIX: Block events with school tags for royalty
+			if event.tags then
+				for _, tag in ipairs(event.tags) do
+					local t = tag:lower()
+					if t == "school" or t == "public_school" or t == "classroom" or t == "cafeteria" then
+						-- Check if it's a royal school variant
+						if not event.isRoyalEducation and not eventId:find("royal") then
+							return false -- Block school-tagged events for royalty
+						end
+					end
 				end
 			end
 			
@@ -2123,19 +2174,62 @@ local AgeMilestoneEvents = {
 -- These milestone events are for premium gamepass holders
 -- ═══════════════════════════════════════════════════════════════════════════════
 local PremiumMilestoneEvents = {
-	-- Royalty milestones (require is_royalty flag)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: MASSIVELY EXPANDED Royalty milestones!
+	-- User complaint: "THE ROYALTY BARELY CHANGES STUFF BRUH LIKE ENSURE ROYATLTY IN BEGINNING OF LIFE WORKS GREAT"
+	-- Royals need events for EVERY age, not just a few milestone ages!
+	-- These are arrays of possible events for each age - one will be randomly chosen
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	royalty = {
-		[0] = "royal_birth_announcement",
-		[1] = "royal_christening",
-		[3] = "first_public_appearance",
-		[6] = "royal_education_choice",
-		[18] = "coming_of_age_ball",
-		[21] = "royal_military_service",
-		[25] = "royal_engagement_pressure",
-		[50] = "silver_jubilee",
-		[60] = "golden_jubilee",
-		[70] = "diamond_jubilee",
-		[75] = "platinum_jubilee",
+		-- BABY/TODDLER (0-4) - Royal baby experiences
+		[0] = { "royal_birth_announcement" },
+		[1] = { "royal_christening", "royal_first_public_appearance" },
+		[2] = { "toddler_tantrum", "princess_prince_phase" },
+		[3] = { "first_public_appearance", "imaginary_friend" },
+		[4] = { "royal_first_public_appearance", "hide_and_seek_champion" },
+		-- EARLY CHILDHOOD (5-8) - Royal tutoring instead of school!
+		[5] = { "royal_childhood_education_start", "royal_etiquette_lessons" },
+		[6] = { "royal_tutors_childhood", "royal_etiquette_lessons" },
+		[7] = { "royal_siblings_lessons", "royal_etiquette_lessons" },
+		[8] = { "royal_pony_lessons", "royal_christmas_broadcast" },
+		-- LATE CHILDHOOD (9-12) - Royal duties begin
+		[9] = { "royal_charity_visit", "royal_christmas_broadcast" },
+		[10] = { "royal_friends", "royal_media_training" },
+		[11] = { "royal_media_training", "royal_christmas_broadcast" },
+		[12] = { "royal_coming_of_age_prep", "royal_christmas_broadcast" },
+		-- EARLY TEEN (13-15) - Royal responsibilities increase
+		[13] = { "royal_first_solo_engagement", "royal_media_training" },
+		[14] = { "royal_boarding_school", "royal_christmas_broadcast" },
+		[15] = { "royal_drivers_training", "royal_first_solo_engagement" },
+		-- LATE TEEN (16-18) - Major royal milestones
+		[16] = { "royal_sixteenth_birthday", "royal_charity_patronage" },
+		[17] = { "royal_gap_year_decision", "royal_christmas_broadcast" },
+		[18] = { "coming_of_age_ball", "royal_military_service" },
+		-- YOUNG ADULT (19-24) - Royal duties and university
+		[19] = { "royal_christmas_broadcast", "royal_charity_patronage" },
+		[20] = { "royal_christmas_broadcast", "royal_state_visit" },
+		[21] = { "royal_military_service", "royal_charity_patronage" },
+		[22] = { "royal_state_visit", "royal_charity_patronage" },
+		[23] = { "royal_christmas_broadcast", "royal_charity_patronage" },
+		[24] = { "royal_engagement_pressure", "royal_state_visit" },
+		-- MID-LATE 20s - Settling into royal life
+		[25] = { "royal_engagement_pressure", "royal_state_visit" },
+		[26] = { "royal_state_visit", "royal_charity_patronage" },
+		[27] = { "royal_charity_focus", "royal_christmas_broadcast" },
+		[28] = { "royal_state_visit", "royal_christmas_broadcast" },
+		[29] = { "royal_christmas_broadcast", "royal_charity_patronage" },
+		-- 30s-40s - Established royal life
+		[30] = { "royal_christmas_broadcast", "royal_state_visit" },
+		[35] = { "royal_charity_focus", "royal_state_visit" },
+		[40] = { "royal_christmas_broadcast", "royal_state_visit" },
+		-- 50s-60s - Senior royalty
+		[50] = { "silver_jubilee", "royal_state_visit" },
+		[60] = { "golden_jubilee", "royal_christmas_broadcast" },
+		-- 65+ - Elder royalty
+		[65] = { "royal_succession_planning", "royal_christmas_broadcast" },
+		[70] = { "diamond_jubilee", "royal_christmas_broadcast" },
+		[75] = { "platinum_jubilee", "royal_christmas_broadcast" },
+		[80] = { "royal_christmas_broadcast", "royal_state_visit" },
 	},
 	-- Mafia milestones (require in_mob flag)
 	mafia = {
@@ -3108,6 +3202,54 @@ function LifeEvents.buildYearQueue(state, options)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: ROYALTY GETS ROYAL MILESTONES FIRST!
+	-- User complaint: "THE ROYALTY BARELY CHANGES STUFF BRUH LIKE ENSURE ROYATLTY IN BEGINNING OF LIFE WORKS GREAT"
+	-- Royals should ONLY see royal-specific events, not normal school/life events!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isRoyal = flags.is_royalty or flags.royal_birth or (state.RoyalState and state.RoyalState.isRoyal)
+	
+	if isRoyal and PremiumMilestoneEvents.royalty[age] then
+		local royalMilestones = PremiumMilestoneEvents.royalty[age]
+		-- Convert to array if it's a single string
+		if type(royalMilestones) == "string" then
+			royalMilestones = { royalMilestones }
+		end
+		
+		-- Shuffle royal milestones for variety
+		local shuffledRoyalMilestones = {}
+		for _, m in ipairs(royalMilestones) do
+			table.insert(shuffledRoyalMilestones, m)
+		end
+		for i = #shuffledRoyalMilestones, 2, -1 do
+			local j = RANDOM:NextInteger(1, i)
+			shuffledRoyalMilestones[i], shuffledRoyalMilestones[j] = shuffledRoyalMilestones[j], shuffledRoyalMilestones[i]
+		end
+		
+		-- Find eligible royal milestones
+		local eligibleRoyalMilestones = {}
+		for _, milestoneId in ipairs(shuffledRoyalMilestones) do
+			local event = AllEvents[milestoneId]
+			if event then
+				local occurCount = (history.occurrences[milestoneId] or 0)
+				if occurCount == 0 then
+					if canEventTrigger(event, state) then
+						table.insert(eligibleRoyalMilestones, event)
+					end
+				end
+			end
+		end
+		
+		-- If we have eligible royal milestones, use them!
+		if #eligibleRoyalMilestones > 0 then
+			local chosenIndex = RANDOM:NextInteger(1, #eligibleRoyalMilestones)
+			local chosenEvent = eligibleRoyalMilestones[chosenIndex]
+			table.insert(selectedEvents, chosenEvent)
+			recordEventShown(state, chosenEvent)
+			return selectedEvents -- Royal milestones take priority!
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #67: GUARANTEED MILESTONE EVENTS
 	-- First, check if there's an age-specific milestone that MUST trigger
 	-- These are events that should NEVER be skipped (DMV at 16, graduation at 18, etc.)
@@ -3117,6 +3259,11 @@ function LifeEvents.buildYearQueue(state, options)
 	-- to trigger in the same order across different lives. Now we shuffle the order!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local guaranteedMilestones = AgeMilestoneEvents[age]
+	
+	-- CRITICAL FIX: Skip normal milestones entirely for royalty - they use royal milestones!
+	if isRoyal then
+		guaranteedMilestones = nil -- Royals don't get normal milestones
+	end
 	
 	if guaranteedMilestones then
 		-- CRITICAL FIX #VARIETY-3: Create a shuffled copy of milestones for variety
