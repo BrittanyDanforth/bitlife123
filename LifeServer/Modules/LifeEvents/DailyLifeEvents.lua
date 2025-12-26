@@ -132,8 +132,8 @@ DailyLifeEvents.events = {
 		text = "Time for your daily commute!",
 		question = "How does the commute go?",
 		minAge = 18, maxAge = 75,
-		baseChance = 0.55,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.25,  -- CRITICAL FIX: Reduced from 0.55 to prevent car event spam
+		cooldown = 5, -- CRITICAL FIX: Increased to space out commute events
 		stage = STAGE,
 		ageBand = "any",
 		category = "daily",

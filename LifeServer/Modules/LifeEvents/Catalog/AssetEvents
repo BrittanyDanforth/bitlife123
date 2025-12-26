@@ -49,8 +49,8 @@ local events = {
 		weight = 7,
 		minAge = 16,
 		maxAge = 80,
-		baseChance = 0.4,
-		cooldown = 3,
+		baseChance = 0.20,  -- CRITICAL FIX: Reduced from 0.4 to prevent spam
+		cooldown = 5,  -- CRITICAL FIX: Increased to space out joyride events
 		blockedByFlags = { in_prison = true },
 		eligibility = function(state)
 			return hasAssetType(state, "Vehicles")
@@ -106,8 +106,8 @@ local events = {
 		weight = 5,
 		minAge = 18,
 		maxAge = 50,
-		baseChance = 0.455,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.18,  -- CRITICAL FIX: Reduced from 0.455 to prevent spam
+		cooldown = 6, -- CRITICAL FIX: Increased to space out racing events
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		-- CRITICAL FIX: Must FIRST check if player owns ANY car, THEN check car value
 		eligibility = function(state)
@@ -188,8 +188,8 @@ local events = {
 		weight = 5,
 		minAge = 18,
 		maxAge = 60,
-		baseChance = 0.45,
-		cooldown = 4,
+		baseChance = 0.15,  -- CRITICAL FIX: Reduced from 0.45 to prevent spam (VehicleEvents has car_show)
+		cooldown = 7,  -- CRITICAL FIX: Increased to space out car show events
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		-- CRITICAL FIX: Must FIRST check if player owns ANY car, THEN check car value
 		eligibility = function(state)
@@ -249,8 +249,8 @@ local events = {
 		weight = 4,
 		minAge = 18,
 		maxAge = 55,
-		baseChance = 0.45,
-		cooldown = 3,
+		baseChance = 0.15,  -- CRITICAL FIX: Reduced from 0.45 to prevent spam
+		cooldown = 6,  -- CRITICAL FIX: Increased to space out high-risk events
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		-- CRITICAL FIX: Must FIRST check if player owns ANY car, THEN check car value
 		eligibility = function(state)
@@ -441,8 +441,8 @@ local events = {
 		weight = 4,
 		minAge = 21,
 		maxAge = 65,
-		baseChance = 0.455,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.20,  -- CRITICAL FIX: Reduced from 0.455 to prevent spam
+		cooldown = 6, -- CRITICAL FIX: Increased to space out exotic car events
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		-- CRITICAL FIX: Must FIRST check if player owns ANY car, THEN check car value
 		eligibility = function(state)

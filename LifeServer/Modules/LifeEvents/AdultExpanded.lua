@@ -1425,8 +1425,8 @@ AdultExpanded.events = {
 		text = "Something's happening with your vehicle.",
 		question = "What's the car situation?",
 		minAge = 18, maxAge = 70,
-		baseChance = 0.4,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.15,  -- CRITICAL FIX: Reduced from 0.4 to prevent car event spam
+		cooldown = 6, -- CRITICAL FIX: Increased to space out car events
 		stage = STAGE,
 		ageBand = "adult",
 		category = "expenses",
@@ -1620,8 +1620,8 @@ AdultExpanded.events = {
 		text = "Your current car situation needs attention - maybe it's time for an upgrade?",
 		question = "How do you handle transportation?",
 		minAge = 21, maxAge = 60,
-		baseChance = 0.455,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.15,  -- CRITICAL FIX: Reduced from 0.455 to prevent spam
+		cooldown = 6, -- CRITICAL FIX: Increased to space out car shopping events
 		stage = STAGE,
 		ageBand = "adult",
 		category = "transportation",

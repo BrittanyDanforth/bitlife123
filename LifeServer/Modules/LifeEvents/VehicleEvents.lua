@@ -116,105 +116,10 @@ end
 
 VehicleEvents.events = {
     -- ══════════════════════════════════════════════════════════════════════════════
-    -- STREET RACING EVENTS - Outcomes depend on car quality!
+    -- RACING EVENTS - Outcomes depend on car quality!
     -- CRITICAL: All events check masterVehicleEligibility to prevent wrong triggers
+    -- NOTE: Basic street race challenge is in AssetEvents (street_race_invitation)
     -- ══════════════════════════════════════════════════════════════════════════════
-    {
-        id = "vehicle_street_race_challenge",
-        title = "Street Race Challenge!",
-        emoji = "🏎️",
-        text = "While stopped at a red light, someone in a sports car revs their engine at you challengingly.",
-        textVariants = {
-            "A flashy car pulls up next to you at the light and the driver gives you a smirk.",
-            "Someone in a souped-up ride is clearly trying to race you!",
-            "The car next to you revs loudly - it's an invitation to race!",
-            "A stranger challenges you to a race at the stoplight!",
-        },
-        question = "Do you accept the street race?",
-        minAge = 18, maxAge = 55,
-        baseChance = 0.25,  -- REDUCED: Don't spam racing events
-        cooldown = 5,       -- INCREASED: Space out vehicle events
-        stage = STAGE,
-        category = "vehicle",
-        tags = { "racing", "car", "risk", "street" },
-        blockedByFlags = { in_prison = true, incarcerated = true, dead = true, is_dead = true },
-        -- CRITICAL: Master eligibility check ensures player has a car
-        eligibility = function(state)
-            local canTrigger, reason = masterVehicleEligibility(state)
-            if not canTrigger then return false, reason end
-            return true
-        end,
-        
-        choices = {
-            {
-                text = "Accept the challenge! 🏁",
-                effects = {},
-                feedText = "You rev your engine...",
-                onResolve = function(state)
-                    local vehicle, tier = getPlayerVehicle(state)
-                    local vehicleName = vehicle and vehicle.name or "your car"
-                    local roll = math.random()
-                    
-                    -- Win chances based on vehicle tier
-                    local winChance = 0.20 -- Base 20% chance
-                    if tier == "exotic" then winChance = 0.85
-                    elseif tier == "luxury" then winChance = 0.70
-                    elseif tier == "sport" then winChance = 0.60
-                    elseif tier == "standard" then winChance = 0.35
-                    else winChance = 0.15 end -- economy
-                    
-                    -- Add some skill variance
-                    local smarts = (state.Stats and state.Stats.Smarts) or 50
-                    winChance = winChance + (smarts / 500) -- Small boost for smart driving
-                    
-                    if roll < winChance * 0.7 then
-                        -- WIN! Glory and bragging rights
-                        state:ModifyStat("Happiness", 15)
-                        state.Flags = state.Flags or {}
-                        state.Flags.street_racer = true
-                        state.Flags.race_winner = true
-                        local prize = math.random(100, 500)
-                        state.Money = (state.Money or 0) + prize
-                        state:AddFeed(string.format("🏎️ YOU WON! %s smoked them! They handed over $%d in shame! What a rush!", vehicleName, prize))
-                    elseif roll < winChance then
-                        -- Close win
-                        state:ModifyStat("Happiness", 10)
-                        state.Flags = state.Flags or {}
-                        state.Flags.street_racer = true
-                        state:AddFeed(string.format("🏎️ Photo finish but YOU WIN! %s barely pulled ahead! Heart pounding!", vehicleName))
-                    elseif roll < 0.85 then
-                        -- Lost but safe
-                        state:ModifyStat("Happiness", -5)
-                        state:AddFeed(string.format("🏎️ You lost! %s just couldn't keep up. Embarrassing...", vehicleName))
-                    elseif roll < 0.95 then
-                        -- Lost AND got a ticket
-                        state:ModifyStat("Happiness", -8)
-                        state.Money = math.max(0, (state.Money or 0) - 350)
-                        state.Flags = state.Flags or {}
-                        state.Flags.speeding_ticket = true
-                        state:AddFeed("🏎️ Lost the race AND got pulled over! $350 speeding ticket! Terrible decision!")
-                    else
-                        -- Crash!
-                        state:ModifyStat("Happiness", -15)
-                        state:ModifyStat("Health", -10)
-                        state.Money = math.max(0, (state.Money or 0) - 2000)
-                        state:AddFeed(string.format("🏎️ CRASHED! %s is wrecked! Hospital bills and repair costs! Never again!", vehicleName))
-                    end
-                end,
-            },
-            {
-                text = "Ignore them - not worth the risk",
-                effects = { Happiness = 2 },
-                feedText = "🏎️ You kept your cool. Smart choice - they sped off and probably got a ticket.",
-            },
-            {
-                text = "Wave them off and laugh",
-                effects = { Happiness = 3 },
-                feedText = "🏎️ You're not that immature. Let them have their fun alone.",
-            },
-        },
-    },
-    
     {
         id = "vehicle_organized_race",
         title = "Underground Racing Event",
@@ -450,11 +355,15 @@ VehicleEvents.events = {
         },
     },
     
+    -- NOTE: Car breakdown event is in Adult.lua (car_breakdown)
+    -- NOTE: Keeping this section but referencing the main file
+    
     -- ══════════════════════════════════════════════════════════════════════════════
-    -- CAR BREAKDOWN EVENTS
+    -- ROADSIDE ASSISTANCE EVENTS - Alternative scenarios for vehicle issues
+    -- These complement existing breakdown events in other files
     -- ══════════════════════════════════════════════════════════════════════════════
     {
-        id = "vehicle_breakdown",
+        id = "vehicle_tow_needed",
         title = "Car Broke Down!",
         emoji = "🔧",
         text = "Your car suddenly died on the side of the road!",

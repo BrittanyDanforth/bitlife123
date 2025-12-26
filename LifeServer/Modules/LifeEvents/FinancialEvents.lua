@@ -285,8 +285,8 @@ FinancialEvents.events = {
 		text = "Your vehicle needs attention!",
 		question = "What's wrong with the car?",
 		minAge = 18, maxAge = 90,
-		baseChance = 0.55,
-		cooldown = 3,
+		baseChance = 0.18,  -- CRITICAL FIX: Reduced from 0.55 to prevent spam (multiple car events exist)
+		cooldown = 6,  -- CRITICAL FIX: Increased to space out car expense events
 		stage = STAGE,
 		ageBand = "any",
 		category = "transportation",

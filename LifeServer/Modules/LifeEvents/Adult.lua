@@ -2389,8 +2389,8 @@ Adult.events = {
 		text = "Your car broke down unexpectedly!",
 		question = "How do you handle this?",
 		minAge = 18, maxAge = 65,
-		baseChance = 0.4,
-		cooldown = 3,
+		baseChance = 0.18,  -- CRITICAL FIX: Reduced from 0.4 to prevent spam (VehicleEvents has similar)
+		cooldown = 6,  -- CRITICAL FIX: Increased from 3 to space out car trouble events
 		requiresFlags = { has_car = true },
 		blockedByFlags = { in_prison = true },
 		
