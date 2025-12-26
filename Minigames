@@ -624,40 +624,345 @@ function Minigames:createDebateGame()
 				{ text = "We're just acquaintances really", correct = false },
 			}},
 		},
-		-- GENERAL QUICK THINKING (fallback)
+		-- ════════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: MCAT / MEDICAL SCHOOL EXAM QUESTIONS
+		-- User complaint: "MCAT EXAM IS ARGUMENTS NOT ACTUAL MEDICAL QUESTIONS"
+		-- ════════════════════════════════════════════════════════════════════════════════
+		medical = {
+			{ q = "MCAT: Which organ is primarily responsible for detoxification?", answers = {
+				{ text = "Liver", correct = true },
+				{ text = "Kidneys", correct = false },
+				{ text = "Heart", correct = false },
+				{ text = "Lungs", correct = false },
+			}},
+			{ q = "MCAT: What type of blood cells fight infection?", answers = {
+				{ text = "White blood cells", correct = true },
+				{ text = "Red blood cells", correct = false },
+				{ text = "Platelets", correct = false },
+				{ text = "Plasma cells", correct = false },
+			}},
+			{ q = "MCAT: Which part of the brain controls balance and coordination?", answers = {
+				{ text = "Cerebellum", correct = true },
+				{ text = "Cerebrum", correct = false },
+				{ text = "Medulla", correct = false },
+				{ text = "Hypothalamus", correct = false },
+			}},
+			{ q = "MCAT: DNA replication occurs during which cell phase?", answers = {
+				{ text = "S phase (Synthesis)", correct = true },
+				{ text = "G1 phase", correct = false },
+				{ text = "G2 phase", correct = false },
+				{ text = "M phase (Mitosis)", correct = false },
+			}},
+			{ q = "MCAT: Which hormone regulates blood sugar levels?", answers = {
+				{ text = "Insulin", correct = true },
+				{ text = "Cortisol", correct = false },
+				{ text = "Adrenaline", correct = false },
+				{ text = "Thyroxine", correct = false },
+			}},
+			{ q = "MCAT: The heart's pacemaker is located in the:", answers = {
+				{ text = "Sinoatrial (SA) node", correct = true },
+				{ text = "Atrioventricular (AV) node", correct = false },
+				{ text = "Bundle of His", correct = false },
+				{ text = "Purkinje fibers", correct = false },
+			}},
+		},
+		mcat = {}, -- Will be populated to point to medical
+		
+		-- ════════════════════════════════════════════════════════════════════════════════
+		-- LSAT / LAW SCHOOL EXAM QUESTIONS
+		-- ════════════════════════════════════════════════════════════════════════════════
+		law = {
+			{ q = "LSAT: If all lawyers are professionals, and some professionals are wealthy, which must be true?", answers = {
+				{ text = "Some lawyers may be wealthy", correct = true },
+				{ text = "All lawyers are wealthy", correct = false },
+				{ text = "No lawyers are wealthy", correct = false },
+				{ text = "All wealthy people are lawyers", correct = false },
+			}},
+			{ q = "LSAT: Which amendment protects against unreasonable searches?", answers = {
+				{ text = "Fourth Amendment", correct = true },
+				{ text = "First Amendment", correct = false },
+				{ text = "Fifth Amendment", correct = false },
+				{ text = "Second Amendment", correct = false },
+			}},
+			{ q = "LSAT: The principle of 'stare decisis' means:", answers = {
+				{ text = "Courts should follow prior rulings", correct = true },
+				{ text = "Defendants are innocent until proven guilty", correct = false },
+				{ text = "Laws must be written clearly", correct = false },
+				{ text = "Judges cannot be sued", correct = false },
+			}},
+			{ q = "LSAT: Which type of crime requires proving criminal intent?", answers = {
+				{ text = "Mens rea crimes", correct = true },
+				{ text = "Strict liability crimes", correct = false },
+				{ text = "Civil infractions", correct = false },
+				{ text = "Traffic violations", correct = false },
+			}},
+			{ q = "LSAT: A contract requires all of the following EXCEPT:", answers = {
+				{ text = "A written document in all cases", correct = true },
+				{ text = "Offer and acceptance", correct = false },
+				{ text = "Consideration", correct = false },
+				{ text = "Capacity to contract", correct = false },
+			}},
+			{ q = "LSAT: 'Habeas corpus' protects against:", answers = {
+				{ text = "Unlawful detention", correct = true },
+				{ text = "Double jeopardy", correct = false },
+				{ text = "Self-incrimination", correct = false },
+				{ text = "Cruel punishment", correct = false },
+			}},
+		},
+		lsat = {}, -- Will be populated to point to law
+		
+		-- ════════════════════════════════════════════════════════════════════════════════
+		-- GMAT / BUSINESS SCHOOL EXAM QUESTIONS
+		-- ════════════════════════════════════════════════════════════════════════════════
+		business = {
+			{ q = "GMAT: If revenue is $100K and costs are $60K, what's the profit margin?", answers = {
+				{ text = "40%", correct = true },
+				{ text = "60%", correct = false },
+				{ text = "140%", correct = false },
+				{ text = "30%", correct = false },
+			}},
+			{ q = "GMAT: Which financial statement shows a company's assets and liabilities?", answers = {
+				{ text = "Balance Sheet", correct = true },
+				{ text = "Income Statement", correct = false },
+				{ text = "Cash Flow Statement", correct = false },
+				{ text = "P&L Statement", correct = false },
+			}},
+			{ q = "GMAT: 'SWOT' analysis includes all EXCEPT:", answers = {
+				{ text = "Tactics", correct = true },
+				{ text = "Strengths", correct = false },
+				{ text = "Weaknesses", correct = false },
+				{ text = "Opportunities", correct = false },
+			}},
+			{ q = "GMAT: The 'break-even point' is when:", answers = {
+				{ text = "Total revenue equals total costs", correct = true },
+				{ text = "Profits are maximized", correct = false },
+				{ text = "All debts are paid off", correct = false },
+				{ text = "Sales exceed projections", correct = false },
+			}},
+			{ q = "GMAT: A company's 'market cap' is calculated by:", answers = {
+				{ text = "Stock price × shares outstanding", correct = true },
+				{ text = "Total revenue - expenses", correct = false },
+				{ text = "Assets - liabilities", correct = false },
+				{ text = "Net income × PE ratio", correct = false },
+			}},
+			{ q = "GMAT: ROI stands for:", answers = {
+				{ text = "Return on Investment", correct = true },
+				{ text = "Rate of Inflation", correct = false },
+				{ text = "Revenue over Income", correct = false },
+				{ text = "Risk of Investment", correct = false },
+			}},
+		},
+		gmat = {}, -- Will be populated to point to business
+		
+		-- ════════════════════════════════════════════════════════════════════════════════
+		-- STREET HUSTLER / STREET SMARTS QUESTIONS
+		-- User complaint: "STREET HUSTLER HAS SAME INTERVIEWS AS EVERYTHING"
+		-- ════════════════════════════════════════════════════════════════════════════════
+		street = {
+			{ q = "Someone's trying to short-change you. What do you do?", answers = {
+				{ text = "Count the money carefully in front of them", correct = true },
+				{ text = "Trust them and walk away", correct = false },
+				{ text = "Start a fight immediately", correct = false },
+				{ text = "Just take whatever they give", correct = false },
+			}},
+			{ q = "A rival crew is moving into your territory. How do you respond?", answers = {
+				{ text = "Talk to their leader and negotiate boundaries", correct = true },
+				{ text = "Attack them without warning", correct = false },
+				{ text = "Run away and hide", correct = false },
+				{ text = "Call the police", correct = false },
+			}},
+			{ q = "A customer is asking for credit. What's the smart move?", answers = {
+				{ text = "Only extend credit to regulars with a good track record", correct = true },
+				{ text = "Give everyone unlimited credit", correct = false },
+				{ text = "Never give anyone credit ever", correct = false },
+				{ text = "Double the price for credit", correct = false },
+			}},
+			{ q = "The cops are asking questions about you. What's the play?", answers = {
+				{ text = "Say nothing and get a lawyer", correct = true },
+				{ text = "Tell them everything to be helpful", correct = false },
+				{ text = "Run away as fast as possible", correct = false },
+				{ text = "Try to bribe them on the spot", correct = false },
+			}},
+			{ q = "Someone wants to partner up. How do you vet them?", answers = {
+				{ text = "Test them with small jobs first, watch how they handle pressure", correct = true },
+				{ text = "Trust them immediately because they seem nice", correct = false },
+				{ text = "Never work with anyone ever", correct = false },
+				{ text = "Give them full access to everything right away", correct = false },
+			}},
+			{ q = "You find out someone's been talking to the feds. What now?", answers = {
+				{ text = "Cut all ties quietly and secure your operations", correct = true },
+				{ text = "Confront them violently", correct = false },
+				{ text = "Ignore it and hope it goes away", correct = false },
+				{ text = "Turn yourself in first", correct = false },
+			}},
+		},
+		street_hustler = {}, -- Will be populated to point to street
+		hustler = {}, -- Alias
+		
+		-- ════════════════════════════════════════════════════════════════════════════════
+		-- SCHOOL EXAMS (K-12)
+		-- ════════════════════════════════════════════════════════════════════════════════
+		school = {
+			{ q = "Math: What is 15% of 200?", answers = {
+				{ text = "30", correct = true },
+				{ text = "15", correct = false },
+				{ text = "45", correct = false },
+				{ text = "20", correct = false },
+			}},
+			{ q = "Science: What planet is closest to the Sun?", answers = {
+				{ text = "Mercury", correct = true },
+				{ text = "Venus", correct = false },
+				{ text = "Mars", correct = false },
+				{ text = "Earth", correct = false },
+			}},
+			{ q = "History: Who was the first President of the United States?", answers = {
+				{ text = "George Washington", correct = true },
+				{ text = "Abraham Lincoln", correct = false },
+				{ text = "Thomas Jefferson", correct = false },
+				{ text = "Benjamin Franklin", correct = false },
+			}},
+			{ q = "English: Which word is a verb?", answers = {
+				{ text = "Run", correct = true },
+				{ text = "Beautiful", correct = false },
+				{ text = "Quickly", correct = false },
+				{ text = "Book", correct = false },
+			}},
+			{ q = "Geography: What is the capital of France?", answers = {
+				{ text = "Paris", correct = true },
+				{ text = "London", correct = false },
+				{ text = "Berlin", correct = false },
+				{ text = "Rome", correct = false },
+			}},
+			{ q = "Science: What do plants need to make food through photosynthesis?", answers = {
+				{ text = "Sunlight, water, and carbon dioxide", correct = true },
+				{ text = "Soil and fertilizer", correct = false },
+				{ text = "Air and darkness", correct = false },
+				{ text = "Just water", correct = false },
+			}},
+		},
+		exam = {}, -- Will be populated to point to school
+		test = {}, -- Alias
+		
+		-- ════════════════════════════════════════════════════════════════════════════════
+		-- COLLEGE EXAMS
+		-- ════════════════════════════════════════════════════════════════════════════════
+		college = {
+			{ q = "Statistics: What does a p-value less than 0.05 typically indicate?", answers = {
+				{ text = "Statistically significant results", correct = true },
+				{ text = "The experiment failed", correct = false },
+				{ text = "No relationship between variables", correct = false },
+				{ text = "Sample size is too small", correct = false },
+			}},
+			{ q = "Economics: What happens when demand exceeds supply?", answers = {
+				{ text = "Prices tend to rise", correct = true },
+				{ text = "Prices tend to fall", correct = false },
+				{ text = "Nothing changes", correct = false },
+				{ text = "Government intervenes always", correct = false },
+			}},
+			{ q = "Psychology: Who developed the hierarchy of needs?", answers = {
+				{ text = "Abraham Maslow", correct = true },
+				{ text = "Sigmund Freud", correct = false },
+				{ text = "Carl Jung", correct = false },
+				{ text = "B.F. Skinner", correct = false },
+			}},
+			{ q = "Chemistry: What is the pH of a neutral solution?", answers = {
+				{ text = "7", correct = true },
+				{ text = "0", correct = false },
+				{ text = "14", correct = false },
+				{ text = "1", correct = false },
+			}},
+			{ q = "Philosophy: 'I think, therefore I am' was said by:", answers = {
+				{ text = "René Descartes", correct = true },
+				{ text = "Plato", correct = false },
+				{ text = "Aristotle", correct = false },
+				{ text = "Socrates", correct = false },
+			}},
+		},
+		
+		-- ════════════════════════════════════════════════════════════════════════════════
+		-- DRIVING TEST
+		-- ════════════════════════════════════════════════════════════════════════════════
+		driving = {
+			{ q = "Driving: At a 4-way stop, who has the right of way?", answers = {
+				{ text = "The first car to arrive", correct = true },
+				{ text = "The biggest vehicle", correct = false },
+				{ text = "The fastest car", correct = false },
+				{ text = "No one - everyone goes at once", correct = false },
+			}},
+			{ q = "Driving: What should you do when approaching a yellow light?", answers = {
+				{ text = "Slow down and prepare to stop", correct = true },
+				{ text = "Speed up to beat the red", correct = false },
+				{ text = "Stop immediately", correct = false },
+				{ text = "Honk your horn", correct = false },
+			}},
+			{ q = "Driving: The legal blood alcohol limit for adults in most states is:", answers = {
+				{ text = "0.08%", correct = true },
+				{ text = "0.10%", correct = false },
+				{ text = "0.05%", correct = false },
+				{ text = "0.00%", correct = false },
+			}},
+			{ q = "Driving: When should you use your headlights?", answers = {
+				{ text = "30 minutes before sunset to 30 minutes after sunrise", correct = true },
+				{ text = "Only when it's completely dark", correct = false },
+				{ text = "Only when raining", correct = false },
+				{ text = "Never during daytime", correct = false },
+			}},
+			{ q = "Driving: What does a flashing red light mean?", answers = {
+				{ text = "Stop, then proceed when safe", correct = true },
+				{ text = "Slow down only", correct = false },
+				{ text = "Proceed with caution", correct = false },
+				{ text = "Stop and wait for green", correct = false },
+			}},
+		},
+		dmv = {}, -- Alias for driving
+		
+		-- GENERAL QUICK THINKING (fallback for unmatched contexts)
 		general = {
-			{ q = "Someone challenges: Prove yourself!", answers = {
-				{ text = "I'll show you through my actions", correct = true },
-				{ text = "I don't need to prove anything!", correct = false },
-				{ text = "Watch me fail spectacularly!", correct = false },
-				{ text = "Um, how?", correct = false },
+			{ q = "Quick! What's the best approach to a new challenge?", answers = {
+				{ text = "Stay calm and think it through", correct = true },
+				{ text = "Panic and give up", correct = false },
+				{ text = "Ignore it completely", correct = false },
+				{ text = "Blame someone else", correct = false },
 			}},
-			{ q = "They question: Why should I believe you?", answers = {
-				{ text = "Because I'm being honest with you", correct = true },
-				{ text = "I don't care if you believe me", correct = false },
-				{ text = "Because I said so!", correct = false },
-				{ text = "Fine, don't believe me then", correct = false },
+			{ q = "Someone needs your help. What do you do?", answers = {
+				{ text = "Assess the situation and offer assistance", correct = true },
+				{ text = "Pretend you didn't notice", correct = false },
+				{ text = "Walk away quickly", correct = false },
+				{ text = "Make it about yourself", correct = false },
 			}},
-			{ q = "They push: Make a decision now!", answers = {
-				{ text = "Let me think carefully before deciding", correct = true },
-				{ text = "I'll do whatever!", correct = false },
-				{ text = "You can't rush me!", correct = false },
-				{ text = "Uhh... I choose... nothing?", correct = false },
+			{ q = "You made a mistake. The best response is:", answers = {
+				{ text = "Acknowledge it and learn from it", correct = true },
+				{ text = "Blame everyone else", correct = false },
+				{ text = "Pretend it never happened", correct = false },
+				{ text = "Get angry at those who noticed", correct = false },
 			}},
-			{ q = "They test: What would you do if...?", answers = {
-				{ text = "I would handle it calmly and thoughtfully", correct = true },
-				{ text = "I'd probably panic", correct = false },
-				{ text = "I don't do hypotheticals", correct = false },
-				{ text = "Whatever happens, happens", correct = false },
+			{ q = "A difficult decision is ahead. How do you proceed?", answers = {
+				{ text = "Gather information and consider the consequences", correct = true },
+				{ text = "Flip a coin", correct = false },
+				{ text = "Let someone else decide", correct = false },
+				{ text = "Avoid making any choice", correct = false },
 			}},
-			{ q = "They ask: What makes you different?", answers = {
-				{ text = "My unique perspective and dedication", correct = true },
-				{ text = "Nothing really", correct = false },
-				{ text = "I'm better than everyone!", correct = false },
-				{ text = "Different how?", correct = false },
+			{ q = "You're facing pressure. What's your strategy?", answers = {
+				{ text = "Take a deep breath and prioritize", correct = true },
+				{ text = "Shut down completely", correct = false },
+				{ text = "Lash out at others", correct = false },
+				{ text = "Quit immediately", correct = false },
 			}},
 		},
 	}
+
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Set up alias tables to point to main question pools
+	-- This ensures aliases like "mcat" properly use "medical" questions
+	-- ═══════════════════════════════════════════════════════════════════════════
+	self.contextQuestions.mcat = self.contextQuestions.medical
+	self.contextQuestions.lsat = self.contextQuestions.law
+	self.contextQuestions.gmat = self.contextQuestions.business
+	self.contextQuestions.street_hustler = self.contextQuestions.street
+	self.contextQuestions.hustler = self.contextQuestions.street
+	self.contextQuestions.exam = self.contextQuestions.school
+	self.contextQuestions.test = self.contextQuestions.school
+	self.contextQuestions.dmv = self.contextQuestions.driving
 
 	-- Default to general questions for backwards compatibility
 	self.debateQuestions = self.contextQuestions.general
@@ -688,6 +993,19 @@ function Minigames:startDebate(callback, options)
 		self.debateStageTitle.Text = "😤 OFFICE SHOWDOWN"
 	elseif context == "exam" or context == "test" or context == "school" then
 		self.debateStageTitle.Text = "📝 EXAM TIME"
+	-- CRITICAL FIX: Specific exam titles for different school types!
+	elseif context == "mcat" or context == "medical" or context == "med_school" then
+		self.debateStageTitle.Text = "🏥 MCAT EXAM"
+	elseif context == "lsat" or context == "law" or context == "law_school" then
+		self.debateStageTitle.Text = "⚖️ LSAT EXAM"
+	elseif context == "gmat" or context == "business" or context == "business_school" then
+		self.debateStageTitle.Text = "💼 GMAT EXAM"
+	elseif context == "driving" or context == "dmv" or context == "drivers_test" then
+		self.debateStageTitle.Text = "🚗 DRIVING TEST"
+	elseif context == "college" or context == "university" then
+		self.debateStageTitle.Text = "🎓 COLLEGE EXAM"
+	elseif context == "street" or context == "street_hustler" or context == "hustler" then
+		self.debateStageTitle.Text = "🔥 STREET SMARTS"
 	elseif context == "karaoke" or context == "singing" then
 		self.debateStageTitle.Text = "🎤 KARAOKE BATTLE"
 	elseif context == "extortion" or context == "intimidation" then
@@ -742,6 +1060,32 @@ function Minigames:startDebate(callback, options)
 		family = "family", relatives = "family", parent_argument = "family", sibling_argument = "family",
 		-- FRIENDS
 		friendship = "friendship", friends = "friendship", friend_argument = "friendship",
+		
+		-- ═══════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: EXAM TYPES - User complained about broken exam questions!
+		-- "MCAT EXAM IS ARGUMENTS NOT ACTUAL MEDICAL QUESTIONS"
+		-- ═══════════════════════════════════════════════════════════════════════════
+		-- MEDICAL SCHOOL / MCAT
+		mcat = "medical", medical = "medical", med_school = "medical", 
+		medical_school = "medical", premed = "medical", doctor_exam = "medical",
+		-- LAW SCHOOL / LSAT
+		lsat = "law", law = "law", law_school = "law", bar_exam = "law",
+		lawyer_exam = "law", legal_exam = "law", attorney = "law",
+		-- BUSINESS SCHOOL / GMAT
+		gmat = "business", business = "business", business_school = "business",
+		mba = "business", finance_exam = "business", accounting_exam = "business",
+		-- DRIVING TEST
+		driving = "driving", dmv = "driving", drivers_test = "driving",
+		license_test = "driving", driving_exam = "driving",
+		-- COLLEGE GENERAL
+		college = "college", university = "college", college_exam = "college",
+		finals = "college", midterms = "college",
+		-- SCHOOL (K-12)
+		school = "school", exam = "school", test = "school", highschool = "school",
+		grade_school = "school", middle_school = "school",
+		-- STREET HUSTLER
+		street = "street", street_hustler = "street", hustler = "street",
+		street_smarts = "street", hustle = "street", dealing = "street",
 	}
 
 	-- Get the right question pool for this context
@@ -1218,19 +1562,28 @@ function Minigames:createGetawayGame()
 	self.getawayCard.Size = UDim2.new(0.95, 0, 0.85, 0)  -- 85% of screen height
 	self.getawayCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.getawayCard.Position = UDim2.fromScale(0.5, 0.5)
-	self.getawayCard.BackgroundColor3 = Color3.fromRGB(25, 35, 45)
+	-- VISUAL FIX: More car-chase themed dark gradient background
+	self.getawayCard.BackgroundColor3 = Color3.fromRGB(15, 25, 40)
 	self.getawayCard.ZIndex = 201
 	self.getawayCard.ClipsDescendants = true  -- CRITICAL: Prevent content overflow
 	self.getawayCard.Parent = self.getawayOverlay
 	corner(self.getawayCard, 20)
+	
+	-- Add a subtle border glow effect
+	local cardStroke = Instance.new("UIStroke")
+	cardStroke.Color = Color3.fromRGB(255, 140, 0)  -- Orange glow
+	cardStroke.Thickness = 2
+	cardStroke.Transparency = 0.5
+	cardStroke.Parent = self.getawayCard
 
 	local getawayTitle = Instance.new("TextLabel")
 	getawayTitle.Size = UDim2.new(1, 0, 0, 60)
-	getawayTitle.BackgroundColor3 = Color3.fromRGB(180, 100, 50)
+	-- VISUAL FIX: More vibrant orange-red gradient for urgency
+	getawayTitle.BackgroundColor3 = Color3.fromRGB(220, 80, 30)
 	getawayTitle.Font = F.Title
-	getawayTitle.TextSize = 24
+	getawayTitle.TextSize = 26
 	getawayTitle.TextColor3 = C.White
-	getawayTitle.Text = "🚗 GETAWAY!"
+	getawayTitle.Text = "🚗💨 GRAND THEFT AUTO!"
 	getawayTitle.ZIndex = 202
 	getawayTitle.Parent = self.getawayCard
 	corner(getawayTitle, 20)
@@ -1238,20 +1591,21 @@ function Minigames:createGetawayGame()
 	local titleFix = Instance.new("Frame")
 	titleFix.Size = UDim2.new(1, 0, 0, 30)
 	titleFix.Position = UDim2.new(0, 0, 0, 35)
-	titleFix.BackgroundColor3 = Color3.fromRGB(180, 100, 50)
+	titleFix.BackgroundColor3 = Color3.fromRGB(220, 80, 30)
 	titleFix.ZIndex = 202
 	titleFix.Parent = getawayTitle
 
 	self.getawayInstructions = Instance.new("TextLabel")
-	self.getawayInstructions.Size = UDim2.new(0.9, 0, 0, 40)
+	self.getawayInstructions.Size = UDim2.new(0.9, 0, 0, 45)
 	self.getawayInstructions.AnchorPoint = Vector2.new(0.5, 0)
 	self.getawayInstructions.Position = UDim2.new(0.5, 0, 0, 70)
 	self.getawayInstructions.BackgroundTransparency = 1
-	self.getawayInstructions.Font = F.Body
-	self.getawayInstructions.TextSize = 14
-	self.getawayInstructions.TextColor3 = C.Gray300
+	self.getawayInstructions.Font = F.Medium
+	self.getawayInstructions.TextSize = 15
+	self.getawayInstructions.TextColor3 = Color3.fromRGB(255, 200, 100)  -- Yellow-orange for visibility
 	self.getawayInstructions.TextWrapped = true
-	self.getawayInstructions.Text = "TAP THE HIGHLIGHTED BUTTONS IN ORDER! Don't let the cops catch you!"
+	-- VISUAL FIX: Clearer, more exciting instructions
+	self.getawayInstructions.Text = "🔵 Watch the pattern → Repeat the directions → Escape before cops catch you!"
 	self.getawayInstructions.ZIndex = 202
 	self.getawayInstructions.Parent = self.getawayCard
 
@@ -1391,10 +1745,17 @@ function Minigames:handleGetawayInput(btnIndex)
 	local targetIndex = self.getawaySequence[self.currentSequenceIndex]
 
 	if btnIndex == targetIndex then
-		self.getawayBtns[btnIndex].BackgroundColor3 = C.Green
+		-- ═══════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Made getaway minigame EASIER and more visually rewarding
+		-- User complaint: "it's a bit weird kinda but ensure its pretty easy too"
+		-- - Increased progress per correct input from 0.1 to 0.15 (need ~7 to win vs 10)
+		-- - Better visual feedback with brighter colors
+		-- ═══════════════════════════════════════════════════════════════════════════
+		self.getawayBtns[btnIndex].BackgroundColor3 = Color3.fromRGB(50, 205, 50) -- Bright green
 		self.currentSequenceIndex += 1
 
-		self.getawayProgress = self.getawayProgress + 0.1
+		-- EASIER: More progress per correct input (0.15 = need ~7 to win instead of 10)
+		self.getawayProgress = self.getawayProgress + 0.15
 		tween(self.getawayProgressFill, TweenInfo.new(0.2), {
 			Size = UDim2.new(math.min(1, self.getawayProgress), 0, 1, 0),
 		})
@@ -1419,8 +1780,9 @@ function Minigames:handleGetawayInput(btnIndex)
 			end)
 		end
 	else
-		self.getawayBtns[btnIndex].BackgroundColor3 = C.Red
-		self.copProgress = self.copProgress + 0.15
+		-- EASIER: Reduced cop penalty from 0.15 to 0.10 (more forgiving mistakes)
+		self.getawayBtns[btnIndex].BackgroundColor3 = Color3.fromRGB(255, 50, 50) -- Bright red
+		self.copProgress = self.copProgress + 0.10
 		tween(self.copProgressFill, TweenInfo.new(0.2), {
 			Size = UDim2.new(math.min(1, self.copProgress), 0, 1, 0),
 		})
@@ -1436,12 +1798,19 @@ function Minigames:startCopChase()
 		pcall(function() task.cancel(self._getawayCopChaseThread) end)
 	end
 
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Made cop chase SLOWER for easier gameplay
+	-- User complaint: "ensure its pretty easy too"
+	-- - Increased wait from 2s to 2.5s between cop progress ticks
+	-- - Reduced cop progress from 0.05 to 0.04 per tick
+	-- This gives players more time to complete sequences without pressure
+	-- ═══════════════════════════════════════════════════════════════════════════
 	self._getawayCopChaseThread = task.spawn(function()
 		while self.activeGame == "getaway" do
-			task.wait(2)
+			task.wait(2.5)  -- EASIER: Was 2s, now 2.5s
 			if self.activeGame ~= "getaway" then break end
 
-			self.copProgress = self.copProgress + 0.05
+			self.copProgress = self.copProgress + 0.04  -- EASIER: Was 0.05, now 0.04
 			tween(self.copProgressFill, TweenInfo.new(0.3), {
 				Size = UDim2.new(math.min(1, self.copProgress), 0, 1, 0),
 			})
@@ -2151,52 +2520,58 @@ function Minigames:createHackingGame()
 	self.hackOverlay.Parent = self.screenGui
 
 	self.hackCard = Instance.new("Frame")
-	-- CRITICAL FIX: Responsive height for mobile
-	self.hackCard.Size = UDim2.new(0.95, 0, 0.85, 0)
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Mobile-responsive System Breach UI
+	-- User complaint: "bunched up" and doesn't work on mobile
+	-- Solution: Use percentage-based positioning for all elements
+	-- ═══════════════════════════════════════════════════════════════════════════
+	self.hackCard.Size = UDim2.new(0.95, 0, 0.88, 0)  -- Slightly taller for better fit
 	self.hackCard.ClipsDescendants = true
 	self.hackCard.AnchorPoint = Vector2.new(0.5, 0.5)
 	self.hackCard.Position = UDim2.fromScale(0.5, 0.5)
-	self.hackCard.BackgroundColor3 = Color3.fromRGB(15, 25, 20)
+	self.hackCard.BackgroundColor3 = Color3.fromRGB(10, 20, 15)
 	self.hackCard.ZIndex = 201
 	self.hackCard.Parent = self.hackOverlay
-	corner(self.hackCard, 20)
+	corner(self.hackCard, 16)
+	
+	-- Matrix-style border glow
+	local hackStroke = Instance.new("UIStroke")
+	hackStroke.Color = Color3.fromRGB(0, 255, 100)
+	hackStroke.Thickness = 2
+	hackStroke.Transparency = 0.6
+	hackStroke.Parent = self.hackCard
 
+	-- Title - 10% of card height
 	local hackTitle = Instance.new("TextLabel")
-	hackTitle.Size = UDim2.new(1, 0, 0, 60)
-	hackTitle.BackgroundColor3 = Color3.fromRGB(0, 80, 60)
+	hackTitle.Size = UDim2.new(1, 0, 0.10, 0)
+	hackTitle.BackgroundColor3 = Color3.fromRGB(0, 70, 50)
 	hackTitle.Font = F.Title
-	hackTitle.TextSize = 24
-	hackTitle.TextColor3 = C.Green
+	hackTitle.TextSize = 22
+	hackTitle.TextColor3 = Color3.fromRGB(0, 255, 100)
 	hackTitle.Text = "💻 SYSTEM BREACH"
 	hackTitle.ZIndex = 202
 	hackTitle.Parent = self.hackCard
-	corner(hackTitle, 20)
+	corner(hackTitle, 16)
 
-	local titleFix = Instance.new("Frame")
-	titleFix.Size = UDim2.new(1, 0, 0, 30)
-	titleFix.Position = UDim2.new(0, 0, 0, 35)
-	titleFix.BackgroundColor3 = Color3.fromRGB(0, 80, 60)
-	titleFix.ZIndex = 202
-	titleFix.Parent = hackTitle
-
+	-- Instructions - 7% of card height
 	self.hackInstructions = Instance.new("TextLabel")
-	self.hackInstructions.Size = UDim2.new(0.9, 0, 0, 40)
+	self.hackInstructions.Size = UDim2.new(0.92, 0, 0.07, 0)
 	self.hackInstructions.AnchorPoint = Vector2.new(0.5, 0)
-	self.hackInstructions.Position = UDim2.new(0.5, 0, 0, 70)
+	self.hackInstructions.Position = UDim2.new(0.5, 0, 0.11, 0)
 	self.hackInstructions.BackgroundTransparency = 1
 	self.hackInstructions.Font = F.Body
-	self.hackInstructions.TextSize = 14
-	self.hackInstructions.TextColor3 = C.Green
+	self.hackInstructions.TextSize = 13
+	self.hackInstructions.TextColor3 = Color3.fromRGB(150, 255, 180)
 	self.hackInstructions.TextWrapped = true
-	self.hackInstructions.Text = "Enter the security codes before time runs out!"
+	self.hackInstructions.Text = "Match the security codes to breach the system!"
 	self.hackInstructions.ZIndex = 202
 	self.hackInstructions.Parent = self.hackCard
 
-	-- Timer bar
+	-- Timer bar - 3% of card height
 	self.hackTimerBg = Instance.new("Frame")
-	self.hackTimerBg.Size = UDim2.new(0.9, 0, 0, 12)
+	self.hackTimerBg.Size = UDim2.new(0.9, 0, 0.025, 0)
 	self.hackTimerBg.AnchorPoint = Vector2.new(0.5, 0)
-	self.hackTimerBg.Position = UDim2.new(0.5, 0, 0, 115)
+	self.hackTimerBg.Position = UDim2.new(0.5, 0, 0.19, 0)
 	self.hackTimerBg.BackgroundColor3 = C.Gray700
 	self.hackTimerBg.ZIndex = 202
 	self.hackTimerBg.Parent = self.hackCard
@@ -2204,81 +2579,99 @@ function Minigames:createHackingGame()
 
 	self.hackTimerFill = Instance.new("Frame")
 	self.hackTimerFill.Size = UDim2.new(1, 0, 1, 0)
-	self.hackTimerFill.BackgroundColor3 = C.Green
+	self.hackTimerFill.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
 	self.hackTimerFill.ZIndex = 203
 	self.hackTimerFill.Parent = self.hackTimerBg
 	pill(self.hackTimerFill)
 
-	-- Code display (what to type)
+	-- Code display (what to type) - 9% of card height
 	self.hackCodeDisplay = Instance.new("TextLabel")
-	self.hackCodeDisplay.Size = UDim2.new(0.9, 0, 0, 50)
+	self.hackCodeDisplay.Size = UDim2.new(0.85, 0, 0.09, 0)
 	self.hackCodeDisplay.AnchorPoint = Vector2.new(0.5, 0)
-	self.hackCodeDisplay.Position = UDim2.new(0.5, 0, 0, 140)
-	self.hackCodeDisplay.BackgroundColor3 = Color3.fromRGB(0, 40, 30)
+	self.hackCodeDisplay.Position = UDim2.new(0.5, 0, 0.23, 0)
+	self.hackCodeDisplay.BackgroundColor3 = Color3.fromRGB(0, 35, 25)
 	self.hackCodeDisplay.Font = Enum.Font.Code
-	self.hackCodeDisplay.TextSize = 28
-	self.hackCodeDisplay.TextColor3 = C.Green
+	self.hackCodeDisplay.TextSize = 26
+	self.hackCodeDisplay.TextColor3 = Color3.fromRGB(0, 255, 100)
 	self.hackCodeDisplay.Text = "####"
 	self.hackCodeDisplay.ZIndex = 202
 	self.hackCodeDisplay.Parent = self.hackCard
-	corner(self.hackCodeDisplay, 12)
+	corner(self.hackCodeDisplay, 10)
 
-	-- User input display
+	-- User input display - 9% of card height
 	self.hackInputDisplay = Instance.new("TextLabel")
-	self.hackInputDisplay.Size = UDim2.new(0.9, 0, 0, 50)
+	self.hackInputDisplay.Size = UDim2.new(0.85, 0, 0.09, 0)
 	self.hackInputDisplay.AnchorPoint = Vector2.new(0.5, 0)
-	self.hackInputDisplay.Position = UDim2.new(0.5, 0, 0, 200)
-	self.hackInputDisplay.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+	self.hackInputDisplay.Position = UDim2.new(0.5, 0, 0.335, 0)
+	self.hackInputDisplay.BackgroundColor3 = Color3.fromRGB(25, 30, 35)
 	self.hackInputDisplay.Font = Enum.Font.Code
-	self.hackInputDisplay.TextSize = 28
+	self.hackInputDisplay.TextSize = 26
 	self.hackInputDisplay.TextColor3 = C.Amber
 	self.hackInputDisplay.Text = "____"
 	self.hackInputDisplay.ZIndex = 202
 	self.hackInputDisplay.Parent = self.hackCard
-	corner(self.hackInputDisplay, 12)
+	corner(self.hackInputDisplay, 10)
 
-	-- Progress
+	-- Progress - 5% of card height
 	self.hackProgressLabel = Instance.new("TextLabel")
-	self.hackProgressLabel.Size = UDim2.new(0.9, 0, 0, 30)
+	self.hackProgressLabel.Size = UDim2.new(0.9, 0, 0.05, 0)
 	self.hackProgressLabel.AnchorPoint = Vector2.new(0.5, 0)
-	self.hackProgressLabel.Position = UDim2.new(0.5, 0, 0, 260)
+	self.hackProgressLabel.Position = UDim2.new(0.5, 0, 0.44, 0)
 	self.hackProgressLabel.BackgroundTransparency = 1
 	self.hackProgressLabel.Font = F.Medium
-	self.hackProgressLabel.TextSize = 14
-	self.hackProgressLabel.TextColor3 = C.Green
+	self.hackProgressLabel.TextSize = 13
+	self.hackProgressLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
 	self.hackProgressLabel.Text = "Codes: 0/5"
 	self.hackProgressLabel.ZIndex = 202
 	self.hackProgressLabel.Parent = self.hackCard
 
-	-- Keypad
+	-- Keypad - 45% of card height (large for easy mobile tapping)
 	self.hackKeypad = Instance.new("Frame")
-	self.hackKeypad.Size = UDim2.new(0.8, 0, 0, 180)
+	self.hackKeypad.Size = UDim2.new(0.9, 0, 0.45, 0)
 	self.hackKeypad.AnchorPoint = Vector2.new(0.5, 0)
-	self.hackKeypad.Position = UDim2.new(0.5, 0, 0, 300)
+	self.hackKeypad.Position = UDim2.new(0.5, 0, 0.50, 0)
 	self.hackKeypad.BackgroundTransparency = 1
 	self.hackKeypad.ZIndex = 202
 	self.hackKeypad.Parent = self.hackCard
 
 	local keypadLayout = Instance.new("UIGridLayout")
-	keypadLayout.CellSize = UDim2.new(0.3, 0, 0.22, 0)
-	keypadLayout.CellPadding = UDim2.new(0.025, 0, 0.04, 0)
+	keypadLayout.CellSize = UDim2.new(0.30, -4, 0.22, -4)  -- Responsive cells with slight padding
+	keypadLayout.CellPadding = UDim2.new(0.025, 0, 0.03, 0)
 	keypadLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	keypadLayout.Parent = self.hackKeypad
 
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Mobile-optimized keypad buttons
+	-- Larger text, better contrast, responsive sizing
+	-- ═══════════════════════════════════════════════════════════════════════════
 	local keyOrder = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0", "✓" }
 	self.hackKeyBtns = {}
 	for i, key in ipairs(keyOrder) do
 		local btn = Instance.new("TextButton")
-		btn.BackgroundColor3 = (key == "✓" and C.Green) or (key == "⌫" and C.Red) or Color3.fromRGB(0, 60, 45)
+		-- More vibrant colors for visibility
+		if key == "✓" then
+			btn.BackgroundColor3 = Color3.fromRGB(40, 180, 80)  -- Bright green
+		elseif key == "⌫" then
+			btn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)  -- Bright red
+		else
+			btn.BackgroundColor3 = Color3.fromRGB(0, 80, 60)  -- Matrix green
+		end
 		btn.Font = F.Title
-		btn.TextSize = 24
+		btn.TextSize = 28  -- Larger text for mobile
 		btn.TextColor3 = C.White
 		btn.Text = key
 		btn.AutoButtonColor = false
 		btn.LayoutOrder = i
 		btn.ZIndex = 203
 		btn.Parent = self.hackKeypad
-		corner(btn, 12)
+		corner(btn, 10)
+		
+		-- Add subtle border for better visibility
+		local btnStroke = Instance.new("UIStroke")
+		btnStroke.Color = Color3.fromRGB(0, 200, 120)
+		btnStroke.Thickness = 1
+		btnStroke.Transparency = 0.7
+		btnStroke.Parent = btn
 
 		self.hackKeyBtns[key] = btn
 	end

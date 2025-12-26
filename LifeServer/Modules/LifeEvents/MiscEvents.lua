@@ -16,20 +16,21 @@ MiscEvents.events = {
 		id = "misc_found_item",
 		title = "Found Something",
 		emoji = "🔍",
-		text = "You found something interesting!",
-		question = "What did you find?",
+		text = "You spotted something on the ground!",
+		question = "Do you pick it up?",
 		minAge = 8, maxAge = 100,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 5,
 		stage = STAGE,
 		ageBand = "any",
 		category = "luck",
 		tags = { "found", "lucky", "discovery" },
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		
-		-- CRITICAL: Random find outcome
+		-- CRITICAL FIX #1012: Added more choice options including decline
 		choices = {
 			{
-				text = "Check out the discovery",
+				text = "Check it out!",
 				effects = {},
 				feedText = "Examining the find...",
 				onResolve = function(state)
@@ -53,6 +54,16 @@ MiscEvents.events = {
 						state:AddFeed("🔍 Found something interesting but not valuable. Cool keepsake!")
 					end
 				end,
+			},
+			{
+				text = "Leave it alone",
+				effects = {},
+				feedText = "🔍 You walked past. Not worth the trouble.",
+			},
+			{
+				text = "Turn it in to lost and found",
+				effects = { Smarts = 1 },
+				feedText = "🔍 Good citizen! Maybe karma will reward you later.",
 			},
 		},
 	},
@@ -105,7 +116,7 @@ MiscEvents.events = {
 		question = "How does it affect you?",
 		minAge = 5, maxAge = 100,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "experience",
@@ -163,7 +174,7 @@ MiscEvents.events = {
 		question = "What's the coincidence?",
 		minAge = 10, maxAge = 100,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "experience",
@@ -184,7 +195,7 @@ MiscEvents.events = {
 		question = "Do you help?",
 		minAge = 12, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "kindness",
@@ -283,7 +294,7 @@ MiscEvents.events = {
 		question = "What memory did the smell bring back?",
 		minAge = 10, maxAge = 100,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "experience",
@@ -399,7 +410,7 @@ MiscEvents.events = {
 		question = "What do you do with your free day?",
 		minAge = 18, maxAge = 80,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "opportunity",
@@ -420,7 +431,7 @@ MiscEvents.events = {
 		question = "How do you process it?",
 		minAge = 10, maxAge = 100,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "experience",
@@ -440,7 +451,7 @@ MiscEvents.events = {
 		question = "How does the wrong number go?",
 		minAge = 12, maxAge = 100,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "experience",
@@ -479,7 +490,7 @@ MiscEvents.events = {
 		question = "What is it?",
 		minAge = 5, maxAge = 100,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "luck",
@@ -519,7 +530,7 @@ MiscEvents.events = {
 		question = "How do you handle being in the dark?",
 		minAge = 5, maxAge = 100,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "inconvenience",

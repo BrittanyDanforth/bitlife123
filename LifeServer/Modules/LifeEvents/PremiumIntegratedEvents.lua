@@ -146,7 +146,7 @@ PremiumIntegratedEvents.events = {
 		question = "How do you handle the money troubles?",
 		minAge = 20, maxAge = 70,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		category = "finance",
 		tags = { "money", "crisis", "debt" },
@@ -666,7 +666,7 @@ PremiumIntegratedEvents.events = {
 		question = "How do you handle the family feud?",
 		minAge = 16, maxAge = 80,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		category = "family",
 		tags = { "family", "drama", "conflict" },
@@ -1091,7 +1091,7 @@ PremiumIntegratedEvents.events = {
 		question = "How do you approach the party?",
 		minAge = 21, maxAge = 55,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		category = "social",
 		tags = { "party", "networking", "social" },
@@ -1141,7 +1141,7 @@ PremiumIntegratedEvents.events = {
 		question = "Do you invest?",
 		minAge = 25, maxAge = 60,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		category = "finance",
 		tags = { "business", "investment", "opportunity" },
@@ -1306,7 +1306,7 @@ PremiumIntegratedEvents.events = {
 		question = "How do you handle the bully?",
 		minAge = 10, maxAge = 17,
 		baseChance = 0.555,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = "teen",
 		category = "teen",
 		tags = { "bully", "school", "conflict" },
@@ -1391,7 +1391,7 @@ PremiumIntegratedEvents.events = {
 		question = "Check your numbers?",
 		minAge = 18, maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		category = "luck",
 		tags = { "money", "luck", "gambling" },
@@ -1722,7 +1722,7 @@ PremiumIntegratedEvents.events = {
 		question = "How do you handle it?",
 		minAge = 20, maxAge = 70,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		category = "social",
 		tags = { "public", "speech", "confidence" },
@@ -1780,7 +1780,7 @@ PremiumIntegratedEvents.events = {
 		question = "What do you plan?",
 		minAge = 18, maxAge = 70,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		category = "relationships",
 		tags = { "romance", "love", "partner" },
@@ -2031,12 +2031,40 @@ PremiumIntegratedEvents.events = {
 				setFlags = { enjoying_youth = true, turning_point_complete = true },
 				feedText = "YOLO! These are the best years of your life!",
 			},
-			{
-				text = "💵 Start working and save money",
-				effects = { Money = 1500 },
-				setFlags = { young_earner = true, turning_point_complete = true },
-				feedText = "You get a part-time job. First paycheck feels AMAZING!",
-			},
+		{
+			text = "💵 Start working and save money",
+			effects = { Money = 1500 },
+			setFlags = { young_earner = true, turning_point_complete = true, has_part_time_job = true },
+			feedText = "You get a part-time job. First paycheck feels AMAZING!",
+			-- CRITICAL FIX #801: Actually give the player a job!
+			-- User complaint: "it said part-time job but I didn't get"
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags.employed = true
+				state.Flags.has_part_time_job = true
+				state.Flags.first_job = true
+				state.Flags.young_earner = true
+				-- Set actual job
+				state.CurrentJob = state.CurrentJob or {
+					id = "part_time_retail",
+					name = "Retail Associate (Part-Time)",
+					category = "service",
+					salary = 15000,
+					isPartTime = true,
+					yearsInJob = 0,
+				}
+				-- Add to job history
+				state.JobHistory = state.JobHistory or {}
+				table.insert(state.JobHistory, {
+					id = "part_time_retail",
+					name = "Retail Associate (Part-Time)",
+					startAge = state.Age,
+				})
+				if state.AddFeed then
+					state:AddFeed("💵 You got hired at a retail store! $15k/year part-time!")
+				end
+			end,
+		},
 			{
 				text = "💪 Work on self-improvement",
 				effects = { Health = 5, Looks = 3, Smarts = 2 },
@@ -3077,6 +3105,109 @@ PremiumIntegratedEvents.events = {
 				effects = { Happiness = 0 },
 				setFlags = { rejected_fame = true },
 				feedText = "⭐ 'Your loss, kid. Some people dream their whole lives for this chance.' They walk away, shaking their head.",
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #539: Premium Teaser Events - Show free players what they're missing!
+	-- These events give everyone a FUN experience but make premium look amazing
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	{
+		id = "premium_teaser_viral_video",
+		title = "🎥 Your Video Went Viral!",
+		emoji = "🎥",
+		text = "You posted a video online and it BLEW UP! Millions of views! Brands are reaching out!",
+		question = "What do you do with this moment of fame?",
+		minAge = 13, maxAge = 40,
+		baseChance = 0.3,
+		cooldown = 10,
+		oneTime = true,
+		stage = STAGE,
+		category = "random",
+		tags = { "fame", "social_media", "viral", "teaser" },
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #601: Viral video REQUIRES player to have actually posted content!
+		-- User complaint: "Video went viral but I never posted any videos"
+		-- This event should ONLY fire if player has content creator flags!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- CRITICAL: Must NOT have celebrity gamepass (this is a teaser event)
+			if flags.celebrity_gamepass or flags.celebrity_career_chosen then
+				return false
+			end
+			-- CRITICAL FIX: Player MUST have actually created content!
+			-- Check for any flag indicating they've posted videos/content
+			local hasCreatedContent = flags.content_creator or flags.streamer or flags.influencer
+				or flags.first_video_posted or flags.first_video_uploaded or flags.youtube_started
+				or flags.youtube_channel or flags.pursuing_streaming or flags.social_media_active
+				or flags.gaming_content or flags.vlog_content or flags.vlogger or flags.daily_uploader
+			if not hasCreatedContent then
+				return false, "Player hasn't created any content yet"
+			end
+			return true
+		end,
+		choices = {
+			{
+				text = "Try to capitalize on it! 💰",
+				effects = { Happiness = 10, Money = 500 },
+				feedText = "🎥 You made a few bucks from sponsors... but the fame faded quickly.",
+			},
+			{
+				text = "⭐ Pursue REAL fame! (Celebrity Gamepass)",
+				effects = { Happiness = 15 },
+				requiresGamepass = "CELEBRITY",
+				setFlags = { celebrity_gamepass = true, content_creator = true },
+				feedText = "⭐ With the Celebrity Gamepass, you can turn this into a CAREER!",
+			},
+			{
+				text = "Enjoy the moment and move on 🤷",
+				effects = { Happiness = 5 },
+				feedText = "🎥 Nice while it lasted!",
+			},
+		},
+	},
+	
+	{
+		id = "premium_teaser_overwhelming_problems",
+		title = "😩 Everything Is Going Wrong!",
+		emoji = "😩",
+		text = "Your health is declining, you're stressed, nothing seems right. If only you could just FIX everything!",
+		question = "How do you handle this?",
+		minAge = 18, maxAge = 80,
+		baseChance = 0.3,
+		cooldown = 5,
+		oneTime = false,
+		maxOccurrences = 2,
+		stage = STAGE,
+		category = "random",
+		tags = { "stress", "problems", "godmode", "teaser" },
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			if flags.god_mode_gamepass then return false end
+			local health = (state.Stats and state.Stats.Health) or 50
+			local happiness = (state.Stats and state.Stats.Happiness) or 50
+			return health < 50 or happiness < 40
+		end,
+		choices = {
+			{
+				text = "Try to fix things one at a time... 😤",
+				effects = { Happiness = 3, Health = 2, Smarts = 1 },
+				feedText = "😤 You're working on it slowly...",
+			},
+			{
+				text = "⚡ Take TOTAL Control! (God Mode Gamepass)",
+				effects = { Happiness = 25, Health = 25, Smarts = 5, Looks = 5 },
+				requiresGamepass = "GOD_MODE",
+				setFlags = { god_mode_gamepass = true },
+				feedText = "⚡ With GOD MODE, you have COMPLETE CONTROL! Edit your stats - everything!",
+			},
+			{
+				text = "Accept life as it is 😔",
+				effects = { Happiness = -5 },
+				feedText = "😔 Sometimes life is just hard...",
 			},
 		},
 	},

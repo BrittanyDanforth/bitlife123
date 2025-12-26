@@ -410,35 +410,71 @@ Adult.events = {
 		question = "How do you respond?",
 		minAge = 35, maxAge = 50,
 		baseChance = 0.4,
-		cooldown = 5,
+		cooldown = 8,
+		oneTime = true, -- CRITICAL FIX: Only once!
 
 		-- META
 		stage = STAGE,
 		ageBand = "adult_midlife",
 		category = "health",
 		tags = { "doctor", "lifestyle", "midlife" },
+		
+		-- CRITICAL FIX #806: Only show if health is actually concerning!
+		-- User complaint: Health wake-up call showing when already healthy
+		eligibility = function(state)
+			local health = (state.Stats and state.Stats.Health) or state.Health or 50
+			-- Only show if health is below 65 at midlife
+			if health >= 75 then
+				return false, "Player is healthy - no wake-up call needed"
+			end
+			return true
+		end,
+		blockedByFlags = { midlife_health_done = true },
+		
+		-- Dynamic text based on actual health
+		getDynamicText = function(state)
+			local health = (state.Stats and state.Stats.Health) or state.Health or 50
+			local text
+			if health < 40 then
+				text = string.format("Your checkup results are concerning. At %d%% health, the doctor says major changes are needed.", math.floor(health))
+			elseif health < 55 then
+				text = string.format("A routine checkup reveals some issues. %d%% health at your age needs attention.", math.floor(health))
+			else
+				text = "A routine checkup reveals you could be doing better. Some preventive changes would help."
+			end
+			return { text = text, currentHealth = health }
+		end,
 
 		choices = {
 			{
 				text = "Complete lifestyle overhaul",
 				effects = { Health = 15, Happiness = 5, Money = -500 },
-				setFlags = { health_conscious = true },
-				feedText = "You transformed your lifestyle. Feeling great!"
+				setFlags = { health_conscious = true, midlife_health_done = true },
+				feedText = "You transformed your lifestyle. Feeling great!",
+				onResolve = function(state)
+					local health = (state.Stats and state.Stats.Health) or state.Health or 50
+					if health < 40 then
+						state:ModifyStat("Health", 20) -- Extra boost for very unhealthy
+						state:AddFeed("🏥 Major transformation! You feel like a new person!")
+					end
+				end,
 			},
 			{
 				text = "Make gradual improvements",
 				effects = { Health = 8, Happiness = 3 },
+				setFlags = { midlife_health_done = true },
 				feedText = "You're making steady health improvements."
 			},
 			{
 				text = "Ignore it and hope for the best",
 				effects = { Health = -10, Happiness = -5 },
+				setFlags = { midlife_health_done = true, ignores_health = true },
 				feedText = "You ignored the warning signs..."
 			},
 			{
 				text = "Become obsessive about health",
 				effects = { Health = 10, Happiness = -5, Money = -1000 },
-				setFlags = { health_obsessed = true },
+				setFlags = { health_obsessed = true, midlife_health_done = true },
 				feedText = "Health became your entire focus. Maybe too much."
 			},
 		},
@@ -768,7 +804,7 @@ Adult.events = {
 		question = "What's the biggest problem?",
 		minAge = 18, maxAge = 26,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { lives_alone = true },
 
 		choices = {
@@ -786,7 +822,7 @@ Adult.events = {
 		question = "What's the issue?",
 		minAge = 18, maxAge = 28,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { has_roommates = true },
 		-- CRITICAL FIX: Can't have roommate drama from prison!
 		blockedByFlags = { in_prison = true, incarcerated = true },
@@ -864,7 +900,7 @@ Adult.events = {
 		question = "How's your experience?",
 		minAge = 20, maxAge = 40,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresSingle = true,
 		blockedByFlags = { married = true, in_prison = true, incarcerated = true },
 
@@ -1265,7 +1301,7 @@ Adult.events = {
 		question = "How do you handle it?",
 		minAge = 22, maxAge = 60,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true, -- CRITICAL FIX: Only show for employed players!
 
 		choices = {
@@ -2269,7 +2305,7 @@ Adult.events = {
 		question = "How do you handle it?",
 		minAge = 60, maxAge = 95,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		choices = {
 			{ text = "Take a class to learn", effects = { Smarts = 5, Happiness = 5 }, setFlags = { tech_savvy_senior = true }, feedText = "You're learning! Video calls are great!" },
@@ -2901,7 +2937,7 @@ Adult.events = {
 		question = "Where do you go?",
 		minAge = 22, maxAge = 70,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		blockedByFlags = { in_prison = true, homeless = true },
 		-- CRITICAL FIX: Need at least some money for vacation
 		eligibility = function(state)
@@ -3129,10 +3165,73 @@ Adult.events = {
 		baseChance = 0.3,
 		oneTime = true,
 		maxOccurrences = 1,
-		blockedByFlags = { homeowner = true },
+		blockedByFlags = { homeowner = true, has_property = true },
+		-- CRITICAL FIX: Must have enough money for down payment!
+		-- User complaint: "IT SAYS IM A HOMEOWNER BUT THE POPUP FOR BUYING HOME I HAD NO MONEY"
+		eligibility = function(state)
+			local money = state.Money or 0
+			if money < 10000 then
+				return false, "Not enough money for a down payment"
+			end
+			local flags = state.Flags or {}
+			if flags.homeowner or flags.has_property then
+				return false, "Already owns a home"
+			end
+			return true
+		end,
 		choices = {
-			{ text = "Offer asking price immediately", effects = { Happiness = 15, Money = -50000 }, setFlags = { homeowner = true }, feedText = "🏠 Keys in hand! You're a homeowner!" },
-			{ text = "Negotiate aggressively", effects = { Happiness = 12, Money = -40000, Smarts = 3 }, setFlags = { homeowner = true }, feedText = "🏠 Saved $10k with your negotiating skills!" },
+			{ 
+				text = "Offer asking price immediately ($50k down)", 
+				effects = { Happiness = 15, Money = -50000 }, 
+				setFlags = { homeowner = true, has_property = true }, 
+				feedText = "🏠 Keys in hand! You're a homeowner!",
+				eligibility = function(state)
+					local money = state.Money or 0
+					if money < 50000 then
+						return false, "Can't afford $50,000 down payment"
+					end
+					return true
+				end,
+				onResolve = function(state)
+					if state.AddAsset then
+						state:AddAsset("Properties", {
+							id = "home_" .. tostring(state.Age or 0),
+							name = "House",
+							emoji = "🏠",
+							price = 250000,
+							value = 250000,
+							income = 0,
+							isEventAcquired = true,
+						})
+					end
+				end,
+			},
+			{ 
+				text = "Negotiate aggressively ($40k down)", 
+				effects = { Happiness = 12, Money = -40000, Smarts = 3 }, 
+				setFlags = { homeowner = true, has_property = true }, 
+				feedText = "🏠 Saved $10k with your negotiating skills!",
+				eligibility = function(state)
+					local money = state.Money or 0
+					if money < 40000 then
+						return false, "Can't afford $40,000 down payment"
+					end
+					return true
+				end,
+				onResolve = function(state)
+					if state.AddAsset then
+						state:AddAsset("Properties", {
+							id = "home_negotiated_" .. tostring(state.Age or 0),
+							name = "House",
+							emoji = "🏠",
+							price = 200000,
+							value = 200000,
+							income = 0,
+							isEventAcquired = true,
+						})
+					end
+				end,
+			},
 			{ text = "Keep renting for now", effects = { Happiness = -5 }, feedText = "Not ready for that commitment yet." },
 		},
 	},

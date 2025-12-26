@@ -105,8 +105,27 @@ end
 -- JOB CHECKS
 -- ═══════════════════════════════════════════════════════════════════════
 
+-- CRITICAL FIX: Exclude hacker category jobs from general tech events
+-- Hacker jobs have their own events in HackerEvents
+local function isHackerJob(state)
+	if not state.CurrentJob then return false end
+	local jobId = tostring(state.CurrentJob.id or ""):lower()
+	local jobCat = tostring(state.CurrentJob.category or ""):lower()
+	local jobName = tostring(state.CurrentJob.name or ""):lower()
+	-- Check if this is a hacker-specific job
+	if jobCat == "hacker" then return true end
+	if jobId:find("hacker") or jobId:find("black_hat") or jobId:find("cyber_crime") then return true end
+	if jobName:find("hacker") or jobName:find("black hat") then return true end
+	return false
+end
+
 local function hasTechJob(state)
 	if not state.CurrentJob then return false end
+	
+	-- CRITICAL FIX: Don't fire tech events for hacker jobs!
+	-- Hacker jobs have their own dedicated events
+	if isHackerJob(state) then return false end
+	
 	local jobId = tostring(state.CurrentJob.id or ""):lower()
 	local jobCat = tostring(state.CurrentJob.category or ""):lower()
 	local jobName = tostring(state.CurrentJob.name or ""):lower()
@@ -127,6 +146,7 @@ end
 
 local function hasDevOpsJob(state)
 	if not state.CurrentJob then return false end
+	if isHackerJob(state) then return false end -- CRITICAL FIX: Exclude hackers
 	local jobId = tostring(state.CurrentJob.id or ""):lower()
 	local jobName = tostring(state.CurrentJob.name or ""):lower()
 	return jobId:find("devops") or jobId:find("sre") or jobId:find("infra")
@@ -136,6 +156,7 @@ end
 
 local function hasSecurityJob(state)
 	if not state.CurrentJob then return false end
+	if isHackerJob(state) then return false end -- CRITICAL FIX: Exclude hackers
 	local jobId = tostring(state.CurrentJob.id or ""):lower()
 	local jobName = tostring(state.CurrentJob.name or ""):lower()
 	return jobId:find("security") or jobId:find("cyber") or jobId:find("pen")
@@ -145,6 +166,7 @@ end
 
 local function hasDevJob(state)
 	if not state.CurrentJob then return false end
+	if isHackerJob(state) then return false end -- CRITICAL FIX: Exclude hackers
 	local jobId = tostring(state.CurrentJob.id or ""):lower()
 	local jobName = tostring(state.CurrentJob.name or ""):lower()
 	return jobId:find("developer") or jobId:find("software") or jobId:find("engineer")
@@ -192,7 +214,7 @@ TechCareerEvents.events = {
 		weight = 20,
 		minAge = 22, maxAge = 60,
 		baseChance = 0.60,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = hasDevOpsJob,
 		blockedByFlags = { in_prison = true },
@@ -269,7 +291,7 @@ TechCareerEvents.events = {
 		weight = 16,
 		minAge = 22, maxAge = 60,
 		baseChance = 0.52,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = hasDevOpsJob,
 		blockedByFlags = { in_prison = true },
@@ -853,7 +875,7 @@ TechCareerEvents.events = {
 		weight = 16,
 		minAge = 18, maxAge = 55,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = hasTechJob,
 		blockedByFlags = { in_prison = true },
@@ -922,7 +944,7 @@ TechCareerEvents.events = {
 		weight = 14,
 		minAge = 18, maxAge = 60,
 		baseChance = 0.50,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = hasDevJob,
 		blockedByFlags = { in_prison = true },
@@ -1537,7 +1559,7 @@ TechCareerEvents.events = {
 		weight = 15,
 		minAge = 22, maxAge = 55,
 		baseChance = 0.50,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = hasTechJob,
 		blockedByFlags = { in_prison = true },

@@ -20,7 +20,7 @@ FinancialEvents.events = {
 		question = "Where did it come from?",
 		minAge = 18, maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "finance",
@@ -83,7 +83,7 @@ FinancialEvents.events = {
 		question = "What's the side hustle?",
 		minAge = 16, maxAge = 70,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "finance",
@@ -163,7 +163,7 @@ FinancialEvents.events = {
 		question = "Did you get a bonus?",
 		minAge = 18, maxAge = 70,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "career",
@@ -211,7 +211,7 @@ FinancialEvents.events = {
 		question = "What's the big cost?",
 		minAge = 18, maxAge = 90,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "finance",
@@ -351,7 +351,7 @@ FinancialEvents.events = {
 		question = "How do you approach savings?",
 		minAge = 20, maxAge = 70,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		oneTime = true,
 		stage = STAGE,
 		ageBand = "any",
@@ -384,7 +384,7 @@ FinancialEvents.events = {
 		question = "Do you invest?",
 		minAge = 18, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "investment",
@@ -507,7 +507,7 @@ FinancialEvents.events = {
 		question = "Do you invest in crypto?",
 		minAge = 18, maxAge = 70,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "investment",
@@ -648,7 +648,7 @@ FinancialEvents.events = {
 		question = "How do you approach retirement?",
 		minAge = 25, maxAge = 60,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "finance",
@@ -681,7 +681,7 @@ FinancialEvents.events = {
 		question = "What's the debt situation?",
 		minAge = 18, maxAge = 70,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "finance",
@@ -751,7 +751,7 @@ FinancialEvents.events = {
 		question = "How do you handle it?",
 		minAge = 18, maxAge = 80,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "finance",
@@ -879,7 +879,7 @@ FinancialEvents.events = {
 		question = "Do you gamble?",
 		minAge = 21, maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "gambling",
@@ -1013,7 +1013,7 @@ FinancialEvents.events = {
 		question = "Do you invest?",
 		minAge = 18, maxAge = 80,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "scam",
@@ -1066,7 +1066,7 @@ FinancialEvents.events = {
 		question = "How do you approach taxes?",
 		minAge = 18, maxAge = 90,
 		baseChance = 0.555,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "finance",
@@ -1189,229 +1189,228 @@ FinancialEvents.events = {
 			},
 		},
 	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- HOUSING-RELATED FINANCIAL EVENTS
+	-- CRITICAL FIX: User complained events suggest buying house but don't link to assets
+	-- "IT SAYS IM A COLLEGE STUDEND LIKE LIVING IN COLLEGE DORM ROOM STILL EVEN THO IM LIKE 40"
+	-- "ENSURE THE CARD POP UPS ARE ACTUALLY LINKED TO THE ASSETS IN BUYING"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "fin_housing_suggestion",
+		title = "Housing Situation Check",
+		emoji = "🏠",
+		text = "Your current living situation needs attention...",
+		question = "What's your plan?",
+		minAge = 25, maxAge = 60,
+		baseChance = 0.40,
+		cooldown = 3,
+		stage = "adult",
+		ageBand = "adult",
+		category = "finance",
+		tags = { "housing", "financial", "life" },
+		
+		-- CRITICAL: Only trigger for people WITHOUT proper housing
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			local age = state.Age or 25
+			
+			-- Skip if already owns home
+			if flags.homeowner or flags.has_house or flags.owns_property then return false end
+			-- Skip if has apartment
+			if flags.has_apartment and flags.renting then return false end
+			-- Skip if explicitly living somewhere
+			if flags.has_own_place or flags.living_independently then return false end
+			-- Don't fire for young people still in college
+			if flags.in_college or flags.college_student then return false end
+			-- Skip if already homeless (different event path)
+			if flags.homeless then return false end
+			
+			-- Only trigger if player has money to do something about it
+			local money = state.Money or 0
+			return age >= 25 and money > 1000
+		end,
+		
+		-- CRITICAL: Dynamic text based on player state
+		preProcess = function(state, eventDef)
+			local money = state.Money or 0
+			local flags = state.Flags or {}
+			local hasJob = state.CurrentJob ~= nil
+			
+			local situation = "You're currently without stable housing."
+			if flags.living_with_parents then
+				situation = "You're still living with your parents. Time to consider your own place?"
+			elseif flags.couch_surfing then
+				situation = "Couch surfing isn't sustainable. Time to find something permanent."
+			elseif flags.living_in_car then
+				situation = "Living in your car is rough. Can you afford something better?"
+			end
+			
+			local moneyStatus = ""
+			if money >= 50000 then
+				moneyStatus = " You have enough to buy a small home!"
+			elseif money >= 5000 then
+				moneyStatus = " You could afford a deposit on a rental."
+			else
+				moneyStatus = " You'll need to save more or find cheaper options."
+			end
+			
+			eventDef.text = situation .. moneyStatus
+			return true
+		end,
+		
+		choices = {
+			{
+				text = "Look for an apartment to rent",
+				effects = {},
+				feedText = "Searching for apartments...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money >= 3000 then
+						state.Money = money - 2000 -- Deposit + first month
+						state.Flags = state.Flags or {}
+						state.Flags.has_apartment = true
+						state.Flags.renting = true
+						state.Flags.has_own_place = true
+						state.Flags.living_with_parents = nil
+						state.HousingState = state.HousingState or {}
+						state.HousingState.status = "renter"
+						state.HousingState.type = "apartment"
+						state.HousingState.rent = 1000
+						state.HousingState.moveInYear = state.Year or 2025
+						if state.AddFeed then
+							state:AddFeed("🏠 Found an apartment! $1000/month rent. Your own place at last!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("🏠 Couldn't afford the deposit. Need to save more.")
+						end
+					end
+				end,
+				eligibility = function(state)
+					return (state.Money or 0) >= 2000
+				end,
+			},
+			{
+				text = "Save for a house down payment",
+				effects = { Happiness = 2, Smarts = 2 },
+				setFlags = { saving_for_house = true },
+				feedText = "🏠 Setting aside money each month. Building toward homeownership!",
+			},
+			{
+				text = "Get a job first - need income!",
+				effects = { Happiness = -2 },
+				feedText = "🏠 Housing requires income. Time to focus on employment.",
+				eligibility = function(state)
+					return not state.CurrentJob
+				end,
+			},
+			{
+				text = "Stay where I am for now",
+				effects = { Happiness = -3 },
+				feedText = "🏠 Putting off housing decisions. It'll catch up eventually.",
+			},
+		},
+	},
+
+	{
+		id = "fin_rent_due",
+		title = "Rent is Due!",
+		emoji = "💸",
+		text = "It's the first of the month. Your landlord is expecting the rent payment.",
+		question = "Your rent is due. What do you do?",
+		minAge = 18, maxAge = 75,
+		baseChance = 0.65,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		stage = "adult",
+		ageBand = "any",
+		category = "finance",
+		tags = { "housing", "rent", "bills" },
+		
+		-- Only for renters
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			local housing = state.HousingState or {}
+			return (flags.renting or housing.status == "renter") and not flags.homeless
+		end,
+		
+		preProcess = function(state, eventDef)
+			local rent = 1000
+			if state.HousingState and state.HousingState.rent then
+				rent = state.HousingState.rent
+			end
+			eventDef.question = string.format("Your rent of $%d is due. What do you do?", rent)
+			return true
+		end,
+		
+		choices = {
+			{
+				text = "Pay in full - on time",
+				effects = { Happiness = 2 },
+				feedText = "Paying rent...",
+				onResolve = function(state)
+					local rent = 1000
+					if state.HousingState and state.HousingState.rent then
+						rent = state.HousingState.rent
+					end
+					local money = state.Money or 0
+					if money >= rent then
+						state.Money = money - rent
+						state.HousingState = state.HousingState or {}
+						state.HousingState.missedRentYears = 0
+						if state.AddFeed then
+							state:AddFeed(string.format("💸 Rent paid! -$%d. Roof over your head secured.", rent))
+						end
+					else
+						state.HousingState = state.HousingState or {}
+						state.HousingState.missedRentYears = (state.HousingState.missedRentYears or 0) + 1
+						if state.AddFeed then
+							state:AddFeed("💸 Couldn't afford full rent. Landlord is not happy.")
+						end
+					end
+				end,
+			},
+			{
+				text = "Ask for an extension",
+				effects = { Happiness = -3 },
+				feedText = "Requesting more time...",
+				onResolve = function(state)
+					if math.random() < 0.5 then
+						if state.AddFeed then
+							state:AddFeed("💸 Landlord gave you until end of month. Don't be late again!")
+						end
+					else
+						state.HousingState = state.HousingState or {}
+						state.HousingState.missedRentYears = (state.HousingState.missedRentYears or 0) + 1
+						if state.AddFeed then
+							state:AddFeed("💸 No extension. Late fees added. Eviction warning issued.")
+						end
+					end
+				end,
+			},
+			{
+				text = "Skip this month",
+				effects = { Happiness = -5, Money = 0 },
+				feedText = "Keeping your money...",
+				onResolve = function(state)
+					state.HousingState = state.HousingState or {}
+					state.HousingState.missedRentYears = (state.HousingState.missedRentYears or 0) + 1
+					state.Flags = state.Flags or {}
+					state.Flags.rent_delinquent = true
+					if state.HousingState.missedRentYears >= 2 then
+						state.Flags.eviction_warning = true
+						if state.AddFeed then
+							state:AddFeed("⚠️ EVICTION WARNING! Miss rent again and you're out!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("💸 Skipped rent. Landlord is furious. This will catch up to you.")
+						end
+					end
+				end,
+			},
+		},
+	},
 }
 
 return FinancialEvents
-
--- ═══════════════════════════════════════════════════════════════════════════════
--- HOUSING-RELATED FINANCIAL EVENTS
--- CRITICAL FIX: User complained events suggest buying house but don't link to assets
--- "IT SAYS IM A COLLEGE STUDEND LIKE LIVING IN COLLEGE DORM ROOM STILL EVEN THO IM LIKE 40"
--- "ENSURE THE CARD POP UPS ARE ACTUALLY LINKED TO THE ASSETS IN BUYING"
--- ═══════════════════════════════════════════════════════════════════════════════
-
-FinancialEvents.events[#FinancialEvents.events + 1] = {
-	id = "fin_housing_suggestion",
-	title = "Housing Situation Check",
-	emoji = "🏠",
-	text = "Your current living situation needs attention...",
-	question = "What's your plan?",
-	minAge = 25, maxAge = 60,
-	baseChance = 0.40,
-	cooldown = 3,
-	stage = "adult",
-	ageBand = "adult",
-	category = "finance",
-	tags = { "housing", "financial", "life" },
-	
-	-- CRITICAL: Only trigger for people WITHOUT proper housing
-	eligibility = function(state)
-		local flags = state.Flags or {}
-		local age = state.Age or 25
-		
-		-- Skip if already owns home
-		if flags.homeowner or flags.has_house or flags.owns_property then return false end
-		-- Skip if has apartment
-		if flags.has_apartment and flags.renting then return false end
-		-- Skip if explicitly living somewhere
-		if flags.has_own_place or flags.living_independently then return false end
-		-- Don't fire for young people still in college
-		if flags.in_college or flags.college_student then return false end
-		-- Skip if already homeless (different event path)
-		if flags.homeless then return false end
-		
-		-- Only trigger if player has money to do something about it
-		local money = state.Money or 0
-		return age >= 25 and money > 1000
-	end,
-	
-	-- CRITICAL: Dynamic text based on player state
-	preProcess = function(state, eventDef)
-		local money = state.Money or 0
-		local flags = state.Flags or {}
-		local hasJob = state.CurrentJob ~= nil
-		
-		local situation = "You're currently without stable housing."
-		if flags.living_with_parents then
-			situation = "You're still living with your parents. Time to consider your own place?"
-		elseif flags.couch_surfing then
-			situation = "Couch surfing isn't sustainable. Time to find something permanent."
-		elseif flags.living_in_car then
-			situation = "Living in your car is rough. Can you afford something better?"
-		end
-		
-		local moneyStatus = ""
-		if money >= 50000 then
-			moneyStatus = " You have enough to buy a small home!"
-		elseif money >= 5000 then
-			moneyStatus = " You could afford a deposit on a rental."
-		else
-			moneyStatus = " You'll need to save more or find cheaper options."
-		end
-		
-		eventDef.text = situation .. moneyStatus
-		return true
-	end,
-	
-	choices = {
-		{
-			text = "Look for an apartment to rent",
-			effects = {},
-			feedText = "Searching for apartments...",
-			onResolve = function(state)
-				local money = state.Money or 0
-				if money >= 3000 then
-					state.Money = money - 2000 -- Deposit + first month
-					state.Flags = state.Flags or {}
-					state.Flags.has_apartment = true
-					state.Flags.renting = true
-					state.Flags.has_own_place = true
-					state.Flags.living_with_parents = nil
-					state.HousingState = state.HousingState or {}
-					state.HousingState.status = "renter"
-					state.HousingState.type = "apartment"
-					state.HousingState.rent = 1000
-					state.HousingState.moveInYear = state.Year or 2025
-					if state.AddFeed then
-						state:AddFeed("🏠 Found an apartment! $1000/month rent. Your own place at last!")
-					end
-				else
-					if state.AddFeed then
-						state:AddFeed("🏠 Couldn't afford the deposit. Need to save more.")
-					end
-				end
-			end,
-			eligibility = function(state)
-				return (state.Money or 0) >= 2000
-			end,
-		},
-		{
-			text = "Save for a house down payment",
-			effects = { Happiness = 2, Smarts = 2 },
-			setFlags = { saving_for_house = true },
-			feedText = "🏠 Setting aside money each month. Building toward homeownership!",
-		},
-		{
-			text = "Get a job first - need income!",
-			effects = { Happiness = -2 },
-			feedText = "🏠 Housing requires income. Time to focus on employment.",
-			eligibility = function(state)
-				return not state.CurrentJob
-			end,
-		},
-		{
-			text = "Stay where I am for now",
-			effects = { Happiness = -3 },
-			feedText = "🏠 Putting off housing decisions. It'll catch up eventually.",
-		},
-	},
-}
-
-FinancialEvents.events[#FinancialEvents.events + 1] = {
-	id = "fin_rent_due",
-	title = "Rent is Due!",
-	emoji = "💸",
-	text = "It's the first of the month. Your landlord is expecting the rent payment.",
-	question = "Your rent is due. What do you do?",
-	minAge = 18, maxAge = 75,
-	baseChance = 0.65,
-	cooldown = 2,
-	stage = "adult",
-	ageBand = "any",
-	category = "finance",
-	tags = { "housing", "rent", "bills" },
-	
-	-- Only for renters
-	eligibility = function(state)
-		local flags = state.Flags or {}
-		local housing = state.HousingState or {}
-		return (flags.renting or housing.status == "renter") and not flags.homeless
-	end,
-	
-	preProcess = function(state, eventDef)
-		local rent = 1000
-		if state.HousingState and state.HousingState.rent then
-			rent = state.HousingState.rent
-		end
-		eventDef.question = string.format("Your rent of $%d is due. What do you do?", rent)
-		return true
-	end,
-	
-	choices = {
-		{
-			text = "Pay in full - on time",
-			effects = { Happiness = 2 },
-			feedText = "Paying rent...",
-			onResolve = function(state)
-				local rent = 1000
-				if state.HousingState and state.HousingState.rent then
-					rent = state.HousingState.rent
-				end
-				local money = state.Money or 0
-				if money >= rent then
-					state.Money = money - rent
-					state.HousingState = state.HousingState or {}
-					state.HousingState.missedRentYears = 0
-					if state.AddFeed then
-						state:AddFeed(string.format("💸 Rent paid! -$%d. Roof over your head secured.", rent))
-					end
-				else
-					state.HousingState = state.HousingState or {}
-					state.HousingState.missedRentYears = (state.HousingState.missedRentYears or 0) + 1
-					if state.AddFeed then
-						state:AddFeed("💸 Couldn't afford full rent. Landlord is not happy.")
-					end
-				end
-			end,
-		},
-		{
-			text = "Ask for an extension",
-			effects = { Happiness = -3 },
-			feedText = "Requesting more time...",
-			onResolve = function(state)
-				if math.random() < 0.5 then
-					if state.AddFeed then
-						state:AddFeed("💸 Landlord gave you until end of month. Don't be late again!")
-					end
-				else
-					state.HousingState = state.HousingState or {}
-					state.HousingState.missedRentYears = (state.HousingState.missedRentYears or 0) + 1
-					if state.AddFeed then
-						state:AddFeed("💸 No extension. Late fees added. Eviction warning issued.")
-					end
-				end
-			end,
-		},
-		{
-			text = "Skip this month",
-			effects = { Happiness = -5, Money = 0 },
-			feedText = "Keeping your money...",
-			onResolve = function(state)
-				state.HousingState = state.HousingState or {}
-				state.HousingState.missedRentYears = (state.HousingState.missedRentYears or 0) + 1
-				state.Flags = state.Flags or {}
-				state.Flags.rent_delinquent = true
-				if state.HousingState.missedRentYears >= 2 then
-					state.Flags.eviction_warning = true
-					if state.AddFeed then
-						state:AddFeed("⚠️ EVICTION WARNING! Miss rent again and you're out!")
-					end
-				else
-					if state.AddFeed then
-						state:AddFeed("💸 Skipped rent. Landlord is furious. This will catch up to you.")
-					end
-				end
-			end,
-		},
-	},
-}

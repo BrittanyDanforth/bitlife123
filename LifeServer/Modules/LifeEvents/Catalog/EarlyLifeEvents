@@ -310,7 +310,7 @@ EarlyLifeEvents.events = {
 		question = "What happens with this obsession?",
 		minAge = 2, maxAge = 6,
 		baseChance = 0.7,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -481,7 +481,7 @@ EarlyLifeEvents.events = {
 		question = "How do you handle this?",
 		minAge = 5, maxAge = 10,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -743,7 +743,7 @@ EarlyLifeEvents.events = {
 		question = "How does the sleepover go?",
 		minAge = 7, maxAge = 12,
 		baseChance = 0.7,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -790,7 +790,7 @@ EarlyLifeEvents.events = {
 		question = "What's your approach?",
 		minAge = 7, maxAge = 14,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -844,7 +844,7 @@ EarlyLifeEvents.events = {
 		question = "What do you do?",
 		minAge = 6, maxAge = 14,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -909,7 +909,7 @@ EarlyLifeEvents.events = {
 		question = "What kind of project do you do?",
 		minAge = 8, maxAge = 14,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -988,7 +988,7 @@ EarlyLifeEvents.events = {
 		question = "What do you do about it?",
 		minAge = 10, maxAge = 13,
 		baseChance = 0.7,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -1117,6 +1117,10 @@ EarlyLifeEvents.events = {
 		minAge = 11, maxAge = 14,
 		oneTime = true,
 		isMilestone = true,
+		-- CRITICAL FIX #800: Block if already had growth spurt - user complaint about spam
+		blockedByFlags = { had_growth_spurt = true, growth_spurt_complete = true },
+		cooldown = 99, -- Extra protection against respawning
+		maxOccurrences = 1, -- Can only happen once per life
 		
 		choices = {
 			{
@@ -1175,7 +1179,7 @@ EarlyLifeEvents.events = {
 		question = "Where do you fit in?",
 		minAge = 11, maxAge = 14,
 		baseChance = 0.7,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -1265,7 +1269,7 @@ EarlyLifeEvents.events = {
 		question = "How do you approach social media?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.7,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -1335,7 +1339,7 @@ EarlyLifeEvents.events = {
 		question = "Do you go?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -1391,7 +1395,7 @@ EarlyLifeEvents.events = {
 		question = "Do you look for work?",
 		minAge = 15, maxAge = 17,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -1442,7 +1446,7 @@ EarlyLifeEvents.events = {
 		question = "How's the driving practice going?",
 		minAge = 15, maxAge = 17,
 		baseChance = 0.8,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -1482,7 +1486,7 @@ EarlyLifeEvents.events = {
 		question = "What's your response?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -1531,7 +1535,7 @@ EarlyLifeEvents.events = {
 		question = "How do you handle the pressure?",
 		minAge = 16, maxAge = 17,
 		baseChance = 0.8,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -1605,7 +1609,7 @@ EarlyLifeEvents.events = {
 		question = "What do you do?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -1771,7 +1775,7 @@ EarlyLifeEvents.events = {
 		question = "How do you handle your fear?",
 		minAge = 3, maxAge = 8,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -1863,7 +1867,7 @@ EarlyLifeEvents.events = {
 		question = "How do you react?",
 		minAge = 5, maxAge = 12,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -1909,7 +1913,7 @@ EarlyLifeEvents.events = {
 		question = "What's your choice?",
 		minAge = 7, maxAge = 12,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -1960,7 +1964,7 @@ EarlyLifeEvents.events = {
 		question = "What do you do?",
 		minAge = 3, maxAge = 8,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -2155,7 +2159,7 @@ EarlyLifeEvents.events = {
 		question = "How do you deal with it?",
 		minAge = 12, maxAge = 17,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -2203,7 +2207,7 @@ EarlyLifeEvents.events = {
 		question = "What happened?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -2264,7 +2268,7 @@ EarlyLifeEvents.events = {
 		question = "What kind of music do you get into?",
 		minAge = 12, maxAge = 17,
 		baseChance = 0.7,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -2318,7 +2322,7 @@ EarlyLifeEvents.events = {
 		question = "How do you handle it?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -2466,7 +2470,7 @@ EarlyLifeEvents.events = {
 		question = "How do you do?",
 		minAge = 2, maxAge = 4,
 		baseChance = 0.7,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -2570,7 +2574,7 @@ EarlyLifeEvents.events = {
 		question = "What do you create?",
 		minAge = 5, maxAge = 12,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -2678,7 +2682,7 @@ EarlyLifeEvents.events = {
 		question = "What's the challenge?",
 		minAge = 5, maxAge = 12,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -2735,7 +2739,7 @@ EarlyLifeEvents.events = {
 		question = "What kind of books do you pick?",
 		minAge = 5, maxAge = 14,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -2801,7 +2805,7 @@ EarlyLifeEvents.events = {
 		question = "What did you find?",
 		minAge = 4, maxAge = 12,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -2913,7 +2917,7 @@ EarlyLifeEvents.events = {
 		question = "How do you handle it?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.7,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -3091,7 +3095,7 @@ EarlyLifeEvents.events = {
 		question = "How do you spend the day?",
 		minAge = 4, maxAge = 12,
 		baseChance = 0.7,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -3344,7 +3348,7 @@ EarlyLifeEvents.events = {
 		question = "What do you do first?",
 		minAge = 2, maxAge = 4,
 		baseChance = 0.85,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -3579,7 +3583,7 @@ EarlyLifeEvents.events = {
 		question = "What kind of party do you want?",
 		minAge = 4, maxAge = 10,
 		baseChance = 0.9,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -3947,7 +3951,7 @@ EarlyLifeEvents.events = {
 		question = "Do you follow the treasure map?",
 		minAge = 3, maxAge = 6,
 		baseChance = 0.9,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		priority = "high",
 		
 		choices = {
@@ -4005,7 +4009,7 @@ EarlyLifeEvents.events = {
 		question = "Truth or Dare?",
 		minAge = 5, maxAge = 10,
 		baseChance = 0.85,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		priority = "medium",
 		
 		choices = {
@@ -4067,7 +4071,7 @@ EarlyLifeEvents.events = {
 		question = "What kind of fort are you building?",
 		minAge = 4, maxAge = 10,
 		baseChance = 0.9,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		priority = "medium",
 		
 		choices = {

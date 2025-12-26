@@ -106,7 +106,7 @@ Childhood.events = {
 		question = "What do you do?",
 		minAge = 2, maxAge = 3,
 		baseChance = 0.8,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		-- META
 		stage = STAGE,
@@ -394,7 +394,7 @@ Childhood.events = {
 		question = "Do you volunteer?",
 		minAge = 6, maxAge = 9,
 		baseChance = 0.7,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		-- META
 		stage = STAGE,
@@ -554,7 +554,7 @@ Childhood.events = {
 		question = "What kind of camp appeals to you?",
 		minAge = 8, maxAge = 12,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		-- META
 		stage = STAGE,
@@ -721,7 +721,7 @@ Childhood.events = {
 		question = "How do you react?",
 		minAge = 5, maxAge = 10,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		stage = STAGE,
 		ageBand = "childhood",
@@ -743,7 +743,7 @@ Childhood.events = {
 		question = "What do you do?",
 		minAge = 3, maxAge = 8,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		stage = STAGE,
 		ageBand = "early_childhood",
@@ -765,7 +765,7 @@ Childhood.events = {
 		question = "What's your act?",
 		minAge = 6, maxAge = 12,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		stage = STAGE,
 		ageBand = "childhood",
@@ -920,7 +920,7 @@ Childhood.events = {
 		question = "Which sport do you try out for?",
 		minAge = 6, maxAge = 12,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		stage = STAGE,
 		ageBand = "late_childhood",
@@ -1058,7 +1058,7 @@ Childhood.events = {
 		question = "How do you handle it?",
 		minAge = 5, maxAge = 8,
 		baseChance = 0.7,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		stage = STAGE,
 		ageBand = "childhood",
@@ -1254,7 +1254,7 @@ Childhood.events = {
 		question = "What do you bring?",
 		minAge = 4, maxAge = 7,
 		baseChance = 0.8,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		stage = STAGE,
 		ageBand = "early_childhood",
@@ -1301,7 +1301,7 @@ Childhood.events = {
 		question = "What kind of hideout do you build?",
 		minAge = 7, maxAge = 12,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		stage = STAGE,
 		ageBand = "late_childhood",
@@ -1457,7 +1457,7 @@ Childhood.events = {
 		question = "How do you handle the anxiety?",
 		minAge = 5, maxAge = 11,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		stage = STAGE,
 		ageBand = "childhood",
@@ -1479,7 +1479,7 @@ Childhood.events = {
 		question = "How do you feel about the dentist?",
 		minAge = 4, maxAge = 12,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		stage = STAGE,
 		ageBand = "childhood",
@@ -1583,7 +1583,7 @@ Childhood.events = {
 		question = "What do you do?",
 		minAge = 5, maxAge = 12,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		stage = STAGE,
 		ageBand = "childhood",
@@ -1806,7 +1806,7 @@ Childhood.events = {
 		question = "What triggered it?",
 		minAge = 2, maxAge = 5,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		stage = STAGE,
 		ageBand = "baby_toddler",
@@ -1850,7 +1850,7 @@ Childhood.events = {
 		question = "What do you play together?",
 		minAge = 3, maxAge = 7,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		stage = STAGE,
 		ageBand = "early_childhood",
@@ -1952,7 +1952,7 @@ Childhood.events = {
 		question = "Where is the field trip?",
 		minAge = 5, maxAge = 12,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		stage = STAGE,
 		ageBand = "childhood",
@@ -2045,7 +2045,7 @@ Childhood.events = {
 		question = "What's your lunch routine?",
 		minAge = 5, maxAge = 12,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		stage = STAGE,
 		ageBand = "childhood",
@@ -2088,7 +2088,7 @@ Childhood.events = {
 		question = "How does the partnership go?",
 		minAge = 7, maxAge = 12,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		stage = STAGE,
 		ageBand = "late_childhood",
@@ -2167,7 +2167,7 @@ Childhood.events = {
 		question = "What's really going on?",
 		minAge = 5, maxAge = 12,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		stage = STAGE,
 		ageBand = "childhood",
@@ -2232,7 +2232,7 @@ Childhood.events = {
 		question = "How do you handle the difficult homework?",
 		minAge = 6, maxAge = 12,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		stage = STAGE,
 		ageBand = "childhood",
@@ -2406,7 +2406,7 @@ Childhood.events = {
 		question = "What's your masterpiece?",
 		minAge = 5, maxAge = 12,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		stage = STAGE,
 		ageBand = "childhood",
@@ -2470,7 +2470,7 @@ Childhood.events = {
 		question = "Why did you need to see the nurse?",
 		minAge = 5, maxAge = 12,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		stage = STAGE,
 		ageBand = "childhood",
@@ -2607,7 +2607,7 @@ Childhood.events = {
 		question = "How do you use your popularity?",
 		minAge = 6, maxAge = 11,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		stage = STAGE,
 		ageBand = "childhood",
@@ -2661,7 +2661,7 @@ Childhood.events = {
 		question = "What do you do together?",
 		minAge = 3, maxAge = 12,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		stage = STAGE,
 		ageBand = "childhood",
@@ -2842,7 +2842,7 @@ Childhood.events = {
 		question = "Do you share?",
 		minAge = 3, maxAge = 7,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		stage = STAGE,
 		ageBand = "early_childhood",
@@ -2864,7 +2864,7 @@ Childhood.events = {
 		question = "What do you do about the tooth fairy?",
 		minAge = 5, maxAge = 8,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		stage = STAGE,
 		ageBand = "childhood",
@@ -2886,7 +2886,7 @@ Childhood.events = {
 		question = "What happened?",
 		minAge = 4, maxAge = 10,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		stage = STAGE,
 		ageBand = "childhood",

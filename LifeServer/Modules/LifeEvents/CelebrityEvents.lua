@@ -850,7 +850,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "📸",
 		text = "Paparazzi are following you everywhere! They're getting dangerously close.",
 		minFame = 30,
-		cooldown = 2, -- CRITICAL FIX: 2 year cooldown between paparazzi events
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam -- CRITICAL FIX: 2 year cooldown between paparazzi events
 		choices = {
 			{
 				text = "Smile and wave professionally",
@@ -890,7 +890,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "😍",
 		text = "A fan recognizes you and wants a photo and autograph!",
 		minFame = 20,
-		cooldown = 2, -- CRITICAL FIX: 2 year cooldown
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam -- CRITICAL FIX: 2 year cooldown
 		choices = {
 			{
 				text = "Happily oblige",
@@ -1232,7 +1232,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "📱",
 		text = "Something you did went incredibly viral! Millions of people have seen it.",
 		minFame = 15,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{
 				text = "Lean into the attention",
@@ -1287,7 +1287,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "⚡",
 		text = "Another celebrity publicly called you out!",
 		minFame = 35,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{
 				text = "Clap back hard",
@@ -1338,7 +1338,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🏆",
 		text = "You've been nominated for a major award!",
 		minFame = 55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{
 				text = "Campaign hard to win",
@@ -1368,7 +1368,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "😔",
 		text = "The constant spotlight is taking its toll.",
 		minFame = 50,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{
 				text = "Speak openly about struggles",
@@ -1480,7 +1480,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "📱",
 		text = "Something you did just went viral! Millions are watching, sharing, and talking about you.",
 		minFame = 20,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 5,
 		choices = {
 			{
@@ -1563,7 +1563,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🎪",
 		text = "You've been asked to host the biggest charity gala of the year. All eyes will be on you.",
 		minFame = 60,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		choices = {
 			{
@@ -1603,7 +1603,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🤝",
 		text = "One of the biggest names in entertainment wants to collaborate with you. This could change everything.",
 		minFame = 50,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 4,
 		choices = {
 			{
@@ -1639,7 +1639,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🎤",
 		text = "You've been invited to perform at the biggest award show of the year. Billions will be watching.",
 		minFame = 55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 5,
 		choices = {
 			{
@@ -1681,7 +1681,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🎙️",
 		text = "A popular podcast wants a deep-dive interview. No scripts, no edits. Just real conversation.",
 		minFame = 40,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 6,
 		choices = {
 			{
@@ -1720,7 +1720,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🎬",
 		text = "A major studio wants you for their next blockbuster. But the role requires a dramatic transformation.",
 		minFame = 55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		conditions = { blockedFlags = { retired = true } },
 		choices = {
@@ -1932,7 +1932,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "📰",
 		text = "A major tabloid printed completely false stories about you. The lies are spreading everywhere.",
 		minFame = 35,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 5,
 		choices = {
 			{
@@ -1974,7 +1974,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "👋",
 		text = "Your fans organized a massive meetup hoping you'd show. Word got back to your team.",
 		minFame = 45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 8,
 		choices = {
 			{
@@ -2012,7 +2012,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🌟",
 		text = "A young rising star wants you to mentor them. You could shape the next generation.",
 		minFame = 60,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		choices = {
 			{
@@ -2079,7 +2079,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🎬",
 		text = "It's the world premiere of your biggest movie! The red carpet stretches endlessly.",
 		minFame = 50,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 8,
 		choices = {
 			{
@@ -2189,7 +2189,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🎪",
 		text = "Your PR team proposes an outrageous publicity stunt. It's risky but could get massive attention.",
 		minFame = 35,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 4,
 		choices = {
 			{
@@ -2257,7 +2257,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🔥",
 		text = "Another celebrity made shady comments about you. The internet is waiting for your response.",
 		minFame = 45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 4,
 		choices = {
 			{
@@ -2503,7 +2503,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🏟️",
 		text = "Your arena show sold out in minutes! Fans are reselling tickets for insane prices.",
 		minFame = 60,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 5,
 		choices = {
 			{
@@ -2537,7 +2537,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "📱",
 		text = "Something you posted online is causing a massive controversy! Your mentions are on fire.",
 		minFame = 35,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 5,
 		choices = {
 			{
@@ -2610,7 +2610,7 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "📰",
 		text = "A prestigious magazine wants you on their cover with an exclusive interview.",
 		minFame = 45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 8,
 		choices = {
 			{
@@ -4325,7 +4325,7 @@ local FamePathEvents = {
 		minAge = 13,
 		maxAge = 30,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		conditions = { requiresFlags = { pursuing_fame = true } },
 		choices = {
 			{
@@ -4544,6 +4544,478 @@ for _, event in ipairs(FamePathEvents) do
 		event.conditions = { allowsFameCareers = true }
 	end
 	
+	table.insert(CelebrityEvents.events, event)
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #538: MEGA EXCITING CELEBRITY-ONLY EVENTS
+-- User feedback: "Celebrity gamepass needs to be SO SO SO SO FUN"
+-- These events are EXCLUSIVE to Celebrity gamepass holders!
+-- Premium experiences that make the gamepass worth every Robux!
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local ExclusivePremiumCelebrityEvents = {
+	-- VIRAL MOMENT
+	{
+		id = "celebrity_viral_moment",
+		title = "🔥 YOU WENT VIRAL!",
+		emoji = "🔥",
+		text = "OMG! Something you did just blew up on social media! Everyone is talking about you!",
+		category = "celebrity",
+		weight = 30,
+		minAge = 16,
+		maxAge = 80,
+		baseChance = 0.45,
+		cooldown = 3,
+		isCelebrityOnly = true,
+		conditions = { requiresFlags = { celebrity_career_chosen = true } },
+		choices = {
+			{
+				text = "Capitalize on the moment! 💰",
+				effects = { Money = 500000, Happiness = 25 },
+				fameGain = 20,
+				feedText = "You struck while the iron was hot! Brand deals pouring in!",
+				onResolve = function(state)
+					state.Fame = math.min(100, (state.Fame or 0) + 20)
+					state.Flags = state.Flags or {}
+					state.Flags.viral_celebrity = true
+					if state.AddFeed then
+						state:AddFeed("🔥 VIRAL! Your follower count exploded overnight! You're trending everywhere!")
+					end
+				end,
+			},
+			{
+				text = "Stay humble and grounded 🙏",
+				effects = { Happiness = 15, Smarts = 3 },
+				fameGain = 10,
+				setFlags = { humble_celebrity = true },
+				feedText = "You stayed grounded. Fans respect your authenticity.",
+			},
+			{
+				text = "Go even crazier for more attention! 🤪",
+				effects = { Happiness = 10 },
+				fameGain = 25,
+				feedText = "You doubled down! The internet is obsessed!",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.6 then
+						state.Fame = math.min(100, (state.Fame or 0) + 25)
+						state.Money = (state.Money or 0) + 1000000
+						if state.AddFeed then
+							state:AddFeed("🔥 LEGENDARY! You turned viral into a cultural moment! Sponsors FIGHTING for you!")
+						end
+					else
+						state.Flags = state.Flags or {}
+						state.Flags.controversial_celebrity = true
+						if state.AddFeed then
+							state:AddFeed("😬 You went too far. Some people cancelled you but others love the drama.")
+						end
+					end
+				end,
+			},
+		},
+	},
+	
+	-- RED CARPET PREMIERE
+	{
+		id = "celebrity_red_carpet_premiere",
+		title = "🌟 RED CARPET PREMIERE!",
+		emoji = "🌟",
+		text = "You're invited to a major Hollywood premiere! Cameras flashing, fans screaming your name!",
+		category = "celebrity",
+		weight = 25,
+		minAge = 18,
+		maxAge = 90,
+		baseChance = 0.4,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		isCelebrityOnly = true,
+		conditions = { 
+			requiresFlags = { celebrity_career_chosen = true },
+			custom = function(state) return (state.Fame or 0) >= 25 end
+		},
+		choices = {
+			{
+				text = "Slay the red carpet look! 👗✨",
+				effects = { Looks = 5, Happiness = 20, Money = -50000 },
+				fameGain = 15,
+				feedText = "Your outfit is going viral! Best dressed of the night!",
+			},
+			{
+				text = "Make a controversial statement! 🎤",
+				effects = { Happiness = 10 },
+				fameGain = 20,
+				feedText = "You made headlines! Everyone is talking!",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.5 then
+						state.Fame = math.min(100, (state.Fame or 0) + 20)
+						if state.AddFeed then
+							state:AddFeed("🎤 Your statement resonated! You're being called a voice of a generation!")
+						end
+					else
+						state.Flags = state.Flags or {}
+						state.Flags.controversial_statement = true
+						if state.AddFeed then
+							state:AddFeed("🎤 Polarizing! Half love you, half hate you. Engagement through the roof!")
+						end
+					end
+				end,
+			},
+			{
+				text = "Network with A-listers 🤝",
+				effects = { Happiness = 15, Smarts = 2 },
+				fameGain = 8,
+				setFlags = { a_list_connections = true },
+				feedText = "You made powerful connections in the industry!",
+			},
+		},
+	},
+	
+	-- MASSIVE ENDORSEMENT DEAL
+	{
+		id = "celebrity_mega_endorsement",
+		title = "💎 MEGA BRAND DEAL!",
+		emoji = "💎",
+		text = "A MASSIVE brand wants YOU as their face! This could change everything!",
+		category = "celebrity",
+		weight = 20,
+		minAge = 18,
+		maxAge = 70,
+		baseChance = 0.35,
+		cooldown = 3,
+		isCelebrityOnly = true,
+		conditions = { 
+			requiresFlags = { celebrity_career_chosen = true },
+			custom = function(state) return (state.Fame or 0) >= 40 end
+		},
+		choices = {
+			{
+				text = "Sign the deal! 💰 ($5 MILLION!)",
+				effects = { Money = 5000000, Happiness = 25 },
+				fameGain = 10,
+				setFlags = { brand_ambassador = true, has_endorsement_deal = true },
+				feedText = "$5 MILLION DEAL SIGNED! You're the face of a global brand!",
+			},
+			{
+				text = "Negotiate for more! 🤑 (Risky)",
+				effects = { Happiness = 5 },
+				feedText = "You pushed for more...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.4 then
+						state.Money = (state.Money or 0) + 15000000
+						state.Fame = math.min(100, (state.Fame or 0) + 15)
+						state.Flags = state.Flags or {}
+						state.Flags.brand_ambassador = true
+						state.Flags.mega_deal = true
+						if state.AddFeed then
+							state:AddFeed("💎 LEGENDARY NEGOTIATION! $15 MILLION! You're an icon!")
+						end
+					else
+						if state.AddFeed then
+							state:AddFeed("😔 They walked away... You pushed too hard.")
+						end
+					end
+				end,
+			},
+			{
+				text = "Reject it - Stay authentic 🙅",
+				effects = { Happiness = 10 },
+				fameGain = 5,
+				setFlags = { authentic_celebrity = true },
+				feedText = "You stayed true to yourself. Fans respect that.",
+			},
+		},
+	},
+	
+	-- AWARD SHOW WIN
+	{
+		id = "celebrity_award_win",
+		title = "🏆 YOU WON AN AWARD!",
+		emoji = "🏆",
+		text = "Incredible! You've been nominated for a major industry award... and YOU WON!",
+		category = "celebrity",
+		weight = 15,
+		minAge = 20,
+		maxAge = 90,
+		baseChance = 0.3,
+		cooldown = 4,
+		isCelebrityOnly = true,
+		conditions = { 
+			requiresFlags = { celebrity_career_chosen = true },
+			custom = function(state) return (state.Fame or 0) >= 50 end
+		},
+		choices = {
+			{
+				text = "Give an inspiring speech! 🎤",
+				effects = { Happiness = 30, Smarts = 3 },
+				fameGain = 25,
+				setFlags = { award_winner = true, inspiring_speaker = true },
+				feedText = "Standing ovation! Your speech moved millions! The moment is historic!",
+			},
+			{
+				text = "Thank everyone and keep it short 🙏",
+				effects = { Happiness = 25 },
+				fameGain = 15,
+				setFlags = { award_winner = true },
+				feedText = "Classy acceptance. A moment you'll never forget.",
+			},
+			{
+				text = "Go wild! Party all night! 🎉",
+				effects = { Happiness = 35, Health = -5 },
+				fameGain = 20,
+				setFlags = { award_winner = true, party_legend = true },
+				feedText = "You celebrated like a champion! What a night!",
+			},
+		},
+	},
+	
+	-- PAPARAZZI CHASE
+	{
+		id = "celebrity_paparazzi_chase",
+		title = "📸 PAPARAZZI SWARM!",
+		emoji = "📸",
+		text = "A mob of paparazzi has surrounded you! Cameras everywhere! What do you do?!",
+		category = "celebrity",
+		weight = 30,
+		minAge = 18,
+		maxAge = 80,
+		baseChance = 0.5,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		isCelebrityOnly = true,
+		conditions = { 
+			requiresFlags = { celebrity_career_chosen = true },
+			custom = function(state) return (state.Fame or 0) >= 30 end
+		},
+		choices = {
+			{
+				text = "Strike a pose! 💅",
+				effects = { Looks = 2, Happiness = 15 },
+				fameGain = 10,
+				feedText = "You owned the moment! Tomorrow's front page!",
+			},
+			{
+				text = "Run to your car! 🏃",
+				effects = { Health = 2, Happiness = -5 },
+				feedText = "You escaped! That was intense!",
+			},
+			{
+				text = "Throw hands at a camera! 👊 (Bad idea!)",
+				effects = { Happiness = -10, Money = -100000 },
+				fameGain = 15,
+				setFlags = { paparazzi_incident = true },
+				feedText = "You're getting sued BUT you're trending #1!",
+			},
+			{
+				text = "Sign autographs for fans in the crowd 📝",
+				effects = { Happiness = 20 },
+				fameGain = 8,
+				setFlags = { fan_favorite = true },
+				feedText = "The fans love you! Videos of your kindness go viral!",
+			},
+		},
+	},
+	
+	-- COLLABORATION WITH LEGEND
+	{
+		id = "celebrity_legend_collab",
+		title = "👑 COLLAB WITH A LEGEND!",
+		emoji = "👑",
+		text = "An ABSOLUTE LEGEND in your industry wants to collaborate with YOU!",
+		category = "celebrity",
+		weight = 15,
+		minAge = 20,
+		maxAge = 70,
+		baseChance = 0.25,
+		cooldown = 5,
+		isCelebrityOnly = true,
+		conditions = { 
+			requiresFlags = { celebrity_career_chosen = true },
+			custom = function(state) return (state.Fame or 0) >= 45 end
+		},
+		choices = {
+			{
+				text = "YES! Dream come true! 🤩",
+				effects = { Happiness = 30, Money = 2000000 },
+				fameGain = 25,
+				setFlags = { collab_with_legend = true },
+				feedText = "You collaborated with a LEGEND! Your career has peaked!",
+				onResolve = function(state)
+					state.Fame = math.min(100, (state.Fame or 0) + 25)
+					if state.AddFeed then
+						state:AddFeed("👑 The collab dropped and BROKE THE INTERNET! You're now legendary too!")
+					end
+				end,
+			},
+			{
+				text = "Nah, I'm making my own lane 🛣️",
+				effects = { Happiness = 10, Smarts = 5 },
+				fameGain = 5,
+				setFlags = { independent_celebrity = true },
+				feedText = "You're carving your own path. Respect.",
+			},
+		},
+	},
+	
+	-- SCANDAL - DRAMA!
+	{
+		id = "celebrity_scandal_drama",
+		title = "😱 SCANDAL BREAKS!",
+		emoji = "😱",
+		text = "OH NO! A scandal just hit the news and you're at the center of it!",
+		category = "celebrity",
+		weight = 20,
+		minAge = 18,
+		maxAge = 80,
+		baseChance = 0.35,
+		cooldown = 3,
+		isCelebrityOnly = true,
+		conditions = { 
+			requiresFlags = { celebrity_career_chosen = true },
+			custom = function(state) return (state.Fame or 0) >= 35 end
+		},
+		choices = {
+			{
+				text = "Address it directly and apologize 🙏",
+				effects = { Happiness = -10 },
+				fameGain = -5,
+				feedText = "You took responsibility. Some respect you more, others moved on.",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.7 then
+						state.Flags = state.Flags or {}
+						state.Flags.scandal_survivor = true
+						if state.AddFeed then
+							state:AddFeed("🙏 Your apology was well-received. The storm is passing.")
+						end
+					else
+						state.Fame = math.max(0, (state.Fame or 0) - 10)
+						if state.AddFeed then
+							state:AddFeed("😔 The public wasn't satisfied. Your reputation took a hit.")
+						end
+					end
+				end,
+			},
+			{
+				text = "Deny everything! 🙅",
+				effects = { Happiness = -5 },
+				feedText = "You denied it all...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.4 then
+						state.Fame = math.min(100, (state.Fame or 0) + 5)
+						if state.AddFeed then
+							state:AddFeed("😌 The story died down. Crisis averted... for now.")
+						end
+					else
+						state.Fame = math.max(0, (state.Fame or 0) - 15)
+						state.Flags = state.Flags or {}
+						state.Flags.caught_lying = true
+						if state.AddFeed then
+							state:AddFeed("😬 Evidence came out! The lie made it worse!")
+						end
+					end
+				end,
+			},
+			{
+				text = "Embrace the chaos! 'No such thing as bad press' 🔥",
+				effects = { Happiness = 5 },
+				fameGain = 10,
+				feedText = "You leaned into the controversy!",
+				onResolve = function(state)
+					state.Fame = math.min(100, (state.Fame or 0) + 10)
+					state.Flags = state.Flags or {}
+					state.Flags.controversial_celebrity = true
+					if state.AddFeed then
+						state:AddFeed("🔥 The drama made you MORE famous! Your followers doubled!")
+					end
+				end,
+			},
+		},
+	},
+	
+	-- EXCLUSIVE PARTY
+	{
+		id = "celebrity_vip_party",
+		title = "🥂 VIP PARTY INVITE!",
+		emoji = "🥂",
+		text = "You're invited to THE most exclusive party in the world! Celebrities, billionaires, royalty!",
+		category = "celebrity",
+		weight = 20,
+		minAge = 21,
+		maxAge = 70,
+		baseChance = 0.4,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		isCelebrityOnly = true,
+		conditions = { 
+			requiresFlags = { celebrity_career_chosen = true },
+			custom = function(state) return (state.Fame or 0) >= 40 end
+		},
+		choices = {
+			{
+				text = "Go all out! Party like a celebrity! 🎉",
+				effects = { Happiness = 30, Health = -5, Money = -25000 },
+				fameGain = 15,
+				setFlags = { party_celebrity = true },
+				feedText = "BEST NIGHT EVER! The photos are EVERYWHERE!",
+			},
+			{
+				text = "Network strategically 🤝",
+				effects = { Happiness = 15, Smarts = 3, Money = 100000 },
+				fameGain = 10,
+				setFlags = { well_connected = true },
+				feedText = "You made connections that will pay off for years!",
+			},
+			{
+				text = "Find romance at the party 💕",
+				effects = { Happiness = 25 },
+				fameGain = 12,
+				setFlags = { celebrity_romance = true },
+				feedText = "Sparks flew! You might have found someone special...",
+			},
+		},
+	},
+	
+	-- FAN GIFT
+	{
+		id = "celebrity_superfan_gift",
+		title = "🎁 SUPERFAN GIFT!",
+		emoji = "🎁",
+		text = "A superfan sent you the most thoughtful, heartfelt gift! It made you emotional...",
+		category = "celebrity",
+		weight = 25,
+		minAge = 16,
+		maxAge = 90,
+		baseChance = 0.45,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		isCelebrityOnly = true,
+		conditions = { requiresFlags = { celebrity_career_chosen = true } },
+		choices = {
+			{
+				text = "Post about it and thank them publicly! 📱",
+				effects = { Happiness = 20 },
+				fameGain = 8,
+				setFlags = { grateful_celebrity = true },
+				feedText = "Fans LOVE how genuine you are! The post went viral!",
+			},
+			{
+				text = "Send a personal thank you video! 🎥",
+				effects = { Happiness = 25, Smarts = 2 },
+				fameGain = 5,
+				feedText = "You made their ENTIRE LIFE! They'll never forget this!",
+			},
+			{
+				text = "Just appreciate it privately 🙏",
+				effects = { Happiness = 15 },
+				feedText = "You kept it between you and them. Pure and genuine.",
+			},
+		},
+	},
+}
+
+-- Add exclusive premium celebrity events to main events list
+for _, event in ipairs(ExclusivePremiumCelebrityEvents) do
+	event.isCelebrityOnly = true -- THESE ARE EXCLUSIVE TO GAMEPASS
 	table.insert(CelebrityEvents.events, event)
 end
 

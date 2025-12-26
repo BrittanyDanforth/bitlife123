@@ -538,7 +538,7 @@ GamerCareerEvents.events = {
 		weight = 14,
 		minAge = 14, maxAge = 40,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		eligibility = hasAnyGamingActivity,
 		blockedByFlags = { in_prison = true },
 		
@@ -588,7 +588,7 @@ GamerCareerEvents.events = {
 		weight = 12,
 		minAge = 14, maxAge = 35,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		eligibility = hasAnyGamingActivity,
 		blockedByFlags = { in_prison = true },
 		
@@ -642,7 +642,7 @@ GamerCareerEvents.events = {
 		weight = 12,
 		minAge = 14, maxAge = 35,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		eligibility = hasAnyGamingActivity,
 		blockedByFlags = { in_prison = true },
 		
@@ -791,7 +791,7 @@ GamerCareerEvents.events = {
 		weight = 14,
 		minAge = 14, maxAge = 35,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		eligibility = hasAnyGamingActivity,
 		blockedByFlags = { in_prison = true },
 		

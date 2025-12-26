@@ -57,7 +57,7 @@ SchoolExpanded.events = {
 		question = "Do you participate?",
 		minAge = 6, maxAge = 12,
 		baseChance = 0.555,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = "childhood",
 		ageBand = "early_childhood",
 		category = "academics",
@@ -163,7 +163,7 @@ SchoolExpanded.events = {
 		question = "How did your project turn out?",
 		minAge = 5, maxAge = 12,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = "childhood",
 		ageBand = "early_childhood",
 		category = "creativity",
@@ -202,7 +202,7 @@ SchoolExpanded.events = {
 		question = "What's the lunch drama?",
 		minAge = 5, maxAge = 12,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = "childhood",
 		ageBand = "early_childhood",
 		category = "social",
@@ -223,7 +223,7 @@ SchoolExpanded.events = {
 		question = "What's happening at recess?",
 		minAge = 5, maxAge = 10,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = "childhood",
 		ageBand = "early_childhood",
 		category = "social",
@@ -259,7 +259,7 @@ SchoolExpanded.events = {
 		question = "How does the field trip go?",
 		minAge = 5, maxAge = 12,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = "childhood",
 		ageBand = "early_childhood",
 		category = "experience",
@@ -296,7 +296,7 @@ SchoolExpanded.events = {
 		question = "How do you handle being teacher's pet?",
 		minAge = 5, maxAge = 12,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = "childhood",
 		ageBand = "early_childhood",
 		category = "school",
@@ -342,7 +342,7 @@ SchoolExpanded.events = {
 		question = "Which group do you identify with?",
 		minAge = 11, maxAge = 14,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = "teen",
 		ageBand = "teen",
 		category = "social",
@@ -364,7 +364,7 @@ SchoolExpanded.events = {
 		question = "How does the dance go?",
 		minAge = 11, maxAge = 14,
 		baseChance = 0.555,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = "teen",
 		ageBand = "teen",
 		category = "social",
@@ -449,7 +449,7 @@ SchoolExpanded.events = {
 		question = "Do you try out?",
 		minAge = 11, maxAge = 14,
 		baseChance = 0.555,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = "teen",
 		ageBand = "teen",
 		category = "athletics",
@@ -537,7 +537,7 @@ SchoolExpanded.events = {
 		question = "Do you go for it?",
 		minAge = 15, maxAge = 18,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = "teen",
 		ageBand = "teen",
 		category = "leadership",
@@ -700,7 +700,7 @@ SchoolExpanded.events = {
 		question = "Do you go?",
 		minAge = 18, maxAge = 24,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = "adult",
 		ageBand = "young_adult",
 		category = "social",
@@ -757,7 +757,7 @@ SchoolExpanded.events = {
 		question = "How do you handle crunch time?",
 		minAge = 18, maxAge = 25,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = "adult",
 		ageBand = "young_adult",
 		category = "academics",
@@ -815,7 +815,7 @@ SchoolExpanded.events = {
 		question = "How does the internship search go?",
 		minAge = 19, maxAge = 24,
 		baseChance = 0.555,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = "adult",
 		ageBand = "young_adult",
 		category = "career",

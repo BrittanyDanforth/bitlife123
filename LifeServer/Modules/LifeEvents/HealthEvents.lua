@@ -29,7 +29,7 @@ HealthEvents.events = {
 		question = "What's wrong?",
 		minAge = 3, maxAge = 100,
 		baseChance = 0.555,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",
@@ -91,7 +91,7 @@ HealthEvents.events = {
 		question = "How bad is it?",
 		minAge = 5, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",
@@ -158,7 +158,7 @@ HealthEvents.events = {
 		question = "What do the results show?",
 		minAge = 18, maxAge = 100,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",
@@ -170,7 +170,18 @@ HealthEvents.events = {
 				text = "Get your results",
 				effects = { Money = -50 },
 				feedText = "Waiting for test results...",
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				-- CRITICAL FIX #529: Set went_to_doctor flag so diagnosis events work correctly!
+				-- User complaint: "DIAGNOSIS SHOWING UP BUT I DIDNT GO TO DOCTOR"
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				setFlags = { went_to_doctor = true, doctor_checkup = true, recent_checkup = true },
 				onResolve = function(state)
+					-- CRITICAL FIX #529: ALSO set flags here for onResolve path
+					state.Flags = state.Flags or {}
+					state.Flags.went_to_doctor = true
+					state.Flags.doctor_checkup = true
+					state.Flags.recent_checkup = true
+					
 					local health = (state.Stats and state.Stats.Health) or 50
 					local age = state.Age or 30
 					local roll = math.random()
@@ -231,7 +242,7 @@ HealthEvents.events = {
 		question = "How are your teeth?",
 		minAge = 5, maxAge = 100,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",
@@ -340,7 +351,7 @@ HealthEvents.events = {
 		question = "How do you approach weight management?",
 		minAge = 14, maxAge = 90,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",
@@ -470,7 +481,7 @@ HealthEvents.events = {
 		question = "What do you do?",
 		minAge = 12, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "mental_health",
@@ -549,7 +560,7 @@ HealthEvents.events = {
 		question = "How is therapy going?",
 		minAge = 14, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "mental_health",
@@ -694,7 +705,7 @@ HealthEvents.events = {
 		question = "What kind of dreams?",
 		minAge = 8, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "experience",
@@ -719,7 +730,7 @@ HealthEvents.events = {
 		question = "What changes do you make?",
 		minAge = 15, maxAge = 90,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "wellness",
@@ -818,7 +829,7 @@ HealthEvents.events = {
 		question = "What's your approach to healthy living?",
 		minAge = 18, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "wellness",
@@ -848,7 +859,7 @@ HealthEvents.events = {
 		question = "Looks like a cold or flu virus. What do you want to do?",
 		minAge = 3, maxAge = 100,
 		baseChance = 0.35,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",
@@ -879,10 +890,21 @@ HealthEvents.events = {
 		diagnosisType = "diabetes",
 		oneTime = true,
 		maxOccurrences = 1,
+		-- CRITICAL FIX: Only show if player visited doctor or has symptoms
 		eligibility = function(state)
 			local health = (state.Stats and state.Stats.Health) or 50
 			local flags = state.Flags or {}
-			return health < 60 and not flags.diabetes
+			-- Already have diabetes? Don't show again
+			if flags.diabetes then return false end
+			-- CRITICAL FIX: Must have visited doctor OR have symptoms
+			local visitedDoctor = flags.went_to_doctor or flags.doctor_checkup or flags.recent_checkup
+			local hasSymptoms = flags.feeling_sick or flags.frequent_urination or flags.excessive_thirst
+				or flags.unexplained_weight_loss or flags.fatigue or health < 40
+			-- Only show if visited doctor with low health OR has specific symptoms
+			if not visitedDoctor and not hasSymptoms then
+				return false
+			end
+			return health < 60
 		end,
 		
 		choices = {
@@ -927,11 +949,25 @@ HealthEvents.events = {
 		diagnosisType = "heart_disease",
 		oneTime = true,
 		maxOccurrences = 1,
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #530: Heart disease diagnosis REQUIRES doctor visit!
+		-- User complaint: "DIAGNOSIS SHOWING UP BUT I DIDNT GO TO DOCTOR"
+		-- Must have: went_to_doctor OR doctor_checkup OR recent_checkup flag
+		-- ═══════════════════════════════════════════════════════════════════════════════
 		eligibility = function(state)
 			local health = (state.Stats and state.Stats.Health) or 50
 			local age = state.Age or 30
 			local flags = state.Flags or {}
-			return (age > 45 and health < 55) and not flags.heart_disease
+			-- Already have heart disease? Don't show again
+			if flags.heart_disease then return false end
+			-- CRITICAL FIX: Must have visited doctor OR have severe symptoms
+			local visitedDoctor = flags.went_to_doctor or flags.doctor_checkup or flags.recent_checkup
+			local hasSymptoms = flags.chest_pain or flags.shortness_of_breath or flags.heart_palpitations 
+				or flags.feeling_faint or flags.hospitalized or health < 30
+			if not visitedDoctor and not hasSymptoms then
+				return false
+			end
+			return (age > 45 and health < 55)
 		end,
 		
 		choices = {
@@ -966,9 +1002,25 @@ HealthEvents.events = {
 		diagnosisType = "cancer",
 		oneTime = true,
 		maxOccurrences = 1,
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #531: Cancer diagnosis REQUIRES doctor visit or screening!
+		-- User complaint: "DIAGNOSIS SHOWING UP BUT I DIDNT GO TO DOCTOR"
+		-- This is a MAJOR diagnosis - should NEVER pop up randomly!
+		-- ═══════════════════════════════════════════════════════════════════════════════
 		eligibility = function(state)
 			local flags = state.Flags or {}
-			return not flags.has_cancer and not flags.cancer_survivor
+			-- Already have cancer or survived? Don't show again
+			if flags.has_cancer or flags.cancer_survivor then return false end
+			-- CRITICAL FIX: Must have visited doctor OR had screening
+			local visitedDoctor = flags.went_to_doctor or flags.doctor_checkup or flags.recent_checkup
+			local hadScreening = flags.cancer_screening or flags.biopsy or flags.mammogram 
+				or flags.colonoscopy or flags.blood_work
+			local hasSevereSymptoms = flags.unexplained_weight_loss or flags.persistent_cough 
+				or flags.found_lump or flags.unusual_bleeding or flags.severe_fatigue
+			if not visitedDoctor and not hadScreening and not hasSevereSymptoms then
+				return false
+			end
+			return true
 		end,
 		
 		choices = {
@@ -978,15 +1030,52 @@ HealthEvents.events = {
 				setFlags = { has_cancer = true, cancer = true, in_treatment = true, fighting_cancer = true },
 				feedText = "🎗️ Cancer diagnosis. Starting chemotherapy. Fight of your life.",
 				onResolve = function(state)
-					-- 60% chance of survival with treatment
+					-- CRITICAL FIX: Treatment doesn't immediately resolve - it takes time
+					-- First treatment has 40% chance to show improvement
+					-- Patient can try again at doctor later
 					local roll = math.random()
-					if roll < 0.60 then
-						state.Flags.cancer_survivor = true
-						state.Flags.in_remission = true
-						state:AddFeed("🎗️ After months of treatment, you're in remission! You beat it!")
+					state.Flags = state.Flags or {}
+					if roll < 0.40 then
+						-- Treatment showing early promise
+						state.Flags.treatment_responding = true
+						state.Flags.cancer_treatment_rounds = 1
+						state:AddFeed("🎗️ First round of chemo complete. Early signs are promising!")
+					elseif roll < 0.70 then
+						-- Treatment uncertain - need more rounds
+						state.Flags.treatment_uncertain = true
+						state.Flags.cancer_treatment_rounds = 1
+						state:AddFeed("🎗️ First round complete. Results inconclusive. More treatment needed.")
 					else
-						state.Flags.terminal_illness = true
-						state:AddFeed("🎗️ Treatment isn't working as hoped. This is serious.")
+						-- Treatment not working well
+						state.Flags.treatment_struggling = true
+						state.Flags.cancer_treatment_rounds = 1
+						state:AddFeed("🎗️ Treatment is hard on your body. Doctors are concerned. Don't give up!")
+					end
+				end,
+			},
+			{
+				text = "Get second opinion first",
+				effects = { Happiness = -5, Money = -500 },
+				feedText = "🎗️ Seeking another doctor's perspective...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					state.Flags.has_cancer = true
+					state.Flags.cancer = true
+					if roll < 0.15 then
+						-- Misdiagnosis (rare)
+						state.Flags.cancer_misdiagnosis = true
+						state:ModifyStat("Happiness", 20)
+						state:AddFeed("🎗️ INCREDIBLE NEWS! Second opinion says it's NOT cancer! Just a benign growth!")
+					elseif roll < 0.50 then
+						-- Earlier stage than thought
+						state.Flags.early_stage_cancer = true
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🎗️ Second doctor says it was caught earlier than thought. Better prognosis!")
+					else
+						-- Diagnosis confirmed
+						state.Flags.confirmed_cancer = true
+						state:AddFeed("🎗️ Second doctor confirmed the diagnosis. Time to start treatment.")
 					end
 				end,
 			},
@@ -995,6 +1084,113 @@ HealthEvents.events = {
 				effects = { Happiness = -30, Health = -40 },
 				setFlags = { has_cancer = true, terminal_illness = true, refusing_treatment = true },
 				feedText = "🎗️ Choosing to live remaining time without treatment.",
+			},
+		},
+	},
+	-- CRITICAL FIX: Cancer follow-up treatment events - allow retry at doctor
+	{
+		id = "health_cancer_treatment_followup",
+		title = "🎗️ Cancer Treatment Update",
+		emoji = "🎗️",
+		text = "Time for your cancer treatment check-up. The doctors have the latest results.",
+		question = "How is your treatment going?",
+		minAge = 20, maxAge = 100,
+		baseChance = 0.70,
+		cooldown = 1,
+		stage = STAGE,
+		ageBand = "any",
+		category = "health",
+		tags = { "cancer", "treatment", "followup" },
+		-- Only show for people actively fighting cancer
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			return flags.has_cancer and flags.in_treatment and not flags.cancer_survivor and not flags.terminal_illness
+		end,
+		
+		choices = {
+			{
+				text = "Continue aggressive treatment",
+				effects = { Money = -5000, Health = -10, Happiness = -5 },
+				feedText = "🎗️ Pushing through more treatment...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					local rounds = (state.Flags.cancer_treatment_rounds or 1) + 1
+					state.Flags.cancer_treatment_rounds = rounds
+					
+					-- Each round has a chance to beat it, improved by previous rounds
+					local baseChance = 0.25 + (rounds * 0.10) -- More rounds = better odds
+					local roll = math.random()
+					
+					if roll < baseChance then
+						-- REMISSION!
+						state.Flags.cancer_survivor = true
+						state.Flags.in_remission = true
+						state.Flags.in_treatment = nil
+						state.Flags.treatment_responding = nil
+						state.Flags.treatment_uncertain = nil
+						state.Flags.treatment_struggling = nil
+						state:ModifyStat("Happiness", 30)
+						state:ModifyStat("Health", 10)
+						state:AddFeed("🎗️ REMISSION! After " .. rounds .. " rounds of treatment, you beat cancer! 🎉")
+					elseif roll < baseChance + 0.30 then
+						-- Improving
+						state.Flags.treatment_responding = true
+						state.Flags.treatment_uncertain = nil
+						state.Flags.treatment_struggling = nil
+						state:AddFeed("🎗️ Good news! Treatment round " .. rounds .. " is working. Keep fighting!")
+					elseif roll < baseChance + 0.55 then
+						-- Stable
+						state.Flags.treatment_uncertain = true
+						state:AddFeed("🎗️ Holding steady after round " .. rounds .. ". Not worse, not better yet.")
+					else
+						-- Getting worse
+						state.Flags.treatment_struggling = true
+						state:ModifyStat("Health", -5)
+						if rounds >= 5 and math.random() < 0.30 then
+							-- After many rounds, might become terminal
+							state.Flags.terminal_illness = true
+							state.Flags.in_treatment = nil
+							state:AddFeed("🎗️ After " .. rounds .. " rounds... doctors say treatment isn't working. 💔")
+						else
+							state:AddFeed("🎗️ Round " .. rounds .. " was tough. Cancer is stubborn. Don't give up!")
+						end
+					end
+				end,
+			},
+			{
+				text = "Try alternative treatments",
+				effects = { Money = -3000, Happiness = 2 },
+				feedText = "🎗️ Exploring other options...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					
+					if roll < 0.20 then
+						-- Alternative worked! (rare)
+						state.Flags.cancer_survivor = true
+						state.Flags.in_remission = true
+						state.Flags.in_treatment = nil
+						state:ModifyStat("Happiness", 25)
+						state:AddFeed("🎗️ The alternative approach worked! You're in remission! 🌟")
+					elseif roll < 0.50 then
+						-- Helped a bit
+						state.Flags.treatment_responding = true
+						state:AddFeed("🎗️ Alternative therapies giving you strength. Combining with regular treatment.")
+					else
+						-- Didn't help
+						state:AddFeed("🎗️ Alternative treatment didn't show results. Back to traditional methods.")
+					end
+				end,
+			},
+			{
+				text = "Take a break from treatment",
+				effects = { Happiness = 5, Health = -5 },
+				feedText = "🎗️ Your body needs rest...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.treatment_paused = true
+					state:AddFeed("🎗️ Taking a break to recover strength. Will resume treatment later.")
+				end,
 			},
 		},
 	},
@@ -1015,10 +1211,23 @@ HealthEvents.events = {
 		diagnosisType = "depression",
 		oneTime = true,
 		maxOccurrences = 1,
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #532: Depression diagnosis requires VERY low happiness or doctor visit
+		-- Changed the text to say "After evaluation" so it makes sense narratively
+		-- ═══════════════════════════════════════════════════════════════════════════════
 		eligibility = function(state)
 			local happiness = (state.Stats and state.Stats.Happiness) or 50
 			local flags = state.Flags or {}
-			return happiness < 35 and not flags.depression
+			-- Already have depression? Don't show again
+			if flags.depression then return false end
+			-- Need either: doctor visit OR VERY severe symptoms (happiness below 25)
+			local visitedDoctor = flags.went_to_doctor or flags.doctor_checkup or flags.recent_checkup
+			local visitedTherapist = flags.therapy_session or flags.saw_therapist or flags.mental_health_eval
+			local severeSymptoms = happiness < 25 or flags.suicidal_thoughts or flags.cant_get_out_of_bed
+			if not visitedDoctor and not visitedTherapist and not severeSymptoms then
+				return false
+			end
+			return happiness < 35
 		end,
 		
 		choices = {
@@ -1059,9 +1268,21 @@ HealthEvents.events = {
 		diagnosisType = "anxiety",
 		oneTime = true,
 		maxOccurrences = 1,
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #533: Anxiety diagnosis requires doctor/therapist or severe symptoms
+		-- ═══════════════════════════════════════════════════════════════════════════════
 		eligibility = function(state)
 			local flags = state.Flags or {}
-			return not flags.anxiety and (flags.stressed or flags.panic_attacks or flags.nervous)
+			-- Already have anxiety? Don't show again
+			if flags.anxiety then return false end
+			-- Need either: doctor/therapist visit OR explicit panic attacks
+			local visitedDoctor = flags.went_to_doctor or flags.doctor_checkup or flags.recent_checkup
+			local visitedTherapist = flags.therapy_session or flags.saw_therapist or flags.mental_health_eval
+			local hasSymptoms = flags.panic_attacks or flags.severe_anxiety or flags.anxiety_attack
+			if not visitedDoctor and not visitedTherapist and not hasSymptoms then
+				return false
+			end
+			return flags.stressed or flags.panic_attacks or flags.nervous
 		end,
 		
 		choices = {
@@ -1089,13 +1310,28 @@ HealthEvents.events = {
 		question = "Your diagnosis: BACTERIAL INFECTION\n\n🔬 Status: Positive\n⚠️ Type: Bacterial infection detected\n💊 Treatment: Antibiotics available\n🩺 Follow-up: Required\n\nRest and take your medicine!",
 		minAge = 5, maxAge = 90,
 		baseChance = 0.30,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",
 		tags = { "diagnosis", "infection" },
 		isDiagnosisCard = true,
 		diagnosisType = "infection",
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #534: Infection diagnosis requires being sick or doctor visit
+		-- User complaint: "DIAGNOSIS SHOWING UP BUT I DIDNT GO TO DOCTOR"
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			local health = (state.Stats and state.Stats.Health) or 50
+			-- Currently recovering? Don't show again
+			if flags.recovering_from_infection then return false end
+			-- Must have: visited doctor, OR been sick, OR have low health
+			local visitedDoctor = flags.went_to_doctor or flags.doctor_checkup or flags.recent_checkup
+			local beenSick = flags.feeling_sick or flags.has_cold or flags.prolonged_illness or flags.fever
+			local lowHealth = health < 40
+			return visitedDoctor or beenSick or lowHealth
+		end,
 		
 		choices = {
 			{
@@ -1134,14 +1370,21 @@ HealthEvents.events = {
 		diagnosisType = "chronic_fatigue",
 		oneTime = true,
 		maxOccurrences = 1,
-		-- CRITICAL FIX: Only trigger if player has low health or is stressed
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #535: Chronic fatigue requires doctor visit + symptoms
+		-- User complaint: "CHRONIC FATIGUE KEEPS POPPING UP AT AGE 32 WITHOUT DOCTOR"
+		-- The text says "After seeing a doctor" so must have actually seen a doctor!
+		-- ═══════════════════════════════════════════════════════════════════════════════
 		eligibility = function(state)
 			local health = (state.Stats and state.Stats.Health) or 50
 			local happiness = (state.Stats and state.Stats.Happiness) or 50
 			local flags = state.Flags or {}
 			-- Already has it? Don't trigger again
 			if flags.chronic_fatigue then return false end
-			-- Must have low health OR low happiness (stress indicator)
+			-- CRITICAL FIX: Must have visited doctor (the text says "After seeing a doctor")
+			local visitedDoctor = flags.went_to_doctor or flags.doctor_checkup or flags.recent_checkup
+			if not visitedDoctor then return false end
+			-- AND must have low health OR low happiness (stress indicator)
 			return health < 45 or happiness < 35
 		end,
 		
@@ -1589,8 +1832,6 @@ function HealthEvents.getHealthSummary(state)
 	return summary
 end
 
-return HealthEvents
-
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- CHRONIC CONDITION TREATMENT EVENTS
 -- CRITICAL FIX: User requested "ENSURE IT LINKS TO BACKEND AND CAN HEAL IT OR NOT"
@@ -1606,7 +1847,7 @@ HealthEvents.events[#HealthEvents.events + 1] = {
 	question = "The doctor reviews your treatment progress...",
 	minAge = 18, maxAge = 100,
 	baseChance = 0.55,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	stage = STAGE,
 	ageBand = "any",
 	category = "health",
@@ -1751,7 +1992,7 @@ HealthEvents.events[#HealthEvents.events + 1] = {
 	question = "How are you managing your diabetes?",
 	minAge = 18, maxAge = 100,
 	baseChance = 0.50,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	stage = STAGE,
 	ageBand = "any",
 	category = "health",
@@ -1844,3 +2085,5 @@ HealthEvents.events[#HealthEvents.events + 1] = {
 		},
 	},
 }
+
+return HealthEvents

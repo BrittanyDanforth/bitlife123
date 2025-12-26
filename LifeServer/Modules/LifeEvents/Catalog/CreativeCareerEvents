@@ -112,7 +112,7 @@ CreativeCareerEvents.events = {
 		weight = 18,
 		minAge = 18, maxAge = 65,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = hasCreativeJob,
 		blockedByFlags = { in_prison = true },
@@ -227,7 +227,7 @@ CreativeCareerEvents.events = {
 		weight = 16,
 		minAge = 18, maxAge = 65,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = hasCreativeJob,
 		blockedByFlags = { in_prison = true },

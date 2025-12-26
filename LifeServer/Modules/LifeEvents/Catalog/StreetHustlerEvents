@@ -412,7 +412,7 @@ local events = {
 		minAge = 18,
 		maxAge = 60,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { street_hustler = true },
 		blockedByFlags = { in_prison = true, laying_low = true },
 		
@@ -641,7 +641,7 @@ local events = {
 		minAge = 18,
 		maxAge = 50,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { street_hustler = true },
 		blockedByFlags = { in_prison = true },
 		
@@ -714,7 +714,7 @@ local events = {
 		minAge = 16,
 		maxAge = 55,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { street_hustler = true },
 		blockedByFlags = { in_prison = true },
 		
@@ -793,7 +793,7 @@ local events = {
 		minAge = 20,
 		maxAge = 45,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { street_hustler = true },
 		blockedByFlags = { in_prison = true, laying_low = true },
 		
@@ -1002,7 +1002,7 @@ local events = {
 		minAge = 18,
 		maxAge = 55,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { street_hustler = true },
 		blockedByFlags = { in_prison = true },
 		
@@ -1080,7 +1080,7 @@ local events = {
 		minAge = 18,
 		maxAge = 50,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { street_hustler = true },
 		blockedByFlags = { in_prison = true },
 		
@@ -1150,7 +1150,7 @@ local events = {
 		minAge = 35,
 		maxAge = 55,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { street_hustler = true },
 		blockedByFlags = { in_prison = true },
 		

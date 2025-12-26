@@ -196,7 +196,7 @@ Senior.events = {
         question = "What did the results show?",
         minAge = 60, maxAge = 95,
         baseChance = 0.7,
-        cooldown = 2,
+        cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
         
         stage = STAGE,
         ageBand = "senior",
@@ -267,7 +267,7 @@ Senior.events = {
         question = "How do you spend time with them?",
         minAge = 55, maxAge = 95,
         baseChance = 0.6,
-        cooldown = 2,
+        cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
         requiresFlags = { grandparent = true },
         
         stage = STAGE,
@@ -536,7 +536,7 @@ Senior.events = {
         question = "How do you adapt?",
         minAge = 70, maxAge = 90,
         baseChance = 0.5,
-        cooldown = 2,
+        cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
         
         stage = STAGE,
         ageBand = "senior_mid",
@@ -579,7 +579,7 @@ Senior.events = {
         question = "How do you handle these concerns?",
         minAge = 68, maxAge = 95,
         baseChance = 0.4,
-        cooldown = 2,
+        cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
         
         stage = STAGE,
         ageBand = "senior_mid",
@@ -653,7 +653,7 @@ Senior.events = {
         question = "How does the reunion go?",
         minAge = 60, maxAge = 90,
         baseChance = 0.4,
-        cooldown = 2,
+        cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
         
         stage = STAGE,
         ageBand = "senior",
@@ -694,7 +694,7 @@ Senior.events = {
         question = "What does the assessment show?",
         minAge = 65, maxAge = 85,
         baseChance = 0.4,
-        cooldown = 2,
+        cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
         
         stage = STAGE,
         ageBand = "senior",
@@ -753,7 +753,7 @@ Senior.events = {
         question = "How do you respond?",
         minAge = 72, maxAge = 92,
         baseChance = 0.4,
-        cooldown = 2,
+        cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
         
         stage = STAGE,
         ageBand = "senior_mid",
@@ -810,7 +810,7 @@ Senior.events = {
         question = "How do you handle this?",
         minAge = 65, maxAge = 90,
         baseChance = 0.4,
-        cooldown = 2,
+        cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
         requiresFlags = { has_child = true },
         
         stage = STAGE,
@@ -857,7 +857,7 @@ Senior.events = {
         question = "What do you decide?",
         minAge = 78, maxAge = 95,
         baseChance = 0.4,
-        cooldown = 2,
+        cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
         
         stage = STAGE,
         ageBand = "senior_late",
@@ -1082,7 +1082,7 @@ Senior.events = {
         question = "How does this affect you?",
         minAge = 72, maxAge = 95,
         baseChance = 0.555,
-        cooldown = 2,
+        cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
         
         stage = STAGE,
         ageBand = "senior_late",
@@ -1380,7 +1380,7 @@ Senior.events = {
         question = "How do you volunteer?",
         minAge = 60, maxAge = 85,
         baseChance = 0.5,
-        cooldown = 2,
+        cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
         
         stage = STAGE,
         ageBand = "senior",
@@ -1510,7 +1510,7 @@ Senior.events = {
         question = "What do you do?",
         minAge = 65, maxAge = 95,
         baseChance = 0.5,
-        cooldown = 2,
+        cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
         
         stage = STAGE,
         ageBand = "senior",
@@ -1553,7 +1553,7 @@ Senior.events = {
         question = "How do you adapt?",
         minAge = 65, maxAge = 95,
         baseChance = 0.5,
-        cooldown = 2,
+        cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
         
         stage = STAGE,
         ageBand = "senior",
@@ -1679,7 +1679,7 @@ Senior.events = {
         question = "How do you handle the tech frustration?",
         minAge = 60, maxAge = 95,
         baseChance = 0.5,
-        cooldown = 2,
+        cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
         
         stage = STAGE,
         ageBand = "senior",

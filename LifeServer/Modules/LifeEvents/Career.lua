@@ -138,7 +138,7 @@ Career.events = {
 		question = "What do you do?",
 		minAge = 22, maxAge = 60,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Only for formal company jobs - entertainment careers don't get "laid off"
 		eligibility = hasFormalWorkplaceJob,
@@ -172,7 +172,7 @@ Career.events = {
 		question = "How do you cope?",
 		minAge = 18, maxAge = 60,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Only show for FORMAL jobs with actual managers/HR
 		-- Street hustlers, criminals, freelancers don't have "managers"
@@ -306,7 +306,7 @@ Career.events = {
 		question = "How do you approach it?",
 		minAge = 22, maxAge = 60,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Only for formal corporate jobs - street hustlers don't get "business trips"
 		blockedByFlags = { 
@@ -336,7 +336,7 @@ Career.events = {
 		question = "What path do you take?",
 		minAge = 28, maxAge = 45,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		blockedByFlags = { in_prison = true, incarcerated = true },
 
@@ -392,7 +392,7 @@ Career.events = {
 		question = "What do you do with it?",
 		minAge = 20, maxAge = 50,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		requiresJobCategory = "tech",
 		blockedByFlags = { in_prison = true, incarcerated = true },
@@ -504,7 +504,7 @@ Career.events = {
 		question = "How do you push through?",
 		minAge = 20, maxAge = 60,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		requiresJobCategory = "creative",
 
@@ -559,7 +559,7 @@ Career.events = {
 		question = "What do you do?",
 		minAge = 22, maxAge = 60,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		-- CRITICAL FIX #10: Can't invest if broke, can't be approached from prison
 		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
 		-- Need at least $3000 to invest (first choice costs $3000)
@@ -650,7 +650,7 @@ Career.events = {
 		question = "What's next?",
 		minAge = 25, maxAge = 55,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { entrepreneur = true },
 
 		-- META
@@ -690,7 +690,7 @@ Career.events = {
 		question = "How do you feel?",
 		minAge = 30, maxAge = 65,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		requiresStats = { Smarts = { min = 70 } },
 
@@ -719,7 +719,7 @@ Career.events = {
 		question = "What do you choose?",
 		minAge = 22, maxAge = 60,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Only for formal office jobs - street hustlers don't get "remote work options"
 		blockedByFlags = { 
@@ -744,7 +744,7 @@ Career.events = {
 		question = "How do you cope?",
 		minAge = 20, maxAge = 60,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Only for formal workplace jobs
 		blockedByFlags = { 
@@ -784,7 +784,7 @@ Career.events = {
 		question = "How do you approach this negotiation?",
 		minAge = 22, maxAge = 60,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Only for formal jobs with salaries and reviews
 		blockedByFlags = { 
@@ -967,7 +967,7 @@ Career.events = {
 		question = "How do you respond?",
 		minAge = 25, maxAge = 55,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Random job offer legitimacy - can't choose if it's a scam
 		choices = {
@@ -1042,7 +1042,7 @@ Career.events = {
 		question = "What do you do?",
 		minAge = 20, maxAge = 55,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Only for formal jobs with coworkers - not entertainment careers
 		eligibility = hasFormalWorkplaceJob,
@@ -1121,7 +1121,7 @@ Career.events = {
 		question = "What do you do?",
 		minAge = 25, maxAge = 55,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Use hasFormalWorkplaceJob to exclude entertainment careers
 		-- Entertainment careers have their own burnout events (creator_burnout, gamer_burnout, etc.)
@@ -1374,7 +1374,7 @@ Career.events = {
 		question = "How do you respond?",
 		minAge = 22, maxAge = 40,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Only for formal corporate jobs with senior leadership
 		blockedByFlags = { 
@@ -1398,7 +1398,7 @@ Career.events = {
 		question = "How do you handle it?",
 		minAge = 22, maxAge = 55,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Only for formal jobs with overtime expectations
 		blockedByFlags = { 
@@ -1424,7 +1424,7 @@ Career.events = {
 		question = "What do you do?",
 		minAge = 22, maxAge = 45,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		blockedByFlags = { in_prison = true, incarcerated = true },
 
@@ -1547,7 +1547,7 @@ Career.events = {
 		question = "What was the highlight?",
 		minAge = 25, maxAge = 60,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Only for legitimate professional careers - not entertainment
 		eligibility = hasFormalWorkplaceJob,
@@ -1573,7 +1573,7 @@ Career.events = {
 		question = "How do you approach this review?",
 		minAge = 20, maxAge = 60,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Only for formal jobs with performance reviews
 		blockedByFlags = { 
@@ -1650,7 +1650,7 @@ Career.events = {
 	question = "How do you handle this uncertain time?",
 	minAge = 22, maxAge = 55,
 	baseChance = 0.455,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	
 	-- META
@@ -1674,7 +1674,7 @@ Career.events = {
 	question = "What's your work style?",
 	minAge = 20, maxAge = 60,
 	baseChance = 0.555,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	
 	-- META
@@ -1699,7 +1699,7 @@ Career.events = {
 	question = "Do you pursue the side hustle?",
 	minAge = 22, maxAge = 50,
 	baseChance = 0.555,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	
 	-- META
@@ -1723,7 +1723,7 @@ Career.events = {
 	question = "How do you cope?",
 	minAge = 20, maxAge = 55,
 	baseChance = 0.55,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	requiresStats = { Happiness = { max = 60 } },
 	
@@ -1748,7 +1748,7 @@ Career.events = {
 	question = "How do you respond?",
 	minAge = 22, maxAge = 40,
 	baseChance = 0.455,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	
 	-- META
@@ -1772,7 +1772,7 @@ Career.events = {
 	question = "Do you take the leap?",
 	minAge = 28, maxAge = 50,
 	baseChance = 0.455,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	
 	-- META
@@ -1879,7 +1879,7 @@ Career.events = {
 	question = "What do you do?",
 	minAge = 18, maxAge = 45,
 	baseChance = 0.455,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	requiresJobCategory = "sports",
 	blockedByFlags = { in_prison = true },
@@ -2212,7 +2212,7 @@ Career.events = {
 	question = "How do you handle it?",
 	minAge = 30, maxAge = 60,
 	baseChance = 0.455,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	requiresJobCategory = "government",
 	blockedByFlags = { in_prison = true },
@@ -2286,7 +2286,7 @@ Career.events = {
 	question = "How do you handle the chaos?",
 	minAge = 18, maxAge = 55,
 	baseChance = 0.5,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	requiresJobCategory = "retail",
 	blockedByFlags = { in_prison = true },
@@ -2328,7 +2328,7 @@ Career.events = {
 	question = "How do you handle this Karen/Kevin?",
 	minAge = 16, maxAge = 55,
 	baseChance = 0.6,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	requiresJobCategory = "retail",
 	blockedByFlags = { in_prison = true },
@@ -2435,7 +2435,7 @@ Career.events = {
 	question = "Do you take the gamble?",
 	minAge = 22, maxAge = 45,
 	baseChance = 0.55,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	requiresJobCategory = "tech",
 	blockedByFlags = { in_prison = true },
@@ -2490,7 +2490,7 @@ Career.events = {
 	question = "What do you do?",
 	minAge = 18, maxAge = 50,
 	baseChance = 0.4,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	requiresJobCategory = "tech",
 	blockedByFlags = { in_prison = true },
@@ -2637,7 +2637,7 @@ Career.events = {
 	question = "How do you handle this?",
 	minAge = 26, maxAge = 65,
 	baseChance = 0.45,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	requiresJobCategory = "medical",
 	blockedByFlags = { in_prison = true },
@@ -2678,7 +2678,7 @@ Career.events = {
 	question = "How do you respond?",
 	minAge = 18, maxAge = 60,
 	baseChance = 0.55,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	requiresJobCategory = "trades",
 	blockedByFlags = { in_prison = true },
@@ -2736,7 +2736,7 @@ Career.events = {
 	question = "Do you take it on?",
 	minAge = 22, maxAge = 60,
 	baseChance = 0.55,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	requiresJobCategory = "trades",
 	blockedByFlags = { in_prison = true },
@@ -2842,7 +2842,7 @@ Career.events = {
 	question = "How do you respond?",
 	minAge = 24, maxAge = 65,
 	baseChance = 0.4,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	requiresJobCategory = "education",
 	blockedByFlags = { in_prison = true },
@@ -2904,7 +2904,7 @@ Career.events = {
 	question = "What do you do?",
 	minAge = 24, maxAge = 60,
 	baseChance = 0.55,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	requiresJobCategory = "finance",
 	blockedByFlags = { in_prison = true },
@@ -2953,7 +2953,7 @@ Career.events = {
 	question = "What do you do?",
 	minAge = 18, maxAge = 55,
 	baseChance = 0.45,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	requiresJobCategory = "creative",
 	blockedByFlags = { in_prison = true },
@@ -3015,7 +3015,7 @@ Career.events = {
 	question = "How do you push through?",
 	minAge = 18, maxAge = 65,
 	baseChance = 0.5,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	requiresJobCategory = "creative",
 	blockedByFlags = { in_prison = true },
@@ -3107,7 +3107,7 @@ Career.events = {
 	question = "Do you take it?",
 	minAge = 30, maxAge = 55,
 	baseChance = 0.45,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	blockedByFlags = { in_prison = true, street_hustler = true, criminal_career = true },
 	
@@ -3154,7 +3154,7 @@ Career.events = {
 	question = "How do you approach the negotiation?",
 	minAge = 22, maxAge = 60,
 	baseChance = 0.4,
-	cooldown = 2,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	blockedByFlags = { in_prison = true, street_hustler = true, criminal_career = true },
 	
@@ -3253,7 +3253,7 @@ Career.events = {
 		text = "A senior executive has noticed your potential and offers to mentor you. This could accelerate your career.",
 		minAge = 22, maxAge = 45,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		blockedByFlags = { in_prison = true, street_hustler = true, criminal_career = true },
 		stage = STAGE,
@@ -3372,7 +3372,7 @@ Career.events = {
 		text = "Two executives are in a power struggle. Both are trying to recruit you to their side.",
 		minAge = 25, maxAge = 55,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		blockedByFlags = { in_prison = true, self_employed = true },
 		stage = STAGE,
@@ -3533,7 +3533,7 @@ Career.events = {
 		question = "How do you approach your speech?",
 		minAge = 20, maxAge = 55,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		conditions = { requiresFlags = { pursuing_politics = true, entered_local_politics = true } },
 		category = "career",
 		choices = {
@@ -3628,7 +3628,7 @@ Career.events = {
 		question = "How do you handle this?",
 		minAge = 16, maxAge = 50,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		conditions = { requiresFlags = { pursuing_crime = true } },
 		blockedByFlags = { in_prison = true },
 		category = "crime",

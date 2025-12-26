@@ -55,7 +55,7 @@ LuckEvents.events = {
 		question = "Is it actually good luck?",
 		minAge = 5, maxAge = 100,
 		baseChance = 0.1,
-		cooldown = 2,
+		cooldown = 5, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "luck",

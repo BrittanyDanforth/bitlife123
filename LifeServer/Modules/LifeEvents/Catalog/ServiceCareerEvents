@@ -98,7 +98,7 @@ ServiceCareerEvents.events = {
 		weight = 18,
 		minAge = 16, maxAge = 50,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Expanded job ID list to catch all variations
 		requiresJobId = { "waiter", "server", "waitress", "waiter_waitress", "restaurant_server", "food_server" },
@@ -173,7 +173,7 @@ ServiceCareerEvents.events = {
 		weight = 14,
 		minAge = 18, maxAge = 50,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Expanded job ID list to catch all variations
 		requiresJobId = { "waiter", "server", "waitress", "waiter_waitress", "restaurant_server", "food_server" },
@@ -248,7 +248,7 @@ ServiceCareerEvents.events = {
 		weight = 16,
 		minAge = 21, maxAge = 55,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		requiresJobId = { "bartender" },
 		blockedByFlags = { in_prison = true },
@@ -435,7 +435,7 @@ ServiceCareerEvents.events = {
 		weight = 16,
 		minAge = 16, maxAge = 40,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		requiresJobId = { "barista" },
 		blockedByFlags = { in_prison = true },
@@ -563,7 +563,7 @@ ServiceCareerEvents.events = {
 		weight = 16,
 		minAge = 21, maxAge = 55,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		requiresJobId = { "flight_attendant" },
 		blockedByFlags = { in_prison = true },
@@ -730,7 +730,7 @@ ServiceCareerEvents.events = {
 		weight = 15,
 		minAge = 18, maxAge = 50,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		requiresJobId = { "hotel_front_desk" },
 		blockedByFlags = { in_prison = true },
@@ -981,7 +981,7 @@ ServiceCareerEvents.events = {
 		weight = 14,
 		minAge = 18, maxAge = 55,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		requiresJobId = { "tour_guide" },
 		blockedByFlags = { in_prison = true },

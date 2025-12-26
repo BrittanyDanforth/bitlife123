@@ -107,7 +107,7 @@ local events = {
 		minAge = 18,
 		maxAge = 50,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		-- CRITICAL FIX: Must FIRST check if player owns ANY car, THEN check car value
 		eligibility = function(state)
@@ -442,7 +442,7 @@ local events = {
 		minAge = 21,
 		maxAge = 65,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		-- CRITICAL FIX: Must FIRST check if player owns ANY car, THEN check car value
 		eligibility = function(state)
@@ -524,7 +524,7 @@ local events = {
 		minAge = 18,
 		maxAge = 50,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		blockedByFlags = { in_prison = true },
 		eligibility = function(state)
 			return hasAssetType(state, "Properties")
@@ -1036,7 +1036,7 @@ local events = {
 		minAge = 21,
 		maxAge = 90,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		blockedByFlags = { in_prison = true },
 		eligibility = function(state)
 			return hasAssetType(state, "Properties")
@@ -1101,7 +1101,7 @@ local events = {
 		minAge = 25,
 		maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		blockedByFlags = { in_prison = true },
 		eligibility = function(state)
 			return hasAssetType(state, "Properties")
@@ -1134,7 +1134,7 @@ local events = {
 		minAge = 21,
 		maxAge = 80,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		blockedByFlags = { in_prison = true },
 		eligibility = function(state)
 			return hasAssetType(state, "Properties")
@@ -1209,7 +1209,7 @@ local events = {
 		minAge = 25,
 		maxAge = 70,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		blockedByFlags = { in_prison = true },
 		eligibility = function(state)
 			return hasAssetType(state, "Properties")
@@ -1261,7 +1261,7 @@ local events = {
 		minAge = 21,
 		maxAge = 90,
 		baseChance = 0.12,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		blockedByFlags = { in_prison = true },
 		eligibility = function(state)
 			return hasAssetType(state, "Items")
@@ -1356,7 +1356,7 @@ local events = {
 		minAge = 21,
 		maxAge = 70,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
 		-- CRITICAL FIX: Ensure player actually owns something worth showing off
 		eligibility = function(state)
@@ -1624,7 +1624,7 @@ local events = {
 		minAge = 30,
 		maxAge = 75,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		eligibility = function(state)
 			if not state.Assets or not state.Assets.Vehicles then return false end

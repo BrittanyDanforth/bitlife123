@@ -805,7 +805,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 8,
 		maxAge = 14,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		-- CRITICAL FIX #43: Eligibility for tutor events
 		eligibility = function(state) return isActiveRoyal(state) end,
 		choices = {
@@ -881,7 +881,7 @@ RoyaltyEvents.LifeEvents = {
 		maxAge = 17,
 		isRoyalOnly = true,
 		requiresFlags = { in_boarding_school = true },
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		-- CRITICAL FIX #45: Eligibility for school events
 		eligibility = function(state) return isActiveRoyal(state) end,
 		choices = {
@@ -923,7 +923,7 @@ RoyaltyEvents.LifeEvents = {
 		maxAge = 19,
 		isRoyalOnly = true,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		-- CRITICAL FIX #46: Eligibility for teen scandal events
 		eligibility = function(state) return isActiveRoyal(state) end,
 		choices = {
@@ -2029,7 +2029,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 21,
 		maxAge = 70,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		choices = {
 			{
@@ -2102,7 +2102,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 70,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		choices = {
 			{
@@ -2226,7 +2226,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 21,
 		maxAge = 75,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 5,
 		choices = {
 			{
@@ -2294,7 +2294,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 80,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Issue dignified denial", effects = { Happiness = -10 }, royaltyEffect = { popularity = -5, scandals = 1 }, feed = "Your denial was measured." },
 			{ text = "Sue for defamation", effects = { Happiness = -15, Money = -500000 }, royaltyEffect = { popularity = -3, scandals = 1 }, feed = "You took legal action." },
@@ -2381,7 +2381,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 25,
 		maxAge = 90,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Mental health", effects = { Happiness = 15, Money = -2000000 }, royaltyEffect = { popularity = 20 }, feed = "Your campaign saved lives!" },
 			{ text = "Environment", effects = { Happiness = 12, Money = -3000000 }, royaltyEffect = { popularity = 18 }, feed = "You're protecting the planet!" },
@@ -2419,7 +2419,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 80,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		baseChance = 0.55,
 		choices = {
 			{ text = "Sue the tabloid for defamation", effects = { Happiness = -5, Money = -500000 }, royaltyEffect = { popularity = 5 }, feed = "You fought back legally!" },
@@ -2436,7 +2436,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 25,
 		maxAge = 90,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{
 				text = "Invest in sustainable energy",
@@ -2491,7 +2491,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 10,
 		maxAge = 80,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "The pet stays - hire more staff", effects = { Happiness = 10, Money = -50000 }, feed = "Your loyalty to your pet is admirable!" },
 			{ text = "Get professional training", effects = { Happiness = 5, Money = -20000 }, feed = "Your pet is now palace-worthy." },
@@ -2541,7 +2541,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 12, -- CRITICAL FIX #323: Was 5, now 12 - babies shouldn't wave to crowds independently
 		maxAge = 100,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Wave enthusiastically and blow kisses", effects = { Happiness = 12 }, royaltyEffect = { popularity = 10 }, feed = "The crowd went wild!" },
 			{ text = "Maintain dignified composure", effects = { Happiness = 5 }, royaltyEffect = { popularity = 5 }, feed = "Regal and refined as always." },
@@ -2573,7 +2573,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 16,
 		maxAge = 75,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Lead the traditional hunt", effects = { Health = 5, Happiness = 8 }, royaltyEffect = { popularity = -10 }, feed = "Traditionalists approved, activists didn't." },
 			{ text = "Convert it to a photography safari", effects = { Happiness = 10, Smarts = 3 }, royaltyEffect = { popularity = 15 }, feed = "Modern and environmentally conscious!" },
@@ -2636,7 +2636,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 20,
 		maxAge = 45,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 4,
 		conditions = { 
 			requiresFlags = { married = true },
@@ -2658,7 +2658,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 16,
 		maxAge = 85,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 5,
 		choices = {
 			{ text = "Roll up sleeves and help personally", effects = { Happiness = 15, Health = -5 }, royaltyEffect = { popularity = 30 }, setFlags = { hands_on_royal = true }, feed = "Photos of you helping went viral!" },
@@ -2715,7 +2715,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 16,
 		maxAge = 60,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		conditions = { blockedFlags = { only_child = true } },
 		choices = {
@@ -2975,7 +2975,7 @@ RoyaltyEvents.LifeEvents = {
 		minAge = 10,
 		maxAge = 90,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		choices = {
 			{ text = "Feature them in official photos", effects = { Happiness = 15 }, royaltyEffect = { popularity = 12 }, setFlags = { pet_parent = true }, feed = "The nation has a new favorite royal pet!" },
@@ -4499,7 +4499,7 @@ RoyaltyEvents.RoyalEducationEvents = {
 		minAge = 14,
 		maxAge = 17,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		conditions = { requiresFlags = { in_boarding_school = true } },
 		choices = {
 			{
@@ -4595,7 +4595,397 @@ end
 -- ════════════════════════════════════════════════════════════════════════════
 
 RoyaltyEvents.ExpandedRoyalEvents = {
-	-- ROYAL CHILDHOOD EXPERIENCES
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: ROYAL CHILDHOOD EXPERIENCES
+	-- User complaint: "THE ROYALTY BARELY CHANGES STUFF BRUH"
+	-- Royals need events for EVERY age from birth onwards!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- AGE 7: Royal siblings and etiquette
+	{
+		id = "royal_siblings_lessons",
+		title = "👨‍👩‍👧‍👦 Royal Siblings",
+		emoji = "👨‍👩‍👧‍👦",
+		text = "As a young royal, you're expected to take lessons with your siblings or cousins from other noble families.",
+		minAge = 6,
+		maxAge = 10,
+		oneTime = true,
+		isRoyalOnly = true,
+		isMilestone = true,
+		conditions = { requiresFlags = { is_royalty = true } },
+		choices = {
+			{
+				text = "Be the responsible older sibling",
+				effects = { Happiness = 5, Smarts = 3 },
+				setFlags = { responsible_royal = true },
+				feed = "You showed maturity beyond your years!",
+			},
+			{
+				text = "Be competitive and try to outshine them",
+				effects = { Happiness = 3, Smarts = 5 },
+				setFlags = { competitive_royal = true },
+				feed = "Your competitive spirit impressed the tutors!",
+			},
+			{
+				text = "Play pranks and make mischief",
+				effects = { Happiness = 8, Smarts = -2 },
+				setFlags = { mischievous_royal = true },
+				feed = "The palace staff has their hands full with you!",
+			},
+		},
+	},
+	
+	{
+		id = "royal_etiquette_lessons",
+		title = "🎩 Royal Etiquette",
+		emoji = "🎩",
+		text = "A strict etiquette instructor arrives at the palace. Time to learn proper royal behavior!",
+		minAge = 5,
+		maxAge = 12,
+		oneTime = true,
+		isRoyalOnly = true,
+		isMilestone = true,
+		conditions = { requiresFlags = { is_royalty = true } },
+		choices = {
+			{
+				text = "Pay attention and learn proper manners",
+				effects = { Happiness = 2, Smarts = 5 },
+				setFlags = { proper_manners = true, etiquette_trained = true },
+				feed = "You mastered the art of royal etiquette!",
+			},
+			{
+				text = "Pretend to pay attention while daydreaming",
+				effects = { Happiness = 4, Smarts = 2 },
+				setFlags = { daydreamer = true },
+				feed = "The instructor didn't notice your wandering mind.",
+			},
+			{
+				text = "Deliberately misbehave",
+				effects = { Happiness = 6, Smarts = -3 },
+				royaltyEffect = { popularity = -5 },
+				setFlags = { rebellious_royal = true },
+				feed = "The palace is abuzz with gossip about your behavior!",
+			},
+		},
+	},
+	
+	-- AGE 8: Pony/Horse lessons
+	{
+		id = "royal_pony_lessons",
+		title = "🐴 Royal Riding Lessons",
+		emoji = "🐴",
+		text = "Every royal must learn to ride! Your first pony, a beautiful creature, awaits in the royal stables.",
+		minAge = 6,
+		maxAge = 10,
+		oneTime = true,
+		isRoyalOnly = true,
+		isMilestone = true,
+		conditions = { requiresFlags = { is_royalty = true } },
+		choices = {
+			{
+				text = "Embrace it - You're a natural rider!",
+				effects = { Happiness = 10, Health = 5 },
+				setFlags = { equestrian = true, loves_horses = true },
+				feed = "You and your pony form an instant bond!",
+			},
+			{
+				text = "Try cautiously - A bit nervous but determined",
+				effects = { Happiness = 5, Health = 3 },
+				setFlags = { cautious_rider = true },
+				feed = "With practice, you're becoming a competent rider!",
+			},
+			{
+				text = "Refuse at first - Horses are scary!",
+				effects = { Happiness = -2, Health = 2 },
+				setFlags = { afraid_of_horses = true },
+				feed = "It took some time, but eventually you gave it a try.",
+			},
+		},
+	},
+	
+	-- AGE 9: Royal charity visit
+	{
+		id = "royal_charity_visit",
+		title = "💝 First Charity Visit",
+		emoji = "💝",
+		text = "It's time for your first official charity visit! Your parents are taking you to a children's hospital.",
+		minAge = 7,
+		maxAge = 12,
+		oneTime = true,
+		isRoyalOnly = true,
+		isMilestone = true,
+		conditions = { requiresFlags = { is_royalty = true } },
+		choices = {
+			{
+				text = "Connect with the children genuinely",
+				effects = { Happiness = 15 },
+				royaltyEffect = { popularity = 20 },
+				setFlags = { charitable_heart = true, loves_charity = true },
+				feed = "The children adored you and so did the media! You're a natural philanthropist.",
+			},
+			{
+				text = "Be polite but formal",
+				effects = { Happiness = 5 },
+				royaltyEffect = { popularity = 10 },
+				setFlags = { formal_royal = true },
+				feed = "You performed your duties with proper decorum.",
+			},
+			{
+				text = "Feel overwhelmed by the experience",
+				effects = { Happiness = -5 },
+				royaltyEffect = { popularity = 5 },
+				setFlags = { sensitive_soul = true },
+				feed = "The experience left a deep impression on you.",
+			},
+		},
+	},
+	
+	-- AGE 10: Royal friends
+	{
+		id = "royal_friends",
+		title = "👑 Noble Companions",
+		emoji = "👑",
+		text = "As a young royal, your friendships are carefully curated. Children from noble families are invited to the palace.",
+		minAge = 8,
+		maxAge = 12,
+		oneTime = true,
+		isRoyalOnly = true,
+		isMilestone = true,
+		conditions = { requiresFlags = { is_royalty = true } },
+		choices = {
+			{
+				text = "Become best friends with a duke's child",
+				effects = { Happiness = 10 },
+				setFlags = { noble_friend = true, social_royal = true },
+				feed = "You and your noble friend are inseparable!",
+			},
+			{
+				text = "Prefer the company of palace staff's children",
+				effects = { Happiness = 8 },
+				royaltyEffect = { popularity = 5 },
+				setFlags = { down_to_earth = true },
+				feed = "Your choice of friends shows your humble character.",
+			},
+			{
+				text = "Prefer to be alone - Books are your friends",
+				effects = { Happiness = 3, Smarts = 8 },
+				setFlags = { solitary_royal = true, bookworm = true },
+				feed = "You find more comfort in the palace library than in playmates.",
+			},
+		},
+	},
+	
+	-- AGE 12: Coming of age prep
+	{
+		id = "royal_coming_of_age_prep",
+		title = "🌟 Preparing for Adulthood",
+		emoji = "🌟",
+		text = "As you approach your teenage years, the palace begins preparing you for your future royal responsibilities.",
+		minAge = 11,
+		maxAge = 13,
+		oneTime = true,
+		isRoyalOnly = true,
+		isMilestone = true,
+		conditions = { requiresFlags = { is_royalty = true } },
+		choices = {
+			{
+				text = "Embrace your destiny as future royalty",
+				effects = { Happiness = 8, Smarts = 5 },
+				setFlags = { embraced_duty = true, mature_royal = true },
+				feed = "You accept your royal destiny with grace and determination!",
+			},
+			{
+				text = "Feel the weight of expectations",
+				effects = { Happiness = -5, Smarts = 3 },
+				setFlags = { burdened_royal = true },
+				feed = "The crown feels heavy even before you wear it...",
+			},
+			{
+				text = "Dream of a normal life",
+				effects = { Happiness = 3 },
+				setFlags = { dreams_of_normalcy = true },
+				feed = "Sometimes you wonder what life would be like as a regular kid...",
+			},
+		},
+	},
+	
+	-- AGE 13: First solo engagement
+	{
+		id = "royal_first_solo_engagement",
+		title = "🎤 First Solo Appearance",
+		emoji = "🎤",
+		text = "For the first time, you'll attend an official event WITHOUT your parents! A school opening ceremony awaits.",
+		minAge = 12,
+		maxAge = 15,
+		oneTime = true,
+		isRoyalOnly = true,
+		isMilestone = true,
+		conditions = { requiresFlags = { is_royalty = true } },
+		choices = {
+			{
+				text = "Nail it - Give a small speech confidently",
+				effects = { Happiness = 12, Smarts = 3 },
+				royaltyEffect = { popularity = 15 },
+				setFlags = { confident_speaker = true, solo_debut_success = true },
+				feed = "Your first solo engagement was a massive success! The press loves you!",
+			},
+			{
+				text = "Manage adequately - A bit nervous but okay",
+				effects = { Happiness = 5 },
+				royaltyEffect = { popularity = 8 },
+				setFlags = { nervous_performer = true },
+				feed = "You got through it! Experience will build confidence.",
+			},
+			{
+				text = "Struggle - Stage fright hits hard",
+				effects = { Happiness = -8 },
+				royaltyEffect = { popularity = -5 },
+				setFlags = { stage_fright = true },
+				feed = "The experience was overwhelming... but you survived.",
+			},
+		},
+	},
+	
+	-- AGE 14: Royal boarding school option
+	{
+		id = "royal_boarding_school",
+		title = "🏫 Elite Education",
+		emoji = "🏫",
+		text = "Your parents discuss your education future. Will you attend an elite boarding school or continue private palace tutoring?",
+		minAge = 13,
+		maxAge = 16,
+		oneTime = true,
+		isRoyalOnly = true,
+		isMilestone = true,
+		conditions = { requiresFlags = { is_royalty = true } },
+		choices = {
+			{
+				text = "Elite boarding school - Meet other nobles",
+				effects = { Happiness = 8, Smarts = 10 },
+				setFlags = { boarding_school = true, elite_education = true },
+				feed = "You're off to one of the world's most exclusive schools!",
+			},
+			{
+				text = "Continue palace tutoring - Stay home",
+				effects = { Happiness = 5, Smarts = 8 },
+				setFlags = { palace_educated = true },
+				feed = "Your tutors continue to provide world-class education at home.",
+			},
+			{
+				text = "Military academy - Build discipline",
+				effects = { Happiness = 2, Health = 10, Smarts = 5 },
+				setFlags = { military_education = true, disciplined = true },
+				feed = "The military academy will shape you into a leader!",
+			},
+		},
+	},
+	
+	-- AGE 15: Driving training
+	{
+		id = "royal_drivers_training",
+		title = "🚗 Royal Driving Lessons",
+		emoji = "🚗",
+		text = "Even royals must learn to drive! Though you'll usually have a chauffeur, driving is an important skill.",
+		minAge = 15,
+		maxAge = 17,
+		oneTime = true,
+		isRoyalOnly = true,
+		isMilestone = true,
+		conditions = { requiresFlags = { is_royalty = true } },
+		choices = {
+			{
+				text = "Learn in a luxury vehicle",
+				effects = { Happiness = 10 },
+				setFlags = { can_drive = true, learned_in_luxury = true },
+				feed = "Learning to drive in a Bentley? Very royal of you!",
+			},
+			{
+				text = "Learn defensive driving like security",
+				effects = { Happiness = 5, Health = 5 },
+				setFlags = { can_drive = true, defensive_driver = true },
+				feed = "You learned advanced driving techniques!",
+			},
+			{
+				text = "Let the chauffeur handle it",
+				effects = { Happiness = 3 },
+				setFlags = { prefers_chauffeur = true },
+				feed = "Why drive when you have staff for that?",
+			},
+		},
+	},
+	
+	-- AGE 16: Sweet sixteen royal style
+	{
+		id = "royal_sixteenth_birthday",
+		title = "🎂 Royal Sweet Sixteen",
+		emoji = "🎂",
+		text = "Your sixteenth birthday is a major celebration! The palace is planning an extravagant event.",
+		minAge = 16,
+		maxAge = 16,
+		oneTime = true,
+		isRoyalOnly = true,
+		isMilestone = true,
+		conditions = { requiresFlags = { is_royalty = true } },
+		choices = {
+			{
+				text = "Grand ball with nobility from around the world",
+				effects = { Happiness = 15 },
+				royaltyEffect = { popularity = 20 },
+				setFlags = { sweet_sixteen_ball = true },
+				feed = "A magnificent celebration worthy of a future monarch!",
+			},
+			{
+				text = "Intimate celebration with close friends",
+				effects = { Happiness = 12 },
+				royaltyEffect = { popularity = 10 },
+				setFlags = { private_celebration = true },
+				feed = "A wonderful birthday surrounded by those who truly know you.",
+			},
+			{
+				text = "Charity gala in your honor",
+				effects = { Happiness = 10 },
+				royaltyEffect = { popularity = 25 },
+				setFlags = { charitable_birthday = true, loves_charity = true },
+				feed = "Your birthday raised millions for charity! What a noble gesture!",
+			},
+		},
+	},
+	
+	-- AGE 17: Gap year decision
+	{
+		id = "royal_gap_year_decision",
+		title = "🌍 Gap Year Adventure?",
+		emoji = "🌍",
+		text = "Before university, many royals take a gap year. What will you do with this time?",
+		minAge = 17,
+		maxAge = 18,
+		oneTime = true,
+		isRoyalOnly = true,
+		isMilestone = true,
+		conditions = { requiresFlags = { is_royalty = true } },
+		choices = {
+			{
+				text = "World tour with charitable work",
+				effects = { Happiness = 15, Smarts = 5 },
+				royaltyEffect = { popularity = 20 },
+				setFlags = { gap_year_charity = true, world_traveler = true },
+				feed = "Your gap year combined adventure with meaningful service!",
+			},
+			{
+				text = "Military service to serve the nation",
+				effects = { Happiness = 5, Health = 15 },
+				setFlags = { gap_year_military = true, military_service = true },
+				feed = "Following royal tradition, you serve in the armed forces!",
+			},
+			{
+				text = "Skip it - Straight to university",
+				effects = { Happiness = 3, Smarts = 8 },
+				setFlags = { no_gap_year = true },
+				feed = "You're eager to begin your higher education!",
+			},
+		},
+	},
+	
 	{
 		id = "royal_first_public_appearance",
 		title = "👶 First Public Appearance",
@@ -4790,7 +5180,7 @@ RoyaltyEvents.ExpandedRoyalEvents = {
 		minAge = 21,
 		maxAge = 70,
 		isRoyalOnly = true,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		conditions = { requiresFlags = { is_royalty = true, royal_adult = true } },
 		choices = {
 			{

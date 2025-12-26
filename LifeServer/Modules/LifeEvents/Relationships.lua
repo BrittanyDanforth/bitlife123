@@ -112,7 +112,7 @@ Relationships.events = {
 		question = "Could this be a new friendship?",
 		minAge = 13, maxAge = 80,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		-- Dynamic text generation for the event
 		getDynamicText = function(state)
 			-- Generate a random name for the potential friend
@@ -524,7 +524,7 @@ Relationships.events = {
 		question = "Can you make it work?",
 		minAge = 18, maxAge = 50,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresPartner = true,
 		choices = {
 			{ text = "We'll make it work", effects = { Happiness = 3, Money = -500 }, setFlags = { long_distance = true }, feedText = "You're committed despite the distance." },
@@ -694,7 +694,7 @@ Relationships.events = {
 		question = "How do you handle it?",
 		minAge = 28, maxAge = 60,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { parent = true },
 		choices = {
 			{ text = "Patient understanding", effects = { Happiness = 5, Smarts = 2 }, feedText = "Patience paid off." },
@@ -711,7 +711,7 @@ Relationships.events = {
 		question = "How do you react?",
 		minAge = 30, maxAge = 70,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { parent = true },
 		choices = {
 			{ text = "Celebrate with them", effects = { Happiness = 12 }, feedText = "You shared their joy!" },
@@ -731,7 +731,7 @@ Relationships.events = {
 		question = "How do you deal with it?",
 		minAge = 10, maxAge = 60,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { has_siblings = true },
 		choices = {
 			{ text = "Work it out together", effects = { Happiness = 5 }, feedText = "You reconciled with your sibling." },
@@ -748,7 +748,7 @@ Relationships.events = {
 		question = "How do you approach it?",
 		minAge = 18, maxAge = 50,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Make effort to connect", effects = { Happiness = 8 }, setFlags = { close_to_parents = true }, feedText = "You worked on your relationship with your parents." },
 			{ text = "Set healthy boundaries", effects = { Happiness = 5, Smarts = 2 }, feedText = "You established boundaries." },
@@ -784,7 +784,7 @@ Relationships.events = {
 		question = "How do you cope with the loss?",
 		minAge = 20, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Lean on others for support", effects = { Happiness = -5, Health = -2 }, feedText = "Grief is heavy, but you're not alone." },
 			{ text = "Celebrate their life", effects = { Happiness = -3, Smarts = 2 }, feedText = "You chose to remember the good times." },
@@ -821,7 +821,7 @@ Relationships.events = {
 		question = "What's your game plan?",
 		minAge = 15, maxAge = 55,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresSingle = true,
 		-- CRITICAL FIX #5: Can't go on dates from prison!
 		blockedByFlags = { in_prison = true, incarcerated = true },
@@ -956,7 +956,7 @@ Relationships.events = {
 		question = "What do you do?",
 		minAge = 18, maxAge = 55,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresSingle = true,
 		blockedByFlags = { in_prison = true, incarcerated = true },
 
@@ -1004,7 +1004,7 @@ Relationships.events = {
 		question = "What's your strategy?",
 		minAge = 21, maxAge = 50,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresSingle = true,
 		-- CRITICAL FIX #11: Can't speed date from prison!
 		blockedByFlags = { in_prison = true, incarcerated = true },
@@ -1264,7 +1264,7 @@ Relationships.events = {
 		question = "What was it?",
 		minAge = 20, maxAge = 70,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresPartner = true,
 
 		choices = {
@@ -1282,7 +1282,7 @@ Relationships.events = {
 		question = "How do you celebrate?",
 		minAge = 20, maxAge = 90,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresPartner = true,
 		blockedByFlags = { in_prison = true, incarcerated = true },
 
@@ -1419,7 +1419,7 @@ Relationships.events = {
 		question = "What did they do?",
 		minAge = 13, maxAge = 70,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { has_best_friend = true },
 
 		choices = {
@@ -1494,7 +1494,7 @@ Relationships.events = {
 		question = "What do you do?",
 		minAge = 15, maxAge = 60,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		choices = {
 			{ text = "Cut them off completely", effects = { Happiness = 5, Health = 3 }, setFlags = { ended_toxic_friendship = true }, feedText = "You're free from that negativity!" },
@@ -1511,7 +1511,7 @@ Relationships.events = {
 		question = "What happened?",
 		minAge = 10, maxAge = 80,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { has_best_friend = true },
 
 		choices = {
@@ -1583,7 +1583,7 @@ Relationships.events = {
 		question = "How do you feel?",
 		minAge = 15, maxAge = 70,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { has_siblings = true },
 
 		choices = {
@@ -1636,7 +1636,7 @@ Relationships.events = {
 		question = "How do you react?",
 		minAge = 16, maxAge = 45,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		-- CRITICAL FIX: MUST have a partner to get pregnant! User reported baby without partner
 		requiresFlags = { has_partner = true },
 
@@ -1711,7 +1711,7 @@ Relationships.events = {
 		question = "What do you do?",
 		minAge = 25, maxAge = 45,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresPartner = true,
 		requiresFlags = { trying_for_baby = true },
 		blockedByFlags = { in_prison = true, incarcerated = true },
@@ -1897,7 +1897,7 @@ Relationships.events = {
 		question = "How do you handle it?",
 		minAge = 30, maxAge = 60,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { parent = true },
 
 		choices = {
@@ -1980,7 +1980,7 @@ Relationships.events = {
 		question = "What do you do?",
 		minAge = 25, maxAge = 65,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresSingle = true,
 		blockedByFlags = { married = true, in_prison = true, incarcerated = true },
 

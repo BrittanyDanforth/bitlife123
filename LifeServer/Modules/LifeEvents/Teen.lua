@@ -69,7 +69,7 @@ Teen.events = {
 		text = "It's time to select your elective classes for next year.",
 		question = "What interests you most?",
 		minAge = 14, maxAge = 16,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Advanced Math & Science", effects = { Smarts = 5 }, setFlags = { stem_track = true }, hintCareer = "tech", feedText = "You're challenging yourself with advanced STEM classes." },
 			{ text = "Creative Writing & Literature", effects = { Smarts = 3, Happiness = 3 }, setFlags = { humanities_track = true }, hintCareer = "creative", feedText = "You're exploring the power of words." },
@@ -86,7 +86,7 @@ Teen.events = {
 		question = "How do you handle it?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.7,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Do their share yourself", effects = { Smarts = 3, Happiness = -3, Health = -2 }, setFlags = { takes_on_too_much = true }, feedText = "You did all the work. Good grade, but you're exhausted." },
 			{ text = "Talk to them directly", effects = { Smarts = 2, Happiness = 3 }, setFlags = { direct_communicator = true }, feedText = "You addressed the issue head-on." },
@@ -156,7 +156,7 @@ Teen.events = {
 		question = "How do you cope?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Study intensively", effects = { Smarts = 5, Health = -3, Happiness = -2 }, feedText = "You crammed hard. Exhausted but prepared." },
 			{ text = "Form a study group", effects = { Smarts = 4, Happiness = 2 }, setFlags = { collaborative = true }, feedText = "Studying with friends made it bearable." },
@@ -176,7 +176,7 @@ Teen.events = {
 		question = "What do you do?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.7,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresSingle = true,
 		choices = {
 			{ 
@@ -222,7 +222,7 @@ Teen.events = {
 		question = "What do you do?",
 		minAge = 15, maxAge = 17,
 		baseChance = 0.7,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Sneak out and go", effects = { Happiness = 5, Health = -2 }, setFlags = { rebellious = true, sneaks_out = true }, feedText = "You snuck out! The party was wild." },
 			{ text = "Ask parents for permission", effects = { Happiness = 3 }, setFlags = { respectful = true }, feedText = "You asked, and they said yes (with rules)." },
@@ -360,38 +360,101 @@ Teen.events = {
 		oneTime = true,
 		-- CRITICAL FIX: Use blockedByFlags instead of requiresFlags with false value
 		-- Only show if haven't graduated yet (planning stage)
-		blockedByFlags = { graduated_high_school = true, high_school_graduate = true },
+		blockedByFlags = { graduated_high_school = true, high_school_graduate = true, future_planned = true },
 		choices = {
 			{
 				text = "Aim for a top university",
 				effects = { Smarts = 3, Happiness = -2 },
-				setFlags = { college_bound = true, ambitious = true, plans_for_college = true },
+				setFlags = { college_bound = true, ambitious = true, plans_for_college = true, future_planned = true },
 				feedText = "You're working hard for a prestigious school.",
+				-- CRITICAL FIX #805: Actually set up education path!
+				-- User complaint: "Planning Your Future does nothing"
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.ivy_league_aspirations = true
+					state.Flags.college_track = true
+					-- Set education intention
+					state.EducationPlan = state.EducationPlan or {}
+					state.EducationPlan.goal = "top_university"
+					state.EducationPlan.type = "university"
+					if state.AddFeed then
+						state:AddFeed("🎯 You're on the Ivy League track! Study hard!")
+					end
+				end,
 			},
 			{
 				text = "State school is fine",
 				effects = { Smarts = 2, Happiness = 2 },
-				setFlags = { college_bound = true, practical = true, plans_for_college = true },
+				setFlags = { college_bound = true, practical = true, plans_for_college = true, future_planned = true },
 				feedText = "You're taking a practical approach to higher ed.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.state_college_track = true
+					state.EducationPlan = state.EducationPlan or {}
+					state.EducationPlan.goal = "state_university"
+					state.EducationPlan.type = "university"
+					if state.AddFeed then
+						state:AddFeed("🎯 State school it is! Practical and affordable!")
+					end
+				end,
 			},
 			{
 				text = "Community college first",
 				effects = { Smarts = 1, Money = 50 },
-				setFlags = { college_bound = true, economical = true, plans_for_community_college = true },
+				setFlags = { college_bound = true, economical = true, plans_for_community_college = true, future_planned = true },
 				feedText = "You're saving money with community college.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.community_college_track = true
+					state.EducationPlan = state.EducationPlan or {}
+					state.EducationPlan.goal = "community_college"
+					state.EducationPlan.type = "community_college"
+					state.Money = (state.Money or 0) + 500 -- Scholarship for being smart
+					if state.AddFeed then
+						state:AddFeed("🎯 Community college first - smart financial move!")
+					end
+				end,
 			},
 			{
 				text = "Trade school / vocational",
 				effects = { Smarts = 2 },
-				setFlags = { trade_school_bound = true },
+				setFlags = { trade_school_bound = true, future_planned = true },
 				hintCareer = "trades",
 				feedText = "You're planning to learn a skilled trade.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.trade_school_track = true
+					state.Flags.practical_skills = true
+					state.EducationPlan = state.EducationPlan or {}
+					state.EducationPlan.goal = "trade_school"
+					state.EducationPlan.type = "vocational"
+					-- Trade skills start building
+					state.CareerSkills = state.CareerSkills or {}
+					state.CareerSkills.trades = (state.CareerSkills.trades or 0) + 10
+					if state.AddFeed then
+						state:AddFeed("🎯 Trade school path! You'll learn valuable hands-on skills!")
+					end
+				end,
 			},
 			{
 				text = "Skip college, start working",
 				effects = { Money = 100 },
-				setFlags = { no_college = true, workforce_bound = true },
+				setFlags = { no_college = true, workforce_bound = true, future_planned = true },
 				feedText = "You're ready to enter the workforce directly.",
+				-- CRITICAL FIX: Actually prepare them for work!
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.eager_to_work = true
+					state.Flags.job_ready = true
+					state.Money = (state.Money or 0) + 200 -- Already saving from odd jobs
+					-- Set up for job hunting at 18
+					state.EducationPlan = state.EducationPlan or {}
+					state.EducationPlan.goal = "work"
+					state.EducationPlan.type = "none"
+					if state.AddFeed then
+						state:AddFeed("🎯 No college for you - you're going straight to work!")
+					end
+				end,
 			},
 		},
 	},
@@ -468,7 +531,7 @@ Teen.events = {
 		question = "Which sport?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresStats = { Health = { min = 50 } },
 		choices = {
 			{ text = "Football", effects = { Health = 5, Happiness = 5 }, setFlags = { varsity_athlete = true, plays_football = true }, hintCareer = "sports", feedText = "You made the football team!" },
@@ -486,7 +549,7 @@ Teen.events = {
 		question = "Will you participate?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Audition for lead role", effects = { Happiness = 8, Looks = 3 }, setFlags = { theater_kid = true, lead_actor = true }, hintCareer = "entertainment", feedText = "You went for the lead! Bold move!" },
 			{ text = "Join the ensemble", effects = { Happiness = 5, Looks = 2 }, setFlags = { theater_kid = true }, hintCareer = "entertainment", feedText = "You're part of the cast!" },
@@ -502,7 +565,7 @@ Teen.events = {
 		question = "What cause calls to you?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Animal shelter", effects = { Happiness = 5 }, setFlags = { volunteer = true, animal_lover = true }, hintCareer = "veterinary", feedText = "You're helping animals at the shelter!" },
 			{ text = "Food bank", effects = { Happiness = 5, Health = 2 }, setFlags = { volunteer = true, community_minded = true }, feedText = "You're helping feed those in need." },
@@ -525,7 +588,7 @@ Teen.events = {
 		question = "What really happened?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		choices = {
 			{ text = "I actually cheated - own up", effects = { Happiness = -5, Smarts = -3 }, setFlags = { academic_probation = true, honest = true }, feedText = "You admitted it. There are consequences, but at least you were honest." },
@@ -632,7 +695,7 @@ Teen.events = {
 		question = "What do you do?",
 		minAge = 15, maxAge = 17,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		choices = {
 			{ text = "Tell them to slow down", effects = { Happiness = 3, Health = 2 }, setFlags = { assertive = true }, feedText = "You spoke up and they listened. Smart move." },
@@ -649,7 +712,7 @@ Teen.events = {
 		question = "What kind of viral moment is it?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { social_online = true },
 
 		choices = {
@@ -688,7 +751,7 @@ Teen.events = {
 		question = "How do you handle this?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		choices = {
 			{ 
@@ -750,7 +813,7 @@ Teen.events = {
 		question = "Do you want to try making it work?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresSingle = true,
 
 		choices = {
@@ -822,7 +885,7 @@ Teen.events = {
 		question = "What do you do?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		choices = {
 			{ text = "Firmly say no and leave", effects = { Happiness = 5, Health = 3 }, setFlags = { resists_peer_pressure = true }, feedText = "You made a smart choice. You left the party." },
@@ -839,7 +902,7 @@ Teen.events = {
 		question = "What kind of school appeals to you?",
 		minAge = 15, maxAge = 17,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		choices = {
 			{ text = "Big university with lots of options", effects = { Happiness = 4, Smarts = 2 }, setFlags = { wants_big_school = true }, feedText = "You loved the energy of a big campus!" },
@@ -1035,7 +1098,7 @@ Teen.events = {
 		question = "How do you handle the confrontation?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		choices = {
 			{ text = "Lie about it", effects = { Happiness = -3 }, setFlags = { lies_to_parents = true }, feedText = "They didn't believe you. Now you're grounded AND they don't trust you." },
@@ -1052,7 +1115,7 @@ Teen.events = {
 		question = "How is it affecting you?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { gamer = true },
 
 		choices = {
@@ -1070,7 +1133,7 @@ Teen.events = {
 		question = "How do you show your school spirit?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		choices = {
 			{ text = "Go all out with face paint and cheering", effects = { Happiness = 7 }, setFlags = { school_spirit = true }, feedText = "You were the loudest fan in the stands!" },
@@ -1121,7 +1184,7 @@ Teen.events = {
 		question = "What were you trying to do?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		choices = {
 			{ text = "Meet up with friends", effects = { Happiness = -4 }, setFlags = { grounded = true }, feedText = "Caught by mom on the way out. Grounded for a month." },
@@ -1138,7 +1201,7 @@ Teen.events = {
 		question = "How do you prepare?",
 		minAge = 15, maxAge = 17,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { academic_path = true },
 
 		choices = {
@@ -1156,7 +1219,7 @@ Teen.events = {
 		question = "How do you handle this news?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { has_best_friend = true },
 
 		choices = {
@@ -1192,7 +1255,7 @@ Teen.events = {
 		question = "How do you react?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		choices = {
 			{ text = "Feel humiliated and cry", effects = { Happiness = -8, Looks = -2 }, feedText = "That really hurt. You deserved better." },
@@ -1317,7 +1380,7 @@ Teen.events = {
 		question = "How do you handle this?",
 		minAge = 15, maxAge = 17,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { has_teen_job = true },
 		
 		choices = {
@@ -1438,7 +1501,7 @@ Teen.events = {
 		question = "What topic do you write about?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresStats = { Smarts = { min = 55 } },
 		
 		-- CRITICAL FIX: Random essay contest outcome
@@ -1505,7 +1568,7 @@ Teen.events = {
 		question = "What kind of car do you look for?",
 		minAge = 16, maxAge = 17,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { has_license = true },
 		-- CRITICAL FIX: Check money requirement!
 		eligibility = function(state)
@@ -1539,11 +1602,18 @@ Teen.events = {
 							state.Flags = state.Flags or {}
 							state.Flags.has_car = true
 							state.Flags.owns_car = true
-							state:AddAsset("old_car", {
-								id = "old_car",
-								type = "vehicle",
+							-- CRITICAL FIX: Use "Vehicles" category so it shows in AssetScreen!
+							state:AddAsset("Vehicles", {
+								id = "beater_car_" .. tostring(os.time()),
+								type = "sedan",
 								name = "Beater Car",
+								emoji = "🚗",
+								price = 1500,
 								value = 1500,
+								condition = 65,
+								happiness = 3,
+								maintenance = 400,
+								acquiredAge = state.Age,
 								description = "Your first car! It runs... mostly.",
 							})
 							state:AddFeed("🚗 You bought your first car for $1,500! Freedom!")
@@ -1553,12 +1623,20 @@ Teen.events = {
 							state.Flags.has_car = true
 							state.Flags.owns_car = true
 							state.Flags.car_problems = true
-							state:AddAsset("old_car", {
-								id = "old_car",
-								type = "vehicle",
+							-- CRITICAL FIX: Use "Vehicles" category so it shows in AssetScreen!
+							state:AddAsset("Vehicles", {
+								id = "beater_car_problem_" .. tostring(os.time()),
+								type = "sedan",
 								name = "Beater Car",
+								emoji = "🚗",
+								price = 1500,
 								value = 800,
+								condition = 40,
+								happiness = 2,
+								maintenance = 700,
+								acquiredAge = state.Age,
 								description = "Your first car. Needs constant repairs.",
+								hasIssues = true,
 							})
 							state:AddFeed("🚗 Your new car already has problems... but it's yours!")
 						end
@@ -1587,11 +1665,18 @@ Teen.events = {
 						state.Flags = state.Flags or {}
 						state.Flags.has_car = true
 						state.Flags.owns_car = true
-						state:AddAsset("reliable_car", {
-							id = "reliable_car",
-							type = "vehicle",
+						-- CRITICAL FIX: Use "Vehicles" category so it shows in AssetScreen!
+						state:AddAsset("Vehicles", {
+							id = "reliable_car_" .. tostring(os.time()),
+							type = "sedan",
 							name = "Reliable Car",
+							emoji = "🚗",
+							price = 3000,
 							value = 3000,
+							condition = 80,
+							happiness = 4,
+							maintenance = 250,
+							acquiredAge = state.Age,
 							description = "Not flashy, but it works!",
 						})
 						state:AddFeed("🚗 You bought a reliable car for $3,000! Smart choice.")
@@ -1613,7 +1698,7 @@ Teen.events = {
 		question = "What role do you play?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{ text = "Lead vocals", effects = { Happiness = 8, Looks = 3 }, setFlags = { band_vocalist = true, in_band = true }, hintCareer = "entertainment", feedText = "You're the face of the band! Time to practice your stage presence." },
@@ -1689,7 +1774,7 @@ Teen.events = {
 		question = "What's your role in all this?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{ text = "Stay out of it completely", effects = { Happiness = 3 }, setFlags = { avoids_drama = true }, feedText = "Not your circus, not your monkeys. Smart." },
@@ -1706,7 +1791,7 @@ Teen.events = {
 		question = "What's the conflict about?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{ text = "Curfew and freedoms", effects = { Happiness = -4 }, setFlags = { curfew_fighter = true }, feedText = "You want more independence. They want to keep you safe." },
@@ -1889,7 +1974,7 @@ Teen.events = {
 		question = "What does the letter say?",
 		minAge = 17, maxAge = 18,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { college_bound = true },
 		
 		-- CRITICAL FIX: Random college decision outcome based on stats!
@@ -1968,7 +2053,7 @@ Teen.events = {
 		question = "How serious is it?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { varsity_athlete = true },
 		
 		-- CRITICAL FIX: Random injury severity
@@ -2028,7 +2113,7 @@ Teen.events = {
 		question = "How do you handle it?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{ 
@@ -2104,7 +2189,7 @@ Teen.events = {
 		question = "How do you approach tonight?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		-- CRITICAL FIX: Random test outcome based on study approach
 		choices = {
@@ -2282,7 +2367,7 @@ Teen.events = {
 		question = "Do you sign up?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -2367,7 +2452,7 @@ Teen.events = {
 		question = "How do you handle this?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		choices = {
 			{
@@ -2482,7 +2567,7 @@ Teen.events = {
 		question = "What's your excuse?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		choices = {
 			{
@@ -2592,7 +2677,7 @@ Teen.events = {
 		question = "How do you handle this?",
 		minAge = 13, maxAge = 17,
 		baseChance = 0.555,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 2,
 		choices = {
 			{
@@ -2637,6 +2722,24 @@ Teen.events = {
 		cooldown = 4,
 		oneTime = true,
 		priority = "high",
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #605: Viral events REQUIRE player to have actually posted content!
+		-- User complaint: "Video went viral but I never posted any videos"
+		-- A video of you can only go viral if you've been posting/creating content
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Player MUST have some form of content creation or social media activity!
+			local hasCreatedContent = flags.content_creator or flags.streamer or flags.influencer
+				or flags.first_video_posted or flags.first_video_uploaded or flags.youtube_started
+				or flags.social_media_active or flags.pursuing_streaming or flags.youtube_channel
+				or flags.gaming_content or flags.vlogger or flags.social_media_star or flags.talent_social
+			if not hasCreatedContent then
+				return false, "Player hasn't created any content yet"
+			end
+			return true
+		end,
 		
 		choices = {
 			{
@@ -2699,7 +2802,7 @@ Teen.events = {
 		question = "What do you do?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.75,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{
@@ -2835,7 +2938,7 @@ Teen.events = {
 		question = "What did you win?",
 		minAge = 13, maxAge = 18,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{

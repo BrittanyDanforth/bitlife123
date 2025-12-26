@@ -20,7 +20,7 @@ DailyLifeEvents.events = {
 		question = "How do you start your day?",
 		minAge = 12, maxAge = 80,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "daily",
@@ -63,7 +63,7 @@ DailyLifeEvents.events = {
 		question = "What do you eat?",
 		minAge = 8, maxAge = 100,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "daily",
@@ -133,7 +133,7 @@ DailyLifeEvents.events = {
 		question = "How does the commute go?",
 		minAge = 18, maxAge = 75,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "daily",
@@ -157,7 +157,7 @@ DailyLifeEvents.events = {
 			return false, "Need a car to drive to work"
 		end,
 		
-		-- CRITICAL: Random commute outcome
+		-- CRITICAL FIX #1013: Added more choice options!
 		choices = {
 			{
 				text = "Hit the road",
@@ -176,11 +176,20 @@ DailyLifeEvents.events = {
 						if state.AddFeed then state:AddFeed("🚗 Traffic nightmare! Late to work! Stressed!") end
 					else
 						if state.ModifyStat then state:ModifyStat("Happiness", -6) end
-						-- CRITICAL FIX: Prevent negative money
 						state.Money = math.max(0, (state.Money or 0) - 50)
 						if state.AddFeed then state:AddFeed("🚗 Fender bender! Minor accident. Insurance claim incoming.") end
 					end
 				end,
+			},
+			{
+				text = "Leave extra early",
+				effects = { Happiness = 2 },
+				feedText = "🚗 Beat the traffic! Arrived early and relaxed!",
+			},
+			{
+				text = "Call in - work from home today",
+				effects = { Happiness = 3 },
+				feedText = "🚗 Stayed home instead. No commute stress!",
 			},
 		},
 	},
@@ -192,14 +201,14 @@ DailyLifeEvents.events = {
 		question = "How is the transit experience?",
 		minAge = 16, maxAge = 90,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "daily",
 		tags = { "transit", "commute", "public" },
 		blockedByFlags = { in_prison = true, incarcerated = true },  -- CRITICAL FIX: Can't take transit from prison!
 		
-		-- CRITICAL: Random transit outcome
+		-- CRITICAL FIX #1014: Added more choice options!
 		choices = {
 			{
 				text = "Ride the bus/train",
@@ -223,6 +232,17 @@ DailyLifeEvents.events = {
 					end
 				end,
 			},
+			{
+				text = "Take an Uber instead ($15)",
+				effects = { Money = -15, Happiness = 3 },
+				feedText = "🚌 Skipped the bus. Comfortable ride in an Uber!",
+				eligibility = function(state) return (state.Money or 0) >= 15, "Can't afford Uber" end,
+			},
+			{
+				text = "Walk/bike instead",
+				effects = { Health = 3, Happiness = 2 },
+				feedText = "🚌 Fresh air and exercise! Good for you!",
+			},
 		},
 	},
 	{
@@ -233,7 +253,7 @@ DailyLifeEvents.events = {
 		question = "How productive is your WFH day?",
 		minAge = 20, maxAge = 75,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "daily",
@@ -282,7 +302,7 @@ DailyLifeEvents.events = {
 		question = "What do you do for lunch?",
 		minAge = 15, maxAge = 80,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "daily",
@@ -303,7 +323,7 @@ DailyLifeEvents.events = {
 		question = "How do you power through?",
 		minAge = 18, maxAge = 75,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "daily",
@@ -328,7 +348,7 @@ DailyLifeEvents.events = {
 		question = "How do you spend your evening?",
 		minAge = 18, maxAge = 80,
 		baseChance = 0.555,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "daily",
@@ -351,7 +371,7 @@ DailyLifeEvents.events = {
 		question = "How do you handle dinner?",
 		minAge = 15, maxAge = 100,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "daily",
@@ -392,7 +412,7 @@ DailyLifeEvents.events = {
 		question = "How do you wind down?",
 		minAge = 12, maxAge = 100,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "daily",
@@ -444,7 +464,7 @@ DailyLifeEvents.events = {
 		question = "How do you prepare for sleep?",
 		minAge = 10, maxAge = 100,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "daily",
@@ -525,7 +545,7 @@ DailyLifeEvents.events = {
 		question = "How do you handle chores?",
 		minAge = 12, maxAge = 90,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "daily",
@@ -667,7 +687,7 @@ DailyLifeEvents.events = {
 		question = "How do you handle the noise?",
 		minAge = 18, maxAge = 90,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "daily",

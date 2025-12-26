@@ -45,6 +45,8 @@ MafiaSystem.Families = {
 			{ id = "loan_shark", name = "Shylock Loans", emoji = "💵", risk = 35, reward = { min = 3000, max = 12000 }, respect = 18, description = "Collect interest from desperate borrowers.", rankRequired = 2, category = "finance" },
 			{ id = "smuggling", name = "Smuggle Goods", emoji = "📦", risk = 40, reward = { min = 2000, max = 10000 }, respect = 20, description = "Sneak contraband through the docks.", rankRequired = 3, category = "logistics" },
 			{ id = "heist", name = "Plan a Heist", emoji = "🏦", risk = 60, reward = { min = 10000, max = 100000 }, respect = 50, description = "Coordinate a high-stakes robbery.", rankRequired = 4, category = "score" },
+			-- CRITICAL FIX: Added hitjob to match client fallback operations
+			{ id = "hitjob", name = "Hit Job", emoji = "🎯", risk = 80, reward = { min = 15000, max = 50000 }, respect = 80, description = "Take out a rival target.", rankRequired = 4, category = "enforcement" },
 			{ id = "silencer", name = "Silence a Witness", emoji = "🎯", risk = 80, reward = { min = 5000, max = 25000 }, respect = 100, description = "Make sure someone can't testify.", rankRequired = 5, category = "enforcement" },
 		},
 		initiation = "You must prove your loyalty by completing a task for the family.",
@@ -70,6 +72,10 @@ MafiaSystem.Families = {
 			{ id = "black_market", name = "Black Market Deal", emoji = "🛰️", risk = 35, reward = { min = 2000, max = 9000 }, respect = 15, description = "Move counterfeit goods through the ports.", rankRequired = 1, category = "logistics" },
 			{ id = "cyber", name = "Cyber Crime", emoji = "💻", risk = 30, reward = { min = 2000, max = 20000 }, respect = 15, description = "Deploy a ransomware payload.", rankRequired = 2, category = "tech" },
 			{ id = "weapons", name = "Arms Dealing", emoji = "🔫", risk = 45, reward = { min = 3000, max = 15000 }, respect = 25, description = "Broker a weapons shipment.", rankRequired = 3, category = "logistics" },
+			-- CRITICAL FIX: Added heist operation so client fallback works!
+			{ id = "heist", name = "Bank Heist", emoji = "🏦", risk = 60, reward = { min = 10000, max = 100000 }, respect = 50, description = "Coordinate a high-stakes bank robbery.", rankRequired = 4, category = "score" },
+			-- CRITICAL FIX: Added hitjob to match client fallback operations
+			{ id = "hitjob", name = "Hit Job", emoji = "🎯", risk = 80, reward = { min = 15000, max = 50000 }, respect = 80, description = "Take out a rival target.", rankRequired = 4, category = "enforcement" },
 			{ id = "ransom", name = "High-Value Ransom", emoji = "💼", risk = 70, reward = { min = 15000, max = 75000 }, respect = 60, description = "Grab a VIP and negotiate ransom.", rankRequired = 4, category = "score" },
 			{ id = "enforcer_hit", name = "Enforcer Job", emoji = "🕶️", risk = 85, reward = { min = 10000, max = 50000 }, respect = 120, description = "Handle a problem for the boss.", rankRequired = 5, category = "enforcement" },
 		},
@@ -96,6 +102,10 @@ MafiaSystem.Families = {
 			{ id = "night_market", name = "Night Market Fees", emoji = "🀄", risk = 20, reward = { min = 1500, max = 6000 }, respect = 10, description = "Tax the street vendors.", rankRequired = 1, category = "income" },
 			{ id = "blackmail", name = "Corporate Blackmail", emoji = "📂", risk = 35, reward = { min = 5000, max = 25000 }, respect = 20, description = "Leak photos unless they pay.", rankRequired = 2, category = "finance" },
 			{ id = "construction", name = "Construction Bid Rigging", emoji = "🏗️", risk = 25, reward = { min = 3000, max = 15000 }, respect = 15, description = "Control major contracts.", rankRequired = 3, category = "logistics" },
+			-- CRITICAL FIX: Added heist operation so client fallback works!
+			{ id = "heist", name = "Casino Heist", emoji = "🏦", risk = 60, reward = { min = 10000, max = 100000 }, respect = 50, description = "Hit a casino vault for major score.", rankRequired = 4, category = "score" },
+			-- CRITICAL FIX: Added hitjob to match client fallback operations
+			{ id = "hitjob", name = "Hit Job", emoji = "🎯", risk = 80, reward = { min = 15000, max = 50000 }, respect = 80, description = "Take out a rival target.", rankRequired = 4, category = "enforcement" },
 			{ id = "art_smuggling", name = "Art Smuggling", emoji = "🖼️", risk = 45, reward = { min = 7000, max = 30000 }, respect = 35, description = "Move stolen art overseas.", rankRequired = 4, category = "logistics" },
 			{ id = "international_smuggling", name = "International Smuggling", emoji = "🚢", risk = 75, reward = { min = 20000, max = 100000 }, respect = 80, description = "Massive contraband operation overseas.", rankRequired = 5, category = "score" },
 			{ id = "yubitsume", name = "Enforce Loyalty", emoji = "🩸", risk = 50, reward = { min = 0, max = 0 }, respect = 150, description = "Make an example with yubitsume.", rankRequired = 5, category = "discipline" },
@@ -123,6 +133,10 @@ MafiaSystem.Families = {
 			{ id = "mule_run", name = "Courier Run", emoji = "🧳", risk = 25, reward = { min = 2000, max = 7000 }, respect = 10, description = "Move product across town.", rankRequired = 1, category = "logistics" },
 			{ id = "transport", name = "Cargo Transport", emoji = "🚛", risk = 40, reward = { min = 5000, max = 20000 }, respect = 20, description = "Escort a major shipment.", rankRequired = 2, category = "logistics" },
 			{ id = "production", name = "Run Operations", emoji = "⚗️", risk = 50, reward = { min = 10000, max = 50000 }, respect = 35, description = "Oversee the production facility.", rankRequired = 3, category = "finance" },
+			-- CRITICAL FIX: Added heist operation so client fallback works!
+			{ id = "heist", name = "Border Heist", emoji = "🏦", risk = 60, reward = { min = 10000, max = 100000 }, respect = 50, description = "Hit a border facility for major score.", rankRequired = 4, category = "score" },
+			-- CRITICAL FIX: Added hitjob to match client fallback operations
+			{ id = "hitjob", name = "Hit Job", emoji = "🎯", risk = 80, reward = { min = 15000, max = 50000 }, respect = 80, description = "Take out a rival target.", rankRequired = 4, category = "enforcement" },
 			{ id = "distribution", name = "Distribution Network", emoji = "📦", risk = 35, reward = { min = 8000, max = 30000 }, respect = 25, description = "Expand the regional network.", rankRequired = 4, category = "logistics" },
 			{ id = "facility_expansion", name = "Facility Expansion", emoji = "🏭", risk = 55, reward = { min = 12000, max = 60000 }, respect = 40, description = "Build a new hidden facility.", rankRequired = 4, category = "finance" },
 			{ id = "territorial", name = "Territory Takeover", emoji = "🌎", risk = 90, reward = { min = 25000, max = 150000 }, respect = 100, description = "Seize a rival's territory.", rankRequired = 5, category = "enforcement" },
@@ -150,6 +164,10 @@ MafiaSystem.Families = {
 			{ id = "piracy", name = "Software Piracy", emoji = "💾", risk = 20, reward = { min = 2000, max = 10000 }, respect = 8, description = "Duplicate movies and games.", rankRequired = 1, category = "tech" },
 			{ id = "loan_sharking", name = "Loan Sharking", emoji = "📉", risk = 30, reward = { min = 3000, max = 12000 }, respect = 15, description = "Collect brutal interest payments.", rankRequired = 2, category = "finance" },
 			{ id = "nightclub_take", name = "Nightclub Takeover", emoji = "🎤", risk = 35, reward = { min = 5000, max = 22000 }, respect = 22, description = "Seize control of a nightclub.", rankRequired = 3, category = "violence" },
+			-- CRITICAL FIX: Added heist operation so client fallback works!
+			{ id = "heist", name = "Vault Heist", emoji = "🏦", risk = 60, reward = { min = 10000, max = 100000 }, respect = 50, description = "Hit a bank vault for major score.", rankRequired = 4, category = "score" },
+			-- CRITICAL FIX: Added hitjob to match client fallback operations
+			{ id = "hitjob", name = "Hit Job", emoji = "🎯", risk = 80, reward = { min = 15000, max = 50000 }, respect = 80, description = "Take out a rival target.", rankRequired = 4, category = "enforcement" },
 			{ id = "smuggling", name = "Smuggling Ring", emoji = "🚢", risk = 55, reward = { min = 15000, max = 60000 }, respect = 40, description = "Move contraband along the coast.", rankRequired = 4, category = "logistics" },
 			{ id = "ritual", name = "Blood Oath Ceremony", emoji = "🩸", risk = 40, reward = { min = 0, max = 0 }, respect = 200, description = "Enforce loyalty through ritual.", rankRequired = 5, category = "discipline" },
 		},
@@ -1247,6 +1265,19 @@ function MafiaSystem:serialize(lifeState)
 		progressToNextRank = 100 -- At max rank
 	end
 	
+	-- CRITICAL FIX: Show "Made Man" status if player completed blood oath
+	-- User complaint: "It says Soldier but I did made man ceremony"
+	-- The rank is based on respect, but we show Made Man status separately
+	local displayRankName = currentRank.name
+	local displayRankEmoji = currentRank.emoji
+	local isMadeMan = (lifeState.Flags and lifeState.Flags.made_member) or (mobState.rankIndex >= 2 and lifeState.Flags and lifeState.Flags.blood_oath_taken)
+	
+	-- If made man but still at Soldier rank, show "Made Man" instead of just "Soldier"
+	if isMadeMan and mobState.rankIndex == 2 then
+		displayRankName = "Made Man"
+		displayRankEmoji = "💀"
+	end
+	
 	return {
 		inMob = true,
 		familyId = mobState.familyId,
@@ -1257,9 +1288,10 @@ function MafiaSystem:serialize(lifeState)
 		familyColor = familyColorArray,
 		familyColorHex = familyColorHex,
 		familyColorDark = familyColorDark,
-		rankName = currentRank.name,
-		rankEmoji = currentRank.emoji,
+		rankName = displayRankName,
+		rankEmoji = displayRankEmoji,
 		rankLevel = mobState.rankIndex,
+		isMadeMan = isMadeMan,
 		maxRank = #family.ranks,
 		respect = mobState.respect,
 		respectDisplay = self:formatMoney(mobState.respect), -- CRITICAL FIX: Formatted display
@@ -2004,6 +2036,178 @@ function MafiaSystem:doEnhancedOperation(lifeState, operationId, scenarioMods)
 	end
 	
 	return true, result.message, result
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: OPERATION WITH FORCED RESULT
+-- When a minigame (combat/heist) is completed, respect the minigame result
+-- Don't re-roll success - the player already earned it through gameplay
+-- ════════════════════════════════════════════════════════════════════════════
+
+function MafiaSystem:doOperationWithForcedResult(lifeState, operationId, forcedSuccess, modifiers)
+	local mobState = self:getMobState(lifeState)
+	
+	if not mobState.inMob then
+		return false, "You're not in a crime family!", nil
+	end
+	
+	if lifeState.InJail then
+		return false, "You can't do operations from jail!", nil
+	end
+	
+	local family = self.Families[mobState.familyId]
+	local operation = nil
+	
+	for _, op in ipairs(family.operations) do
+		if op.id == operationId then
+			operation = op
+			break
+		end
+	end
+	
+	if not operation then
+		return false, "Unknown operation.", nil
+	end
+	
+	-- Apply modifiers from choices (if any)
+	modifiers = modifiers or {}
+	local rankMultiplier = self:getRankRewardMultiplier(lifeState)
+	local crewSuccessBonus, crewRewardBonus = self:getCrewBonus(lifeState, operation.category)
+	
+	local rewardMod = (modifiers.rewardMod or 1.0) * rankMultiplier * crewRewardBonus
+	local riskMod = modifiers.riskMod or 1.0
+	local respectBonus = modifiers.respectBonus or 0
+	
+	local result = {
+		operation = operation.name,
+		operationEmoji = operation.emoji,
+		success = forcedSuccess, -- CRITICAL: Use the forced result from minigame!
+		money = 0,
+		respect = 0,
+		heat = 0,
+		message = "",
+		rankMultiplier = rankMultiplier,
+	}
+	
+	if forcedSuccess then
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- SUCCESS! Player WON the minigame - they EARNED this success!
+		-- CRITICAL FIX #541: GUARANTEED NO JAIL when minigame is won!
+		-- User complaint: "crime successful but still went to jail"
+		-- When player WINS combat minigame, they CANNOT go to jail!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		
+		-- CRITICAL: Clear any jail state that might exist (safety check)
+		lifeState.InJail = false
+		lifeState.JailYearsLeft = 0
+		if lifeState.Flags then
+			lifeState.Flags.in_prison = nil
+			lifeState.Flags.incarcerated = nil
+		end
+		
+		local baseReward = math.random(operation.reward.min, operation.reward.max)
+		result.money = math.floor(baseReward * rewardMod)
+		result.respect = math.floor((operation.respect + math.random(0, 10) + respectBonus))
+		result.heat = self:calculateHeat(lifeState, operation.risk / 10, riskMod)
+		
+		-- Apply rewards
+		lifeState.Money = (lifeState.Money or 0) + result.money
+		self:addRespect(lifeState, result.respect)
+		self:addHeat(lifeState, result.heat)
+		mobState.earnings = (mobState.earnings or 0) + result.money
+		mobState.operationsCompleted = (mobState.operationsCompleted or 0) + 1
+		
+		result.message = string.format(
+			"%s Operation successful! You earned $%s and gained %d respect.",
+			operation.emoji,
+			self:formatMoney(result.money),
+			result.respect
+		)
+		
+		if rankMultiplier > 1 then
+			result.message = result.message .. string.format(" (%.0f%% rank bonus!)", (rankMultiplier - 1) * 100)
+		end
+		
+		-- Check for rank up
+		local rankUpMsg = self:checkRankUp(lifeState)
+		if rankUpMsg then
+			result.message = result.message .. "\n\n" .. rankUpMsg
+			result.promoted = true
+		end
+		
+		-- CRITICAL: Absolutely NO jail on minigame success!
+		result.arrested = false
+		result.success = true
+		
+		return true, result.message, result
+	else
+		-- FAILED! Player lost the minigame
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Combat loss = health damage!
+		-- User complaint: "I GOT KNOCKED OUT AND IT SAID CRIME SUCCESSFUL"
+		-- If you lose a combat operation, you take damage from getting beaten!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		
+		result.heat = self:calculateHeat(lifeState, operation.risk / 5, riskMod)
+		self:addHeat(lifeState, result.heat)
+		mobState.operationsFailed = (mobState.operationsFailed or 0) + 1
+		
+		-- Combat operations deal health damage when lost
+		local combatOperations = { hitjob = true, intimidation = true, assault = true, protection = true }
+		local isCombatOp = combatOperations[operationId] or (modifiers and modifiers.combatCompleted)
+		local healthLost = 0
+		
+		if isCombatOp then
+			healthLost = math.random(10, 25)
+			lifeState.Stats = lifeState.Stats or {}
+			local currentHealth = lifeState.Stats.Health or lifeState.Health or 50
+			lifeState.Stats.Health = math.max(0, currentHealth - healthLost)
+			lifeState.Health = lifeState.Stats.Health
+			
+			-- Also lose some happiness from embarrassment
+			local currentHappiness = lifeState.Stats.Happiness or lifeState.Happiness or 50
+			lifeState.Stats.Happiness = math.max(0, currentHappiness - 15)
+			lifeState.Happiness = lifeState.Stats.Happiness
+		end
+		
+		result.healthLost = healthLost
+		result.knockedOut = isCombatOp and healthLost > 0
+		
+		-- Risk of arrest - but lower than normal since they at least tried the minigame
+		-- Only arrest if heat is very high or very unlucky
+		local arrestChance = (operation.risk * riskMod) / 4 -- Lower chance than normal failure
+		if mobState.heat >= 70 then
+			arrestChance = arrestChance * 1.5 -- Higher chance if already hot
+		end
+		
+		if math.random(100) <= arrestChance then
+			local jailYears = math.max(1, math.ceil((operation.risk * riskMod) / 25))
+			lifeState.InJail = true
+			lifeState.JailYearsLeft = jailYears
+			if isCombatOp then
+				result.message = string.format(
+					"😵 You got knocked out! Lost %d health. The cops found you and sentenced you to %d years!",
+					healthLost,
+					jailYears
+				)
+			else
+				result.message = string.format(
+					"%s Operation failed! You got caught and sentenced to %d years!",
+					operation.emoji,
+					jailYears
+				)
+			end
+			result.arrested = true
+		else
+			if isCombatOp then
+				result.message = string.format("😵 Embarrassing! They beat you down - lost %d health. You limped away before the cops came.", healthLost)
+			else
+				result.message = string.format("%s Operation failed! You barely escaped, but the heat is on.", operation.emoji)
+			end
+		end
+		
+		return false, result.message, result
+	end
 end
 
 -- ════════════════════════════════════════════════════════════════════════════

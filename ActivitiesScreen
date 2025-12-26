@@ -418,6 +418,13 @@ function ActivitiesScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc
 		CELEBRITY = 1626461980,
 	}
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #520: Store reference for direct gamepass prompting
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	self._marketplaceService = MarketplaceService
+	self._player = player
+	self._GAMEPASS_IDS = GAMEPASS_IDS
+	
 	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(plr, gamePassId, wasPurchased)
 		if plr ~= player or not wasPurchased then return end
 		
@@ -2444,49 +2451,162 @@ function ActivitiesScreen:attemptLeaveMob()
 	end
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #704: Combat-based mafia operations from ActivitiesScreen
+-- User feedback: "minigames even if successful still jail me"
+-- Operations done from ActivitiesScreen MUST also support minigames!
+-- ═══════════════════════════════════════════════════════════════════════════════
+local CombatMafiaOpsFromActivities = {
+	enforcer_hit = true,
+	intimidation = true,
+	protection = true,
+	heist = true,
+}
+
 function ActivitiesScreen:doMobOperation(opId, opName)
 	-- CRITICAL FIX: Enhanced action logging for debugging
 	logAction("MOB_OPERATION", opId, opName, "Mafia activity")
 	
 	log("Doing mob operation:", opId)
 	local DoMobOp = getRemote("DoMobOperation")
-	if DoMobOp then
-		-- CRITICAL FIX #3: Add pcall protection for server calls
-		local success, result = pcall(function()
-			return DoMobOp:InvokeServer(opId)
-		end)
-		if success and result and result.success then
-			local msg = result.message or string.format("Operation successful! +$%s +%d respect", result.money or 0, result.respect or 0)
-			self:showActivityResult(true, msg, {id = opId, name = opName, emoji = "💰"}, "💰")
-			
-			-- CRITICAL FIX: Update local mob state after operation
-			if self.state and self.state.MobState then
-				if result.respect then
-					self.state.MobState.respect = (self.state.MobState.respect or 0) + result.respect
-				end
-				if result.promoted then
-					-- Refresh tab to show new rank
-					task.delay(0.5, function()
-						self:switchTab("crime")
-					end)
-				end
-			end
-		elseif success and result then
-			local msg = result.message or "The operation failed..."
-			-- CRITICAL FIX: If arrested, update local state
-			if result.arrested and self.state then
-				self.state.InJail = true
-			end
-			self:showActivityResult(false, msg, {id = opId, name = opName, emoji = result.arrested and "🚔" or "❌"}, result.arrested and "🚔" or "❌", result.arrested)
-		else
-			self:showActivityResult(false, "Connection error. Try again.", {id = opId, name = opName, emoji = "❌"}, "❌")
-		end
-	else
+	if not DoMobOp then
 		-- Fallback for testing
 		self:showActivityResult(true, opName .. " completed! You earned cash and respect.", {id = opId, name = opName, emoji = "💰"}, "💰")
+		return
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #704: Combat-based operations require minigame!
+	-- Without this, players doing operations from ActivitiesScreen get jailed randomly
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if CombatMafiaOpsFromActivities[opId] then
+		log("[ActivitiesScreen] Combat operation detected:", opId)
+		
+		local ReplicatedStorage = game:GetService("ReplicatedStorage")
+		local MinigamesModule = ReplicatedStorage:FindFirstChild("Minigames")
+		
+		if MinigamesModule then
+			local Minigames = require(MinigamesModule)
+			local minigameInstance = Minigames.new(self.screenGui)
+			
+			-- Determine minigame type
+			local minigameType = (opId == "heist") and "heist" or "combat"
+			
+			log("[ActivitiesScreen] Starting minigame for operation:", opId, "type:", minigameType)
+			minigameInstance:play(minigameType, function(won, minigameResult)
+				log("[ActivitiesScreen] Minigame result - Won:", won)
+				
+				-- ═══════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX: Build modifiers with minigame result
+			-- User complaint: "plan heist still go jail even if correctly do minigame"
+			-- Issue: The `and won or nil` pattern returns `nil` when `won = false`
+			-- This causes server to fallback to random roll instead of respecting loss
+			-- Fix: Explicitly check minigameType and always pass the boolean result
+			-- ═══════════════════════════════════════════════════════════════════════════
+				local modifiers = {
+					minigameResult = minigameResult,
+				}
+				
+				if minigameType == "combat" then
+					modifiers.combatCompleted = true
+					modifiers.combatWon = won  -- Explicit boolean (true/false)
+				elseif minigameType == "heist" then
+					modifiers.heistCompleted = true
+					modifiers.heistSuccess = won  -- Explicit boolean (true/false)
+				end
+				
+				log(string.format("[MOB_MINIGAME] Type: %s | Won: %s | Sending heistSuccess: %s", 
+					tostring(minigameType), tostring(won), tostring(modifiers.heistSuccess)))
+				
+				-- Call server with minigame results
+				local success, result = pcall(function()
+					return DoMobOp:InvokeServer(opId, modifiers)
+				end)
+				
+				if success and result and result.success then
+					local msg = result.message or string.format("Operation successful! +$%s +%d respect", result.money or 0, result.respect or 0)
+					self:showActivityResult(true, msg, {id = opId, name = opName, emoji = "💰"}, "💰")
+					
+					-- Update local mob state
+					if self.state and self.state.MobState then
+						if result.respect then
+							self.state.MobState.respect = (self.state.MobState.respect or 0) + result.respect
+						end
+						if result.promoted then
+							task.delay(0.5, function()
+								self:switchTab("crime")
+							end)
+						end
+					end
+			elseif success and result then
+				local msg = result.message or "The operation failed..."
+				if result.arrested and self.state then
+					self.state.InJail = true
+					-- CRITICAL FIX: Update flags too for consistent jail detection
+					self.state.Flags = self.state.Flags or {}
+					self.state.Flags.in_prison = true
+					self.state.Flags.incarcerated = true
+				end
+				self:showActivityResult(false, msg, {id = opId, name = opName, emoji = result.arrested and "🚔" or "❌"}, result.arrested and "🚔" or "❌", result.arrested)
+			else
+				self:showActivityResult(false, "Connection error. Try again.", {id = opId, name = opName, emoji = "❌"}, "❌")
+			end
+			
+			self:updateInfoBar()
+			-- CRITICAL FIX: Switch to prison tab if arrested, not crime tab!
+			if result and result.arrested then
+				self:rebuildTabs()
+				self:switchTab("prison")
+			else
+				self:switchTab("crime")
+			end
+			end)
+			return -- Wait for minigame callback
+		end
+	end
+	
+	-- Standard operation (no minigame required)
+	local success, result = pcall(function()
+		return DoMobOp:InvokeServer(opId)
+	end)
+	
+	if success and result and result.success then
+		local msg = result.message or string.format("Operation successful! +$%s +%d respect", result.money or 0, result.respect or 0)
+		self:showActivityResult(true, msg, {id = opId, name = opName, emoji = "💰"}, "💰")
+		
+		-- CRITICAL FIX: Update local mob state after operation
+		if self.state and self.state.MobState then
+			if result.respect then
+				self.state.MobState.respect = (self.state.MobState.respect or 0) + result.respect
+			end
+			if result.promoted then
+				task.delay(0.5, function()
+					self:switchTab("crime")
+				end)
+			end
+		end
+	elseif success and result then
+		local msg = result.message or "The operation failed..."
+		-- CRITICAL FIX: If arrested, update local state
+		if result.arrested and self.state then
+			self.state.InJail = true
+			-- CRITICAL FIX: Update flags too for consistent jail detection
+			self.state.Flags = self.state.Flags or {}
+			self.state.Flags.in_prison = true
+			self.state.Flags.incarcerated = true
+		end
+		self:showActivityResult(false, msg, {id = opId, name = opName, emoji = result.arrested and "🚔" or "❌"}, result.arrested and "🚔" or "❌", result.arrested)
+	else
+		self:showActivityResult(false, "Connection error. Try again.", {id = opId, name = opName, emoji = "❌"}, "❌")
 	end
 	self:updateInfoBar()
-	self:switchTab("crime") -- Refresh
+	-- CRITICAL FIX: Switch to prison tab if arrested, not crime tab!
+	if result and result.arrested then
+		self:rebuildTabs()
+		self:switchTab("prison")
+	else
+		self:switchTab("crime") -- Refresh
+	end
 end
 
 function ActivitiesScreen:getMobState()
@@ -2686,10 +2806,21 @@ function ActivitiesScreen:showGamepassPrompt(gamepassKey, title, description)
 	end)
 	
 	buyBtn.MouseButton1Click:Connect(function()
-		-- Prompt actual Roblox purchase
-		local PromptPurchase = getRemote("PromptGamepass")
-		if PromptPurchase then
-			PromptPurchase:FireServer(gamepassKey)
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #521: Use direct client-side MarketplaceService prompt!
+		-- This bypasses the server's cooldown and ALWAYS shows the Roblox purchase popup!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local gamepassId = self._GAMEPASS_IDS and self._GAMEPASS_IDS[gamepassKey]
+		if gamepassId and self._marketplaceService and self._player then
+			pcall(function()
+				self._marketplaceService:PromptGamePassPurchase(self._player, gamepassId)
+			end)
+		else
+			-- Fallback to server if direct prompt not available
+			local PromptPurchase = getRemote("PromptGamepass")
+			if PromptPurchase then
+				PromptPurchase:FireServer(gamepassKey, true)
+			end
 		end
 		overlay:Destroy()
 	end)
@@ -5089,18 +5220,44 @@ function ActivitiesScreen:doPrisonActivityAfterMinigame(escaped)
 		return
 	end
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #804: Hide activities screen BEFORE showing escape result
+	-- User complaint: "escape card shows behind activity screen, I had to close it"
+	-- The result popup was appearing behind the ActivitiesScreen!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Hide the activities screen to prevent result showing behind it
+	if self.mainFrame then
+		self.mainFrame.Visible = false
+	end
+	if self.container then
+		self.container.Visible = false
+	end
+	
 	-- The server handles the actual escape logic, but we pass the minigame result
 	if escaped then
-		-- CRITICAL FIX: Don't show result popup here!
-		-- The server will send an event popup with escape choices.
-		-- Showing a popup here causes DOUBLE POPUP bug.
 		-- CRITICAL FIX: Add pcall protection
 		local success, result = pcall(function()
 			return DoPrisonAction:InvokeServer("prison_escape")
 		end)
 		if success and result then
 			log("Server response:", result.success, result.message)
-			-- Server handles the popup via presentEvent - don't show duplicate!
+			-- CRITICAL FIX #804: Show the result card ON TOP of everything
+			-- Create a high-ZIndex result popup
+			local message = result.message or "🔓 ESCAPE SUCCESSFUL! Against all odds, you made it over the wall and into freedom!"
+			self:showActivityResult(true, message, {id = "prison_escape", name = "Prison Escape", emoji = "🔓"}, "🔓", false)
+			
+			-- CRITICAL FIX: Update local state to reflect escape
+			if self.state then
+				self.state.InJail = false
+				self.state.JailYearsLeft = 0
+				if self.state.Flags then
+					self.state.Flags.in_prison = nil
+					self.state.Flags.incarcerated = nil
+					self.state.Flags.escaped_prison = true
+					self.state.Flags.on_the_run = true
+				end
+			end
 		else
 			self:showActivityResult(false, "Server error", {id = "prison_escape", name = "Prison Escape", emoji = "🚨"}, "Error")
 		end
@@ -5420,20 +5577,40 @@ function ActivitiesScreen:doCrime(item)
 						emoji = "👊"
 					end
 				else
-					-- Lost the fight
-					resultTitle = "😵 Fight Lost!"
-					resultMessage = "Your victim fought back and won! You're the one who got beat up."
-					if serverResult and serverResult.caught then
-						resultMessage = resultMessage .. " And the cops got you too!"
-						emoji = "🚔"
+					-- Lost the fight - GOT KNOCKED OUT!
+					-- CRITICAL FIX: Show proper "knocked out" message with health loss
+					-- User feedback: "I GOT KNOCKED OUT AND IT SAID CRIME SUCCESSFUL INSTEAD OF BE LIKE DAMN EMBARESSING"
+					if serverResult and serverResult.knockedOut then
+						-- Server confirmed knockout - use server message which includes health loss
+						resultTitle = "😵 Knocked Out!"
+						resultMessage = serverResult.message or "They knocked you out cold!"
+						if serverResult.healthLost then
+							resultMessage = resultMessage .. string.format("\n\n💔 -%d Health", serverResult.healthLost)
+						end
+						if serverResult.caught then
+							emoji = "🚔"
+						else
+							emoji = "😵"
+						end
 					else
-						emoji = "😵"
+						-- Fallback if server didn't send knockedOut flag
+						resultTitle = "😵 Humiliating Defeat!"
+						resultMessage = "Your victim fought back and knocked you out! That's embarrassing..."
+						if serverResult and serverResult.caught then
+							resultMessage = resultMessage .. "\n\n🚔 And the cops got you too!"
+							emoji = "🚔"
+						else
+							emoji = "😵"
+						end
 					end
 				end
 				
 				-- Show proper result after combat
+				-- CRITICAL FIX: Use server's success value for display, NOT just combat win
+				-- If knocked out, crimeSuccess must be false even if server somehow says success
+				local actualSuccess = crimeSuccess and not (serverResult and serverResult.knockedOut)
 				self:show()
-				self:showActivityResult(crimeSuccess, resultMessage, item, emoji, serverResult and serverResult.caught)
+				self:showActivityResult(actualSuccess, resultMessage, item, emoji, serverResult and serverResult.caught)
 			end, { 
 				context = combatContext,
 				difficulty = item.id == "mugging" and "weak" or "average" -- Mugging targets are usually weaker
@@ -6803,10 +6980,13 @@ end
 -- This creates a proper event-style card for activity completion, matching the
 -- look and feel of the main life event cards for a premium experience
 -- ═══════════════════════════════════════════════════════════════════════════════
-function ActivitiesScreen:showActivityResult(success, message, item, emoji, wasCaught)
+function ActivitiesScreen:showActivityResult(success, message, item, emoji, wasCaught, serverStatChanges)
 	-- CRITICAL: Log the result for debugging
 	log("=== SHOWING ACTIVITY RESULT ===")
 	log("Success:", success, "Message:", message, "Item:", item and item.name or "nil", "Emoji:", emoji, "wasCaught:", wasCaught)
+	if serverStatChanges then
+		log("Server stat changes received:", serverStatChanges)
+	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: If wasCaught is true, ALWAYS show RED card (failure)
@@ -6898,15 +7078,63 @@ function ActivitiesScreen:showActivityResult(success, message, item, emoji, wasC
 	-- Build stat changes display string
 	local statChangesText = ""
 	
-	-- Check if we have stat changes data (passed as extra arg)
-	-- NOTE: The statChanges are passed via item.statChanges temporarily or extra params
-	local statChanges = nil
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: PRIORITIZE SERVER STAT CHANGES!
+	-- User complaint: "Activities like happiness or any stat doesn't actually give it 
+	-- nicely to me like how LifeClient cardpop ups do"
+	-- Now we use actual server-provided stat changes when available!
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- Check if the item has effect text we can display
+	-- First priority: Use actual stat changes from server if available
+	if serverStatChanges and type(serverStatChanges) == "table" and isActualSuccess then
+		local statParts = {}
+		for stat, amount in pairs(serverStatChanges) do
+			if type(amount) == "number" and amount ~= 0 then
+				local sign = amount >= 0 and "+" or ""
+				-- Emoji mapping for all stat types
+				local statEmoji = ""
+				if stat == "Happiness" then statEmoji = "😊"
+				elseif stat == "Health" then statEmoji = "💪"
+				elseif stat == "Smarts" then statEmoji = "🧠"
+				elseif stat == "Looks" then statEmoji = "✨"
+				elseif stat == "Popularity" then statEmoji = "👥"
+				elseif stat == "Fame" then statEmoji = "⭐"
+				elseif stat == "Respect" then statEmoji = "🤝"
+				elseif stat == "Money" then statEmoji = "💰"
+				elseif stat == "Diplomacy" then statEmoji = "🌍"
+				elseif stat == "Heat" then statEmoji = "🔥"
+				elseif stat == "Karma" then statEmoji = "☯️"
+				elseif stat == "Followers" then statEmoji = "📱"
+				elseif stat == "Charisma" then statEmoji = "💬"
+				elseif stat == "Fitness" then statEmoji = "🏃"
+				elseif stat == "Willpower" then statEmoji = "🧘"
+				elseif stat == "Craziness" then statEmoji = "🤪"
+				elseif stat == "Crime" then statEmoji = "💣"
+				else statEmoji = "📊"
+				end
+				-- Format money differently (with $ and commas)
+				local valueText
+				if stat == "Money" then
+					if math.abs(amount) >= 1000000 then
+						valueText = string.format("%s$%.1fM", sign, amount / 1000000)
+					elseif math.abs(amount) >= 1000 then
+						valueText = string.format("%s$%dk", sign, math.floor(amount / 1000))
+					else
+						valueText = string.format("%s$%d", sign, amount)
+					end
+				else
+					valueText = string.format("%s%d %s", sign, amount, stat)
+				end
+				table.insert(statParts, string.format("%s %s", statEmoji, valueText))
+			end
+		end
+		if #statParts > 0 then
+			statChangesText = "\n\n" .. table.concat(statParts, "  ")
+			log("Using server stat changes:", statChangesText)
+		end
+	-- Second priority: Check if the item has effect text we can display
 	-- CRITICAL FIX: Only show effect text if it doesn't contain ranges like "$50K-500K"
-	-- User complained: "EARNED $50K-500K +40 HEAT" showing after crime completed
-	-- The effect field is for PRE-activity description, not post-activity results
-	if item and item.effect and isActualSuccess then
+	elseif item and item.effect and isActualSuccess then
 		local effectText = item.effect
 		-- Don't show effects that have ranges (indicated by "-" in dollar amounts)
 		-- or are just descriptions of what MIGHT happen
@@ -6917,10 +7145,9 @@ function ActivitiesScreen:showActivityResult(success, message, item, emoji, wasC
 		end
 	end
 	
-	-- If we have actual stat changes from server, show them
-	-- This requires the statChanges to be stored somewhere accessible
-	-- For now, show the effect from item definition which matches what the server applied
-	if item and item.id then
+	-- Third priority: Use hardcoded effectItems mapping as fallback
+	-- This is used when server doesn't provide stat changes but we know what they should be
+	if statChangesText == "" and item and item.id then
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		-- CRITICAL FIX: EXPANDED effectItems mapping for ALL activities!
 		-- User complaint: "Royal activities show +Popularity not +5 Popularity"

@@ -93,7 +93,7 @@ ChildhoodExpanded.events = {
 		question = "What's your eating situation?",
 		minAge = 2, maxAge = 5,
 		baseChance = 0.6,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "baby_toddler",
 		category = "behavior",
@@ -204,7 +204,7 @@ ChildhoodExpanded.events = {
 		question = "How bad is your separation anxiety?",
 		minAge = 1, maxAge = 4,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "baby_toddler",
 		category = "psychology",
@@ -352,7 +352,7 @@ ChildhoodExpanded.events = {
 		question = "How serious is it?",
 		minAge = 4, maxAge = 10,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "early_childhood",
 		category = "health",
@@ -398,7 +398,7 @@ ChildhoodExpanded.events = {
 		question = "How are you doing with pet duties?",
 		minAge = 5, maxAge = 12,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { has_pet = true },
 		stage = STAGE,
 		ageBand = "childhood",
@@ -445,7 +445,7 @@ ChildhoodExpanded.events = {
 		question = "What happened?",
 		minAge = 6, maxAge = 12,
 		baseChance = 0.45,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "childhood",
 		category = "conflict",
@@ -571,7 +571,7 @@ ChildhoodExpanded.events = {
 		question = "What kind of sick?",
 		minAge = 4, maxAge = 12,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "childhood",
 		category = "health",
@@ -913,7 +913,7 @@ ChildhoodExpanded.events = {
 		question = "What do you do?",
 		minAge = 7, maxAge = 12,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "childhood",
 		category = "moral_development",
@@ -1022,7 +1022,7 @@ ChildhoodExpanded.events = {
 		question = "What is the award for?",
 		minAge = 6, maxAge = 12,
 		baseChance = 0.455,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "childhood",
 		category = "achievement",
@@ -1064,7 +1064,7 @@ ChildhoodExpanded.events = {
 		question = "What's your bedtime situation?",
 		minAge = 4, maxAge = 10,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "childhood",
 		category = "routine",
@@ -1105,7 +1105,7 @@ ChildhoodExpanded.events = {
 		question = "What's your progress like?",
 		minAge = 6, maxAge = 12,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { musical = true },
 		stage = STAGE,
 		ageBand = "childhood",
@@ -1174,7 +1174,7 @@ ChildhoodExpanded.events = {
 		question = "How does it go?",
 		minAge = 5, maxAge = 12,
 		baseChance = 0.4,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "childhood",
 		category = "skills",
@@ -1233,7 +1233,7 @@ ChildhoodExpanded.events = {
 		question = "How bad is the obsession?",
 		minAge = 6, maxAge = 12,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { gamer = true },
 		stage = STAGE,
 		ageBand = "childhood",
@@ -1263,6 +1263,287 @@ ChildhoodExpanded.events = {
 				effects = { Happiness = -6 },
 				setFlags = { games_confiscated = true },
 				feedText = "Gone. Confiscated. The withdrawal is REAL.",
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #702: NEW DYNAMIC CHILDHOOD EVENTS
+	-- User feedback: "ensure stuff u do actually has stuff popup for it in future"
+	-- These events have CONSEQUENCES that affect later life!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	{
+		id = "child_promise_to_friend",
+		title = "A Promise Made",
+		emoji = "🤝",
+		text = "Your best friend is moving away. You promise to stay in touch forever.",
+		question = "Will you keep this promise?",
+		minAge = 8, maxAge = 12,
+		oneTime = true,
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "friendship",
+		tags = { "promise", "friendship", "moving" },
+		triggersFollowUp = true,
+		
+		choices = {
+			{
+				text = "Promise to write every week",
+				effects = { Happiness = 3 },
+				setFlags = { promised_friend_letters = true, made_important_promise = true },
+				feedText = "🤝 You swore to stay best friends forever!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.childhood_promise_age = state.Age
+				end,
+			},
+			{
+				text = "Cry and say goodbye",
+				effects = { Happiness = -5 },
+				setFlags = { lost_childhood_friend = true },
+				feedText = "😢 It's so hard to say goodbye...",
+			},
+		},
+	},
+	{
+		id = "child_secret_spot",
+		title = "Secret Hideout",
+		emoji = "🏚️",
+		text = "You discovered a secret spot! An abandoned treehouse, hidden cave, or empty lot.",
+		question = "What becomes of your secret spot?",
+		minAge = 7, maxAge = 11,
+		oneTime = true,
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "adventure",
+		tags = { "secret", "adventure", "hideout" },
+		
+		choices = {
+			{
+				text = "Make it your personal hideaway",
+				effects = { Happiness = 8 },
+				setFlags = { had_secret_spot = true, values_privacy = true },
+				feedText = "🏚️ Your special place! No adults allowed!",
+			},
+			{
+				text = "Share it with friends",
+				effects = { Happiness = 10 },
+				setFlags = { had_secret_clubhouse = true, shares_with_friends = true },
+				feedText = "🏚️ The coolest clubhouse ever! Secret password required!",
+			},
+			{
+				text = "Tell your parents (they said it's dangerous)",
+				effects = { Happiness = -3, Smarts = 2 },
+				setFlags = { obedient_child = true },
+				feedText = "🏚️ Adults ruined it. But you stayed safe.",
+			},
+		},
+	},
+	{
+		id = "child_saved_animal",
+		title = "Rescued Animal",
+		emoji = "🐦",
+		text = "You found an injured bird/animal! It's hurt and needs help!",
+		question = "What do you do?",
+		minAge = 5, maxAge = 12,
+		oneTime = true,
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "empathy",
+		tags = { "animals", "rescue", "kindness" },
+		hintCareer = "veterinary",
+		
+		choices = {
+			{
+				text = "Nurse it back to health",
+				effects = {},
+				feedText = "You tried your best to help...",
+				setFlags = { rescued_animal = true },
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.50 then
+						state:ModifyStat("Happiness", 10)
+						state:ModifyStat("Smarts", 3)
+						state.Flags = state.Flags or {}
+						state.Flags.animal_healer = true
+						state.Flags.compassionate = true
+						state:AddFeed("🐦 It recovered! You released it back into the wild!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:ModifyStat("Smarts", 2)
+						state.Flags = state.Flags or {}
+						state.Flags.learned_about_loss = true
+						state:AddFeed("🐦 Despite your efforts, it didn't make it. You learned about loss.")
+					end
+				end,
+			},
+			{
+				text = "Take it to a vet",
+				effects = { Smarts = 3 },
+				setFlags = { trusts_professionals = true },
+				feedText = "🐦 The vet took care of it. Smart choice!",
+			},
+		},
+	},
+	{
+		id = "child_standing_up_to_bully",
+		title = "Facing the Bully",
+		emoji = "💪",
+		text = "A bully is picking on a smaller kid. Nobody else is helping.",
+		question = "What do you do?",
+		minAge = 7, maxAge = 12,
+		oneTime = true,
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "courage",
+		tags = { "bully", "courage", "standing_up" },
+		
+		choices = {
+			{
+				text = "Stand up to the bully",
+				effects = {},
+				feedText = "You stepped in...",
+				setFlags = { stood_up_to_bully = true },
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.60 then
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.brave = true
+						state.Flags.defender = true
+						state:AddFeed("💪 The bully backed down! You're a hero!")
+					else
+						state:ModifyStat("Health", -5)
+						state:ModifyStat("Happiness", 3)
+						state.Flags = state.Flags or {}
+						state.Flags.brave = true
+						state.Flags.took_a_beating = true
+						state:AddFeed("💪 Got beat up but earned everyone's respect. Worth it.")
+					end
+				end,
+			},
+			{
+				text = "Get an adult",
+				effects = { Smarts = 3 },
+				setFlags = { seeks_help = true },
+				feedText = "💪 Got a teacher. The bully got in trouble.",
+			},
+			{
+				text = "Walk away",
+				effects = { Happiness = -4 },
+				setFlags = { avoided_conflict = true },
+				feedText = "💪 You kept walking. The guilt sticks with you.",
+			},
+		},
+	},
+	{
+		id = "child_big_lie",
+		title = "The Big Lie",
+		emoji = "🤥",
+		text = "You did something wrong and your parents are asking about it. If you lie, you might get away with it...",
+		question = "Do you tell the truth?",
+		minAge = 6, maxAge = 12,
+		baseChance = 0.5,
+		cooldown = 3,
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "morality",
+		tags = { "honesty", "lying", "consequences" },
+		
+		choices = {
+			{
+				text = "Tell the truth",
+				effects = { Smarts = 3 },
+				setFlags = { honest_child = true },
+				feedText = "🤥 Got in trouble but parents respected your honesty.",
+			},
+			{
+				text = "Lie and deny everything",
+				effects = {},
+				feedText = "You lied...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Happiness", 3)
+						state.Flags = state.Flags or {}
+						state.Flags.good_liar = true
+						state:AddFeed("🤥 Got away with it! The guilt fades... eventually.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state.Flags = state.Flags or {}
+						state.Flags.caught_lying = true
+						state:AddFeed("🤥 CAUGHT! Double punishment for lying!")
+					end
+				end,
+			},
+			{
+				text = "Blame a sibling",
+				effects = {},
+				setFlags = { blamed_sibling = true },
+				feedText = "You pointed fingers...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.30 then
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("🤥 Your sibling took the fall. You monster.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state.Flags.sibling_hates_you = true
+						state:AddFeed("🤥 The truth came out. Your sibling will NEVER forget this.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "child_talent_discovered",
+		title = "Hidden Talent",
+		emoji = "✨",
+		text = "You discovered something you're naturally good at!",
+		question = "What's your hidden talent?",
+		minAge = 5, maxAge = 11,
+		oneTime = true,
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "discovery",
+		tags = { "talent", "discovery", "skills" },
+		
+		choices = {
+			{
+				text = "Amazing at drawing/art",
+				effects = { Happiness = 8, Smarts = 3 },
+				setFlags = { artistic_talent = true, creative = true },
+				hintCareer = "arts",
+				feedText = "✨ You can draw anything! Natural artist!",
+			},
+			{
+				text = "Natural athlete",
+				effects = { Happiness = 8, Health = 5 },
+				setFlags = { athletic_talent = true, natural_athlete = true },
+				hintCareer = "sports",
+				feedText = "✨ Fastest, strongest, most coordinated! Sports star potential!",
+			},
+			{
+				text = "Math/Science whiz",
+				effects = { Happiness = 6, Smarts = 8 },
+				setFlags = { academic_talent = true, math_genius = true },
+				hintCareer = "stem",
+				feedText = "✨ Numbers make sense to you! Future scientist?",
+			},
+			{
+				text = "Natural performer/entertainer",
+				effects = { Happiness = 8, Looks = 2 },
+				setFlags = { performer_talent = true, natural_performer = true },
+				hintCareer = "entertainment",
+				feedText = "✨ You love being on stage! Star in the making!",
+			},
+			{
+				text = "Amazing with animals",
+				effects = { Happiness = 6, Smarts = 2 },
+				setFlags = { animal_talent = true, animal_whisperer = true },
+				hintCareer = "veterinary",
+				feedText = "✨ Animals just trust you! Dr. Dolittle vibes!",
 			},
 		},
 	},

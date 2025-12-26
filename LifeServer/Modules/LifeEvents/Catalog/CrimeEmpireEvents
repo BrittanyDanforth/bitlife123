@@ -186,7 +186,7 @@ local events = {
 		weight = 12,
 		minAge = 16,
 		maxAge = 50,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { crime_path_active = true, first_hustle_done = true },
 		blockedByFlags = { in_prison = true },
 		-- CRITICAL FIX #3: Eligibility check to ensure on crime path

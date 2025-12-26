@@ -43,7 +43,7 @@ InvestmentBankingEvents.events = {
 		weight = 18,
 		minAge = 22, maxAge = 40,
 		baseChance = 0.55,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = isInvestmentBanker,
 		blockedByFlags = { in_prison = true },
@@ -149,7 +149,7 @@ InvestmentBankingEvents.events = {
 		weight = 14,
 		minAge = 24, maxAge = 55,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = hasFinanceJob,
 		blockedByFlags = { in_prison = true },

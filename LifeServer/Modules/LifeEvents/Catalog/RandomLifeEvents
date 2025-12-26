@@ -1387,7 +1387,7 @@ RandomLifeEvents.events = {
 		weight = 14,
 		minAge = 5, maxAge = 100,
 		baseChance = 0.5,
-		cooldown = 2,
+		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
 			{

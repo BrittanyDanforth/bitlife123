@@ -278,18 +278,25 @@ function LifeBackend:checkGamepassOwnership(player, gamepassKey)
 	return owns
 end
 
-function LifeBackend:promptGamepassPurchase(player, gamepassKey)
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #507: Added forceBypassCooldown parameter for direct user clicks!
+-- When user clicks a gamepass button, they should ALWAYS see the Roblox prompt!
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:promptGamepassPurchase(player, gamepassKey, forceBypassCooldown)
 	if not player then
-		return
+		return false, "no_player"
 	end
 
-	local success, err = pcall(function()
-		GamepassSystem:promptGamepass(player, gamepassKey)
+	local success, promptSuccess, reason, extra = pcall(function()
+		return GamepassSystem:promptGamepass(player, gamepassKey, forceBypassCooldown)
 	end)
 
 	if not success then
-		warn(string.format("[LifeBackend] Failed to prompt %s purchase: %s", tostring(gamepassKey), tostring(err)))
+		warn(string.format("[LifeBackend] Failed to prompt %s purchase: %s", tostring(gamepassKey), tostring(promptSuccess)))
+		return false, "error"
 	end
+	
+	return promptSuccess, reason, extra
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
@@ -1072,8 +1079,10 @@ function LifeBackend:clearGhostRelationships(state)
 			end
 			
 			-- AAA FIX: Bound relationship to 0-100
-			if rel.relationship then
+			if rel.relationship and type(rel.relationship) == "number" then
 				rel.relationship = math.max(0, math.min(100, rel.relationship))
+			elseif not rel.relationship then
+				rel.relationship = 50 -- Default relationship value
 			end
 			
 			-- AAA FIX: Validate yearsKnown
@@ -2832,7 +2841,11 @@ local function debugPrint(...)
 end
 
 local function clamp(value, minValue, maxValue)
-	return math.clamp(value, minValue or 0, maxValue or 100)
+	-- CRITICAL FIX: Handle nil values to prevent type errors
+	local safeValue = tonumber(value) or 0
+	local safeMin = tonumber(minValue) or 0
+	local safeMax = tonumber(maxValue) or 100
+	return math.clamp(safeValue, safeMin, safeMax)
 end
 
 local function shallowCopy(source)
@@ -2870,10 +2883,16 @@ local function chooseRandom(list)
 end
 
 local function formatMoney(amount)
+	-- CRITICAL FIX: Handle nil and invalid values
+	if not amount or type(amount) ~= "number" then
+		return "$0"
+	end
 	if amount >= 1_000_000 then
 		return string.format("$%.1fM", amount / 1_000_000)
 	elseif amount >= 1_000 then
 		return string.format("$%.1fK", amount / 1_000)
+	elseif amount < 0 then
+		return string.format("-$%.0f", math.abs(amount))
 	else
 		return "$" .. tostring(math.floor(amount + 0.5))
 	end
@@ -4813,23 +4832,34 @@ local JobCatalogList = {
 	{ id = "new_influencer", name = "New Content Creator", company = "Instagram/TikTok", emoji = "📱", salary = 5000, minAge = 13, requirement = nil, category = "entertainment",
 		difficulty = 1, grantsFlags = { "content_creator", "social_media_presence", "influencer" }, isFameCareer = true,
 		description = "Just starting your content creation journey" },
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- INFLUENCER CAREER PATH - COMPLETELY FREE!
+	-- CRITICAL FIX #540: User feedback "FREE PLAYERS CANT GET BORED"
+	-- Influencer is FREE - everyone wants to be an influencer, keeps them playing!
+	-- Celebrity gamepass is for HOLLYWOOD (actors, rappers, musicians)
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{ id = "micro_influencer", name = "Micro-Influencer", company = "Social Media", emoji = "📊", salary = 15000, minAge = 14, requirement = nil, category = "entertainment",
 		difficulty = 3, requiresFlags = { "content_creator" }, grantsFlags = { "influencer", "small_following" }, isFameCareer = true,
 		description = "Building a small but engaged following" },
 	{ id = "rising_influencer", name = "Rising Influencer", company = "Social Media", emoji = "📈", salary = 25000, minAge = 15, requirement = nil, category = "entertainment",
 		difficulty = 4, requiresFlags = { "influencer" }, grantsFlags = { "growing_audience", "brand_potential" }, isFameCareer = true,
-		description = "Your audience is growing fast" },
+		description = "Your audience is growing fast!" },
 	{ id = "established_influencer", name = "Established Influencer", company = "Brand Partnerships", emoji = "🤝", salary = 150000, minAge = 17, requirement = nil, category = "entertainment",
 		difficulty = 6, requiresFlags = { "growing_audience" }, grantsFlags = { "brand_deals", "influencer_marketing" }, isFameCareer = true,
-		description = "Brands want to work with you" },
+		description = "Brands want to work with you!" },
 	{ id = "major_influencer", name = "Major Influencer", company = "Management Agency", emoji = "⭐", salary = 750000, minAge = 18, requirement = nil, category = "entertainment",
 		difficulty = 7, requiresFlags = { "brand_deals" }, grantsFlags = { "major_following", "celebrity_status" }, isFameCareer = true,
-		description = "Millions of followers" },
+		description = "Millions of followers!" },
 	{ id = "mega_influencer", name = "Mega Influencer", company = "Global Brand", emoji = "🌟", salary = 5000000, minAge = 20, requirement = nil, category = "entertainment",
 		difficulty = 9, requiresFlags = { "major_following" }, grantsFlags = { "mega_fame", "household_name" }, isFameCareer = true,
-		description = "A household name on social media" },
+		description = "A household name on social media!" },
 	
-	-- STREAMER CAREER PATH (Celebrity gamepass)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- STREAMER CAREER PATH - COMPLETELY FREE!
+	-- CRITICAL FIX #540: User feedback "FREE PLAYERS CANT GET BORED"
+	-- Streaming is FREE - super popular with young players, keeps them engaged!
+	-- They'll want God Mode when stats are low, or Time Machine for mistakes
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{ id = "hobbyist_streamer", name = "Hobbyist Streamer", company = "Twitch", emoji = "🎥", salary = 1000, minAge = 13, requirement = nil, category = "entertainment",
 		difficulty = 1, grantsFlags = { "streamer", "broadcaster", "pursuing_streaming" }, isFameCareer = true,
 		description = "Stream as a hobby - just for fun!" },
@@ -4838,19 +4868,19 @@ local JobCatalogList = {
 		description = "Just started streaming" },
 	{ id = "affiliate_streamer", name = "Affiliate Streamer", company = "Twitch", emoji = "💜", salary = 8000, minAge = 14, requirement = nil, category = "entertainment",
 		difficulty = 3, requiresFlags = { "streamer" }, grantsFlags = { "affiliate", "monetized" }, isFameCareer = true,
-		description = "Earned affiliate status" },
+		description = "Earned affiliate status!" },
 	{ id = "partner_streamer", name = "Partner Streamer", company = "Twitch", emoji = "✅", salary = 15000, minAge = 16, requirement = nil, category = "entertainment",
 		difficulty = 5, requiresFlags = { "affiliate" }, grantsFlags = { "partner", "verified_streamer" }, isFameCareer = true,
-		description = "Full partner with perks" },
+		description = "Full partner with perks!" },
 	{ id = "popular_streamer", name = "Popular Streamer", company = "Multi-Platform", emoji = "📺", salary = 150000, minAge = 17, requirement = nil, category = "entertainment",
 		difficulty = 6, requiresFlags = { "partner" }, grantsFlags = { "popular_broadcaster", "streaming_income" }, isFameCareer = true,
-		description = "Thousands watch your streams" },
+		description = "Thousands watch your streams!" },
 	{ id = "famous_streamer", name = "Famous Streamer", company = "Exclusive Contract", emoji = "⭐", salary = 1000000, minAge = 18, requirement = nil, category = "entertainment",
 		difficulty = 8, requiresFlags = { "popular_broadcaster" }, grantsFlags = { "famous_streamer", "platform_face" }, isFameCareer = true,
-		description = "One of the biggest streamers" },
+		description = "One of the biggest streamers!" },
 	{ id = "streaming_legend", name = "Streaming Legend", company = "Hall of Fame", emoji = "👑", salary = 10000000, minAge = 22, requirement = nil, category = "entertainment",
 		difficulty = 10, requiresFlags = { "famous_streamer" }, grantsFlags = { "streaming_legend", "icon" }, isFameCareer = true,
-		description = "A legend of the streaming world" },
+		description = "A legend of the streaming world!" },
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- MUSIC CAREER PATH - REQUIRES CELEBRITY GAMEPASS
@@ -4924,7 +4954,12 @@ local JobCatalogList = {
 		difficulty = 10, requiresFlags = { "a_list" }, grantsFlags = { "hollywood_legend", "cinema_icon" }, isFameCareer = true,
 		description = "An icon of cinema" },
 	
-	-- ATHLETE CAREER PATH (Celebrity gamepass)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- ATHLETE CAREER PATH - COMPLETELY FREE!
+	-- CRITICAL FIX #540: User feedback "THATS SO BORING FOR FREE PLAYERS"
+	-- Athletes are FREE to keep players engaged and having fun!
+	-- This hooks players into the game - they buy God Mode/Time Machine later
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	{ id = "amateur_athlete", name = "Amateur", company = "Local Leagues", emoji = "🏃", salary = 250, minAge = 14, requirement = nil, category = "entertainment",
 		difficulty = 2, minStats = { Health = 60 }, grantsFlags = { "athlete", "amateur_status" }, isFameCareer = true,
 		description = "Competing at amateur level" },
@@ -4933,7 +4968,7 @@ local JobCatalogList = {
 		description = "Playing for your college team" },
 	{ id = "pro_prospect", name = "Pro Prospect", company = "Draft Pool", emoji = "📋", salary = 50000, minAge = 20, requirement = nil, category = "entertainment",
 		difficulty = 6, minStats = { Health = 75 }, requiresFlags = { "college_sports" }, grantsFlags = { "draft_eligible", "pro_potential" }, isFameCareer = true,
-		description = "Scouts are watching" },
+		description = "Scouts are watching!" },
 	{ id = "pro_athlete_fame", name = "Professional Athlete", company = "Pro Team", emoji = "🏆", salary = 1000000, minAge = 21, requirement = nil, category = "entertainment",
 		difficulty = 7, minStats = { Health = 80 }, requiresFlags = { "pro_potential" }, grantsFlags = { "pro_athlete", "team_player" }, isFameCareer = true,
 		description = "Playing professionally" },
@@ -6367,42 +6402,182 @@ local ActivityCatalog = {
 }
 
 local CrimeCatalog = {
-	-- PETTY CRIMES (low risk)
-	porch_pirate = { risk = 20, reward = { 30, 200 }, jail = { min = 0.2, max = 1 } },
-	shoplift = { risk = 25, reward = { 20, 150 }, jail = { min = 0.5, max = 2 } },
-	pickpocket = { risk = 35, reward = { 30, 300 }, jail = { min = 0.5, max = 2 }, hasMinigame = true, minigameType = "qte" },
-	-- PROPERTY CRIMES (medium risk)
-	burglary = { risk = 50, reward = { 500, 5000 }, jail = { min = 2, max = 5 }, hasMinigame = true, minigameType = "heist" },
-	gta = { risk = 60, reward = { 2000, 20000 }, jail = { min = 3, max = 7 }, hasMinigame = true, minigameType = "getaway" },
-	-- MAJOR CRIMES (high risk)
-	bank_robbery = { risk = 80, reward = { 10000, 500000 }, jail = { min = 5, max = 12 }, hasMinigame = true, minigameType = "heist" },
-	-- EXPANDED CRIMES (CRITICAL FIX: Added more variety)
-	tax_fraud = { risk = 35, reward = { 5000, 50000 }, jail = { min = 1, max = 5 } },
-	identity_theft = { risk = 40, reward = { 1000, 20000 }, jail = { min = 2, max = 6 } },
-	smuggling = { risk = 55, reward = { 500, 10000 }, jail = { min = 3, max = 10 } },
-	car_theft = { risk = 50, reward = { 3000, 15000 }, jail = { min = 2, max = 5 } },
-	arson = { risk = 70, reward = { 0, 1000 }, jail = { min = 5, max = 15 } },
-	intimidation = { risk = 60, reward = { 2000, 30000 }, jail = { min = 3, max = 8 } },
-	ransom = { risk = 85, reward = { 10000, 200000 }, jail = { min = 10, max = 25 } },
-	assault = { risk = 90, reward = { 0, 5000 }, jail = { min = 20, max = 100 } },
-	-- CRITICAL FIX: Added missing crimes from ActivitiesScreen (was causing "Unknown Crime" errors)
-	illegal_dealing = { risk = 55, reward = { 500, 10000 }, jail = { min = 3, max = 10 } }, -- Renamed from drug_dealing
-	extortion = { risk = 60, reward = { 2000, 30000 }, jail = { min = 3, max = 8 } },
-	kidnapping = { risk = 85, reward = { 10000, 200000 }, jail = { min = 10, max = 25 } },
-	murder = { risk = 95, reward = { 0, 5000 }, jail = { min = 25, max = 100 } },
-	hacking = { risk = 45, reward = { 5000, 50000 }, jail = { min = 2, max = 8 }, hasMinigame = true, minigameType = "hacking" },
-	counterfeiting = { risk = 50, reward = { 3000, 25000 }, jail = { min = 2, max = 7 } },
-	fraud = { risk = 40, reward = { 2000, 20000 }, jail = { min = 1, max = 5 } },
-	embezzlement = { risk = 45, reward = { 10000, 100000 }, jail = { min = 3, max = 10 } },
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- PETTY CRIMES (low risk) - These set basic criminal flags for career unlocks!
+	-- User complaint: "petty crimes like assault pick pocket let u become a smuggler"
+	-- ═══════════════════════════════════════════════════════════════════════════
+	porch_pirate = { 
+		risk = 20, reward = { 30, 200 }, jail = { min = 0.2, max = 1 },
+		name = "Porch Pirate", -- CRITICAL FIX: Added name to prevent "Unknown crime"
+		grantsFlags = { "petty_criminal", "crime_experience", "criminal_background" },
+	},
+	shoplift = { 
+		risk = 25, reward = { 20, 150 }, jail = { min = 0.5, max = 2 },
+		name = "Shoplifting",
+		grantsFlags = { "petty_criminal", "crime_experience", "criminal_background" },
+	},
+	pickpocket = { 
+		risk = 35, reward = { 30, 300 }, jail = { min = 0.5, max = 2 }, 
+		hasMinigame = true, minigameType = "qte",
+		name = "Pickpocketing",
+		grantsFlags = { "petty_criminal", "crime_experience", "criminal_background", "street_thief" },
+	},
 	
 	-- ═══════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX #8: PRISON CRIMES - Can be committed while incarcerated
-	-- Getting caught adds years to sentence instead of starting new sentence
+	-- VIOLENCE CRIMES - Combat-based
 	-- ═══════════════════════════════════════════════════════════════════════════
-	prison_assault = { risk = 60, reward = { 0, 200 }, jail = { min = 1, max = 3 }, isPrisonCrime = true },
-	prison_riot = { risk = 80, reward = { 0, 0 }, jail = { min = 2, max = 5 }, isPrisonCrime = true },
-	prison_contraband = { risk = 50, reward = { 100, 1000 }, jail = { min = 1, max = 2 }, isPrisonCrime = true },
-	prison_gang_violence = { risk = 70, reward = { 0, 500 }, jail = { min = 2, max = 4 }, isPrisonCrime = true },
+	assault = { 
+		risk = 45, reward = { 0, 500 }, jail = { min = 1, max = 5 }, -- FIXED: Reduced from insane 20-100 years
+		name = "Assault",
+		hasMinigame = true, minigameType = "combat",
+		grantsFlags = { "violent_criminal", "crime_experience", "criminal_background", "assault_record" },
+	},
+	mugging = { -- CRITICAL FIX: Was missing! Client sends this ID
+		risk = 55, reward = { 50, 500 }, jail = { min = 1, max = 4 },
+		name = "Mugging",
+		hasMinigame = true, minigameType = "combat",
+		grantsFlags = { "violent_criminal", "crime_experience", "criminal_background", "robbery_record" },
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- PROPERTY CRIMES (medium risk)
+	-- ═══════════════════════════════════════════════════════════════════════════
+	burglary = { 
+		risk = 50, reward = { 500, 5000 }, jail = { min = 2, max = 5 }, 
+		hasMinigame = true, minigameType = "heist",
+		name = "Burglary",
+		grantsFlags = { "property_criminal", "crime_experience", "criminal_background", "burglary_record" },
+	},
+	gta = { 
+		risk = 60, reward = { 2000, 20000 }, jail = { min = 3, max = 7 }, 
+		hasMinigame = true, minigameType = "getaway",
+		name = "Grand Theft Auto",
+		grantsFlags = { "car_thief", "crime_experience", "criminal_background", "gta_record" },
+	},
+	car_theft = { 
+		risk = 50, reward = { 3000, 15000 }, jail = { min = 2, max = 5 },
+		name = "Car Theft",
+		hasMinigame = true, minigameType = "getaway",
+		grantsFlags = { "car_thief", "crime_experience", "criminal_background" },
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- WHITE COLLAR CRIMES
+	-- ═══════════════════════════════════════════════════════════════════════════
+	tax_fraud = { 
+		risk = 35, reward = { 5000, 50000 }, jail = { min = 1, max = 5 },
+		name = "Tax Fraud",
+		grantsFlags = { "white_collar_criminal", "crime_experience", "criminal_background", "fraud_record" },
+	},
+	identity_theft = { 
+		risk = 40, reward = { 1000, 20000 }, jail = { min = 2, max = 6 },
+		name = "Identity Theft",
+		hasMinigame = true, minigameType = "hacking",
+		grantsFlags = { "white_collar_criminal", "crime_experience", "criminal_background", "hacker" },
+	},
+	fraud = { 
+		risk = 40, reward = { 2000, 20000 }, jail = { min = 1, max = 5 },
+		name = "Fraud",
+		grantsFlags = { "white_collar_criminal", "crime_experience", "criminal_background", "fraud_record" },
+	},
+	embezzlement = { 
+		risk = 45, reward = { 10000, 100000 }, jail = { min = 3, max = 10 },
+		name = "Embezzlement",
+		grantsFlags = { "white_collar_criminal", "crime_experience", "criminal_background" },
+	},
+	counterfeiting = { 
+		risk = 50, reward = { 3000, 25000 }, jail = { min = 2, max = 7 },
+		name = "Counterfeiting",
+		grantsFlags = { "white_collar_criminal", "crime_experience", "criminal_background" },
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- SERIOUS CRIMES
+	-- ═══════════════════════════════════════════════════════════════════════════
+	illegal_dealing = { 
+		risk = 55, reward = { 500, 10000 }, jail = { min = 3, max = 10 },
+		name = "Illegal Dealing",
+		grantsFlags = { "dealer", "crime_experience", "criminal_background", "smuggler_potential" },
+	},
+	smuggling = { 
+		risk = 55, reward = { 500, 10000 }, jail = { min = 3, max = 10 },
+		name = "Smuggling",
+		grantsFlags = { "smuggler", "crime_experience", "criminal_background" },
+	},
+	extortion = { 
+		risk = 60, reward = { 2000, 30000 }, jail = { min = 3, max = 8 },
+		name = "Extortion",
+		hasMinigame = true, minigameType = "debate",
+		grantsFlags = { "extortionist", "crime_experience", "criminal_background", "intimidation_skills" },
+	},
+	intimidation = { 
+		risk = 60, reward = { 2000, 30000 }, jail = { min = 3, max = 8 },
+		name = "Intimidation",
+		grantsFlags = { "intimidator", "crime_experience", "criminal_background" },
+	},
+	arson = { 
+		risk = 70, reward = { 0, 1000 }, jail = { min = 5, max = 15 },
+		name = "Arson",
+		hasMinigame = true, minigameType = "qte",
+		grantsFlags = { "arsonist", "crime_experience", "criminal_background" },
+	},
+	hacking = { 
+		risk = 45, reward = { 5000, 50000 }, jail = { min = 2, max = 8 }, 
+		hasMinigame = true, minigameType = "hacking",
+		name = "Hacking",
+		grantsFlags = { "hacker", "crime_experience", "criminal_background", "tech_criminal" },
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- MAJOR CRIMES (high risk)
+	-- ═══════════════════════════════════════════════════════════════════════════
+	bank_robbery = { 
+		risk = 80, reward = { 10000, 500000 }, jail = { min = 5, max = 12 }, 
+		hasMinigame = true, minigameType = "heist",
+		name = "Bank Robbery",
+		grantsFlags = { "bank_robber", "crime_experience", "criminal_background", "major_criminal" },
+	},
+	kidnapping = { 
+		risk = 85, reward = { 10000, 200000 }, jail = { min = 10, max = 25 },
+		name = "Kidnapping",
+		hasMinigame = true, minigameType = "combat",
+		grantsFlags = { "kidnapper", "crime_experience", "criminal_background", "major_criminal" },
+	},
+	ransom = { 
+		risk = 85, reward = { 10000, 200000 }, jail = { min = 10, max = 25 },
+		name = "Ransom",
+		grantsFlags = { "kidnapper", "crime_experience", "criminal_background", "major_criminal" },
+	},
+	murder = { 
+		risk = 95, reward = { 0, 5000 }, jail = { min = 25, max = 100 },
+		name = "Murder",
+		hasMinigame = true, minigameType = "combat",
+		grantsFlags = { "murderer", "crime_experience", "criminal_background", "violent_criminal" },
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- PRISON CRIMES - Can be committed while incarcerated
+	-- ═══════════════════════════════════════════════════════════════════════════
+	prison_assault = { 
+		risk = 60, reward = { 0, 200 }, jail = { min = 1, max = 3 }, 
+		isPrisonCrime = true,
+		name = "Prison Assault",
+	},
+	prison_riot = { 
+		risk = 80, reward = { 0, 0 }, jail = { min = 2, max = 5 }, 
+		isPrisonCrime = true,
+		name = "Prison Riot",
+	},
+	prison_contraband = { 
+		risk = 50, reward = { 100, 1000 }, jail = { min = 1, max = 2 }, 
+		isPrisonCrime = true,
+		name = "Prison Contraband",
+	},
+	prison_gang_violence = { 
+		risk = 70, reward = { 0, 500 }, jail = { min = 2, max = 4 }, 
+		isPrisonCrime = true,
+		name = "Prison Gang Violence",
+	},
 }
 
 local PrisonActions = {
@@ -8598,16 +8773,22 @@ function LifeBackend:setupRemotes()
 		return self:handleLeaveMob(player)
 	end
 	
-	self.remotes.DoMobOperation.OnServerInvoke = function(player, operationId)
-		return self:handleMobOperation(player, operationId)
+	self.remotes.DoMobOperation.OnServerInvoke = function(player, operationId, modifiers)
+		return self:handleMobOperation(player, operationId, modifiers)
 	end
 	
 	self.remotes.CheckGamepass.OnServerInvoke = function(player, gamepassKey)
 		return self:checkGamepassOwnership(player, gamepassKey)
 	end
 	
-	self.remotes.PromptGamepass.OnServerEvent:Connect(function(player, gamepassKey)
-		self:promptGamepassPurchase(player, gamepassKey)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #508: Pass forceBypassCooldown = true for ALL user-initiated prompts!
+	-- When a player clicks a gamepass button, they ALWAYS want to buy - never block them!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	self.remotes.PromptGamepass.OnServerEvent:Connect(function(player, gamepassKey, forceBypassCooldown)
+		-- CRITICAL: Default to true for user-initiated prompts!
+		local bypass = (forceBypassCooldown ~= false) -- true unless explicitly false
+		self:promptGamepassPurchase(player, gamepassKey, bypass)
 	end)
 	
 	-- CRITICAL FIX #358: Developer Product purchase handler
@@ -9677,7 +9858,7 @@ function LifeBackend:setLifeInfo(player, nameOrPayload, genderArg, countryArg)
 			state.Flags.famous_family = true
 			
 			-- Send royal birth message
-			self:pushState(player, string.format("👑 %s %s of %s takes their first breath in %s!", title, state.Name or "Your Highness", country.name, country.palace))
+			self:pushState(player, string.format("👑 %s %s of %s takes their first breath in %s!", tostring(title or "Prince/Princess"), tostring(state.Name or "Your Highness"), tostring(country.name or "the Kingdom"), tostring(country.palace or "the Palace")))
 			return
 		end
 	end
@@ -9809,8 +9990,8 @@ function LifeBackend:advanceRelationships(state)
 							table.insert(state.YearLog, {
 								type = "inheritance",
 								emoji = "💰",
-								text = string.format("Inherited $%s from %s's estate", formatMoney(inheritanceAmount), rel.name or "your parent"),
-								amount = inheritanceAmount,
+								text = string.format("Inherited %s from %s's estate", formatMoney(inheritanceAmount) or "$0", tostring(rel.name or "your parent")),
+								amount = inheritanceAmount or 0,
 							})
 						end
 					elseif relRole:find("grandmother") or relRole:find("grandfather") or relRole:find("grandparent") then
@@ -9824,7 +10005,7 @@ function LifeBackend:advanceRelationships(state)
 							table.insert(state.YearLog, {
 								type = "inheritance",
 								emoji = "💰",
-								text = string.format("Received $%s from %s's will", formatMoney(inheritanceAmount), rel.name or "your grandparent"),
+								text = string.format("Received %s from %s's will", formatMoney(inheritanceAmount or 0) or "$0", tostring(rel.name or "your grandparent")),
 								amount = inheritanceAmount,
 							})
 						end
@@ -9907,8 +10088,9 @@ function LifeBackend:advanceRelationships(state)
 			state.Stats = state.Stats or {}
 			state.Stats.Happiness = clamp((state.Stats.Happiness or 50) - 35, 0, 100)
 			
+			-- CRITICAL FIX: Ensure all values are safe for string.format
 			state.PendingFeed = string.format("💔 Your %s, %s, passed away at age %d. You are now widowed.", 
-				partnerRole, partnerName, partnerAge)
+				tostring(partnerRole or "partner"), tostring(partnerName or "spouse"), tonumber(partnerAge) or 0)
 		end
 	end
 	
@@ -9938,7 +10120,11 @@ function LifeBackend:advanceRelationships(state)
 			"🕯️ Your %s, %s, passed away at %d years old.",
 		}
 		local msgTemplate = messages[RANDOM:NextInteger(1, #messages)]
-		local formattedMsg = string.format(msgTemplate, death.name, roleName, death.age)
+		-- CRITICAL FIX: Ensure all values are safe for string.format
+		local safeName = tostring(death.name or "family member")
+		local safeRole = tostring(roleName or "relative")
+		local safeAge = tonumber(death.age) or 0
+		local formattedMsg = string.format(msgTemplate, safeName, safeRole, safeAge)
 		
 		state.PendingFeed = formattedMsg
 		state.Flags = state.Flags or {}
@@ -10161,13 +10347,15 @@ function LifeBackend:tickCareer(state)
 			info.lastAutoPromoAttemptAge = state.Age
 
 			-- CRITICAL FIX: Higher auto-promotion chance, ESPECIALLY for talent-based careers
-			local baseChance = (info.promotionProgress - 50) / 100  -- 10% at 60%, 50% at 100%
+			-- Ensure promotionProgress is a valid number
+			local safeProgress = tonumber(info.promotionProgress) or 0
+			local baseChance = math.max(0, (safeProgress - 50) / 100)  -- 10% at 60%, 50% at 100%
 
 			if isTalentCareer then
 				baseChance = baseChance * 3.0  -- 30% at 60%, 150% (capped to 95%) at 100% for talent careers
 			end
 
-			local autoPromoChance = math.min(0.95, baseChance)  -- Cap at 95%
+			local autoPromoChance = math.min(0.95, math.max(0, baseChance))  -- Cap at 95%, floor at 0%
 			
 			if RANDOM:NextNumber() < autoPromoChance then
 				-- Find next job in career track
@@ -10299,7 +10487,9 @@ function LifeBackend:tickCareer(state)
 	for skill, maxGain in pairs(skillGrowth) do
 		local currentLevel = info.skills[skill] or 0
 		-- Diminishing returns at higher levels
-		local gain = math.max(1, math.floor(maxGain * (1 - currentLevel / 100)))
+		-- CRITICAL FIX: Ensure maxGain is a valid number
+		local safeMaxGain = (type(maxGain) == "number" and maxGain > 0) and maxGain or 1
+		local gain = math.max(1, math.floor(safeMaxGain * (1 - currentLevel / 100)))
 		info.skills[skill] = math.min(100, currentLevel + RANDOM:NextInteger(0, gain))
 	end
 	
@@ -10331,13 +10521,13 @@ function LifeBackend:tickCareer(state)
 		-- YearLog entries need 'text' field, not 'message' - that's what generateYearSummary looks for
 		state.YearLog = state.YearLog or {}
 		table.insert(state.YearLog, {
-			type = "salary",
-			emoji = "💰",
-			text = string.format("Earned $%s from your job as %s", 
-				formatMoney(salary), 
-				state.CurrentJob.name or "employee"),
-			amount = salary,
-		})
+		type = "salary",
+		emoji = "💰",
+		text = string.format("Earned %s from your job as %s", 
+			formatMoney(salary or 0) or "$0", 
+			tostring(state.CurrentJob.name or "employee")),
+		amount = salary or 0,
+	})
 	end
 end
 
@@ -11297,44 +11487,48 @@ function LifeBackend:applyRelationshipDecay(state)
 		local popupData = nil
 		
 		if event.type == "friend_annoyed" then
+			local safeName = tostring(event.name or "Your friend")
 			popupData = {
 				emoji = "😤",
 				title = "Friend Annoyed",
 				body = string.format("%s is annoyed that you haven't reached out in %d years.\n\nThey feel like you've been neglecting the friendship.", 
-					event.name, event.yearsSince or 2),
+					safeName, tonumber(event.yearsSince) or 2),
 				happiness = -3,
 			}
 		elseif event.type == "friend_angry" then
+			local safeName = tostring(event.name or "Your friend")
 			popupData = {
 				emoji = "😡",
 				title = "Friend is Angry!",
 				body = string.format("%s is really upset with you!\n\n\"You haven't talked to me in years! Do you even care about our friendship anymore?\"", 
-					event.name),
+					safeName),
 				happiness = -8,
 			}
 			state.Flags = state.Flags or {}
 			state.Flags.has_angry_friend = true
-			state.Flags.angry_friend_name = event.name
+			state.Flags.angry_friend_name = safeName
 			state.Flags.angry_friend_id = event.relId
 		elseif event.type == "friend_furious" then
+			local safeName = tostring(event.name or "Your friend")
 			popupData = {
 				emoji = "🔥",
-				title = string.format("%s is FURIOUS!", event.name),
+				title = string.format("%s is FURIOUS!", safeName),
 				body = string.format("%s confronted you, absolutely livid:\n\n\"You NEVER talk to me anymore! I'm always the one reaching out! What kind of friend are you?!\"\n\nThis friendship is on the verge of ending.", 
-					event.name),
+					safeName),
 				happiness = -15,
 			}
 		elseif event.type == "friendship_ended" then
+			local safeName = tostring(event.name or "Your friend")
 			popupData = {
 				emoji = "💔",
 				title = "Friendship Over",
 				body = string.format("After %d years of no contact, you and %s have completely drifted apart.\n\nThe friendship that once meant so much... is now just a memory.", 
-					event.yearsSince or 8, event.name),
+					tonumber(event.yearsSince) or 8, safeName),
 				happiness = -20,
 			}
 			state.Flags = state.Flags or {}
 			state.Flags.lost_friend = true
-			state.Flags.lost_friend_name = event.name
+			state.Flags.lost_friend_name = safeName
 		end
 		
 		-- Queue the popup if it's a significant event
@@ -13949,21 +14143,99 @@ function LifeBackend:handleContinueAsKid(player, childData)
 	newState.Year = (state.Year or 2025) -- Same year
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX: Adjust family member ages based on child's starting age
-	-- createInitialState generates family for age 0 newborn, so we need to age them up
-	-- This prevents grandparents being too young and siblings having weird ages
+	-- CRITICAL FIX #FAMILY-DUP: FIX FAMILY MEMBER DUPLICATION BUG!
+	-- User complaint: "WHEN FAMILYS LIKE FATHER OR MOTHER ANOTHER ONE SPAWNS IN SOMEHOW"
+	-- The old code was creating random NEW parents via createInitialState, but the
+	-- child's actual parent is the deceased player character + their partner!
+	-- 
+	-- Solution: Clear the randomly generated parents and properly set up:
+	-- 1. Deceased parent = the player who just died
+	-- 2. Living parent = the player's partner (if they had one)
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	if newState.Relationships then
-		for relId, rel in pairs(newState.Relationships) do
-			if type(rel) == "table" and rel.age then
-				-- Age up all family members by the child's starting age
+	
+	-- Clear the randomly generated parents from createInitialState
+	newState.Relationships = newState.Relationships or {}
+	newState.Relationships["mother"] = nil
+	newState.Relationships["father"] = nil
+	
+	-- Determine which parent the deceased player was (based on their gender)
+	local deceasedIsMotherOrFather = (state.Gender == "Female") and "mother" or "father"
+	local otherParentRole = (state.Gender == "Female") and "father" or "mother"
+	
+	-- Create the deceased parent (the player who just died)
+	newState.Relationships[deceasedIsMotherOrFather] = {
+		id = deceasedIsMotherOrFather,
+		name = parentName,
+		type = "family",
+		role = (state.Gender == "Female") and "Mother" or "Father",
+		relationship = child.relationship or 70,
+		age = parentAge,
+		gender = (state.Gender == "Female") and "female" or "male",
+		alive = false, -- DECEASED
+		deceased = true,
+		deathYear = state.Year or 2025,
+		isFamily = true,
+		wasPlayer = true, -- Mark that this was the previous player character
+	}
+	
+	-- Set up the other parent (player's spouse/partner if they had one)
+	local partnerData = state.Relationships and (state.Relationships.partner or state.Relationships.spouse)
+	if partnerData and type(partnerData) == "table" then
+		newState.Relationships[otherParentRole] = {
+			id = otherParentRole,
+			name = partnerData.name or "Parent",
+			type = "family",
+			role = (otherParentRole == "mother") and "Mother" or "Father",
+			relationship = math.max(40, (partnerData.relationship or 50)),
+			age = (partnerData.age or parentAge) + childAge, -- Age them up
+			gender = (otherParentRole == "mother") and "female" or "male",
+			alive = partnerData.alive ~= false, -- Assume alive unless marked dead
+			deceased = partnerData.alive == false,
+			isFamily = true,
+			wasPartner = true, -- Mark that this was the player's partner
+		}
+	else
+		-- No partner - create a generic other parent (could be unknown/absent)
+		local RANDOM = Random.new()
+		local nameList = (otherParentRole == "mother") and 
+			{"Sarah", "Jessica", "Emily", "Ashley", "Rachel", "Amanda", "Michelle", "Jennifer"} or
+			{"Michael", "David", "James", "Robert", "William", "Thomas", "Daniel", "Matthew"}
+		local genericName = nameList[RANDOM:NextInteger(1, #nameList)]
+		
+		newState.Relationships[otherParentRole] = {
+			id = otherParentRole,
+			name = genericName,
+			type = "family",
+			role = (otherParentRole == "mother") and "Mother" or "Father",
+			relationship = 50,
+			age = parentAge + RANDOM:NextInteger(-5, 5) + childAge,
+			gender = (otherParentRole == "mother") and "female" or "male",
+			alive = true,
+			isFamily = true,
+		}
+	end
+	
+	-- Adjust grandparent ages based on child's starting age
+	for relId, rel in pairs(newState.Relationships) do
+		if type(rel) == "table" and rel.age and relId:find("grand") then
+			-- Age up grandparents by child's age
+			rel.age = rel.age + childAge
+			
+			-- Check if grandparents should be dead at this age
+			if rel.age >= 85 then
+				rel.alive = false
+				rel.deceased = true
+			end
+		end
+	end
+	
+	-- Also adjust sibling ages
+	for relId, rel in pairs(newState.Relationships) do
+		if type(rel) == "table" and (relId:find("brother") or relId:find("sister")) then
+			if rel.ageOffset then
+				rel.age = childAge + rel.ageOffset
+			elseif rel.age then
 				rel.age = rel.age + childAge
-				
-				-- Check if grandparents should be dead at this age
-				if relId:find("grand") and rel.age >= 85 then
-					rel.alive = false
-					rel.deceased = true
-				end
 			end
 		end
 	end
@@ -14124,6 +14396,73 @@ function LifeBackend:handleContinueAsKid(player, childData)
 	-- Create parent as a memory
 	newState.Flags.parent_deceased = true
 	newState.Flags.grieving = true
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #INHERIT-1: Add more variety and depth to inheritance experience
+	-- User requested: "ENSURE CONTINUE AS KID WORKS BETTER AND ISN'T BORING"
+	-- Add special starting flags that create unique events for inherited characters
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Track the size of inheritance (affects story)
+	if inheritance >= 500000 then
+		newState.Flags.large_inheritance = true
+		newState.Flags.wealthy_background = true
+	elseif inheritance >= 100000 then
+		newState.Flags.moderate_inheritance = true
+		newState.Flags.comfortable_background = true
+	elseif inheritance >= 10000 then
+		newState.Flags.small_inheritance = true
+	else
+		newState.Flags.minimal_inheritance = true
+		newState.Flags.starting_from_scratch = true
+	end
+	
+	-- Track relationship with parent (affects grief events)
+	local childRelationship = child.relationship or 50
+	if childRelationship >= 80 then
+		newState.Flags.close_with_parent = true
+		newState.Flags.intense_grief = true
+	elseif childRelationship >= 50 then
+		newState.Flags.normal_parent_relationship = true
+	elseif childRelationship >= 30 then
+		newState.Flags.distant_from_parent = true
+		newState.Flags.complicated_grief = true
+	else
+		newState.Flags.estranged_from_parent = true
+		newState.Flags.guilt_feelings = true
+	end
+	
+	-- If parent was famous/notorious, child inherits that legacy
+	if state.Flags and (state.Flags.famous or state.Flags.celebrity or state.Flags.is_famous) then
+		newState.Flags.famous_parent = true
+		newState.Flags.celebrity_child = true
+	end
+	
+	if state.Flags and (state.Flags.criminal or state.Flags.has_criminal_record or state.Flags.notorious) then
+		newState.Flags.criminal_parent = true
+		newState.Flags.parents_shadow = true
+	end
+	
+	if state.Flags and (state.Flags.philanthropist or state.Flags.charitable or state.Flags.community_pillar) then
+		newState.Flags.respected_parent = true
+		newState.Flags.good_family_name = true
+	end
+	
+	-- Career legacy potential
+	if state.CurrentJob and state.CurrentJob.id then
+		local parentJob = state.CurrentJob.id:lower()
+		if parentJob:find("doctor") or parentJob:find("surgeon") or parentJob:find("medical") then
+			newState.Flags.medical_family = true
+		elseif parentJob:find("lawyer") or parentJob:find("attorney") then
+			newState.Flags.legal_family = true
+		elseif parentJob:find("business") or parentJob:find("ceo") or parentJob:find("executive") then
+			newState.Flags.business_family = true
+		elseif parentJob:find("military") or parentJob:find("army") or parentJob:find("marine") then
+			newState.Flags.military_family = true
+		elseif parentJob:find("teacher") or parentJob:find("professor") then
+			newState.Flags.education_family = true
+		end
+	end
 	
 	-- Store the new state
 	self.playerStates[player] = newState
@@ -15473,22 +15812,143 @@ function LifeBackend:handleCrime(player, crimeId, minigameBonus)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX: Minigame bonus reduces risk of getting caught!
-	-- Completing the heist minigame (like cracking a safe) gives you an advantage
-	-- CRITICAL FIX: Also handle table format from combat minigames!
+	-- CRITICAL FIX #700: Minigame WIN = GUARANTEED SUCCESS!
+	-- User complaint: "crime ones even if successful still jail me"
+	-- When a player WINS the minigame, they've EARNED their success - NO JAIL!
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	local minigameWon = false
+	local minigameFailed = false
+	
 	if minigameBonus == true then
-		riskModifier = riskModifier - 20  -- 20% less likely to get caught
+		minigameWon = true
 	elseif type(minigameBonus) == "table" then
-		-- CRITICAL FIX: Handle table format { won = true, success = true, isCombat = true }
+		-- Handle table format { won = true, success = true, isCombat = true }
 		if minigameBonus.won or minigameBonus.success then
-			riskModifier = riskModifier - 25 -- Combat win = even bigger bonus!
+			minigameWon = true
 		elseif minigameBonus.escaped then
-			riskModifier = riskModifier - 10 -- Escaped = some bonus for getaway
+			riskModifier = riskModifier - 15 -- Escaped = significant bonus
+		elseif minigameBonus.won == false or minigameBonus.success == false then
+			minigameFailed = true
 		end
 	elseif minigameBonus == false and crime.hasMinigame then
-		-- Failed minigame for a crime that has one = higher risk
-		riskModifier = riskModifier + 15  -- 15% more likely to get caught
+		minigameFailed = true
+	end
+	
+	-- If player WON the minigame, they CANNOT get caught - period!
+	if minigameWon then
+		-- GUARANTEED SUCCESS - Player earned this through skill!
+		local reward = 0
+		if crime.reward then
+			reward = RANDOM:NextInteger(crime.reward[1] or 0, crime.reward[2] or 100)
+			-- Bonus for minigame win!
+			reward = math.floor(reward * 1.25)
+			self:addMoney(state, reward)
+		end
+		state.Flags.successful_criminal = true
+		state.Flags.criminal_experience = (state.Flags.criminal_experience or 0) + 1
+		if (state.Flags.criminal_experience or 0) >= 5 then
+			state.Flags.experienced_criminal = true
+		end
+		
+		-- ═══════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Apply grantsFlags from crime catalog!
+		-- User complaint: "petty crimes should let u become a smuggler"
+		-- This sets criminal_background, crime_experience, etc. for career unlocks
+		-- ═══════════════════════════════════════════════════════════════════════════
+		if crime.grantsFlags then
+			for _, flagName in ipairs(crime.grantsFlags) do
+				state.Flags[flagName] = true
+			end
+		end
+		-- Always set these on successful crime
+		state.Flags.criminal_record = true
+		state.Flags.crime_experience = true
+		state.Flags.criminal_background = true
+		
+		local crimeName = crime.name or crimeId
+		local message = string.format("💰 Perfect execution! %s succeeded - you got away clean with $%d!", crimeName, reward)
+		self:pushState(player, message)
+		return { 
+			success = true, 
+			caught = false, 
+			message = message, 
+			money = reward,
+			perfectExecution = true,
+			crimeName = crimeName,
+		}
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Combat-based crimes MUST fail if combat was lost!
+	-- User complaint: "I GOT KNOCKED OUT AND IT SAID CRIME SUCCESSFUL"
+	-- If you get knocked out trying to assault/mug someone, you LOST - the crime failed!
+	-- This is different from minigame-based crimes where failure just increases risk.
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local combatCrimes = { assault = true, mugging = true, prison_assault = true, prison_riot = true }
+	local isCombatCrime = combatCrimes[crimeId] or (type(minigameBonus) == "table" and minigameBonus.isCombat)
+	
+	if minigameFailed and isCombatCrime then
+		-- You got knocked out! Crime automatically fails + health damage
+		local healthLoss = RANDOM:NextInteger(10, 25)
+		state.Stats = state.Stats or {}
+		local currentHealth = state.Stats.Health or state.Health or 50
+		state.Stats.Health = math.max(0, currentHealth - healthLoss)
+		state.Health = state.Stats.Health
+		
+		-- Apply embarrassment/happiness loss
+		self:applyStatChanges(state, { Happiness = -15 })
+		
+		-- Random chance cops were called during the altercation
+		local copsCalled = RANDOM:NextInteger(1, 100) <= 25  -- 25% chance someone called cops
+		
+		if copsCalled then
+			local years = RANDOM:NextInteger(crime.jail.min, crime.jail.max)
+			state.InJail = true
+			state.JailYearsLeft = years
+			state.Flags.in_prison = true
+			state.Flags.incarcerated = true
+			state.Flags.criminal_record = true
+			
+			-- Lose job when going to prison
+			if state.CurrentJob then
+				state.CareerInfo = state.CareerInfo or {}
+				state.CareerInfo.lastJobBeforeJail = {
+					id = state.CurrentJob.id,
+					name = state.CurrentJob.name,
+					company = state.CurrentJob.company,
+					salary = state.CurrentJob.salary,
+				}
+				state.CurrentJob = nil
+				state.Flags.employed = nil
+				state.Flags.has_job = nil
+			end
+			
+			local message = string.format("😵 Embarrassing! They knocked you out cold! Lost %d health. Someone called the cops - you're sentenced to %.1f years!", healthLoss, years)
+			self:pushState(player, message)
+			return { 
+				success = false, 
+				caught = true, 
+				knockedOut = true,
+				message = message, 
+				healthLost = healthLoss,
+			}
+		else
+			-- Just got beat up, no cops
+			local message = string.format("😵 Humiliating defeat! They fought back and knocked you out! Lost %d health. You limped away embarrassed.", healthLoss)
+			self:pushState(player, message)
+			return { 
+				success = false, 
+				caught = false, 
+				knockedOut = true,
+				message = message, 
+				healthLost = healthLoss,
+			}
+		end
+	end
+	
+	-- If minigame was failed (non-combat), higher risk but still roll
+	if minigameFailed then
+		riskModifier = riskModifier + 20  -- 20% more likely to get caught
 	end
 
 	local roll = RANDOM:NextInteger(0, 100)
@@ -15549,10 +16009,30 @@ function LifeBackend:handleCrime(player, crimeId, minigameBonus)
 		local payout = RANDOM:NextInteger(crime.reward[1], crime.reward[2])
 		self:addMoney(state, payout)
 		self:applyStatChanges(state, { Happiness = 4 })
-		local message = string.format("Crime succeeded! You gained %s.", formatMoney(payout))
+		
+		-- ═══════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Apply grantsFlags from crime catalog on success!
+		-- User complaint: "petty crimes should let u become a smuggler"
+		-- ═══════════════════════════════════════════════════════════════════════════
+		if crime.grantsFlags then
+			for _, flagName in ipairs(crime.grantsFlags) do
+				state.Flags[flagName] = true
+			end
+		end
+		-- Always set these on successful crime
+		state.Flags.criminal_record = true
+		state.Flags.crime_experience = true
+		state.Flags.criminal_background = true
+		state.Flags.criminal_experience = (state.Flags.criminal_experience or 0) + 1
+		if (state.Flags.criminal_experience or 0) >= 3 then
+			state.Flags.experienced_criminal = true
+		end
+		
+		local crimeName = crime.name or crimeId
+		local message = string.format("%s succeeded! You gained %s.", crimeName, formatMoney(payout))
 		-- CRITICAL FIX: Don't use showPopup - client shows its own result
 		self:pushState(player, message)
-		return { success = true, caught = false, message = message, money = payout }
+		return { success = true, caught = false, message = message, money = payout, crimeName = crimeName }
 	end
 end
 
@@ -16844,7 +17324,7 @@ function LifeBackend:handleJobApplication(player, jobId, clientInterviewScore)
 	-- Clear application history for this job (fresh start)
 	state.JobApplications[actualJobId] = nil
 
-	local feed = string.format("🎉 Congratulations! You were hired as a %s at %s!", job.name, job.company)
+	local feed = string.format("🎉 Congratulations! You were hired as a %s at %s!", tostring(job.name or "employee"), tostring(job.company or "a company"))
 	self:pushState(player, feed)
 	-- CRITICAL FIX: Return job info for client display
 	return { 
@@ -17126,14 +17606,14 @@ function LifeBackend:applyJobOffer(state, job, player)
 	end
 	
 	-- Push state to client
-	if player then
+	if player and state.CurrentJob then
 		self:pushState(player, string.format("🎉 Congratulations! You're now a %s at %s!", 
-			state.CurrentJob.name, state.CurrentJob.company))
+			tostring(state.CurrentJob.name or "employee"), tostring(state.CurrentJob.company or "a company")))
 	end
 	
 	return {
 		success = true,
-		message = string.format("You're now a %s at %s!", state.CurrentJob.name, state.CurrentJob.company),
+		message = string.format("You're now a %s at %s!", tostring(state.CurrentJob and state.CurrentJob.name or "employee"), tostring(state.CurrentJob and state.CurrentJob.company or "a company")),
 		job = state.CurrentJob,
 	}
 end
@@ -17182,8 +17662,8 @@ function LifeBackend:handleQuitJob(player, quitStyle)
 	-- Track total years worked for experience bonuses
 	state.CareerInfo.totalYearsWorked = (state.CareerInfo.totalYearsWorked or 0) + (state.CareerInfo.yearsAtJob or 0)
 
-	local jobName = state.CurrentJob.name
-	local companyName = state.CurrentJob.company or "your employer"
+	local jobName = (state.CurrentJob and state.CurrentJob.name) or "your job"
+	local companyName = (state.CurrentJob and state.CurrentJob.company) or "your employer"
 	state.CurrentJob = nil
 	state.CareerInfo.performance = 0
 	state.CareerInfo.promotionProgress = 0
@@ -17633,13 +18113,13 @@ function LifeBackend:enrollEducation(player, programId, options)
 	local playerAge = state.Age or 0
 	local minAge = program.minAge or 18
 	if playerAge < minAge then
-		return { success = false, message = string.format("You must be at least %d years old to enroll in %s.", minAge, program.name) }
+		return { success = false, message = string.format("You must be at least %d years old to enroll in %s.", minAge, tostring(program.name or "this program")) }
 	end
 
 	if not self:meetsEducationRequirement(state, program.requirement) then
 		-- MINOR FIX: More helpful error message with specific requirement
 		local requiredText = program.requirement or "a prerequisite degree"
-		return { success = false, message = string.format("You need %s to enroll in %s.", requiredText, program.name) }
+		return { success = false, message = string.format("You need %s to enroll in %s.", tostring(requiredText or "prerequisites"), tostring(program.name or "this program")) }
 	end
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -17808,7 +18288,8 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 	end
 
 	-- Money check
-	if (state.Money or 0) < asset.price then
+	local assetPrice = tonumber(asset.price) or 0
+	if (state.Money or 0) < assetPrice then
 		return { success = false, message = "You can't afford that." }
 	end
 
@@ -18034,7 +18515,7 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 		end
 	end
 
-	self:addMoney(state, -asset.price)
+	self:addMoney(state, -(tonumber(asset.price) or 0))
 	
 	-- Generate feed with tier-specific messaging
 	local tierMessages = {
@@ -18051,7 +18532,7 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 		investment = "Smart investment:",
 	}
 	local tierMsg = tierMessages[asset.tier or "basic"] or "You purchased"
-	local feed = string.format("%s %s for %s!", tierMsg, asset.name, formatMoney(asset.price))
+	local feed = string.format("%s %s for %s!", tierMsg, tostring(asset.name or "an item"), formatMoney(asset.price or 0))
 	
 	-- Debug: Check assets before push
 	debugPrint("  Before pushState:")
@@ -18170,6 +18651,33 @@ function LifeBackend:handleAssetSale(player, assetId, assetType)
 					state.Flags.mortgage_debt = nil
 					state.Flags.mortgage_trouble = nil
 				end
+				
+				-- CRITICAL FIX: Update HousingState when selling last property
+				-- Player is now homeless or needs to find a new place!
+				state.HousingState = state.HousingState or {}
+				local age = state.Age or 18
+				if age < 18 then
+					-- Underage - back to living with parents
+					state.HousingState.status = "with_parents"
+					state.HousingState.type = "family_home"
+					state.HousingState.rent = 0
+				elseif state.Money and state.Money >= 1000 then
+					-- Has money - assume they'll rent
+					state.HousingState.status = "renter"
+					state.HousingState.type = "apartment"
+					state.HousingState.rent = math.max(500, math.min(2000, math.floor(state.Money / 20)))
+					state.HousingState.moveInYear = state.Year or 2025
+					state.HousingState.yearsWithoutPayingRent = 0
+					state.Flags.renter = true
+				else
+					-- No money and sold their home - homeless!
+					state.HousingState.status = "homeless"
+					state.HousingState.type = "street"
+					state.HousingState.rent = 0
+					state.Flags.homeless = true
+					state.Flags.renter = nil
+				end
+				state.HousingState.value = nil -- No longer own property
 			elseif normalizedType == "Properties" and #bucket > 0 then
 				-- CRITICAL FIX #25: If selling one property but have mortgage, clear if this was the mortgaged one
 				if asset.hasMortgage then
@@ -19212,7 +19720,7 @@ function LifeBackend:startStoryPath(player, pathId)
 		-- Player must marry into royalty or be born royal to become royalty
 	end
 
-	local feed = string.format("🌟 You began the %s path!", path.name)
+	local feed = string.format("🌟 You began the %s path!", tostring(path.name or "new"))
 	self:pushState(player, feed)
 	return { success = true, message = feed }
 end
@@ -19278,7 +19786,7 @@ function LifeBackend:performPathAction(player, pathId, actionId)
 		state.Paths[pathId] = #stages
 		state.Paths.active = nil
 		state.ActivePath = nil
-		local feed = string.format("You completed the %s path!", path.name)
+		local feed = string.format("You completed the %s path!", tostring(path.name or ""))
 		self:pushState(player, feed, {
 			showPopup = true,
 			emoji = "🌟",
@@ -19459,7 +19967,7 @@ function LifeBackend:handleLeaveMob(player)
 	return { success = true, message = msg }
 end
 
-function LifeBackend:handleMobOperation(player, operationId)
+function LifeBackend:handleMobOperation(player, operationId, modifiers)
 	-- CRITICAL FIX #12: Check MAFIA gamepass before operations
 	if not self:checkGamepassOwnership(player, "MAFIA") then
 		self:promptGamepassPurchase(player, "MAFIA")
@@ -19475,7 +19983,32 @@ function LifeBackend:handleMobOperation(player, operationId)
 	if not state then
 		return { success = false, message = "State not found." }
 	end
-	local success, message, opResult = MafiaSystem:doOperation(state, operationId)
+	
+	modifiers = modifiers or {}
+	
+	-- CRITICAL FIX: If client already completed a minigame (combat/heist), respect that result!
+	-- Don't re-roll success - the minigame already determined the outcome
+	local forcedSuccess = nil
+	if modifiers.combatCompleted then
+		-- Combat minigame was played - respect that result
+		forcedSuccess = modifiers.combatWon
+		print("[MobOperation] Combat minigame completed. Won:", forcedSuccess)
+	elseif modifiers.heistCompleted then
+		-- Heist minigame was played - respect that result
+		forcedSuccess = modifiers.heistSuccess
+		print("[MobOperation] Heist minigame completed. Won:", forcedSuccess)
+	end
+	
+	local success, message, opResult
+	
+	if forcedSuccess ~= nil then
+		-- CRITICAL FIX: Use forced success from minigame result instead of re-rolling!
+		success, message, opResult = MafiaSystem:doOperationWithForcedResult(state, operationId, forcedSuccess, modifiers)
+	else
+		-- Normal operation - roll for success
+		success, message, opResult = MafiaSystem:doOperation(state, operationId)
+	end
+	
 	if success then
 		local resp = {
 			success = true,
@@ -19730,7 +20263,7 @@ function LifeBackend:handleGodModeEdit(player, payload)
 			state.Flags.famous_family = true
 			state.Flags.royalty_gamepass = true
 			
-			table.insert(summaries, string.format("👑 Born as %s of %s %s with $%s inheritance!", title, country.emoji, country.name, formatMoney(royalWealth)))
+			table.insert(summaries, string.format("👑 Born as %s of %s %s with %s inheritance!", tostring(title or "Royal"), tostring(country.emoji or "👑"), tostring(country.name or "the Kingdom"), formatMoney(royalWealth or 0)))
 		else
 			-- No gamepass, prompt purchase
 			self:promptGamepassPurchase(player, "ROYALTY")
@@ -19786,7 +20319,7 @@ function LifeBackend:handleGodModeEdit(player, payload)
 				state.Flags.has_job = true
 				state.Flags.celebrity_gamepass = true
 				
-				table.insert(summaries, string.format("%s Started %s career as %s!", path.emoji, path.name, path.firstStage))
+				table.insert(summaries, string.format("%s Started %s career as %s!", tostring(path.emoji or "⭐"), tostring(path.name or "new"), tostring(path.firstStage or "beginner")))
 			end
 		else
 			self:promptGamepassPurchase(player, "CELEBRITY")

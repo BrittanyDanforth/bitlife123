@@ -142,6 +142,35 @@ local hasMafiaGamepass = false
 -- CRITICAL FIX #446: Gamepass IDs for purchase detection
 local MAFIA_GAMEPASS_ID = 1626238769
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #516: DIRECT CLIENT-SIDE GAMEPASS PROMPT FUNCTION!
+-- This bypasses the server's cooldown system entirely for user-initiated clicks!
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function promptMafiaGamepassDirect()
+	if hasMafiaGamepass then
+		return false  -- Already owns
+	end
+	
+	local success, err = pcall(function()
+		MarketplaceServiceModule:PromptGamePassPurchase(localPlayer, MAFIA_GAMEPASS_ID)
+	end)
+	
+	if success then
+		print("[MafiaScreen] ✅ Prompted Mafia gamepass purchase directly")
+	else
+		warn("[MafiaScreen] Failed to prompt Mafia purchase:", err)
+	end
+	
+	-- Also notify server (for tracking)
+	task.spawn(function()
+		if PromptGamepass then
+			pcall(function() PromptGamepass:FireServer("MAFIA", true) end)
+		end
+	end)
+	
+	return success
+end
+
 -- CRITICAL FIX #457: Track pending family join for auto-retry after purchase
 local pendingFamilyJoin = nil
 
@@ -1594,10 +1623,10 @@ function MafiaScreen:attemptJoinFamily(familyId)
 			pendingFamilyJoin = familyId
 			log("Storing pending family join:", familyId)
 			
-			-- Prompt gamepass purchase
-			if PromptGamepass then
-				PromptGamepass:FireServer("MAFIA")
-			end
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX #517: Use direct client-side prompt instead of server!
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			promptMafiaGamepassDirect()
 			-- CRITICAL FIX #472: Show retry button for gamepass required
 			self:showResult(false, "Gamepass Required", result.message or "Purchase the Mafia gamepass to join!", "💎", true)
 		else
@@ -1862,14 +1891,28 @@ function MafiaScreen:doOperation(operationId, modifiers)
 						local title = won and "Operation Complete!" or "Partial Success"
 						self:showResult(true, title, serverResult.message or "The job is done.", emoji)
 					else
-						local emoji = serverResult.arrested and "👮" or (won and "💨" or "😵")
-						self:showResult(false, "Operation Failed", serverResult.message or "Things went wrong.", emoji)
+						-- CRITICAL FIX: Properly show knocked out state with health loss
+						-- User complaint: "I GOT KNOCKED OUT AND IT SAID CRIME SUCCESSFUL"
+						local emoji = serverResult.arrested and "👮" or "😵"
+						local title = "Operation Failed"
+						
+						if serverResult.knockedOut then
+							title = "😵 Knocked Out!"
+							emoji = serverResult.arrested and "🚔" or "😵"
+						end
+						
+						local message = serverResult.message or "Things went wrong."
+						if serverResult.healthLost and serverResult.healthLost > 0 and not message:find("health") then
+							message = message .. string.format("\n\n💔 -%d Health", serverResult.healthLost)
+						end
+						
+						self:showResult(false, title, message, emoji)
 					end
 				else
-					local title = won and "👊 Victory" or "😵 Beaten"
+					local title = won and "👊 Victory" or "😵 Knocked Out!"
 					local message = won 
 						and "You dominated them! The family is impressed." 
-						or "You got beat up. This damages the family's reputation."
+						or "You got beat down hard! That's embarrassing for the family..."
 					self:showResult(won, title, message, won and "💪" or "😵")
 				end
 				
@@ -1983,10 +2026,10 @@ function MafiaScreen:doOperation(operationId, modifiers)
 			self:refreshContent()
 		end)
 	elseif success and result and result.needsGamepass then
-		-- MINOR FIX #5: Handle gamepass requirement in operations
-		if PromptGamepass then
-			PromptGamepass:FireServer("MAFIA")
-		end
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #518: Use direct client-side prompt instead of server!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		promptMafiaGamepassDirect()
 		self:showResult(false, "Gamepass Required", result.message or "You need the Mafia gamepass.", "💎")
 	end
 end
@@ -2206,10 +2249,10 @@ function MafiaScreen:showGamepassPrompt()
 	end)
 	
 	buyBtn.MouseButton1Click:Connect(function()
-		-- Prompt actual Roblox purchase
-		if PromptGamepass then
-			PromptGamepass:FireServer("MAFIA")
-		end
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #519: Use direct client-side prompt instead of server!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		promptMafiaGamepassDirect()
 		overlay:Destroy()
 	end)
 	
