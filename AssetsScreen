@@ -426,7 +426,7 @@ function AssetsScreen:healUIState(state)
 end
 
 function AssetsScreen:updateState(newState)
-	log("=== UPDATE STATE CALLED ===")
+	-- Debug logging removed to prevent spam
 	if newState then 
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		-- CRITICAL FIX #26: Detect new life and reset assets view
@@ -441,7 +441,7 @@ function AssetsScreen:updateState(newState)
 		-- RUN UI STATE HEALER before rendering
 		-- ═══════════════════════════════════════════════════════════════════════
 		self:healUIState(newState)
-		log("State updated - Age:", self:getAge(), "Money:", self:getMoney())
+		-- Verbose state logging removed to prevent spam
 		
 		-- CRITICAL DEBUG: Trace the Assets field
 		if newState.Assets then

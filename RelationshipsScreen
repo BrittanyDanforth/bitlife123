@@ -557,7 +557,7 @@ function RelationshipsScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurF
 end
 
 function RelationshipsScreen:updateState(newState)
-	log("=== UPDATE STATE CALLED ===")
+	-- Debug logging removed to prevent spam
 	if not newState then 
 		log("WARNING: updateState called with nil newState!")
 		return 
@@ -571,7 +571,7 @@ function RelationshipsScreen:updateState(newState)
 	local isNewLife = (wasAge > 5 and newAge <= 1)
 
 	self.playerState = newState
-	log("State updated - Age:", self:getAge(), "Money:", self:getMoney())
+	-- Verbose state logging removed to prevent spam
 
 	-- CRITICAL DEBUG: Trace the Relationships field
 	if newState.Relationships then

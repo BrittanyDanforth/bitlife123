@@ -1667,7 +1667,7 @@ function OccupationScreen:healUIState(state)
 end
 
 function OccupationScreen:updateState(newState)
-	log("Updating state...")
+	-- Debug logging removed to prevent spam
 	if newState then 
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		-- CRITICAL FIX: Deep copy state to prevent reference issues
@@ -1680,8 +1680,8 @@ function OccupationScreen:updateState(newState)
 		-- RUN UI STATE HEALER before rendering
 		-- ═══════════════════════════════════════════════════════════════════════
 		self:healUIState(newState)
-		
-		log("State updated - Age:", self:getAge(), "Money:", self:getMoney(), "Job:", self:getCurrentJob() or "None")
+
+		-- Verbose state logging removed to prevent spam
 		
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		-- CRITICAL FIX #1: ALWAYS clear cached data when state changes

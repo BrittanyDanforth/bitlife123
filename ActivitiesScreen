@@ -407,7 +407,7 @@ function ActivitiesScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc
 	self.currentTab = "mindbody"
 	-- CRITICAL FIX: Store callback for showing BitLife-style event cards
 	self.onShowEventCard = onShowEventCard
-	log("Initial state - Age:", self:getAge(), "Money:", self:getMoney(), "InJail:", self:isInJail())
+	-- Initial state log removed to prevent spam
 	self:createUI()
 	
 	-- CRITICAL FIX #449: Listen for gamepass purchases to refresh UI immediately
@@ -579,7 +579,7 @@ function ActivitiesScreen:healUIState(state)
 end
 
 function ActivitiesScreen:updateState(newState)
-	log("Updating state...")
+	-- Debug logging removed to prevent spam
 
 	-- Store previous jail status using the SAME logic as isInJail()
 	local wasInJail = false
@@ -627,17 +627,10 @@ function ActivitiesScreen:updateState(newState)
 		-- Check if jail status changed using consistent logic
 		local nowInJail = self:isInJail()
 
-		log("State updated - Age:", self:getAge(), "Money:", self:getMoney())
-		log("  InJail (ExtendedState):", newState.InJail)
-		log("  Flags.in_prison:", newState.Flags and newState.Flags.in_prison)
-		log("  Flags.incarcerated:", newState.Flags and newState.Flags.incarcerated)
-		log("  JailYearsLeft:", self:getJailYearsLeft())
-		log("  wasInJail:", wasInJail, "nowInJail:", nowInJail)
+		-- Verbose state logging removed to prevent spam
 
 		if wasInJail ~= nowInJail then
-			log("🔄 JAIL STATUS CHANGED! Was:", wasInJail, "Now:", nowInJail)
-			-- Always rebuild tabs when jail status changes
-			log("Rebuilding tabs due to jail status change")
+			-- Jail status changed - rebuild tabs
 			self:rebuildTabs()
 			self:updateInfoBar()
 
@@ -679,18 +672,14 @@ function ActivitiesScreen:isInJail()
 
 	-- If InJail is explicitly set (true or false), use that as authoritative
 	if state.InJail == true then
-		log("isInJail: TRUE (from ExtendedState.InJail)")
 		return true
 	elseif state.InJail == false then
-		log("isInJail: FALSE (from ExtendedState.InJail)")
 		return false
 	end
 
 	-- Fallback to flags only if InJail is nil (not synced yet)
-	local flagsInJail = (state.Flags and state.Flags.in_prison == true) 
+	local flagsInJail = (state.Flags and state.Flags.in_prison == true)
 		or (state.Flags and state.Flags.incarcerated == true)
-
-	log("isInJail:", flagsInJail, "(from Flags - InJail was nil)")
 	return flagsInJail
 end
 
