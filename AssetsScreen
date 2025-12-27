@@ -1331,7 +1331,10 @@ function AssetsScreen:populateProperty()
 		end
 		statusColor = C.Green
 	-- PRIORITY 3: RENTING - Also overrides transitional states
-	elseif flags.has_apartment or flags.renting or housingStatus == "renter" then
+	-- CRITICAL FIX: Only show renting if NOT homeless! Stale flags can cause contradictions
+	-- BUG: User said "shows renting but I'm homeless" - homeless flag should override renting
+	elseif (flags.has_apartment or flags.renting or housingStatus == "renter") 
+		and not flags.homeless and housingStatus ~= "homeless" then
 		livingEmoji = "🏢"
 		if flags.has_roommates or housingState.type == "shared_apartment" then
 			livingStatus = "Renting (Roommates)"
@@ -1342,6 +1345,7 @@ function AssetsScreen:populateProperty()
 		livingDetail = "Monthly rent: $" .. self:formatMoney(rent)
 		statusColor = C.Blue
 	-- PRIORITY 4: Actual homeless states (no property, no rental)
+	-- CRITICAL FIX: Also check for stale renting flags that contradict homeless status
 	elseif flags.homeless or housingStatus == "homeless" then
 		livingEmoji = "🏕️"
 		livingStatus = "Homeless"
