@@ -19794,8 +19794,31 @@ function LifeBackend:createBasicRelationship(state, relType)
 		"Clark", "Lewis", "Robinson", "Walker", "Hall", "Young", "Allen", "King", "Wright", "Lopez"
 	}
 	
-	-- Choose gender randomly for romance/friend, then select appropriate name
-	local gender = (math.random() > 0.5) and "male" or "female"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Choose gender based on player's gender for romance!
+	-- BUG REPORTED: "As a girl it only lets me romance girls"
+	-- The issue was random 50/50 gender instead of considering player's gender!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local gender
+	if relType == "romance" or relType == "partner" then
+		-- Romance: opposite gender by default, ~15% same-gender
+		local playerGender = state.Gender or "Male"
+		if playerGender == "Female" or playerGender == "female" then
+			gender = "male" -- Female player gets male partner by default
+			if math.random() < 0.15 then
+				gender = "female" -- Same-gender
+			end
+		else
+			gender = "female" -- Male player gets female partner by default
+			if math.random() < 0.15 then
+				gender = "male" -- Same-gender
+			end
+		end
+	else
+		-- Friends/enemies: random gender
+		gender = (math.random() > 0.5) and "male" or "female"
+	end
+	
 	local firstName
 	if gender == "male" then
 		firstName = maleFirstNames[math.random(#maleFirstNames)]
