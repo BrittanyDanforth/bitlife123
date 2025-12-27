@@ -718,22 +718,75 @@ Career.events = {
 		text = "Your company is offering a permanent work-from-home option.",
 		question = "What do you choose?",
 		minAge = 22, maxAge = 60,
-		baseChance = 0.4,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.35, -- FIXED: Lowered from 0.4
+		cooldown = 10, -- FIXED: Increased - major life decision
+		oneTime = true, -- FIXED: Only ask once per life!
 		requiresJob = true,
-		-- CRITICAL FIX: Only for formal office jobs - street hustlers don't get "remote work options"
+		-- CRITICAL FIX: Only for jobs that CAN be done remotely
+		-- Street hustlers, doctors, construction workers, etc. can't work from home
+		eligibility = function(state)
+			local job = state.CurrentJob
+			if not job then return false, "Need a job first" end
+			
+			-- Jobs that CANNOT be done remotely
+			local nonRemoteJobs = {
+				"waiter", "waitress", "chef", "cook", "bartender", "barista",
+				"doctor", "surgeon", "nurse", "paramedic", "dentist",
+				"police", "cop", "firefighter", "soldier", "military",
+				"construction", "plumber", "electrician", "mechanic",
+				"delivery", "driver", "uber", "lyft", "trucker",
+				"retail", "cashier", "store", "clerk",
+				"teacher", "professor", -- Debatable but keeping for gameplay
+				"dealer", "hustler", "criminal", "thief",
+				"athlete", "actor", "singer", "performer",
+				"janitor", "cleaner", "maintenance",
+				"farmer", "rancher", "landscaper",
+			}
+			
+			local jobTitle = (job.title or ""):lower()
+			for _, blocked in ipairs(nonRemoteJobs) do
+				if jobTitle:find(blocked) then
+					return false, "This job can't be done remotely"
+				end
+			end
+			return true
+		end,
 		blockedByFlags = { 
 			in_prison = true, 
 			street_hustler = true, 
 			dealer = true, 
 			criminal_career = true,
+			works_from_home = true, -- Already remote
+			remote_worker = true, -- Already remote
+			hybrid_worker = true, -- Already chose hybrid
+			remote_approved = true, -- Already approved
 		},
 
 		choices = {
-			{ text = "Go fully remote", effects = { Happiness = 8, Health = 3, Money = 200 }, setFlags = { works_from_home = true }, feedText = "No more commute! Working in your pajamas!" },
-			{ text = "Stay in the office", effects = { Happiness = 2, Smarts = 2 }, feedText = "You prefer the structure of the office." },
-			{ text = "Hybrid schedule", effects = { Happiness = 6, Health = 2 }, setFlags = { hybrid_worker = true }, feedText = "Best of both worlds!" },
-			{ text = "Use it to move somewhere cheaper", effects = { Happiness = 10, Money = 500 }, setFlags = { works_from_home = true, relocated = true }, feedText = "You moved to a lower cost of living area!" },
+			{ 
+				text = "Go fully remote", 
+				effects = { Happiness = 8, Health = 3, Money = 200 }, 
+				setFlags = { works_from_home = true, remote_worker = true }, 
+				feedText = "No more commute! Working in your pajamas forever!" 
+			},
+			{ 
+				text = "Stay in the office", 
+				effects = { Happiness = 2, Smarts = 2 }, 
+				setFlags = { office_worker = true }, 
+				feedText = "You prefer the structure and social aspect of the office." 
+			},
+			{ 
+				text = "Hybrid schedule", 
+				effects = { Happiness = 6, Health = 2 }, 
+				setFlags = { hybrid_worker = true, works_from_home = true }, 
+				feedText = "Best of both worlds - some days home, some days office!" 
+			},
+			{ 
+				text = "Use it to move somewhere cheaper", 
+				effects = { Happiness = 10, Money = 500 }, 
+				setFlags = { works_from_home = true, remote_worker = true, relocated = true }, 
+				feedText = "You moved to a lower cost of living area while keeping your salary!" 
+			},
 		},
 	},
 	{
@@ -1668,30 +1721,8 @@ Career.events = {
 		{ text = "Volunteer for the integration team", effects = { Happiness = 5, Money = 500, Smarts = 4 }, setFlags = { integration_leader = true }, feedText = "You positioned yourself as a key player in the transition!" },
 	},
 },
-{
-	id = "remote_work_decision",
-	title = "Remote Work Opportunity",
-	emoji = "🏠",
-	text = "Your company is offering permanent remote work options. You could work from home forever, come to the office, or go hybrid.",
-	question = "What's your work style?",
-	minAge = 20, maxAge = 60,
-	baseChance = 0.555,
-	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
-	requiresJob = true,
-	
-	-- META
-	stage = STAGE,
-	ageBand = "working_age",
-	category = "career_lifestyle",
-	tags = { "job", "remote", "flexibility", "lifestyle" },
-	
-	choices = {
-		{ text = "Go fully remote - freedom!", effects = { Happiness = 10, Health = 3 }, setFlags = { remote_worker = true }, feedText = "No more commute! You're working in pajamas now." },
-		{ text = "Stay in the office - I need the structure", effects = { Happiness = 3, Smarts = 2 }, setFlags = { office_worker = true }, feedText = "You thrive on in-person collaboration." },
-		{ text = "Hybrid - best of both worlds", effects = { Happiness = 7, Health = 2 }, setFlags = { hybrid_worker = true }, feedText = "Some days home, some days office. Perfect balance." },
-		{ text = "Ask to relocate to a cheaper city", effects = { Happiness = 8, Money = 800 }, setFlags = { relocated_worker = true }, feedText = "You moved somewhere with lower cost of living while keeping your salary!" },
-	},
-},
+-- REMOVED: Duplicate "remote_work_decision" event - was identical to "work_from_home"
+-- Keeping only one remote work event to prevent spam
 {
 	-- CRITICAL FIX: Renamed from "side_hustle_opportunity" to avoid ID conflict with FastFoodEvents
 	id = "side_hustle_idea",

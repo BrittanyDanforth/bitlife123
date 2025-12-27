@@ -4932,6 +4932,46 @@ IntroUI.genderTitle.LayoutOrder = 1
 IntroUI.genderTitle.ZIndex = 72
 IntroUI.genderTitle.Parent = IntroUI.content
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- BONUS INCOME PROMPT - "Join our group & like the game for 25% extra income!"
+-- Shows on intro screen to encourage engagement and increase retention
+-- ═══════════════════════════════════════════════════════════════════════════════
+IntroUI.bonusPrompt = Instance.new("Frame")
+IntroUI.bonusPrompt.Name = "BonusPrompt"
+IntroUI.bonusPrompt.Size = UDim2.new(0.95, 0, 0, 50)
+IntroUI.bonusPrompt.BackgroundColor3 = Color3.fromRGB(34, 197, 94) -- Green
+IntroUI.bonusPrompt.BackgroundTransparency = 0.1
+IntroUI.bonusPrompt.LayoutOrder = 1.5 -- Between title and gender buttons
+IntroUI.bonusPrompt.ZIndex = 72
+IntroUI.bonusPrompt.Parent = IntroUI.content
+
+IntroUI.bonusPromptCorner = Instance.new("UICorner")
+IntroUI.bonusPromptCorner.CornerRadius = UDim.new(0, 12)
+IntroUI.bonusPromptCorner.Parent = IntroUI.bonusPrompt
+
+IntroUI.bonusPromptStroke = Instance.new("UIStroke")
+IntroUI.bonusPromptStroke.Color = Color3.fromRGB(22, 163, 74)
+IntroUI.bonusPromptStroke.Thickness = 2
+IntroUI.bonusPromptStroke.Parent = IntroUI.bonusPrompt
+
+IntroUI.bonusPromptText = Instance.new("TextLabel")
+IntroUI.bonusPromptText.Name = "BonusText"
+IntroUI.bonusPromptText.Size = UDim2.fromScale(1, 1)
+IntroUI.bonusPromptText.BackgroundTransparency = 1
+IntroUI.bonusPromptText.Font = F.Title or Enum.Font.GothamBold
+IntroUI.bonusPromptText.TextSize = 14
+IntroUI.bonusPromptText.TextColor3 = Color3.fromRGB(255, 255, 255)
+IntroUI.bonusPromptText.Text = "⭐ Join our GROUP & LIKE the game for +25% INCOME! 💰"
+IntroUI.bonusPromptText.TextWrapped = true
+IntroUI.bonusPromptText.ZIndex = 73
+IntroUI.bonusPromptText.Parent = IntroUI.bonusPrompt
+
+-- Add padding to the text
+IntroUI.bonusPromptPadding = Instance.new("UIPadding")
+IntroUI.bonusPromptPadding.PaddingLeft = UDim.new(0, 10)
+IntroUI.bonusPromptPadding.PaddingRight = UDim.new(0, 10)
+IntroUI.bonusPromptPadding.Parent = IntroUI.bonusPromptText
+
 IntroUI.genderBtns = Instance.new("Frame")
 -- CRITICAL FIX: Increased height to fit Male, Female, Born Royal, AND Customize Character buttons
 -- Mobile needs more space for touch targets

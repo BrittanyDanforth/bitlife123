@@ -185,8 +185,8 @@ EarlyLifeEvents.events = {
 		text = "Your parents took you to the playground! So many things to explore!",
 		question = "What do you want to do?",
 		minAge = 2, maxAge = 5,
-		baseChance = 0.8,
-		cooldown = 1,
+		baseChance = 0.5, -- FIXED: Lowered from 0.8 to reduce spam
+		cooldown = 3, -- FIXED: Increased from 1 to reduce spam
 		
 		choices = {
 			{
@@ -1994,8 +1994,8 @@ EarlyLifeEvents.events = {
 		text = "Your class is going on a field trip!",
 		question = "Where are you going?",
 		minAge = 6, maxAge = 14,
-		baseChance = 0.7,
-		cooldown = 1,
+		baseChance = 0.45, -- FIXED: Lowered from 0.7 to reduce spam
+		cooldown = 3, -- FIXED: Increased from 1 - field trips aren't every year
 		
 		choices = {
 			{
@@ -2109,8 +2109,8 @@ EarlyLifeEvents.events = {
 		text = "The neighborhood kids are playing outside!",
 		question = "Do you join them?",
 		minAge = 5, maxAge = 12,
-		baseChance = 0.7,
-		cooldown = 1,
+		baseChance = 0.4, -- FIXED: Lowered from 0.7 to reduce spam
+		cooldown = 3, -- FIXED: Increased from 1 to reduce spam
 		
 		choices = {
 			{
@@ -2396,8 +2396,8 @@ EarlyLifeEvents.events = {
 		text = "It's Friday! What are you doing this weekend?",
 		question = "What's the plan?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.8,
-		cooldown = 1,
+		baseChance = 0.4, -- FIXED: Lowered from 0.8 to reduce spam
+		cooldown = 4, -- FIXED: Increased from 1 to reduce spam
 		
 		choices = {
 			{

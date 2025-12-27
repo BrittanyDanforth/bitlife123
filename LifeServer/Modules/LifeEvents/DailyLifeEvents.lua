@@ -252,14 +252,25 @@ DailyLifeEvents.events = {
 		text = "Remote work day!",
 		question = "How productive is your WFH day?",
 		minAge = 20, maxAge = 75,
-		baseChance = 0.55,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.35, -- CRITICAL FIX: Lowered from 0.55 to reduce spam
+		cooldown = 6, -- CRITICAL FIX: Increased from 4 to reduce spam
+		oneTime = false, -- Can happen multiple times
 		stage = STAGE,
 		ageBand = "any",
 		category = "daily",
 		tags = { "remote", "wfh", "work" },
 		requiresJob = true,
-		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },  -- CRITICAL FIX: Can't WFH from prison!
+		-- CRITICAL FIX: Only trigger if player actually works remotely!
+		-- This was spamming for everyone with a job even if they're not remote workers
+		-- Check for ANY remote work flag (different events set different flags)
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			if flags.works_from_home or flags.remote_worker or flags.hybrid_worker or flags.remote_approved then
+				return true
+			end
+			return false, "You don't work remotely"
+		end,
+		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
 		
 		-- CRITICAL: Random WFH productivity
 		choices = {
