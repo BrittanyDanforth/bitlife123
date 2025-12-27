@@ -2120,18 +2120,24 @@ end
 -- This dramatically reduces repetition across different lives
 -- ═══════════════════════════════════════════════════════════════════════════════
 local AgeMilestoneEvents = {
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #970: ENHANCED EARLY GAME for player retention!
+	-- First 10 minutes (ages 0-5) MUST be exciting to hook players!
+	-- Added new viral, superpower, adventure, and talent discovery events
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
 	-- BABY/TODDLER (0-4) - Lots of variety in early years
-	[0] = { "royal_birth_announcement", "baby_first_smile", "baby_first_laugh", "newborn_checkup", "first_photo", "naming_ceremony" },
-	[1] = { "royal_christening", "first_words", "first_steps", "baby_first_food", "baby_teething_pain", "first_birthday", "walk_talk_milestone" },
-	[2] = { "toddler_potty_training", "toddler_tantrum", "toddler_language_explosion", "terrible_twos", "playground_adventure", "toddler_art_masterpiece" },
-	[3] = { "first_public_appearance", "preschool_start", "imaginary_friend", "toddler_fear_dark", "first_pet_encounter", "bedtime_stories", "princess_prince_phase" },
-	[4] = { "toddler_curiosity_incident", "toddler_sibling_dynamics", "toddler_picky_eater", "first_playdate", "learning_colors", "hide_and_seek_champion" },
+	[0] = { "royal_birth_announcement", "baby_first_smile", "baby_first_laugh", "newborn_checkup", "first_photo", "naming_ceremony", "baby_discovered_talent", "baby_viral_moment", "baby_laugh_attack" },
+	[1] = { "royal_christening", "first_words", "first_steps", "baby_first_food", "baby_teething_pain", "first_birthday", "walk_talk_milestone", "baby_discovered_talent", "baby_viral_moment" },
+	[2] = { "toddler_potty_training", "toddler_tantrum", "toddler_language_explosion", "terrible_twos", "playground_adventure", "toddler_art_masterpiece", "toddler_big_choice" },
+	[3] = { "first_public_appearance", "preschool_start", "imaginary_friend", "toddler_fear_dark", "first_pet_encounter", "bedtime_stories", "princess_prince_phase", "child_superpower_discovery", "toddler_big_choice" },
+	[4] = { "toddler_curiosity_incident", "toddler_sibling_dynamics", "toddler_picky_eater", "first_playdate", "learning_colors", "hide_and_seek_champion", "child_adventure_call", "child_superpower_discovery" },
 	
 	-- EARLY CHILDHOOD (5-8) - School and discovery
 	-- CRITICAL FIX #604: Added premium events to age milestones for gamepass exposure
-	[5] = { "first_day_kindergarten", "royal_education_choice", "stage_transition_child", "child_reading_discovery", "lost_first_tooth", "first_homework", "making_friends" },
-	[6] = { "first_day_school", "first_best_friend", "child_show_and_tell", "child_music_lesson", "elementary_adventure", "learning_to_read", "playground_king", "premium_career_day_dream" },
-	[7] = { "child_playground_adventure", "child_sports_tryout", "child_allowance_lesson", "science_project", "first_crush_maybe", "school_play", "summer_reading", "premium_magic_wish" },
+	[5] = { "first_day_kindergarten", "royal_education_choice", "stage_transition_child", "child_reading_discovery", "lost_first_tooth", "first_homework", "making_friends", "child_adventure_call" },
+	[6] = { "first_day_school", "first_best_friend", "child_show_and_tell", "child_music_lesson", "elementary_adventure", "learning_to_read", "playground_king", "premium_career_day_dream", "child_adventure_call" },
+	[7] = { "child_playground_adventure", "child_sports_tryout", "child_allowance_lesson", "science_project", "first_crush_maybe", "school_play", "summer_reading", "premium_magic_wish", "child_superpower_discovery" },
 	[8] = { "learning_to_ride_bike", "child_video_games_discovery", "child_summer_camp", "sleepover_first", "collector_hobby", "tree_climbing", "neighborhood_explorer", "premium_dream_big" },
 	
 	-- LATE CHILDHOOD (9-12) - Growing up

@@ -182,8 +182,31 @@ function LifeBackend:savePlayerData(player)
 
 	local key = "Player_" .. player.UserId
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #960: Use UpdateAsync instead of SetAsync to prevent race conditions!
+	-- SetAsync can cause data loss if player saves twice quickly or leaves during save
+	-- UpdateAsync is atomic and handles concurrent writes safely
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	local success, err = pcall(function()
-		store:SetAsync(key, serialized)
+		store:UpdateAsync(key, function(oldData)
+			-- If no old data or new data is newer, use new data
+			-- This prevents overwriting newer saves with older data
+			if not oldData then
+				return serialized
+			end
+			
+			-- Compare ages - only save if newer
+			local oldAge = oldData.Age or 0
+			local newAge = serialized.Age or 0
+			
+			-- If new data is older (somehow), keep old data
+			if newAge < oldAge then
+				warn("[LifeBackend] ⚠️ Skipping save - old data is newer!")
+				return nil -- Return nil to abort the update
+			end
+			
+			return serialized
+		end)
 	end)
 
 	if success then
@@ -8973,63 +8996,67 @@ function LifeBackend:setupRemotes()
 	
 	-- AAA FIX: Interview result handler for the interview screen system
 	self.remotes.SubmitInterviewResult = self:createRemote("SubmitInterviewResult", "RemoteFunction")
-	self.remotes.SubmitInterviewResult.OnServerInvoke = function(player, interviewData, choices)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #961: ALL remote handlers MUST use safeHandler to prevent crashes!
+	-- Unprotected handlers can crash the entire server if an error occurs
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	self.remotes.SubmitInterviewResult.OnServerInvoke = safeHandler(function(self, player, interviewData, choices)
 		return self:handleInterviewResult(player, interviewData, choices)
-	end
+	end)
 	
-	self.remotes.QuitJob.OnServerInvoke = function(player, quitStyle)
+	self.remotes.QuitJob.OnServerInvoke = safeHandler(function(self, player, quitStyle)
 		return self:handleQuitJob(player, quitStyle)
-	end
-	self.remotes.DoWork.OnServerInvoke = function(player)
+	end)
+	self.remotes.DoWork.OnServerInvoke = safeHandler(function(self, player)
 		return self:handleWork(player)
-	end
-	self.remotes.RequestPromotion.OnServerInvoke = function(player)
+	end)
+	self.remotes.RequestPromotion.OnServerInvoke = safeHandler(function(self, player)
 		return self:handlePromotion(player)
-	end
-	self.remotes.RequestRaise.OnServerInvoke = function(player)
+	end)
+	self.remotes.RequestRaise.OnServerInvoke = safeHandler(function(self, player)
 		return self:handleRaise(player)
-	end
-	self.remotes.GetCareerInfo.OnServerInvoke = function(player)
+	end)
+	self.remotes.GetCareerInfo.OnServerInvoke = safeHandler(function(self, player)
 		return self:getCareerInfo(player)
-	end
+	end)
 	
 	-- CRITICAL FIX #338: Check job eligibility (education, experience, stats)
-	self.remotes.GetJobEligibility.OnServerInvoke = function(player)
+	self.remotes.GetJobEligibility.OnServerInvoke = safeHandler(function(self, player)
 		return self:getJobEligibility(player)
-	end
+	end)
 
-	self.remotes.GetEducationInfo.OnServerInvoke = function(player)
+	self.remotes.GetEducationInfo.OnServerInvoke = safeHandler(function(self, player)
 		return self:getEducationInfo(player)
-	end
-	self.remotes.EnrollEducation.OnServerInvoke = function(player, programId)
+	end)
+	self.remotes.EnrollEducation.OnServerInvoke = safeHandler(function(self, player, programId)
 		return self:enrollEducation(player, programId)
-	end
+	end)
 
-	self.remotes.BuyProperty.OnServerInvoke = function(player, assetId)
+	self.remotes.BuyProperty.OnServerInvoke = safeHandler(function(self, player, assetId)
 		return self:handleAssetPurchase(player, "Properties", Properties, assetId)
-	end
-	self.remotes.BuyVehicle.OnServerInvoke = function(player, assetId)
+	end)
+	self.remotes.BuyVehicle.OnServerInvoke = safeHandler(function(self, player, assetId)
 		return self:handleAssetPurchase(player, "Vehicles", Vehicles, assetId)
-	end
-	self.remotes.BuyItem.OnServerInvoke = function(player, assetId)
+	end)
+	self.remotes.BuyItem.OnServerInvoke = safeHandler(function(self, player, assetId)
 		return self:handleAssetPurchase(player, "Items", ShopItems, assetId)
-	end
-	self.remotes.SellAsset.OnServerInvoke = function(player, assetId, assetType)
+	end)
+	self.remotes.SellAsset.OnServerInvoke = safeHandler(function(self, player, assetId, assetType)
 		return self:handleAssetSale(player, assetId, assetType)
-	end
+	end)
 	-- REMOVED: Gambling handler (against Roblox TOS)
 	-- Gambling features have been removed to comply with Roblox Terms of Service
 
-	self.remotes.DoInteraction.OnServerInvoke = function(player, payload)
+	self.remotes.DoInteraction.OnServerInvoke = safeHandler(function(self, player, payload)
 		return self:handleInteraction(player, payload)
-	end
+	end)
 
-	self.remotes.StartPath.OnServerInvoke = function(player, pathId)
+	self.remotes.StartPath.OnServerInvoke = safeHandler(function(self, player, pathId)
 		return self:startStoryPath(player, pathId)
-	end
-	self.remotes.DoPathAction.OnServerInvoke = function(player, pathId, actionId)
+	end)
+	self.remotes.DoPathAction.OnServerInvoke = safeHandler(function(self, player, pathId, actionId)
 		return self:performPathAction(player, pathId, actionId)
-	end
+	end)
 
 	self.remotes.ResetLife.OnServerEvent:Connect(function(player)
 		self:resetLife(player)
@@ -13682,10 +13709,38 @@ end
 
 function LifeBackend:handleAgeUp(player)
 	local state = self:getState(player)
-	if not state or state.awaitingDecision or (state.Flags and state.Flags.dead) then
-		if state and state.Flags and state.Flags.dead then
-			debugPrint("Age up ignored for dead player", player.Name)
+	if not state then return end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #963: Timeout for awaitingDecision to prevent permanent softlock!
+	-- If player has been stuck for 60+ seconds, force-clear the flag
+	-- This prevents permanent softlock if an event fails to resolve properly
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.awaitingDecision then
+		local pending = self.pendingEvents and self.pendingEvents[player.UserId]
+		local pendingTimestamp = pending and pending.timestamp or state._awaitingDecisionTimestamp
+		local currentTime = os.clock()
+		
+		if pendingTimestamp and (currentTime - pendingTimestamp) > 60 then
+			warn("[LifeBackend] ⚠️ SOFTLOCK DETECTED! Clearing awaitingDecision after 60s timeout for", player.Name)
+			state.awaitingDecision = false
+			self.pendingEvents[player.UserId] = nil
+			-- Continue with age up instead of returning
+		else
+			-- Track when awaiting started
+			if not state._awaitingDecisionTimestamp then
+				state._awaitingDecisionTimestamp = currentTime
+			end
+			debugPrint("Age up blocked - awaiting decision for", player.Name)
+			return
 		end
+	end
+	
+	-- Clear timestamp tracking
+	state._awaitingDecisionTimestamp = nil
+	
+	if state.Flags and state.Flags.dead then
+		debugPrint("Age up ignored for dead player", player.Name)
 		return
 	end
 
@@ -15180,11 +15235,25 @@ function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
 end
 
 function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #962: Clear awaitingDecision on ALL early returns to prevent softlock!
+	-- If this function fails for any reason, player should NOT be stuck unable to age up
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local function clearAwaitingOnError()
+		local state = self:getState(player)
+		if state then
+			state.awaitingDecision = false
+		end
+		self.pendingEvents[player.UserId] = nil
+	end
+	
 	local pending = self.pendingEvents[player.UserId]
 	if not pending then
+		clearAwaitingOnError()
 		return
 	end
 	if pending.activeEventId and pending.activeEventId ~= eventId then
+		-- Don't clear for mismatched eventId - might be legitimate queue
 		return
 	end
 
@@ -15195,16 +15264,20 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 		eventDef = pending.definition
 	end
 	if not eventDef then
+		warn("[LifeBackend] No event definition found - clearing to prevent softlock")
+		clearAwaitingOnError()
 		return
 	end
 
 	local choices = eventDef.choices or {}
 	local choice = choices[choiceIndex]
 	if not choice then
+		warn("[LifeBackend] Invalid choice index", choiceIndex, "- clearing to prevent softlock")
+		clearAwaitingOnError()
 		return
 	end
 
-	debugPrint(string.format("Resolving event %s for %s with choice #%d", eventDef.id or "unknown", player.Name, choiceIndex))
+	debugPrint(string.format("Resolving event %s for %s with choice #%d", eventId or "unknown", player.Name, choiceIndex))
 
 	local state = self:getState(player)
 	if not state then
@@ -18892,16 +18965,60 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 	debugPrint("=== ASSET PURCHASE ===")
 	debugPrint("  Player:", player.Name, "Type:", assetType, "AssetId:", assetId)
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #964: Input validation to prevent exploits!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Validate assetId is a string
+	if type(assetId) ~= "string" then
+		warn("[LifeBackend] EXPLOIT ATTEMPT: Invalid assetId type from", player.Name)
+		return { success = false, message = "Invalid request." }
+	end
+	
+	-- Validate assetId length (prevent memory attacks)
+	if #assetId > 100 then
+		warn("[LifeBackend] EXPLOIT ATTEMPT: AssetId too long from", player.Name)
+		return { success = false, message = "Invalid request." }
+	end
+	
 	local state = self:getState(player)
 	if not state then
 		debugPrint("  FAILED: No state")
 		return { success = false, message = "Life data missing." }
 	end
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #965: Rate limiting to prevent purchase spam exploits!
+	-- Max 3 purchases per second
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	state._purchaseTimes = state._purchaseTimes or {}
+	local currentTime = os.clock()
+	
+	-- Clean old timestamps (older than 1 second)
+	local recentPurchases = {}
+	for _, timestamp in ipairs(state._purchaseTimes) do
+		if currentTime - timestamp < 1 then
+			table.insert(recentPurchases, timestamp)
+		end
+	end
+	state._purchaseTimes = recentPurchases
+	
+	if #state._purchaseTimes >= 3 then
+		warn("[LifeBackend] Rate limit: Too many purchases from", player.Name)
+		return { success = false, message = "Slow down! Try again in a moment." }
+	end
+	table.insert(state._purchaseTimes, currentTime)
+
 	local asset = self:findAssetById(catalog, assetId)
 	if not asset then
 		debugPrint("  FAILED: Unknown asset")
 		return { success = false, message = "Unknown asset." }
+	end
+	
+	-- Validate asset has required fields
+	if not asset.price or type(asset.price) ~= "number" then
+		warn("[LifeBackend] Invalid asset price for", assetId)
+		return { success = false, message = "Asset unavailable." }
 	end
 	
 	debugPrint("  Found asset:", asset.name, "Price:", asset.price)
