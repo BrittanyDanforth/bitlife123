@@ -2673,11 +2673,14 @@ Teen.events = {
 		emoji = "🚗",
 		text = "You finally turned 16 and can get your driver's license! Time for the test.",
 		question = "How does the test go?",
-		minAge = 16, maxAge = 16,
-		baseChance = 0.9,
+		minAge = 16, maxAge = 17,
+		baseChance = 0.6, -- CRITICAL FIX: Reduced from 0.9 - other driving events exist
 		oneTime = true,
 		maxOccurrences = 1,
-		blockedByFlags = { has_license = true },
+		category = "milestone",
+		tags = { "driving", "license", "milestone" },
+		-- CRITICAL FIX: Block if already have license from ANY driving event
+		blockedByFlags = { has_license = true, drivers_license = true, driver_license = true, has_drivers_license = true, learned_driving = true, driving_done = true },
 		choices = {
 			{
 				text = "Nail it perfectly!",
@@ -2976,6 +2979,9 @@ Teen.events = {
 		minAge = 13, maxAge = 18,
 		baseChance = 0.55,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		category = "school",
+		tags = { "competition", "achievement", "school" },
+		blockedByFlags = { in_prison = true, dropped_out_high_school = true },
 		
 		choices = {
 			{
@@ -3001,6 +3007,305 @@ Teen.events = {
 				effects = { Smarts = 6, Happiness = 11 },
 				setFlags = { debate_champion = true, public_speaker = true },
 				feedText = "🏆 You destroyed the competition! Natural leader material!",
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: NEW ENGAGING TEEN EVENTS FOR VARIETY
+	-- These events keep teens hooked and create memorable stories
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "teen_secret_revealed",
+		title = "🤫 The Secret",
+		emoji = "🤫",
+		text = "Someone at school just found out a secret about you! It's spreading fast...",
+		question = "What's the secret?",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.2,
+		cooldown = 10,
+		oneTime = true,
+		category = "social",
+		tags = { "drama", "social", "secret" },
+		blockedByFlags = { in_prison = true, dropped_out_high_school = true },
+		
+		choices = {
+			{
+				text = "An embarrassing crush",
+				effects = { Happiness = -10 },
+				feedText = "Oh no. Everyone knows now...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.3 then
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.crush_likes_back = true
+						state:AddFeed("😊 Plot twist! Your crush heard and... THEY LIKE YOU BACK!")
+					elseif roll < 0.6 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("😅 It's awkward for a week, then everyone moves on. High school!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("😢 People are teasing you. It'll blow over eventually...")
+					end
+				end,
+			},
+			{
+				text = "Something you lied about",
+				effects = { Happiness = -12 },
+				feedText = "The truth comes out...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.4 then
+						state:ModifyStat("Smarts", 3)
+						state:AddFeed("🤔 You learned your lesson. Honesty is easier in the long run.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state.Flags = state.Flags or {}
+						state.Flags.reputation_damaged = true
+						state:AddFeed("😔 Trust takes time to rebuild. People are watching you now.")
+					end
+				end,
+			},
+			{
+				text = "A hidden talent",
+				effects = { Happiness = 5 },
+				feedText = "People found out you're actually really good at something!",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 10)
+					state.Flags = state.Flags or {}
+					state.Flags.talent_discovered = true
+					state:AddFeed("✨ Your secret talent is out! Now everyone wants you to perform!")
+				end,
+			},
+		},
+	},
+	{
+		id = "teen_viral_video",
+		title = "📱 You Went Viral!",
+		emoji = "📱",
+		text = "A video of you is spreading like wildfire on social media!",
+		question = "What kind of video is it?",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.15,
+		cooldown = 15,
+		oneTime = true,
+		category = "social",
+		tags = { "viral", "social_media", "fame" },
+		blockedByFlags = { in_prison = true, went_teen_viral = true },
+		
+		choices = {
+			{
+				text = "Something impressive you did",
+				effects = { Happiness = 20, Looks = 3 },
+				setFlags = { went_teen_viral = true, internet_famous = true },
+				feedText = "The whole school knows!",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.4 then
+						state.Money = (state.Money or 0) + 500
+						state:AddFeed("📱 MILLIONS of views! Brand deals are rolling in! +$500!")
+					else
+						state:AddFeed("📱 Everyone thinks you're COOL now! Popularity skyrocketed!")
+					end
+				end,
+			},
+			{
+				text = "An embarrassing moment",
+				effects = { Happiness = -15 },
+				setFlags = { went_teen_viral = true, viral_embarrassment = true },
+				feedText = "No. No no no...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.3 then
+						state:ModifyStat("Happiness", 10)
+						state:ModifyStat("Smarts", 3)
+						state:AddFeed("📱 You owned it! Made a comeback video. People respect the confidence!")
+					else
+						state:AddFeed("📱 This will be your villain origin story. Never living this down.")
+					end
+				end,
+			},
+			{
+				text = "A random funny thing",
+				effects = { Happiness = 15 },
+				setFlags = { went_teen_viral = true, meme_famous = true },
+				feedText = "Wait what? This blew up?!",
+				onResolve = function(state)
+					state:AddFeed("📱 You're a MEME! People quote you in the halls! Weird but cool!")
+				end,
+			},
+		},
+	},
+	{
+		id = "teen_unexpected_friendship",
+		title = "🤝 Unlikely Friends",
+		emoji = "🤝",
+		text = "You ended up becoming friends with someone completely unexpected...",
+		question = "Who became your new friend?",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.25,
+		cooldown = 8,
+		oneTime = true,
+		category = "social",
+		tags = { "friendship", "social", "growth" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "The popular kid",
+				effects = { Happiness = 12, Looks = 2 },
+				setFlags = { popular_friend = true },
+				feedText = "Social upgrade unlocked!",
+				onResolve = function(state)
+					state:AddFeed("🤝 They're actually really down to earth! Your social life just leveled up!")
+				end,
+			},
+			{
+				text = "The 'weird' kid everyone avoids",
+				effects = { Happiness = 10, Smarts = 3 },
+				setFlags = { kind_soul = true, unconventional_friend = true },
+				feedText = "You looked past the surface...",
+				onResolve = function(state)
+					state:AddFeed("🤝 They're FASCINATING! Most interesting person you've met. Best decision ever.")
+				end,
+			},
+			{
+				text = "Someone from a different grade",
+				effects = { Happiness = 8, Smarts = 2 },
+				setFlags = { diverse_friendships = true },
+				feedText = "Age is just a number!",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.5 then
+						state:AddFeed("🤝 They give the BEST advice about surviving the grades above!")
+					else
+						state:AddFeed("🤝 Different perspective on life. Your worldview expanded!")
+					end
+				end,
+			},
+			{
+				text = "A teacher's kid",
+				effects = { Happiness = 6, Smarts = 4 },
+				setFlags = { teacher_connection = true },
+				feedText = "Inside access to teacher secrets!",
+				onResolve = function(state)
+					state:AddFeed("🤝 You now know which teachers are actually cool. Strategic friendship!")
+				end,
+			},
+		},
+	},
+	{
+		id = "teen_defining_moment",
+		title = "⭐ Defining Moment",
+		emoji = "⭐",
+		text = "Something happened today that you know you'll remember forever...",
+		question = "What was the moment?",
+		minAge = 14, maxAge = 18,
+		baseChance = 0.2,
+		cooldown = 12,
+		oneTime = true,
+		category = "milestone",
+		tags = { "growth", "memory", "milestone" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Standing up to a bully",
+				effects = { Happiness = 15, Health = 2 },
+				setFlags = { stood_up_to_bully = true, brave = true },
+				feedText = "Today you found your courage.",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.6 then
+						state:AddFeed("⭐ They backed down. You're not afraid anymore. Others look up to you now.")
+					else
+						state:ModifyStat("Health", -5)
+						state:AddFeed("⭐ It didn't go perfectly, but you did the right thing. That matters.")
+					end
+				end,
+			},
+			{
+				text = "Helping someone in need",
+				effects = { Happiness = 18, Smarts = 2 },
+				setFlags = { helper = true, kind_soul = true },
+				feedText = "You made a real difference.",
+				onResolve = function(state)
+					state:AddFeed("⭐ They thanked you with tears in their eyes. You'll never forget this feeling.")
+				end,
+			},
+			{
+				text = "Achieving something you thought impossible",
+				effects = { Happiness = 20, Smarts = 3 },
+				setFlags = { overcame_odds = true, achiever = true },
+				feedText = "You proved yourself wrong.",
+				onResolve = function(state)
+					state:AddFeed("⭐ If you can do THIS, what else are you capable of? Everything feels possible now!")
+				end,
+			},
+			{
+				text = "A deep conversation that changed your perspective",
+				effects = { Smarts = 6, Happiness = 10 },
+				setFlags = { philosophical = true, deep_thinker = true },
+				feedText = "Your world expanded.",
+				onResolve = function(state)
+					state:AddFeed("⭐ You see things differently now. Childhood innocence fading, but wisdom growing.")
+				end,
+			},
+		},
+	},
+	{
+		id = "teen_mentor_figure",
+		title = "🌟 A Mentor Appears",
+		emoji = "🌟",
+		text = "An adult in your life has taken a special interest in helping you succeed...",
+		question = "Who becomes your mentor?",
+		minAge = 14, maxAge = 18,
+		baseChance = 0.2,
+		cooldown = 15,
+		oneTime = true,
+		category = "growth",
+		tags = { "mentor", "guidance", "growth" },
+		blockedByFlags = { in_prison = true, has_mentor = true },
+		
+		choices = {
+			{
+				text = "A teacher who sees your potential",
+				effects = { Smarts = 8, Happiness = 10 },
+				setFlags = { has_mentor = true, teacher_mentor = true },
+				feedText = "Finally, an adult who gets you.",
+				onResolve = function(state)
+					state:AddFeed("🌟 They push you to be better. Your grades AND confidence improve!")
+				end,
+			},
+			{
+				text = "A family friend in your dream career",
+				effects = { Smarts = 5, Happiness = 12 },
+				setFlags = { has_mentor = true, career_mentor = true },
+				feedText = "An inside look at your future!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.career_clarity = true
+					state:AddFeed("🌟 They're showing you exactly what it takes. You have a roadmap now!")
+				end,
+			},
+			{
+				text = "A coach who believes in you",
+				effects = { Health = 6, Happiness = 10, Looks = 2 },
+				setFlags = { has_mentor = true, coach_mentor = true },
+				feedText = "They're tough, but fair.",
+				onResolve = function(state)
+					state:AddFeed("🌟 'I see champions. You just need to believe it too.' You'll never forget those words.")
+				end,
+			},
+			{
+				text = "A successful relative",
+				effects = { Smarts = 4, Happiness = 8, Money = 100 },
+				setFlags = { has_mentor = true, family_mentor = true },
+				feedText = "Family looking out for you.",
+				onResolve = function(state)
+					state:AddFeed("🌟 They're investing in your future. Both with advice AND some cash for your goals!")
+				end,
 			},
 		},
 	},

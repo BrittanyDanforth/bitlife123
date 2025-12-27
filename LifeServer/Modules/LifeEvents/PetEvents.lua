@@ -18,13 +18,15 @@ PetEvents.events = {
 		emoji = "🐾",
 		text = "You really want a pet!",
 		question = "Do you adopt a furry friend?",
-		minAge = 10, maxAge = 90,
-		baseChance = 0.4,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		minAge = 18, maxAge = 90, -- CRITICAL FIX: Adults only, kids use childhood_pet_want
+		baseChance = 0.25, -- CRITICAL FIX: Reduced from 0.4 - pet urges shouldn't be constant
+		cooldown = 10, -- CRITICAL FIX: Increased from 4 to prevent spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "pets",
 		tags = { "adoption", "pet", "animal" },
+		-- CRITICAL FIX: Block if already has multiple pets or asked recently
+		blockedByFlags = { in_prison = true, pet_urge_asked = true },
 		
 		eligibility = function(state)
 			local money = state.Money or 0

@@ -153,9 +153,11 @@ YoungLifeEvents.events = {
 		category = "childhood",
 		weight = 13,
 		minAge = 5, maxAge = 14,
-		baseChance = 0.45,
-		cooldown = 3,
-		blockedByFlags = { in_prison = true, has_childhood_pet = true },
+		baseChance = 0.25, -- CRITICAL FIX: Reduced from 0.45 - pet asks should be rare
+		cooldown = 12, -- CRITICAL FIX: Increased from 3 to prevent spam
+		oneTime = true, -- CRITICAL FIX: Only ask once
+		-- CRITICAL FIX: Block if already has a pet OR asked in childhood_pet_want event
+		blockedByFlags = { in_prison = true, has_childhood_pet = true, got_dog = true, got_cat = true, got_fish = true, has_dog = true, has_cat = true, pet_asked = true },
 		
 		choices = {
 			{

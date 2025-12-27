@@ -3353,6 +3353,455 @@ Adult.events = {
 			{ text = "Plan more visits and trips to see them", effects = { Happiness = 8, Money = -2000 }, setFlags = { empty_nester = true }, feedText = "Distance doesn't mean disconnection." },
 		},
 	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: NEW ENGAGING ADULT EVENTS FOR VARIETY
+	-- These events make adult life more interesting and keep players hooked
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "viral_moment",
+		title = "🌟 Viral Fame!",
+		emoji = "📱",
+		text = "Something you posted online has gone VIRAL! Your phone is blowing up with notifications. Millions of people are watching, sharing, commenting...",
+		question = "How do you handle your 15 minutes of fame?",
+		minAge = 18, maxAge = 55,
+		baseChance = 0.15,
+		cooldown = 20,
+		oneTime = true,
+		category = "social",
+		tags = { "viral", "fame", "social_media", "opportunity" },
+		blockedByFlags = { in_prison = true, went_viral_before = true },
+		choices = {
+			{
+				text = "Monetize it - get sponsors!",
+				effects = { Happiness = 15 },
+				setFlags = { went_viral_before = true, influencer = true },
+				feedText = "You capitalized on your viral moment!",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					if roll < 0.4 then
+						state.Money = (state.Money or 0) + 25000
+						state.Flags.successful_influencer = true
+						state:AddFeed("💰 JACKPOT! Brands are throwing money at you! +$25,000!")
+					elseif roll < 0.7 then
+						state.Money = (state.Money or 0) + 8000
+						state:AddFeed("💰 A few sponsorships came through! +$8,000!")
+					else
+						state.Money = (state.Money or 0) + 2000
+						state:AddFeed("💰 Made some cash, but fame faded fast. +$2,000")
+					end
+				end,
+			},
+			{
+				text = "Use it to launch a business",
+				effects = { Happiness = 10 },
+				setFlags = { went_viral_before = true, business_starter = true },
+				feedText = "Leveraging fame for business...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					if roll < 0.35 then
+						state.Money = (state.Money or 0) + 50000
+						state.Flags.viral_entrepreneur = true
+						state:AddFeed("🚀 Your business EXPLODED! People love your brand! +$50,000!")
+					elseif roll < 0.6 then
+						state.Money = (state.Money or 0) + 12000
+						state:AddFeed("🚀 Business is doing okay! Steady growth. +$12,000")
+					else
+						state.Money = math.max(0, (state.Money or 0) - 5000)
+						state:AddFeed("🚀 Business flopped. Lost your investment. -$5,000")
+					end
+				end,
+			},
+			{
+				text = "Stay humble - enjoy the moment",
+				effects = { Happiness = 20, Smarts = 2 },
+				setFlags = { went_viral_before = true, humble = true },
+				feedText = "You enjoyed the attention without letting it change you.",
+			},
+			{
+				text = "Delete everything - too much attention",
+				effects = { Happiness = -5, Health = 3 },
+				setFlags = { went_viral_before = true, privacy_focused = true },
+				feedText = "You weren't ready for all that attention. Back to normal life.",
+			},
+		},
+	},
+	{
+		id = "unexpected_inheritance",
+		title = "💌 A Letter From The Past",
+		emoji = "📜",
+		text = "A lawyer contacts you. A distant relative you barely knew has passed away, and they left something for you in their will...",
+		question = "What did they leave you?",
+		minAge = 25, maxAge = 70,
+		baseChance = 0.12,
+		cooldown = 25,
+		oneTime = true,
+		category = "money",
+		tags = { "inheritance", "surprise", "family", "money" },
+		blockedByFlags = { in_prison = true, got_inheritance = true },
+		choices = {
+			{
+				text = "Open the will anxiously",
+				effects = {},
+				setFlags = { got_inheritance = true },
+				feedText = "Reading the will...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					if roll < 0.2 then
+						state.Money = (state.Money or 0) + 500000
+						state:ModifyStat("Happiness", 35)
+						state.Flags.wealthy_inheritance = true
+						state:AddFeed("💰 WHAT?! They left you $500,000! You're rich!")
+					elseif roll < 0.4 then
+						state.Money = (state.Money or 0) + 75000
+						state:ModifyStat("Happiness", 20)
+						state:AddFeed("💰 A nice surprise! They left you $75,000!")
+					elseif roll < 0.6 then
+						state.Money = (state.Money or 0) + 15000
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("💰 They left you $15,000. Better than nothing!")
+					elseif roll < 0.8 then
+						state:ModifyStat("Happiness", 5)
+						state.Flags.inherited_antique = true
+						state:AddFeed("🏺 They left you an antique! Might be worth something...")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("📦 They left you... a box of old photographs. Sentimental value only.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "life_changing_conversation",
+		title = "💬 The Conversation",
+		emoji = "🗣️",
+		text = "You had a deep, meaningful conversation with a stranger that really made you think about your life choices...",
+		question = "What was the conversation about?",
+		minAge = 20, maxAge = 65,
+		baseChance = 0.2,
+		cooldown = 15,
+		oneTime = true,
+		category = "personal",
+		tags = { "wisdom", "growth", "reflection", "milestone" },
+		blockedByFlags = { in_prison = true },
+		choices = {
+			{
+				text = "About chasing dreams vs. stability",
+				effects = { Smarts = 5, Happiness = 5 },
+				setFlags = { deep_thinker = true, life_reflected = true },
+				feedText = "Their words stuck with you. 'What's the point of safety if you never feel alive?'",
+			},
+			{
+				text = "About relationships and love",
+				effects = { Happiness = 8 },
+				setFlags = { romantic_soul = true, life_reflected = true },
+				feedText = "They said: 'Love isn't about finding the perfect person. It's about seeing imperfect people perfectly.'",
+			},
+			{
+				text = "About dealing with failure",
+				effects = { Smarts = 4, Health = 3 },
+				setFlags = { resilient = true, life_reflected = true },
+				feedText = "'Every master was once a disaster.' Those words changed how you see setbacks.",
+			},
+			{
+				text = "About family and legacy",
+				effects = { Happiness = 6, Smarts = 2 },
+				setFlags = { family_focused = true, life_reflected = true },
+				feedText = "'In the end, it's not about what you gathered, but who gathered around you.'",
+			},
+		},
+	},
+	{
+		id = "mystery_package",
+		title = "📦 Mystery Package",
+		emoji = "📦",
+		text = "A mysterious package arrives at your door. No return address. Just your name scrawled on the front...",
+		question = "What do you do?",
+		minAge = 18, maxAge = 70,
+		baseChance = 0.18,
+		cooldown = 12,
+		oneTime = true,
+		category = "random",
+		tags = { "mystery", "surprise", "random" },
+		blockedByFlags = { in_prison = true },
+		choices = {
+			{
+				text = "Open it immediately!",
+				effects = {},
+				feedText = "Your curiosity wins...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					if roll < 0.25 then
+						state.Money = (state.Money or 0) + 5000
+						state:ModifyStat("Happiness", 20)
+						state:AddFeed("📦 It's cash! $5,000! Who sent this?!")
+					elseif roll < 0.45 then
+						state:ModifyStat("Happiness", 15)
+						state.Flags.got_mystery_gift = true
+						state:AddFeed("📦 It's an expensive watch! Must have been from a secret admirer!")
+					elseif roll < 0.65 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("📦 Old family photos from a relative you lost touch with. Touching!")
+					elseif roll < 0.85 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("📦 Just some books. Nice gesture though!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("📦 It was a prank. Glitter EVERYWHERE. Not funny.")
+					end
+				end,
+			},
+			{
+				text = "Call the police first",
+				effects = { Smarts = 3 },
+				feedText = "Better safe than sorry...",
+				onResolve = function(state)
+					state:AddFeed("👮 Police said it's safe. Just a care package from a charity. How boring.")
+				end,
+			},
+			{
+				text = "Return to sender (wherever that is)",
+				effects = {},
+				feedText = "You decided not to risk it.",
+				onResolve = function(state)
+					state:AddFeed("📦 You'll never know what was inside. Probably nothing. Right?")
+				end,
+			},
+		},
+	},
+	{
+		id = "random_act_of_kindness",
+		title = "💝 Acts of Kindness",
+		emoji = "💝",
+		text = "You witnessed someone struggling today and had a chance to help...",
+		question = "What do you do?",
+		minAge = 12, maxAge = 90,
+		baseChance = 0.3,
+		cooldown = 8,
+		category = "social",
+		tags = { "kindness", "charity", "social", "moral" },
+		blockedByFlags = { in_prison = true },
+		choices = {
+			{
+				text = "Help them generously",
+				effects = { Happiness = 10, Money = -50 },
+				setFlags = { kind_soul = true },
+				feedText = "You helped and it felt amazing.",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.3 then
+						state.Money = (state.Money or 0) + 500
+						state:AddFeed("💝 Plot twist! They paid you back 10x when they got back on their feet!")
+					elseif roll < 0.5 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.new_friend = true
+						state:AddFeed("💝 You made a new friend! They're awesome!")
+					else
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("💝 Karma will remember your kindness.")
+					end
+				end,
+			},
+			{
+				text = "Help a little",
+				effects = { Happiness = 4 },
+				feedText = "You did what you could.",
+			},
+			{
+				text = "Too busy, walk past",
+				effects = { Happiness = -3 },
+				feedText = "You had your own problems...",
+			},
+		},
+	},
+	{
+		id = "second_chance_romance",
+		title = "💕 The One That Got Away",
+		emoji = "💘",
+		text = "You randomly bump into an old flame from years ago. They look great. The chemistry is still there...",
+		question = "What happens next?",
+		minAge = 25, maxAge = 60,
+		baseChance = 0.15,
+		cooldown = 20,
+		oneTime = true,
+		category = "relationships",
+		tags = { "romance", "past", "second_chance" },
+		blockedByFlags = { in_prison = true, married = true, second_chance_tried = true },
+		choices = {
+			{
+				text = "Get coffee, reconnect",
+				effects = { Happiness = 10 },
+				setFlags = { second_chance_tried = true },
+				feedText = "Maybe things happen for a reason...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					if roll < 0.4 then
+						state:ModifyStat("Happiness", 20)
+						state.Flags.rekindled_love = true
+						state.Flags.dating = true
+						state:AddFeed("💕 Sparks flew! You're giving it another shot!")
+					elseif roll < 0.7 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("💕 Nice catching up. But that chapter is closed. You're both different people now.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("💕 Awkward. You remembered why it ended. Yikes.")
+					end
+				end,
+			},
+			{
+				text = "Politely decline, keep walking",
+				effects = { Smarts = 2 },
+				setFlags = { second_chance_tried = true },
+				feedText = "Some doors are better left closed.",
+			},
+			{
+				text = "Pretend not to see them",
+				effects = { Happiness = -5 },
+				setFlags = { second_chance_tried = true },
+				feedText = "You hid behind a plant. They definitely saw you. Awkward.",
+			},
+		},
+	},
+	{
+		id = "adventure_opportunity",
+		title = "🌍 Adventure Calls!",
+		emoji = "🎒",
+		text = "A once-in-a-lifetime adventure opportunity has presented itself!",
+		question = "Do you take the leap?",
+		minAge = 18, maxAge = 65,
+		baseChance = 0.2,
+		cooldown = 15,
+		category = "adventure",
+		tags = { "adventure", "travel", "opportunity", "life_changing" },
+		blockedByFlags = { in_prison = true, adventure_taken = true },
+		choices = {
+			{
+				text = "Climb a famous mountain!",
+				effects = { Health = -10, Happiness = 25 },
+				setFlags = { adventurer = true, mountain_climber = true },
+				feedText = "The summit awaits!",
+				onResolve = function(state)
+					local roll = math.random()
+					local health = (state.Stats and state.Stats.Health) or 50
+					local successChance = 0.5 + (health / 200)
+					if roll < successChance then
+						state:ModifyStat("Health", 10)
+						state:ModifyStat("Happiness", 20)
+						state.Flags = state.Flags or {}
+						state.Flags.conquered_mountain = true
+						state:AddFeed("🏔️ YOU DID IT! Standing on the summit, looking at the world below... unforgettable!")
+					else
+						state:ModifyStat("Health", -15)
+						state:AddFeed("🏔️ Had to turn back due to weather. Disappointed but alive. You'll try again someday.")
+					end
+				end,
+			},
+			{
+				text = "Skydiving over the ocean!",
+				effects = { Happiness = 30 },
+				setFlags = { adventurer = true, skydiver = true },
+				feedText = "FREE FALLING!",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.95 then
+						state:AddFeed("🪂 INCREDIBLE! The rush of freefall, then floating over crystal blue waters. You feel SO alive!")
+					else
+						state:ModifyStat("Health", -20)
+						state.Flags = state.Flags or {}
+						state.Flags.rough_landing = true
+						state:AddFeed("🪂 Rough landing! Sprained your ankle. But WHAT A STORY!")
+					end
+				end,
+			},
+			{
+				text = "Safari in Africa!",
+				effects = { Money = -3000, Happiness = 25 },
+				setFlags = { adventurer = true, safari_done = true },
+				feedText = "The wild calls!",
+				eligibility = function(state)
+					if (state.Money or 0) < 3000 then
+						return false, "Can't afford the $3,000 safari trip"
+					end
+					return true
+				end,
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					if roll < 0.6 then
+						state.Flags.saw_big_five = true
+						state:AddFeed("🦁 SAW THE BIG FIVE! Lions, elephants, rhinos, leopards, and buffalo! Life-changing experience!")
+					else
+						state:AddFeed("🦁 Incredible trip! The sunsets, the animals, the people. You'll never forget it.")
+					end
+				end,
+			},
+			{
+				text = "Too risky, stay safe",
+				effects = { Happiness = -5 },
+				feedText = "You'll always wonder 'what if?'...",
+			},
+		},
+	},
+	{
+		id = "skill_discovery",
+		title = "🎯 Hidden Talent!",
+		emoji = "✨",
+		text = "You tried something new and discovered you're actually REALLY good at it!",
+		question = "What's your hidden talent?",
+		minAge = 15, maxAge = 70,
+		baseChance = 0.25,
+		cooldown = 12,
+		oneTime = true,
+		category = "personal",
+		tags = { "talent", "skill", "discovery", "self_improvement" },
+		blockedByFlags = { in_prison = true, talent_discovered = true },
+		choices = {
+			{
+				text = "Cooking - you could be a chef!",
+				effects = { Happiness = 12, Smarts = 3 },
+				setFlags = { talent_discovered = true, talented_cook = true },
+				feedText = "Who knew you had such culinary skills?!",
+				onResolve = function(state)
+					state:AddFeed("👨‍🍳 Your dishes are AMAZING! Friends and family are begging for dinner invites!")
+				end,
+			},
+			{
+				text = "Art - you have a creative eye!",
+				effects = { Happiness = 15, Smarts = 4 },
+				setFlags = { talent_discovered = true, artistic = true },
+				feedText = "An artist is born!",
+				onResolve = function(state)
+					state:AddFeed("🎨 Your art is beautiful! People actually want to BUY your work!")
+				end,
+			},
+			{
+				text = "Music - you have an ear for it!",
+				effects = { Happiness = 14, Smarts = 3 },
+				setFlags = { talent_discovered = true, musical_talent = true },
+				feedText = "Musical genius awakened!",
+				onResolve = function(state)
+					state:AddFeed("🎵 You picked up an instrument and it just... clicked! You're a natural!")
+				end,
+			},
+			{
+				text = "Public speaking - you command a room!",
+				effects = { Happiness = 10, Smarts = 5 },
+				setFlags = { talent_discovered = true, charismatic_speaker = true },
+				feedText = "Born to lead!",
+				onResolve = function(state)
+					state:AddFeed("🎤 When you speak, people LISTEN. This could open SO many doors!")
+				end,
+			},
+		},
+	},
 }
 
 return Adult

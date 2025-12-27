@@ -27,9 +27,12 @@ EarlyLifeEvents.events = {
 		text = "Your parents notice you're developing your own little personality!",
 		question = "What kind of baby are you?",
 		minAge = 0, maxAge = 1,
-		baseChance = 0.8,
-		cooldown = 2, -- CRITICAL FIX: Increased to prevent spam
+		baseChance = 0.55, -- CRITICAL FIX: Reduced from 0.8
+		cooldown = 3, -- CRITICAL FIX: Increased
 		oneTime = true, -- Only happens once per life
+		category = "childhood",
+		tags = { "baby", "personality", "milestone" },
+		blockedByFlags = { personality_set = true },
 		
 		choices = {
 			{
@@ -684,8 +687,13 @@ EarlyLifeEvents.events = {
 		text = "You REALLY want a pet! You've been begging your parents for weeks!",
 		question = "How do you convince them?",
 		minAge = 5, maxAge = 12,
-		baseChance = 0.6,
-		cooldown = 3,
+		baseChance = 0.4, -- CRITICAL FIX: Reduced from 0.6
+		cooldown = 8, -- CRITICAL FIX: Increased from 3 to prevent spam
+		category = "childhood",
+		tags = { "pet", "family", "childhood" },
+		oneTime = true, -- CRITICAL FIX: Only ask once per childhood
+		-- CRITICAL FIX: Don't show if already got a pet or asked too recently
+		blockedByFlags = { has_childhood_pet = true, got_dog = true, got_cat = true, got_fish = true, has_dog = true, has_cat = true, pet_asked = true },
 		
 		choices = {
 			{
@@ -2684,8 +2692,11 @@ EarlyLifeEvents.events = {
 		text = "It's picture day at school!",
 		question = "How does your photo turn out?",
 		minAge = 5, maxAge = 17,
-		baseChance = 0.7,
-		cooldown = 1,
+		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.7
+		cooldown = 5, -- CRITICAL FIX: Increased from 1 to prevent spam
+		category = "school",
+		tags = { "picture", "school", "photo" },
+		blockedByFlags = { in_prison = true, dropped_out_high_school = true },
 		
 		choices = {
 			{
@@ -3099,8 +3110,12 @@ EarlyLifeEvents.events = {
 		text = "Your tooth is wiggling and about to fall out!",
 		question = "How do you handle it?",
 		minAge = 5, maxAge = 10,
-		baseChance = 0.6,
-		cooldown = 1,
+		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.6
+		cooldown = 6, -- CRITICAL FIX: Increased from 1 to prevent spam
+		category = "childhood",
+		tags = { "tooth", "milestone", "childhood" },
+		-- CRITICAL FIX: Block if already had a tooth event recently
+		blockedByFlags = { tooth_fell_out = true, recent_tooth_loss = true },
 		
 		choices = {
 			{

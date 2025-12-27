@@ -19,12 +19,14 @@ ChildhoodExpanded.events = {
 		text = "You're not sleeping through the night yet. Your parents are exhausted.",
 		question = "How does this phase go?",
 		minAge = 0, maxAge = 2,
-		baseChance = 0.7,
-		cooldown = 1,
+		baseChance = 0.4, -- CRITICAL FIX: Reduced from 0.7
+		cooldown = 4, -- CRITICAL FIX: Increased from 1 to prevent spam
+		oneTime = true, -- CRITICAL FIX: Sleep patterns only discussed once
 		stage = STAGE,
 		ageBand = "baby_toddler",
 		category = "development",
 		tags = { "sleep", "baby", "development" },
+		blockedByFlags = { sleep_issues_discussed = true },
 		
 		choices = {
 			{

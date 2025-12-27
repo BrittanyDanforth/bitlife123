@@ -1891,10 +1891,25 @@ Random.events = {
 		emoji = "🎗️",
 		text = "You've found a concerning lump or had abnormal test results.",
 		question = "The doctor wants to run more tests...",
-		minAge = 25, maxAge = 90,
-		baseChance = 0.25,
-		cooldown = 4,
-		category = "illness",
+		minAge = 30, maxAge = 90, -- CRITICAL FIX: Start at 30, not 25
+		baseChance = 0.08, -- CRITICAL FIX: Reduced from 0.25 - cancer scares should be RARE
+		cooldown = 15, -- CRITICAL FIX: Increased massively - shouldn't repeat often
+		category = "health",
+		tags = { "illness", "cancer", "health_scare" },
+		oneTime = true, -- CRITICAL FIX: Only happens once per life!
+		-- CRITICAL FIX: Block if already had cancer scare or has cancer
+		blockedByFlags = { cancer_survivor = true, battling_cancer = true, has_cancer = true, cancer_scare_done = true, in_prison = true },
+		-- CRITICAL FIX: Require some health-related activity first
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Already dealt with cancer? Don't show
+			if flags.cancer_survivor or flags.battling_cancer or flags.has_cancer then return false end
+			-- Must have visited doctor or had some medical interaction
+			local hadMedical = flags.went_to_doctor or flags.doctor_checkup or flags.recent_checkup
+				or flags.health_checkup or flags.physical_exam or flags.found_lump
+			if not hadMedical then return false end
+			return true
+		end,
 		-- CRITICAL FIX: Random cancer outcome - player can't choose diagnosis
 		choices = {
 			{
@@ -2616,12 +2631,14 @@ Random.events = {
 		text = "You can't pay rent. Your landlord has given you an eviction notice.",
 		question = "What do you do?",
 		minAge = 18, maxAge = 80,
-		baseChance = 0.8, -- High chance if triggered
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.8
+		cooldown = 6, -- CRITICAL FIX: Increased to prevent spam
+		category = "homeless",
+		tags = { "eviction", "housing", "financial" },
 		-- CRITICAL FIX: Only triggers for people with bum_life flag AND low money
 		-- This prevents rich players from getting eviction notices!
 		requiresFlags = { bum_life = true },
-		blockedByFlags = { homeless = true },
+		blockedByFlags = { homeless = true, evicted = true },
 		-- CRITICAL FIX: Custom eligibility check to ensure player is actually broke
 		eligibility = function(state)
 			local money = state.Money or 0

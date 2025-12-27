@@ -234,6 +234,12 @@ local events = {
 		minAge = 15,
 		maxAge = 17,
 		oneTime = true,
+		-- CRITICAL FIX: Block if already learned to drive from ANY driving event!
+		blockedByFlags = { 
+			has_license = true, drivers_license = true, driver_license = true,
+			has_drivers_license = true, learned_driving = true, good_driver = true,
+			driving_done = true, in_prison = true
+		},
 		choices = {
 			{
 				index = 1,

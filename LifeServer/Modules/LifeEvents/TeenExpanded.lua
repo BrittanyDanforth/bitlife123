@@ -1445,6 +1445,12 @@ TeenExpanded.events = {
 		ageBand = "teen",
 		category = "skills",
 		tags = { "driving", "license", "skills" },
+		-- CRITICAL FIX: Block if already learned to drive from ANY of the 3 driving events!
+		blockedByFlags = { 
+			has_license = true, drivers_license = true, driver_license = true, 
+			has_drivers_license = true, learned_driving = true, good_driver = true,
+			driving_done = true, in_prison = true 
+		},
 		
 		-- CRITICAL: Random driving test outcome
 		choices = {
