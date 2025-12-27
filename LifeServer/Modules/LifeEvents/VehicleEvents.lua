@@ -812,6 +812,203 @@ VehicleEvents.events = {
         },
     },
     
+    -- ═══════════════════════════════════════════════════════════════════════════════
+    -- CRITICAL FIX #981: YACHT EVENTS - Make yachts actually FUN!
+    -- These ONLY trigger if player owns a yacht (yacht_owner flag)
+    -- ═══════════════════════════════════════════════════════════════════════════════
+    {
+        id = "yacht_party_opportunity",
+        title = "🛥️ Yacht Party Time!",
+        emoji = "🛥️",
+        text = "Perfect weather! Your yacht is ready. Friends are asking about a party...",
+        question = "How do you use your yacht today?",
+        minAge = 25, maxAge = 80,
+        baseChance = 0.35,  -- Common when you own a yacht!
+        cooldown = 3,
+        stage = STAGE,
+        category = "vehicle",
+        tags = { "yacht", "party", "luxury", "social" },
+        blockedByFlags = { in_prison = true },
+        eligibility = function(state)
+            local flags = state.Flags or {}
+            if not flags.yacht_owner and not flags.boat_owner then
+                return false, "No yacht"
+            end
+            return true
+        end,
+        
+        choices = {
+            {
+                text = "Throw an EPIC yacht party! 🎉",
+                effects = {},
+                feedText = "Party preparations begin...",
+                onResolve = function(state)
+                    local roll = math.random(100)
+                    local cost = math.random(5000, 15000)
+                    state.Money = math.max(0, (state.Money or 0) - cost)
+                    
+                    if roll <= 60 then
+                        state:ModifyStat("Happiness", 20)
+                        state.Fame = (state.Fame or 0) + 5
+                        state.Flags = state.Flags or {}
+                        state.Flags.party_legend = true
+                        state:AddFeed(string.format("🛥️ LEGENDARY YACHT PARTY! Cost $%d but made memories for LIFE! Everyone's talking about it!", cost))
+                    elseif roll <= 85 then
+                        state:ModifyStat("Happiness", 12)
+                        state:AddFeed(string.format("🛥️ Great party on the yacht! $%d well spent. Sun, music, friends!", cost))
+                    else
+                        state:ModifyStat("Happiness", 5)
+                        state:AddFeed(string.format("🛥️ Party was decent. Someone got seasick. $%d spent.", cost))
+                    end
+                end,
+            },
+            {
+                text = "Peaceful solo cruise at sunset 🌅",
+                effects = {},
+                feedText = "Setting sail alone...",
+                onResolve = function(state)
+                    state:ModifyStat("Happiness", 15)
+                    state:ModifyStat("Health", 5)
+                    state.Flags = state.Flags or {}
+                    state.Flags.found_peace = true
+                    state:AddFeed("🛥️ Just you and the ocean. Watched the sunset from your yacht. Pure peace.")
+                end,
+            },
+            {
+                text = "Go deep sea fishing! 🎣",
+                effects = {},
+                feedText = "Heading to deep waters...",
+                onResolve = function(state)
+                    local roll = math.random(100)
+                    if roll <= 30 then
+                        local fishValue = math.random(200, 2000)
+                        state.Money = (state.Money or 0) + fishValue
+                        state:ModifyStat("Happiness", 18)
+                        state.Flags = state.Flags or {}
+                        state.Flags.master_fisherman = true
+                        state:AddFeed(string.format("🎣 MASSIVE CATCH! Sold the fish for $%d! Best fishing trip ever!", fishValue))
+                    elseif roll <= 70 then
+                        state:ModifyStat("Happiness", 10)
+                        state:AddFeed("🎣 Caught a few fish! Nice relaxing day on the water.")
+                    else
+                        state:ModifyStat("Happiness", 3)
+                        state:AddFeed("🎣 Fish weren't biting today. At least the weather was nice.")
+                    end
+                end,
+            },
+            {
+                text = "Keep it docked today",
+                effects = { Happiness = -2 },
+                feedText = "🛥️ Your yacht sits unused. Why did you buy this thing again?",
+            },
+        },
+    },
+    
+    {
+        id = "yacht_celebrity_encounter",
+        title = "🛥️ Celebrity Spotted!",
+        emoji = "⭐",
+        text = "While on your yacht, you spot a celebrity on their yacht nearby!",
+        question = "What do you do?",
+        minAge = 25, maxAge = 75,
+        baseChance = 0.20,
+        cooldown = 5,
+        stage = STAGE,
+        category = "vehicle",
+        tags = { "yacht", "celebrity", "fame", "social" },
+        blockedByFlags = { in_prison = true },
+        eligibility = function(state)
+            local flags = state.Flags or {}
+            return flags.yacht_owner == true, "No yacht"
+        end,
+        
+        choices = {
+            {
+                text = "Wave and say hi from your yacht!",
+                effects = {},
+                feedText = "You wave over...",
+                onResolve = function(state)
+                    local roll = math.random(100)
+                    if roll <= 40 then
+                        state:ModifyStat("Happiness", 15)
+                        state.Fame = (state.Fame or 0) + 3
+                        state.Flags = state.Flags or {}
+                        state.Flags.celebrity_friend = true
+                        state:AddFeed("⭐ They waved back! You exchanged numbers! Celebrity yacht friend acquired!")
+                    else
+                        state:ModifyStat("Happiness", 8)
+                        state:AddFeed("⭐ They gave a friendly wave! You're in the same yacht club now!")
+                    end
+                end,
+            },
+            {
+                text = "Mind your own business",
+                effects = { Happiness = 3 },
+                feedText = "⭐ You respect their privacy. Classy move.",
+            },
+        },
+    },
+    
+    {
+        id = "supercar_attention",
+        title = "🏎️ Your Car Draws a Crowd!",
+        emoji = "📸",
+        text = "People are stopping to look at and photograph your supercar!",
+        question = "How do you handle the attention?",
+        minAge = 18, maxAge = 70,
+        baseChance = 0.30,  -- Common for supercar owners
+        cooldown = 4,
+        stage = STAGE,
+        category = "vehicle",
+        tags = { "supercar", "fame", "attention" },
+        blockedByFlags = { in_prison = true },
+        eligibility = function(state)
+            local flags = state.Flags or {}
+            if not (flags.supercar_owner or flags.luxury_car_owner or flags.ferrari_owner) then
+                return false, "No supercar"
+            end
+            return true
+        end,
+        
+        choices = {
+            {
+                text = "Pose with the car for photos! 📸",
+                effects = {},
+                feedText = "You embrace the attention...",
+                onResolve = function(state)
+                    state:ModifyStat("Happiness", 12)
+                    state:ModifyStat("Looks", 2)
+                    state.Fame = (state.Fame or 0) + 3
+                    state.Flags = state.Flags or {}
+                    state.Flags.loves_attention = true
+                    state:AddFeed("📸 You posed like a superstar! The crowd loved it! Photos everywhere!")
+                end,
+            },
+            {
+                text = "Rev the engine and drive off dramatically! 🔥",
+                effects = {},
+                feedText = "VROOOOM!",
+                onResolve = function(state)
+                    local roll = math.random(100)
+                    if roll <= 80 then
+                        state:ModifyStat("Happiness", 15)
+                        state.Fame = (state.Fame or 0) + 2
+                        state:AddFeed("🔥 EPIC EXIT! The crowd cheered as you roared away! LEGENDARY!")
+                    else
+                        state:ModifyStat("Happiness", -5)
+                        state.Money = math.max(0, (state.Money or 0) - 500)
+                        state:AddFeed("🔥 You spun out a bit showing off. Embarrassing. And you scratched the rim. $500 damage.")
+                    end
+                end,
+            },
+            {
+                text = "Modestly get in and leave",
+                effects = { Happiness = 5 },
+                feedText = "🏎️ You gave a humble nod and drove off. Classy.",
+            },
+        },
+    },
+    
     {
         id = "vehicle_car_theft_attempt",
         title = "Car Theft Attempt!",

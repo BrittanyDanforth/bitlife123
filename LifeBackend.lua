@@ -19283,22 +19283,216 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 
 	self:addMoney(state, -(tonumber(asset.price) or 0))
 	
-	-- Generate feed with tier-specific messaging
-	local tierMessages = {
-		budget = "You got yourself",
-		basic = "You bought",
-		reliable = "You purchased",
-		nice = "You treated yourself to",
-		premium = "Nice! You acquired",
-		luxury = "Congrats! You now own",
-		supercar = "WOW! You're now the proud owner of",
-		elite = "INCREDIBLE! You purchased",
-		ultra = "LEGENDARY! You now own",
-		billionaire = "BILLIONAIRE STATUS! You bought",
-		investment = "Smart investment:",
-	}
-	local tierMsg = tierMessages[asset.tier or "basic"] or "You purchased"
-	local feed = string.format("%s %s for %s!", tierMsg, tostring(asset.name or "an item"), formatMoney(asset.price or 0))
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #980: EXCITING PURCHASE CELEBRATIONS WITH VARIETY!
+	-- Not boring "You bought X" - actual exciting, varied messages!
+	-- One-time special events for first purchases of each type
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	local feed = ""
+	local showPopup = false
+	local popupData = nil
+	local assetLower = (asset.id or ""):lower()
+	
+	-- Track first-time purchases for unique celebrations
+	state._purchaseCelebrations = state._purchaseCelebrations or {}
+	local isFirstOfType = not state._purchaseCelebrations[asset.id]
+	state._purchaseCelebrations[asset.id] = true
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- SPECIFIC ASSET CELEBRATIONS - SHOES/SNEAKERS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if assetLower == "sneakers" or assetLower:find("shoe") or assetLower:find("kick") then
+		if isFirstOfType then
+			local shoeMessages = {
+				"👟 FRESH KICKS ALERT! You unbox your new %s and they're FIRE! 🔥 First thing you do is flex on everyone!",
+				"👟 New %s! You can SMELL that new shoe smell! Time to walk with CONFIDENCE!",
+				"👟 %s secured! You're walking different now. Head high, fresh feet!",
+				"👟 The drip is REAL! Your new %s are gonna turn heads!",
+			}
+			feed = string.format(shoeMessages[RANDOM:NextInteger(1, #shoeMessages)], asset.name)
+			state.Flags.got_fresh_kicks = true
+			state.Flags.sneakerhead = true
+		else
+			-- Already bought before - shorter message
+			feed = string.format("👟 Added another pair: %s. The collection grows!", asset.name)
+		end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- PHONE CELEBRATION - First phone is a MAJOR milestone for teens!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	elseif assetLower == "iphone" or assetLower:find("phone") then
+		if isFirstOfType then
+			local phoneMessages = {
+				"📱 YOUR FIRST PHONE! A %s! Welcome to the connected world! Group chats, social media, EVERYTHING!",
+				"📱 %s unlocked! You can TEXT people now! This changes EVERYTHING!",
+				"📱 New %s! First thing: download EVERY app! Time to join the digital age!",
+				"📱 %s is YOURS! You immediately created 15 social media accounts!",
+			}
+			feed = string.format(phoneMessages[RANDOM:NextInteger(1, #phoneMessages)], asset.name)
+			showPopup = true
+			popupData = {
+				emoji = "📱",
+				title = "FIRST PHONE! 🎉",
+				body = "You're connected now! Social media, texts, apps, games - the world is at your fingertips!",
+				wasSuccess = true,
+			}
+			state.Flags.first_phone_celebrated = true
+			state.Flags.connected = true
+			state.Flags.has_phone = true
+		else
+			feed = string.format("📱 Upgraded to: %s! Even faster, even sleeker!", asset.name)
+		end
+		
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- YACHT CELEBRATION - This should be EPIC!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	elseif assetLower == "yacht" or assetLower:find("yacht") then
+		if isFirstOfType then
+			feed = string.format("🛥️ YOU BOUGHT A YACHT!!! A %s! The ultimate flex! You're officially in the BIG leagues! Time to invite everyone for a yacht party!", asset.name)
+			showPopup = true
+			popupData = {
+				emoji = "🛥️",
+				title = "YACHT OWNER! 🎉",
+				body = "You now own a yacht! The ocean is your playground. Plan parties, go fishing, or just flex on everyone from the deck!",
+				wasSuccess = true,
+			}
+			state.Flags.yacht_party_ready = true
+			state.Flags.can_host_yacht_party = true
+			-- Yacht gives fame boost
+			state.Fame = (state.Fame or 0) + 20
+		else
+			feed = "🛥️ Added another yacht to your fleet. You're building a navy!"
+		end
+		
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- SUPERCAR/EXOTIC CAR CELEBRATION
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	elseif asset.tier == "supercar" or asset.tier == "exotic" or assetLower:find("ferrari") or assetLower:find("lambo") or assetLower:find("bugatti") then
+		if not state.Flags.first_supercar_celebrated then
+			local carMessages = {
+				"🏎️ SUPERCAR SECURED! Your new %s roars to life! 0-60 in SECONDS! This is the DREAM!",
+				"🏎️ LEGENDARY PURCHASE! A %s! People are gonna stop and STARE!",
+				"🏎️ %s is YOURS! The engine purrs like a beast! Time to hit the open road!",
+				"🏎️ You did it! A %s! Every kid's dream car is now in YOUR garage!",
+			}
+			feed = string.format(carMessages[RANDOM:NextInteger(1, #carMessages)], asset.name)
+			showPopup = true
+			popupData = {
+				emoji = "🏎️",
+				title = "SUPERCAR UNLOCKED!",
+				body = string.format("You now own a %s! Street racers will challenge you. People will take photos. You've MADE IT!", asset.name),
+				wasSuccess = true,
+			}
+			state.Flags.first_supercar_celebrated = true
+			state.Flags.supercar_owner = true
+			state.Fame = (state.Fame or 0) + 10
+		else
+			feed = string.format("🏎️ Another supercar: %s! Your garage is STACKED!", asset.name)
+		end
+		
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- FIRST CAR CELEBRATION
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	elseif assetType == "Vehicles" and not state.Flags.first_car_celebrated then
+		local firstCarMessages = {
+			"🚗 YOUR FIRST CAR! A %s! FREEDOM! No more asking for rides! The road is YOURS!",
+			"🚗 You got your first car! A %s! This changes EVERYTHING! Where to first?",
+			"🚗 MILESTONE! Your very own %s! You can go ANYWHERE now!",
+			"🚗 First wheels: %s! You sat in the driver's seat for 10 minutes just GRINNING!",
+		}
+		feed = string.format(firstCarMessages[RANDOM:NextInteger(1, #firstCarMessages)], asset.name)
+		showPopup = true
+		popupData = {
+			emoji = "🚗",
+			title = "FIRST CAR! 🎉",
+			body = string.format("Your very own %s! No more bumming rides. Freedom awaits!", asset.name),
+			wasSuccess = true,
+		}
+		state.Flags.first_car_celebrated = true
+		state.Flags.has_first_car = true
+		
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- FIRST HOME CELEBRATION
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	elseif assetType == "Properties" and not state.Flags.first_home_celebrated then
+		local homeMessages = {
+			"🏠 YOU'RE A HOMEOWNER! Your very own %s! No more rent! This is YOURS!",
+			"🏠 MAJOR MILESTONE! You bought a %s! Time to make it HOME!",
+			"🏠 Keys in hand to your %s! You walked through every room TWICE just because you COULD!",
+			"🏠 %s is YOURS! You immediately started planning what to change!",
+		}
+		feed = string.format(homeMessages[RANDOM:NextInteger(1, #homeMessages)], asset.name)
+		showPopup = true
+		popupData = {
+			emoji = "🏠",
+			title = "HOMEOWNER! 🎉",
+			body = string.format("Welcome to your %s! Throw a housewarming party?", asset.name),
+			wasSuccess = true,
+		}
+		state.Flags.first_home_celebrated = true
+		
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- MANSION/LUXURY PROPERTY CELEBRATION
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	elseif assetType == "Properties" and (asset.tier == "luxury" or asset.tier == "elite" or asset.tier == "ultra" or assetLower:find("mansion") or assetLower:find("penthouse")) then
+		if not state.Flags.luxury_home_celebrated then
+			feed = string.format("🏰 LUXURY LIVING! Your %s is STUNNING! Multiple bathrooms! A VIEW! You're living the DREAM!", asset.name)
+			showPopup = true
+			popupData = {
+				emoji = "🏰",
+				title = "LUXURY HOME!",
+				body = "You've reached the top! Time to host fancy parties and live like royalty!",
+				wasSuccess = true,
+			}
+			state.Flags.luxury_home_celebrated = true
+			state.Fame = (state.Fame or 0) + 15
+		else
+			feed = string.format("🏰 Another luxury property: %s! Real estate mogul!", asset.name)
+		end
+		
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- GAMING PC/TECH CELEBRATION
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	elseif assetLower == "gaming_pc" or assetLower:find("gaming") then
+		if isFirstOfType then
+			feed = string.format("🖥️ GAMING SETUP COMPLETE! Your new %s boots up! RGB lights EVERYWHERE! Time to go PRO!", asset.name)
+			state.Flags.gaming_setup = true
+		else
+			feed = string.format("🖥️ Upgraded: %s! Even MORE frames per second!", asset.name)
+		end
+		
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- JEWELRY CELEBRATION  
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	elseif asset.tier == "jewelry" or assetLower:find("ring") or assetLower:find("necklace") or assetLower:find("watch") then
+		if not state.Flags.bling_owner then
+			feed = string.format("💎 BLING! Your new %s sparkles! People notice. You feel FANCY!", asset.name)
+			state.Flags.bling_owner = true
+		else
+			feed = string.format("💎 More shine: %s added to the collection!", asset.name)
+		end
+		
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- DEFAULT MESSAGES (Still with variety!)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	else
+		local tierMessages = {
+			budget = { "You snagged", "You got yourself", "Picked up" },
+			basic = { "You bought", "You grabbed", "You picked up" },
+			reliable = { "You purchased", "You invested in", "You acquired" },
+			nice = { "You treated yourself to", "Nice! You got", "Sweet purchase:" },
+			premium = { "Excellent choice!", "Premium purchase:", "Quality investment:" },
+			luxury = { "LUXURY! You now own", "Living the dream with", "Congrats on your" },
+			supercar = { "INCREDIBLE!", "LEGENDARY PURCHASE!", "DREAM ACHIEVED!" },
+			elite = { "ELITE STATUS!", "TOP TIER!", "BALLER MOVE!" },
+			ultra = { "ULTRA WEALTHY!", "NEXT LEVEL!", "ULTIMATE FLEX!" },
+			billionaire = { "BILLIONAIRE LIFESTYLE!", "OBSCENE WEALTH!", "MOGUL STATUS!" },
+		}
+		local messages = tierMessages[asset.tier or "basic"] or tierMessages.basic
+		local tierMsg = messages[RANDOM:NextInteger(1, #messages)]
+		feed = string.format("%s %s for %s!", tierMsg, tostring(asset.name or "an item"), formatMoney(asset.price or 0))
+	end
 	
 	-- Debug: Check assets before push
 	debugPrint("  Before pushState:")
@@ -19306,7 +19500,13 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 	debugPrint("    state.Assets.Vehicles:", state.Assets.Vehicles and #state.Assets.Vehicles or 0)
 	debugPrint("    state.Assets.Items:", state.Assets.Items and #state.Assets.Items or 0)
 	
-	self:pushState(player, feed)
+	-- Push state with optional popup for major purchases
+	if showPopup and popupData then
+		popupData.showPopup = true
+		self:pushState(player, feed, popupData)
+	else
+		self:pushState(player, feed)
+	end
 	return { success = true, message = feed }
 end
 
