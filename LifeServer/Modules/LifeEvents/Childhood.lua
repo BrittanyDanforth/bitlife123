@@ -468,10 +468,12 @@ Childhood.events = {
 			{ 
 				text = "Science and discovery", 
 				effects = { Smarts = 12, Happiness = 5 }, 
+				-- CRITICAL FIX #1002: Added math_science_talent for consequence events!
 				setFlags = { 
 					passionate_scientist = true,
 					discovered_passion = true,
 					science_talent = true,
+					math_science_talent = true,  -- Links to "Your Old Report Cards" consequence event!
 					curious_mind = true,
 					likes_science = true,
 				}, 
@@ -613,10 +615,11 @@ Childhood.events = {
 		category = "relationships",
 		tags = { "romance", "school", "feelings" },
 
+		-- CRITICAL FIX #1001: All choices set had_first_crush for consequence events later!
 		choices = {
-			{ text = "Write them a secret note", effects = { Happiness = 3 }, setFlags = { romantic_soul = true }, feedText = "You slipped a note to your crush. Heart pounding!" },
-			{ text = "Tell your best friend", effects = { Happiness = 3 }, setFlags = { shares_feelings = true }, feedText = "You confided in your best friend about your crush." },
-			{ text = "Keep it to yourself", effects = { }, setFlags = { private_person = true }, feedText = "You kept your feelings secret. Some things are just for you." },
+			{ text = "Write them a secret note", effects = { Happiness = 3 }, setFlags = { romantic_soul = true, had_first_crush = true, experienced_crush = true }, feedText = "You slipped a note to your crush. Heart pounding!" },
+			{ text = "Tell your best friend", effects = { Happiness = 3 }, setFlags = { shares_feelings = true, had_first_crush = true, experienced_crush = true }, feedText = "You confided in your best friend about your crush." },
+			{ text = "Keep it to yourself", effects = { }, setFlags = { private_person = true, had_first_crush = true, experienced_crush = true }, feedText = "You kept your feelings secret. Some things are just for you." },
 			{ text = "Ew, no thanks", effects = { Happiness = 2 }, feedText = "Romance? You've got better things to think about." },
 		},
 	},

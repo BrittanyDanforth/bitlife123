@@ -1173,6 +1173,569 @@ FriendshipDecayEvents.events = {
 			},
 		},
 	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #1010-1030: MASSIVE CONSEQUENCE EVENT EXPANSION!
+	-- User feedback: "ADD WAY MORE LINKAGE - WHEN I DO A CHOICE HAVE OTHER STUFF SHOWUP LATER"
+	-- These events create meaningful connections between past choices and future outcomes!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	{
+		id = "consequence_stem_success",
+		title = "Your STEM Education Paid Off",
+		emoji = "🧪",
+		text = "A recruiter approaches you: 'We've been looking for someone with your science background. Interested in a research position?'",
+		category = "consequence",
+		weight = 12,
+		minAge = 22, maxAge = 35,
+		baseChance = 0.40,
+		cooldown = 10,
+		oneTime = true,
+		requiresFlags = { math_science_talent = true },
+		blockedByFlags = { got_stem_opportunity = true },
+		
+		choices = {
+			{
+				text = "Accept the opportunity",
+				effects = { Happiness = 15, Money = 5000 },
+				feedText = "🧪 Your childhood love of science opened doors! Career opportunity unlocked!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.got_stem_opportunity = true
+					state.Flags.research_career = true
+				end,
+			},
+			{
+				text = "Decline - I went a different direction",
+				effects = { Happiness = 3 },
+				feedText = "🧪 Different path, no regrets. Your talents served you in other ways.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.got_stem_opportunity = true
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "consequence_saver_habit",
+		title = "Your Savings Habit Saved You",
+		emoji = "💰",
+		text = "An unexpected expense came up! But wait... you have savings from your careful money habits since childhood!",
+		category = "consequence",
+		weight = 10,
+		minAge = 25, maxAge = 50,
+		baseChance = 0.45,
+		cooldown = 8,
+		oneTime = true,
+		requiresFlags = { saver = true },
+		blockedByFlags = { savings_saved_you = true },
+		
+		choices = {
+			{
+				text = "Thank past you for saving",
+				effects = { Happiness = 15, Money = 2000 },
+				feedText = "💰 'I knew saving would pay off!' Your childhood habit protected you!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.savings_saved_you = true
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "consequence_spender_regret",
+		title = "Spending Catches Up",
+		emoji = "💸",
+		text = "A financial emergency! You need money but... your spending habits left you unprepared.",
+		category = "consequence",
+		weight = 10,
+		minAge = 25, maxAge = 50,
+		baseChance = 0.45,
+		cooldown = 8,
+		oneTime = true,
+		requiresFlags = { spender = true },
+		blockedByFlags = { spending_lesson_learned = true },
+		
+		choices = {
+			{
+				text = "Borrow from family",
+				effects = { Happiness = -8, Money = 1000 },
+				feedText = "💸 They helped, but gave you a lecture about saving. Fair point.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.spending_lesson_learned = true
+				end,
+			},
+			{
+				text = "Figure it out yourself",
+				effects = { Happiness = -12, Health = -5 },
+				feedText = "💸 Stress. So much stress. But you learned a valuable lesson.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.spending_lesson_learned = true
+					state.Flags.learned_to_save = true
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "consequence_animal_lover_rescue",
+		title = "Animal Lover's Moment",
+		emoji = "🐕",
+		text = "You find an abandoned animal on the street. Your lifelong love of animals kicks in immediately.",
+		category = "consequence",
+		weight = 8,
+		minAge = 18, maxAge = 60,
+		baseChance = 0.35,
+		cooldown = 10,
+		oneTime = true,
+		requiresFlags = { animal_lover = true },
+		blockedByFlags = { rescued_animal = true },
+		
+		choices = {
+			{
+				text = "Rescue and adopt them!",
+				effects = { Happiness = 20, Money = -200 },
+				feedText = "🐕 Your childhood love of animals led to this moment. New best friend!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.rescued_animal = true
+					state.Flags.has_pet = true
+				end,
+			},
+			{
+				text = "Take to a shelter",
+				effects = { Happiness = 10 },
+				feedText = "🐕 You made sure they'd find a home. Your heart is in the right place.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.rescued_animal = true
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "consequence_creative_recognition",
+		title = "Your Art Gets Noticed!",
+		emoji = "🎨",
+		text = "Someone discovered your creative work online. 'This is exactly what I've been looking for! Are you available for a commission?'",
+		category = "consequence",
+		weight = 10,
+		minAge = 20, maxAge = 45,
+		baseChance = 0.35,
+		cooldown = 10,
+		oneTime = true,
+		requiresFlags = { artistic_talent = true },
+		blockedByFlags = { art_got_noticed = true },
+		
+		choices = {
+			{
+				text = "Take the commission!",
+				effects = { Happiness = 15 },
+				feedText = "🎨 Your childhood doodling evolved into something people pay for! Dreams can come true!",
+				onResolve = function(state)
+					local payment = math.random(500, 3000)
+					state.Money = (state.Money or 0) + payment
+					state.Flags = state.Flags or {}
+					state.Flags.art_got_noticed = true
+					state.Flags.paid_artist = true
+					addFeed(state, string.format("🎨 Earned $%d for your art! Those childhood drawings led somewhere!", payment))
+				end,
+			},
+			{
+				text = "Decline - art is personal",
+				effects = { Happiness = 5 },
+				feedText = "🎨 Not everything needs to be monetized. Art remains your peaceful escape.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.art_got_noticed = true
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "consequence_romantic_soul",
+		title = "Love Finds Romantic Souls",
+		emoji = "💕",
+		text = "You've always been a romantic at heart. And now, someone special notices the way you see the world.",
+		category = "consequence",
+		weight = 8,
+		minAge = 20, maxAge = 40,
+		baseChance = 0.30,
+		cooldown = 15,
+		oneTime = true,
+		requiresFlags = { romantic_soul = true },
+		blockedByFlags = { romantic_soulmate_met = true, married = true },
+		
+		choices = {
+			{
+				text = "Let yourself fall in love",
+				effects = { Happiness = 25 },
+				feedText = "💕 Your romantic nature attracted exactly the right person. This feels real.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.romantic_soulmate_met = true
+					state.Flags.in_relationship = true
+				end,
+			},
+			{
+				text = "Guard your heart",
+				effects = { Happiness = 5 },
+				feedText = "💕 You've been hurt before. Better to be careful. Maybe next time.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.romantic_soulmate_met = true
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "consequence_loyal_friend_reward",
+		title = "Loyalty Returned",
+		emoji = "🤝",
+		text = "Remember when you dropped everything to help your friend? They just did the same for you. When you needed it most.",
+		category = "consequence",
+		weight = 12,
+		minAge = 22, maxAge = 60,
+		baseChance = 0.40,
+		cooldown = 10,
+		oneTime = true,
+		requiresFlags = { loyal_friend = true },
+		blockedByFlags = { loyalty_returned = true },
+		
+		choices = {
+			{
+				text = "Express deep gratitude",
+				effects = { Happiness = 20 },
+				feedText = "🤝 What goes around comes around. Your loyalty was remembered. True friendship.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.loyalty_returned = true
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "consequence_ghosted_karma",
+		title = "Karma Visits",
+		emoji = "👻",
+		text = "Someone you used to know brings up how you ghosted that friend years ago. The word spread.",
+		category = "consequence",
+		weight = 8,
+		minAge = 22, maxAge = 50,
+		baseChance = 0.35,
+		cooldown = 10,
+		oneTime = true,
+		requiresFlags = { ghosted_someone = true },
+		blockedByFlags = { ghosting_karma_hit = true },
+		
+		choices = {
+			{
+				text = "Feel the shame",
+				effects = { Happiness = -10 },
+				feedText = "👻 Reputation travels. People remember how you treated others.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.ghosting_karma_hit = true
+				end,
+			},
+			{
+				text = "Defend yourself",
+				effects = { Happiness = -5 },
+				feedText = "👻 Excuses don't change facts. Maybe it's time to be better.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.ghosting_karma_hit = true
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "consequence_entrepreneur_success",
+		title = "Business Instincts Kick In",
+		emoji = "💼",
+		text = "You spot a business opportunity that others missed. Your entrepreneurial mind from childhood sees the potential immediately.",
+		category = "consequence",
+		weight = 10,
+		minAge = 23, maxAge = 50,
+		baseChance = 0.35,
+		cooldown = 10,
+		oneTime = true,
+		requiresFlags = { entrepreneur = true },
+		blockedByFlags = { entrepreneur_opportunity_taken = true },
+		
+		choices = {
+			{
+				text = "Take the risk!",
+				effects = {},
+				feedText = "Taking the plunge...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					state.Flags.entrepreneur_opportunity_taken = true
+					if roll < 0.60 then
+						local profit = math.random(5000, 50000)
+						state.Money = (state.Money or 0) + profit
+						modStatIfPossible(state, "Happiness", 20)
+						state.Flags.successful_entrepreneur = true
+						addFeed(state, string.format("💼 IT WORKED! Made $%d! Your childhood instincts were RIGHT!", profit))
+					else
+						local loss = math.random(1000, 5000)
+						state.Money = math.max(0, (state.Money or 0) - loss)
+						modStatIfPossible(state, "Happiness", -10)
+						addFeed(state, string.format("💼 Lost $%d. But entrepreneurs learn from failure. Next time.", loss))
+					end
+				end,
+			},
+			{
+				text = "Play it safe",
+				effects = { Happiness = -5 },
+				feedText = "💼 You let the opportunity pass. Smart? Or a missed chance? Only time will tell.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.entrepreneur_opportunity_taken = true
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "consequence_natural_leader_moment",
+		title = "Leadership Tested",
+		emoji = "👔",
+		text = "A crisis situation and everyone looks to YOU for guidance. Your natural leadership abilities activate.",
+		category = "consequence",
+		weight = 10,
+		minAge = 25, maxAge = 55,
+		baseChance = 0.35,
+		cooldown = 10,
+		oneTime = true,
+		requiresFlags = { natural_leader = true },
+		blockedByFlags = { leadership_tested = true },
+		
+		choices = {
+			{
+				text = "Step up and lead!",
+				effects = {},
+				feedText = "Taking charge...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					state.Flags.leadership_tested = true
+					if roll < 0.70 then
+						modStatIfPossible(state, "Happiness", 20)
+						state.Fame = (state.Fame or 0) + 3
+						state.Flags.proven_leader = true
+						addFeed(state, "👔 You led everyone through the crisis! People will remember this!")
+					else
+						modStatIfPossible(state, "Happiness", 5)
+						addFeed(state, "👔 You did your best. Not perfect, but you tried. That matters.")
+					end
+				end,
+			},
+			{
+				text = "Defer to someone else",
+				effects = { Happiness = -8 },
+				feedText = "👔 You had the skills but held back. Why? Something to reflect on.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.leadership_tested = true
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "consequence_gamer_esports",
+		title = "Gaming Skills Noticed",
+		emoji = "🎮",
+		text = "Your gaming skills from childhood caught someone's attention. 'You should try competitive gaming - you're actually good!'",
+		category = "consequence",
+		weight = 8,
+		minAge = 18, maxAge = 30,
+		baseChance = 0.30,
+		cooldown = 10,
+		oneTime = true,
+		requiresFlags = { gamer = true },
+		blockedByFlags = { esports_chance = true },
+		
+		choices = {
+			{
+				text = "Enter a tournament!",
+				effects = {},
+				feedText = "Time to prove yourself...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					state.Flags.esports_chance = true
+					if roll < 0.40 then
+						local prize = math.random(1000, 10000)
+						state.Money = (state.Money or 0) + prize
+						modStatIfPossible(state, "Happiness", 25)
+						state.Fame = (state.Fame or 0) + 5
+						state.Flags.esports_winner = true
+						addFeed(state, string.format("🎮 YOU WON! $%d prize! All those hours gaming paid off!", prize))
+					elseif roll < 0.70 then
+						modStatIfPossible(state, "Happiness", 10)
+						addFeed(state, "🎮 Didn't win, but you held your own! Gaming community respects you!")
+					else
+						modStatIfPossible(state, "Happiness", -5)
+						addFeed(state, "🎮 Got eliminated early. Maybe stick to casual gaming.")
+					end
+				end,
+			},
+			{
+				text = "Gaming is just for fun",
+				effects = { Happiness = 5 },
+				feedText = "🎮 Not everything needs to be competitive. Gaming remains your chill time.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.esports_chance = true
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "consequence_tech_talent_breakthrough",
+		title = "Tech Skills Pay Dividends",
+		emoji = "💻",
+		text = "Your natural tech talent from youth helped you spot a problem others couldn't. A company wants to hire you!",
+		category = "consequence",
+		weight = 10,
+		minAge = 20, maxAge = 40,
+		baseChance = 0.35,
+		cooldown = 10,
+		oneTime = true,
+		requiresFlags = { tech_talent = true },
+		blockedByFlags = { tech_breakthrough = true },
+		
+		choices = {
+			{
+				text = "Join the company!",
+				effects = { Happiness = 15, Money = 10000 },
+				feedText = "💻 Your childhood love of computers turned into a career! Signing bonus received!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.tech_breakthrough = true
+					state.Flags.tech_career = true
+				end,
+			},
+			{
+				text = "Stay independent",
+				effects = { Happiness = 8 },
+				feedText = "💻 Freelance life. Your skills open doors whenever you want.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.tech_breakthrough = true
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "consequence_cooking_talent_recognition",
+		title = "Your Cooking Impresses",
+		emoji = "👨‍🍳",
+		text = "You made something for a gathering and everyone's asking for the recipe. 'You should open a restaurant!'",
+		category = "consequence",
+		weight = 8,
+		minAge = 25, maxAge = 55,
+		baseChance = 0.35,
+		cooldown = 10,
+		oneTime = true,
+		requiresFlags = { cooking_talent = true },
+		blockedByFlags = { cooking_recognized = true },
+		
+		choices = {
+			{
+				text = "Start selling your food!",
+				effects = {},
+				feedText = "Taking the plunge...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					state.Flags.cooking_recognized = true
+					if roll < 0.60 then
+						local income = math.random(1000, 5000)
+						state.Money = (state.Money or 0) + income
+						modStatIfPossible(state, "Happiness", 15)
+						state.Flags.food_business = true
+						addFeed(state, string.format("👨‍🍳 Your food is a HIT! Made $%d! Those childhood kitchen experiments paid off!", income))
+					else
+						modStatIfPossible(state, "Happiness", 5)
+						addFeed(state, "👨‍🍳 Food business is HARD. But people love your cooking. Keep at it!")
+					end
+				end,
+			},
+			{
+				text = "Cooking is just my hobby",
+				effects = { Happiness = 8 },
+				feedText = "👨‍🍳 Cooking for loved ones is reward enough. No pressure, just love.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.cooking_recognized = true
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "consequence_musical_moment",
+		title = "Your Musical Gift Shines",
+		emoji = "🎵",
+		text = "Someone overheard you playing/singing. 'That was beautiful! Have you ever performed publicly?'",
+		category = "consequence",
+		weight = 8,
+		minAge = 18, maxAge = 50,
+		baseChance = 0.35,
+		cooldown = 10,
+		oneTime = true,
+		requiresFlags = { musical_talent = true },
+		blockedByFlags = { music_moment_happened = true },
+		
+		choices = {
+			{
+				text = "Perform at open mic night!",
+				effects = {},
+				feedText = "Stepping onto the stage...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					state.Flags.music_moment_happened = true
+					if roll < 0.50 then
+						modStatIfPossible(state, "Happiness", 25)
+						state.Fame = (state.Fame or 0) + 5
+						state.Flags.performed_publicly = true
+						addFeed(state, "🎵 STANDING OVATION! Your childhood music practice created magic!")
+					elseif roll < 0.80 then
+						modStatIfPossible(state, "Happiness", 12)
+						addFeed(state, "🎵 Good reception! People clapped and smiled. That felt AMAZING!")
+					else
+						modStatIfPossible(state, "Happiness", -5)
+						addFeed(state, "🎵 Stage fright got you. But you tried! That takes courage.")
+					end
+				end,
+			},
+			{
+				text = "Music is just for me",
+				effects = { Happiness = 5 },
+				feedText = "🎵 Private joy. Your music fills your soul even if nobody else hears.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.music_moment_happened = true
+				end,
+			},
+		},
+	},
 }
 
 -- ═══════════════════════════════════════════════════════════════════════════════
