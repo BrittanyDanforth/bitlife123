@@ -42,8 +42,8 @@ InvestmentBankingEvents.events = {
 		category = "career_finance",
 		weight = 18,
 		minAge = 22, maxAge = 40,
-		baseChance = 0.55,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.3, -- LOWERED to prevent spam
+		cooldown = 5, -- INCREASED
 		requiresJob = true,
 		eligibility = isInvestmentBanker,
 		blockedByFlags = { in_prison = true },
@@ -99,8 +99,8 @@ InvestmentBankingEvents.events = {
 		category = "career_finance",
 		weight = 16,
 		minAge = 22, maxAge = 55,
-		baseChance = 0.5,
-		cooldown = 3,
+		baseChance = 0.3, -- LOWERED
+		cooldown = 5, -- INCREASED
 		requiresJob = true,
 		eligibility = isInvestmentBanker,
 		blockedByFlags = { in_prison = true },
@@ -148,11 +148,11 @@ InvestmentBankingEvents.events = {
 		category = "career_finance",
 		weight = 14,
 		minAge = 24, maxAge = 55,
-		baseChance = 0.5,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.25, -- LOWERED to prevent spam
+		cooldown = 5, -- INCREASED
 		requiresJob = true,
 		eligibility = hasFinanceJob,
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, lost_client = true },
 		
 		choices = {
 			{
@@ -479,6 +479,607 @@ InvestmentBankingEvents.events = {
 						state.Flags.legal_trouble = true
 						state:AddFeed("⚖️ They found it later. Lawsuit incoming. You might have to testify.")
 					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- NEW EVENTS - ENHANCED VARIETY, LINKAGE, AND CONSEQUENCES
+	-- ══════════════════════════════════════════════════════════════════════════════
+	
+	{
+		id = "ib_top_performer_consequence",
+		title = "💎 Top Performer Perks",
+		emoji = "💎",
+		text = "Being named top performer has its perks! The MD is personally mentoring you now.",
+		category = "career_finance",
+		weight = 6,
+		minAge = 24, maxAge = 45,
+		baseChance = 0.3, -- LOWERED
+		cooldown = 6, -- INCREASED
+		oneTime = true, -- Only once
+		requiresJob = true,
+		eligibility = isInvestmentBanker,
+		-- LINKAGE: Only triggers if you were named top performer
+		requiresFlags = { top_performer = true },
+		blockedByFlags = { in_prison = true, deal_leader = true },
+		
+		choices = {
+			{
+				text = "Ask to lead the next big deal",
+				effects = { Smarts = 5 },
+				feedText = "Ambitious move...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						local bonus = math.random(200000, 800000)
+						state.Money = (state.Money or 0) + bonus
+						state:ModifyStat("Happiness", 20)
+						state.Flags = state.Flags or {}
+						state.Flags.deal_leader = true
+						state:AddFeed(string.format("💎 Led a $2B acquisition! $%s bonus! Fast track to VP!", bonus))
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("💎 The deal fell through. Not your fault but the spotlight isn't kind.")
+					end
+				end,
+			},
+			{
+				text = "Learn everything you can from the MD",
+				effects = { Smarts = 8, Happiness = 5 },
+				feedText = "Knowledge is power...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.md_mentee = true
+					state.Flags.industry_knowledge = true
+					state:AddFeed("💎 Absorbing decades of wisdom! You're learning things they don't teach in b-school!")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "ib_sec_investigation_consequence",
+		title = "🔍 SEC Investigation Deepens",
+		emoji = "🔍",
+		text = "Remember those trades? The SEC investigation is getting serious. They want to interview you.",
+		category = "career_finance",
+		weight = 12,
+		minAge = 25, maxAge = 60,
+		baseChance = 0.35, -- LOWERED
+		cooldown = 5, -- INCREASED
+		oneTime = true, -- Only once!
+		requiresJob = true,
+		eligibility = hasFinanceJob,
+		-- LINKAGE: Only triggers if SEC is investigating
+		requiresFlags = { sec_investigation = true },
+		blockedByFlags = { in_prison = true, cleared_by_sec = true, banned_from_finance = true },
+		
+		choices = {
+			{
+				text = "Cooperate fully with investigators",
+				effects = { Happiness = -10 },
+				feedText = "Nothing to hide...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state.Flags = state.Flags or {}
+						state.Flags.sec_investigation = nil
+						state.Flags.cleared_by_sec = true
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("🔍 Investigation closed! No charges! You can breathe again!")
+					elseif roll <= 80 then
+						state.Money = math.max(0, (state.Money or 0) - math.random(100000, 300000))
+						state.Flags = state.Flags or {}
+						state.Flags.sec_investigation = nil
+						state:AddFeed("🔍 Settled with a fine. No admission of guilt. Career can continue.")
+					else
+						state.Flags = state.Flags or {}
+						state.Flags.sec_investigation = nil
+						state.Flags.banned_from_finance = true
+						state.CurrentJob = nil
+						state:AddFeed("🔍 Banned from the securities industry! Career OVER!")
+					end
+				end,
+			},
+			{
+				text = "Lawyer up and fight it",
+				effects = { Money = -200000, Happiness = -15 },
+				feedText = "Going to war...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 35 then
+						state.Flags = state.Flags or {}
+						state.Flags.sec_investigation = nil
+						state.Flags.beat_the_feds = true
+						state:ModifyStat("Happiness", 25)
+						state:AddFeed("🔍 Your legal team CRUSHED IT! Case dismissed! You're untouchable!")
+					else
+						state.Flags = state.Flags or {}
+						state.Flags.in_prison = true
+						state.PrisonYearsRemaining = math.random(2, 8)
+						state.CurrentJob = nil
+						state.Flags.sec_investigation = nil
+						state:AddFeed("🔍 Lost the case. Federal prison. Should have cooperated.")
+					end
+				end,
+			},
+			{
+				text = "Flee the country",
+				effects = { Happiness = -20 },
+				feedText = "Running...",
+				onResolve = function(state)
+					state.Money = math.max(0, (state.Money or 0) - math.random(500000, 1000000))
+					state.Flags = state.Flags or {}
+					state.Flags.fugitive = true
+					state.Flags.sec_investigation = nil
+					state.CurrentJob = nil
+					state:AddFeed("🔍 Living in a country with no extradition. Rich but paranoid. Forever looking over your shoulder.")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "ib_ipo_legend_consequence",
+		title = "🌟 IPO Legend Status",
+		emoji = "🌟",
+		text = "After that legendary IPO, you're being offered a partner position at a new hedge fund!",
+		category = "career_finance",
+		weight = 8,
+		minAge = 30, maxAge = 55,
+		baseChance = 0.45,
+		cooldown = 5,
+		oneTime = true,
+		requiresJob = true,
+		eligibility = isInvestmentBanker,
+		-- LINKAGE: Only triggers if IPO was legendary
+		requiresFlags = { ipo_legend = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Take the partner position",
+				effects = { Happiness = 20 },
+				feedText = "Moving up!",
+				onResolve = function(state)
+					local equity = math.random(1000000, 5000000)
+					state.Money = (state.Money or 0) + equity
+					state.Flags = state.Flags or {}
+					state.Flags.hedge_fund_partner = true
+					state.Flags.ipo_legend = nil -- Clear for new adventures
+					state:AddFeed(string.format("🌟 PARTNER! $%s in equity! Running the show now!", equity))
+				end,
+			},
+			{
+				text = "Start your own fund",
+				effects = { Smarts = 5 },
+				feedText = "Going solo...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					local investment = 500000
+					if (state.Money or 0) < investment then
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🌟 Can't afford to start your own fund. Need at least $500k.")
+					else
+						state.Money = state.Money - investment
+						if roll <= 50 then
+							local returns = math.random(2000000, 10000000)
+							state.Money = (state.Money or 0) + returns
+							state.Flags = state.Flags or {}
+							state.Flags.hedge_fund_founder = true
+							state.Fame = (state.Fame or 0) + 50
+							state:AddFeed(string.format("🌟 YOUR FUND IS CRUSHING IT! $%s returns in year one!", returns))
+						else
+							state:ModifyStat("Happiness", -15)
+							state:AddFeed("🌟 Fund underperformed. Investors pulling out. Back to square one.")
+						end
+					end
+				end,
+			},
+			{
+				text = "Stay loyal to current firm",
+				effects = { Happiness = 5, Money = 300000 },
+				setFlags = { loyal_employee = true },
+				feedText = "Loyalty matters.",
+				onResolve = function(state)
+					state:AddFeed("🌟 Stayed put. Promoted to Managing Director. Comfortable but... what if?")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "ib_dealmaker_streak",
+		title = "🔥 Hot Streak",
+		emoji = "🔥",
+		text = "You've closed 5 deals in a row! You're the hottest dealmaker in the firm!",
+		category = "career_finance",
+		weight = 6,
+		minAge = 26, maxAge = 50,
+		baseChance = 0.2, -- LOWERED
+		cooldown = 6, -- INCREASED
+		requiresJob = true,
+		eligibility = isInvestmentBanker,
+		-- LINKAGE: REQUIRES dealmaker flag - not just boosted
+		requiresFlags = { dealmaker = true },
+		blockedByFlags = { in_prison = true, legendary_dealmaker = true },
+		
+		choices = {
+			{
+				text = "Go for the biggest deal of your career",
+				effects = { Health = -5 },
+				feedText = "Swinging for the fences...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						local bonus = math.random(500000, 2000000)
+						state.Money = (state.Money or 0) + bonus
+						state:ModifyStat("Happiness", 25)
+						state.Fame = (state.Fame or 0) + 30
+						state.Flags = state.Flags or {}
+						state.Flags.legendary_dealmaker = true
+						state:AddFeed(string.format("🔥 HISTORIC DEAL! $%s bonus! Your name in the Wall Street Journal!", bonus))
+					else
+						state:ModifyStat("Happiness", -15)
+						state.Money = math.max(0, (state.Money or 0) - 50000)
+						state:AddFeed("🔥 Overreached. Deal collapsed. Streak ended painfully.")
+					end
+				end,
+			},
+			{
+				text = "Lock in your gains - coast for a bit",
+				effects = { Happiness = 8, Health = 5 },
+				feedText = "Protecting the streak...",
+				onResolve = function(state)
+					state.Money = (state.Money or 0) + math.random(100000, 300000)
+					state:AddFeed("🔥 Played it safe. Took smaller deals. Streak continues quietly.")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "ib_legal_trouble_consequence",
+		title = "⚠️ Legal Troubles Mount",
+		emoji = "⚠️",
+		text = "Remember that deal with hidden liabilities? The lawsuit is here. You're being deposed.",
+		category = "career_finance",
+		weight = 12,
+		minAge = 26, maxAge = 60,
+		baseChance = 0.55,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = hasFinanceJob,
+		-- LINKAGE: Only triggers if you have legal trouble
+		requiresFlags = { legal_trouble = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Tell the truth - whatever happens",
+				effects = { Smarts = 3 },
+				feedText = "Coming clean...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state.Money = math.max(0, (state.Money or 0) - math.random(50000, 200000))
+						state.Flags = state.Flags or {}
+						state.Flags.legal_trouble = nil
+						state.Flags.ethical_banker = true
+						state:AddFeed("⚠️ Settled out of court. Reputation damaged but career survives.")
+					else
+						state.Money = math.max(0, (state.Money or 0) - math.random(300000, 800000))
+						state.Flags = state.Flags or {}
+						state.Flags.legal_trouble = nil
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("⚠️ Massive settlement. Wiped out your savings. Hard lesson learned.")
+					end
+				end,
+			},
+			{
+				text = "Blame it on someone else",
+				effects = { Happiness = -10 },
+				feedText = "Deflecting...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state.Flags = state.Flags or {}
+						state.Flags.legal_trouble = nil
+						state:AddFeed("⚠️ Somehow got away with it. Colleague took the fall. Can you live with that?")
+					else
+						state:ModifyStat("Happiness", -20)
+						state.Flags = state.Flags or {}
+						state.Flags.in_prison = true
+						state.PrisonYearsRemaining = math.random(1, 5)
+						state.Flags.legal_trouble = nil
+						state.CurrentJob = nil
+						state:AddFeed("⚠️ Perjury charges on top of everything else. Prison time.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "ib_not_team_player_consequence",
+		title = "📋 Performance Review",
+		emoji = "📋",
+		text = "Your reputation as 'not a team player' is coming back to haunt you. PIP incoming.",
+		category = "career_finance",
+		weight = 12,
+		minAge = 23, maxAge = 45,
+		baseChance = 0.5,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = isInvestmentBanker,
+		-- LINKAGE: Only triggers if flagged as not team player
+		requiresFlags = { not_team_player = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Accept feedback and change behavior",
+				effects = { Happiness = -5, Smarts = 3 },
+				feedText = "Swallowing pride...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.not_team_player = nil
+					state.Flags.reformed = true
+					state:AddFeed("📋 Six months later: 'Remarkable turnaround!' You kept your job.")
+				end,
+			},
+			{
+				text = "Push back and defend yourself",
+				effects = { Happiness = 5 },
+				feedText = "Not going down quietly...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 35 then
+						state.Money = (state.Money or 0) + math.random(30000, 100000)
+						state.Flags = state.Flags or {}
+						state.Flags.not_team_player = nil
+						state:AddFeed("📋 Your numbers proved them wrong! PIP rescinded! Respect earned!")
+					else
+						state:ModifyStat("Happiness", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.terminated = true
+						state.CurrentJob = nil
+						state:AddFeed("📋 'Terminated for performance.' Looking for a new job.")
+					end
+				end,
+			},
+			{
+				text = "Start job hunting immediately",
+				effects = { Smarts = 2 },
+				feedText = "Writing on the wall...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state.Money = (state.Money or 0) + math.random(50000, 150000) -- Signing bonus
+						state.Flags = state.Flags or {}
+						state.Flags.not_team_player = nil
+						state:AddFeed("📋 Jumped ship! New firm, fresh start! Signing bonus in hand!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("📋 Still looking. Nobody's hiring right now. Stuck.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "ib_market_veteran_opportunity",
+		title = "📊 Market Commentary Request",
+		emoji = "📊",
+		text = "CNBC wants you as a regular market commentator! TV appearances every week!",
+		category = "career_finance",
+		weight = 8,
+		minAge = 30, maxAge = 65,
+		baseChance = 0.4,
+		cooldown = 5,
+		oneTime = true,
+		requiresJob = true,
+		eligibility = hasFinanceJob,
+		-- LINKAGE: Only if you've proven yourself in market crashes
+		requiresFlags = { market_veteran = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Become a TV personality",
+				effects = { Happiness = 10 },
+				feedText = "Hello, America!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state.Fame = (state.Fame or 0) + 40
+						state.Money = (state.Money or 0) + math.random(100000, 300000)
+						state.Flags = state.Flags or {}
+						state.Flags.tv_personality = true
+						state:AddFeed("📊 You're a TV STAR! 'The Finance Guy!' Book deal incoming!")
+					else
+						state.Fame = (state.Fame or 0) - 10
+						state:AddFeed("📊 Made a bad call on TV. Went viral for the wrong reasons.")
+					end
+				end,
+			},
+			{
+				text = "Decline - stay behind the scenes",
+				effects = { Happiness = 3 },
+				setFlags = { behind_the_scenes = true },
+				feedText = "Camera shy.",
+				onResolve = function(state)
+					state:AddFeed("📊 Declined. Your clients appreciate your discretion.")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "ib_crypto_opportunity",
+		title = "₿ Crypto Hedge Fund Offer",
+		emoji = "₿",
+		text = "A new crypto hedge fund is launching. They want YOU to run traditional finance operations!",
+		category = "career_finance",
+		weight = 5,
+		minAge = 25, maxAge = 50,
+		baseChance = 0.15, -- LOWERED - rare opportunity
+		cooldown = 8, -- INCREASED
+		oneTime = true, -- Only once
+		requiresJob = true,
+		eligibility = hasFinanceJob,
+		blockedByFlags = { in_prison = true, crypto_millionaire = true },
+		
+		choices = {
+			{
+				text = "Join the crypto revolution",
+				effects = { Happiness = 8 },
+				feedText = "WAGMI!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 35 then
+						local gains = math.random(1000000, 5000000)
+						state.Money = (state.Money or 0) + gains
+						state.Fame = (state.Fame or 0) + 25
+						state.Flags = state.Flags or {}
+						state.Flags.crypto_millionaire = true
+						state:AddFeed(string.format("₿ CRYPTO BOOM! $%s in equity! To the moon!", gains))
+					elseif roll <= 70 then
+						state.Money = (state.Money or 0) + math.random(100000, 400000)
+						state:AddFeed("₿ Decent returns. Crypto winter hit but you survived.")
+					else
+						state:ModifyStat("Happiness", -20)
+						state.CurrentJob = nil
+						state:AddFeed("₿ Fund collapsed. Regulatory nightmare. Your reputation is in tatters.")
+					end
+				end,
+			},
+			{
+				text = "Stay in traditional finance",
+				effects = { Smarts = 3, Money = 50000 },
+				feedText = "Boring is beautiful.",
+				onResolve = function(state)
+					state:AddFeed("₿ Watched crypto from the sidelines. No FOMO. Steady returns.")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "ib_whistleblower_dilemma",
+		title = "🚨 Major Fraud Discovery",
+		emoji = "🚨",
+		text = "You discovered your firm is committing massive fraud. Billions in fake numbers. Do you blow the whistle?",
+		category = "career_finance",
+		weight = 6,
+		minAge = 26, maxAge = 55,
+		baseChance = 0.3,
+		cooldown = 6,
+		oneTime = true,
+		requiresJob = true,
+		eligibility = isInvestmentBanker,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Report to SEC - do the right thing",
+				effects = { Happiness = -10, Smarts = 5 },
+				feedText = "Whistleblower...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						local reward = math.random(2000000, 10000000)
+						state.Money = (state.Money or 0) + reward
+						state.Flags = state.Flags or {}
+						state.Flags.whistleblower_hero = true
+						state.Flags.blacklisted_wallstreet = true
+						state.CurrentJob = nil
+						state:AddFeed(string.format("🚨 WHISTLEBLOWER REWARD! $%s! But you'll never work on Wall Street again.", reward))
+					else
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.whistleblower_hero = true
+						state.CurrentJob = nil
+						state:AddFeed("🚨 Did the right thing. No reward. But you saved thousands of investors.")
+					end
+				end,
+			},
+			{
+				text = "Quietly quit and say nothing",
+				effects = { Happiness = -15 },
+				feedText = "Not my problem...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.CurrentJob = nil
+					if roll <= 50 then
+						state:AddFeed("🚨 Left quietly. Years later, the fraud was exposed. You feel guilty.")
+					else
+						state.Flags = state.Flags or {}
+						state.Flags.complicit_in_fraud = true
+						state:AddFeed("🚨 Left but they're investigating everyone. You might get dragged in.")
+					end
+				end,
+			},
+			{
+				text = "Confront management directly",
+				effects = {},
+				feedText = "Internal resolution...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 25 then
+						state.Money = (state.Money or 0) + math.random(500000, 1500000)
+						state.Flags = state.Flags or {}
+						state.Flags.management_fixer = true
+						state:AddFeed("🚨 They fixed it quietly. You got a huge bonus to keep quiet.")
+					else
+						state:ModifyStat("Health", -10)
+						state.CurrentJob = nil
+						state:AddFeed("🚨 Fired immediately. 'Restructuring.' Watch your back.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "ib_mentor_wisdom",
+		title = "🎓 MD Shares Career Advice",
+		emoji = "🎓",
+		text = "Your MD mentor pulls you aside. 'Kid, I've been in this game 30 years. Here's what I've learned...'",
+		category = "career_finance",
+		weight = 12,
+		minAge = 24, maxAge = 40,
+		baseChance = 0.45,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = isInvestmentBanker,
+		-- LINKAGE: More likely if you're being mentored
+		boostedByFlags = { md_mentee = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Listen carefully - absorb everything",
+				effects = { Smarts = 8, Happiness = 5 },
+				feedText = "Learning from the master...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.industry_wisdom = true
+					state.Flags.mentored = true
+					state:AddFeed("🎓 'Relationships matter more than deals. Never burn bridges.' Wisdom acquired!")
+				end,
+			},
+			{
+				text = "Ask about their biggest regret",
+				effects = { Smarts = 5, Happiness = 2 },
+				feedText = "Getting personal...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.learned_from_others_mistakes = true
+					state:AddFeed("🎓 'I missed my kids growing up. Don't make my mistake.' Deep conversation.")
 				end,
 			},
 		},
