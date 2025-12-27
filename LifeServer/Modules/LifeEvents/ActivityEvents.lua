@@ -1125,7 +1125,8 @@ ActivityEvents.Vacation = {
 -- ═══════════════════════════════════════════════════════════════════════════════
 ActivityEvents.Doctor = {
 	{
-		id = "doctor_checkup",
+		-- CRITICAL FIX: Renamed to avoid ID collision with MedicalActivityEvents
+		id = "doctor_routine_checkup",
 		title = "🏥 Routine Checkup",
 		emoji = "🏥",
 		weight = 40,

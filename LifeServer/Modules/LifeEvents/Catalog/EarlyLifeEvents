@@ -618,14 +618,15 @@ EarlyLifeEvents.events = {
 		},
 	},
 	{
-		id = "birthday_party",
+		-- CRITICAL FIX: Renamed to avoid ID collision with Childhood.lua birthday_party
+		id = "child_birthday_celebration",
 		title = "Birthday Party!",
 		emoji = "🎂",
 		text = "It's your birthday! You're having a party!",
 		question = "What kind of party do you want?",
 		minAge = 4, maxAge = 12,
-		baseChance = 0.6, -- CRITICAL FIX: Reduced from 0.9 - not every year has a party
-		cooldown = 3, -- CRITICAL FIX: Increased from 1 - parties aren't annual spam
+		baseChance = 0.45, -- CRITICAL FIX: Reduced to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased - parties aren't annual spam
 		category = "childhood", -- CRITICAL FIX: Proper category
 		tags = { "birthday", "celebration", "childhood" },
 		

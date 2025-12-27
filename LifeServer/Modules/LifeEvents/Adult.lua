@@ -3138,7 +3138,8 @@ Adult.events = {
 	
 	-- CAREER CROSSROADS
 	{
-		id = "career_crossroads",
+		-- CRITICAL FIX: Renamed to avoid ID collision with Career.lua
+		id = "adult_career_crossroads",
 		title = "Career Crossroads",
 		emoji = "🔀",
 		text = "You've been doing the same job for years. Is it time for a change?",
@@ -3147,6 +3148,9 @@ Adult.events = {
 		baseChance = 0.3,
 		cooldown = 8,
 		maxOccurrences = 2,
+		category = "career",
+		tags = { "career", "decision", "crossroads" },
+		blockedByFlags = { in_prison = true },
 		choices = {
 			{ text = "Take a leap and change careers", effects = { Happiness = 15, Money = -5000 }, setFlags = { career_changer = true }, feedText = "Scary but exciting! New chapter begins." },
 			{ text = "Stay but ask for a promotion", effects = { Happiness = 5, Money = 5000 }, feedText = "You made your case. A raise is coming!" },

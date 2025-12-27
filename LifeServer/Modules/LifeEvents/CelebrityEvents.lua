@@ -2252,13 +2252,16 @@ CelebrityEvents.GeneralFameEvents = {
 	
 	-- CELEBRITY FEUD
 	{
-		id = "celebrity_feud",
+		-- CRITICAL FIX: Renamed to avoid ID collision
+		id = "celebrity_feud_drama",
 		title = "🔥 Celebrity Feud",
 		emoji = "🔥",
 		text = "Another celebrity made shady comments about you. The internet is waiting for your response.",
 		minFame = 45,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 4,
+		category = "celebrity",
+		tags = { "celebrity", "drama", "feud" },
 		choices = {
 			{
 				text = "Epic clap back on social media",

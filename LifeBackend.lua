@@ -16807,8 +16807,11 @@ function LifeBackend:handlePrisonAction(player, actionId)
 		state.JailYearsLeft = 0
 		state.Flags.in_prison = nil
 		state.Flags.incarcerated = nil
+		-- CRITICAL FIX: Set ALL escape flag variations for compatibility!
 		state.Flags.escaped_prisoner = true
+		state.Flags.escaped_prison = true -- For LifeExperiences consequence events
 		state.Flags.fugitive = true
+		state.Flags.on_the_run = true
 		state.PendingFeed = nil
 		state.YearLog = {}
 		
@@ -16842,13 +16845,15 @@ function LifeBackend:handlePrisonAction(player, actionId)
 				{ 
 					text = "Lay low and start fresh", 
 					effects = { Happiness = 20 },
-					setFlags = { escaped_prisoner = true, fugitive = true, criminal_record = true },
+					-- CRITICAL FIX: Set ALL escape flags for compatibility!
+					setFlags = { escaped_prisoner = true, escaped_prison = true, fugitive = true, on_the_run = true, criminal_record = true },
 					feedText = "🏃 You escaped prison! Now living as a fugitive.",
 				},
 				{ 
 					text = "Leave the country", 
 					effects = { Happiness = 15, Money = -5000 },
-					setFlags = { escaped_prisoner = true, fugitive = true, fled_country = true },
+					-- CRITICAL FIX: Set ALL escape flags for compatibility!
+					setFlags = { escaped_prisoner = true, escaped_prison = true, fugitive = true, on_the_run = true, fled_country = true },
 					feedText = "🏃 You escaped and fled to another country!",
 				},
 			},

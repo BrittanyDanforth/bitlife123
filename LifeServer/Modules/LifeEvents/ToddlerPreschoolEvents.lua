@@ -1272,7 +1272,8 @@ events[#events + 1] = {
 -- ════════════════════════════════════════════════════════════════════════════
 
 events[#events + 1] = {
-	id = "birthday_party",
+	-- CRITICAL FIX: Renamed to avoid ID collision with Childhood.lua birthday_party
+	id = "toddler_birthday_party",
 	title = "Birthday Party!",
 	emoji = "🎂",
 	textVariants = {
@@ -1285,9 +1286,10 @@ events[#events + 1] = {
 	text = "It's YOUR birthday! Party time!",
 	question = "How was your special day?",
 	minAge = 3, maxAge = 6,
-	baseChance = 0.55, -- CRITICAL FIX: Reduced from 0.9 to prevent spam
+	baseChance = 0.45, -- CRITICAL FIX: Reduced to prevent spam
 	cooldown = 12, -- CRITICAL FIX: Increased - birthday parties aren't every year
 	category = "childhood",
+	tags = { "birthday", "party", "toddler" },
 
 	choices = {
 		{

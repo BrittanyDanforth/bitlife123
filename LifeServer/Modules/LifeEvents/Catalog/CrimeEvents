@@ -1554,7 +1554,8 @@ local events = {
 	
 	-- BURGLARY
 	{
-		id = "burglary_opportunity",
+		-- CRITICAL FIX: Renamed to avoid ID collision
+		id = "burglary_empty_house",
 		emoji = "🏠",
 		title = "Empty House",
 		text = "You notice a neighbor is on vacation and their security system seems off.",

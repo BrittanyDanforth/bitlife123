@@ -1871,14 +1871,15 @@ Childhood.events = {
 		},
 	},
 	{
-		id = "birthday_party",
+		-- CRITICAL FIX: Renamed to avoid ID collision with other birthday events
+		id = "childhood_birthday_celebration",
 		title = "Birthday Celebration",
 		emoji = "🎂",
 		text = "It's your birthday! Time to celebrate!",
 		question = "What kind of party do you want?",
 		minAge = 3, maxAge = 12,
-		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.9 - not every birthday needs a card
-		cooldown = 4, -- CRITICAL FIX: Increased from 1 to prevent spam
+		baseChance = 0.4, -- CRITICAL FIX: Reduced to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		
 		stage = STAGE,
 		ageBand = "childhood",
