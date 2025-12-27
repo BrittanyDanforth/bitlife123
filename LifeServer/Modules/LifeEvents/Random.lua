@@ -2676,7 +2676,10 @@ Random.events = {
 		minAge = 18, maxAge = 80,
 		baseChance = 0.6, -- CRITICAL FIX: Reduced from 0.9 to prevent spam
 		cooldown = 3, -- CRITICAL FIX: Increased from 1 to prevent spam
+		category = "homeless", -- CRITICAL FIX: Proper category
+		tags = { "homeless", "survival" },
 		requiresFlags = { homeless = true },
+		blockedByFlags = { in_prison = true }, -- CRITICAL FIX: Can't be homeless in prison
 
 		choices = {
 			{ 

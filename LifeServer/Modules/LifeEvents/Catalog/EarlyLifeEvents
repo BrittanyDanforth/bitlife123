@@ -573,6 +573,8 @@ EarlyLifeEvents.events = {
 		minAge = 5, maxAge = 8,
 		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
 		cooldown = 2, -- CRITICAL FIX: Increased from 1 to prevent spam
+		category = "childhood", -- CRITICAL FIX: Proper category
+		tags = { "teeth", "childhood", "milestone" },
 		
 		choices = {
 			{
@@ -621,6 +623,8 @@ EarlyLifeEvents.events = {
 		minAge = 4, maxAge = 12,
 		baseChance = 0.6, -- CRITICAL FIX: Reduced from 0.9 - not every year has a party
 		cooldown = 3, -- CRITICAL FIX: Increased from 1 - parties aren't annual spam
+		category = "childhood", -- CRITICAL FIX: Proper category
+		tags = { "birthday", "celebration", "childhood" },
 		
 		choices = {
 			{
@@ -1451,6 +1455,10 @@ EarlyLifeEvents.events = {
 		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
 		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		oneTime = true, -- You only learn to drive once!
+		-- CRITICAL FIX: Block if already has license or learned to drive
+		blockedByFlags = { has_drivers_license = true, good_driver = true, learned_driving = true },
+		category = "teen",
+		tags = { "driving", "milestone", "teen" },
 		
 		choices = {
 			{
@@ -1460,24 +1468,55 @@ EarlyLifeEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					state.Flags = state.Flags or {}
+					state.Flags.learned_driving = true -- CRITICAL FIX: Always set this so event doesn't repeat
 					if roll <= 40 then
 						state:ModifyStat("Smarts", 3)
 						state:ModifyStat("Happiness", 6)
 						state.Flags.good_driver = true
+						state.Flags.has_drivers_license = true
 						state:AddFeed("🚗 You're a natural! Passed the test first try!")
 					elseif roll <= 70 then
 						state:ModifyStat("Smarts", 2)
 						state:ModifyStat("Happiness", 3)
+						state.Flags.has_drivers_license = true
 						state:AddFeed("🚗 You passed! Took a few tries but you got your license!")
 					elseif roll <= 90 then
 						state:ModifyStat("Happiness", -2)
-						state:AddFeed("🚗 Failed the test. Parallel parking got you. Try again...")
+						state:AddFeed("🚗 Failed the test. Parallel parking got you. You'll need to try again later...")
 					else
 						state:ModifyStat("Happiness", -4)
 						state:ModifyStat("Health", -3)
 						state.Flags.minor_accident = true
 						state:AddFeed("🚗 You had a minor fender bender during practice. Scary!")
 					end
+				end,
+			},
+			{
+				text = "Barely practice",
+				effects = {},
+				feedText = "How hard can it be...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					state.Flags.learned_driving = true
+					if roll <= 20 then
+						state:ModifyStat("Happiness", 4)
+						state.Flags.has_drivers_license = true
+						state:AddFeed("🚗 Lucky! Passed despite barely practicing!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🚗 Failed! Should've practiced more...")
+					end
+				end,
+			},
+			{
+				text = "Wait until you're older",
+				effects = { Happiness = -2 },
+				feedText = "Not ready yet...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.delayed_driving = true
+					state:AddFeed("🚗 You decided to wait. Driving can be scary!")
 				end,
 			},
 		},
@@ -1541,6 +1580,10 @@ EarlyLifeEvents.events = {
 		baseChance = 0.55, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
 		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		oneTime = true, -- College decisions are once-in-a-lifetime
+		-- CRITICAL FIX: Proper blocking and category
+		blockedByFlags = { college_decision_made = true, in_college = true, skipping_college = true },
+		category = "teen",
+		tags = { "college", "education", "milestone", "teen" },
 		
 		choices = {
 			{
@@ -1554,18 +1597,22 @@ EarlyLifeEvents.events = {
 					roll = roll - bonus
 					
 					state.Flags = state.Flags or {}
+					state.Flags.college_decision_made = true -- CRITICAL: Mark as done
 					if roll <= 30 then
 						state:ModifyStat("Smarts", 8)
 						state:ModifyStat("Happiness", 5)
 						state.Flags.high_sat_score = true
+						state.Flags.college_bound = true -- CRITICAL: Link to college events
 						state:AddFeed("🎓 Crushed the SAT! Top percentile! College apps looking good!")
 					elseif roll <= 60 then
 						state:ModifyStat("Smarts", 4)
 						state:ModifyStat("Happiness", 2)
+						state.Flags.college_bound = true -- CRITICAL: Link to college events
 						state:AddFeed("🎓 Solid score! Not Ivy League but plenty of options!")
 					else
 						state:ModifyStat("Smarts", 2)
 						state:ModifyStat("Happiness", -3)
+						state.Flags.college_bound = true -- Still going to college
 						state:AddFeed("🎓 Score wasn't great. Maybe retake it?")
 					end
 				end,
@@ -1577,6 +1624,8 @@ EarlyLifeEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					state.Flags = state.Flags or {}
+					state.Flags.college_decision_made = true -- CRITICAL FIX: Mark as done
+					state.Flags.college_bound = true -- CRITICAL FIX: Link to college events
 					if roll <= 50 then
 						state:ModifyStat("Happiness", 5)
 						state.Flags.well_rounded = true
@@ -1594,13 +1643,16 @@ EarlyLifeEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					state.Flags = state.Flags or {}
+					state.Flags.college_decision_made = true -- CRITICAL FIX: Mark as done
 					if roll <= 40 then
 						state:ModifyStat("Happiness", 3)
 						state.Flags.alternative_path = true
+						state.Flags.skipping_college = true -- CRITICAL FIX: Different path
 						state:AddFeed("🎓 You're considering trade school or going straight to work. Valid path!")
 					else
 						state:ModifyStat("Happiness", -2)
-						state:AddFeed("🎓 Parents are NOT happy about this. Lots of arguments.")
+						state.Flags.college_bound = true -- Parents won, going to college
+						state:AddFeed("🎓 Parents are NOT happy. After many arguments, you agree to try college.")
 					end
 				end,
 			},

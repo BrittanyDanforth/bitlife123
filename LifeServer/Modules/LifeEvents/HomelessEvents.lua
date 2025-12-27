@@ -147,6 +147,8 @@ events[#events + 1] = {
 	minAge = 18, maxAge = 70,
 	baseChance = 0.55, -- CRITICAL FIX: Reduced from 0.85 to prevent spam
 	cooldown = 4, -- CRITICAL FIX: Increased from 1 to prevent spam
+	category = "homeless", -- CRITICAL FIX: Proper category
+	tags = { "homeless", "housing", "crisis" },
 	requiresFlags = { couch_surfing = true },
 	blockedByFlags = { homeless = true },
 	
@@ -201,6 +203,8 @@ events[#events + 1] = {
 	minAge = 18, maxAge = 80,
 	baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.85 to prevent spam
 	cooldown = 3, -- CRITICAL FIX: Increased from 1 to prevent spam
+	category = "homeless", -- CRITICAL FIX: Proper category
+	tags = { "homeless", "survival", "daily" },
 	requiresFlags = { homeless = true },
 	blockedByFlags = { in_prison = true },
 	
@@ -272,6 +276,8 @@ events[#events + 1] = {
 	minAge = 18, maxAge = 80,
 	baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
 	cooldown = 3, -- CRITICAL FIX: Increased from 1 to prevent spam
+	category = "homeless", -- CRITICAL FIX: Proper category
+	tags = { "homeless", "survival", "night" },
 	requiresFlags = { homeless = true },
 	blockedByFlags = { in_prison = true, using_shelter = true },
 	
