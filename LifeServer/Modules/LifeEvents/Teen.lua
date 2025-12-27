@@ -70,6 +70,10 @@ Teen.events = {
 		question = "What interests you most?",
 		minAge = 14, maxAge = 16,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		category = "teen", -- CRITICAL FIX: Proper category
+		tags = { "school", "education", "choices" },
+		requiresFlags = { in_high_school = true }, -- CRITICAL FIX: Must be in school
+		blockedByFlags = { dropped_out_high_school = true, in_prison = true },
 		choices = {
 			-- CRITICAL FIX #1003: Added math_science_talent for consequence events linkage!
 			{ text = "Advanced Math & Science", effects = { Smarts = 5 }, setFlags = { stem_track = true, math_science_talent = true }, hintCareer = "tech", feedText = "You're challenging yourself with advanced STEM classes." },
@@ -86,8 +90,12 @@ Teen.events = {
 		text = "You're assigned a group project, but one member isn't pulling their weight.",
 		question = "How do you handle it?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.7,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.55, -- CRITICAL FIX: Reduced from 0.7
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
+		category = "teen", -- CRITICAL FIX: Proper category
+		tags = { "school", "conflict", "teamwork" },
+		requiresFlags = { in_high_school = true }, -- CRITICAL FIX: Must be in school
+		blockedByFlags = { dropped_out_high_school = true, in_prison = true },
 		choices = {
 			{ text = "Do their share yourself", effects = { Smarts = 3, Happiness = -3, Health = -2 }, setFlags = { takes_on_too_much = true }, feedText = "You did all the work. Good grade, but you're exhausted." },
 			{ text = "Talk to them directly", effects = { Smarts = 2, Happiness = 3 }, setFlags = { direct_communicator = true }, feedText = "You addressed the issue head-on." },
@@ -156,8 +164,12 @@ Teen.events = {
 		text = "A big exam is coming up. You're feeling the pressure.",
 		question = "How do you cope?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.6,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.6
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
+		category = "teen", -- CRITICAL FIX: Proper category
+		tags = { "school", "stress", "exam" },
+		requiresFlags = { in_high_school = true }, -- CRITICAL FIX: Must be in school
+		blockedByFlags = { dropped_out_high_school = true, in_prison = true },
 		choices = {
 			{ text = "Study intensively", effects = { Smarts = 5, Health = -3, Happiness = -2 }, feedText = "You crammed hard. Exhausted but prepared." },
 			{ text = "Form a study group", effects = { Smarts = 4, Happiness = 2 }, setFlags = { collaborative = true }, feedText = "Studying with friends made it bearable." },
@@ -176,9 +188,12 @@ Teen.events = {
 		text = "Someone you like seems to be interested in you too.",
 		question = "What do you do?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.7,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
+		category = "teen", -- CRITICAL FIX: Proper category
+		tags = { "romance", "relationships", "teen" },
 		requiresSingle = true,
+		blockedByFlags = { in_prison = true, has_partner = true, dating = true },
 		choices = {
 			{ 
 				text = "Ask them out", 
@@ -222,8 +237,11 @@ Teen.events = {
 		text = "You're invited to a party at a popular kid's house. Your parents might not approve.",
 		question = "What do you do?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.7,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
+		category = "teen", -- CRITICAL FIX: Proper category
+		tags = { "social", "party", "teen" },
+		blockedByFlags = { in_prison = true, grounded = true },
 		choices = {
 			{ text = "Sneak out and go", effects = { Happiness = 5, Health = -2 }, setFlags = { rebellious = true, sneaks_out = true }, feedText = "You snuck out! The party was wild." },
 			{ text = "Ask parents for permission", effects = { Happiness = 3 }, setFlags = { respectful = true }, feedText = "You asked, and they said yes (with rules)." },
@@ -239,6 +257,10 @@ Teen.events = {
 		question = "Which group do you gravitate toward?",
 		minAge = 13, maxAge = 16,
 		oneTime = true,
+		category = "teen", -- CRITICAL FIX: Proper category
+		tags = { "social", "identity", "teen" },
+		requiresFlags = { in_high_school = true }, -- CRITICAL FIX: Must be in school
+		blockedByFlags = { dropped_out_high_school = true, in_prison = true, found_clique = true },
 		choices = {
 			{ text = "The studious overachievers", effects = { Smarts = 5 }, setFlags = { nerd_group = true }, feedText = "You found your tribe among the academic crowd." },
 			{ text = "The athletes and jocks", effects = { Health = 5, Happiness = 3 }, setFlags = { jock_group = true }, hintCareer = "sports", feedText = "You fit in with the athletic crowd." },
@@ -254,9 +276,12 @@ Teen.events = {
 		text = "You found out your best friend has been talking behind your back.",
 		question = "How do you react?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.5,
-		cooldown = 3,
+		baseChance = 0.4, -- CRITICAL FIX: Reduced
+		cooldown = 5, -- CRITICAL FIX: Increased
+		category = "teen", -- CRITICAL FIX: Proper category
+		tags = { "friendship", "conflict", "teen" },
 		requiresFlags = { has_best_friend = true },
+		blockedByFlags = { in_prison = true },
 		choices = {
 			{ text = "Confront them", effects = { Happiness = 3 }, setFlags = { confrontational = true }, feedText = "You had it out. The truth came to light." },
 			{ text = "End the friendship", effects = { Happiness = -5 }, setFlags = { holds_grudges = true, has_best_friend = false }, feedText = "You cut them off. It hurts." },
@@ -276,6 +301,9 @@ Teen.events = {
 		question = "What aspect of yourself are you exploring?",
 		minAge = 14, maxAge = 17,
 		oneTime = true,
+		category = "teen", -- CRITICAL FIX: Proper category
+		tags = { "identity", "growth", "teen" },
+		blockedByFlags = { in_prison = true, identity_explored = true },
 		choices = {
 			{ text = "My values and beliefs", effects = { Smarts = 3, Happiness = 3 }, setFlags = { philosophical = true }, feedText = "You're questioning what you believe in." },
 			{ text = "My future career", effects = { Smarts = 3 }, setFlags = { career_focused = true }, feedText = "You're thinking seriously about your future." },
@@ -290,8 +318,11 @@ Teen.events = {
 		text = "You've been feeling down lately. More than usual.",
 		question = "How do you cope?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.4,
-		cooldown = 3,
+		baseChance = 0.35, -- CRITICAL FIX: Reduced
+		cooldown = 5, -- CRITICAL FIX: Increased
+		category = "teen", -- CRITICAL FIX: Proper category
+		tags = { "mental_health", "coping", "teen" },
+		blockedByFlags = { in_prison = true },
 		choices = {
 			{ text = "Talk to a trusted adult", effects = { Happiness = 5, Health = 3 }, setFlags = { seeks_help = true }, feedText = "Opening up helped. You're not alone." },
 			{ text = "Confide in a friend", effects = { Happiness = 3 }, feedText = "Your friend listened and supported you." },
@@ -319,10 +350,12 @@ Teen.events = {
 		text = "A local business is hiring teenagers for part-time work.",
 		question = "Will you apply?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.7,
-		cooldown = 3,
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7
+		cooldown = 5, -- CRITICAL FIX: Increased
+		category = "teen", -- CRITICAL FIX: Proper category
+		tags = { "job", "money", "teen" },
 		-- CRITICAL FIX: Only block by ACTUAL employment flags, not experience flags
-		blockedByFlags = { employed = true, has_job = true, has_teen_job = true },
+		blockedByFlags = { employed = true, has_job = true, has_teen_job = true, in_prison = true },
 		requiresNoJob = true,
 		choices = {
 			{ text = "Work at a fast food place", effects = { Money = 200, Health = -2, Happiness = -1 }, setFlags = { has_teen_job = true, fast_food_experience = true }, feedText = "You got a job flipping burgers. Money incoming!" },
@@ -338,8 +371,11 @@ Teen.events = {
 		text = "You have an idea for making money on your own.",
 		question = "What's your business?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.5,
-		cooldown = 3,
+		baseChance = 0.4, -- CRITICAL FIX: Reduced
+		cooldown = 5, -- CRITICAL FIX: Increased
+		category = "teen", -- CRITICAL FIX: Proper category
+		tags = { "business", "money", "teen" },
+		blockedByFlags = { in_prison = true, entrepreneur = true }, -- CRITICAL FIX: Don't repeat if already entrepreneur
 		choices = {
 			{ text = "Lawn care / yard work", effects = { Money = 150, Health = 3 }, setFlags = { entrepreneur = true }, hintCareer = "business", feedText = "You started a lawn care service!" },
 			{ text = "Selling crafts online", effects = { Money = 100, Happiness = 3 }, setFlags = { entrepreneur = true, creative_business = true }, hintCareer = "creative", feedText = "You're selling your creations online!" },

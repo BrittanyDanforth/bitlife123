@@ -2029,25 +2029,41 @@ actionsTitle.ZIndex = 153
 actionsTitle.LayoutOrder = 3
 actionsTitle.Parent = modalScroll
 
+-- CRITICAL FIX: Wrapper frame to center the grid
+local actionsGridWrapper = Instance.new("Frame")
+actionsGridWrapper.Size = UDim2.new(1, 0, 0, 0)
+actionsGridWrapper.AutomaticSize = Enum.AutomaticSize.Y
+actionsGridWrapper.BackgroundTransparency = 1
+actionsGridWrapper.ZIndex = 152
+actionsGridWrapper.LayoutOrder = 4
+actionsGridWrapper.Parent = modalScroll
+
 local actionsGrid = Instance.new("Frame")
 actionsGrid.Size = UDim2.new(1, 0, 0, 0)
 actionsGrid.AutomaticSize = Enum.AutomaticSize.Y
 actionsGrid.BackgroundTransparency = 1
 actionsGrid.ZIndex = 152
-actionsGrid.LayoutOrder = 4
-actionsGrid.Parent = modalScroll
+actionsGrid.AnchorPoint = Vector2.new(0.5, 0) -- CRITICAL FIX: Center anchor
+actionsGrid.Position = UDim2.new(0.5, 0, 0, 0) -- CRITICAL FIX: Center position
+actionsGrid.Parent = actionsGridWrapper
 
 -- CRITICAL FIX: Better grid layout for mobile - properly centered cells
 local gridLayout = Instance.new("UIGridLayout")
--- CRITICAL FIX: Use fixed cell sizes for better mobile centering
-local cellWidth = Device.IS_TINY_PHONE and 135 or (Device.IS_SMALL_PHONE and 150 or 170)
-local cellHeight = Device.IS_TINY_PHONE and 52 or 56
+-- CRITICAL FIX: Calculate cell width based on modal width minus padding (20 on each side = 40 total)
+-- Modal is 320 on tiny, 420 on regular. Minus 40 padding = 280 or 380 usable
+local usableWidth = Device.IS_TINY_PHONE and 280 or 380
+local cellPad = 8
+-- Two columns: usableWidth = 2*cellWidth + cellPad
+local cellWidth = math.floor((usableWidth - cellPad) / 2)
+local cellHeight = Device.IS_TINY_PHONE and 48 or 52
 gridLayout.CellSize = UDim2.new(0, cellWidth, 0, cellHeight)
-gridLayout.CellPadding = UDim2.new(0, 8, 0, 8)
+gridLayout.CellPadding = UDim2.new(0, cellPad, 0, cellPad)
 -- CRITICAL FIX: Center the grid horizontally
 gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+gridLayout.VerticalAlignment = Enum.VerticalAlignment.Top
 gridLayout.FillDirection = Enum.FillDirection.Horizontal
 gridLayout.FillDirectionMaxCells = 2 -- 2 columns
+gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
 gridLayout.Parent = actionsGrid
 
 -- CRITICAL FIX #164 + #183: Quick action buttons for God Mode - Expanded list
@@ -2086,27 +2102,28 @@ for i, action in ipairs(quickActions) do
 	btnContent.ZIndex = 154
 	btnContent.Parent = btn
 	
-	-- CRITICAL FIX: Better emoji positioning - centered vertically
+	-- CRITICAL FIX: Better emoji positioning - left aligned, vertically centered
 	local emoji = Instance.new("TextLabel")
-	local emojiSize = Device.IS_TINY_PHONE and 24 or 28
+	local emojiSize = Device.IS_TINY_PHONE and 22 or 26
 	emoji.Size = UDim2.new(0, emojiSize, 1, 0)
-	emoji.Position = UDim2.new(0, 0, 0, 0)
+	emoji.Position = UDim2.new(0, 2, 0, 0)
 	emoji.BackgroundTransparency = 1
 	emoji.Font = F.Body
-	emoji.TextSize = Device.IS_TINY_PHONE and 16 or 18
+	emoji.TextSize = Device.IS_TINY_PHONE and 14 or 16
 	emoji.Text = action.emoji
 	emoji.TextYAlignment = Enum.TextYAlignment.Center
+	emoji.TextXAlignment = Enum.TextXAlignment.Center
 	emoji.ZIndex = 155
 	emoji.Parent = btnContent
 	
-	-- CRITICAL FIX: Better text positioning - properly aligned
-	local textOffset = Device.IS_TINY_PHONE and 26 or 30
+	-- CRITICAL FIX: Better text positioning - properly aligned and sized
+	local textOffset = Device.IS_TINY_PHONE and 24 or 28
 	local name = Instance.new("TextLabel")
-	name.Size = UDim2.new(1, -textOffset, 0, 18)
-	name.Position = UDim2.new(0, textOffset, 0, Device.IS_TINY_PHONE and 6 or 8)
+	name.Size = UDim2.new(1, -textOffset - 4, 0, 16)
+	name.Position = UDim2.new(0, textOffset, 0, Device.IS_TINY_PHONE and 5 or 7)
 	name.BackgroundTransparency = 1
 	name.Font = F.Medium
-	name.TextSize = Device.IS_TINY_PHONE and 10 or 12
+	name.TextSize = Device.IS_TINY_PHONE and 9 or 11
 	name.TextColor3 = C.Gray800
 	name.TextXAlignment = Enum.TextXAlignment.Left
 	name.TextTruncate = Enum.TextTruncate.AtEnd -- Prevent overflow
@@ -2115,8 +2132,8 @@ for i, action in ipairs(quickActions) do
 	name.Parent = btnContent
 	
 	local desc = Instance.new("TextLabel")
-	desc.Size = UDim2.new(1, -textOffset, 0, 14)
-	desc.Position = UDim2.new(0, textOffset, 0, Device.IS_TINY_PHONE and 24 or 28)
+	desc.Size = UDim2.new(1, -textOffset - 4, 0, 12)
+	desc.Position = UDim2.new(0, textOffset, 0, Device.IS_TINY_PHONE and 21 or 25)
 	desc.BackgroundTransparency = 1
 	desc.Font = F.Body
 	desc.TextSize = Device.IS_TINY_PHONE and 8 or 9
@@ -2146,24 +2163,31 @@ errorLabel.LayoutOrder = 5
 errorLabel.Parent = modalScroll
 
 -- Button bar
--- CRITICAL FIX #316: Properly centered button bar with fixed width buttons
+-- CRITICAL FIX: Properly centered button bar with fixed width buttons
 local buttonBar = Instance.new("Frame")
-buttonBar.Size = UDim2.new(1, 0, 0, 50)
+buttonBar.Size = UDim2.new(1, 0, 0, 55)
 buttonBar.BackgroundTransparency = 1
 buttonBar.ZIndex = 152
 buttonBar.LayoutOrder = 6
 buttonBar.Parent = modalScroll
 
+-- CRITICAL FIX: Add padding to center buttons properly
+local buttonBarPad = Instance.new("UIPadding")
+buttonBarPad.PaddingTop = UDim.new(0, 8)
+buttonBarPad.Parent = buttonBar
+
 local buttonLayout = Instance.new("UIListLayout")
 buttonLayout.FillDirection = Enum.FillDirection.Horizontal
 buttonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 buttonLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-buttonLayout.Padding = UDim.new(0, 12)
+buttonLayout.Padding = UDim.new(0, 16)
 buttonLayout.Parent = buttonBar
 
--- CRITICAL FIX #316: Fixed width buttons that fit nicely in the modal
-local btnWidth = Device.IS_TINY_PHONE and 130 or 160
-local btnHeight = Device.IS_TINY_PHONE and 38 or 42
+-- CRITICAL FIX: Calculate button width to fit 2 buttons + padding in modal
+-- Modal usable width: 280 (tiny) or 380 (regular) 
+-- Two buttons + 16px padding between = width/2 - 8
+local btnWidth = Device.IS_TINY_PHONE and 120 or 150
+local btnHeight = Device.IS_TINY_PHONE and 36 or 40
 
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, btnWidth, 0, btnHeight)

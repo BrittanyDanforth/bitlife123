@@ -393,8 +393,9 @@ Childhood.events = {
 		text = "Your classroom got a new pet hamster! The teacher needs someone to care for it.",
 		question = "Do you volunteer?",
 		minAge = 6, maxAge = 9,
-		baseChance = 0.7,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
+		blockedByFlags = { class_pet_done = true }, -- CRITICAL FIX: Prevent repeat
 
 		-- META
 		stage = STAGE,
