@@ -556,21 +556,30 @@ local C = {
 
 -- CRITICAL FIX #951: Fonts must ALWAYS have valid values to prevent nil errors
 -- "Unable to assign property Font. EnumItem, number, or string expected, got nil"
+local DEFAULT_FONT = Enum.Font.SourceSans
+
 local F = {
-	Title  = Enum.Font.GothamBold or Enum.Font.SourceSansBold,
-	Body   = Enum.Font.Gotham or Enum.Font.SourceSans,
-	Medium = Enum.Font.GothamMedium or Enum.Font.SourceSans,
-	Button = Enum.Font.GothamBold or Enum.Font.SourceSansBold,
+	Title  = Enum.Font.GothamBold or Enum.Font.SourceSansBold or DEFAULT_FONT,
+	Body   = Enum.Font.Gotham or Enum.Font.SourceSans or DEFAULT_FONT,
+	Medium = Enum.Font.GothamMedium or Enum.Font.SourceSans or DEFAULT_FONT,
+	Button = Enum.Font.GothamBold or Enum.Font.SourceSansBold or DEFAULT_FONT,
+	Bold   = Enum.Font.GothamBold or Enum.Font.SourceSansBold or DEFAULT_FONT,
 }
 
--- Safety: Ensure all font values are valid Enum.Font
-local DEFAULT_FONT = Enum.Font.SourceSans
+-- Safety: Ensure all font values are valid Enum.Font (double-check everything)
 for key, value in pairs(F) do
 	if type(value) ~= "userdata" then
 		warn("[LifeClient] Font", key, "was invalid, using default")
 		F[key] = DEFAULT_FONT
 	end
 end
+
+-- Triple safety: Explicit checks for commonly used fonts
+if not F.Title then F.Title = DEFAULT_FONT end
+if not F.Body then F.Body = DEFAULT_FONT end
+if not F.Medium then F.Medium = DEFAULT_FONT end
+if not F.Button then F.Button = DEFAULT_FONT end
+if not F.Bold then F.Bold = DEFAULT_FONT end
 
 local function ensureSharedUITheme()
 	local sharedUI = safeRequireRS("UIComponents")
@@ -755,16 +764,33 @@ local function detectMobile()
 	return hasTouch and not hasMouse
 end
 
+-- CRITICAL FIX: Wait for viewport to have valid dimensions before initializing Device
+-- This prevents the rare "UI completely broken" issue on slow mobile connections
+local function waitForValidViewport()
+	local attempts = 0
+	while (Camera.ViewportSize.X < 100 or Camera.ViewportSize.Y < 100) and attempts < 30 do
+		attempts = attempts + 1
+		task.wait(0.1)
+	end
+	if Camera.ViewportSize.X < 100 or Camera.ViewportSize.Y < 100 then
+		warn("[LifeClient] ⚠️ Viewport still invalid after waiting, using defaults")
+		return Vector2.new(390, 844)  -- Default to iPhone 12 size
+	end
+	return Camera.ViewportSize
+end
+
+local initialViewport = waitForValidViewport()
+
 local Device = {
-	ViewportSize = Camera.ViewportSize,
+	ViewportSize = initialViewport,
 	IS_MOBILE = detectMobile(),
 	IS_TABLET = false,
 	IS_SMALL_PHONE = false,
 	IS_TINY_PHONE = false,
 }
-Device.IS_TABLET = Device.IS_MOBILE and (Camera.ViewportSize.X >= 768 or Camera.ViewportSize.Y >= 768)
-Device.IS_SMALL_PHONE = Device.IS_MOBILE and not Device.IS_TABLET and (Camera.ViewportSize.X < 450 or Camera.ViewportSize.Y < 750)
-Device.IS_TINY_PHONE = Device.IS_MOBILE and not Device.IS_TABLET and (Camera.ViewportSize.X <= 380 or Camera.ViewportSize.Y <= 680)
+Device.IS_TABLET = Device.IS_MOBILE and (initialViewport.X >= 768 or initialViewport.Y >= 768)
+Device.IS_SMALL_PHONE = Device.IS_MOBILE and not Device.IS_TABLET and (initialViewport.X < 450 or initialViewport.Y < 750)
+Device.IS_TINY_PHONE = Device.IS_MOBILE and not Device.IS_TABLET and (initialViewport.X <= 380 or initialViewport.Y <= 680)
 
 -- Viewport tracking
 local function updateViewport()
@@ -904,12 +930,28 @@ end
 -- SCREEN GUI
 ----------------------------------------------------------------
 
+-- CRITICAL FIX: Add timeout and retry for PlayerGui to prevent UI from being "completely broken"
+local playerGui = nil
+local MAX_RETRIES = 5
+for attempt = 1, MAX_RETRIES do
+	playerGui = player:WaitForChild("PlayerGui", 5)
+	if playerGui then
+		break
+	end
+	warn("[LifeClient] ⚠️ PlayerGui not found, attempt", attempt, "of", MAX_RETRIES)
+	task.wait(1)
+end
+
+if not playerGui then
+	error("[LifeClient] ❌ CRITICAL: PlayerGui not found after", MAX_RETRIES, "attempts! UI cannot initialize.")
+end
+
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "BitLifeUI"
 screenGui.ResetOnSpawn = false
 screenGui.IgnoreGuiInset = true
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-screenGui.Parent = player:WaitForChild("PlayerGui")
+screenGui.Parent = playerGui
 
 local blurOverlay = Instance.new("Frame")
 blurOverlay.Name = "BlurOverlay"
@@ -1025,6 +1067,12 @@ local function createResultPopup()
 	-- TINY PHONE FIX: More compact popup width
 	local popupWidth = modalWidth(320)
 	
+	-- CRITICAL FIX: Calculate max popup height to prevent going off screen
+	local screenHeight = Device.ViewportSize.Y
+	local topReserved = Device.IS_TINY_PHONE and 60 or (Device.IS_SMALL_PHONE and 70 or 80)
+	local bottomReserved = Device.IS_TINY_PHONE and 40 or (Device.IS_SMALL_PHONE and 50 or 60)
+	local maxPopupHeight = screenHeight - topReserved - bottomReserved
+	
 	-- Shadow frame (matches event modal) - thinner borders on tiny phones
 	ResultUI.shadow = Instance.new("Frame")
 	ResultUI.shadow.Size = UDim2.new(0, popupWidth, 0, 0)
@@ -1034,8 +1082,14 @@ local function createResultPopup()
 	ResultUI.shadow.BackgroundColor3 = C.Black
 	ResultUI.shadow.BackgroundTransparency = 0.92
 	ResultUI.shadow.ZIndex = 81
+	ResultUI.shadow.ClipsDescendants = true  -- CRITICAL FIX: Clip overflow
 	ResultUI.shadow.Parent = ResultUI.overlay
 	corner(ResultUI.shadow, Device.IS_TINY_PHONE and 14 or px(28))
+	
+	-- CRITICAL FIX: Add max height constraint to prevent modal from going off screen
+	local resultSizeConstraint = Instance.new("UISizeConstraint")
+	resultSizeConstraint.MaxSize = Vector2.new(popupWidth, maxPopupHeight)
+	resultSizeConstraint.Parent = ResultUI.shadow
 
 	-- Green/Red shell - thinner on tiny phones
 	local shellMargin = Device.IS_TINY_PHONE and 2 or 6
@@ -1053,14 +1107,22 @@ local function createResultPopup()
 	end
 
 	-- Inner white card - thinner on tiny phones
+	-- CRITICAL FIX: Make card a ScrollingFrame to handle long text
 	local cardMargin = Device.IS_TINY_PHONE and 4 or 10
-	ResultUI.card = Instance.new("Frame")
+	ResultUI.card = Instance.new("ScrollingFrame")
 	ResultUI.card.Name = "ResultCard"
 	ResultUI.card.Size = UDim2.new(1, -cardMargin, 1, -cardMargin)
 	ResultUI.card.Position = UDim2.new(0, cardMargin/2, 0, cardMargin/2)
 	ResultUI.card.BackgroundColor3 = C.White
 	ResultUI.card.ZIndex = 83
 	ResultUI.card.Parent = ResultUI.shell
+	ResultUI.card.CanvasSize = UDim2.new(1, 0, 0, 0)
+	ResultUI.card.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	ResultUI.card.ScrollingDirection = Enum.ScrollingDirection.Y
+	ResultUI.card.ScrollBarThickness = Device.IS_MOBILE and 3 or 5
+	ResultUI.card.ScrollBarImageColor3 = C.Gray400
+	ResultUI.card.ScrollingEnabled = true  -- Enable scrolling for long results
+	ResultUI.card.BorderSizePixel = 0
 	corner(ResultUI.card, Device.IS_TINY_PHONE and 10 or px(22))
 
 	local cardLayout = Instance.new("UIListLayout")
@@ -3051,12 +3113,17 @@ local function buildEventModal()
 	local eventSizeConstraint = Instance.new("UISizeConstraint")
 	eventSizeConstraint.MaxSize = Vector2.new(eventWidth, maxEventHeight)
 	eventSizeConstraint.Parent = EventUI.shadowFrame
+	
+	-- CRITICAL FIX: Enable clipping on shadowFrame to prevent visual overflow
+	EventUI.shadowFrame.ClipsDescendants = true
 
 	-- Shell: autosize height (no Y scale) - fixes button overflow
 	EventUI.shell = Instance.new("Frame")
 	EventUI.shell.Name = "EventShell"
 	EventUI.shell.Size = UDim2.new(1, -shellMargin, 0, 0)
 	EventUI.shell.AutomaticSize = Enum.AutomaticSize.Y
+	-- CRITICAL FIX: Shell must also clip to prevent overflow
+	EventUI.shell.ClipsDescendants = true
 	EventUI.shell.Position = UDim2.new(0, shellMargin/2, 0, shellMargin/2)
 	EventUI.shell.BackgroundColor3 = C.Red
 	EventUI.shell.ZIndex = 62
@@ -3067,8 +3134,9 @@ local function buildEventModal()
 		createShadow(EventUI.shell, Device.IS_SMALL_PHONE and 4 or 6, Device.IS_SMALL_PHONE and px(14) or px(20), C.Black, 0.85)
 	end
 
-	-- Card: autosize height (no Y scale) - fixes button overflow
-	EventUI.card = Instance.new("Frame")
+	-- CRITICAL FIX: Card is now a ScrollingFrame that enables scrolling when content overflows
+	-- This prevents cards with lots of text/choices from going off screen
+	EventUI.card = Instance.new("ScrollingFrame")
 	EventUI.card.Name = "EventCard"
 	EventUI.card.Size = UDim2.new(1, -cardMargin, 0, 0)
 	EventUI.card.AutomaticSize = Enum.AutomaticSize.Y
@@ -3077,7 +3145,18 @@ local function buildEventModal()
 	EventUI.card.ZIndex = 63
 	EventUI.card.ClipsDescendants = true  -- Safety clip to prevent visual leaks
 	EventUI.card.Parent = EventUI.shell
+	-- Scrolling properties - only activates when needed
+	EventUI.card.CanvasSize = UDim2.new(1, 0, 0, 0)
+	EventUI.card.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	EventUI.card.ScrollingDirection = Enum.ScrollingDirection.Y
+	EventUI.card.ScrollBarThickness = Device.IS_MOBILE and 3 or 5
+	EventUI.card.ScrollBarImageColor3 = C.Gray400
+	EventUI.card.ScrollingEnabled = false  -- Start disabled, enable dynamically if needed
+	EventUI.card.BorderSizePixel = 0
 	corner(EventUI.card, Device.IS_TINY_PHONE and 10 or (Device.IS_SMALL_PHONE and 14 or px(20)))
+	
+	-- Store max card content height for dynamic scroll enabling
+	EventUI.maxCardContentHeight = maxEventHeight - shellMargin - cardMargin - 20  -- 20px buffer
 
 	local eventLayout = Instance.new("UIListLayout")
 	eventLayout.Padding = UDim.new(0, 0)
@@ -4762,13 +4841,38 @@ showEvent = function(payload)
 		EventUI.shadowFrame.Position = UDim2.new(0.5, 0, 0.5, 40)
 		EventUI.shadowFrame.BackgroundTransparency = 1
 		EventUI.shell.BackgroundTransparency = 1
-		EventUI.card.BackgroundTransparency = 1
+		EventUI.card.BackgroundTransparency = 0  -- Keep opaque for scroll to work
+		
+		-- CRITICAL FIX: Enable scrolling if card content exceeds max height
+		-- This prevents cards with lots of text/choices from going off screen
+		task.defer(function()
+			if EventUI.card and EventUI.maxCardContentHeight then
+				local canvasHeight = EventUI.card.AbsoluteCanvasSize.Y
+				local containerHeight = EventUI.maxCardContentHeight
+				
+				if canvasHeight > containerHeight then
+					-- Content overflows - enable scrolling and fix card height
+					EventUI.card.ScrollingEnabled = true
+					EventUI.card.AutomaticSize = Enum.AutomaticSize.None
+					EventUI.card.Size = UDim2.new(1, -8, 0, containerHeight)
+					-- Show subtle scroll indicator
+					EventUI.card.ScrollBarImageTransparency = 0.3
+				else
+					-- Content fits - disable scrolling, use auto-size
+					EventUI.card.ScrollingEnabled = false
+					EventUI.card.AutomaticSize = Enum.AutomaticSize.Y
+					EventUI.card.Size = UDim2.new(1, -8, 0, 0)
+					EventUI.card.ScrollBarImageTransparency = 1
+				end
+			end
+		end)
 
 		tween(EventUI.shadowFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
 			Position = UDim2.fromScale(0.5, 0.5),
 			BackgroundTransparency = 0.92,
 		})
 		tween(EventUI.shell, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
+		-- Card transparency handled above for scroll to work
 		tween(EventUI.card, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
 	end) -- End of pcall
 
@@ -4807,6 +4911,19 @@ hideEvent = function()
 			EventUI.nameLbl.Text = ""
 			EventUI.relationLbl.Text = ""
 			EventUI.header.Visible = false
+			
+			-- CRITICAL FIX: Reset card scroll position and state for next event
+			if EventUI.card then
+				EventUI.card.CanvasPosition = Vector2.new(0, 0)  -- Reset scroll to top
+				EventUI.card.ScrollingEnabled = false  -- Disable until needed
+				EventUI.card.AutomaticSize = Enum.AutomaticSize.Y  -- Restore auto-sizing
+				EventUI.card.Size = UDim2.new(1, -8, 0, 0)  -- Reset size for auto-sizing
+			end
+			
+			-- CRITICAL FIX: Reset body scroll position too
+			if EventUI.bodyScroll then
+				EventUI.bodyScroll.CanvasPosition = Vector2.new(0, 0)
+			end
 		end
 
 		EventUI.currentHideTween = nil
