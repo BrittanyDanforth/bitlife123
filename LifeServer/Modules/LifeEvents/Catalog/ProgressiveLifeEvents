@@ -1499,6 +1499,402 @@ ProgressiveLifeEvents.events = {
 			},
 		},
 	},
+	
+	-- ════════════════════════════════════════════════════════════════════════════
+	-- NEW VARIETY EVENTS - Ages 8-18 (School Years)
+	-- All properly wired with eligibility checks, cooldowns, and blockedByFlags
+	-- ════════════════════════════════════════════════════════════════════════════
+	{
+		id = "school_talent_discovered",
+		title = "⭐ Hidden Talent Discovered",
+		emoji = "⭐",
+		text = "A teacher noticed something special about you!",
+		minAge = 8, maxAge = 16,
+		cooldown = 5,
+		oneTime = true,
+		category = "childhood",
+		tags = { "school", "talent", "milestone" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "It's your artistic ability",
+				effects = { Smarts = 3, Happiness = 6 },
+				setFlags = { artistic_talent = true, discovered_talent = true },
+				feedText = "Your art caught their eye! You've got a real gift.",
+			},
+			{
+				text = "It's your way with words",
+				effects = { Smarts = 5, Happiness = 5 },
+				setFlags = { writing_talent = true, discovered_talent = true },
+				feedText = "Your essays are brilliant! Future author potential!",
+			},
+			{
+				text = "It's your mathematical mind",
+				effects = { Smarts = 6, Happiness = 4 },
+				setFlags = { math_talent = true, discovered_talent = true },
+				feedText = "You see patterns others can't! Numbers speak to you.",
+			},
+			{
+				text = "It's your athletic potential",
+				effects = { Health = 4, Happiness = 5 },
+				setFlags = { athletic_talent = true, discovered_talent = true },
+				feedText = "Coach says you've got what it takes for varsity!",
+			},
+		},
+	},
+	{
+		id = "school_field_trip_adventure",
+		title = "🚌 Field Trip Adventures",
+		emoji = "🚌",
+		text = "Your class is going on a field trip! Where would you like to go?",
+		minAge = 7, maxAge = 14,
+		cooldown = 3,
+		category = "childhood",
+		tags = { "school", "fun", "adventure" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Science museum",
+				effects = {},
+				feedText = "Let's learn something!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Smarts", 4)
+						state:ModifyStat("Happiness", 6)
+						state:AddFeed("🚌 The dinosaur exhibit was AMAZING! Science is cool!")
+					else
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🚌 Some parts were boring but you had fun with friends!")
+					end
+				end,
+			},
+			{
+				text = "Zoo",
+				effects = {},
+				feedText = "Animals!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 7)
+						state.Flags = state.Flags or {}
+						state.Flags.loves_animals = true
+						state:AddFeed("🚌 The monkeys waved at you! You want to be a zoologist now!")
+					else
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("🚌 Most animals were sleeping but the gift shop was fun!")
+					end
+				end,
+			},
+			{
+				text = "Historical site",
+				effects = { Smarts = 3, Happiness = 3 },
+				setFlags = { history_buff = true },
+				feedText = "Learning about the past brought history alive!",
+			},
+		},
+	},
+	{
+		id = "school_summer_discovery",
+		title = "☀️ Summer Discovery",
+		emoji = "☀️",
+		text = "Summer break! What did you discover about yourself this summer?",
+		minAge = 10, maxAge = 17,
+		cooldown = 3,
+		category = "childhood",
+		tags = { "summer", "growth", "hobbies" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Learned to swim properly",
+				effects = { Health = 5, Happiness = 4 },
+				setFlags = { strong_swimmer = true },
+				feedText = "You conquered the deep end! Freedom in the water!",
+			},
+			{
+				text = "Picked up a new hobby",
+				effects = { Smarts = 3, Happiness = 5 },
+				feedText = "This summer hobby might become a lifelong passion!",
+				onResolve = function(state)
+					local hobbies = {"photography", "skateboarding", "cooking", "coding", "gardening", "collecting"}
+					local hobby = hobbies[math.random(1, #hobbies)]
+					state.Flags = state.Flags or {}
+					state.Flags["summer_hobby_" .. hobby] = true
+					state:AddFeed("☀️ You got really into " .. hobby .. "! Can't wait to continue!")
+				end,
+			},
+			{
+				text = "Made a summer friend",
+				effects = { Happiness = 6 },
+				feedText = "Best summer friendship!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state.Flags = state.Flags or {}
+						state.Flags.summer_best_friend = true
+						state:AddFeed("☀️ Made an amazing summer friend! You'll stay in touch!")
+					else
+						state:AddFeed("☀️ Had a great summer buddy! Might not see them again but memories remain!")
+					end
+				end,
+			},
+			{
+				text = "Just played video games",
+				effects = { Happiness = 4, Smarts = 1 },
+				feedText = "Gaming skills leveled up! Real life... not so much.",
+			},
+		},
+	},
+	
+	-- ════════════════════════════════════════════════════════════════════════════
+	-- NEW VARIETY EVENTS - Ages 20-40 (Young Adult / Mid Life)
+	-- ════════════════════════════════════════════════════════════════════════════
+	{
+		id = "adult_unexpected_mentor",
+		title = "🧑‍🏫 Unexpected Mentor",
+		emoji = "🧑‍🏫",
+		text = "Someone older and wiser has taken an interest in guiding you. How did you meet them?",
+		minAge = 20, maxAge = 35,
+		cooldown = 5,
+		oneTime = true,
+		category = "adult",
+		tags = { "mentor", "growth", "guidance" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Through work",
+				effects = { Smarts = 5, Happiness = 4 },
+				setFlags = { has_career_mentor = true },
+				feedText = "A senior colleague is showing you the ropes. Invaluable wisdom!",
+			},
+			{
+				text = "At a community event",
+				effects = { Smarts = 3, Happiness = 5 },
+				setFlags = { has_life_mentor = true },
+				feedText = "They see something in you. Their life advice is changing your perspective!",
+			},
+			{
+				text = "Family friend reconnection",
+				effects = { Smarts = 4, Happiness = 4 },
+				setFlags = { has_family_mentor = true },
+				feedText = "Your parents' old friend turned out to be wise beyond measure!",
+			},
+		},
+	},
+	{
+		id = "adult_life_crossroads",
+		title = "🛤️ Life at a Crossroads",
+		emoji = "🛤️",
+		text = "You've been thinking a lot lately. Life could go in several directions from here.",
+		minAge = 25, maxAge = 40,
+		cooldown = 5,
+		oneTime = true,
+		category = "adult",
+		tags = { "life", "decisions", "crossroads" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Focus on building wealth",
+				effects = { Smarts = 3 },
+				setFlags = { wealth_focused = true },
+				feedText = "Financial security is your priority. Time to make moves!",
+			},
+			{
+				text = "Focus on relationships",
+				effects = { Happiness = 5 },
+				setFlags = { relationship_focused = true },
+				feedText = "People matter most. You're investing in your connections.",
+			},
+			{
+				text = "Focus on experiences",
+				effects = { Happiness = 6 },
+				setFlags = { experience_focused = true },
+				feedText = "Life is short! You want stories to tell, not just things to own.",
+			},
+			{
+				text = "Focus on health and wellness",
+				effects = { Health = 5 },
+				setFlags = { wellness_focused = true },
+				feedText = "Your body is your temple. Prioritizing self-care!",
+			},
+		},
+	},
+	{
+		id = "adult_random_opportunity",
+		title = "🎲 Random Opportunity",
+		emoji = "🎲",
+		text = "An unexpected opportunity fell into your lap. What kind?",
+		minAge = 22, maxAge = 45,
+		cooldown = 4,
+		category = "adult",
+		tags = { "opportunity", "luck", "chance" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Investment opportunity",
+				effects = {},
+				feedText = "Taking a chance...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					local investment = math.min((state.Money or 0) / 10, 5000)
+					if roll <= 50 and investment > 100 then
+						local returns = math.random(2, 5) * investment
+						state.Money = (state.Money or 0) + returns
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed(string.format("🎲 The investment paid off! Made $%d profit!", math.floor(returns)))
+					elseif roll <= 75 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🎲 Broke even. At least you didn't lose money!")
+					else
+						state.Money = math.max(0, (state.Money or 0) - investment)
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🎲 Lost the investment. Lesson learned.")
+					end
+				end,
+			},
+			{
+				text = "Career opportunity",
+				effects = {},
+				feedText = "Door opening...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state:ModifyStat("Smarts", 4)
+						state:ModifyStat("Happiness", 10)
+						state.Money = (state.Money or 0) + math.random(5000, 20000)
+						state:AddFeed("🎲 A side gig turned into serious money! Your skills are in demand!")
+					else
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("🎲 Didn't pan out but at least you learned something new.")
+					end
+				end,
+			},
+			{
+				text = "Social opportunity",
+				effects = { Happiness = 5 },
+				feedText = "Meeting new people...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state.Flags = state.Flags or {}
+						state.Flags.influential_friend = true
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🎲 Met someone who could change your life! Networking pays off!")
+					else
+						state:AddFeed("🎲 Nice evening but nothing special came of it.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "adult_nostalgia_moment",
+		title = "🕰️ Nostalgic Memory",
+		emoji = "🕰️",
+		text = "Something triggered a powerful memory from your past.",
+		minAge = 25, maxAge = 60,
+		cooldown = 4,
+		category = "adult",
+		tags = { "nostalgia", "memory", "reflection" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Childhood memory - simpler times",
+				effects = { Happiness = 4 },
+				feedText = "Those were the days...",
+				onResolve = function(state)
+					local memories = {
+						"You remembered playing outside until the streetlights came on.",
+						"The smell of grandma's cooking filled your mind.",
+						"You thought about your childhood best friend. Wonder what they're doing now.",
+						"Old cartoons and weekend mornings came flooding back.",
+					}
+					state:AddFeed("🕰️ " .. memories[math.random(1, #memories)])
+				end,
+			},
+			{
+				text = "Teen years - who you were becoming",
+				effects = { Happiness = 3, Smarts = 2 },
+				feedText = "So much growth then...",
+				onResolve = function(state)
+					local memories = {
+						"First real friendship. First real heartbreak. You survived it all.",
+						"That embarrassing thing you did? Nobody remembers but you.",
+						"Staying up late talking about dreams. Did you achieve them?",
+						"The music you loved then still hits different.",
+					}
+					state:AddFeed("🕰️ " .. memories[math.random(1, #memories)])
+				end,
+			},
+			{
+				text = "Recent past - how far you've come",
+				effects = { Happiness = 5, Smarts = 2 },
+				feedText = "Look at how much you've grown...",
+				onResolve = function(state)
+					state:AddFeed("🕰️ You've come so far. Past-you would be proud of present-you!")
+				end,
+			},
+		},
+	},
+	{
+		id = "adult_bucket_list_item",
+		title = "✅ Bucket List Moment",
+		emoji = "✅",
+		text = "You have a chance to check something off your bucket list!",
+		minAge = 25, maxAge = 55,
+		cooldown = 5,
+		category = "adult",
+		tags = { "bucket_list", "achievement", "life" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Learn a new skill",
+				effects = { Smarts = 5, Happiness = 4 },
+				setFlags = { bucket_list_skill = true },
+				feedText = "Finally doing it!",
+				onResolve = function(state)
+					local skills = {"play an instrument", "speak a new language", "martial arts", "dance", "photography"}
+					local skill = skills[math.random(1, #skills)]
+					state:AddFeed("✅ You started learning to " .. skill .. "! Life goal unlocked!")
+				end,
+			},
+			{
+				text = "Visit a dream destination",
+				effects = { Happiness = 8 },
+				setFlags = { bucket_list_travel = true },
+				feedText = "Dream vacation!",
+				onResolve = function(state)
+					local cost = math.random(2000, 8000)
+					if (state.Money or 0) >= cost then
+						state.Money = math.max(0, (state.Money or 0) - cost)
+						state:AddFeed("✅ The trip of a lifetime! Worth every penny!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("✅ Couldn't quite afford it this time. But one day!")
+					end
+				end,
+			},
+			{
+				text = "Overcome a fear",
+				effects = { Happiness = 6, Health = 2 },
+				setFlags = { conquered_fear = true },
+				feedText = "Facing your fears...",
+				onResolve = function(state)
+					local fears = {"skydiving", "public speaking", "asking someone out", "performing on stage", "heights"}
+					local fear = fears[math.random(1, #fears)]
+					state:AddFeed("✅ You faced your fear of " .. fear .. " and WON! Nothing can stop you now!")
+				end,
+			},
+		},
+	},
 }
 
 return ProgressiveLifeEvents
