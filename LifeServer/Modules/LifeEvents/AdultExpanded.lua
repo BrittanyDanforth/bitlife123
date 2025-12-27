@@ -685,21 +685,22 @@ AdultExpanded.events = {
 				feedText = "You put money in...",
 				onResolve = function(state)
 					local investment = 500
-					-- CRITICAL FIX: Prevent negative money
-					state.Money = math.max(0, (state.Money or 0) - investment)
+					-- CRITICAL FIX: Prevent negative money and ensure nil safety
+					local currentMoney = state.Money or 0
+					state.Money = math.max(0, currentMoney - investment)
 					local roll = math.random()
 					if roll < 0.35 then
-						state.Money = state.Money + 1200
+						state.Money = (state.Money or 0) + 1200  -- CRITICAL FIX: nil safety
 						state:ModifyStat("Happiness", 10)
 						state.Flags = state.Flags or {}
 						state.Flags.good_investment = true
 						state:AddFeed("📈 INVESTMENT DOUBLED! Great call! $1200 profit!")
 					elseif roll < 0.60 then
-						state.Money = state.Money + 650
+						state.Money = (state.Money or 0) + 650  -- CRITICAL FIX: nil safety
 						state:ModifyStat("Happiness", 4)
 						state:AddFeed("📈 Modest return. $150 profit. Not bad.")
 					elseif roll < 0.85 then
-						state.Money = state.Money + 500
+						state.Money = (state.Money or 0) + 500  -- CRITICAL FIX: nil safety
 						state:AddFeed("📈 Broke even. At least didn't lose money.")
 					else
 						state:ModifyStat("Happiness", -8)
@@ -1425,8 +1426,8 @@ AdultExpanded.events = {
 		text = "Something's happening with your vehicle.",
 		question = "What's the car situation?",
 		minAge = 18, maxAge = 70,
-		baseChance = 0.4,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.15,  -- CRITICAL FIX: Reduced from 0.4 to prevent car event spam
+		cooldown = 6, -- CRITICAL FIX: Increased to space out car events
 		stage = STAGE,
 		ageBand = "adult",
 		category = "expenses",
@@ -1620,8 +1621,8 @@ AdultExpanded.events = {
 		text = "Your current car situation needs attention - maybe it's time for an upgrade?",
 		question = "How do you handle transportation?",
 		minAge = 21, maxAge = 60,
-		baseChance = 0.455,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.15,  -- CRITICAL FIX: Reduced from 0.455 to prevent spam
+		cooldown = 6, -- CRITICAL FIX: Increased to space out car shopping events
 		stage = STAGE,
 		ageBand = "adult",
 		category = "transportation",

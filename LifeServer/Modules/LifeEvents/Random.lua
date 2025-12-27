@@ -4120,8 +4120,8 @@ Random.events = {
 		weight = 8,
 		minAge = 16,
 		maxAge = 90,
-		baseChance = 0.5,
-		cooldown = 1,
+		baseChance = 0.35, -- FIXED: Lowered to reduce spam
+		cooldown = 4, -- FIXED: Increased from 1 - gas prices don't spike every year
 		blockedByFlags = { in_prison = true },
 		requiresFlags = { has_vehicle = true },
 		

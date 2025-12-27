@@ -911,11 +911,12 @@ Adult.events = {
 				effects = { Happiness = 10 }, 
 				setFlags = { has_partner = true, met_online = true, dating = true }, 
 				feedText = "Swipe right turned into real love!",
-				-- CRITICAL FIX: Actually create the partner object!
+				-- CRITICAL FIX #2008: Partner gender based on PLAYER gender!
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
-					local isMale = math.random() > 0.5
-					local names = isMale 
+					local playerGender = state.Gender or "male"
+					local partnerIsMale = (playerGender == "female")
+					local names = partnerIsMale 
 						and {"Mike", "Chris", "Jason", "Brian", "Matt", "Steve", "Dave", "Tom", "Nick", "Ben"}
 						or {"Jessica", "Ashley", "Sarah", "Emily", "Lauren", "Amanda", "Megan", "Nicole", "Brittany", "Rachel"}
 					local partnerName = names[math.random(1, #names)]
@@ -923,10 +924,10 @@ Adult.events = {
 						id = "partner",
 						name = partnerName,
 						type = "romantic",
-						role = isMale and "Boyfriend" or "Girlfriend",
+						role = partnerIsMale and "Boyfriend" or "Girlfriend",
 						relationship = 70,
 						age = (state.Age or 25) + math.random(-5, 5),
-						gender = isMale and "male" or "female",
+						gender = partnerIsMale and "male" or "female",
 						alive = true,
 						metThrough = "dating_app",
 					}
@@ -2389,8 +2390,8 @@ Adult.events = {
 		text = "Your car broke down unexpectedly!",
 		question = "How do you handle this?",
 		minAge = 18, maxAge = 65,
-		baseChance = 0.4,
-		cooldown = 3,
+		baseChance = 0.18,  -- CRITICAL FIX: Reduced from 0.4 to prevent spam (VehicleEvents has similar)
+		cooldown = 6,  -- CRITICAL FIX: Increased from 3 to space out car trouble events
 		requiresFlags = { has_car = true },
 		blockedByFlags = { in_prison = true },
 		

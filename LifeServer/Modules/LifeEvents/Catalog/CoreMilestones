@@ -536,6 +536,14 @@ local events = {
 				text = "Get your own apartment - full independence!",
 				effects = { Happiness = 10, Health = 2 },
 				setFlags = { living_independently = true, lives_alone = true, adulting = true },
+				-- CRITICAL FIX #952: Add eligibility check - need at least $1000 to move out!
+				eligibility = function(state)
+					local money = state.Money or 0
+					if money < 1000 then
+						return false, "Need at least $1,000 to move out!"
+					end
+					return true
+				end,
 				feedText = "Looking for your own apartment...",
 				-- CRITICAL FIX: Money validation for $15000 apartment costs
 				-- CRITICAL FIX #2: Also set proper housing flags and HousingState!
@@ -608,6 +616,14 @@ local events = {
 				text = "Roommates - split the cost",
 				effects = { Happiness = 7 },
 				setFlags = { living_independently = true, has_roommates = true },
+				-- CRITICAL FIX #952: Need at least $500 for roommate deposit
+				eligibility = function(state)
+					local money = state.Money or 0
+					if money < 500 then
+						return false, "Need at least $500 for deposit!"
+					end
+					return true
+				end,
 				feedText = "Finding roommates...",
 				-- CRITICAL FIX: Set proper housing flags and HousingState!
 				onResolve = function(state)
@@ -683,6 +699,43 @@ local events = {
 				text = "Move in with your partner - take the leap!",
 				effects = { Happiness = 9 },
 				setFlags = { living_independently = true, cohabitating = true, serious_relationship = true },
+				-- CRITICAL FIX #952: Requires having a partner and some money!
+				eligibility = function(state)
+					-- Check for partner/relationship
+					local hasPartner = state.Flags and (
+						state.Flags.has_partner or 
+						state.Flags.dating or 
+						state.Flags.in_relationship or
+						state.Flags.married or
+						state.Flags.engaged
+					)
+					
+					-- Also check relationships table
+					if not hasPartner and state.Relationships then
+						for _, rel in pairs(state.Relationships) do
+							local relType = rel and (rel.type or "")
+							local relRole = rel and (rel.role or "")
+							relType = string.lower(tostring(relType))
+							relRole = string.lower(tostring(relRole))
+							if rel.alive and (relType == "romance" or relType == "partner" or relType == "spouse" or
+								relRole:find("partner") or relRole:find("girlfriend") or relRole:find("boyfriend") or
+								relRole:find("spouse") or relRole:find("wife") or relRole:find("husband")) then
+								hasPartner = true
+								break
+							end
+						end
+					end
+					
+					if not hasPartner then
+						return false, "You don't have a partner to move in with!"
+					end
+					
+					local money = state.Money or 0
+					if money < 2000 then
+						return false, "Need at least $2,000 to move in together!"
+					end
+					return true
+				end,
 				feedText = "Moving in with partner...",
 				-- CRITICAL FIX: Set proper housing flags for cohabitation!
 				onResolve = function(state)

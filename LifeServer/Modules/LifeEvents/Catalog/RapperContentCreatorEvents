@@ -226,7 +226,7 @@ RapperContentCreatorEvents.events = {
 				text = "📚 Lyrical conscious rap - real bars, real message",
 				effects = { Happiness = 12, Smarts = 5, Health = -2, Money = -50 },  -- ENHANCED: Lyrical = smarts boost
 				setFlags = { first_track_recorded = true, lyrical_rapper = true },
-				feedText = "🎤 YOU POURED YOUR SOUL INTO THOSE BARS. 3 verses, no hook, just pure lyrics about life, struggle, and dreams. Marcus said 'damn, you actually have something to say.' The underground will respect this. It's not for everyone, but the ones who get it will REALLY get it. Posted on SoundCloud - 47 plays in the first week. Small start, big potential.",
+				feedText = "🎤 YOU POURED YOUR SOUL INTO THOSE BARS. 3 verses, no hook, just pure lyrics about life, struggle, and dreams. Marcus said 'yo, you actually have something to say.' The underground will respect this. It's not for everyone, but the ones who get it will REALLY get it. Posted on SoundCloud - 47 plays in the first week. Small start, big potential.",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					-- CRITICAL FIX: Ensure careerPath is set so FameState gets serialized!

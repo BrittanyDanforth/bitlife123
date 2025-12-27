@@ -182,8 +182,31 @@ function LifeBackend:savePlayerData(player)
 
 	local key = "Player_" .. player.UserId
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #960: Use UpdateAsync instead of SetAsync to prevent race conditions!
+	-- SetAsync can cause data loss if player saves twice quickly or leaves during save
+	-- UpdateAsync is atomic and handles concurrent writes safely
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	local success, err = pcall(function()
-		store:SetAsync(key, serialized)
+		store:UpdateAsync(key, function(oldData)
+			-- If no old data or new data is newer, use new data
+			-- This prevents overwriting newer saves with older data
+			if not oldData then
+				return serialized
+			end
+			
+			-- Compare ages - only save if newer
+			local oldAge = oldData.Age or 0
+			local newAge = serialized.Age or 0
+			
+			-- If new data is older (somehow), keep old data
+			if newAge < oldAge then
+				warn("[LifeBackend] ⚠️ Skipping save - old data is newer!")
+				return nil -- Return nil to abort the update
+			end
+			
+			return serialized
+		end)
 	end)
 
 	if success then
@@ -472,6 +495,12 @@ function LifeBackend:validateStateConsistency(state)
 			state.HousingState.yearsWithoutPayingRent = 0
 			state.HousingState.yearsBroke = nil
 		end
+	elseif money < 100 and age >= 18 then
+		-- CRITICAL FIX #912: Player is BROKE - prompt money boost!
+		-- This is a HIGH CONVERSION moment - they need money!
+		flags.broke = true
+		flags.struggling_financially = true
+		-- Note: Actual prompt happens in advanceYear to avoid spam
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════
@@ -2613,11 +2642,276 @@ function LifeBackend:setupProcessReceipt()
 		local result = GamepassSystem:processProductReceipt(
 			receiptInfo,
 			function(player) return self:getState(player) end,
-			function(player, years) return self:executeTimeMachineAction(player, years) end
+			function(player, years) return self:executeTimeMachineAction(player, years) end,
+			function(player) return self:executeJailRelease(player) end,
+			function(player) return self:executeStatBoost(player) end,  -- CRITICAL FIX #922: Stat boost handler
+			function(player, action) return self:executeExtraLife(player, action) end  -- CRITICAL FIX #923: Extra life handler
 		)
 		return result
 	end
 	print("[LifeBackend] ProcessReceipt handler set up for Developer Products")
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #922: STAT BOOST - Instantly boost all stats by +25!
+-- Called when player purchases STAT_BOOST product
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:executeStatBoost(player)
+	local state = self:getState(player)
+	if not state then
+		return { success = false, message = "State not found." }
+	end
+	
+	-- Initialize stats if needed
+	state.Stats = state.Stats or { Health = 50, Happiness = 50, Smarts = 50, Looks = 50 }
+	
+	-- Boost ALL stats by 25!
+	local boostAmount = 25
+	local oldHealth = state.Stats.Health or 50
+	local oldHappiness = state.Stats.Happiness or 50
+	local oldSmarts = state.Stats.Smarts or 50
+	local oldLooks = state.Stats.Looks or 50
+	
+	state.Stats.Health = math.min(100, oldHealth + boostAmount)
+	state.Stats.Happiness = math.min(100, oldHappiness + boostAmount)
+	state.Stats.Smarts = math.min(100, oldSmarts + boostAmount)
+	state.Stats.Looks = math.min(100, oldLooks + boostAmount)
+	
+	-- Also sync to state.Health etc for consistency
+	state.Health = state.Stats.Health
+	state.Happiness = state.Stats.Happiness
+	state.Smarts = state.Stats.Smarts
+	state.Looks = state.Stats.Looks
+	
+	-- Set flag
+	state.Flags = state.Flags or {}
+	state.Flags.stat_boosted = true
+	state.Flags.times_stat_boosted = (state.Flags.times_stat_boosted or 0) + 1
+	
+	-- Create dramatic message
+	local message = string.format(
+		"📈 MIRACLE BOOST! 💪\n\n" ..
+		"❤️ Health: %d → %d (+%d)\n" ..
+		"😊 Happiness: %d → %d (+%d)\n" ..
+		"🧠 Smarts: %d → %d (+%d)\n" ..
+		"✨ Looks: %d → %d (+%d)\n\n" ..
+		"You feel AMAZING!",
+		oldHealth, state.Stats.Health, state.Stats.Health - oldHealth,
+		oldHappiness, state.Stats.Happiness, state.Stats.Happiness - oldHappiness,
+		oldSmarts, state.Stats.Smarts, state.Stats.Smarts - oldSmarts,
+		oldLooks, state.Stats.Looks, state.Stats.Looks - oldLooks
+	)
+	
+	-- Push state with the boost message
+	self:pushState(player, "📈 MIRACLE BOOST! All stats increased by +25! You feel INCREDIBLE!")
+	
+	print("[LifeBackend] STAT_BOOST executed for:", player.Name)
+	return { 
+		success = true, 
+		message = message,
+		showPopup = true,
+		emoji = "📈",
+		title = "💪 MIRACLE BOOST!",
+		body = message,
+	}
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #923: EXTRA LIFE - The AMAZING Second Chance System!
+-- 
+-- When purchased: Notifies player they have an extra life
+-- When used (on death): 
+--   - Prevents death entirely
+--   - Rolls back age 5-10 years (was in coma/recovery)
+--   - Restores health to 100%
+--   - Keeps ALL money, assets, relationships
+--   - Grants "survivor" flag for unique events
+--   - +10 Smarts (near-death wisdom)
+--   - Creates dramatic narrative
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:executeExtraLife(player, action)
+	local state = self:getState(player)
+	if not state then
+		return { success = false, message = "State not found." }
+	end
+	
+	-- If just purchased, notify the player
+	if action == "purchased" then
+		local lives = GamepassSystem:getExtraLives(player)
+		self:pushState(player, string.format("💖 EXTRA LIFE ACQUIRED! You now have %d extra %s ready!", lives, lives == 1 and "life" or "lives"))
+		return { success = true, message = "Extra life stored for when you need it most!" }
+	end
+	
+	-- If being used (called from death prevention), do the revival
+	if action == "use" then
+		return self:performExtraLifeRevival(player, state)
+	end
+	
+	return { success = true, message = "Extra life ready." }
+end
+
+-- The actual revival logic - called when player would die but has extra life
+function LifeBackend:performExtraLifeRevival(player, state)
+	-- Use one extra life
+	local used = GamepassSystem:useExtraLife(player)
+	if not used then
+		return { success = false, message = "No extra lives remaining!" }
+	end
+	
+	-- Calculate how much to roll back age (5-10 years recovery time)
+	local currentAge = state.Age or 25
+	local yearsInRecovery = RANDOM:NextInteger(5, 10)
+	local newAge = math.max(18, currentAge - yearsInRecovery) -- Can't go below 18
+	local actualYearsBack = currentAge - newAge
+	
+	-- Save old values for narrative
+	local oldAge = currentAge
+	local oldHealth = (state.Stats and state.Stats.Health) or 50
+	local deathCause = state.DeathReason or state.CauseOfDeath or "the accident"
+	
+	-- REVIVE THE CHARACTER!
+	state.Age = newAge
+	state.Year = (state.Year or 2024) - actualYearsBack
+	
+	-- Full health restoration
+	state.Stats = state.Stats or {}
+	state.Stats.Health = 100
+	state.Health = 100
+	
+	-- Boost happiness (glad to be alive!)
+	state.Stats.Happiness = math.min(100, (state.Stats.Happiness or 50) + 20)
+	
+	-- Wisdom from near-death experience (+10 Smarts)
+	state.Stats.Smarts = math.min(100, (state.Stats.Smarts or 50) + 10)
+	
+	-- Clear death flags
+	state.Flags = state.Flags or {}
+	state.Flags.dead = nil
+	state.Flags.is_dead = nil
+	state.Flags.is_alive = true
+	state.DeathReason = nil
+	state.DeathAge = nil
+	state.DeathYear = nil
+	state.CauseOfDeath = nil
+	
+	-- Grant survivor flags for unique events!
+	state.Flags.survivor = true
+	state.Flags.near_death_survivor = true
+	state.Flags.cheated_death = true
+	state.Flags.second_chance = true
+	state.Flags.times_revived = (state.Flags.times_revived or 0) + 1
+	state.Flags.last_revival_age = oldAge
+	state.Flags.years_lost_to_coma = actualYearsBack
+	
+	-- Keep ALL money and assets (they're yours!)
+	-- Keep ALL relationships (they waited for you!)
+	
+	-- Generate dramatic revival narrative
+	local survivalStories = {
+		string.format("💖 MIRACLE! After %d years in a coma, you woke up! The doctors called it a medical miracle.", actualYearsBack),
+		string.format("💖 SECOND CHANCE! You flatlined but were revived. After %d years of recovery, you're back stronger than ever!", actualYearsBack),
+		string.format("💖 SURVIVOR! Against all odds, you survived %s. %d years of rehabilitation later, you've made a full recovery!", deathCause, actualYearsBack),
+		string.format("💖 BACK FROM THE BRINK! You spent %d years fighting for your life. Now you're ready to live it to the fullest!", actualYearsBack),
+		string.format("💖 REBORN! What should have killed you only made you stronger. After %d years, you emerged with a new perspective on life.", actualYearsBack),
+	}
+	local survivalMessage = survivalStories[RANDOM:NextInteger(1, #survivalStories)]
+	
+	-- Add to year log
+	state.YearLog = state.YearLog or {}
+	table.insert(state.YearLog, {
+		type = "miracle",
+		emoji = "💖",
+		text = survivalMessage,
+		isSpecial = true,
+	})
+	
+	-- Full message for CardPopup
+	local fullMessage = string.format(
+		"%s\n\n" ..
+		"📊 Your Second Chance:\n" ..
+		"• Age: %d → %d (-%d years in recovery)\n" ..
+		"• Health: %d%% → 100%%\n" ..
+		"• Wisdom: +10 🧠 (Near-death insight)\n" ..
+		"• All your money, assets & relationships preserved!\n\n" ..
+		"🌟 You've unlocked special 'Survivor' life events!",
+		survivalMessage, oldAge, newAge, actualYearsBack, oldHealth
+	)
+	
+	-- Push state update
+	self:pushState(player, survivalMessage)
+	
+	print("[LifeBackend] EXTRA_LIFE REVIVAL executed for:", player.Name, "Age rolled back from", oldAge, "to", newAge)
+	
+	return {
+		success = true,
+		message = fullMessage,
+		revived = true,
+		showPopup = true,
+		emoji = "💖",
+		title = "💖 SECOND CHANCE AT LIFE!",
+		body = fullMessage,
+		newAge = newAge,
+		oldAge = oldAge,
+		yearsBack = actualYearsBack,
+	}
+end
+
+-- Check if player should be saved by extra life (called before death)
+function LifeBackend:checkExtraLifeSave(player, state)
+	if not player or not GamepassSystem then return false end
+	
+	-- Check if player has an extra life
+	if GamepassSystem:hasExtraLife(player) then
+		-- Use the extra life to save them!
+		local result = self:performExtraLifeRevival(player, state)
+		return result.success, result
+	end
+	
+	return false, nil
+end
+
+-- CRITICAL FIX #908: Execute jail release (called from ProcessReceipt after GET_OUT_OF_JAIL purchase)
+function LifeBackend:executeJailRelease(player)
+	local state = self:getState(player)
+	if not state then
+		return { success = false, message = "State not found." }
+	end
+	
+	-- Check if actually in jail
+	if not state.InJail then
+		return { success = false, message = "You're not in jail!" }
+	end
+	
+	-- Release from jail immediately!
+	state.InJail = false
+	state.JailYearsLeft = 0
+	
+	-- Clear ALL prison flags (AAA exhaustive list)
+	state.Flags = state.Flags or {}
+	state.Flags.in_prison = nil
+	state.Flags.incarcerated = nil
+	state.Flags.jailed = nil
+	state.Flags.serving_time = nil
+	state.Flags.prison_sentence = nil
+	state.Flags.awaiting_trial = nil
+	state.Flags.convicted = nil
+	
+	-- Clear any prison-related pending events
+	if state.PendingEvent and state.PendingEvent.id then
+		local eventId = state.PendingEvent.id
+		if eventId:find("prison") or eventId:find("jail") or eventId:find("incarcerat") then
+			state.PendingEvent = nil
+		end
+	end
+	
+	-- Good reputation boost for purchasing freedom
+	state.Flags.purchased_freedom = true
+	
+	-- Push notification to player
+	self:pushState(player, "🔓 GET OUT OF JAIL FREE! All charges dropped - you're a free person!")
+	
+	print("[LifeBackend] GET OUT OF JAIL executed for:", player.Name)
+	return { success = true, message = "You're free! All charges dropped." }
 end
 
 -- CRITICAL FIX #361: Set up gamepass purchase listener for UI refresh
@@ -8602,6 +8896,7 @@ function LifeBackend:setupRemotes()
 	self.remotes.PresentEvent = self:createRemote("PresentEvent", "RemoteEvent")
 	self.remotes.SubmitChoice = self:createRemote("SubmitChoice", "RemoteEvent")
 	self.remotes.SetLifeInfo = self:createRemote("SetLifeInfo", "RemoteEvent")
+	self.remotes.SetEngagementBonus = self:createRemote("SetEngagementBonus", "RemoteEvent") -- For group/like bonus
 	self.remotes.MinigameResult = self:createRemote("MinigameResult", "RemoteEvent")
 	self.remotes.MinigameStart = self:createRemote("MinigameStart", "RemoteEvent")
 
@@ -8661,6 +8956,29 @@ function LifeBackend:setupRemotes()
 	self.remotes.SetLifeInfo.OnServerEvent:Connect(function(player, name, gender, country)
 		self:setLifeInfo(player, name, gender, country)
 	end)
+	
+	-- ENGAGEMENT BONUS: Set flag when player joins group or likes game
+	-- Grants +25% income bonus on all salary payments
+	self.remotes.SetEngagementBonus.OnServerEvent:Connect(function(player, bonusType)
+		local state = self:getState(player)
+		if state then
+			state.Flags = state.Flags or {}
+			if bonusType == "group" then
+				state.Flags.joined_group = true
+				state.Flags.engagement_bonus = true
+				print("[LifeBackend] ⭐ Player", player.Name, "joined group - +25% income bonus activated!")
+			elseif bonusType == "like" then
+				state.Flags.liked_game = true
+				state.Flags.engagement_bonus = true
+				print("[LifeBackend] ⭐ Player", player.Name, "liked game - +25% income bonus activated!")
+			elseif bonusType == "both" then
+				state.Flags.joined_group = true
+				state.Flags.liked_game = true
+				state.Flags.engagement_bonus = true
+				print("[LifeBackend] ⭐ Player", player.Name, "engaged (group+like) - +25% income bonus activated!")
+			end
+		end
+	end)
 
 	self.remotes.SubmitChoice.OnServerEvent:Connect(function(player, eventId, choiceIndex)
 		self:resolvePendingEvent(player, eventId, choiceIndex)
@@ -8702,63 +9020,67 @@ function LifeBackend:setupRemotes()
 	
 	-- AAA FIX: Interview result handler for the interview screen system
 	self.remotes.SubmitInterviewResult = self:createRemote("SubmitInterviewResult", "RemoteFunction")
-	self.remotes.SubmitInterviewResult.OnServerInvoke = function(player, interviewData, choices)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #961: ALL remote handlers MUST use safeHandler to prevent crashes!
+	-- Unprotected handlers can crash the entire server if an error occurs
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	self.remotes.SubmitInterviewResult.OnServerInvoke = safeHandler(function(self, player, interviewData, choices)
 		return self:handleInterviewResult(player, interviewData, choices)
-	end
+	end)
 	
-	self.remotes.QuitJob.OnServerInvoke = function(player, quitStyle)
+	self.remotes.QuitJob.OnServerInvoke = safeHandler(function(self, player, quitStyle)
 		return self:handleQuitJob(player, quitStyle)
-	end
-	self.remotes.DoWork.OnServerInvoke = function(player)
+	end)
+	self.remotes.DoWork.OnServerInvoke = safeHandler(function(self, player)
 		return self:handleWork(player)
-	end
-	self.remotes.RequestPromotion.OnServerInvoke = function(player)
+	end)
+	self.remotes.RequestPromotion.OnServerInvoke = safeHandler(function(self, player)
 		return self:handlePromotion(player)
-	end
-	self.remotes.RequestRaise.OnServerInvoke = function(player)
+	end)
+	self.remotes.RequestRaise.OnServerInvoke = safeHandler(function(self, player)
 		return self:handleRaise(player)
-	end
-	self.remotes.GetCareerInfo.OnServerInvoke = function(player)
+	end)
+	self.remotes.GetCareerInfo.OnServerInvoke = safeHandler(function(self, player)
 		return self:getCareerInfo(player)
-	end
+	end)
 	
 	-- CRITICAL FIX #338: Check job eligibility (education, experience, stats)
-	self.remotes.GetJobEligibility.OnServerInvoke = function(player)
+	self.remotes.GetJobEligibility.OnServerInvoke = safeHandler(function(self, player)
 		return self:getJobEligibility(player)
-	end
+	end)
 
-	self.remotes.GetEducationInfo.OnServerInvoke = function(player)
+	self.remotes.GetEducationInfo.OnServerInvoke = safeHandler(function(self, player)
 		return self:getEducationInfo(player)
-	end
-	self.remotes.EnrollEducation.OnServerInvoke = function(player, programId)
+	end)
+	self.remotes.EnrollEducation.OnServerInvoke = safeHandler(function(self, player, programId)
 		return self:enrollEducation(player, programId)
-	end
+	end)
 
-	self.remotes.BuyProperty.OnServerInvoke = function(player, assetId)
+	self.remotes.BuyProperty.OnServerInvoke = safeHandler(function(self, player, assetId)
 		return self:handleAssetPurchase(player, "Properties", Properties, assetId)
-	end
-	self.remotes.BuyVehicle.OnServerInvoke = function(player, assetId)
+	end)
+	self.remotes.BuyVehicle.OnServerInvoke = safeHandler(function(self, player, assetId)
 		return self:handleAssetPurchase(player, "Vehicles", Vehicles, assetId)
-	end
-	self.remotes.BuyItem.OnServerInvoke = function(player, assetId)
+	end)
+	self.remotes.BuyItem.OnServerInvoke = safeHandler(function(self, player, assetId)
 		return self:handleAssetPurchase(player, "Items", ShopItems, assetId)
-	end
-	self.remotes.SellAsset.OnServerInvoke = function(player, assetId, assetType)
+	end)
+	self.remotes.SellAsset.OnServerInvoke = safeHandler(function(self, player, assetId, assetType)
 		return self:handleAssetSale(player, assetId, assetType)
-	end
+	end)
 	-- REMOVED: Gambling handler (against Roblox TOS)
 	-- Gambling features have been removed to comply with Roblox Terms of Service
 
-	self.remotes.DoInteraction.OnServerInvoke = function(player, payload)
+	self.remotes.DoInteraction.OnServerInvoke = safeHandler(function(self, player, payload)
 		return self:handleInteraction(player, payload)
-	end
+	end)
 
-	self.remotes.StartPath.OnServerInvoke = function(player, pathId)
+	self.remotes.StartPath.OnServerInvoke = safeHandler(function(self, player, pathId)
 		return self:startStoryPath(player, pathId)
-	end
-	self.remotes.DoPathAction.OnServerInvoke = function(player, pathId, actionId)
+	end)
+	self.remotes.DoPathAction.OnServerInvoke = safeHandler(function(self, player, pathId, actionId)
 		return self:performPathAction(player, pathId, actionId)
-	end
+	end)
 
 	self.remotes.ResetLife.OnServerEvent:Connect(function(player)
 		self:resetLife(player)
@@ -9546,6 +9868,83 @@ function LifeBackend:onPlayerAdded(player)
 			for k, v in pairs(savedData.Flags) do
 				state.Flags[k] = v
 			end
+			
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX #950: Clear death flags on rejoin!
+			-- If player died and rejoins, they should start a NEW life, not be stuck dead!
+			-- The death screen should have offered "New Life" option, so if they're back,
+			-- they want to start fresh.
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			if state.Flags.dead or state.Flags.is_dead then
+				print("[LifeBackend] 🔄 Player rejoined after death - resetting for new life!")
+				
+				-- Clear ALL death-related state
+				state.Flags.dead = nil
+				state.Flags.is_dead = nil
+				state.Flags.is_alive = true
+				state.DeathReason = nil
+				state.DeathAge = nil
+				state.DeathYear = nil
+				
+				-- Reset to a new life (age 0)
+				state.Age = 0
+				state.Year = os.date("*t").year  -- Current year
+				state.BirthYear = state.Year
+				
+				-- Generate new identity
+				local newNames = { "James", "Emma", "Michael", "Sophia", "Daniel", "Olivia", "Liam", "Charlotte", "Noah", "Mia" }
+				local lastNames = { "Smith", "Johnson", "Williams", "Brown", "Jones", "Davis", "Miller", "Wilson", "Moore", "Taylor" }
+				local firstName = newNames[math.random(1, #newNames)]
+				local lastName = lastNames[math.random(1, #lastNames)]
+				state.Name = firstName .. " " .. lastName
+				state.Gender = math.random() > 0.5 and "Male" or "Female"
+				
+				-- Reset stats to newborn
+				state.Stats = state.Stats or {}
+				state.Stats.Health = 100
+				state.Stats.Happiness = 75 + math.random(0, 25)
+				state.Stats.Smarts = 20 + math.random(0, 40)
+				state.Stats.Looks = 30 + math.random(0, 40)
+				state.Health = state.Stats.Health
+				state.Happiness = state.Stats.Happiness
+				state.Smarts = state.Stats.Smarts
+				state.Looks = state.Stats.Looks
+				
+				-- Reset money (small inheritance from past life)
+				state.Money = math.random(0, 500)
+				
+				-- Clear job/career
+				state.CurrentJob = nil
+				state.CareerInfo = nil
+				state.Education = "None"
+				
+				-- Reset housing to with parents
+				state.HousingState = { status = "with_parents", type = "family_home", rent = 0 }
+				state.Flags.living_with_parents = true
+				state.Flags.moved_out = nil
+				state.Flags.has_apartment = nil
+				state.Flags.renting = nil
+				
+				-- Clear most flags but keep gamepasses
+				local savedGamepasses = state.GamepassOwnership
+				state.Flags = { is_alive = true, new_life = true }
+				state.GamepassOwnership = savedGamepasses
+				
+				-- Generate new family
+				state.Relationships = {}
+				
+				-- Clear special states
+				state.RoyalState = nil
+				state.MobState = nil
+				state.FameState = nil
+				state.Fame = 0
+				state.Karma = 50
+				
+				-- Clear assets (new life starts fresh)
+				state.Assets = { Properties = {}, Vehicles = {}, Items = {} }
+				
+				print("[LifeBackend] 🆕 New life created! Name:", state.Name, "as a", state.Gender)
+			end
 		end
 
 		-- Restore career
@@ -9858,12 +10257,19 @@ function LifeBackend:setLifeInfo(player, nameOrPayload, genderArg, countryArg)
 			state.Flags.famous_family = true
 			
 			-- Send royal birth message
-			self:pushState(player, string.format("👑 %s %s of %s takes their first breath in %s!", tostring(title or "Prince/Princess"), tostring(state.Name or "Your Highness"), tostring(country.name or "the Kingdom"), tostring(country.palace or "the Palace")))
+			-- CRITICAL FIX: Properly handle nil values to prevent string.format errors
+			local safeTitle = tostring(title or "Prince/Princess")
+			local safeName = tostring(state.Name or "Your Highness")
+			local safeCountryName = (country and country.name) and tostring(country.name) or "the Kingdom"
+			local safePalace = (country and country.palace) and tostring(country.palace) or "the Palace"
+			self:pushState(player, string.format("👑 %s %s of %s takes their first breath in %s!", safeTitle, safeName, safeCountryName, safePalace))
 			return
 		end
 	end
 	
-	self:pushState(player, string.format("%s takes their first breath.", state.Name or "Your character"))
+	-- CRITICAL FIX: Properly handle nil Name
+	local safeBirthName = tostring(state.Name or "Your character")
+	self:pushState(player, string.format("%s takes their first breath.", safeBirthName))
 end
 
 -- ============================================================================
@@ -10432,12 +10838,15 @@ function LifeBackend:tickCareer(state)
 											end
 											
 											-- Log the promotion
+											-- CRITICAL FIX: Handle nil values
 											state.YearLog = state.YearLog or {}
+											local safeOldName = tostring(oldJobName or "previous position")
+											local safeNextName = tostring(nextJob.name or "new position")
+											local safeSalary = formatMoney((state.CurrentJob and state.CurrentJob.salary) or 0)
 											table.insert(state.YearLog, {
 												type = "promotion",
 												emoji = "🎉",
-												text = string.format("Promoted from %s to %s! New salary: $%s", 
-													oldJobName, nextJob.name, formatMoney(state.CurrentJob.salary)),
+												text = string.format("Promoted from %s to %s! New salary: $%s", safeOldName, safeNextName, safeSalary),
 											})
 											
 											promoted = true
@@ -10507,8 +10916,23 @@ function LifeBackend:tickCareer(state)
 	end
 	
 	if salary > 0 then
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- ENGAGEMENT BONUS: +25% income for players who joined group & liked the game!
+		-- This rewards engaged players and encourages community participation
+		-- Check flags set by client when player joins group/likes game
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local baseSalary = salary
+		local bonusAmount = 0
+		local hasEngagementBonus = false
+		
+		if state.Flags and (state.Flags.joined_group or state.Flags.liked_game or state.Flags.engagement_bonus) then
+			hasEngagementBonus = true
+			bonusAmount = math.floor(baseSalary * 0.25)
+			salary = baseSalary + bonusAmount
+		end
+		
 		self:addMoney(state, salary)
-		debugPrint("Salary paid:", salary, "to player. New balance:", state.Money)
+		debugPrint("Salary paid:", salary, "(base:", baseSalary, "+ bonus:", bonusAmount, ") to player. New balance:", state.Money)
 		
 		-- CRITICAL FIX: Store last paid salary for pension calculation
 		-- This ensures retirement events can calculate pension from actual income
@@ -10520,14 +10944,24 @@ function LifeBackend:tickCareer(state)
 		-- This was the bug - salary was paid but user didn't see any message
 		-- YearLog entries need 'text' field, not 'message' - that's what generateYearSummary looks for
 		state.YearLog = state.YearLog or {}
+		
+		local salaryText
+		if hasEngagementBonus then
+			salaryText = string.format("Earned %s from your job as %s (+25%% bonus!)", 
+				formatMoney(salary or 0) or "$0", 
+				tostring(state.CurrentJob.name or "employee"))
+		else
+			salaryText = string.format("Earned %s from your job as %s", 
+				formatMoney(salary or 0) or "$0", 
+				tostring(state.CurrentJob.name or "employee"))
+		end
+		
 		table.insert(state.YearLog, {
-		type = "salary",
-		emoji = "💰",
-		text = string.format("Earned %s from your job as %s", 
-			formatMoney(salary or 0) or "$0", 
-			tostring(state.CurrentJob.name or "employee")),
-		amount = salary or 0,
-	})
+			type = "salary",
+			emoji = hasEngagementBonus and "💰⭐" or "💰",
+			text = salaryText,
+			amount = salary or 0,
+		})
 	end
 end
 
@@ -12361,10 +12795,37 @@ function LifeBackend:checkNaturalDeath(state)
 	
 	-- Health-based death (very low health)
 	if health <= 0 then
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #924: Check for EXTRA_LIFE before death!
+		-- If player has an extra life, use it to save them!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local player = state.player
+		if player and GamepassSystem and GamepassSystem:hasExtraLife(player) then
+			-- EXTRA LIFE SAVE!
+			state.DeathReason = state.DeathReason or "Health complications"
+			local saved, result = self:checkExtraLifeSave(player, state)
+			if saved then
+				-- Don't die - extra life was used!
+				print("[checkNaturalDeath] Player saved by EXTRA_LIFE!")
+				return -- Exit without setting dead flag
+			end
+		end
+		
+		-- No extra life - player dies
 		state.Flags.dead = true
 		state.DeathReason = state.DeathReason or "Health complications"
 		state.DeathAge = age
 		state.DeathYear = state.Year
+		
+		-- CRITICAL FIX #925: Prompt EXTRA_LIFE purchase for next time!
+		-- They just died - they might want one for their next character
+		if player and self.gamepassSystem then
+			task.delay(2, function()
+				if player and player.Parent then
+					self.gamepassSystem:promptProduct(player, "EXTRA_LIFE")
+				end
+			end)
+		end
 		return
 	end
 	
@@ -12372,6 +12833,65 @@ function LifeBackend:checkNaturalDeath(state)
 	if health <= 10 then
 		self:logYearEvent(state, "health",
 			"⚠️ Health is critical! Seek medical attention immediately.", "🏥")
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- STRATEGIC GAMEPASS PROMPT #910: When health is critical, offer God Mode!
+		-- Perfect conversion moment - they're about to die and want to save their character
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		state.Flags.near_death = true -- For God Mode eligibility check
+		
+		-- CRITICAL FIX #911: Prompt God Mode when health is critical (HIGH CONVERSION!)
+		if state.player and self.gamepassSystem then
+			if not self:checkGamepassOwnership(state.player, "GOD_MODE") then
+				task.delay(1, function()
+					if state.player and state.player.Parent then
+						self.gamepassSystem:promptGamepass(state.player, "GOD_MODE")
+					end
+				end)
+			end
+		end
+	elseif health <= 25 then
+		-- Health low but not critical - still prompt
+		if state.player and self.gamepassSystem then
+			if not self:checkGamepassOwnership(state.player, "GOD_MODE") then
+				-- 30% chance to prompt (not spam)
+				if RANDOM:NextNumber() < 0.3 then
+					task.delay(2, function()
+						if state.player and state.player.Parent then
+							self.gamepassSystem:promptGamepass(state.player, "GOD_MODE")
+						end
+					end)
+				end
+			end
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #937: Prompt STAT_BOOST when multiple stats are low
+	-- This is a strategic monetization moment - player is struggling and wants help
+	-- Only prompt occasionally to avoid being annoying
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local happiness = state.Stats and state.Stats.Happiness or 50
+	local smarts = state.Stats and state.Stats.Smarts or 50
+	local looks = state.Stats and state.Stats.Looks or 50
+	
+	local lowStatCount = 0
+	if health < 40 then lowStatCount = lowStatCount + 1 end
+	if happiness < 40 then lowStatCount = lowStatCount + 1 end
+	if smarts < 40 then lowStatCount = lowStatCount + 1 end
+	if looks < 40 then lowStatCount = lowStatCount + 1 end
+	
+	-- If 2+ stats are below 40, consider prompting STAT_BOOST
+	if lowStatCount >= 2 and state.player and self.gamepassSystem then
+		-- 15% chance per year to prompt (non-annoying)
+		if RANDOM:NextNumber() < 0.15 then
+			task.delay(3, function()
+				if state.player and state.player.Parent then
+					-- Use the cooldown-aware prompt
+					self.gamepassSystem:promptProduct(state.player, "STAT_BOOST")
+				end
+			end)
+		end
 	end
 	
 	-- Age-based death chance (increases with age)
@@ -12422,11 +12942,13 @@ function LifeBackend:checkNaturalDeath(state)
 		local finalMortality = baseMortality * healthModifier * lifestyleModifier
 		
 		if RANDOM:NextNumber() < finalMortality then
-			state.Flags.dead = true
-			state.DeathAge = age
-			state.DeathYear = state.Year
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX #926: Check for EXTRA_LIFE before age-based death!
+			-- Even old age can be cheated with an extra life!
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			local player = state.player
 			
-			-- Generate death reason based on age/health
+			-- Generate death reason first (needed for revival message)
 			local deathReasons
 			if age >= 90 then
 				deathReasons = {
@@ -12450,8 +12972,33 @@ function LifeBackend:checkNaturalDeath(state)
 					"Unexpected illness",
 				}
 			end
-			
 			state.DeathReason = deathReasons[RANDOM:NextInteger(1, #deathReasons)]
+			
+			-- Check for extra life BEFORE dying!
+			if player and GamepassSystem and GamepassSystem:hasExtraLife(player) then
+				local saved, result = self:checkExtraLifeSave(player, state)
+				if saved then
+					-- EXTRA LIFE USED! Player survives the age-related death!
+					print("[checkNaturalDeath] Player survived age-based death via EXTRA_LIFE!")
+					return -- Exit without completing death
+				end
+			end
+			
+			-- No extra life - proceed with death
+			state.Flags.dead = true
+			state.DeathAge = age
+			state.DeathYear = state.Year
+			
+			-- CRITICAL FIX #927: Prompt EXTRA_LIFE and TIME_MACHINE at death!
+			-- This is THE HIGHEST conversion moment
+			if player and self.gamepassSystem then
+				task.delay(1.5, function()
+					if player and player.Parent then
+						-- Prompt Extra Life for future use
+						self.gamepassSystem:promptProduct(player, "EXTRA_LIFE")
+					end
+				end)
+			end
 			
 			-- AAA FIX: Comprehensive death cleanup
 			self:processDeathCleanup(state)
@@ -13125,17 +13672,19 @@ function LifeBackend:generateYearSummary(state)
 	if age >= 18 then
 		if state.CurrentJob then
 			local job = state.CurrentJob
+			-- CRITICAL FIX: Nil safety for job.company
+			local safeCompany = tostring(job.company or "your workplace")
 			if state.CareerInfo and (state.CareerInfo.yearsAtJob or 0) > 0 then
 				local years = state.CareerInfo.yearsAtJob
 				if years >= 10 then
-					table.insert(summaryParts, string.format("You've been at %s for %d years now.", job.company, years))
+					table.insert(summaryParts, string.format("You've been at %s for %d years now.", safeCompany, years))
 				elseif years >= 5 then
-					table.insert(summaryParts, string.format("You're well established at %s.", job.company))
+					table.insert(summaryParts, string.format("You're well established at %s.", safeCompany))
 				end
 			else
 				-- Just mention they have a job occasionally
 				if RANDOM:NextNumber() < 0.3 then
-					table.insert(summaryParts, string.format("Work at %s keeps you busy.", job.company))
+					table.insert(summaryParts, string.format("Work at %s keeps you busy.", safeCompany))
 				end
 			end
 		elseif age < 65 and not (state.Flags and (state.Flags.retired or state.Flags.in_school)) then
@@ -13209,10 +13758,38 @@ end
 
 function LifeBackend:handleAgeUp(player)
 	local state = self:getState(player)
-	if not state or state.awaitingDecision or (state.Flags and state.Flags.dead) then
-		if state and state.Flags and state.Flags.dead then
-			debugPrint("Age up ignored for dead player", player.Name)
+	if not state then return end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #963: Timeout for awaitingDecision to prevent permanent softlock!
+	-- If player has been stuck for 60+ seconds, force-clear the flag
+	-- This prevents permanent softlock if an event fails to resolve properly
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.awaitingDecision then
+		local pending = self.pendingEvents and self.pendingEvents[player.UserId]
+		local pendingTimestamp = pending and pending.timestamp or state._awaitingDecisionTimestamp
+		local currentTime = os.clock()
+		
+		if pendingTimestamp and (currentTime - pendingTimestamp) > 60 then
+			warn("[LifeBackend] ⚠️ SOFTLOCK DETECTED! Clearing awaitingDecision after 60s timeout for", player.Name)
+			state.awaitingDecision = false
+			self.pendingEvents[player.UserId] = nil
+			-- Continue with age up instead of returning
+		else
+			-- Track when awaiting started
+			if not state._awaitingDecisionTimestamp then
+				state._awaitingDecisionTimestamp = currentTime
+			end
+			debugPrint("Age up blocked - awaiting decision for", player.Name)
+			return
 		end
+	end
+	
+	-- Clear timestamp tracking
+	state._awaitingDecisionTimestamp = nil
+	
+	if state.Flags and state.Flags.dead then
+		debugPrint("Age up ignored for dead player", player.Name)
 		return
 	end
 
@@ -13236,6 +13813,8 @@ function LifeBackend:handleAgeUp(player)
 	state.Flags.just_fired = nil    -- Allow job events again after being fired
 	state.Flags.just_promoted = nil -- Allow promotion events again
 	state.Flags.just_hired = nil    -- Allow new hire events again
+	state.Flags.worked_hard_this_year = nil  -- CRITICAL FIX #931: Reset work hard flag for new year
+	state.Flags.noticed_by_boss = nil        -- Reset boss notice flag
 	
 	-- AAA FIX: Clear feed message tracking for new year (prevents duplicate prevention from persisting)
 	state._feedMessages = nil
@@ -13326,8 +13905,11 @@ function LifeBackend:handleAgeUp(player)
 				mobState.rankName = rankNames[mobState.rankIndex]
 				mobState.rankEmoji = rankEmojis[mobState.rankIndex]
 				
-				appendFeed(state, string.format("%s You've been promoted from %s to %s!", 
-					mobState.rankEmoji, oldRankName, mobState.rankName))
+				-- CRITICAL FIX: Properly handle nil values to prevent string.format errors
+				local safeEmoji = tostring(mobState.rankEmoji or "🎉")
+				local safeOldRank = tostring(oldRankName or "Associate")
+				local safeNewRank = tostring(mobState.rankName or "Soldier")
+				appendFeed(state, string.format("%s You've been promoted from %s to %s!", safeEmoji, safeOldRank, safeNewRank))
 				state.Flags.got_promotion = true
 				state.Flags.mob_promoted = true
 			end
@@ -13714,6 +14296,50 @@ function LifeBackend:handleAgeUp(player)
 	if transitionEvent then
 		local stageName = transitionEvent.title or "a new stage"
 		feedText = string.format("🎂 %s\n%s", transitionEvent.text or ("You entered " .. stageName), feedText)
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- STRATEGIC GAMEPASS PROMPTS AT KEY LIFE MILESTONES
+		-- These are PERFECT conversion moments when players feel invested in their character
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		
+		-- Age 18: Player becomes an adult - perfect time for premium features!
+		if state.Age == 18 then
+			-- Show Mafia gamepass - they can now join organized crime
+			if not self:checkGamepassOwnership(player, "MAFIA") then
+				task.delay(2, function()
+					if player and player.Parent then
+						-- Don't force prompt, just make it available
+						-- Let the client know they can now use Mafia features
+					end
+				end)
+			end
+		end
+		
+		-- Age 30: "The Big 3-0" - players often want to boost their character
+		if state.Age == 30 then
+			-- If player isn't wealthy or famous yet, offer Celebrity gamepass
+			local money = state.Money or 0
+			local isFamous = state.Flags and (state.Flags.is_famous or state.Flags.celebrity)
+			if money < 100000 and not isFamous and not self:checkGamepassOwnership(player, "CELEBRITY") then
+				task.delay(2, function()
+					if player and player.Parent then
+						self:promptGamepassPurchase(player, "CELEBRITY")
+					end
+				end)
+			end
+		end
+		
+		-- Age 50: Middle-age crisis - offer God Mode to boost declining stats
+		if state.Age == 50 then
+			local health = (state.Stats and state.Stats.Health) or 50
+			if health < 70 and not self:checkGamepassOwnership(player, "GOD_MODE") then
+				task.delay(2, function()
+					if player and player.Parent then
+						self:promptGamepassPurchase(player, "GOD_MODE")
+					end
+				end)
+			end
+		end
 	end
 
 	-- Get just ONE event from the year queue (BitLife style)
@@ -14553,6 +15179,16 @@ function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
 			timeMachineData = TimeMachine.getDeathScreenData(player, state, hasTimeMachineGamepass)
 		end
 		
+		-- CRITICAL FIX #913: Prompt Time Machine purchase for non-owners on death!
+		-- This is THE HIGHEST CONVERSION moment - player just died and wants to save their character!
+		if not hasTimeMachineGamepass and self.gamepassSystem then
+			task.delay(2, function()
+				if player and player.Parent then
+					self.gamepassSystem:promptGamepass(player, "TIME_MACHINE")
+				end
+			end)
+		end
+		
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		-- CRITICAL FEATURE: "Continue as Your Kid" on death!
 		-- User requested: "I WANT A CONTINUE AS YOUR KID BUTTON WHEN YOU DIE"
@@ -14648,11 +15284,25 @@ function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
 end
 
 function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #962: Clear awaitingDecision on ALL early returns to prevent softlock!
+	-- If this function fails for any reason, player should NOT be stuck unable to age up
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local function clearAwaitingOnError()
+		local state = self:getState(player)
+		if state then
+			state.awaitingDecision = false
+		end
+		self.pendingEvents[player.UserId] = nil
+	end
+	
 	local pending = self.pendingEvents[player.UserId]
 	if not pending then
+		clearAwaitingOnError()
 		return
 	end
 	if pending.activeEventId and pending.activeEventId ~= eventId then
+		-- Don't clear for mismatched eventId - might be legitimate queue
 		return
 	end
 
@@ -14663,16 +15313,20 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 		eventDef = pending.definition
 	end
 	if not eventDef then
+		warn("[LifeBackend] No event definition found - clearing to prevent softlock")
+		clearAwaitingOnError()
 		return
 	end
 
 	local choices = eventDef.choices or {}
 	local choice = choices[choiceIndex]
 	if not choice then
+		warn("[LifeBackend] Invalid choice index", choiceIndex, "- clearing to prevent softlock")
+		clearAwaitingOnError()
 		return
 	end
 
-	debugPrint(string.format("Resolving event %s for %s with choice #%d", eventDef.id or "unknown", player.Name, choiceIndex))
+	debugPrint(string.format("Resolving event %s for %s with choice #%d", eventId or "unknown", player.Name, choiceIndex))
 
 	local state = self:getState(player)
 	if not state then
@@ -14720,7 +15374,10 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 			minigameRemote:FireClient(player, minigamePayload)
 		end
 		
-		debugPrint(string.format("Minigame triggered for %s: %s", player.Name, choice.triggerMinigame))
+		-- CRITICAL FIX: Handle nil values safely
+		local safePlayerName = tostring((player and player.Name) or "Unknown")
+		local safeMinigame = tostring(choice.triggerMinigame or "unknown")
+		debugPrint(string.format("Minigame triggered for %s: %s", safePlayerName, safeMinigame))
 		return -- Wait for minigame result
 	end
 
@@ -14877,6 +15534,18 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 		feedText = jailPopupBody -- Also update the feed text for the feed display
 
 		debugPrint(string.format("Player %s was incarcerated by event! Jail years: %.1f", player.Name, state.JailYearsLeft or 0))
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- STRATEGIC GAMEPASS PROMPT: When player gets arrested, offer Time Machine!
+		-- This is the PERFECT conversion moment - they want to undo the arrest
+		-- Only prompt if they don't already own Time Machine
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		if not self:checkGamepassOwnership(player, "TIME_MACHINE") then
+			-- Slight delay so they see the "Busted" message first
+			task.delay(0.5, function()
+				self:promptGamepassPurchase(player, "TIME_MACHINE")
+			end)
+		end
 	end
 
 	-- CRITICAL FIX: Use PendingFeed (detailed outcome from onResolve) for popup body
@@ -15116,6 +15785,9 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Some mischief activities have risk of getting caught
 	-- E.g., vandalism, bullying, underage drinking may have consequences
+	-- CRITICAL FIX #942: SKIP early risk check for activities with minigames!
+	-- The minigame result determines success/failure - don't pre-roll risk here!
+	-- This was causing "Plan a Heist success but got caught" bug!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local resultMessage = ""
 	local gotCaught = false
@@ -15127,7 +15799,12 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 		end
 		resultMessage = enrollResult.message or "You enrolled in a new program."
 	else
-		if activity.risk and RANDOM:NextInteger(1, 100) <= activity.risk then
+		-- CRITICAL FIX #942: Skip early risk check for minigame activities!
+		-- For activities with hasMinigame=true, the risk check happens AFTER minigame result
+		-- in the mafiaEffect section below (lines 15769+)
+		local skipEarlyRiskCheck = activity.hasMinigame or activity.mafiaEffect
+		
+		if activity.risk and not skipEarlyRiskCheck and RANDOM:NextInteger(1, 100) <= activity.risk then
 			gotCaught = true
 			-- Risk-based consequence (usually for teen mischief)
 			if activity.riskConsequence then
@@ -15268,8 +15945,10 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #302: Handle mafia-specific effects from mob operations
-	-- CRITICAL FIX: Minigame success NOW reduces risk! Also fixed "success but jailed" bug
-	-- User complaint: "Crime successful but still sentenced?!"
+	-- CRITICAL FIX #800: MINIGAME WIN = GUARANTEED SUCCESS, NO ARREST!
+	-- User complaint: "Plan a Heist shows crime successful but says you got caught"
+	-- BUG: Code was reducing risk by 80% but STILL rolling for arrest. WRONG!
+	-- FIX: If player WON the minigame, they EARNED their success - NO RISK CHECK!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	if activity.mafiaEffect then
 		state.MobState = state.MobState or {}
@@ -15290,34 +15969,34 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 		state.MobState.operationsCompleted = (state.MobState.operationsCompleted or 0) + 1
 		
 		-- ═══════════════════════════════════════════════════════════════════════════════
-		-- CRITICAL FIX: Risk check - minigame success REDUCES risk!
-		-- Without this, winning the minigame does nothing and you still get jailed
+		-- CRITICAL FIX #800: CHECK IF MINIGAME WAS WON FIRST!
+		-- If player WON the minigame, they get GUARANTEED SUCCESS with NO ARREST!
+		-- Only do risk check if minigame was NOT won or no minigame was played
 		-- ═══════════════════════════════════════════════════════════════════════════════
-		if activity.risk then
+		local minigameWasWon = false
+		
+		-- Check all possible ways minigame win can be communicated
+		if minigameBonus == true then
+			minigameWasWon = true
+		elseif type(minigameBonus) == "table" then
+			if minigameBonus.won or minigameBonus.success or minigameBonus.heistSuccess or minigameBonus.combatWon then
+				minigameWasWon = true
+			end
+		end
+		
+		-- CRITICAL FIX #801: If minigame was won, SKIP risk check entirely!
+		if minigameWasWon then
+			-- Player WON the minigame - GUARANTEED success, NO risk of arrest!
+			resultMessage = "🎯 " .. resultMessage .. " Your skills paid off - perfect execution!"
+			-- Bonus respect for winning the minigame
+			state.MobState.respect = (state.MobState.respect or 0) + 10
+			-- EXPLICIT: NO JAIL POSSIBLE WHEN MINIGAME IS WON!
+			-- Do NOT set gotCaught = true, do NOT check risk, do NOT pass Go, do NOT go to jail!
+		elseif activity.risk then
+			-- ONLY check risk if minigame was NOT won (or no minigame was played)
 			local actualRisk = activity.risk
 			
-			-- CRITICAL FIX: If minigame was WON, MASSIVELY reduce risk
-			-- minigameBonus can be: { won = true, success = true } from client
-			-- CRITICAL FIX: Also handle simple boolean `true` from client!
-			-- User complaint: "Crime successful but still sentenced?!"
-			-- The client was passing `true` but server only checked for table/number
-			if minigameBonus == true then
-				-- Simple boolean true = won the minigame = 80% risk reduction!
-				actualRisk = math.floor(actualRisk * 0.2)
-			elseif type(minigameBonus) == "table" then
-				if minigameBonus.won or minigameBonus.success then
-					-- Won minigame = 80% reduction in risk
-					actualRisk = math.floor(actualRisk * 0.2)
-				elseif minigameBonus.failed == false then
-					-- Passed minigame but not perfectly = 50% reduction
-					actualRisk = math.floor(actualRisk * 0.5)
-				end
-			elseif type(minigameBonus) == "number" then
-				-- Old-style bonus: subtract from risk
-				actualRisk = math.max(1, actualRisk - minigameBonus)
-			end
-			
-			-- Also reduce risk based on player's stats and experience
+			-- Reduce risk based on player's stats and experience
 			local smarts = (state.Stats and state.Stats.Smarts) or 50
 			if smarts > 70 then
 				actualRisk = actualRisk - math.floor((smarts - 70) / 5)
@@ -15326,8 +16005,13 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 				actualRisk = actualRisk - 5 -- Experienced mobster bonus
 			end
 			
-			-- CRITICAL: Make sure actualRisk doesn't go negative
-			actualRisk = math.max(1, actualRisk)
+			-- If minigame was failed, increase risk
+			if minigameBonus == false or (type(minigameBonus) == "table" and minigameBonus.failed) then
+				actualRisk = actualRisk + 20 -- Failed minigame = higher risk
+			end
+			
+			-- CRITICAL: Make sure actualRisk stays in valid range
+			actualRisk = math.max(5, math.min(95, actualRisk))
 			
 			-- Roll for getting caught
 			if RANDOM:NextInteger(1, 100) <= actualRisk then
@@ -15343,6 +16027,14 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 				end
 				resultMessage = "🚔 You got caught! Sentenced to " .. jailYears .. " years in prison."
 				gotCaught = true
+				
+				-- CRITICAL FIX #901: Prompt GET OUT OF JAIL purchase when player gets arrested!
+				-- This is a PERFECT moment to offer - player just lost everything!
+				task.delay(1.5, function()
+					if player and player.Parent and self.gamepassSystem then
+						self.gamepassSystem:promptProduct(player, "GET_OUT_OF_JAIL")
+					end
+				end)
 			else
 				-- CRITICAL: Explicitly show that crime succeeded with NO jail
 				resultMessage = "💰 " .. resultMessage .. " Got away clean!"
@@ -15923,6 +16615,13 @@ function LifeBackend:handleCrime(player, crimeId, minigameBonus)
 				state.Flags.has_job = nil
 			end
 			
+			-- CRITICAL FIX #902: Prompt GET OUT OF JAIL when arrested from fight!
+			task.delay(1.5, function()
+				if player and player.Parent and self.gamepassSystem then
+					self.gamepassSystem:promptProduct(player, "GET_OUT_OF_JAIL")
+				end
+			end)
+			
 			local message = string.format("😵 Embarrassing! They knocked you out cold! Lost %d health. Someone called the cops - you're sentenced to %.1f years!", healthLoss, years)
 			self:pushState(player, message)
 			return { 
@@ -15971,6 +16670,14 @@ function LifeBackend:handleCrime(player, crimeId, minigameBonus)
 			state.Flags.was_in_mob_before_jail = true
 			debugPrint("Preserved mob membership for jail duration:", player.Name)
 		end
+		
+		-- CRITICAL FIX #903: Prompt GET OUT OF JAIL when arrested from crime!
+		-- Player just got caught - PERFECT time to offer instant freedom!
+		task.delay(1.5, function()
+			if player and player.Parent and self.gamepassSystem then
+				self.gamepassSystem:promptProduct(player, "GET_OUT_OF_JAIL")
+			end
+		end)
 		
 		-- CRITICAL FIX: Lose job when going to prison!
 		-- In BitLife, you get fired when incarcerated. Save last job for potential re-employment.
@@ -16885,9 +17592,11 @@ function LifeBackend:handleJobApplication(player, jobId, clientInterviewScore)
 	
 	-- Cooldown: Can't spam applications to the same job within the same year
 	if appHistory.lastAttempt == (state.Age or 0) and appHistory.rejectedThisYear then
+		-- CRITICAL FIX: Nil safety for job.company
+		local safeCompany = tostring(job.company or "this company")
 		return { 
 			success = false, 
-			message = string.format("You already applied to %s this year. Wait until next year to try again.", job.company)
+			message = string.format("You already applied to %s this year. Wait until next year to try again.", safeCompany)
 		}
 	end
 	
@@ -17708,6 +18417,13 @@ function LifeBackend:handleQuitJob(player, quitStyle)
 	return { success = true, message = feed }
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #930: "Work Hard" was paying EXTRA salary on top of annual salary!
+-- This caused players to earn 13+ months of pay per year if they clicked Work Hard.
+-- FIX: Work Hard now ONLY boosts performance (which leads to raises/promotions)
+-- and gives small happiness variations. NO EXTRA SALARY.
+-- Your annual salary is paid automatically during age-up.
+-- ═══════════════════════════════════════════════════════════════════════════════
 function LifeBackend:handleWork(player)
 	local state = self:getState(player)
 	if not state or not state.CurrentJob then
@@ -17718,22 +18434,57 @@ function LifeBackend:handleWork(player)
 	end
 
 	state.CareerInfo = state.CareerInfo or {}
+	state.Flags = state.Flags or {}
+	
+	-- Check if already worked hard this year (prevent spam clicking)
+	if state.Flags.worked_hard_this_year then
+		return { success = false, message = "You've already put in extra effort this year! Your dedication will show at your next review." }
+	end
+	
+	-- Mark that we worked hard this year
+	state.Flags.worked_hard_this_year = true
 
-	local salary = state.CurrentJob.salary or 0
-	local bonus = math.floor(((state.CareerInfo.performance or 50) / 100) * 0.2 * salary)
-	local payday = math.floor(salary / 12 + bonus)
-	self:addMoney(state, payday)
-	self:applyStatChanges(state, { Happiness = RANDOM:NextInteger(-2, 2) })
-
-	-- CRITICAL FIX: Working hard improves performance, but not guaranteed
-	-- Performance is the key metric for promotions now (see handlePromotion)
-	state.CareerInfo.performance = clamp((state.CareerInfo.performance or 60) + RANDOM:NextInteger(1, 5), 0, 100)
-
-	local message = string.format("Payday! You earned %s.", formatMoney(payday))
-	-- CRITICAL FIX: Don't use showPopup here - client already shows result from return value
-	-- This was causing DOUBLE popup issue!
+	-- Working hard improves performance significantly!
+	-- Performance affects raises and promotion chances
+	local oldPerformance = state.CareerInfo.performance or 60
+	local performanceGain = RANDOM:NextInteger(5, 12)
+	state.CareerInfo.performance = math.min(100, oldPerformance + performanceGain)
+	
+	-- Working hard also builds skills
+	local skills = state.CareerInfo.skills or {}
+	skills.dedication = math.min(100, (skills.dedication or 0) + RANDOM:NextInteger(2, 5))
+	skills.work_ethic = math.min(100, (skills.work_ethic or 0) + RANDOM:NextInteger(2, 5))
+	state.CareerInfo.skills = skills
+	
+	-- Small stat changes - hard work can be tiring but sometimes satisfying
+	local happinessChange = RANDOM:NextInteger(-3, 5)
+	local healthChange = RANDOM:NextInteger(-2, 1) -- Work can be draining
+	self:applyStatChanges(state, { Happiness = happinessChange, Health = healthChange })
+	
+	-- Chance of getting noticed by boss (could lead to faster promotion)
+	if RANDOM:NextNumber() < 0.25 then
+		state.Flags.noticed_by_boss = true
+	end
+	
+	-- Build the feedback message
+	local messages = {
+		"💼 You put in extra effort at work! Your performance improved (+%d%%). Your boss takes notice.",
+		"💼 You stayed late and went above and beyond! Performance +%d%%. This could help at your next review.",
+		"💼 Your dedication is paying off! Performance improved by %d%%. Keep it up!",
+		"💼 You worked your hardest! +%d%% performance. Your efforts won't go unnoticed.",
+		"💼 Extra hours, extra effort! Performance +%d%%. Promotion material!",
+	}
+	local message = string.format(messages[RANDOM:NextInteger(1, #messages)], performanceGain)
+	
+	-- Add tip about how salary works
+	if state.CareerInfo.performance >= 85 then
+		message = message .. "\n\n⭐ Your performance is excellent! You're due for a raise or promotion soon."
+	elseif state.CareerInfo.performance >= 70 then
+		message = message .. "\n\n📈 Good performance! Keep working hard for that promotion."
+	end
+	
 	self:pushState(player, message)
-	return { success = true, message = message, money = payday }
+	return { success = true, message = message, performanceGain = performanceGain }
 end
 
 function LifeBackend:handlePromotion(player)
@@ -17798,11 +18549,17 @@ function LifeBackend:handlePromotion(player)
 	-- Use CareerTracks to find the next job in the career path
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #126: Nil safety for job ID access
-	local currentJobId = state.CurrentJob and state.CurrentJob.id
+	-- CRITICAL FIX #802: Full nil safety check before accessing CurrentJob properties
+	if not state.CurrentJob then
+		return { success = false, message = "You don't have a job to be promoted from!" }
+	end
+	
+	local currentJobId = state.CurrentJob.id
 	if not currentJobId then
 		-- Fallback: just do salary promotion
 		state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 30000) * 1.15)
-		local feed = string.format("🎉 Salary promotion! You now earn %s.", formatMoney(state.CurrentJob.salary))
+		local safeSalary = formatMoney(state.CurrentJob.salary or 0)
+		local feed = string.format("🎉 Salary promotion! You now earn %s.", safeSalary)
 		self:pushState(player, feed)
 		return { success = true, message = feed }
 	end
@@ -17949,14 +18706,24 @@ function LifeBackend:handlePromotion(player)
 	
 	local feed
 	if promotedToNewTitle and newJobName then
+		-- CRITICAL FIX: Handle nil values safely
+		local safeOldName = tostring(oldJobName or "previous position")
+		local safeNewName = tostring(newJobName or "new position")
+		local safeSalary = formatMoney((state.CurrentJob and state.CurrentJob.salary) or 0)
 		feed = string.format("🎉 MAJOR PROMOTION! You've been promoted from %s to %s! New salary: %s", 
-			oldJobName, newJobName, formatMoney(state.CurrentJob.salary))
+			safeOldName, safeNewName, safeSalary)
 		-- Add a flag for major promotion
 		state.Flags.major_promotion = true
 	else
 		-- No title change available (top of career track) - just salary bump
-		state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 1.15)
-		feed = string.format("🎉 Salary promotion! You now earn %s.", formatMoney(state.CurrentJob.salary))
+		-- CRITICAL FIX: Nil safety for CurrentJob
+		if state.CurrentJob then
+			state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 1.15)
+			local safeSalary = formatMoney(state.CurrentJob.salary or 0)
+			feed = string.format("🎉 Salary promotion! You now earn %s.", safeSalary)
+		else
+			feed = "🎉 You received a promotion!"
+		end
 	end
 	
 	info.performance = clamp((info.performance or 60) + 5, 0, 100)
@@ -18000,11 +18767,15 @@ function LifeBackend:handleRaise(player)
 		return { success = false, message = "Raise denied. 'Budget constraints' they said. Maybe next year." }
 	end
 
-	state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 1.08) -- 8% raise instead of 10%
+	-- CRITICAL FIX: Nil safety for CurrentJob
+	if state.CurrentJob then
+		state.CurrentJob.salary = math.floor((state.CurrentJob.salary or 0) * 1.08) -- 8% raise instead of 10%
+	end
 	info.raises = (info.raises or 0) + 1
 	info.performance = clamp((info.performance or 60) + 3, 0, 100)
 
-	local feed = string.format("💰 Raise approved! Salary is now %s.", formatMoney(state.CurrentJob.salary))
+	local safeSalary = formatMoney((state.CurrentJob and state.CurrentJob.salary) or 0)
+	local feed = string.format("💰 Raise approved! Salary is now %s.", safeSalary)
 	self:pushState(player, feed)
 	return { success = true, message = feed }
 end
@@ -18243,16 +19014,60 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 	debugPrint("=== ASSET PURCHASE ===")
 	debugPrint("  Player:", player.Name, "Type:", assetType, "AssetId:", assetId)
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #964: Input validation to prevent exploits!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- Validate assetId is a string
+	if type(assetId) ~= "string" then
+		warn("[LifeBackend] EXPLOIT ATTEMPT: Invalid assetId type from", player.Name)
+		return { success = false, message = "Invalid request." }
+	end
+	
+	-- Validate assetId length (prevent memory attacks)
+	if #assetId > 100 then
+		warn("[LifeBackend] EXPLOIT ATTEMPT: AssetId too long from", player.Name)
+		return { success = false, message = "Invalid request." }
+	end
+	
 	local state = self:getState(player)
 	if not state then
 		debugPrint("  FAILED: No state")
 		return { success = false, message = "Life data missing." }
 	end
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #965: Rate limiting to prevent purchase spam exploits!
+	-- Max 3 purchases per second
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	state._purchaseTimes = state._purchaseTimes or {}
+	local currentTime = os.clock()
+	
+	-- Clean old timestamps (older than 1 second)
+	local recentPurchases = {}
+	for _, timestamp in ipairs(state._purchaseTimes) do
+		if currentTime - timestamp < 1 then
+			table.insert(recentPurchases, timestamp)
+		end
+	end
+	state._purchaseTimes = recentPurchases
+	
+	if #state._purchaseTimes >= 3 then
+		warn("[LifeBackend] Rate limit: Too many purchases from", player.Name)
+		return { success = false, message = "Slow down! Try again in a moment." }
+	end
+	table.insert(state._purchaseTimes, currentTime)
+
 	local asset = self:findAssetById(catalog, assetId)
 	if not asset then
 		debugPrint("  FAILED: Unknown asset")
 		return { success = false, message = "Unknown asset." }
+	end
+	
+	-- Validate asset has required fields
+	if not asset.price or type(asset.price) ~= "number" then
+		warn("[LifeBackend] Invalid asset price for", assetId)
+		return { success = false, message = "Asset unavailable." }
 	end
 	
 	debugPrint("  Found asset:", asset.name, "Price:", asset.price)
@@ -18517,22 +19332,216 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 
 	self:addMoney(state, -(tonumber(asset.price) or 0))
 	
-	-- Generate feed with tier-specific messaging
-	local tierMessages = {
-		budget = "You got yourself",
-		basic = "You bought",
-		reliable = "You purchased",
-		nice = "You treated yourself to",
-		premium = "Nice! You acquired",
-		luxury = "Congrats! You now own",
-		supercar = "WOW! You're now the proud owner of",
-		elite = "INCREDIBLE! You purchased",
-		ultra = "LEGENDARY! You now own",
-		billionaire = "BILLIONAIRE STATUS! You bought",
-		investment = "Smart investment:",
-	}
-	local tierMsg = tierMessages[asset.tier or "basic"] or "You purchased"
-	local feed = string.format("%s %s for %s!", tierMsg, tostring(asset.name or "an item"), formatMoney(asset.price or 0))
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #980: EXCITING PURCHASE CELEBRATIONS WITH VARIETY!
+	-- Not boring "You bought X" - actual exciting, varied messages!
+	-- One-time special events for first purchases of each type
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	local feed = ""
+	local showPopup = false
+	local popupData = nil
+	local assetLower = (asset.id or ""):lower()
+	
+	-- Track first-time purchases for unique celebrations
+	state._purchaseCelebrations = state._purchaseCelebrations or {}
+	local isFirstOfType = not state._purchaseCelebrations[asset.id]
+	state._purchaseCelebrations[asset.id] = true
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- SPECIFIC ASSET CELEBRATIONS - SHOES/SNEAKERS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if assetLower == "sneakers" or assetLower:find("shoe") or assetLower:find("kick") then
+		if isFirstOfType then
+			local shoeMessages = {
+				"👟 FRESH KICKS ALERT! You unbox your new %s and they're FIRE! 🔥 First thing you do is flex on everyone!",
+				"👟 New %s! You can SMELL that new shoe smell! Time to walk with CONFIDENCE!",
+				"👟 %s secured! You're walking different now. Head high, fresh feet!",
+				"👟 The drip is REAL! Your new %s are gonna turn heads!",
+			}
+			feed = string.format(shoeMessages[RANDOM:NextInteger(1, #shoeMessages)], asset.name)
+			state.Flags.got_fresh_kicks = true
+			state.Flags.sneakerhead = true
+		else
+			-- Already bought before - shorter message
+			feed = string.format("👟 Added another pair: %s. The collection grows!", asset.name)
+		end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- PHONE CELEBRATION - First phone is a MAJOR milestone for teens!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	elseif assetLower == "iphone" or assetLower:find("phone") then
+		if isFirstOfType then
+			local phoneMessages = {
+				"📱 YOUR FIRST PHONE! A %s! Welcome to the connected world! Group chats, social media, EVERYTHING!",
+				"📱 %s unlocked! You can TEXT people now! This changes EVERYTHING!",
+				"📱 New %s! First thing: download EVERY app! Time to join the digital age!",
+				"📱 %s is YOURS! You immediately created 15 social media accounts!",
+			}
+			feed = string.format(phoneMessages[RANDOM:NextInteger(1, #phoneMessages)], asset.name)
+			showPopup = true
+			popupData = {
+				emoji = "📱",
+				title = "FIRST PHONE! 🎉",
+				body = "You're connected now! Social media, texts, apps, games - the world is at your fingertips!",
+				wasSuccess = true,
+			}
+			state.Flags.first_phone_celebrated = true
+			state.Flags.connected = true
+			state.Flags.has_phone = true
+		else
+			feed = string.format("📱 Upgraded to: %s! Even faster, even sleeker!", asset.name)
+		end
+		
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- YACHT CELEBRATION - This should be EPIC!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	elseif assetLower == "yacht" or assetLower:find("yacht") then
+		if isFirstOfType then
+			feed = string.format("🛥️ YOU BOUGHT A YACHT!!! A %s! The ultimate flex! You're officially in the BIG leagues! Time to invite everyone for a yacht party!", asset.name)
+			showPopup = true
+			popupData = {
+				emoji = "🛥️",
+				title = "YACHT OWNER! 🎉",
+				body = "You now own a yacht! The ocean is your playground. Plan parties, go fishing, or just flex on everyone from the deck!",
+				wasSuccess = true,
+			}
+			state.Flags.yacht_party_ready = true
+			state.Flags.can_host_yacht_party = true
+			-- Yacht gives fame boost
+			state.Fame = (state.Fame or 0) + 20
+		else
+			feed = "🛥️ Added another yacht to your fleet. You're building a navy!"
+		end
+		
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- SUPERCAR/EXOTIC CAR CELEBRATION
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	elseif asset.tier == "supercar" or asset.tier == "exotic" or assetLower:find("ferrari") or assetLower:find("lambo") or assetLower:find("bugatti") then
+		if not state.Flags.first_supercar_celebrated then
+			local carMessages = {
+				"🏎️ SUPERCAR SECURED! Your new %s roars to life! 0-60 in SECONDS! This is the DREAM!",
+				"🏎️ LEGENDARY PURCHASE! A %s! People are gonna stop and STARE!",
+				"🏎️ %s is YOURS! The engine purrs like a beast! Time to hit the open road!",
+				"🏎️ You did it! A %s! Every kid's dream car is now in YOUR garage!",
+			}
+			feed = string.format(carMessages[RANDOM:NextInteger(1, #carMessages)], asset.name)
+			showPopup = true
+			popupData = {
+				emoji = "🏎️",
+				title = "SUPERCAR UNLOCKED!",
+				body = string.format("You now own a %s! Street racers will challenge you. People will take photos. You've MADE IT!", asset.name),
+				wasSuccess = true,
+			}
+			state.Flags.first_supercar_celebrated = true
+			state.Flags.supercar_owner = true
+			state.Fame = (state.Fame or 0) + 10
+		else
+			feed = string.format("🏎️ Another supercar: %s! Your garage is STACKED!", asset.name)
+		end
+		
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- FIRST CAR CELEBRATION
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	elseif assetType == "Vehicles" and not state.Flags.first_car_celebrated then
+		local firstCarMessages = {
+			"🚗 YOUR FIRST CAR! A %s! FREEDOM! No more asking for rides! The road is YOURS!",
+			"🚗 You got your first car! A %s! This changes EVERYTHING! Where to first?",
+			"🚗 MILESTONE! Your very own %s! You can go ANYWHERE now!",
+			"🚗 First wheels: %s! You sat in the driver's seat for 10 minutes just GRINNING!",
+		}
+		feed = string.format(firstCarMessages[RANDOM:NextInteger(1, #firstCarMessages)], asset.name)
+		showPopup = true
+		popupData = {
+			emoji = "🚗",
+			title = "FIRST CAR! 🎉",
+			body = string.format("Your very own %s! No more bumming rides. Freedom awaits!", asset.name),
+			wasSuccess = true,
+		}
+		state.Flags.first_car_celebrated = true
+		state.Flags.has_first_car = true
+		
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- FIRST HOME CELEBRATION
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	elseif assetType == "Properties" and not state.Flags.first_home_celebrated then
+		local homeMessages = {
+			"🏠 YOU'RE A HOMEOWNER! Your very own %s! No more rent! This is YOURS!",
+			"🏠 MAJOR MILESTONE! You bought a %s! Time to make it HOME!",
+			"🏠 Keys in hand to your %s! You walked through every room TWICE just because you COULD!",
+			"🏠 %s is YOURS! You immediately started planning what to change!",
+		}
+		feed = string.format(homeMessages[RANDOM:NextInteger(1, #homeMessages)], asset.name)
+		showPopup = true
+		popupData = {
+			emoji = "🏠",
+			title = "HOMEOWNER! 🎉",
+			body = string.format("Welcome to your %s! Throw a housewarming party?", asset.name),
+			wasSuccess = true,
+		}
+		state.Flags.first_home_celebrated = true
+		
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- MANSION/LUXURY PROPERTY CELEBRATION
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	elseif assetType == "Properties" and (asset.tier == "luxury" or asset.tier == "elite" or asset.tier == "ultra" or assetLower:find("mansion") or assetLower:find("penthouse")) then
+		if not state.Flags.luxury_home_celebrated then
+			feed = string.format("🏰 LUXURY LIVING! Your %s is STUNNING! Multiple bathrooms! A VIEW! You're living the DREAM!", asset.name)
+			showPopup = true
+			popupData = {
+				emoji = "🏰",
+				title = "LUXURY HOME!",
+				body = "You've reached the top! Time to host fancy parties and live like royalty!",
+				wasSuccess = true,
+			}
+			state.Flags.luxury_home_celebrated = true
+			state.Fame = (state.Fame or 0) + 15
+		else
+			feed = string.format("🏰 Another luxury property: %s! Real estate mogul!", asset.name)
+		end
+		
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- GAMING PC/TECH CELEBRATION
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	elseif assetLower == "gaming_pc" or assetLower:find("gaming") then
+		if isFirstOfType then
+			feed = string.format("🖥️ GAMING SETUP COMPLETE! Your new %s boots up! RGB lights EVERYWHERE! Time to go PRO!", asset.name)
+			state.Flags.gaming_setup = true
+		else
+			feed = string.format("🖥️ Upgraded: %s! Even MORE frames per second!", asset.name)
+		end
+		
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- JEWELRY CELEBRATION  
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	elseif asset.tier == "jewelry" or assetLower:find("ring") or assetLower:find("necklace") or assetLower:find("watch") then
+		if not state.Flags.bling_owner then
+			feed = string.format("💎 BLING! Your new %s sparkles! People notice. You feel FANCY!", asset.name)
+			state.Flags.bling_owner = true
+		else
+			feed = string.format("💎 More shine: %s added to the collection!", asset.name)
+		end
+		
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- DEFAULT MESSAGES (Still with variety!)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	else
+		local tierMessages = {
+			budget = { "You snagged", "You got yourself", "Picked up" },
+			basic = { "You bought", "You grabbed", "You picked up" },
+			reliable = { "You purchased", "You invested in", "You acquired" },
+			nice = { "You treated yourself to", "Nice! You got", "Sweet purchase:" },
+			premium = { "Excellent choice!", "Premium purchase:", "Quality investment:" },
+			luxury = { "LUXURY! You now own", "Living the dream with", "Congrats on your" },
+			supercar = { "INCREDIBLE!", "LEGENDARY PURCHASE!", "DREAM ACHIEVED!" },
+			elite = { "ELITE STATUS!", "TOP TIER!", "BALLER MOVE!" },
+			ultra = { "ULTRA WEALTHY!", "NEXT LEVEL!", "ULTIMATE FLEX!" },
+			billionaire = { "BILLIONAIRE LIFESTYLE!", "OBSCENE WEALTH!", "MOGUL STATUS!" },
+		}
+		local messages = tierMessages[asset.tier or "basic"] or tierMessages.basic
+		local tierMsg = messages[RANDOM:NextInteger(1, #messages)]
+		feed = string.format("%s %s for %s!", tierMsg, tostring(asset.name or "an item"), formatMoney(asset.price or 0))
+	end
 	
 	-- Debug: Check assets before push
 	debugPrint("  Before pushState:")
@@ -18540,7 +19549,13 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 	debugPrint("    state.Assets.Vehicles:", state.Assets.Vehicles and #state.Assets.Vehicles or 0)
 	debugPrint("    state.Assets.Items:", state.Assets.Items and #state.Assets.Items or 0)
 	
-	self:pushState(player, feed)
+	-- Push state with optional popup for major purchases
+	if showPopup and popupData then
+		popupData.showPopup = true
+		self:pushState(player, feed, popupData)
+	else
+		self:pushState(player, feed)
+	end
 	return { success = true, message = feed }
 end
 
@@ -20263,7 +21278,12 @@ function LifeBackend:handleGodModeEdit(player, payload)
 			state.Flags.famous_family = true
 			state.Flags.royalty_gamepass = true
 			
-			table.insert(summaries, string.format("👑 Born as %s of %s %s with %s inheritance!", tostring(title or "Royal"), tostring(country.emoji or "👑"), tostring(country.name or "the Kingdom"), formatMoney(royalWealth or 0)))
+			-- CRITICAL FIX: Properly handle nil values to prevent string.format errors
+			local safeTitle = tostring(title or "Royal")
+			local safeEmoji = (country and country.emoji) and tostring(country.emoji) or "👑"
+			local safeCountryName = (country and country.name) and tostring(country.name) or "the Kingdom"
+			local safeWealth = formatMoney(royalWealth or 0)
+			table.insert(summaries, string.format("👑 Born as %s of %s %s with %s inheritance!", safeTitle, safeEmoji, safeCountryName, safeWealth))
 		else
 			-- No gamepass, prompt purchase
 			self:promptGamepassPurchase(player, "ROYALTY")

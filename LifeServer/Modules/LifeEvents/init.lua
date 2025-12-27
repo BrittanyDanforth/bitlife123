@@ -75,7 +75,8 @@ local StageCategories = {
 	-- premium_career_day_dream (ages 5-7) and premium_magic_wish (ages 6-10) use these categories
 	baby        = { "childhood", "milestones", "royalty", "family", "health", "pets", "random", "early_life", "special_moments", "dream", "wish" },
 	toddler     = { "childhood", "milestones", "royalty", "family", "health", "pets", "random", "early_life", "special_moments", "social", "dream", "wish" },
-	child       = { "childhood", "milestones", "random", "career_racing", "royalty", "family", "health", "pets", "hobbies", "social", "seasonal", "early_life", "special_moments", "dream", "wish" },
+	-- CRITICAL FIX #984: Added "assets" to child so gaming PCs, phones, etc. trigger events!
+	child       = { "childhood", "milestones", "random", "career_racing", "royalty", "family", "health", "pets", "hobbies", "social", "seasonal", "early_life", "special_moments", "dream", "wish", "assets" },
 	-- CRITICAL FIX #510: Added career_music for rapper/content creator events!
 	-- Also added career_entertainment for general entertainment careers
 	-- CRITICAL FIX #631: Added career_creative for teen content creators!
@@ -84,11 +85,13 @@ local StageCategories = {
 	-- CRITICAL FIX #WISH-1: Added "romance" category for wish fulfillment events (royalty romance, etc.)
 	-- CRITICAL FIX #DYNAMIC-1: Added "consequence" category for dynamic events based on past actions!
 	-- User complaint: "game so boring and shallow, what you do has no impact"
-	teen        = { "teen", "milestones", "milestone", "relationships", "random", "consequence", "crime", "crime_path", "career_racing", "career_hacker", "career_service", "career_street", "career", "career_music", "career_creative", "career_entertainment", "career_influencer", "career_streaming", "career_gaming", "royalty", "celebrity", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance", "dream" },
-	young_adult = { "adult", "teen", "milestones", "milestone", "relationships", "random", "consequence", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance" },
-	adult       = { "adult", "milestones", "milestone", "relationships", "random", "consequence", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance" },
-	middle_age  = { "adult", "senior", "milestones", "milestone", "relationships", "random", "consequence", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance" },
-	senior      = { "adult", "senior", "milestones", "milestone", "relationships", "random", "consequence", "crime_path", "homeless", "career_racing", "career", "career_music", "career_entertainment", "career_acting", "career_sports", "career_education", "career_science", "assets", "royalty", "celebrity", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance" },
+	-- CRITICAL FIX #983: Added "assets" to teen so sneakers/phones/gaming PCs trigger events!
+	-- CRITICAL FIX #1040: Added "karma", "nostalgia" categories for consequence events!
+	teen        = { "teen", "milestones", "milestone", "relationships", "random", "consequence", "karma", "nostalgia", "crime", "crime_path", "career_racing", "career_hacker", "career_service", "career_street", "career", "career_music", "career_creative", "career_entertainment", "career_influencer", "career_streaming", "career_gaming", "royalty", "celebrity", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance", "dream", "vehicle", "property", "assets" },
+	young_adult = { "adult", "teen", "milestones", "milestone", "relationships", "random", "consequence", "karma", "nostalgia", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance", "vehicle", "property" },
+	adult       = { "adult", "milestones", "milestone", "relationships", "random", "consequence", "karma", "nostalgia", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance", "vehicle", "property" },
+	middle_age  = { "adult", "senior", "milestones", "milestone", "relationships", "random", "consequence", "karma", "nostalgia", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance", "vehicle", "property" },
+	senior      = { "adult", "senior", "milestones", "milestone", "relationships", "random", "consequence", "karma", "nostalgia", "crime_path", "homeless", "career_racing", "career", "career_music", "career_entertainment", "career_acting", "career_sports", "career_education", "career_science", "assets", "royalty", "celebrity", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance", "vehicle", "property" },
 }
 
 function LifeEvents.getLifeStage(age)
@@ -321,6 +324,20 @@ function LifeEvents.init()
 		{ name = "PoliceEvents",   category = "career_police" },      -- Law Enforcement career
 		{ name = "AssetEvents",    category = "assets" },             -- Asset enjoyment events (cars, properties)
 		{ name = "FastFoodEvents", category = "career_service" },     -- Fast food/service industry events
+		
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #932: Vehicle Events - Car-based interactions!
+		-- Racing, breakdowns, traffic incidents, road trips, car customization
+		-- Events depend on vehicle quality for outcomes (better car = better chances)
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "VehicleEvents",  category = "vehicle" },            -- 15+ car-based events
+		
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #933: Property Events - Home-based interactions!
+		-- Break-ins, renovations, parties, neighbors, maintenance
+		-- Events depend on property tier for outcomes
+		-- ══════════════════════════════════════════════════════════════════════════════
+		{ name = "PropertyEvents", category = "property" },           -- 10+ property-based events
 		
 		-- ══════════════════════════════════════════════════════════════════════════════
 		-- MASSIVE CAREER EXPANSION - Job-specific events for all careers
@@ -2106,18 +2123,27 @@ end
 -- This dramatically reduces repetition across different lives
 -- ═══════════════════════════════════════════════════════════════════════════════
 local AgeMilestoneEvents = {
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #970: ENHANCED EARLY GAME for player retention!
+	-- First 10 minutes (ages 0-5) MUST be exciting to hook players!
+	-- Added new viral, superpower, adventure, and talent discovery events
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
 	-- BABY/TODDLER (0-4) - Lots of variety in early years
+	-- CRITICAL FIX: Removed nonsensical events - newborns can't do talents/go viral/laugh attacks
+	-- Age 0 = birth events only (realistic for a newborn)
 	[0] = { "royal_birth_announcement", "baby_first_smile", "baby_first_laugh", "newborn_checkup", "first_photo", "naming_ceremony" },
-	[1] = { "royal_christening", "first_words", "first_steps", "baby_first_food", "baby_teething_pain", "first_birthday", "walk_talk_milestone" },
-	[2] = { "toddler_potty_training", "toddler_tantrum", "toddler_language_explosion", "terrible_twos", "playground_adventure", "toddler_art_masterpiece" },
-	[3] = { "first_public_appearance", "preschool_start", "imaginary_friend", "toddler_fear_dark", "first_pet_encounter", "bedtime_stories", "princess_prince_phase" },
-	[4] = { "toddler_curiosity_incident", "toddler_sibling_dynamics", "toddler_picky_eater", "first_playdate", "learning_colors", "hide_and_seek_champion" },
+	[1] = { "royal_christening", "first_words", "first_steps", "baby_first_food", "baby_teething_pain", "first_birthday", "walk_talk_milestone", "baby_discovered_talent", "baby_laugh_attack" },
+	[2] = { "toddler_potty_training", "toddler_tantrum", "toddler_language_explosion", "terrible_twos", "playground_adventure", "toddler_art_masterpiece", "toddler_big_choice" },
+	[3] = { "first_public_appearance", "preschool_start", "imaginary_friend", "toddler_fear_dark", "first_pet_encounter", "bedtime_stories", "princess_prince_phase", "toddler_big_choice" },
+	-- FIXED: Removed events that don't make sense for this age (child_adventure_call now starts at 5, child_superpower_discovery at 4)
+	[4] = { "toddler_curiosity_incident", "toddler_sibling_dynamics", "toddler_picky_eater", "first_playdate", "learning_colors", "hide_and_seek_champion", "child_superpower_discovery" },
 	
 	-- EARLY CHILDHOOD (5-8) - School and discovery
 	-- CRITICAL FIX #604: Added premium events to age milestones for gamepass exposure
-	[5] = { "first_day_kindergarten", "royal_education_choice", "stage_transition_child", "child_reading_discovery", "lost_first_tooth", "first_homework", "making_friends" },
-	[6] = { "first_day_school", "first_best_friend", "child_show_and_tell", "child_music_lesson", "elementary_adventure", "learning_to_read", "playground_king", "premium_career_day_dream" },
-	[7] = { "child_playground_adventure", "child_sports_tryout", "child_allowance_lesson", "science_project", "first_crush_maybe", "school_play", "summer_reading", "premium_magic_wish" },
+	[5] = { "first_day_kindergarten", "royal_education_choice", "stage_transition_child", "child_reading_discovery", "lost_first_tooth", "first_homework", "making_friends", "child_adventure_call" },
+	[6] = { "first_day_school", "first_best_friend", "child_show_and_tell", "child_music_lesson", "elementary_adventure", "learning_to_read", "playground_king", "premium_career_day_dream", "child_adventure_call" },
+	[7] = { "child_playground_adventure", "child_sports_tryout", "child_allowance_lesson", "science_project", "first_crush_maybe", "school_play", "summer_reading", "premium_magic_wish", "child_superpower_discovery" },
 	[8] = { "learning_to_ride_bike", "child_video_games_discovery", "child_summer_camp", "sleepover_first", "collector_hobby", "tree_climbing", "neighborhood_explorer", "premium_dream_big" },
 	
 	-- LATE CHILDHOOD (9-12) - Growing up

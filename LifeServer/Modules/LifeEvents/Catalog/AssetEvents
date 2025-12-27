@@ -49,8 +49,8 @@ local events = {
 		weight = 7,
 		minAge = 16,
 		maxAge = 80,
-		baseChance = 0.4,
-		cooldown = 3,
+		baseChance = 0.20,  -- CRITICAL FIX: Reduced from 0.4 to prevent spam
+		cooldown = 5,  -- CRITICAL FIX: Increased to space out joyride events
 		blockedByFlags = { in_prison = true },
 		eligibility = function(state)
 			return hasAssetType(state, "Vehicles")
@@ -106,8 +106,8 @@ local events = {
 		weight = 5,
 		minAge = 18,
 		maxAge = 50,
-		baseChance = 0.455,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.18,  -- CRITICAL FIX: Reduced from 0.455 to prevent spam
+		cooldown = 6, -- CRITICAL FIX: Increased to space out racing events
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		-- CRITICAL FIX: Must FIRST check if player owns ANY car, THEN check car value
 		eligibility = function(state)
@@ -188,8 +188,8 @@ local events = {
 		weight = 5,
 		minAge = 18,
 		maxAge = 60,
-		baseChance = 0.45,
-		cooldown = 4,
+		baseChance = 0.15,  -- CRITICAL FIX: Reduced from 0.45 to prevent spam (VehicleEvents has car_show)
+		cooldown = 7,  -- CRITICAL FIX: Increased to space out car show events
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		-- CRITICAL FIX: Must FIRST check if player owns ANY car, THEN check car value
 		eligibility = function(state)
@@ -249,8 +249,8 @@ local events = {
 		weight = 4,
 		minAge = 18,
 		maxAge = 55,
-		baseChance = 0.45,
-		cooldown = 3,
+		baseChance = 0.15,  -- CRITICAL FIX: Reduced from 0.45 to prevent spam
+		cooldown = 6,  -- CRITICAL FIX: Increased to space out high-risk events
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		-- CRITICAL FIX: Must FIRST check if player owns ANY car, THEN check car value
 		eligibility = function(state)
@@ -441,8 +441,8 @@ local events = {
 		weight = 4,
 		minAge = 21,
 		maxAge = 65,
-		baseChance = 0.455,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.20,  -- CRITICAL FIX: Reduced from 0.455 to prevent spam
+		cooldown = 6, -- CRITICAL FIX: Increased to space out exotic car events
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		-- CRITICAL FIX: Must FIRST check if player owns ANY car, THEN check car value
 		eligibility = function(state)
@@ -2748,6 +2748,272 @@ local events = {
 						end
 					end
 				end,
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #982: SNEAKER/SHOE EVENTS - Make shoes actually matter!
+	-- These ONLY trigger if player owns sneakers (stylish or sneakerhead flag)
+	-- One-time celebration already handled in handleAssetPurchase
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "sneaker_compliment",
+		emoji = "👟",
+		title = "Nice Kicks!",
+		text = "Someone stops you to compliment your sneakers!",
+		question = "How do you respond?",
+		category = "assets",
+		weight = 6,
+		minAge = 10,
+		maxAge = 50,
+		baseChance = 0.25,  -- Common for sneaker owners
+		cooldown = 4,
+		blockedByFlags = { in_prison = true },
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Only trigger if player has sneakers
+			if not (flags.stylish or flags.sneakerhead or flags.got_fresh_kicks) then
+				return false, "No sneakers"
+			end
+			return true
+		end,
+		oneTime = true, -- Only show once per playthrough!
+		
+		choices = {
+			{
+				index = 1,
+				text = "Thanks! Just got them!",
+				effects = { Happiness = 8, Looks = 2 },
+				feedText = "👟 You flex your new kicks proudly! They're impressed!",
+			},
+			{
+				index = 2,
+				text = "You know good style when you see it!",
+				effects = { Happiness = 6 },
+				feedText = "👟 They laugh and you have a brief chat about sneaker culture.",
+			},
+			{
+				index = 3,
+				text = "Awkwardly say thanks and walk away",
+				effects = { Happiness = 3 },
+				feedText = "👟 Compliments are nice but socializing is hard sometimes.",
+			},
+		},
+	},
+	
+	{
+		id = "gaming_pc_stream",
+		emoji = "🎮",
+		title = "Stream Setup Ready!",
+		text = "Your gaming PC is powerful enough to stream! People keep asking if you stream games.",
+		question = "Do you try streaming?",
+		category = "assets",
+		weight = 5,
+		minAge = 13,
+		maxAge = 45,
+		baseChance = 0.30,
+		cooldown = 5,
+		blockedByFlags = { in_prison = true },
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			if not (flags.gamer or flags.has_computer or flags.gaming_setup) then
+				return false, "No gaming PC"
+			end
+			return true
+		end,
+		oneTime = true,
+		
+		choices = {
+			{
+				index = 1,
+				text = "Start streaming! Let's go viral!",
+				effects = {},
+				feedText = "You set up streaming software...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.2 then
+						state.Fame = (state.Fame or 0) + 5
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(100, 500)
+						state.Flags = state.Flags or {}
+						state.Flags.streamer = true
+						state.Flags.content_creator = true
+						if state.AddFeed then
+							state:AddFeed("🎮 Your stream blew up! You've got followers! People love watching you play!")
+						end
+					elseif roll < 0.6 then
+						state.Flags = state.Flags or {}
+						state.Flags.streamer = true
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.AddFeed then
+							state:AddFeed("🎮 Got a few viewers! Streaming is fun! Building a small community.")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", 2) end
+						if state.AddFeed then
+							state:AddFeed("🎮 Streamed to nobody for 3 hours. But it was still kinda fun!")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Nah, just want to game for fun",
+				effects = { Happiness = 5 },
+				feedText = "🎮 Gaming is better without an audience. Just vibing.",
+			},
+		},
+	},
+	
+	{
+		id = "piano_discovered",
+		emoji = "🎹",
+		title = "Hidden Musical Talent!",
+		text = "You've been practicing piano. Someone overheard you playing!",
+		question = "What happens next?",
+		category = "assets",
+		weight = 5,
+		minAge = 18,
+		maxAge = 75,
+		baseChance = 0.30,
+		cooldown = 5,
+		blockedByFlags = { in_prison = true },
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			if not (flags.piano_owner or flags.musician or flags.plays_instrument) then
+				return false, "No piano"
+			end
+			return true
+		end,
+		oneTime = true,
+		
+		choices = {
+			{
+				index = 1,
+				text = "Perform for them! Show off!",
+				effects = {},
+				feedText = "You play your heart out...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.4 then
+						state.Fame = (state.Fame or 0) + 3
+						state.Flags = state.Flags or {}
+						state.Flags.talented_pianist = true
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
+						if state.AddFeed then
+							state:AddFeed("🎹 They were AMAZED! Word spread about your piano skills!")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.AddFeed then
+							state:AddFeed("🎹 They enjoyed it! Music brings people together.")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "Stop playing - I'm shy about it",
+				effects = { Happiness = 2 },
+				feedText = "🎹 You stopped playing. But they said you sounded great anyway!",
+			},
+		},
+	},
+	
+	{
+		id = "jewelry_attention",
+		emoji = "💎",
+		title = "Your Bling Gets Noticed!",
+		text = "Your jewelry is catching eyes everywhere you go!",
+		question = "How do you feel about the attention?",
+		category = "assets",
+		weight = 5,
+		minAge = 16,
+		maxAge = 80,
+		baseChance = 0.25,
+		cooldown = 5,
+		blockedByFlags = { in_prison = true },
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			if not (flags.bling_owner or flags.jewelry_owner or flags.diamond_owner or flags.watch_collector) then
+				return false, "No jewelry"
+			end
+			return true
+		end,
+		oneTime = true,
+		
+		choices = {
+			{
+				index = 1,
+				text = "Love it! I dressed to impress!",
+				effects = { Happiness = 10, Looks = 3 },
+				feedText = "💎 You feel like a million bucks! The attention is validating!",
+			},
+			{
+				index = 2,
+				text = "A bit uncomfortable honestly",
+				effects = { Happiness = 3 },
+				feedText = "💎 Nice things, but you're not about the attention.",
+			},
+			{
+				index = 3,
+				text = "Starting to worry about theft...",
+				effects = { Happiness = -3, Smarts = 3 },
+				feedText = "💎 Maybe showing off expensive jewelry isn't the smartest...",
+				setFlags = { paranoid_about_theft = true },
+			},
+		},
+	},
+	
+	{
+		id = "designer_bag_flex",
+		emoji = "👜",
+		title = "Fashion Statement!",
+		text = "Your designer bag is turning heads! A fashion blogger wants a photo!",
+		question = "Do you pose with your bag?",
+		category = "assets",
+		weight = 5,
+		minAge = 16,
+		maxAge = 60,
+		baseChance = 0.25,
+		cooldown = 5,
+		blockedByFlags = { in_prison = true },
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			if not (flags.fashionista or flags.designer_clothes) then
+				return false, "No designer bag"
+			end
+			return true
+		end,
+		oneTime = true,
+		
+		choices = {
+			{
+				index = 1,
+				text = "Yes! Work it!",
+				effects = {},
+				feedText = "📸 You pose like a pro...",
+				onResolve = function(state)
+					local roll = RANDOM:NextNumber()
+					if roll < 0.3 then
+						state.Fame = (state.Fame or 0) + 5
+						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
+						if state.AddFeed then
+							state:AddFeed("👜 The photo went viral! You're a fashion icon now! People asking where you shop!")
+						end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.AddFeed then
+							state:AddFeed("👜 Got featured on a fashion blog! Looking fabulous!")
+						end
+					end
+				end,
+			},
+			{
+				index = 2,
+				text = "No thanks, I'm private",
+				effects = { Happiness = 3 },
+				feedText = "👜 They understood. Your style speaks for itself anyway.",
 			},
 		},
 	},

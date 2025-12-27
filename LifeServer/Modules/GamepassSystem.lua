@@ -484,14 +484,57 @@ GamepassSystem.Products = {
 		reward = 1000000,
 	},
 	
-	-- Stat boosts
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #920: STAT_BOOST Developer Product
+	-- Boosts all stats when player is struggling
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	STAT_BOOST = {
-		id = 0,
-		name = "Stat Boost",
+		id = 3489760202,  -- REAL PRODUCT ID from user
+		name = "Miracle Boost! 💪",
 		emoji = "📈",
-		description = "+20 to all stats",
+		description = "Instantly boost ALL stats by +25! Health, Happiness, Smarts, Looks!",
 		price = 50,
 		type = "consumable",
+		boostAmount = 25,  -- How much to boost each stat
+	},
+	
+	-- CRITICAL FIX #900: Get Out of Jail Developer Product
+	GET_OUT_OF_JAIL = {
+		id = 3489751054,  -- REAL PRODUCT ID
+		name = "Get Out of Jail FREE!",
+		emoji = "🔓",
+		description = "Instantly released from prison! All charges dropped!",
+		price = 49,
+		type = "consumable",
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #921: EXTRA_LIFE Developer Product - AMAZING IMPLEMENTATION!
+	-- When you die, you get a SECOND CHANCE at life!
+	-- - Your character is "miraculously saved" and revived
+	-- - Health fully restored to 100
+	-- - You keep ALL your assets, money, relationships
+	-- - Age is rolled back 5-10 years (you were in a coma/recovery)
+	-- - You get a "Survivor" badge and unique life story
+	-- - Special "Near Death Experience" events unlock
+	-- - Your character gains wisdom (+10 Smarts)
+	-- - Creates a dramatic narrative moment!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	EXTRA_LIFE = {
+		id = 3489759791,  -- REAL PRODUCT ID from user
+		name = "Second Chance at Life! 💖",
+		emoji = "💖",
+		description = "Miraculously survive death! Keep everything, revive younger & wiser!",
+		price = 99,
+		type = "consumable",
+		-- How it works:
+		-- 1. Death is prevented
+		-- 2. Age rolled back 5-10 years (recovery/coma time)
+		-- 3. Health restored to 100%
+		-- 4. Keep all money, assets, relationships
+		-- 5. Gain "survivor" flag for unique events
+		-- 6. +10 Smarts (near-death wisdom)
+		-- 7. Special narrative message about survival
 	},
 }
 
@@ -817,12 +860,63 @@ function GamepassSystem:promptGamepass(player, gamepassKey, forceBypassCooldown)
 	return true, nil, nil
 end
 
-function GamepassSystem:promptProduct(player, productKey)
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #935: Enhanced product prompting with cooldowns and non-annoying behavior
+-- Products now have cooldowns just like gamepasses to prevent spam
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- Cooldowns for products (in seconds)
+GamepassSystem.productCooldowns = {
+	GET_OUT_OF_JAIL = 120,   -- 2 minutes (they're in jail, they'll see it)
+	EXTRA_LIFE = 300,        -- 5 minutes (only prompt on death-adjacent events)
+	STAT_BOOST = 180,        -- 3 minutes (prompt when stats are low)
+	TIME_5_YEARS = 300,      -- 5 minutes
+	TIME_10_YEARS = 300,
+	TIME_20_YEARS = 300,
+}
+
+-- Track when products were last prompted
+GamepassSystem.lastProductPrompt = {}
+
+function GamepassSystem:canPromptProduct(player, productKey)
+	local playerId = player.UserId
+	local cacheKey = playerId .. "_product_" .. productKey
+	
+	local lastPrompt = self.lastProductPrompt[cacheKey]
+	local cooldown = self.productCooldowns[productKey] or 180 -- Default 3 minute cooldown
+	
+	if lastPrompt and (os.time() - lastPrompt) < cooldown then
+		local remaining = cooldown - (os.time() - lastPrompt)
+		return false, "cooldown", remaining
+	end
+	
+	return true, nil, nil
+end
+
+function GamepassSystem:recordProductPrompt(player, productKey)
+	local playerId = player.UserId
+	local cacheKey = playerId .. "_product_" .. productKey
+	self.lastProductPrompt[cacheKey] = os.time()
+end
+
+function GamepassSystem:promptProduct(player, productKey, forceBypassCooldown)
 	local product = self.Products[productKey]
 	if not product or product.id == 0 then
 		warn("[GamepassSystem] Cannot prompt purchase - invalid ID for:", productKey)
-		return false
+		return false, "invalid_product"
 	end
+	
+	-- Check cooldown unless bypassing
+	if not forceBypassCooldown then
+		local canPrompt, reason, remaining = self:canPromptProduct(player, productKey)
+		if not canPrompt then
+			print("[GamepassSystem] Product prompt cooldown active for", productKey, "- wait", remaining, "seconds")
+			return false, "cooldown"
+		end
+	end
+	
+	-- Record that we prompted this product
+	self:recordProductPrompt(player, productKey)
 	
 	local success, err = pcall(function()
 		MarketplaceService:PromptProductPurchase(player, product.id)
@@ -830,9 +924,44 @@ function GamepassSystem:promptProduct(player, productKey)
 	
 	if not success then
 		warn("[GamepassSystem] Failed to prompt purchase:", err)
+		return false, "roblox_error"
 	end
 	
-	return success
+	print("[GamepassSystem] ✅ Successfully prompted product", productKey, "for", player.Name)
+	return true, nil
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #936: Get product info for CardPopup display
+-- Returns info that can be shown in a nice UI card before prompting
+-- ═══════════════════════════════════════════════════════════════════════════════
+function GamepassSystem:getProductInfo(productKey)
+	local product = self.Products[productKey]
+	if not product then return nil end
+	
+	return {
+		key = productKey,
+		id = product.id,
+		name = product.name,
+		emoji = product.emoji,
+		description = product.description,
+		price = product.price,
+		type = product.type,
+	}
+end
+
+function GamepassSystem:getGamepassInfo(gamepassKey)
+	local gamepass = self.Gamepasses[gamepassKey]
+	if not gamepass then return nil end
+	
+	return {
+		key = gamepassKey,
+		id = gamepass.id,
+		name = gamepass.name,
+		emoji = gamepass.emoji,
+		description = gamepass.description,
+		price = gamepass.price,
+	}
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
@@ -1373,6 +1502,18 @@ GamepassSystem.productIdToYears = {
 	[3477466778] = -1,  -- Baby (restart)
 }
 
+-- CRITICAL FIX #904: Special product IDs that need custom handling
+GamepassSystem.specialProductIds = {
+	[3489751054] = "GET_OUT_OF_JAIL",  -- Instant jail release
+	[3489759791] = "EXTRA_LIFE",       -- Miraculous survival on death
+	[3489760202] = "STAT_BOOST",       -- Boost all stats +25
+}
+
+-- Pending actions (player -> true)
+GamepassSystem.pendingJailRelease = {}
+GamepassSystem.pendingExtraLife = {}  -- Player has an extra life ready to use
+GamepassSystem.pendingStatBoost = {}
+
 function GamepassSystem:getProductKeyForYears(years)
 	if years == 5 then return "TIME_5_YEARS"
 	elseif years == 10 then return "TIME_10_YEARS"
@@ -1393,7 +1534,7 @@ end
 
 -- Called when a developer product is purchased
 -- Returns: Enum.ProductPurchaseDecision
-function GamepassSystem:processProductReceipt(receiptInfo, getPlayerState, executeTimeMachine)
+function GamepassSystem:processProductReceipt(receiptInfo, getPlayerState, executeTimeMachine, executeJailRelease, executeStatBoost, executeExtraLife)
 	local player = Players:GetPlayerByUserId(receiptInfo.PlayerId)
 	if not player then
 		-- Player left, but purchase succeeded - we should still grant it
@@ -1404,11 +1545,88 @@ function GamepassSystem:processProductReceipt(receiptInfo, getPlayerState, execu
 	local productId = receiptInfo.ProductId
 	local years = self.productIdToYears[productId]
 	
+	-- CRITICAL FIX #905: Check for special products (GET_OUT_OF_JAIL, EXTRA_LIFE, STAT_BOOST)
+	local specialProduct = self.specialProductIds[productId]
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- GET OUT OF JAIL - Instant prison release
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if specialProduct == "GET_OUT_OF_JAIL" then
+		print("[GamepassSystem] Processing GET OUT OF JAIL product for:", player.Name)
+		
+		if executeJailRelease then
+			local success, result = pcall(function()
+				return executeJailRelease(player)
+			end)
+			
+			if success and result and result.success then
+				print("[GamepassSystem] GET OUT OF JAIL successful for player:", player.Name)
+				return Enum.ProductPurchaseDecision.PurchaseGranted
+			else
+				warn("[GamepassSystem] GET OUT OF JAIL failed:", result and result.message or "Unknown error")
+				self.pendingJailRelease[player.UserId] = true
+				return Enum.ProductPurchaseDecision.PurchaseGranted
+			end
+		else
+			self.pendingJailRelease[player.UserId] = true
+			return Enum.ProductPurchaseDecision.PurchaseGranted
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- STAT_BOOST - Instantly boost all stats by +25!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if specialProduct == "STAT_BOOST" then
+		print("[GamepassSystem] Processing STAT_BOOST product for:", player.Name)
+		
+		if executeStatBoost then
+			local success, result = pcall(function()
+				return executeStatBoost(player)
+			end)
+			
+			if success and result and result.success then
+				print("[GamepassSystem] STAT_BOOST successful for player:", player.Name)
+				return Enum.ProductPurchaseDecision.PurchaseGranted
+			else
+				warn("[GamepassSystem] STAT_BOOST failed:", result and result.message or "Unknown error")
+				self.pendingStatBoost[player.UserId] = true
+				return Enum.ProductPurchaseDecision.PurchaseGranted
+			end
+		else
+			self.pendingStatBoost[player.UserId] = true
+			return Enum.ProductPurchaseDecision.PurchaseGranted
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- EXTRA_LIFE - The AMAZING second chance at life!
+	-- This is stored as a "pending" extra life that activates on death
+	-- When player dies, instead of dying, they get revived!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if specialProduct == "EXTRA_LIFE" then
+		print("[GamepassSystem] Processing EXTRA_LIFE product for:", player.Name)
+		
+		-- Extra life is stored and used when player would die
+		-- Count how many extra lives they have (can stack!)
+		local currentLives = self.pendingExtraLife[player.UserId] or 0
+		self.pendingExtraLife[player.UserId] = currentLives + 1
+		
+		print("[GamepassSystem] Player now has", self.pendingExtraLife[player.UserId], "extra lives!")
+		
+		-- Notify the player they have an extra life ready
+		if executeExtraLife then
+			pcall(function()
+				executeExtraLife(player, "purchased") -- Just notify, don't use yet
+			end)
+		end
+		
+		return Enum.ProductPurchaseDecision.PurchaseGranted
+	end
+	
 	if years then
 		-- This is a time machine product
 		print("[GamepassSystem] Processing Time Machine product:", productId, "years:", years)
 		
-		-- Execute the time machine action
 		if executeTimeMachine then
 			local success, result = pcall(function()
 				return executeTimeMachine(player, years)
@@ -1419,12 +1637,10 @@ function GamepassSystem:processProductReceipt(receiptInfo, getPlayerState, execu
 				return Enum.ProductPurchaseDecision.PurchaseGranted
 			else
 				warn("[GamepassSystem] Time Machine failed:", result and result.message or "Unknown error")
-				-- Still grant since payment was taken
 				return Enum.ProductPurchaseDecision.PurchaseGranted
 			end
 		end
 		
-		-- Mark as pending for this player so handleTimeMachine can use it
 		self.pendingTimeMachineActions[player.UserId] = years
 		return Enum.ProductPurchaseDecision.PurchaseGranted
 	end
@@ -1432,6 +1648,59 @@ function GamepassSystem:processProductReceipt(receiptInfo, getPlayerState, execu
 	-- Unknown product
 	warn("[GamepassSystem] Unknown product ID:", productId)
 	return Enum.ProductPurchaseDecision.NotProcessedYet
+end
+
+-- CRITICAL FIX #906: Check if player has a pending jail release
+function GamepassSystem:hasPendingJailRelease(player)
+	return self.pendingJailRelease[player.UserId] == true
+end
+
+function GamepassSystem:clearPendingJailRelease(player)
+	self.pendingJailRelease[player.UserId] = nil
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- EXTRA_LIFE SYSTEM - The amazing second chance!
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- Check if player has an extra life to use
+function GamepassSystem:hasExtraLife(player)
+	return (self.pendingExtraLife[player.UserId] or 0) > 0
+end
+
+-- Get how many extra lives player has
+function GamepassSystem:getExtraLives(player)
+	return self.pendingExtraLife[player.UserId] or 0
+end
+
+-- Use one extra life (called when player would die)
+function GamepassSystem:useExtraLife(player)
+	local lives = self.pendingExtraLife[player.UserId] or 0
+	if lives > 0 then
+		self.pendingExtraLife[player.UserId] = lives - 1
+		print("[GamepassSystem] Extra life used! Remaining:", lives - 1)
+		return true
+	end
+	return false
+end
+
+-- Grant an extra life (from purchase)
+function GamepassSystem:grantExtraLife(player)
+	local lives = self.pendingExtraLife[player.UserId] or 0
+	self.pendingExtraLife[player.UserId] = lives + 1
+	return lives + 1
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- STAT_BOOST SYSTEM
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+function GamepassSystem:hasPendingStatBoost(player)
+	return self.pendingStatBoost[player.UserId] == true
+end
+
+function GamepassSystem:clearPendingStatBoost(player)
+	self.pendingStatBoost[player.UserId] = nil
 end
 
 -- Check if player has a pending time machine action from product purchase

@@ -28,22 +28,26 @@ Relationships.events = {
 				effects = { Happiness = 8 }, 
 				setFlags = { has_partner = true, dating = true }, 
 				feedText = "You matched with someone great!",
-				-- CRITICAL FIX: Actually create the partner object!
+				-- CRITICAL FIX #2001: Partner gender based on PLAYER gender!
+				-- BUG: Was generating random gender partners regardless of player's gender
+				-- FIX: Default to opposite gender (straight dating)
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
-					local isMale = math.random() > 0.5
-					local names = isMale 
-						and {"James", "Michael", "David", "Chris", "Ryan", "Alex", "Matt", "Jake", "Tyler", "Jordan"}
-						or {"Sarah", "Jessica", "Emily", "Ashley", "Amanda", "Samantha", "Lauren", "Megan", "Rachel", "Nicole"}
+					-- CRITICAL FIX: Partner should be OPPOSITE gender by default!
+					local playerGender = state.Gender or "male"
+					local partnerIsMale = (playerGender == "female") -- If player is female, partner is male
+					local names = partnerIsMale 
+						and {"James", "Michael", "David", "Chris", "Ryan", "Alex", "Matt", "Jake", "Tyler", "Jordan", "Liam", "Noah", "Ethan", "Mason", "Lucas"}
+						or {"Sarah", "Jessica", "Emily", "Ashley", "Amanda", "Samantha", "Lauren", "Megan", "Rachel", "Nicole", "Sophia", "Olivia", "Emma", "Ava", "Mia"}
 					local partnerName = names[math.random(1, #names)]
 					state.Relationships.partner = {
 						id = "partner",
 						name = partnerName,
 						type = "romantic",
-						role = isMale and "Boyfriend" or "Girlfriend",
+						role = partnerIsMale and "Boyfriend" or "Girlfriend",
 						relationship = 65,
 						age = (state.Age or 25) + math.random(-5, 5),
-						gender = isMale and "male" or "female",
+						gender = partnerIsMale and "male" or "female",
 						alive = true,
 						metThrough = "dating_app",
 					}
@@ -74,22 +78,24 @@ Relationships.events = {
 				effects = { Happiness = 10, Looks = 2 }, 
 				setFlags = { has_partner = true, dating = true, met_cute = true }, 
 				feedText = "You made the first move!",
-				-- CRITICAL FIX: Actually create the partner object!
+				-- CRITICAL FIX #2002: Partner gender based on PLAYER gender!
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
-					local isMale = math.random() > 0.5
-					local names = isMale 
-						and {"Daniel", "Marcus", "Andrew", "Joshua", "Brandon", "Kevin", "Justin", "Eric", "Sean", "Derek"}
-						or {"Michelle", "Stephanie", "Christina", "Jennifer", "Elizabeth", "Heather", "Amber", "Melissa", "Rebecca", "Tiffany"}
+					-- CRITICAL FIX: Partner should be OPPOSITE gender by default!
+					local playerGender = state.Gender or "male"
+					local partnerIsMale = (playerGender == "female") -- If player is female, partner is male
+					local names = partnerIsMale 
+						and {"Daniel", "Marcus", "Andrew", "Joshua", "Brandon", "Kevin", "Justin", "Eric", "Sean", "Derek", "William", "Benjamin", "Henry", "Alexander", "Sebastian"}
+						or {"Michelle", "Stephanie", "Christina", "Jennifer", "Elizabeth", "Heather", "Amber", "Melissa", "Rebecca", "Tiffany", "Victoria", "Natalie", "Hannah", "Grace", "Lily"}
 					local partnerName = names[math.random(1, #names)]
 					state.Relationships.partner = {
 						id = "partner",
 						name = partnerName,
 						type = "romantic",
-						role = isMale and "Boyfriend" or "Girlfriend",
+						role = partnerIsMale and "Boyfriend" or "Girlfriend",
 						relationship = 75, -- Higher initial attraction for love at first sight!
 						age = (state.Age or 25) + math.random(-5, 5),
-						gender = isMale and "male" or "female",
+						gender = partnerIsMale and "male" or "female",
 						alive = true,
 						metThrough = "chance_encounter",
 						metCute = true,
@@ -842,10 +848,11 @@ Relationships.events = {
 						state.Flags.has_partner = true
 						state.Flags.dating = true
 						state.Flags.great_first_date = true
-						-- CRITICAL FIX: Actually create the partner object!
+						-- CRITICAL FIX #2003: Partner gender based on PLAYER gender!
 						state.Relationships = state.Relationships or {}
-						local isMale = math.random() > 0.5
-						local names = isMale 
+						local playerGender = state.Gender or "male"
+						local partnerIsMale = (playerGender == "female")
+						local names = partnerIsMale 
 							and {"Liam", "Noah", "Oliver", "Elijah", "Lucas", "Mason", "Logan", "Henry", "Jack", "Owen"}
 							or {"Sophia", "Olivia", "Emma", "Ava", "Isabella", "Mia", "Luna", "Harper", "Ella", "Evelyn"}
 						local partnerName = names[math.random(1, #names)]
@@ -853,9 +860,10 @@ Relationships.events = {
 							id = "partner",
 							name = partnerName,
 							type = "romantic",
-							role = isMale and "Boyfriend" or "Girlfriend",
+							role = partnerIsMale and "Boyfriend" or "Girlfriend",
 							relationship = 70,
 							age = (state.Age or 25) + math.random(-5, 5),
+							gender = partnerIsMale and "male" or "female",
 						}
 						state:AddFeed("☕ Amazing chemistry with " .. partnerName .. "! Best first date ever! You're smitten.")
 					elseif roll < successChance + 0.30 then
@@ -882,10 +890,11 @@ Relationships.events = {
 						state.Flags = state.Flags or {}
 						state.Flags.has_partner = true
 						state.Flags.dating = true
-						-- CRITICAL FIX: Actually create the partner object!
+						-- CRITICAL FIX #2004: Partner gender based on PLAYER gender!
 						state.Relationships = state.Relationships or {}
-						local isMale = math.random() > 0.5
-						local names = isMale 
+						local playerGender = state.Gender or "male"
+						local partnerIsMale = (playerGender == "female")
+						local names = partnerIsMale 
 							and {"Ethan", "Aiden", "Jackson", "Sebastian", "Mateo", "Leo", "Asher", "Benjamin", "Ezra", "Miles"}
 							or {"Chloe", "Penelope", "Layla", "Riley", "Zoey", "Nora", "Lily", "Eleanor", "Hannah", "Lillian"}
 						local partnerName = names[math.random(1, #names)]
@@ -893,9 +902,10 @@ Relationships.events = {
 							id = "partner",
 							name = partnerName,
 							type = "romantic",
-							role = isMale and "Boyfriend" or "Girlfriend",
+							role = partnerIsMale and "Boyfriend" or "Girlfriend",
 							relationship = 60,
 							age = (state.Age or 25) + math.random(-5, 5),
+							gender = partnerIsMale and "male" or "female",
 						}
 						state:AddFeed("☕ " .. partnerName .. " found you intriguing! Chemistry is building.")
 					elseif roll < successChance + 0.35 then
@@ -918,10 +928,11 @@ Relationships.events = {
 						state.Flags = state.Flags or {}
 						state.Flags.has_partner = true
 						state.Flags.dating = true
-						-- CRITICAL FIX: Actually create the partner object!
+						-- CRITICAL FIX #2005: Partner gender based on PLAYER gender!
 						state.Relationships = state.Relationships or {}
-						local isMale = math.random() > 0.5
-						local names = isMale 
+						local playerGender = state.Gender or "male"
+						local partnerIsMale = (playerGender == "female")
+						local names = partnerIsMale 
 							and {"Carter", "Jayden", "Luke", "Dylan", "Grayson", "Isaac", "Nathan", "Caleb", "Ryan", "Adrian"}
 							or {"Addison", "Aubrey", "Savannah", "Brooklyn", "Leah", "Stella", "Natalie", "Zoe", "Hazel", "Violet"}
 						local partnerName = names[math.random(1, #names)]
@@ -929,9 +940,10 @@ Relationships.events = {
 							id = "partner",
 							name = partnerName,
 							type = "romantic",
-							role = isMale and "Boyfriend" or "Girlfriend",
+							role = partnerIsMale and "Boyfriend" or "Girlfriend",
 							relationship = 65,
 							age = (state.Age or 25) + math.random(-5, 5),
+							gender = partnerIsMale and "male" or "female",
 						}
 						state:AddFeed("☕ " .. partnerName .. " found your nervousness endearing! How sweet!")
 					elseif roll < 0.50 then
@@ -966,11 +978,12 @@ Relationships.events = {
 				effects = { Happiness = 5 }, 
 				setFlags = { back_with_ex = true, has_partner = true, dating = true }, 
 				feedText = "You're giving it another shot...",
-				-- CRITICAL FIX: Actually create the partner object!
+				-- CRITICAL FIX #2006: Partner gender based on PLAYER gender!
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
-					local isMale = math.random() > 0.5
-					local names = isMale 
+					local playerGender = state.Gender or "male"
+					local partnerIsMale = (playerGender == "female")
+					local names = partnerIsMale 
 						and {"Jason", "Kyle", "Brian", "Steven", "Patrick", "Nathan", "Cody", "Trevor", "Austin", "Zach"}
 						or {"Katie", "Brittany", "Amy", "Kelly", "Angela", "Danielle", "Holly", "Lindsey", "Brooke", "Whitney"}
 					local partnerName = names[math.random(1, #names)]
@@ -978,10 +991,10 @@ Relationships.events = {
 						id = "partner",
 						name = partnerName,
 						type = "romantic",
-						role = isMale and "Boyfriend" or "Girlfriend",
+						role = partnerIsMale and "Boyfriend" or "Girlfriend",
 						relationship = 55, -- Lower initial - trust needs rebuilding
 						age = (state.Age or 25) + math.random(-3, 3),
-						gender = isMale and "male" or "female",
+						gender = partnerIsMale and "male" or "female",
 						alive = true,
 						metThrough = "rekindled_ex",
 						isEx = true,
@@ -1990,11 +2003,12 @@ Relationships.events = {
 				effects = { Happiness = 10 }, 
 				setFlags = { has_partner = true, rekindled_love = true, dating = true }, 
 				feedText = "Second time's the charm?",
-				-- CRITICAL FIX: Actually create the partner object!
+				-- CRITICAL FIX #2007: Partner gender based on PLAYER gender!
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
-					local isMale = math.random() > 0.5
-					local names = isMale 
+					local playerGender = state.Gender or "male"
+					local partnerIsMale = (playerGender == "female")
+					local names = partnerIsMale 
 						and {"Richard", "Thomas", "Gregory", "Peter", "Jeffrey", "Mark", "Timothy", "Douglas", "Scott", "Gary"}
 						or {"Patricia", "Linda", "Barbara", "Susan", "Margaret", "Karen", "Carol", "Nancy", "Betty", "Sandra"}
 					local partnerName = names[math.random(1, #names)]

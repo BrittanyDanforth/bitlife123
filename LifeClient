@@ -22,31 +22,45 @@ local OccupationScreen, AssetsScreen, RelationshipsScreen, ActivitiesScreen, Sto
 local MinigamesModule
 
 if ScreensFolder then
-	-- Load modules in parallel using coroutines for faster startup
+	print("[LifeClient] 📂 Found ScreensFolder, loading screen modules...")
+	
+	-- Load modules with detailed error logging
 	local function safeRequire(name)
+		print("[LifeClient] 🔄 Loading screen module:", name)
 		local child = ScreensFolder:FindFirstChild(name)
 		if child then
+			print("[LifeClient] ✓ Found module:", name)
 			local s, r = pcall(require, child)
-			if not s then
-				warn("[LifeClient] ❌ Failed to require", name, ":", r)
+			if s then
+				if r then
+					print("[LifeClient] ✅ Successfully required:", name)
+					return r
+				else
+					warn("[LifeClient] ❌ Module", name, "returned nil from require")
+				end
+			else
+				warn("[LifeClient] ❌ Failed to require", name, ":", tostring(r))
 			end
-			return s and r or nil
 		else
 			-- Don't warn for optional modules like MafiaScreen
 			if name ~= "MafiaScreen" then
-				warn("[LifeClient] ❌ Module not found:", name)
+				warn("[LifeClient] ❌ Module not found in Screens folder:", name)
 			end
 		end
 		return nil
 	end
 
-	-- Fast parallel loading - no WaitForChild delays
+	-- Sequential loading with logging (for debugging)
 	OccupationScreen    = safeRequire("OccupationScreen")
 	AssetsScreen        = safeRequire("AssetsScreen")
 	RelationshipsScreen = safeRequire("RelationshipsScreen")
 	ActivitiesScreen    = safeRequire("ActivitiesScreen")
 	StoryPathsScreen    = safeRequire("StoryPathsScreen")
 	MafiaScreen         = safeRequire("MafiaScreen")
+	
+	print("[LifeClient] 📂 Screen modules loaded. AssetsScreen is:", AssetsScreen and "OK" or "NIL")
+else
+	warn("[LifeClient] ❌ ScreensFolder not found! Screens will not work!")
 end
 
 -- Minigames module (directly in ReplicatedStorage) - wait for it!
@@ -540,12 +554,23 @@ local C = {
 	Bg = Color3.fromRGB(249, 250, 251), -- Same as Gray50
 }
 
+-- CRITICAL FIX #951: Fonts must ALWAYS have valid values to prevent nil errors
+-- "Unable to assign property Font. EnumItem, number, or string expected, got nil"
 local F = {
-	Title  = Enum.Font.GothamBold,
-	Body   = Enum.Font.Gotham,
-	Medium = Enum.Font.GothamMedium,
-	Button = Enum.Font.GothamBold,
+	Title  = Enum.Font.GothamBold or Enum.Font.SourceSansBold,
+	Body   = Enum.Font.Gotham or Enum.Font.SourceSans,
+	Medium = Enum.Font.GothamMedium or Enum.Font.SourceSans,
+	Button = Enum.Font.GothamBold or Enum.Font.SourceSansBold,
 }
+
+-- Safety: Ensure all font values are valid Enum.Font
+local DEFAULT_FONT = Enum.Font.SourceSans
+for key, value in pairs(F) do
+	if type(value) ~= "userdata" then
+		warn("[LifeClient] Font", key, "was invalid, using default")
+		F[key] = DEFAULT_FONT
+	end
+end
 
 local function ensureSharedUITheme()
 	local sharedUI = safeRequireRS("UIComponents")
@@ -583,10 +608,19 @@ local function ensureSharedUITheme()
 		end
 	end
 
+	-- CRITICAL FIX #951: Ensure fonts are ALWAYS valid
 	sharedUI.Fonts = sharedUI.Fonts or {}
 	for name, font in pairs(F) do
-		if sharedUI.Fonts[name] == nil then
+		if sharedUI.Fonts[name] == nil or type(sharedUI.Fonts[name]) ~= "userdata" then
 			sharedUI.Fonts[name] = font
+		end
+	end
+	
+	-- Extra safety: verify all fonts are valid Enum.Font values
+	local DEFAULT_FONT = Enum.Font.SourceSans
+	for name, font in pairs(sharedUI.Fonts) do
+		if type(font) ~= "userdata" then
+			sharedUI.Fonts[name] = DEFAULT_FONT
 		end
 	end
 
@@ -2650,16 +2684,36 @@ local function createNavButton(info, parent, order)
 			return
 		end
 		
-		if info.screen == "occupation" and ScreenInstances.occupation then
-			ScreenInstances.occupation:show()
-		elseif info.screen == "assets" and ScreenInstances.assets then
-			ScreenInstances.assets:show()
-		elseif info.screen == "relationships" and ScreenInstances.relationships then
-			ScreenInstances.relationships:show()
-		elseif info.screen == "activities" and ScreenInstances.activities then
-			ScreenInstances.activities:show()
-		elseif info.screen == "storypaths" and ScreenInstances.storypaths then
-			ScreenInstances.storypaths:show()
+		if info.screen == "occupation" then
+			if ScreenInstances.occupation then
+				ScreenInstances.occupation:show()
+			else
+				warn("[LifeClient] ❌ OccupationScreen not available!")
+			end
+		elseif info.screen == "assets" then
+			if ScreenInstances.assets then
+				ScreenInstances.assets:show()
+			else
+				warn("[LifeClient] ❌ AssetsScreen not available - failed to initialize!")
+			end
+		elseif info.screen == "relationships" then
+			if ScreenInstances.relationships then
+				ScreenInstances.relationships:show()
+			else
+				warn("[LifeClient] ❌ RelationshipsScreen not available!")
+			end
+		elseif info.screen == "activities" then
+			if ScreenInstances.activities then
+				ScreenInstances.activities:show()
+			else
+				warn("[LifeClient] ❌ ActivitiesScreen not available!")
+			end
+		elseif info.screen == "storypaths" then
+			if ScreenInstances.storypaths then
+				ScreenInstances.storypaths:show()
+			else
+				warn("[LifeClient] ❌ StoryPathsScreen not available!")
+			end
 		end
 	end)
 
@@ -4862,26 +4916,122 @@ IntroUI.content.Parent = IntroUI.overlay
 
 IntroUI.layout = Instance.new("UIListLayout")
 IntroUI.layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-IntroUI.layout.Padding = UDim.new(0, 20)
+IntroUI.layout.Padding = UDim.new(0, 10) -- MOBILE FIX: Reduced from 20 to fit on small screens
 IntroUI.layout.Parent = IntroUI.content
 
 IntroUI.genderTitle = Instance.new("TextLabel")
--- CRITICAL FIX: Moved title higher and gave it more space so it doesn't overlap buttons
-IntroUI.genderTitle.Size = UDim2.new(1, 0, 0, 48)
+-- MOBILE FIX: Compact title that fits on small screens
+IntroUI.genderTitle.Size = UDim2.new(1, 0, 0, 32) -- Reduced from 48
 IntroUI.genderTitle.BackgroundTransparency = 1
-IntroUI.genderTitle.Font = F.Title
-IntroUI.genderTitle.TextSize = 22
-IntroUI.genderTitle.TextColor3 = C.Gray900  -- was yellow; now black-ish so it doesn't look neon
+IntroUI.genderTitle.Font = F.Title or Enum.Font.GothamBold
+IntroUI.genderTitle.TextSize = 18 -- Reduced from 22
+IntroUI.genderTitle.TextScaled = true -- Scale for mobile
+IntroUI.genderTitle.TextColor3 = C.Gray900
 IntroUI.genderTitle.Text = "Start by picking a gender"
-IntroUI.genderTitle.TextYAlignment = Enum.TextYAlignment.Top
+IntroUI.genderTitle.TextYAlignment = Enum.TextYAlignment.Center
 IntroUI.genderTitle.LayoutOrder = 1
 IntroUI.genderTitle.ZIndex = 72
 IntroUI.genderTitle.Parent = IntroUI.content
 
+-- Constrain title text scaling
+IntroUI.genderTitleConstraint = Instance.new("UITextSizeConstraint")
+IntroUI.genderTitleConstraint.MaxTextSize = 20
+IntroUI.genderTitleConstraint.MinTextSize = 12
+IntroUI.genderTitleConstraint.Parent = IntroUI.genderTitle
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- BONUS INCOME PROMPT - "Join our group & like the game for 25% extra income!"
+-- Shows on intro screen to encourage engagement and increase retention
+-- MOBILE-FRIENDLY: Clickable button that activates the bonus
+-- ═══════════════════════════════════════════════════════════════════════════════
+IntroUI.bonusPrompt = Instance.new("TextButton") -- Changed to TextButton so it's clickable!
+IntroUI.bonusPrompt.Name = "BonusPrompt"
+IntroUI.bonusPrompt.Size = UDim2.new(0.85, 0, 0, 38) -- Slightly taller for better touch
+IntroUI.bonusPrompt.BackgroundColor3 = Color3.fromRGB(34, 197, 94) -- Green
+IntroUI.bonusPrompt.BackgroundTransparency = 0
+IntroUI.bonusPrompt.LayoutOrder = 1.5 -- Between title and gender buttons
+IntroUI.bonusPrompt.ZIndex = 72
+IntroUI.bonusPrompt.AutoButtonColor = false
+IntroUI.bonusPrompt.Text = "" -- Text is in child label
+IntroUI.bonusPrompt.Parent = IntroUI.content
+
+IntroUI.bonusPromptCorner = Instance.new("UICorner")
+IntroUI.bonusPromptCorner.CornerRadius = UDim.new(0, 8)
+IntroUI.bonusPromptCorner.Parent = IntroUI.bonusPrompt
+
+IntroUI.bonusPromptStroke = Instance.new("UIStroke")
+IntroUI.bonusPromptStroke.Color = Color3.fromRGB(22, 163, 74)
+IntroUI.bonusPromptStroke.Thickness = 2
+IntroUI.bonusPromptStroke.Parent = IntroUI.bonusPrompt
+
+IntroUI.bonusPromptText = Instance.new("TextLabel")
+IntroUI.bonusPromptText.Name = "BonusText"
+IntroUI.bonusPromptText.Size = UDim2.fromScale(1, 1)
+IntroUI.bonusPromptText.BackgroundTransparency = 1
+IntroUI.bonusPromptText.Font = F.Title or Enum.Font.GothamBold or Enum.Font.SourceSansBold
+IntroUI.bonusPromptText.TextSize = 12
+IntroUI.bonusPromptText.TextColor3 = Color3.fromRGB(255, 255, 255)
+IntroUI.bonusPromptText.Text = "⭐ TAP for +25% Income Bonus! 💰"
+IntroUI.bonusPromptText.TextScaled = true
+IntroUI.bonusPromptText.ZIndex = 73
+IntroUI.bonusPromptText.Parent = IntroUI.bonusPrompt
+
+-- Constrain text scaling
+IntroUI.bonusPromptTextConstraint = Instance.new("UITextSizeConstraint")
+IntroUI.bonusPromptTextConstraint.MaxTextSize = 14
+IntroUI.bonusPromptTextConstraint.MinTextSize = 9
+IntroUI.bonusPromptTextConstraint.Parent = IntroUI.bonusPromptText
+
+-- Add padding to the text
+IntroUI.bonusPromptPadding = Instance.new("UIPadding")
+IntroUI.bonusPromptPadding.PaddingLeft = UDim.new(0, 8)
+IntroUI.bonusPromptPadding.PaddingRight = UDim.new(0, 8)
+IntroUI.bonusPromptPadding.PaddingTop = UDim.new(0, 4)
+IntroUI.bonusPromptPadding.PaddingBottom = UDim.new(0, 4)
+IntroUI.bonusPromptPadding.Parent = IntroUI.bonusPromptText
+
+-- Track if bonus is activated
+local engagementBonusActivated = false
+
+-- Click handler - activates the bonus!
+IntroUI.bonusPrompt.MouseButton1Click:Connect(function()
+	if engagementBonusActivated then return end
+	engagementBonusActivated = true
+	
+	-- Send to server to activate bonus
+	local SetEngagementBonus = remotesFolder and remotesFolder:FindFirstChild("SetEngagementBonus")
+	if SetEngagementBonus then
+		SetEngagementBonus:FireServer("both")
+	end
+	
+	-- Update UI to show activated
+	IntroUI.bonusPrompt.BackgroundColor3 = Color3.fromRGB(22, 163, 74) -- Darker green
+	IntroUI.bonusPromptText.Text = "✅ +25% Income ACTIVATED! 🎉"
+	IntroUI.bonusPromptStroke.Color = Color3.fromRGB(255, 215, 0) -- Gold border
+	
+	-- Celebratory animation
+	tween(IntroUI.bonusPrompt, TweenInfo.new(0.2, Enum.EasingStyle.Back), { Size = UDim2.new(0.9, 0, 0, 42) })
+	task.delay(0.3, function()
+		tween(IntroUI.bonusPrompt, TweenInfo.new(0.2), { Size = UDim2.new(0.85, 0, 0, 38) })
+	end)
+end)
+
+-- Hover effects
+IntroUI.bonusPrompt.MouseEnter:Connect(function()
+	if not engagementBonusActivated then
+		tween(IntroUI.bonusPrompt, TweenInfo.new(0.1), { Size = UDim2.new(0.88, 0, 0, 40) })
+	end
+end)
+IntroUI.bonusPrompt.MouseLeave:Connect(function()
+	if not engagementBonusActivated then
+		tween(IntroUI.bonusPrompt, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 38) })
+	end
+end)
+
 IntroUI.genderBtns = Instance.new("Frame")
--- CRITICAL FIX: Increased height to fit Male, Female, Born Royal, AND Customize Character buttons
--- Mobile needs more space for touch targets
-IntroUI.genderBtns.Size = UDim2.new(1, 0, 0, 280)
+-- MOBILE FIX: Use AutomaticSize so it fits content perfectly
+IntroUI.genderBtns.Size = UDim2.new(1, 0, 0, 0)
+IntroUI.genderBtns.AutomaticSize = Enum.AutomaticSize.Y -- Auto-size based on content
 IntroUI.genderBtns.BackgroundTransparency = 1
 IntroUI.genderBtns.LayoutOrder = 2
 IntroUI.genderBtns.ZIndex = 71
@@ -4889,8 +5039,8 @@ IntroUI.genderBtns.Parent = IntroUI.content
 
 IntroUI.genderBtnLayout = Instance.new("UIListLayout")
 IntroUI.genderBtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
--- CRITICAL FIX: Increased padding for better mobile touch targets
-IntroUI.genderBtnLayout.Padding = UDim.new(0, 12)
+-- MOBILE FIX: Reduced padding to fit more on small screens
+IntroUI.genderBtnLayout.Padding = UDim.new(0, 8)
 IntroUI.genderBtnLayout.Parent = IntroUI.genderBtns
 
 -- ═══════════════════════════════════════════════════════════════════════════════
@@ -5811,10 +5961,11 @@ local genderData = {
 
 for _, g in ipairs(genderData) do
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0.85, 0, 0, 58)
+	btn.Size = UDim2.new(0.85, 0, 0, 48) -- Slightly bigger for better touch targets
 	btn.BackgroundColor3 = g.color
-	btn.Font = F.Title
-	btn.TextSize = 22
+	btn.Font = F.Title or Enum.Font.GothamBold
+	btn.TextSize = 18
+	btn.TextScaled = true
 	btn.TextColor3 = C.White
 	btn.Text = g.icon .. " " .. g.gender
 	btn.AutoButtonColor = false
@@ -5822,12 +5973,18 @@ for _, g in ipairs(genderData) do
 	btn.Parent = IntroUI.genderBtns
 	pill(btn)
 	stroke(btn, 2, 0.5, C.White)
+	
+	-- Text size constraint for mobile
+	local textConstraint = Instance.new("UITextSizeConstraint")
+	textConstraint.MaxTextSize = 20
+	textConstraint.MinTextSize = 12
+	textConstraint.Parent = btn
 
 	btn.MouseEnter:Connect(function()
-		tween(btn, TweenInfo.new(0.1), { Size = UDim2.new(0.88, 0, 0, 62) })
+		tween(btn, TweenInfo.new(0.1), { Size = UDim2.new(0.88, 0, 0, 52) })
 	end)
 	btn.MouseLeave:Connect(function()
-		tween(btn, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 58) })
+		tween(btn, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 48) })
 	end)
 
 	btn.MouseButton1Click:Connect(function()
@@ -5872,10 +6029,11 @@ end
 do
 	local customizeGenderBtn = Instance.new("TextButton")
 	customizeGenderBtn.Name = "CustomizeGenderBtn"
-	customizeGenderBtn.Size = UDim2.new(0.85, 0, 0, 48)
+	customizeGenderBtn.Size = UDim2.new(0.85, 0, 0, 42) -- Slightly bigger for touch
 	customizeGenderBtn.BackgroundColor3 = Color3.fromRGB(253, 230, 138) -- Gold
-	customizeGenderBtn.Font = F.Title
-	customizeGenderBtn.TextSize = 16
+	customizeGenderBtn.Font = F.Title or Enum.Font.GothamBold
+	customizeGenderBtn.TextSize = 14
+	customizeGenderBtn.TextScaled = true
 	customizeGenderBtn.TextColor3 = C.Gray900
 	customizeGenderBtn.Text = "⚡ Customize Character"
 	customizeGenderBtn.AutoButtonColor = false
@@ -5885,13 +6043,19 @@ do
 	pill(customizeGenderBtn)
 	stroke(customizeGenderBtn, 2, 0, Color3.fromRGB(217, 119, 6))
 	
+	-- Text size constraint for mobile
+	local customizeTextConstraint = Instance.new("UITextSizeConstraint")
+	customizeTextConstraint.MaxTextSize = 16
+	customizeTextConstraint.MinTextSize = 10
+	customizeTextConstraint.Parent = customizeGenderBtn
+	
 	IntroUI.customizeGenderBtn = customizeGenderBtn
 	
 	customizeGenderBtn.MouseEnter:Connect(function()
-		tween(customizeGenderBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.88, 0, 0, 52) })
+		tween(customizeGenderBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.88, 0, 0, 46) })
 	end)
 	customizeGenderBtn.MouseLeave:Connect(function()
-		tween(customizeGenderBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 48) })
+		tween(customizeGenderBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 42) })
 	end)
 	
 	customizeGenderBtn.MouseButton1Click:Connect(function()
@@ -5999,10 +6163,11 @@ IntroUI.showRoyalGenderSelection = nil
 do
 	local royaltyBtn = Instance.new("TextButton")
 	royaltyBtn.Name = "RoyaltyGenderBtn"
-	royaltyBtn.Size = UDim2.new(0.85, 0, 0, 48)
+	royaltyBtn.Size = UDim2.new(0.85, 0, 0, 42) -- Slightly bigger for touch
 	royaltyBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-	royaltyBtn.Font = F.Title
-	royaltyBtn.TextSize = 16
+	royaltyBtn.Font = F.Title or Enum.Font.GothamBold
+	royaltyBtn.TextSize = 14
+	royaltyBtn.TextScaled = true
 	royaltyBtn.TextColor3 = C.Gray900
 	royaltyBtn.Text = "👑 Born Royal"
 	royaltyBtn.AutoButtonColor = false
@@ -6012,13 +6177,19 @@ do
 	pill(royaltyBtn)
 	stroke(royaltyBtn, 2, 0, Color3.fromRGB(180, 140, 0))
 	
+	-- Text size constraint for mobile
+	local royaltyTextConstraint = Instance.new("UITextSizeConstraint")
+	royaltyTextConstraint.MaxTextSize = 16
+	royaltyTextConstraint.MinTextSize = 10
+	royaltyTextConstraint.Parent = royaltyBtn
+	
 	IntroUI.royaltyGenderBtn = royaltyBtn
 	
 	royaltyBtn.MouseEnter:Connect(function()
-		tween(royaltyBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.88, 0, 0, 52) })
+		tween(royaltyBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.88, 0, 0, 46) })
 	end)
 	royaltyBtn.MouseLeave:Connect(function()
-		tween(royaltyBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 48) })
+		tween(royaltyBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 42) })
 	end)
 	
 	royaltyBtn.MouseButton1Click:Connect(function()
@@ -7436,9 +7607,22 @@ end)
 ----------------------------------------------------------------
 
 local function safeNew(mod, name, ...)
-	if mod and mod.new then
-		local s, r = pcall(mod.new, ...)
-		if s and r then return r end
+	if not mod then
+		warn("[LifeClient] ❌ Module " .. tostring(name) .. " is nil - failed to require")
+		return nil
+	end
+	if not mod.new then
+		warn("[LifeClient] ❌ Module " .. tostring(name) .. " has no .new function")
+		return nil
+	end
+	local s, r = pcall(mod.new, ...)
+	if s and r then 
+		print("[LifeClient] ✅ Created " .. tostring(name) .. " successfully")
+		return r 
+	elseif not s then
+		warn("[LifeClient] ❌ Failed to create " .. tostring(name) .. ":", tostring(r))
+	else
+		warn("[LifeClient] ❌ " .. tostring(name) .. ".new returned nil")
 	end
 	return nil
 end

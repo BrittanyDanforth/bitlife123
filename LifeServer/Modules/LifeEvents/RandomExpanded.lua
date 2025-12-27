@@ -132,8 +132,8 @@ RandomExpanded.events = {
 		text = "You've got a flat tire!",
 		question = "How do you handle it?",
 		minAge = 16, maxAge = 85,
-		baseChance = 0.455,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.15,  -- CRITICAL FIX: Reduced from 0.455 to prevent spam (VehicleEvents has similar)
+		cooldown = 6, -- CRITICAL FIX: Increased to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "vehicle",
@@ -190,8 +190,8 @@ RandomExpanded.events = {
 		text = "Red and blue lights in your mirror...",
 		question = "Why are you getting pulled over?",
 		minAge = 16, maxAge = 85,
-		baseChance = 0.45,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.15,  -- CRITICAL FIX: Reduced from 0.45 to prevent spam (VehicleEvents has similar)
+		cooldown = 6, -- CRITICAL FIX: Increased to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "legal",

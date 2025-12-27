@@ -285,8 +285,8 @@ FinancialEvents.events = {
 		text = "Your vehicle needs attention!",
 		question = "What's wrong with the car?",
 		minAge = 18, maxAge = 90,
-		baseChance = 0.55,
-		cooldown = 3,
+		baseChance = 0.18,  -- CRITICAL FIX: Reduced from 0.55 to prevent spam (multiple car events exist)
+		cooldown = 6,  -- CRITICAL FIX: Increased to space out car expense events
 		stage = STAGE,
 		ageBand = "any",
 		category = "transportation",
@@ -1408,6 +1408,233 @@ FinancialEvents.events = {
 						end
 					end
 				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #934: INVESTMENT EVENTS - Make money work for you!
+	-- Stock market, crypto, real estate investments
+	-- High risk/reward events for engaged players
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "fin_stock_market_tip",
+		title = "Stock Market Tip!",
+		emoji = "📈",
+		text = "A friend tells you about a 'hot' stock that's about to take off!",
+		textVariants = {
+			"Your coworker says they made a killing on this stock!",
+			"Social media is buzzing about this investment opportunity!",
+			"A financial advisor has a 'can't miss' tip for you!",
+		},
+		question = "Do you invest?",
+		minAge = 21, maxAge = 75,
+		baseChance = 0.30,
+		cooldown = 5,
+		stage = STAGE,
+		category = "finance",
+		tags = { "stocks", "investment", "risk", "money" },
+		blockedByFlags = { in_prison = true, incarcerated = true },
+		eligibility = function(state)
+			return (state.Money or 0) >= 500, "Need at least $500 to invest"
+		end,
+		
+		choices = {
+			{
+				text = "Go big! Invest $5,000!",
+				effects = { Money = -5000 },
+				feedText = "All in on this stock...",
+				eligibility = function(state) return (state.Money or 0) >= 5000, "Need $5000" end,
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.20 then
+						local winnings = math.random(10000, 25000)
+						state.Money = (state.Money or 0) + winnings
+						state:ModifyStat("Happiness", 30)
+						state.Flags = state.Flags or {}
+						state.Flags.investor = true
+						state.Flags.stock_winner = true
+						state:AddFeed(string.format("📈 JACKPOT!!! The stock EXPLODED! Made $%d profit!", winnings - 5000))
+					elseif roll < 0.45 then
+						local winnings = math.random(6000, 9000)
+						state.Money = (state.Money or 0) + winnings
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed(string.format("📈 Nice! Stock went up! Made $%d profit!", winnings - 5000))
+					elseif roll < 0.70 then
+						local result = math.random(4000, 5500)
+						state.Money = (state.Money or 0) + result
+						state:ModifyStat("Happiness", result > 5000 and 3 or -3)
+						state:AddFeed(string.format("📈 Stock was flat. Got back $%d.", result))
+					else
+						local returned = math.random(1000, 3500)
+						state.Money = (state.Money or 0) + returned
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed(string.format("📈 Stock CRASHED! Only got back $%d! Lost $%d!", returned, 5000 - returned))
+					end
+				end,
+			},
+			{
+				text = "Invest a safe amount ($500)",
+				effects = { Money = -500 },
+				feedText = "Testing the waters...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.25 then
+						local winnings = math.random(800, 1500)
+						state.Money = (state.Money or 0) + winnings
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed(string.format("📈 Small bet paid off! Made $%d profit!", winnings - 500))
+					elseif roll < 0.55 then
+						state.Money = (state.Money or 0) + 550
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("📈 Small gain. $50 profit. Baby steps!")
+					else
+						local returned = math.random(200, 450)
+						state.Money = (state.Money or 0) + returned
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed(string.format("📈 Lost $%d. At least it wasn't your life savings.", 500 - returned))
+					end
+				end,
+			},
+			{
+				text = "Pass - too risky for me",
+				effects = { Happiness = 2 },
+				feedText = "📈 Played it safe. Your money stays in your pocket.",
+			},
+		},
+	},
+	
+	{
+		id = "fin_crypto_opportunity",
+		title = "Crypto Craze!",
+		emoji = "🪙",
+		text = "Everyone's talking about this new cryptocurrency!",
+		question = "Jump on the crypto train?",
+		minAge = 18, maxAge = 60,
+		baseChance = 0.25,
+		cooldown = 6,
+		stage = STAGE,
+		category = "finance",
+		tags = { "crypto", "investment", "risk", "money" },
+		blockedByFlags = { in_prison = true, incarcerated = true },
+		eligibility = function(state)
+			return (state.Money or 0) >= 200, "Need money to invest"
+		end,
+		
+		choices = {
+			{
+				text = "YOLO! Invest $2,000!",
+				effects = { Money = -2000 },
+				feedText = "To the moon...",
+				eligibility = function(state) return (state.Money or 0) >= 2000, "Need $2000" end,
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.15 then
+						local winnings = math.random(15000, 30000)
+						state.Money = (state.Money or 0) + winnings
+						state:ModifyStat("Happiness", 35)
+						state.Flags = state.Flags or {}
+						state.Flags.crypto_rich = true
+						state:AddFeed(string.format("🪙 TO THE MOON!!! Made $%d!!!", winnings))
+					elseif roll < 0.35 then
+						local winnings = math.random(3000, 8000)
+						state.Money = (state.Money or 0) + winnings
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed(string.format("🪙 Nice gains! Made $%d!", winnings - 2000))
+					elseif roll < 0.55 then
+						state.Money = (state.Money or 0) + 2000
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("🪙 Sold at entry point. No loss!")
+					else
+						local returned = math.random(0, 500)
+						state.Money = (state.Money or 0) + returned
+						state:ModifyStat("Happiness", -20)
+						state.Flags = state.Flags or {}
+						state.Flags.crypto_burned = true
+						if returned == 0 then
+							state:AddFeed("🪙 RUG PULL!!! Lost EVERYTHING!")
+						else
+							state:AddFeed(string.format("🪙 CRASHED! Only saved $%d!", returned))
+						end
+					end
+				end,
+			},
+			{
+				text = "Small position ($200)",
+				effects = { Money = -200 },
+				feedText = "Testing crypto...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.25 then
+						local winnings = math.random(500, 1000)
+						state.Money = (state.Money or 0) + winnings
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed(string.format("🪙 Crypto win! $%d profit!", winnings - 200))
+					elseif roll < 0.60 then
+						state.Money = (state.Money or 0) + 200
+						state:AddFeed("🪙 Crypto was sideways. No gain, no loss.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🪙 Coin crashed. Lost $200.")
+					end
+				end,
+			},
+			{
+				text = "No thanks - crypto is too volatile",
+				effects = {},
+				feedText = "🪙 You avoided the crypto casino.",
+			},
+		},
+	},
+	
+	{
+		id = "fin_found_money_big",
+		title = "Lucky Discovery!",
+		emoji = "💎",
+		text = "You stumbled upon something valuable!",
+		question = "What did you find?",
+		minAge = 18, maxAge = 80,
+		baseChance = 0.15,
+		cooldown = 8,
+		stage = STAGE,
+		category = "finance",
+		tags = { "luck", "money", "treasure" },
+		blockedByFlags = { in_prison = true, incarcerated = true },
+		
+		choices = {
+			{
+				text = "Investigate the find",
+				effects = {},
+				feedText = "Looking closer...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.10 then
+						local value = math.random(5000, 20000)
+						state.Money = (state.Money or 0) + value
+						state:ModifyStat("Happiness", 30)
+						state.Flags = state.Flags or {}
+						state.Flags.treasure_finder = true
+						state:AddFeed(string.format("💎 INCREDIBLE! It's a rare antique worth $%d!", value))
+					elseif roll < 0.35 then
+						local value = math.random(500, 2000)
+						state.Money = (state.Money or 0) + value
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed(string.format("💎 Nice find! Worth $%d!", value))
+					elseif roll < 0.60 then
+						local value = math.random(50, 300)
+						state.Money = (state.Money or 0) + value
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed(string.format("💎 Worth $%d. Small surprise!", value))
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("💎 Just junk. Oh well.")
+					end
+				end,
+			},
+			{
+				text = "Leave it - probably nothing",
+				effects = {},
+				feedText = "💎 You passed it by. Who knows what it was?",
 			},
 		},
 	},

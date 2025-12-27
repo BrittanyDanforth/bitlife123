@@ -71,7 +71,8 @@ Teen.events = {
 		minAge = 14, maxAge = 16,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
-			{ text = "Advanced Math & Science", effects = { Smarts = 5 }, setFlags = { stem_track = true }, hintCareer = "tech", feedText = "You're challenging yourself with advanced STEM classes." },
+			-- CRITICAL FIX #1003: Added math_science_talent for consequence events linkage!
+			{ text = "Advanced Math & Science", effects = { Smarts = 5 }, setFlags = { stem_track = true, math_science_talent = true }, hintCareer = "tech", feedText = "You're challenging yourself with advanced STEM classes." },
 			{ text = "Creative Writing & Literature", effects = { Smarts = 3, Happiness = 3 }, setFlags = { humanities_track = true }, hintCareer = "creative", feedText = "You're exploring the power of words." },
 			{ text = "Business & Economics", effects = { Smarts = 3, Money = 10 }, setFlags = { business_track = true }, hintCareer = "finance", feedText = "You're learning how the business world works." },
 			{ text = "Art & Music", effects = { Happiness = 5, Looks = 2 }, setFlags = { arts_track = true }, hintCareer = "creative", feedText = "You're developing your artistic talents." },
