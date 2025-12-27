@@ -6,8 +6,26 @@ local TweenService       = game:GetService("TweenService")
 local ReplicatedStorage  = game:GetService("ReplicatedStorage")
 
 local UI = require(ReplicatedStorage:WaitForChild("UIComponents"))
-local C  = UI.Colors
-local F  = UI.Fonts
+local C  = UI.Colors or {}
+local F  = UI.Fonts or {}
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- FONT SAFETY - CRITICAL FIX #953
+-- Ensure ALL fonts exist so Font property never gets nil!
+-- Error was: "Unable to assign property Font. EnumItem, number, or string expected, got nil"
+-- ═══════════════════════════════════════════════════════════════════════════════
+local DEFAULT_FONT = Enum.Font.SourceSans
+F.Title  = F.Title  or Enum.Font.GothamBold   or Enum.Font.SourceSansBold or DEFAULT_FONT
+F.Body   = F.Body   or Enum.Font.Gotham       or Enum.Font.SourceSans     or DEFAULT_FONT
+F.Medium = F.Medium or Enum.Font.GothamMedium or Enum.Font.SourceSans     or DEFAULT_FONT
+F.Button = F.Button or Enum.Font.GothamBold   or Enum.Font.SourceSansBold or DEFAULT_FONT
+
+-- Extra safety: ensure all F values are valid Enum.Font
+for key, value in pairs(F) do
+	if type(value) ~= "userdata" then
+		F[key] = DEFAULT_FONT
+	end
+end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- COLOR SAFETY

@@ -554,12 +554,23 @@ local C = {
 	Bg = Color3.fromRGB(249, 250, 251), -- Same as Gray50
 }
 
+-- CRITICAL FIX #951: Fonts must ALWAYS have valid values to prevent nil errors
+-- "Unable to assign property Font. EnumItem, number, or string expected, got nil"
 local F = {
-	Title  = Enum.Font.GothamBold,
-	Body   = Enum.Font.Gotham,
-	Medium = Enum.Font.GothamMedium,
-	Button = Enum.Font.GothamBold,
+	Title  = Enum.Font.GothamBold or Enum.Font.SourceSansBold,
+	Body   = Enum.Font.Gotham or Enum.Font.SourceSans,
+	Medium = Enum.Font.GothamMedium or Enum.Font.SourceSans,
+	Button = Enum.Font.GothamBold or Enum.Font.SourceSansBold,
 }
+
+-- Safety: Ensure all font values are valid Enum.Font
+local DEFAULT_FONT = Enum.Font.SourceSans
+for key, value in pairs(F) do
+	if type(value) ~= "userdata" then
+		warn("[LifeClient] Font", key, "was invalid, using default")
+		F[key] = DEFAULT_FONT
+	end
+end
 
 local function ensureSharedUITheme()
 	local sharedUI = safeRequireRS("UIComponents")
@@ -597,10 +608,19 @@ local function ensureSharedUITheme()
 		end
 	end
 
+	-- CRITICAL FIX #951: Ensure fonts are ALWAYS valid
 	sharedUI.Fonts = sharedUI.Fonts or {}
 	for name, font in pairs(F) do
-		if sharedUI.Fonts[name] == nil then
+		if sharedUI.Fonts[name] == nil or type(sharedUI.Fonts[name]) ~= "userdata" then
 			sharedUI.Fonts[name] = font
+		end
+	end
+	
+	-- Extra safety: verify all fonts are valid Enum.Font values
+	local DEFAULT_FONT = Enum.Font.SourceSans
+	for name, font in pairs(sharedUI.Fonts) do
+		if type(font) ~= "userdata" then
+			sharedUI.Fonts[name] = DEFAULT_FONT
 		end
 	end
 

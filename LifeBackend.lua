@@ -9817,6 +9817,83 @@ function LifeBackend:onPlayerAdded(player)
 			for k, v in pairs(savedData.Flags) do
 				state.Flags[k] = v
 			end
+			
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX #950: Clear death flags on rejoin!
+			-- If player died and rejoins, they should start a NEW life, not be stuck dead!
+			-- The death screen should have offered "New Life" option, so if they're back,
+			-- they want to start fresh.
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			if state.Flags.dead or state.Flags.is_dead then
+				print("[LifeBackend] 🔄 Player rejoined after death - resetting for new life!")
+				
+				-- Clear ALL death-related state
+				state.Flags.dead = nil
+				state.Flags.is_dead = nil
+				state.Flags.is_alive = true
+				state.DeathReason = nil
+				state.DeathAge = nil
+				state.DeathYear = nil
+				
+				-- Reset to a new life (age 0)
+				state.Age = 0
+				state.Year = os.date("*t").year  -- Current year
+				state.BirthYear = state.Year
+				
+				-- Generate new identity
+				local newNames = { "James", "Emma", "Michael", "Sophia", "Daniel", "Olivia", "Liam", "Charlotte", "Noah", "Mia" }
+				local lastNames = { "Smith", "Johnson", "Williams", "Brown", "Jones", "Davis", "Miller", "Wilson", "Moore", "Taylor" }
+				local firstName = newNames[math.random(1, #newNames)]
+				local lastName = lastNames[math.random(1, #lastNames)]
+				state.Name = firstName .. " " .. lastName
+				state.Gender = math.random() > 0.5 and "Male" or "Female"
+				
+				-- Reset stats to newborn
+				state.Stats = state.Stats or {}
+				state.Stats.Health = 100
+				state.Stats.Happiness = 75 + math.random(0, 25)
+				state.Stats.Smarts = 20 + math.random(0, 40)
+				state.Stats.Looks = 30 + math.random(0, 40)
+				state.Health = state.Stats.Health
+				state.Happiness = state.Stats.Happiness
+				state.Smarts = state.Stats.Smarts
+				state.Looks = state.Stats.Looks
+				
+				-- Reset money (small inheritance from past life)
+				state.Money = math.random(0, 500)
+				
+				-- Clear job/career
+				state.CurrentJob = nil
+				state.CareerInfo = nil
+				state.Education = "None"
+				
+				-- Reset housing to with parents
+				state.HousingState = { status = "with_parents", type = "family_home", rent = 0 }
+				state.Flags.living_with_parents = true
+				state.Flags.moved_out = nil
+				state.Flags.has_apartment = nil
+				state.Flags.renting = nil
+				
+				-- Clear most flags but keep gamepasses
+				local savedGamepasses = state.GamepassOwnership
+				state.Flags = { is_alive = true, new_life = true }
+				state.GamepassOwnership = savedGamepasses
+				
+				-- Generate new family
+				state.Relationships = {}
+				
+				-- Clear special states
+				state.RoyalState = nil
+				state.MobState = nil
+				state.FameState = nil
+				state.Fame = 0
+				state.Karma = 50
+				
+				-- Clear assets (new life starts fresh)
+				state.Assets = { Properties = {}, Vehicles = {}, Items = {} }
+				
+				print("[LifeBackend] 🆕 New life created! Name:", state.Name, "as a", state.Gender)
+			end
 		end
 
 		-- Restore career
