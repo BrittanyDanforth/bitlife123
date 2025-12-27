@@ -1465,10 +1465,17 @@ TeenExpanded.events = {
 					if roll < successChance then
 						state:ModifyStat("Happiness", 10)
 						state.Flags = state.Flags or {}
+						-- CRITICAL FIX: Set ALL license flag variations for compatibility!
 						state.Flags.has_license = true
+						state.Flags.drivers_license = true
+						state.Flags.driver_license = true
+						state.Flags.has_drivers_license = true
+						state.Flags.learned_driving = true
 						state:AddFeed("🚗 PASSED! You have a LICENSE! FREEDOM!")
 					else
 						state:ModifyStat("Happiness", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.learned_driving = true -- Still mark as attempted
 						state:AddFeed("🚗 Failed the test. Gotta try again. Embarrassing.")
 					end
 				end,

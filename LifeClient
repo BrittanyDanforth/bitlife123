@@ -2584,7 +2584,8 @@ if false then -- Disabled: Old modal code kept for reference
 		end)
 
 		if ok and result and result.success then
-			addFeedEntry(result.message or "God Mode updated.")
+			-- CRITICAL FIX: Don't add feed here - pushState on server already sends it!
+			-- Adding it here was causing the message to appear TWICE
 			destroyGodModeModal()
 		else
 			errorLabel.Text = (result and result.message) or "Unable to apply changes."

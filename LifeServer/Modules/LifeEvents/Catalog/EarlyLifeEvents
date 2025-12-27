@@ -703,15 +703,22 @@ EarlyLifeEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					state.Flags = state.Flags or {}
+					state.Flags.pet_asked = true -- Mark that we asked, even if denied
 					if roll <= 30 then
 						state:ModifyStat("Happiness", 10)
+						-- CRITICAL FIX: Set ALL pet flag variations for compatibility!
 						state.Flags.has_childhood_pet = true
 						state.Flags.got_dog = true
+						state.Flags.has_dog = true
+						state.Flags.has_pet = true
 						state:AddFeed("🐕 THEY SAID YES! You got a puppy! Best day ever!")
 					elseif roll <= 50 then
 						state:ModifyStat("Happiness", 7)
+						-- CRITICAL FIX: Set ALL pet flag variations for compatibility!
 						state.Flags.has_childhood_pet = true
 						state.Flags.got_fish = true
+						state.Flags.has_fish = true
+						state.Flags.has_pet = true
 						state:AddFeed("🐕 They compromised - you got a fish. It's SOMETHING at least.")
 					else
 						state:ModifyStat("Happiness", -4)
@@ -726,11 +733,15 @@ EarlyLifeEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					state.Flags = state.Flags or {}
+					state.Flags.pet_asked = true -- Mark that we asked, even if denied
 					if roll <= 45 then
 						state:ModifyStat("Happiness", 10)
 						state:ModifyStat("Smarts", 2)
+						-- CRITICAL FIX: Set ALL pet flag variations for compatibility!
 						state.Flags.has_childhood_pet = true
 						state.Flags.got_cat = true
+						state.Flags.has_cat = true
+						state.Flags.has_pet = true
 						state:AddFeed("🐕 Your hard work paid off! You got a cat!")
 					elseif roll <= 75 then
 						state:ModifyStat("Happiness", 3)
@@ -1463,8 +1474,11 @@ EarlyLifeEvents.events = {
 		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
 		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		oneTime = true, -- You only learn to drive once!
-		-- CRITICAL FIX: Block if already has license or learned to drive
-		blockedByFlags = { has_drivers_license = true, good_driver = true, learned_driving = true },
+		-- CRITICAL FIX: Block if already has license or learned to drive - check ALL flag variations!
+		blockedByFlags = { 
+			has_license = true, drivers_license = true, driver_license = true,
+			has_drivers_license = true, learned_driving = true, good_driver = true, driving_done = true 
+		},
 		category = "teen",
 		tags = { "driving", "milestone", "teen" },
 		
@@ -1481,12 +1495,20 @@ EarlyLifeEvents.events = {
 						state:ModifyStat("Smarts", 3)
 						state:ModifyStat("Happiness", 6)
 						state.Flags.good_driver = true
+						-- CRITICAL FIX: Set ALL license flag variations for compatibility!
 						state.Flags.has_drivers_license = true
+						state.Flags.has_license = true
+						state.Flags.drivers_license = true
+						state.Flags.driver_license = true
 						state:AddFeed("🚗 You're a natural! Passed the test first try!")
 					elseif roll <= 70 then
 						state:ModifyStat("Smarts", 2)
 						state:ModifyStat("Happiness", 3)
+						-- CRITICAL FIX: Set ALL license flag variations for compatibility!
 						state.Flags.has_drivers_license = true
+						state.Flags.has_license = true
+						state.Flags.drivers_license = true
+						state.Flags.driver_license = true
 						state:AddFeed("🚗 You passed! Took a few tries but you got your license!")
 					elseif roll <= 90 then
 						state:ModifyStat("Happiness", -2)
@@ -1509,7 +1531,11 @@ EarlyLifeEvents.events = {
 					state.Flags.learned_driving = true
 					if roll <= 20 then
 						state:ModifyStat("Happiness", 4)
+						-- CRITICAL FIX: Set ALL license flag variations for compatibility!
 						state.Flags.has_drivers_license = true
+						state.Flags.has_license = true
+						state.Flags.drivers_license = true
+						state.Flags.driver_license = true
 						state:AddFeed("🚗 Lucky! Passed despite barely practicing!")
 					else
 						state:ModifyStat("Happiness", -3)

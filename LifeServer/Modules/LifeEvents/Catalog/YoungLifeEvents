@@ -166,10 +166,13 @@ YoungLifeEvents.events = {
 				feedText = "Please please please please!",
 				onResolve = function(state)
 					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					state.Flags.pet_asked = true -- CRITICAL FIX: Always mark as asked to prevent repeats
 					if roll <= 30 then
 						state:ModifyStat("Happiness", 25)
-						state.Flags = state.Flags or {}
+						-- CRITICAL FIX: Set ALL pet flag variations for compatibility
 						state.Flags.has_childhood_pet = true
+						state.Flags.has_pet = true
 						state:AddFeed("🐕 THEY SAID YES! You got a pet! This is the best day!")
 					elseif roll <= 60 then
 						state:ModifyStat("Happiness", 8)

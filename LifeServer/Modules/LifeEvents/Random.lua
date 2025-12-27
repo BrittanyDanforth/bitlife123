@@ -112,6 +112,9 @@ Random.events = {
 		oneTime = true,
 		-- CRITICAL FIX #4: Added "inheritance" category for green/gold event card
 		category = "inheritance",
+		tags = { "inheritance", "money", "family" },
+		-- CRITICAL FIX: Extra protection against repeats
+		blockedByFlags = { in_prison = true, inheritance_received = true },
 		-- CRITICAL FIX: Random inheritance instead of player picking what they get
 		choices = {
 			{
@@ -120,6 +123,8 @@ Random.events = {
 				feedText = "You attended the reading of the will...",
 				onResolve = function(state)
 					-- CRITICAL FIX: Added nil checks for all method calls
+					state.Flags = state.Flags or {}
+					state.Flags.inheritance_received = true -- CRITICAL FIX: Mark as done to prevent repeats
 					local roll = math.random()
 					if roll < 0.30 then -- 30% substantial money
 						local amount = math.random(5000, 25000)
@@ -127,7 +132,6 @@ Random.events = {
 						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
 						if state.AddFeed then state:AddFeed(string.format("📜 You inherited $%d! What a windfall!", amount)) end
 					elseif roll < 0.50 then -- 20% house
-						state.Flags = state.Flags or {}
 						state.Flags.inherited_property = true
 						state.Flags.homeowner = true
 						state.Flags.has_property = true
@@ -175,6 +179,7 @@ Random.events = {
 			{
 				text = "Decline the inheritance",
 				effects = { Happiness = -2 },
+				setFlags = { inheritance_received = true }, -- CRITICAL FIX: Mark as done to prevent repeats
 				feedText = "You declined to accept the inheritance. You never know what strings were attached.",
 			},
 		},
@@ -1919,6 +1924,8 @@ Random.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					local age = state.Age or 40
+					state.Flags = state.Flags or {}
+					state.Flags.cancer_scare_done = true -- CRITICAL FIX: Mark as done to prevent repeats
 					-- Older = slightly higher cancer risk
 					local cancerRisk = 0.15 + (age - 25) / 200
 					if roll < 0.50 then -- 50% false alarm
@@ -1929,19 +1936,16 @@ Random.events = {
 						state:ModifyStat("Health", -18)
 						state:ModifyStat("Happiness", -10)
 						state.Money = math.max(0, (state.Money or 0) - 8000)
-						state.Flags = state.Flags or {}
 						state.Flags.cancer_survivor = true
 						state:AddFeed("🎗️ Cancer caught early. Treatment is working. You'll beat this.")
 					elseif roll < 0.50 + cancerRisk then -- Variable serious
 						state:ModifyStat("Health", -35)
 						state:ModifyStat("Happiness", -20)
 						state.Money = math.max(0, (state.Money or 0) - 20000)
-						state.Flags = state.Flags or {}
 						state.Flags.battling_cancer = true
 						state:AddFeed("🎗️ Serious diagnosis. The fight of your life begins.")
 					else -- Need more tests
 						state:ModifyStat("Happiness", -5)
-						state.Flags = state.Flags or {}
 						state.Flags.health_scare = true
 						state:AddFeed("🎗️ Results inconclusive. More tests needed...")
 					end
@@ -1953,6 +1957,7 @@ Random.events = {
 				feedText = "You put off facing the truth...",
 				onResolve = function(state)
 					state.Flags = state.Flags or {}
+					state.Flags.cancer_scare_done = true -- CRITICAL FIX: Mark as done to prevent repeats
 					state.Flags.delayed_diagnosis = true
 					state.Flags.health_scare = true
 					state:AddFeed("🎗️ The uncertainty weighs on you. Should get tested soon...")

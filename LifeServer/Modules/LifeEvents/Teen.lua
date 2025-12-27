@@ -985,11 +985,17 @@ Teen.events = {
 						state:ModifyStat("Happiness", 10)
 						state:ModifyStat("Smarts", 3)
 						state.Flags = state.Flags or {}
+						-- CRITICAL FIX: Set ALL license flag variations for compatibility!
 						state.Flags.has_license = true
 						state.Flags.drivers_license = true
+						state.Flags.driver_license = true
+						state.Flags.has_drivers_license = true
+						state.Flags.learned_driving = true
 						state:AddFeed("🚗 You passed the driving test! You're licensed!")
 					else
 						state:ModifyStat("Happiness", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.learned_driving = true -- Mark as attempted
 						state:AddFeed("🚗 You failed the driving test. Hit a cone. Try again next time.")
 					end
 				end,
@@ -1007,13 +1013,18 @@ Teen.events = {
 					if math.random() < (baseChance + bonus) then
 						state:ModifyStat("Happiness", 7)
 						state.Flags = state.Flags or {}
+						-- CRITICAL FIX: Set ALL license flag variations for compatibility!
 						state.Flags.has_license = true
 						state.Flags.drivers_license = true
+						state.Flags.driver_license = true
+						state.Flags.has_drivers_license = true
+						state.Flags.learned_driving = true
 						state:AddFeed("🚗 Somehow you passed despite being nervous! Licensed driver!")
 					else
 						state:ModifyStat("Happiness", -8)
 						state.Flags = state.Flags or {}
 						state.Flags.nervous_driver = true
+						state.Flags.learned_driving = true -- Mark as attempted
 						state:AddFeed("🚗 You were too nervous and failed. The examiner was not impressed.")
 					end
 				end,
@@ -1032,12 +1043,18 @@ Teen.events = {
 					if math.random() < (baseChance + bonus) then
 						state:ModifyStat("Happiness", 12)
 						state.Flags = state.Flags or {}
+						-- CRITICAL FIX: Set ALL license flag variations for compatibility!
 						state.Flags.has_license = true
 						state.Flags.drivers_license = true
+						state.Flags.driver_license = true
+						state.Flags.has_drivers_license = true
+						state.Flags.learned_driving = true
 						state.Flags.good_driver = true
 						state:AddFeed("🚗 Perfect score! Your preparation paid off. Licensed to drive!")
 					else
 						state:ModifyStat("Happiness", -3)
+						state.Flags = state.Flags or {}
+						state.Flags.learned_driving = true -- Mark as attempted
 						state:AddFeed("🚗 Despite preparing, you made a mistake. Failed, but you'll get it next time.")
 					end
 				end,
@@ -2685,19 +2702,21 @@ Teen.events = {
 			{
 				text = "Nail it perfectly!",
 				effects = { Happiness = 20 },
-				setFlags = { has_license = true, good_driver = true },
+				-- CRITICAL FIX: Set ALL license flags via onResolve for compatibility
+				setFlags = { has_license = true, good_driver = true, drivers_license = true, driver_license = true, has_drivers_license = true, learned_driving = true },
 				feedText = "🚗 You passed! Freedom awaits!",
 			},
 			{
 				text = "Pass, but barely",
 				effects = { Happiness = 12 },
-				setFlags = { has_license = true },
+				-- CRITICAL FIX: Set ALL license flags via onResolve for compatibility
+				setFlags = { has_license = true, drivers_license = true, driver_license = true, has_drivers_license = true, learned_driving = true },
 				feedText = "🚗 A pass is a pass! You got your license!",
 			},
 			{
 				text = "Fail miserably",
 				effects = { Happiness = -15 },
-				setFlags = { failed_driving_test = true },
+				setFlags = { failed_driving_test = true, learned_driving = true },
 				feedText = "😬 You ran over three cones and a sign. Maybe next time.",
 			},
 			{
