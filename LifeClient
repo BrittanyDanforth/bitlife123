@@ -3134,9 +3134,9 @@ local function buildEventModal()
 		createShadow(EventUI.shell, Device.IS_SMALL_PHONE and 4 or 6, Device.IS_SMALL_PHONE and px(14) or px(20), C.Black, 0.85)
 	end
 
-	-- CRITICAL FIX: Card is now a ScrollingFrame that enables scrolling when content overflows
-	-- This prevents cards with lots of text/choices from going off screen
-	EventUI.card = Instance.new("ScrollingFrame")
+	-- CRITICAL FIX: Card is a regular Frame - NO SCROLLING!
+	-- Text and buttons will be made smaller to fit screen perfectly
+	EventUI.card = Instance.new("Frame")
 	EventUI.card.Name = "EventCard"
 	EventUI.card.Size = UDim2.new(1, -cardMargin, 0, 0)
 	EventUI.card.AutomaticSize = Enum.AutomaticSize.Y
@@ -3145,18 +3145,7 @@ local function buildEventModal()
 	EventUI.card.ZIndex = 63
 	EventUI.card.ClipsDescendants = true  -- Safety clip to prevent visual leaks
 	EventUI.card.Parent = EventUI.shell
-	-- Scrolling properties - only activates when needed
-	EventUI.card.CanvasSize = UDim2.new(1, 0, 0, 0)
-	EventUI.card.AutomaticCanvasSize = Enum.AutomaticSize.Y
-	EventUI.card.ScrollingDirection = Enum.ScrollingDirection.Y
-	EventUI.card.ScrollBarThickness = Device.IS_MOBILE and 3 or 5
-	EventUI.card.ScrollBarImageColor3 = C.Gray400
-	EventUI.card.ScrollingEnabled = false  -- Start disabled, enable dynamically if needed
-	EventUI.card.BorderSizePixel = 0
 	corner(EventUI.card, Device.IS_TINY_PHONE and 10 or (Device.IS_SMALL_PHONE and 14 or px(20)))
-	
-	-- Store max card content height for dynamic scroll enabling
-	EventUI.maxCardContentHeight = maxEventHeight - shellMargin - cardMargin - 20  -- 20px buffer
 
 	local eventLayout = Instance.new("UIListLayout")
 	eventLayout.Padding = UDim.new(0, 0)
