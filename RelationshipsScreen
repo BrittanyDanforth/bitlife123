@@ -19,6 +19,8 @@ F.Title  = F.Title  or Enum.Font.GothamBold   or Enum.Font.SourceSansBold or DEF
 F.Body   = F.Body   or Enum.Font.Gotham       or Enum.Font.SourceSans     or DEFAULT_FONT
 F.Medium = F.Medium or Enum.Font.GothamMedium or Enum.Font.SourceSans     or DEFAULT_FONT
 F.Button = F.Button or Enum.Font.GothamBold   or Enum.Font.SourceSansBold or DEFAULT_FONT
+-- CRITICAL FIX: F.Bold was missing! Used on line 1525 (createPetCard) and caused nil Font errors
+F.Bold   = F.Bold   or Enum.Font.GothamBold   or Enum.Font.SourceSansBold or DEFAULT_FONT
 
 -- Extra safety: ensure all F values are valid Enum.Font
 for key, value in pairs(F) do

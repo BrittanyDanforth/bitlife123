@@ -28,7 +28,8 @@ EarlyLifeEvents.events = {
 		question = "What kind of baby are you?",
 		minAge = 0, maxAge = 1,
 		baseChance = 0.8,
-		cooldown = 1,
+		cooldown = 2, -- CRITICAL FIX: Increased to prevent spam
+		oneTime = true, -- Only happens once per life
 		
 		choices = {
 			{
@@ -99,8 +100,8 @@ EarlyLifeEvents.events = {
 		text = "Time for your routine baby checkup at the doctor's office!",
 		question = "How does it go?",
 		minAge = 0, maxAge = 2,
-		baseChance = 0.7,
-		cooldown = 1,
+		baseChance = 0.5, -- CRITICAL FIX: Reduced to prevent spam
+		cooldown = 2, -- CRITICAL FIX: Increased cooldown
 		
 		choices = {
 			{
