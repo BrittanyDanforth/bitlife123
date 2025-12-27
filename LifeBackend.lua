@@ -15387,11 +15387,25 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 	if choice.effects or eventDef.source == "lifeevents" or eventDef.source == "stage" then
 		local preStats = table.clone(state.Stats)
 		local preMoney = state.Money
-		local success, err = pcall(function()
-			EventEngine.completeEvent(eventDef, choiceIndex, state)
+		local success, result = pcall(function()
+			return EventEngine.completeEvent(eventDef, choiceIndex, state)
 		end)
 		if not success then
-			warn("[LifeBackend] Event resolution error:", err)
+			warn("[LifeBackend] Event resolution error:", result)
+		elseif result and result.failed then
+			-- CRITICAL FIX: Handle choice eligibility/affordability failures!
+			-- User bug: "IT SAYS MOVING OUT BUT DIDNT CHECK IF IM BROKE"
+			-- Show the error message to the player instead of applying the choice
+			warn("[LifeBackend] Choice failed eligibility:", result.failReason)
+			self:pushState(player, nil, {
+				showPopup = true,
+				emoji = "❌",
+				title = "Can't Do That!",
+				body = result.failReason or "You can't select this option right now.",
+				wasSuccess = false,
+			})
+			-- Don't continue with the rest of the event resolution
+			return
 		end
 		effectsSummary = {
 			Happiness = (state.Stats.Happiness - preStats.Happiness),

@@ -1509,7 +1509,7 @@ Milestones.events = {
 		},
 	},
 	{
-		id = "moving_out",
+		id = "milestone_moving_out",  -- CRITICAL FIX: Renamed to avoid duplicate ID
 		title = "Moving Out!",
 		emoji = "🏠",
 		text = "It's time to leave the nest! You're getting your own place! Rent will be about $900/month.",
@@ -1518,6 +1518,29 @@ Milestones.events = {
 		oneTime = true,
 		priority = "high",
 		isMilestone = true,
+		
+		-- CRITICAL FIX: Can't move out if already moved out or broke!
+		blockedByFlags = {
+			moved_out = true,
+			has_own_place = true,
+			has_apartment = true,
+			in_prison = true,
+			homeless = true,
+		},
+		
+		-- CRITICAL FIX: Must be able to AFFORD to move out!
+		eligibility = function(state)
+			local money = state.Money or 0
+			-- Need at least $1000 to move out
+			if money < 1000 then
+				return false, "💸 You need at least $1,000 to move out! Save up first."
+			end
+			-- If no job, need more savings
+			if not state.CurrentJob and money < 5000 then
+				return false, "💸 Without a job, you need $5,000+ saved to move out safely!"
+			end
+			return true
+		end,
 
 		stage = "adult",
 		ageBand = "young_adult",

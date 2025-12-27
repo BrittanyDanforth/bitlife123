@@ -4055,6 +4055,54 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: AUTOMATIC AFFORDABILITY CHECK!
+	-- User bug: "IT SAYS MOVING OUT YOUR OWN PLACE BUT DIDNT CHECK IF IM BROKE"
+	-- This automatically checks if the player can afford choices with Money costs
+	-- BEFORE they can select them - prevents broke players from choosing expensive options!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if choice.effects and choice.effects.Money and choice.effects.Money < 0 then
+		local cost = math.abs(choice.effects.Money)
+		local playerMoney = state.Money or 0
+		
+		-- Check if player can afford this choice
+		if playerMoney < cost then
+			-- Format cost nicely
+			local costStr = "$" .. tostring(cost)
+			if cost >= 1000 then
+				costStr = "$" .. string.format("%.0f", cost / 1000) .. "K"
+			end
+			
+			warn("[EventEngine] Affordability check failed:", eventDef.id, "choice:", choiceIndex, 
+				"- costs", cost, "but player only has", playerMoney)
+			
+			return {
+				success = false,
+				failed = true,
+				failReason = "💸 You can't afford this! You need " .. costStr .. " but only have $" .. tostring(playerMoney) .. ".",
+				eventId = eventDef.id,
+				choiceIndex = choiceIndex,
+			}
+		end
+	end
+	
+	-- Also check 'cost' field which some events use instead of effects.Money
+	if choice.cost and choice.cost > 0 then
+		local playerMoney = state.Money or 0
+		if playerMoney < choice.cost then
+			local costStr = "$" .. tostring(choice.cost)
+			warn("[EventEngine] Cost check failed:", eventDef.id, "choice:", choiceIndex,
+				"- costs", choice.cost, "but player only has", playerMoney)
+			return {
+				success = false,
+				failed = true,
+				failReason = "💸 You can't afford this! You need $" .. tostring(choice.cost) .. " but only have $" .. tostring(playerMoney) .. ".",
+				eventId = eventDef.id,
+				choiceIndex = choiceIndex,
+			}
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Check per-choice eligibility BEFORE applying effects
 	-- This prevents players from selecting choices they can't afford or aren't qualified for
 	-- ═══════════════════════════════════════════════════════════════════════════════

@@ -17,7 +17,7 @@ Adult.events = {
 	-- YOUNG ADULT (18-29)
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "moving_out",
+		id = "adult_moving_out",  -- CRITICAL FIX: Renamed to avoid duplicate ID with Milestones.lua
 		title = "Time to Leave the Nest",
 		emoji = "🏠",
 		-- CRITICAL FIX: Better text explaining the financial implications
@@ -25,8 +25,30 @@ Adult.events = {
 		question = "What's your plan?",
 		minAge = 18, maxAge = 24,
 		oneTime = true,
-		-- CRITICAL FIX: Can't move out from prison!
-		blockedByFlags = { in_prison = true, incarcerated = true },
+		-- CRITICAL FIX: Can't move out from prison or if already moved out!
+		blockedByFlags = { 
+			in_prison = true, 
+			incarcerated = true,
+			moved_out = true,        -- Already moved out
+			has_own_place = true,    -- Already has own place
+			has_apartment = true,    -- Already has apartment
+			homeless = true,         -- Homeless people can't "move out"
+		},
+		
+		-- CRITICAL FIX: Must be able to afford rent! No more broke people moving out!
+		eligibility = function(state)
+			local money = state.Money or 0
+			-- Need at least $1000 to move out (first month rent + deposit)
+			if money < 1000 then
+				return false, "You need at least $1,000 saved to move out (first month + deposit)!"
+			end
+			-- Must have a job OR significant savings to afford rent
+			local hasJob = state.CurrentJob ~= nil
+			if not hasJob and money < 5000 then
+				return false, "Without a job, you need at least $5,000 saved to move out!"
+			end
+			return true
+		end,
 
 		-- META
 		stage = STAGE,
