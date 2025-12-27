@@ -67,7 +67,7 @@ MedicalEvents.DoctorVisit = {
 	},
 	-- Event 2: Good news
 	{
-		id = "doctor_good_news",
+		id = "medical_doctor_good_news", -- CRITICAL FIX: Renamed to avoid duplicate ID
 		title = "✅ Good Health News!",
 		texts = {
 			"The doctor reviews your results with a smile.",

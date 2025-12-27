@@ -966,6 +966,9 @@ Teen.events = {
 		question = "How do you approach the test?",
 		minAge = 16, maxAge = 17,
 		oneTime = true,
+		maxOccurrences = 1,
+		-- CRITICAL FIX: Block if already have license OR already did another driving event
+		blockedByFlags = { has_license = true, drivers_license = true, driver_license = true, has_drivers_license = true, driving_done = true, in_prison = true },
 
 		-- CRITICAL FIX: Random outcome based on choice + stats, not player-picked result!
 		choices = {
@@ -1220,8 +1223,10 @@ Teen.events = {
 		text = "It's your senior year and motivation is... lacking.",
 		question = "How do you handle senioritis?",
 		minAge = 17, maxAge = 18,
-		baseChance = 0.7,
-		cooldown = 3,
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased from 3
+		oneTime = true, -- CRITICAL FIX: Only happens once per life
+		blockedByFlags = { in_prison = true, dropped_out_high_school = true, senioritis_event_done = true },
 
 		choices = {
 			{ text = "Coast through - already got into college", effects = { Smarts = -3, Happiness = 5 }, setFlags = { senioritis = true }, feedText = "You're doing the bare minimum. Living the dream!" },
@@ -2727,17 +2732,18 @@ Teen.events = {
 		},
 	},
 	
-	-- SOCIAL MEDIA DRAMA
+	-- SOCIAL MEDIA DRAMA - MESSAGES LEAKED
 	{
-		id = "teen_social_media_drama",
-		title = "Online Drama",
+		id = "teen_messages_leaked", -- CRITICAL FIX: Renamed from duplicate teen_social_media_drama
+		title = "Messages Leaked!",
 		emoji = "📱",
 		text = "Someone screenshot your private messages and shared them publicly. People are talking.",
 		question = "How do you handle this?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.555,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
-		maxOccurrences = 2,
+		baseChance = 0.45, -- CRITICAL FIX: Reduced from 0.555 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased from 4 to reduce spam
+		maxOccurrences = 1, -- CRITICAL FIX: Only happens once
+		blockedByFlags = { in_prison = true, dropped_out_high_school = true, messages_leaked_done = true },
 		choices = {
 			{
 				text = "Address it publicly and own it",

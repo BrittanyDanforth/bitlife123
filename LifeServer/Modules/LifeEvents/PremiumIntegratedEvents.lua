@@ -1147,7 +1147,11 @@ PremiumIntegratedEvents.events = {
 		tags = { "business", "investment", "opportunity" },
 		
 		eligibility = function(state)
-			return (state.Money or 0) >= 1000
+			local money = state.Money or 0
+			if money < 1000 then
+				return false, "💸 You need at least $1,000 to see this opportunity"
+			end
+			return true
 		end,
 		
 		choices = {
@@ -1664,7 +1668,11 @@ PremiumIntegratedEvents.events = {
 		tags = { "friend", "money", "loyalty" },
 		
 		eligibility = function(state)
-			return (state.Money or 0) >= 1000
+			local money = state.Money or 0
+			if money < 1000 then
+				return false, "💸 You don't have enough money to help"
+			end
+			return true
 		end,
 		
 		choices = {

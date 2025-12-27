@@ -313,8 +313,10 @@ EarlyLifeEvents.events = {
 		text = "You've become obsessed with a particular cartoon show!",
 		question = "What happens with this obsession?",
 		minAge = 2, maxAge = 6,
-		baseChance = 0.7,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.45, -- CRITICAL FIX: Reduced from 0.7 to prevent spam
+		cooldown = 6, -- CRITICAL FIX: Increased from 4
+		oneTime = true, -- CRITICAL FIX: Only happens once
+		blockedByFlags = { in_prison = true, cartoon_obsession_done = true },
 		
 		choices = {
 			{
@@ -3758,8 +3760,12 @@ EarlyLifeEvents.events = {
 		text = "There's a cute puppy at the park! It comes right up to you!",
 		question = "What do you do?",
 		minAge = 2, maxAge = 5,
-		baseChance = 0.75,
-		cooldown = 3,
+		baseChance = 0.45, -- CRITICAL FIX: Reduced from 0.75 to prevent spam
+		cooldown = 6, -- CRITICAL FIX: Increased from 3 to prevent spam
+		oneTime = true, -- CRITICAL FIX: Only happens once
+		maxOccurrences = 1,
+		-- CRITICAL FIX: Block if already has pet or already did this event
+		blockedByFlags = { has_pet = true, has_childhood_pet = true, toddler_pet_done = true },
 		
 		choices = {
 			{
@@ -4423,9 +4429,12 @@ EarlyLifeEvents.events = {
 		text = "This is the BIGGEST choice you've ever made! Well... at your age anyway.",
 		question = "What major thing do you want?",
 		minAge = 2, maxAge = 4,
-		baseChance = 0.45, -- FIXED: Lowered from 0.75
-		cooldown = 4, -- FIXED: Increased from 2
-		oneTime = true, -- FIXED: Only once per life
+		baseChance = 0.4, -- CRITICAL FIX: Reduced from 0.45 to prevent spam
+		cooldown = 6, -- CRITICAL FIX: Increased from 4
+		oneTime = true, -- CRITICAL FIX: Only once per life
+		maxOccurrences = 1,
+		-- CRITICAL FIX: Block if already did this event
+		blockedByFlags = { toddler_big_choice_done = true },
 		
 		choices = {
 			{

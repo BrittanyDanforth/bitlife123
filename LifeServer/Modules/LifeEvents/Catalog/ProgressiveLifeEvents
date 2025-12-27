@@ -717,7 +717,10 @@ ProgressiveLifeEvents.events = {
 		tags = { "work", "money", "responsibility" },
 		-- Only show if player doesn't already have a job
 		eligibility = function(state)
-			return not state.CurrentJob
+			if state.CurrentJob then
+				return false, "💼 You already have a job!"
+			end
+			return true
 		end,
 		choices = {
 			{

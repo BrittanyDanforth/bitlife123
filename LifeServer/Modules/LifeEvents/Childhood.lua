@@ -343,8 +343,14 @@ Childhood.events = {
 		text = "An older kid at school has been picking on you and other kids.",
 		question = "How do you handle this?",
 		minAge = 6, maxAge = 10,
-		baseChance = 0.6,
-		cooldown = 3,
+		baseChance = 0.45, -- CRITICAL FIX: Reduced from 0.6 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased from 3
+		-- CRITICAL FIX: Add blockedByFlags to prevent random popups
+		blockedByFlags = { 
+			in_prison = true, 
+			dropped_out = true,
+			dealt_with_bully = true,  -- Prevent repeat if already dealt with
+		},
 
 		-- META
 		stage = STAGE,
@@ -609,7 +615,11 @@ Childhood.events = {
 		question = "What do you do about these feelings?",
 		minAge = 9, maxAge = 12,
 		oneTime = true,
-		baseChance = 0.7,
+		maxOccurrences = 1,
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Added cooldown
+		-- CRITICAL FIX: Block if already experienced first crush
+		blockedByFlags = { had_first_crush = true, in_prison = true, dropped_out = true },
 
 		-- META
 		stage = STAGE,

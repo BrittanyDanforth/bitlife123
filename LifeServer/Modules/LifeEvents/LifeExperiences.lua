@@ -1284,7 +1284,10 @@ LifeExperiences.events = {
 				effects = { Happiness = 10 },
 				feedText = "📢 They've heard how you climbed from nothing. Inspiration!",
 				eligibility = function(state)
-					return state.Flags and (state.Flags.rags_to_riches or state.Flags.self_made or state.Flags.successful_entrepreneur)
+					if not (state.Flags and (state.Flags.rags_to_riches or state.Flags.self_made or state.Flags.successful_entrepreneur)) then
+						return false, "You don't have a success story to share yet"
+					end
+					return true
 				end,
 			},
 			{
@@ -1292,7 +1295,10 @@ LifeExperiences.events = {
 				effects = { Happiness = 8 },
 				feedText = "📢 Word of your charity work has spread. People thank you!",
 				eligibility = function(state)
-					return state.Flags and (state.Flags.charitable or state.Flags.philanthropist or state.Flags.generous)
+					if not (state.Flags and (state.Flags.charitable or state.Flags.philanthropist or state.Flags.generous)) then
+						return false, "You haven't been notably generous yet"
+					end
+					return true
 				end,
 			},
 			{
@@ -1300,7 +1306,10 @@ LifeExperiences.events = {
 				effects = { Happiness = -8 },
 				feedText = "📢 They know what you did. The whispers follow you everywhere.",
 				eligibility = function(state)
-					return state.Flags and (state.Flags.has_criminal_record or state.Flags.scandal or state.Flags.controversial)
+					if not (state.Flags and (state.Flags.has_criminal_record or state.Flags.scandal or state.Flags.controversial)) then
+						return false, "You don't have a dark past to speak of"
+					end
+					return true
 				end,
 			},
 			{
@@ -1308,7 +1317,10 @@ LifeExperiences.events = {
 				effects = { Happiness = 6, Smarts = 2 },
 				feedText = "📢 You're known as an expert in your field. Respect!",
 				eligibility = function(state)
-					return state.Flags and (state.Flags.industry_expert or state.Flags.accomplished or state.Flags.promoted_multiple_times)
+					if not (state.Flags and (state.Flags.industry_expert or state.Flags.accomplished or state.Flags.promoted_multiple_times)) then
+						return false, "You haven't established professional expertise yet"
+					end
+					return true
 				end,
 			},
 		},
