@@ -102,11 +102,11 @@ Childhood.events = {
 			"The toy aisle is torture. You NEED that action figure, but it's a no.",
 			"Your parents are trying to leave the store, but you've spotted something...",
 		},
-		text = "You want a toy at the store, but your parents said no.",
-		question = "What do you do?",
-		minAge = 2, maxAge = 3,
-		baseChance = 0.8,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+	text = "You want a toy at the store, but your parents said no.",
+	question = "What do you do?",
+	minAge = 2, maxAge = 3,
+	baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
+	cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 
 		-- META
 		stage = STAGE,

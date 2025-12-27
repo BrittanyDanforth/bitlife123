@@ -926,8 +926,8 @@ LifeExperiences.events = {
 		text = "Being an escaped convict is exhausting. Every day is a struggle to stay hidden.",
 		question = "How do you handle life as a fugitive?",
 		minAge = 18, maxAge = 80,
-		baseChance = 0.8,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.55, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "consequence",

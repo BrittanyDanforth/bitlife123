@@ -1931,17 +1931,21 @@ local stats = {
 
 for i, stat in ipairs(stats) do
 	local row = Instance.new("Frame")
-	row.Size = UDim2.new(1, 0, 0, 40)
+	-- CRITICAL FIX: Better row sizing for mobile
+	local rowHeight = Device.IS_TINY_PHONE and 36 or 42
+	row.Size = UDim2.new(1, 0, 0, rowHeight)
 	row.BackgroundTransparency = 1
 	row.LayoutOrder = i
 	row.ZIndex = 153
 	row.Parent = statSection
 	
 	local lbl = Instance.new("TextLabel")
-	lbl.Size = UDim2.new(0, 80, 1, 0)
+	-- CRITICAL FIX: Responsive label width for mobile
+	local lblWidth = Device.IS_TINY_PHONE and 70 or 85
+	lbl.Size = UDim2.new(0, lblWidth, 1, 0)
 	lbl.BackgroundTransparency = 1
 	lbl.Font = F.Medium
-	lbl.TextSize = 14
+	lbl.TextSize = Device.IS_TINY_PHONE and 12 or 14
 	lbl.TextColor3 = C.Gray700
 	lbl.TextXAlignment = Enum.TextXAlignment.Left
 	lbl.Text = stat.emoji .. " " .. stat.key
@@ -1949,8 +1953,12 @@ for i, stat in ipairs(stats) do
 	lbl.Parent = row
 	
 	local sliderBg = Instance.new("Frame")
-	sliderBg.Size = UDim2.new(1, -130, 0, 20)
-	sliderBg.Position = UDim2.new(0, 85, 0.5, -10)
+	-- CRITICAL FIX: Better slider positioning for mobile - centered vertically
+	local sliderOffset = Device.IS_TINY_PHONE and 75 or 90
+	local sliderPadding = Device.IS_TINY_PHONE and 115 or 135
+	local sliderHeight = Device.IS_TINY_PHONE and 18 or 22
+	sliderBg.Size = UDim2.new(1, -sliderPadding, 0, sliderHeight)
+	sliderBg.Position = UDim2.new(0, sliderOffset, 0.5, -sliderHeight/2)
 	sliderBg.BackgroundColor3 = C.Gray200
 	sliderBg.ZIndex = 154
 	sliderBg.Parent = row
@@ -1964,11 +1972,15 @@ for i, stat in ipairs(stats) do
 	corner(sliderFill, 6)
 	
 	local valInput = Instance.new("TextBox")
-	valInput.Size = UDim2.new(0, 40, 0, 28)
-	valInput.Position = UDim2.new(1, -40, 0.5, -14)
+	-- CRITICAL FIX: Better input box sizing for mobile - properly centered
+	local inputW = Device.IS_TINY_PHONE and 36 or 42
+	local inputH = Device.IS_TINY_PHONE and 24 or 30
+	valInput.Size = UDim2.new(0, inputW, 0, inputH)
+	valInput.Position = UDim2.new(1, -inputW, 0.5, -inputH/2)
+	valInput.AnchorPoint = Vector2.new(0, 0) -- Explicitly anchor top-left
 	valInput.BackgroundColor3 = C.Gray100
 	valInput.Font = F.Medium
-	valInput.TextSize = 14
+	valInput.TextSize = Device.IS_TINY_PHONE and 12 or 14
 	valInput.TextColor3 = C.Gray800
 	valInput.Text = "50"
 	valInput.ZIndex = 154
@@ -2025,9 +2037,17 @@ actionsGrid.ZIndex = 152
 actionsGrid.LayoutOrder = 4
 actionsGrid.Parent = modalScroll
 
+-- CRITICAL FIX: Better grid layout for mobile - properly centered cells
 local gridLayout = Instance.new("UIGridLayout")
-gridLayout.CellSize = UDim2.new(0.48, 0, 0, 50)
-gridLayout.CellPadding = UDim2.new(0.02, 0, 0, 8)
+-- CRITICAL FIX: Use fixed cell sizes for better mobile centering
+local cellWidth = Device.IS_TINY_PHONE and 135 or (Device.IS_SMALL_PHONE and 150 or 170)
+local cellHeight = Device.IS_TINY_PHONE and 52 or 56
+gridLayout.CellSize = UDim2.new(0, cellWidth, 0, cellHeight)
+gridLayout.CellPadding = UDim2.new(0, 8, 0, 8)
+-- CRITICAL FIX: Center the grid horizontally
+gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+gridLayout.FillDirection = Enum.FillDirection.Horizontal
+gridLayout.FillDirectionMaxCells = 2 -- 2 columns
 gridLayout.Parent = actionsGrid
 
 -- CRITICAL FIX #164 + #183: Quick action buttons for God Mode - Expanded list
@@ -2048,12 +2068,17 @@ local godModeActionBtns = {}
 for i, action in ipairs(quickActions) do
 	local btn = Instance.new("TextButton")
 	btn.Name = action.id
-	btn.Size = UDim2.new(0.48, 0, 0, 50)
 	btn.BackgroundColor3 = C.Gray100
 	btn.Text = ""
 	btn.ZIndex = 153
 	btn.Parent = actionsGrid
 	corner(btn, 10)
+	
+	-- CRITICAL FIX: Add padding inside button for better mobile appearance
+	local btnPad = Instance.new("UIPadding")
+	btnPad.PaddingLeft = UDim.new(0, 6)
+	btnPad.PaddingRight = UDim.new(0, 6)
+	btnPad.Parent = btn
 	
 	local btnContent = Instance.new("Frame")
 	btnContent.Size = UDim2.fromScale(1, 1)
@@ -2061,36 +2086,43 @@ for i, action in ipairs(quickActions) do
 	btnContent.ZIndex = 154
 	btnContent.Parent = btn
 	
+	-- CRITICAL FIX: Better emoji positioning - centered vertically
 	local emoji = Instance.new("TextLabel")
-	emoji.Size = UDim2.new(0, 30, 1, 0)
-	emoji.Position = UDim2.new(0, 5, 0, 0)
+	local emojiSize = Device.IS_TINY_PHONE and 24 or 28
+	emoji.Size = UDim2.new(0, emojiSize, 1, 0)
+	emoji.Position = UDim2.new(0, 0, 0, 0)
 	emoji.BackgroundTransparency = 1
 	emoji.Font = F.Body
-	emoji.TextSize = 20
+	emoji.TextSize = Device.IS_TINY_PHONE and 16 or 18
 	emoji.Text = action.emoji
+	emoji.TextYAlignment = Enum.TextYAlignment.Center
 	emoji.ZIndex = 155
 	emoji.Parent = btnContent
 	
+	-- CRITICAL FIX: Better text positioning - properly aligned
+	local textOffset = Device.IS_TINY_PHONE and 26 or 30
 	local name = Instance.new("TextLabel")
-	name.Size = UDim2.new(1, -40, 0, 20)
-	name.Position = UDim2.new(0, 35, 0, 5)
+	name.Size = UDim2.new(1, -textOffset, 0, 18)
+	name.Position = UDim2.new(0, textOffset, 0, Device.IS_TINY_PHONE and 6 or 8)
 	name.BackgroundTransparency = 1
 	name.Font = F.Medium
-	name.TextSize = 12
+	name.TextSize = Device.IS_TINY_PHONE and 10 or 12
 	name.TextColor3 = C.Gray800
 	name.TextXAlignment = Enum.TextXAlignment.Left
+	name.TextTruncate = Enum.TextTruncate.AtEnd -- Prevent overflow
 	name.Text = action.name
 	name.ZIndex = 155
 	name.Parent = btnContent
 	
 	local desc = Instance.new("TextLabel")
-	desc.Size = UDim2.new(1, -40, 0, 16)
-	desc.Position = UDim2.new(0, 35, 0, 26)
+	desc.Size = UDim2.new(1, -textOffset, 0, 14)
+	desc.Position = UDim2.new(0, textOffset, 0, Device.IS_TINY_PHONE and 24 or 28)
 	desc.BackgroundTransparency = 1
 	desc.Font = F.Body
-	desc.TextSize = 10
+	desc.TextSize = Device.IS_TINY_PHONE and 8 or 9
 	desc.TextColor3 = C.Gray500
 	desc.TextXAlignment = Enum.TextXAlignment.Left
+	desc.TextTruncate = Enum.TextTruncate.AtEnd -- Prevent overflow
 	desc.Text = action.desc
 	desc.ZIndex = 155
 	desc.Parent = btnContent

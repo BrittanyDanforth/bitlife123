@@ -2674,8 +2674,8 @@ Random.events = {
 		text = "Another day homeless. The streets are harsh and unforgiving.",
 		question = "How do you survive today?",
 		minAge = 18, maxAge = 80,
-		baseChance = 0.9,
-		cooldown = 1,
+		baseChance = 0.6, -- CRITICAL FIX: Reduced from 0.9 to prevent spam
+		cooldown = 3, -- CRITICAL FIX: Increased from 1 to prevent spam
 		requiresFlags = { homeless = true },
 
 		choices = {

@@ -136,7 +136,7 @@ Adult.events = {
 		},
 		question = "What's your focus?",
 		minAge = 18, maxAge = 22,
-		baseChance = 0.7, -- CRITICAL FIX #700: High chance for college events
+		baseChance = 0.55, -- CRITICAL FIX: Reduced from 0.7 to prevent spam
 		-- CRITICAL FIX #516: Accept MULTIPLE flags for college eligibility
 		-- Was only checking college_bound but user could have in_college, enrolled_college, etc.
 		eligibility = function(state)
@@ -145,7 +145,7 @@ Adult.events = {
 			       state.Flags.enrolled_college or state.Flags.college_student or
 			       (state.EducationData and state.EducationData.Status == "enrolled")
 		end,
-		cooldown = 1, -- CRITICAL FIX #701: Reduced cooldown for more variety
+		cooldown = 3, -- CRITICAL FIX: Increased from 1 to prevent spam
 
 		-- META
 		stage = STAGE,
@@ -212,7 +212,7 @@ Adult.events = {
 		text = "It's time to officially declare your major.",
 		question = "What will you study?",
 		minAge = 19, maxAge = 21,
-		baseChance = 0.8, -- CRITICAL FIX #702: High chance for milestone
+		baseChance = 0.6, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
 		oneTime = true,
 		-- CRITICAL FIX #703: Accept multiple college flags
 		eligibility = function(state)

@@ -145,8 +145,8 @@ events[#events + 1] = {
 	text = "Your friend says you need to leave. You've been on their couch for weeks and they need their space back.",
 	question = "Where do you go now?",
 	minAge = 18, maxAge = 70,
-	baseChance = 0.85,
-	cooldown = 1,
+	baseChance = 0.55, -- CRITICAL FIX: Reduced from 0.85 to prevent spam
+	cooldown = 4, -- CRITICAL FIX: Increased from 1 to prevent spam
 	requiresFlags = { couch_surfing = true },
 	blockedByFlags = { homeless = true },
 	
@@ -199,8 +199,8 @@ events[#events + 1] = {
 	text = "The sun rises on another day without a home. Your stomach growls and you need to figure out where your next meal is coming from.",
 	question = "How do you start your day?",
 	minAge = 18, maxAge = 80,
-	baseChance = 0.85,
-	cooldown = 1,
+	baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.85 to prevent spam
+	cooldown = 3, -- CRITICAL FIX: Increased from 1 to prevent spam
 	requiresFlags = { homeless = true },
 	blockedByFlags = { in_prison = true },
 	
@@ -270,8 +270,8 @@ events[#events + 1] = {
 	text = "Night is falling and you need somewhere to sleep. The temperature is dropping.",
 	question = "Where do you sleep tonight?",
 	minAge = 18, maxAge = 80,
-	baseChance = 0.8,
-	cooldown = 1,
+	baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
+	cooldown = 3, -- CRITICAL FIX: Increased from 1 to prevent spam
 	requiresFlags = { homeless = true },
 	blockedByFlags = { in_prison = true, using_shelter = true },
 	

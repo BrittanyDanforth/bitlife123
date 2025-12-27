@@ -72,8 +72,8 @@ FamilyEvents.events = {
 		text = "The baby is coming!",
 		question = "How does the birth go?",
 		minAge = 18, maxAge = 50,
-		baseChance = 0.8,
-		cooldown = 4,
+		baseChance = 0.65, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		oneTime = false,
 		stage = STAGE,
 		ageBand = "adult",
@@ -672,8 +672,8 @@ FamilyEvents.events = {
 		text = "The loss of your parent still weighs heavily on you. The house feels empty.",
 		question = "How do you cope with the grief?",
 		minAge = 18, maxAge = 60,
-		baseChance = 0.8,
-		cooldown = 3,
+		baseChance = 0.55, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		oneTime = true,
 		stage = STAGE,
 		ageBand = "adult",

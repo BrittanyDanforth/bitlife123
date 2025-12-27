@@ -571,8 +571,8 @@ EarlyLifeEvents.events = {
 		text = "Your tooth is super wiggly! It's about to fall out!",
 		question = "How does it come out?",
 		minAge = 5, maxAge = 8,
-		baseChance = 0.8,
-		cooldown = 1,
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
+		cooldown = 2, -- CRITICAL FIX: Increased from 1 to prevent spam
 		
 		choices = {
 			{
@@ -619,8 +619,8 @@ EarlyLifeEvents.events = {
 		text = "It's your birthday! You're having a party!",
 		question = "What kind of party do you want?",
 		minAge = 4, maxAge = 12,
-		baseChance = 0.9,
-		cooldown = 1,
+		baseChance = 0.6, -- CRITICAL FIX: Reduced from 0.9 - not every year has a party
+		cooldown = 3, -- CRITICAL FIX: Increased from 1 - parties aren't annual spam
 		
 		choices = {
 			{
@@ -1448,8 +1448,9 @@ EarlyLifeEvents.events = {
 		text = "It's time to learn how to drive!",
 		question = "How's the driving practice going?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.8,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
+		oneTime = true, -- You only learn to drive once!
 		
 		choices = {
 			{
@@ -1537,8 +1538,9 @@ EarlyLifeEvents.events = {
 		text = "Everyone is talking about college. SATs, applications, the future...",
 		question = "How do you handle the pressure?",
 		minAge = 16, maxAge = 17,
-		baseChance = 0.8,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.55, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
+		oneTime = true, -- College decisions are once-in-a-lifetime
 		
 		choices = {
 			{
@@ -1728,8 +1730,9 @@ EarlyLifeEvents.events = {
 		text = "You're almost done with high school. Motivation is at an all-time low.",
 		question = "How do you handle senior year?",
 		minAge = 17, maxAge = 18,
-		baseChance = 0.8,
-		cooldown = 1,
+		baseChance = 0.55, -- CRITICAL FIX: Reduced from 0.8
+		cooldown = 5, -- CRITICAL FIX: Increased from 1 to prevent spam
+		oneTime = true, -- Senior year happens once!
 		requiresFlags = { in_high_school = true },
 		
 		choices = {
@@ -3354,8 +3357,8 @@ EarlyLifeEvents.events = {
 		text = "Your parents took you to the playground! So many things to explore!",
 		question = "What do you do first?",
 		minAge = 2, maxAge = 4,
-		baseChance = 0.85,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.85 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		
 		choices = {
 			{
@@ -3589,8 +3592,8 @@ EarlyLifeEvents.events = {
 		text = "It's your birthday! Your parents are throwing you a party!",
 		question = "What kind of party do you want?",
 		minAge = 4, maxAge = 10,
-		baseChance = 0.9,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.45, -- CRITICAL FIX: Reduced from 0.9 - not every year has an epic party!
+		cooldown = 6, -- CRITICAL FIX: Increased to prevent spam
 		
 		choices = {
 			{
@@ -3957,8 +3960,9 @@ EarlyLifeEvents.events = {
 		text = "You found a mysterious map in the backyard! X marks the spot!",
 		question = "Do you follow the treasure map?",
 		minAge = 3, maxAge = 6,
-		baseChance = 0.9,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.9 to prevent spam
+		cooldown = 6, -- CRITICAL FIX: Increased to prevent spam
+		oneTime = true, -- Finding a treasure map is a special event!
 		priority = "high",
 		
 		choices = {
@@ -4015,8 +4019,8 @@ EarlyLifeEvents.events = {
 		text = "Your friends are playing Truth or Dare! It's YOUR turn!",
 		question = "Truth or Dare?",
 		minAge = 5, maxAge = 10,
-		baseChance = 0.85,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.45, -- CRITICAL FIX: Reduced from 0.85 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		priority = "medium",
 		
 		choices = {
@@ -4077,8 +4081,8 @@ EarlyLifeEvents.events = {
 		text = "You're building the ULTIMATE blanket fort! This is serious business!",
 		question = "What kind of fort are you building?",
 		minAge = 4, maxAge = 10,
-		baseChance = 0.9,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.45, -- CRITICAL FIX: Reduced from 0.9 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		priority = "medium",
 		
 		choices = {

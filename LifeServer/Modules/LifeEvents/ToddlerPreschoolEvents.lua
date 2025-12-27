@@ -1285,8 +1285,8 @@ events[#events + 1] = {
 	text = "It's YOUR birthday! Party time!",
 	question = "How was your special day?",
 	minAge = 3, maxAge = 6,
-	baseChance = 0.9,
-	cooldown = 10,
+	baseChance = 0.55, -- CRITICAL FIX: Reduced from 0.9 to prevent spam
+	cooldown = 12, -- CRITICAL FIX: Increased - birthday parties aren't every year
 	category = "childhood",
 
 	choices = {
