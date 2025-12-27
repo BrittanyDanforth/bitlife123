@@ -1055,11 +1055,12 @@ Career.events = {
 				effects = { Happiness = 10 }, 
 				setFlags = { office_romance = true, has_partner = true, dating = true }, 
 				feedText = "You took a chance on love at work!",
-				-- CRITICAL FIX: Actually create the partner object!
+				-- CRITICAL FIX #2009: Partner gender based on PLAYER gender!
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
-					local isMale = math.random() > 0.5
-					local names = isMale 
+					local playerGender = state.Gender or "male"
+					local partnerIsMale = (playerGender == "female")
+					local names = partnerIsMale 
 						and {"Brian", "Kevin", "Scott", "Greg", "Craig", "Derek", "Todd", "Chad", "Brett", "Lance"}
 						or {"Heather", "Dana", "Kristen", "Jen", "Monica", "Paula", "Stacy", "Allison", "Brittany", "Shannon"}
 					local partnerName = names[math.random(1, #names)]
@@ -1067,10 +1068,10 @@ Career.events = {
 						id = "partner",
 						name = partnerName,
 						type = "romantic",
-						role = isMale and "Boyfriend" or "Girlfriend",
+						role = partnerIsMale and "Boyfriend" or "Girlfriend",
 						relationship = 70,
 						age = (state.Age or 30) + math.random(-5, 5),
-						gender = isMale and "male" or "female",
+						gender = partnerIsMale and "male" or "female",
 						alive = true,
 						metThrough = "work",
 						isCoworker = true,
@@ -1086,11 +1087,12 @@ Career.events = {
 				effects = { Happiness = 8 }, 
 				setFlags = { has_partner = true, dating = true }, 
 				feedText = "You transferred, then started dating!",
-				-- CRITICAL FIX: Actually create the partner object!
+				-- CRITICAL FIX #2010: Partner gender based on PLAYER gender!
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
-					local isMale = math.random() > 0.5
-					local names = isMale 
+					local playerGender = state.Gender or "male"
+					local partnerIsMale = (playerGender == "female")
+					local names = partnerIsMale 
 						and {"Brian", "Kevin", "Scott", "Greg", "Craig", "Derek", "Todd", "Chad", "Brett", "Lance"}
 						or {"Heather", "Dana", "Kristen", "Jen", "Monica", "Paula", "Stacy", "Allison", "Brittany", "Shannon"}
 					local partnerName = names[math.random(1, #names)]
@@ -1098,10 +1100,10 @@ Career.events = {
 						id = "partner",
 						name = partnerName,
 						type = "romantic",
-						role = isMale and "Boyfriend" or "Girlfriend",
+						role = partnerIsMale and "Boyfriend" or "Girlfriend",
 						relationship = 65,
 						age = (state.Age or 30) + math.random(-5, 5),
-						gender = isMale and "male" or "female",
+						gender = partnerIsMale and "male" or "female",
 						alive = true,
 						metThrough = "work",
 					}
