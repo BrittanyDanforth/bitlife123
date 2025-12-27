@@ -1457,18 +1457,45 @@ function EventEngine.createRelationship(state, relType, options)
 		newAge = math.random(minFriendAge, maxFriendAge)
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Determine appropriate gender for new relationship based on player
+	-- BUG REPORTED: "As a girl it only lets me romance girls"
+	-- The issue: gender was just options.gender (undefined), not based on player!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local newGender = options.gender
+	if not newGender and (relType == "romance" or relType == "partner") then
+		-- Romance partners: opposite gender by default, ~15% chance same-gender
+		local playerGender = state.Gender or "Male"
+		if playerGender == "Female" or playerGender == "female" then
+			-- Female player: default to male partner
+			newGender = "male"
+			if math.random() < 0.15 then
+				newGender = "female" -- Same-gender relationship
+			end
+		else
+			-- Male player: default to female partner
+			newGender = "female"
+			if math.random() < 0.15 then
+				newGender = "male" -- Same-gender relationship
+			end
+		end
+	elseif not newGender then
+		-- Friends/enemies: random gender
+		newGender = math.random() > 0.5 and "male" or "female"
+	end
+	
 	-- Generate a new relationship
 	local relId = "rel_" .. tostring(os.time()) .. "_" .. math.random(1000, 9999)
 	local relationship = {
 		id = relId,
 		type = relType,
-		name = options.name or EventEngine.generateRandomName(state),
+		name = options.name or EventEngine.generateRandomName(state, newGender),
 		age = options.age or newAge,
 		relationship = options.initialRelationship or 50,
 		yearsKnown = 0,
 		createdAt = playerAge,
 		alive = true,
-		gender = options.gender,
+		gender = newGender,
 	}
 
 	-- Add type-specific fields
@@ -1512,21 +1539,42 @@ end
 
 -- ════════════════════════════════════════════════════════════════════════════════
 -- Helper: Generate random name for new relationships
+-- CRITICAL FIX: Now accepts gender parameter to generate appropriate names!
 -- ════════════════════════════════════════════════════════════════════════════════
-function EventEngine.generateRandomName(state)
-	local firstNames = {
-		"Alex", "Jordan", "Taylor", "Morgan", "Casey", "Riley", "Drew", "Quinn",
-		"Jamie", "Avery", "Blake", "Cameron", "Dakota", "Emery", "Finley", "Harper",
-		"James", "Emma", "Oliver", "Sophia", "Liam", "Isabella", "Noah", "Mia",
-		"Lucas", "Charlotte", "Mason", "Amelia", "Ethan", "Evelyn", "Aiden", "Abigail",
+function EventEngine.generateRandomName(state, gender)
+	local maleFirstNames = {
+		"James", "John", "Michael", "David", "Robert", "William", "Daniel", "Matthew",
+		"Anthony", "Mark", "Joshua", "Andrew", "Joseph", "Christopher", "Ryan", "Tyler",
+		"Brandon", "Kevin", "Justin", "Jason", "Brian", "Eric", "Steven", "Thomas",
+		"Oliver", "Liam", "Noah", "Lucas", "Mason", "Ethan", "Aiden", "Sebastian",
+	}
+	local femaleFirstNames = {
+		"Emma", "Olivia", "Sophia", "Isabella", "Mia", "Charlotte", "Amelia", "Harper",
+		"Evelyn", "Abigail", "Emily", "Elizabeth", "Sofia", "Ella", "Avery", "Scarlett",
+		"Grace", "Chloe", "Victoria", "Madison", "Luna", "Penelope", "Layla", "Riley",
+		"Sarah", "Jessica", "Ashley", "Rachel", "Nicole", "Samantha", "Hannah", "Lauren",
 	}
 	local lastNames = {
 		"Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis",
 		"Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson",
 		"Thomas", "Taylor", "Moore", "Jackson", "Martin", "Lee", "Perez", "Thompson",
+		"White", "Harris", "Clark", "Lewis", "Robinson", "Walker", "Hall", "Young",
 	}
 
-	return firstNames[math.random(#firstNames)] .. " " .. lastNames[math.random(#lastNames)]
+	local firstName
+	if gender == "male" then
+		firstName = maleFirstNames[math.random(#maleFirstNames)]
+	elseif gender == "female" then
+		firstName = femaleFirstNames[math.random(#femaleFirstNames)]
+	else
+		-- Random if no gender specified
+		local allNames = {}
+		for _, n in ipairs(maleFirstNames) do table.insert(allNames, n) end
+		for _, n in ipairs(femaleFirstNames) do table.insert(allNames, n) end
+		firstName = allNames[math.random(#allNames)]
+	end
+	
+	return firstName .. " " .. lastNames[math.random(#lastNames)]
 end
 
 -- ═══════════════════════════════════════════════════════════════════════════════════════════════════════

@@ -17,11 +17,13 @@ Relationships.events = {
 		text = "Your friend suggests you try a dating app.",
 		question = "Do you give it a shot?",
 		minAge = 18, maxAge = 45,
-		baseChance = 0.5,
-		cooldown = 3,
+		baseChance = 0.4, -- CRITICAL FIX: Reduced from 0.5
+		cooldown = 5, -- CRITICAL FIX: Increased from 3
+		category = "relationships", -- CRITICAL FIX: Proper category
+		tags = { "dating", "romance", "modern" },
 		requiresSingle = true,
 		-- CRITICAL FIX: Can't use dating apps from prison!
-		blockedByFlags = { in_prison = true, incarcerated = true },
+		blockedByFlags = { in_prison = true, incarcerated = true, has_partner = true, dating = true },
 		choices = {
 			{ 
 				text = "Swipe right!", 
@@ -67,11 +69,13 @@ Relationships.events = {
 		text = "You lock eyes with a stranger. There's an instant connection.",
 		question = "What do you do?",
 		minAge = 18, maxAge = 50,
-		baseChance = 0.4,
-		cooldown = 3,
+		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.4
+		cooldown = 5, -- CRITICAL FIX: Increased from 3
+		category = "relationships", -- CRITICAL FIX: Proper category
+		tags = { "dating", "romance", "chance" },
 		requiresSingle = true,
 		-- CRITICAL FIX: Can't have chance encounters in prison!
-		blockedByFlags = { in_prison = true, incarcerated = true },
+		blockedByFlags = { in_prison = true, incarcerated = true, has_partner = true, dating = true },
 		choices = {
 			{ 
 				text = "Go talk to them", 
@@ -117,8 +121,11 @@ Relationships.events = {
 		text = "You've been hitting it off with {{FRIEND_NAME}}. You two seem to really click!",
 		question = "Could this be a new friendship?",
 		minAge = 13, maxAge = 80,
-		baseChance = 0.5,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.4, -- CRITICAL FIX: Reduced from 0.5
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
+		category = "relationships", -- CRITICAL FIX: Proper category
+		tags = { "friendship", "social" },
+		blockedByFlags = { in_prison = true },
 		-- Dynamic text generation for the event
 		getDynamicText = function(state)
 			-- Generate a random name for the potential friend
@@ -177,10 +184,13 @@ Relationships.events = {
 		text = "Your relationship is getting more serious.",
 		question = "How do you feel about it?",
 		minAge = 18, maxAge = 60,
-		baseChance = 0.5,
-		cooldown = 3,
+		baseChance = 0.4, -- CRITICAL FIX: Reduced from 0.5
+		cooldown = 5, -- CRITICAL FIX: Increased from 3
+		category = "relationships", -- CRITICAL FIX: Proper category
+		tags = { "romance", "milestone", "commitment" },
 		requiresPartner = true,
 		requiresFlags = { dating = true },
+		blockedByFlags = { in_prison = true, committed_relationship = true }, -- CRITICAL FIX: Don't repeat
 		choices = {
 			{ text = "I'm ready for commitment", effects = { Happiness = 10 }, setFlags = { committed_relationship = true }, feedText = "You're all in!" },
 			{ text = "I need more time", effects = { Happiness = 2 }, feedText = "You're taking things slow." },

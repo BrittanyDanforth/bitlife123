@@ -549,7 +549,8 @@ GamerCareerEvents.events = {
 				feedText = "Time to build the dream machine!",
 				onResolve = function(state)
 					if (state.Money or 0) >= 5000 then
-						state.Money = state.Money - 5000
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 5000)
 						state.Flags = state.Flags or {}
 						state.Flags.elite_setup = true
 						state:AddFeed("🖥️ BEAST MODE PC! RTX 4090, 4K 240Hz monitor, everything RGB! Game at maximum settings!")
@@ -564,7 +565,8 @@ GamerCareerEvents.events = {
 				feedText = "Targeting the bottlenecks...",
 				onResolve = function(state)
 					if (state.Money or 0) >= 1500 then
-						state.Money = state.Money - 1500
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - 1500)
 						state:AddFeed("🖥️ Smart upgrades! New GPU and monitor. Performance noticeably better!")
 					else
 						state:AddFeed("🖥️ Can't afford upgrades right now. The grind continues on old hardware.")

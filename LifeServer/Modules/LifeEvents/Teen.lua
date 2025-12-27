@@ -70,6 +70,10 @@ Teen.events = {
 		question = "What interests you most?",
 		minAge = 14, maxAge = 16,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		category = "teen", -- CRITICAL FIX: Proper category
+		tags = { "school", "education", "choices" },
+		requiresFlags = { in_high_school = true }, -- CRITICAL FIX: Must be in school
+		blockedByFlags = { dropped_out_high_school = true, in_prison = true },
 		choices = {
 			-- CRITICAL FIX #1003: Added math_science_talent for consequence events linkage!
 			{ text = "Advanced Math & Science", effects = { Smarts = 5 }, setFlags = { stem_track = true, math_science_talent = true }, hintCareer = "tech", feedText = "You're challenging yourself with advanced STEM classes." },
@@ -86,8 +90,12 @@ Teen.events = {
 		text = "You're assigned a group project, but one member isn't pulling their weight.",
 		question = "How do you handle it?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.7,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.55, -- CRITICAL FIX: Reduced from 0.7
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
+		category = "teen", -- CRITICAL FIX: Proper category
+		tags = { "school", "conflict", "teamwork" },
+		requiresFlags = { in_high_school = true }, -- CRITICAL FIX: Must be in school
+		blockedByFlags = { dropped_out_high_school = true, in_prison = true },
 		choices = {
 			{ text = "Do their share yourself", effects = { Smarts = 3, Happiness = -3, Health = -2 }, setFlags = { takes_on_too_much = true }, feedText = "You did all the work. Good grade, but you're exhausted." },
 			{ text = "Talk to them directly", effects = { Smarts = 2, Happiness = 3 }, setFlags = { direct_communicator = true }, feedText = "You addressed the issue head-on." },
@@ -156,8 +164,12 @@ Teen.events = {
 		text = "A big exam is coming up. You're feeling the pressure.",
 		question = "How do you cope?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.6,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.6
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
+		category = "teen", -- CRITICAL FIX: Proper category
+		tags = { "school", "stress", "exam" },
+		requiresFlags = { in_high_school = true }, -- CRITICAL FIX: Must be in school
+		blockedByFlags = { dropped_out_high_school = true, in_prison = true },
 		choices = {
 			{ text = "Study intensively", effects = { Smarts = 5, Health = -3, Happiness = -2 }, feedText = "You crammed hard. Exhausted but prepared." },
 			{ text = "Form a study group", effects = { Smarts = 4, Happiness = 2 }, setFlags = { collaborative = true }, feedText = "Studying with friends made it bearable." },
@@ -176,9 +188,12 @@ Teen.events = {
 		text = "Someone you like seems to be interested in you too.",
 		question = "What do you do?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.7,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
+		category = "teen", -- CRITICAL FIX: Proper category
+		tags = { "romance", "relationships", "teen" },
 		requiresSingle = true,
+		blockedByFlags = { in_prison = true, has_partner = true, dating = true },
 		choices = {
 			{ 
 				text = "Ask them out", 
@@ -222,8 +237,11 @@ Teen.events = {
 		text = "You're invited to a party at a popular kid's house. Your parents might not approve.",
 		question = "What do you do?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.7,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
+		category = "teen", -- CRITICAL FIX: Proper category
+		tags = { "social", "party", "teen" },
+		blockedByFlags = { in_prison = true, grounded = true },
 		choices = {
 			{ text = "Sneak out and go", effects = { Happiness = 5, Health = -2 }, setFlags = { rebellious = true, sneaks_out = true }, feedText = "You snuck out! The party was wild." },
 			{ text = "Ask parents for permission", effects = { Happiness = 3 }, setFlags = { respectful = true }, feedText = "You asked, and they said yes (with rules)." },
@@ -239,6 +257,10 @@ Teen.events = {
 		question = "Which group do you gravitate toward?",
 		minAge = 13, maxAge = 16,
 		oneTime = true,
+		category = "teen", -- CRITICAL FIX: Proper category
+		tags = { "social", "identity", "teen" },
+		requiresFlags = { in_high_school = true }, -- CRITICAL FIX: Must be in school
+		blockedByFlags = { dropped_out_high_school = true, in_prison = true, found_clique = true },
 		choices = {
 			{ text = "The studious overachievers", effects = { Smarts = 5 }, setFlags = { nerd_group = true }, feedText = "You found your tribe among the academic crowd." },
 			{ text = "The athletes and jocks", effects = { Health = 5, Happiness = 3 }, setFlags = { jock_group = true }, hintCareer = "sports", feedText = "You fit in with the athletic crowd." },
@@ -254,9 +276,12 @@ Teen.events = {
 		text = "You found out your best friend has been talking behind your back.",
 		question = "How do you react?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.5,
-		cooldown = 3,
+		baseChance = 0.4, -- CRITICAL FIX: Reduced
+		cooldown = 5, -- CRITICAL FIX: Increased
+		category = "teen", -- CRITICAL FIX: Proper category
+		tags = { "friendship", "conflict", "teen" },
 		requiresFlags = { has_best_friend = true },
+		blockedByFlags = { in_prison = true },
 		choices = {
 			{ text = "Confront them", effects = { Happiness = 3 }, setFlags = { confrontational = true }, feedText = "You had it out. The truth came to light." },
 			{ text = "End the friendship", effects = { Happiness = -5 }, setFlags = { holds_grudges = true, has_best_friend = false }, feedText = "You cut them off. It hurts." },
@@ -276,6 +301,9 @@ Teen.events = {
 		question = "What aspect of yourself are you exploring?",
 		minAge = 14, maxAge = 17,
 		oneTime = true,
+		category = "teen", -- CRITICAL FIX: Proper category
+		tags = { "identity", "growth", "teen" },
+		blockedByFlags = { in_prison = true, identity_explored = true },
 		choices = {
 			{ text = "My values and beliefs", effects = { Smarts = 3, Happiness = 3 }, setFlags = { philosophical = true }, feedText = "You're questioning what you believe in." },
 			{ text = "My future career", effects = { Smarts = 3 }, setFlags = { career_focused = true }, feedText = "You're thinking seriously about your future." },
@@ -290,8 +318,11 @@ Teen.events = {
 		text = "You've been feeling down lately. More than usual.",
 		question = "How do you cope?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.4,
-		cooldown = 3,
+		baseChance = 0.35, -- CRITICAL FIX: Reduced
+		cooldown = 5, -- CRITICAL FIX: Increased
+		category = "teen", -- CRITICAL FIX: Proper category
+		tags = { "mental_health", "coping", "teen" },
+		blockedByFlags = { in_prison = true },
 		choices = {
 			{ text = "Talk to a trusted adult", effects = { Happiness = 5, Health = 3 }, setFlags = { seeks_help = true }, feedText = "Opening up helped. You're not alone." },
 			{ text = "Confide in a friend", effects = { Happiness = 3 }, feedText = "Your friend listened and supported you." },
@@ -319,10 +350,12 @@ Teen.events = {
 		text = "A local business is hiring teenagers for part-time work.",
 		question = "Will you apply?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.7,
-		cooldown = 3,
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7
+		cooldown = 5, -- CRITICAL FIX: Increased
+		category = "teen", -- CRITICAL FIX: Proper category
+		tags = { "job", "money", "teen" },
 		-- CRITICAL FIX: Only block by ACTUAL employment flags, not experience flags
-		blockedByFlags = { employed = true, has_job = true, has_teen_job = true },
+		blockedByFlags = { employed = true, has_job = true, has_teen_job = true, in_prison = true },
 		requiresNoJob = true,
 		choices = {
 			{ text = "Work at a fast food place", effects = { Money = 200, Health = -2, Happiness = -1 }, setFlags = { has_teen_job = true, fast_food_experience = true }, feedText = "You got a job flipping burgers. Money incoming!" },
@@ -338,8 +371,11 @@ Teen.events = {
 		text = "You have an idea for making money on your own.",
 		question = "What's your business?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.5,
-		cooldown = 3,
+		baseChance = 0.4, -- CRITICAL FIX: Reduced
+		cooldown = 5, -- CRITICAL FIX: Increased
+		category = "teen", -- CRITICAL FIX: Proper category
+		tags = { "business", "money", "teen" },
+		blockedByFlags = { in_prison = true, entrepreneur = true }, -- CRITICAL FIX: Don't repeat if already entrepreneur
 		choices = {
 			{ text = "Lawn care / yard work", effects = { Money = 150, Health = 3 }, setFlags = { entrepreneur = true }, hintCareer = "business", feedText = "You started a lawn care service!" },
 			{ text = "Selling crafts online", effects = { Money = 100, Happiness = 3 }, setFlags = { entrepreneur = true, creative_business = true }, hintCareer = "creative", feedText = "You're selling your creations online!" },
@@ -930,6 +966,9 @@ Teen.events = {
 		question = "How do you approach the test?",
 		minAge = 16, maxAge = 17,
 		oneTime = true,
+		maxOccurrences = 1,
+		-- CRITICAL FIX: Block if already have license OR already did another driving event
+		blockedByFlags = { has_license = true, drivers_license = true, driver_license = true, has_drivers_license = true, driving_done = true, in_prison = true },
 
 		-- CRITICAL FIX: Random outcome based on choice + stats, not player-picked result!
 		choices = {
@@ -949,11 +988,17 @@ Teen.events = {
 						state:ModifyStat("Happiness", 10)
 						state:ModifyStat("Smarts", 3)
 						state.Flags = state.Flags or {}
+						-- CRITICAL FIX: Set ALL license flag variations for compatibility!
 						state.Flags.has_license = true
 						state.Flags.drivers_license = true
+						state.Flags.driver_license = true
+						state.Flags.has_drivers_license = true
+						state.Flags.learned_driving = true
 						state:AddFeed("🚗 You passed the driving test! You're licensed!")
 					else
 						state:ModifyStat("Happiness", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.learned_driving = true -- Mark as attempted
 						state:AddFeed("🚗 You failed the driving test. Hit a cone. Try again next time.")
 					end
 				end,
@@ -971,13 +1016,18 @@ Teen.events = {
 					if math.random() < (baseChance + bonus) then
 						state:ModifyStat("Happiness", 7)
 						state.Flags = state.Flags or {}
+						-- CRITICAL FIX: Set ALL license flag variations for compatibility!
 						state.Flags.has_license = true
 						state.Flags.drivers_license = true
+						state.Flags.driver_license = true
+						state.Flags.has_drivers_license = true
+						state.Flags.learned_driving = true
 						state:AddFeed("🚗 Somehow you passed despite being nervous! Licensed driver!")
 					else
 						state:ModifyStat("Happiness", -8)
 						state.Flags = state.Flags or {}
 						state.Flags.nervous_driver = true
+						state.Flags.learned_driving = true -- Mark as attempted
 						state:AddFeed("🚗 You were too nervous and failed. The examiner was not impressed.")
 					end
 				end,
@@ -996,12 +1046,18 @@ Teen.events = {
 					if math.random() < (baseChance + bonus) then
 						state:ModifyStat("Happiness", 12)
 						state.Flags = state.Flags or {}
+						-- CRITICAL FIX: Set ALL license flag variations for compatibility!
 						state.Flags.has_license = true
 						state.Flags.drivers_license = true
+						state.Flags.driver_license = true
+						state.Flags.has_drivers_license = true
+						state.Flags.learned_driving = true
 						state.Flags.good_driver = true
 						state:AddFeed("🚗 Perfect score! Your preparation paid off. Licensed to drive!")
 					else
 						state:ModifyStat("Happiness", -3)
+						state.Flags = state.Flags or {}
+						state.Flags.learned_driving = true -- Mark as attempted
 						state:AddFeed("🚗 Despite preparing, you made a mistake. Failed, but you'll get it next time.")
 					end
 				end,
@@ -1167,8 +1223,10 @@ Teen.events = {
 		text = "It's your senior year and motivation is... lacking.",
 		question = "How do you handle senioritis?",
 		minAge = 17, maxAge = 18,
-		baseChance = 0.7,
-		cooldown = 3,
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased from 3
+		oneTime = true, -- CRITICAL FIX: Only happens once per life
+		blockedByFlags = { in_prison = true, dropped_out_high_school = true, senioritis_event_done = true },
 
 		choices = {
 			{ text = "Coast through - already got into college", effects = { Smarts = -3, Happiness = 5 }, setFlags = { senioritis = true }, feedText = "You're doing the bare minimum. Living the dream!" },
@@ -2637,28 +2695,33 @@ Teen.events = {
 		emoji = "🚗",
 		text = "You finally turned 16 and can get your driver's license! Time for the test.",
 		question = "How does the test go?",
-		minAge = 16, maxAge = 16,
-		baseChance = 0.9,
+		minAge = 16, maxAge = 17,
+		baseChance = 0.6, -- CRITICAL FIX: Reduced from 0.9 - other driving events exist
 		oneTime = true,
 		maxOccurrences = 1,
-		blockedByFlags = { has_license = true },
+		category = "milestone",
+		tags = { "driving", "license", "milestone" },
+		-- CRITICAL FIX: Block if already have license from ANY driving event
+		blockedByFlags = { has_license = true, drivers_license = true, driver_license = true, has_drivers_license = true, learned_driving = true, driving_done = true },
 		choices = {
 			{
 				text = "Nail it perfectly!",
 				effects = { Happiness = 20 },
-				setFlags = { has_license = true, good_driver = true },
+				-- CRITICAL FIX: Set ALL license flags via onResolve for compatibility
+				setFlags = { has_license = true, good_driver = true, drivers_license = true, driver_license = true, has_drivers_license = true, learned_driving = true },
 				feedText = "🚗 You passed! Freedom awaits!",
 			},
 			{
 				text = "Pass, but barely",
 				effects = { Happiness = 12 },
-				setFlags = { has_license = true },
+				-- CRITICAL FIX: Set ALL license flags via onResolve for compatibility
+				setFlags = { has_license = true, drivers_license = true, driver_license = true, has_drivers_license = true, learned_driving = true },
 				feedText = "🚗 A pass is a pass! You got your license!",
 			},
 			{
 				text = "Fail miserably",
 				effects = { Happiness = -15 },
-				setFlags = { failed_driving_test = true },
+				setFlags = { failed_driving_test = true, learned_driving = true },
 				feedText = "😬 You ran over three cones and a sign. Maybe next time.",
 			},
 			{
@@ -2669,17 +2732,18 @@ Teen.events = {
 		},
 	},
 	
-	-- SOCIAL MEDIA DRAMA
+	-- SOCIAL MEDIA DRAMA - MESSAGES LEAKED
 	{
-		id = "teen_social_media_drama",
-		title = "Online Drama",
+		id = "teen_messages_leaked", -- CRITICAL FIX: Renamed from duplicate teen_social_media_drama
+		title = "Messages Leaked!",
 		emoji = "📱",
 		text = "Someone screenshot your private messages and shared them publicly. People are talking.",
 		question = "How do you handle this?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.555,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
-		maxOccurrences = 2,
+		baseChance = 0.45, -- CRITICAL FIX: Reduced from 0.555 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased from 4 to reduce spam
+		maxOccurrences = 1, -- CRITICAL FIX: Only happens once
+		blockedByFlags = { in_prison = true, dropped_out_high_school = true, messages_leaked_done = true },
 		choices = {
 			{
 				text = "Address it publicly and own it",
@@ -2940,6 +3004,9 @@ Teen.events = {
 		minAge = 13, maxAge = 18,
 		baseChance = 0.55,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		category = "school",
+		tags = { "competition", "achievement", "school" },
+		blockedByFlags = { in_prison = true, dropped_out_high_school = true },
 		
 		choices = {
 			{
@@ -2965,6 +3032,740 @@ Teen.events = {
 				effects = { Smarts = 6, Happiness = 11 },
 				setFlags = { debate_champion = true, public_speaker = true },
 				feedText = "🏆 You destroyed the competition! Natural leader material!",
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: NEW ENGAGING TEEN EVENTS FOR VARIETY
+	-- These events keep teens hooked and create memorable stories
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "teen_secret_revealed",
+		title = "🤫 The Secret",
+		emoji = "🤫",
+		text = "Someone at school just found out a secret about you! It's spreading fast...",
+		question = "What's the secret?",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.2,
+		cooldown = 10,
+		oneTime = true,
+		category = "social",
+		tags = { "drama", "social", "secret" },
+		blockedByFlags = { in_prison = true, dropped_out_high_school = true },
+		
+		choices = {
+			{
+				text = "An embarrassing crush",
+				effects = { Happiness = -10 },
+				feedText = "Oh no. Everyone knows now...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.3 then
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.crush_likes_back = true
+						state:AddFeed("😊 Plot twist! Your crush heard and... THEY LIKE YOU BACK!")
+					elseif roll < 0.6 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("😅 It's awkward for a week, then everyone moves on. High school!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("😢 People are teasing you. It'll blow over eventually...")
+					end
+				end,
+			},
+			{
+				text = "Something you lied about",
+				effects = { Happiness = -12 },
+				feedText = "The truth comes out...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.4 then
+						state:ModifyStat("Smarts", 3)
+						state:AddFeed("🤔 You learned your lesson. Honesty is easier in the long run.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state.Flags = state.Flags or {}
+						state.Flags.reputation_damaged = true
+						state:AddFeed("😔 Trust takes time to rebuild. People are watching you now.")
+					end
+				end,
+			},
+			{
+				text = "A hidden talent",
+				effects = { Happiness = 5 },
+				feedText = "People found out you're actually really good at something!",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 10)
+					state.Flags = state.Flags or {}
+					state.Flags.talent_discovered = true
+					state:AddFeed("✨ Your secret talent is out! Now everyone wants you to perform!")
+				end,
+			},
+		},
+	},
+	{
+		id = "teen_viral_video",
+		title = "📱 You Went Viral!",
+		emoji = "📱",
+		text = "A video of you is spreading like wildfire on social media!",
+		question = "What kind of video is it?",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.15,
+		cooldown = 15,
+		oneTime = true,
+		category = "social",
+		tags = { "viral", "social_media", "fame" },
+		blockedByFlags = { in_prison = true, went_teen_viral = true },
+		
+		choices = {
+			{
+				text = "Something impressive you did",
+				effects = { Happiness = 20, Looks = 3 },
+				setFlags = { went_teen_viral = true, internet_famous = true },
+				feedText = "The whole school knows!",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.4 then
+						state.Money = (state.Money or 0) + 500
+						state:AddFeed("📱 MILLIONS of views! Brand deals are rolling in! +$500!")
+					else
+						state:AddFeed("📱 Everyone thinks you're COOL now! Popularity skyrocketed!")
+					end
+				end,
+			},
+			{
+				text = "An embarrassing moment",
+				effects = { Happiness = -15 },
+				setFlags = { went_teen_viral = true, viral_embarrassment = true },
+				feedText = "No. No no no...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.3 then
+						state:ModifyStat("Happiness", 10)
+						state:ModifyStat("Smarts", 3)
+						state:AddFeed("📱 You owned it! Made a comeback video. People respect the confidence!")
+					else
+						state:AddFeed("📱 This will be your villain origin story. Never living this down.")
+					end
+				end,
+			},
+			{
+				text = "A random funny thing",
+				effects = { Happiness = 15 },
+				setFlags = { went_teen_viral = true, meme_famous = true },
+				feedText = "Wait what? This blew up?!",
+				onResolve = function(state)
+					state:AddFeed("📱 You're a MEME! People quote you in the halls! Weird but cool!")
+				end,
+			},
+		},
+	},
+	{
+		id = "teen_unexpected_friendship",
+		title = "🤝 Unlikely Friends",
+		emoji = "🤝",
+		text = "You ended up becoming friends with someone completely unexpected...",
+		question = "Who became your new friend?",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.25,
+		cooldown = 8,
+		oneTime = true,
+		category = "social",
+		tags = { "friendship", "social", "growth" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "The popular kid",
+				effects = { Happiness = 12, Looks = 2 },
+				setFlags = { popular_friend = true },
+				feedText = "Social upgrade unlocked!",
+				onResolve = function(state)
+					state:AddFeed("🤝 They're actually really down to earth! Your social life just leveled up!")
+				end,
+			},
+			{
+				text = "The 'weird' kid everyone avoids",
+				effects = { Happiness = 10, Smarts = 3 },
+				setFlags = { kind_soul = true, unconventional_friend = true },
+				feedText = "You looked past the surface...",
+				onResolve = function(state)
+					state:AddFeed("🤝 They're FASCINATING! Most interesting person you've met. Best decision ever.")
+				end,
+			},
+			{
+				text = "Someone from a different grade",
+				effects = { Happiness = 8, Smarts = 2 },
+				setFlags = { diverse_friendships = true },
+				feedText = "Age is just a number!",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.5 then
+						state:AddFeed("🤝 They give the BEST advice about surviving the grades above!")
+					else
+						state:AddFeed("🤝 Different perspective on life. Your worldview expanded!")
+					end
+				end,
+			},
+			{
+				text = "A teacher's kid",
+				effects = { Happiness = 6, Smarts = 4 },
+				setFlags = { teacher_connection = true },
+				feedText = "Inside access to teacher secrets!",
+				onResolve = function(state)
+					state:AddFeed("🤝 You now know which teachers are actually cool. Strategic friendship!")
+				end,
+			},
+		},
+	},
+	{
+		id = "teen_defining_moment",
+		title = "⭐ Defining Moment",
+		emoji = "⭐",
+		text = "Something happened today that you know you'll remember forever...",
+		question = "What was the moment?",
+		minAge = 14, maxAge = 18,
+		baseChance = 0.2,
+		cooldown = 12,
+		oneTime = true,
+		category = "milestone",
+		tags = { "growth", "memory", "milestone" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Standing up to a bully",
+				effects = { Happiness = 15, Health = 2 },
+				setFlags = { stood_up_to_bully = true, brave = true },
+				feedText = "Today you found your courage.",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.6 then
+						state:AddFeed("⭐ They backed down. You're not afraid anymore. Others look up to you now.")
+					else
+						state:ModifyStat("Health", -5)
+						state:AddFeed("⭐ It didn't go perfectly, but you did the right thing. That matters.")
+					end
+				end,
+			},
+			{
+				text = "Helping someone in need",
+				effects = { Happiness = 18, Smarts = 2 },
+				setFlags = { helper = true, kind_soul = true },
+				feedText = "You made a real difference.",
+				onResolve = function(state)
+					state:AddFeed("⭐ They thanked you with tears in their eyes. You'll never forget this feeling.")
+				end,
+			},
+			{
+				text = "Achieving something you thought impossible",
+				effects = { Happiness = 20, Smarts = 3 },
+				setFlags = { overcame_odds = true, achiever = true },
+				feedText = "You proved yourself wrong.",
+				onResolve = function(state)
+					state:AddFeed("⭐ If you can do THIS, what else are you capable of? Everything feels possible now!")
+				end,
+			},
+			{
+				text = "A deep conversation that changed your perspective",
+				effects = { Smarts = 6, Happiness = 10 },
+				setFlags = { philosophical = true, deep_thinker = true },
+				feedText = "Your world expanded.",
+				onResolve = function(state)
+					state:AddFeed("⭐ You see things differently now. Childhood innocence fading, but wisdom growing.")
+				end,
+			},
+		},
+	},
+	{
+		id = "teen_mentor_figure",
+		title = "🌟 A Mentor Appears",
+		emoji = "🌟",
+		text = "An adult in your life has taken a special interest in helping you succeed...",
+		question = "Who becomes your mentor?",
+		minAge = 14, maxAge = 18,
+		baseChance = 0.2,
+		cooldown = 15,
+		oneTime = true,
+		category = "growth",
+		tags = { "mentor", "guidance", "growth" },
+		blockedByFlags = { in_prison = true, has_mentor = true },
+		
+		choices = {
+			{
+				text = "A teacher who sees your potential",
+				effects = { Smarts = 8, Happiness = 10 },
+				setFlags = { has_mentor = true, teacher_mentor = true },
+				feedText = "Finally, an adult who gets you.",
+				onResolve = function(state)
+					state:AddFeed("🌟 They push you to be better. Your grades AND confidence improve!")
+				end,
+			},
+			{
+				text = "A family friend in your dream career",
+				effects = { Smarts = 5, Happiness = 12 },
+				setFlags = { has_mentor = true, career_mentor = true },
+				feedText = "An inside look at your future!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.career_clarity = true
+					state:AddFeed("🌟 They're showing you exactly what it takes. You have a roadmap now!")
+				end,
+			},
+			{
+				text = "A coach who believes in you",
+				effects = { Health = 6, Happiness = 10, Looks = 2 },
+				setFlags = { has_mentor = true, coach_mentor = true },
+				feedText = "They're tough, but fair.",
+				onResolve = function(state)
+					state:AddFeed("🌟 'I see champions. You just need to believe it too.' You'll never forget those words.")
+				end,
+			},
+			{
+				text = "A successful relative",
+				effects = { Smarts = 4, Happiness = 8, Money = 100 },
+				setFlags = { has_mentor = true, family_mentor = true },
+				feedText = "Family looking out for you.",
+				onResolve = function(state)
+					state:AddFeed("🌟 They're investing in your future. Both with advice AND some cash for your goals!")
+				end,
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- NEW ENGAGING TEEN EVENTS - Makes ages 13-18 less repetitive!
+	-- User feedback: "AGE LIKE 5 TO 18 IS BASICLY ALLWAYS THE EXACT SAME"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	{
+		id = "teen_cheating_request",
+		title = "The Cheat Request",
+		emoji = "📋",
+		text = "During a big test, the kid next to you slides a note: 'Please let me see your answers! I'll fail if you don't help. I'll do anything!'",
+		question = "What do you do?",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.55,
+		cooldown = 4,
+		category = "school",
+		tags = { "cheating", "test", "ethics", "school" },
+		blockedByFlags = { in_prison = true, dropped_out_high_school = true },
+		
+		choices = {
+			{
+				text = "Let them copy - they're desperate",
+				effects = {},
+				feedText = "You angled your paper...",
+				onResolve = function(state)
+					local roll = math.random(100)
+					state.Flags = state.Flags or {}
+					if roll <= 25 then
+						state:ModifyStat("Happiness", -12)
+						state:ModifyStat("Smarts", -5)
+						state.Flags.caught_enabling_cheating = true
+						state:AddFeed("📋 CAUGHT! Teacher saw. BOTH of you got zeros. Academic probation!")
+					elseif roll <= 60 then
+						state:ModifyStat("Happiness", 3)
+						state.Flags.helped_cheater = true
+						state:AddFeed("📋 They got away with it. They owe you BIG time.")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("📋 They copied wrong answers. Still failed. All that risk for nothing.")
+					end
+				end,
+			},
+			{
+				text = "Ignore them and focus on your test",
+				effects = { Smarts = 2 },
+				setFlags = { academic_integrity = true },
+				feedText = "📋 You stayed focused. Their problem isn't your problem.",
+			},
+			{
+				text = "Whisper 'No way, I could get expelled'",
+				effects = { Happiness = 2 },
+				feedText = "📋 You declined quietly. They looked disappointed but understood.",
+			},
+			{
+				text = "Give them wrong answers on purpose",
+				effects = {},
+				feedText = "You fed them false info...",
+				onResolve = function(state)
+					local roll = math.random(100)
+					state.Flags = state.Flags or {}
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 5)
+						state.Flags.sabotaged_cheater = true
+						state:AddFeed("📋 They got an F. Shouldn't have tried to cheat. Karma!")
+					else
+						state:ModifyStat("Happiness", -6)
+						state:AddFeed("📋 They figured out you tricked them. Now they're your enemy.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "teen_locker_room_confrontation",
+		title = "Locker Room Showdown",
+		emoji = "🏋️",
+		text = "After gym class, some kids corner you in the locker room. 'You think you're tough? Prove it.' Everyone's watching to see what happens.",
+		question = "How do you handle this?",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.45,
+		cooldown = 5,
+		category = "conflict",
+		tags = { "confrontation", "bullying", "gym", "school" },
+		blockedByFlags = { in_prison = true, dropped_out_high_school = true },
+		
+		choices = {
+			{
+				text = "Stand your ground and don't back down",
+				effects = {},
+				feedText = "You faced them directly...",
+				onResolve = function(state)
+					local health = (state.Stats and state.Stats.Health) or 50
+					local roll = math.random(100) + (health / 4)
+					state.Flags = state.Flags or {}
+					if roll >= 60 then
+						state:ModifyStat("Happiness", 8)
+						state.Flags.earned_respect = true
+						state.Flags.stood_up_for_self = true
+						state:AddFeed("🏋️ Your confidence surprised them. They backed off. Respect earned!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:ModifyStat("Health", -5)
+						state.Flags.lost_confrontation = true
+						state:AddFeed("🏋️ It got physical. You took some hits but didn't back down.")
+					end
+				end,
+			},
+			{
+				text = "Try to talk your way out",
+				effects = {},
+				feedText = "You tried diplomacy...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random(100) + (smarts / 4)
+					if roll >= 55 then
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("🏋️ You defused the situation with words. Crisis averted!")
+					else
+						state:ModifyStat("Happiness", -6)
+						state:AddFeed("🏋️ They laughed at your 'talking'. Humiliating.")
+					end
+				end,
+			},
+			{
+				text = "Walk away - not worth it",
+				effects = { Happiness = -4 },
+				feedText = "🏋️ You walked past them. Smart or weak? People will debate.",
+			},
+			{
+				text = "Throw the first punch",
+				effects = {},
+				feedText = "You struck first...",
+				onResolve = function(state)
+					local health = (state.Stats and state.Stats.Health) or 50
+					local roll = math.random(100) + (health / 3)
+					state.Flags = state.Flags or {}
+					if roll >= 70 then
+						state:ModifyStat("Happiness", 6)
+						state.Flags.aggressive_reputation = true
+						state:AddFeed("🏋️ Your surprise attack worked! They scattered. Don't mess with you!")
+					else
+						state:ModifyStat("Health", -12)
+						state:ModifyStat("Happiness", -10)
+						state.Flags.got_beat_up = true
+						state:AddFeed("🏋️ Bad move. There were more of them. Hospital visit needed.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "teen_party_invitation",
+		title = "The Party Invite",
+		emoji = "🎉",
+		text = "The popular kids are throwing a party while their parents are away. You actually got invited! But there's gonna be alcohol and probably some drama...",
+		question = "Do you go?",
+		minAge = 14, maxAge = 18,
+		baseChance = 0.55,
+		cooldown = 4,
+		category = "social",
+		tags = { "party", "social", "decisions", "teen" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Go and have fun!",
+				effects = {},
+				feedText = "You went to the party...",
+				onResolve = function(state)
+					local looks = (state.Stats and state.Stats.Looks) or 50
+					local roll = math.random(100)
+					state.Flags = state.Flags or {}
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 12)
+						state.Flags.party_legend = true
+						state:AddFeed("🎉 BEST. NIGHT. EVER. You're now part of the in-crowd!")
+					elseif roll <= 60 then
+						state:ModifyStat("Happiness", 6)
+						state.Flags.went_to_party = true
+						state:AddFeed("🎉 Fun night! Made some memories. Nothing too crazy.")
+					elseif roll <= 85 then
+						state:ModifyStat("Happiness", -3)
+						state:ModifyStat("Health", -2)
+						state:AddFeed("🎉 The night got messy. Headache tomorrow. Was it worth it?")
+					else
+						state:ModifyStat("Happiness", -10)
+						state.Flags.party_disaster = true
+						state:AddFeed("🎉 Cops showed up. Parents were called. You're GROUNDED.")
+					end
+				end,
+			},
+			{
+				text = "Go but stay sober",
+				effects = { Happiness = 4 },
+				setFlags = { responsible = true, party_attended = true },
+				feedText = "🎉 You had fun without getting wasted. Respect.",
+			},
+			{
+				text = "Skip it - not worth the risk",
+				effects = { Happiness = -2 },
+				feedText = "🎉 You stayed home. FOMO is real but so is being responsible.",
+			},
+			{
+				text = "Tell an adult (snitch)",
+				effects = {},
+				feedText = "You told a parent...",
+				onResolve = function(state)
+					local roll = math.random(100)
+					state.Flags = state.Flags or {}
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("🎉 Party got shut down. Some kids got in trouble. You saved lives maybe?")
+					else
+						state:ModifyStat("Happiness", -8)
+						state.Flags.social_outcast = true
+						state:AddFeed("🎉 Everyone found out you snitched. Social suicide.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "teen_social_media_drama",
+		title = "Social Media Explosion!",
+		emoji = "📱",
+		text = "Someone posted something about you online. It's going VIRAL in your school. Your phone is blowing up with notifications.",
+		question = "What did they post?",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.5,
+		cooldown = 4,
+		category = "social",
+		tags = { "social_media", "drama", "viral", "teen" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "An embarrassing photo of you",
+				effects = {},
+				feedText = "The photo spread everywhere...",
+				onResolve = function(state)
+					local looks = (state.Stats and state.Stats.Looks) or 50
+					local roll = math.random(100)
+					state.Flags = state.Flags or {}
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 5)
+						state.Flags.viral_fame = true
+						state:AddFeed("📱 Plot twist - people thought it was FUNNY in a good way. You're a meme legend!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:ModifyStat("Looks", -3)
+						state.Flags.viral_embarrassment = true
+						state:AddFeed("📱 Everyone saw it. The comments are brutal. You want to transfer schools.")
+					end
+				end,
+			},
+			{
+				text = "A lie/rumor about you",
+				effects = {},
+				feedText = "The rumor spread like wildfire...",
+				onResolve = function(state)
+					local roll = math.random(100)
+					state.Flags = state.Flags or {}
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("📱 The truth came out. The poster got in trouble for spreading lies.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state.Flags.online_victim = true
+						state:AddFeed("📱 People believe the lie. Your reputation is damaged.")
+					end
+				end,
+			},
+			{
+				text = "Actually something COOL about you",
+				effects = { Happiness = 8, Looks = 3 },
+				setFlags = { positive_viral = true },
+				feedText = "📱 You went viral for something AWESOME! Everyone wants to know you now!",
+			},
+			{
+				text = "A private conversation that leaked",
+				effects = {},
+				feedText = "Your private words went public...",
+				onResolve = function(state)
+					local roll = math.random(100)
+					state.Flags = state.Flags or {}
+					if roll <= 60 then
+						state:ModifyStat("Happiness", -12)
+						state.Flags.privacy_violated = true
+						state:AddFeed("📱 Your private messages are everywhere. Trust is SHATTERED.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("📱 People saw it but moved on. Internet attention is short.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "teen_teacher_conflict",
+		title = "Teacher Trouble",
+		emoji = "👨‍🏫",
+		text = "A teacher has it out for you. They keep calling on you when you don't know the answer, grading you harshly, and making snide comments. Today they went TOO far.",
+		question = "What do you do?",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.5,
+		cooldown = 4,
+		category = "school",
+		tags = { "teacher", "conflict", "school", "authority" },
+		blockedByFlags = { in_prison = true, dropped_out_high_school = true },
+		
+		choices = {
+			{
+				text = "Stand up for yourself in class",
+				effects = {},
+				feedText = "You spoke up...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random(100) + (smarts / 5)
+					state.Flags = state.Flags or {}
+					if roll >= 60 then
+						state:ModifyStat("Happiness", 8)
+						state.Flags.stood_up_to_teacher = true
+						state:AddFeed("👨‍🏫 Your classmates supported you! The teacher backed down.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state.Flags.teacher_enemy = true
+						state:AddFeed("👨‍🏫 You made it worse. Now they REALLY have it out for you.")
+					end
+				end,
+			},
+			{
+				text = "Report them to the principal",
+				effects = {},
+				feedText = "You went to administration...",
+				onResolve = function(state)
+					local roll = math.random(100)
+					state.Flags = state.Flags or {}
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 6)
+						state.Flags.reported_teacher = true
+						state:AddFeed("👨‍🏫 The principal took your complaint seriously! Things are changing.")
+					else
+						state:ModifyStat("Happiness", -6)
+						state:AddFeed("👨‍🏫 Nothing happened. Teacher tenure is strong. You feel powerless.")
+					end
+				end,
+			},
+			{
+				text = "Get your parents involved",
+				effects = {},
+				feedText = "Your parents contacted the school...",
+				onResolve = function(state)
+					local roll = math.random(100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("👨‍🏫 Parents to the rescue! The teacher is being more careful now.")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("👨‍🏫 Parents tried but it made things awkward. Teacher knows you snitched.")
+					end
+				end,
+			},
+			{
+				text = "Keep your head down and survive",
+				effects = { Happiness = -4, Smarts = 2 },
+				feedText = "👨‍🏫 You focused on just passing the class. One more year of this...",
+			},
+		},
+	},
+	{
+		id = "teen_caught_skipping",
+		title = "Skipping School",
+		emoji = "🏃",
+		text = "Your friends want to skip school and go to the mall/movies/beach. 'Come on, live a little!' They're peer pressuring you hard.",
+		question = "What do you do?",
+		minAge = 14, maxAge = 18,
+		baseChance = 0.5,
+		cooldown = 4,
+		category = "social",
+		tags = { "skipping", "peer_pressure", "school", "decisions" },
+		blockedByFlags = { in_prison = true, dropped_out_high_school = true },
+		
+		choices = {
+			{
+				text = "Skip with them - YOLO!",
+				effects = {},
+				feedText = "You ditched school...",
+				onResolve = function(state)
+					local roll = math.random(100)
+					state.Flags = state.Flags or {}
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags.skipped_successfully = true
+						state:AddFeed("🏃 Best day ever! No one found out. Memories made!")
+					elseif roll <= 60 then
+						state:ModifyStat("Happiness", 4)
+						state.Flags.skipped_school = true
+						state:AddFeed("🏃 Fun day out. School called home but you made up an excuse.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state.Flags.caught_skipping = true
+						state:AddFeed("🏃 CAUGHT! Truancy officer spotted you. Now you're in deep trouble.")
+					end
+				end,
+			},
+			{
+				text = "Make an excuse and stay",
+				effects = { Smarts = 2 },
+				feedText = "🏃 You made up an excuse. They went without you. FOMO but responsible.",
+			},
+			{
+				text = "Skip just one class, not the whole day",
+				effects = {},
+				feedText = "You skipped one period...",
+				onResolve = function(state)
+					local roll = math.random(100)
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("🏃 Quick adventure, back before anyone noticed. Perfect crime!")
+					else
+						state:ModifyStat("Happiness", -4)
+						state.Flags = state.Flags or {}
+						state.Flags.caught_skipping = true
+						state:AddFeed("🏃 The ONE class you skipped had a pop quiz. And they called roll.")
+					end
+				end,
+			},
+			{
+				text = "Tell them skipping is dumb",
+				effects = { Happiness = -3 },
+				setFlags = { goody_two_shoes = true },
+				feedText = "🏃 You lectured them. They rolled their eyes and left you behind.",
 			},
 		},
 	},

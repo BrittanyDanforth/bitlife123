@@ -27,8 +27,12 @@ EarlyLifeEvents.events = {
 		text = "Your parents notice you're developing your own little personality!",
 		question = "What kind of baby are you?",
 		minAge = 0, maxAge = 1,
-		baseChance = 0.8,
-		cooldown = 1,
+		baseChance = 0.55, -- CRITICAL FIX: Reduced from 0.8
+		cooldown = 3, -- CRITICAL FIX: Increased
+		oneTime = true, -- Only happens once per life
+		category = "childhood",
+		tags = { "baby", "personality", "milestone" },
+		blockedByFlags = { personality_set = true },
 		
 		choices = {
 			{
@@ -99,8 +103,8 @@ EarlyLifeEvents.events = {
 		text = "Time for your routine baby checkup at the doctor's office!",
 		question = "How does it go?",
 		minAge = 0, maxAge = 2,
-		baseChance = 0.7,
-		cooldown = 1,
+		baseChance = 0.5, -- CRITICAL FIX: Reduced to prevent spam
+		cooldown = 2, -- CRITICAL FIX: Increased cooldown
 		
 		choices = {
 			{
@@ -309,8 +313,10 @@ EarlyLifeEvents.events = {
 		text = "You've become obsessed with a particular cartoon show!",
 		question = "What happens with this obsession?",
 		minAge = 2, maxAge = 6,
-		baseChance = 0.7,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.45, -- CRITICAL FIX: Reduced from 0.7 to prevent spam
+		cooldown = 6, -- CRITICAL FIX: Increased from 4
+		oneTime = true, -- CRITICAL FIX: Only happens once
+		blockedByFlags = { in_prison = true, cartoon_obsession_done = true },
 		
 		choices = {
 			{
@@ -570,8 +576,10 @@ EarlyLifeEvents.events = {
 		text = "Your tooth is super wiggly! It's about to fall out!",
 		question = "How does it come out?",
 		minAge = 5, maxAge = 8,
-		baseChance = 0.8,
-		cooldown = 1,
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
+		cooldown = 2, -- CRITICAL FIX: Increased from 1 to prevent spam
+		category = "childhood", -- CRITICAL FIX: Proper category
+		tags = { "teeth", "childhood", "milestone" },
 		
 		choices = {
 			{
@@ -612,14 +620,17 @@ EarlyLifeEvents.events = {
 		},
 	},
 	{
-		id = "birthday_party",
+		-- CRITICAL FIX: Renamed to avoid ID collision with Childhood.lua birthday_party
+		id = "child_birthday_celebration",
 		title = "Birthday Party!",
 		emoji = "🎂",
 		text = "It's your birthday! You're having a party!",
 		question = "What kind of party do you want?",
 		minAge = 4, maxAge = 12,
-		baseChance = 0.9,
-		cooldown = 1,
+		baseChance = 0.45, -- CRITICAL FIX: Reduced to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased - parties aren't annual spam
+		category = "childhood", -- CRITICAL FIX: Proper category
+		tags = { "birthday", "celebration", "childhood" },
 		
 		choices = {
 			{
@@ -679,8 +690,13 @@ EarlyLifeEvents.events = {
 		text = "You REALLY want a pet! You've been begging your parents for weeks!",
 		question = "How do you convince them?",
 		minAge = 5, maxAge = 12,
-		baseChance = 0.6,
-		cooldown = 3,
+		baseChance = 0.4, -- CRITICAL FIX: Reduced from 0.6
+		cooldown = 8, -- CRITICAL FIX: Increased from 3 to prevent spam
+		category = "childhood",
+		tags = { "pet", "family", "childhood" },
+		oneTime = true, -- CRITICAL FIX: Only ask once per childhood
+		-- CRITICAL FIX: Don't show if already got a pet or asked too recently
+		blockedByFlags = { has_childhood_pet = true, got_dog = true, got_cat = true, got_fish = true, has_dog = true, has_cat = true, pet_asked = true },
 		
 		choices = {
 			{
@@ -690,15 +706,22 @@ EarlyLifeEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					state.Flags = state.Flags or {}
+					state.Flags.pet_asked = true -- Mark that we asked, even if denied
 					if roll <= 30 then
 						state:ModifyStat("Happiness", 10)
+						-- CRITICAL FIX: Set ALL pet flag variations for compatibility!
 						state.Flags.has_childhood_pet = true
 						state.Flags.got_dog = true
+						state.Flags.has_dog = true
+						state.Flags.has_pet = true
 						state:AddFeed("🐕 THEY SAID YES! You got a puppy! Best day ever!")
 					elseif roll <= 50 then
 						state:ModifyStat("Happiness", 7)
+						-- CRITICAL FIX: Set ALL pet flag variations for compatibility!
 						state.Flags.has_childhood_pet = true
 						state.Flags.got_fish = true
+						state.Flags.has_fish = true
+						state.Flags.has_pet = true
 						state:AddFeed("🐕 They compromised - you got a fish. It's SOMETHING at least.")
 					else
 						state:ModifyStat("Happiness", -4)
@@ -713,11 +736,15 @@ EarlyLifeEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					state.Flags = state.Flags or {}
+					state.Flags.pet_asked = true -- Mark that we asked, even if denied
 					if roll <= 45 then
 						state:ModifyStat("Happiness", 10)
 						state:ModifyStat("Smarts", 2)
+						-- CRITICAL FIX: Set ALL pet flag variations for compatibility!
 						state.Flags.has_childhood_pet = true
 						state.Flags.got_cat = true
+						state.Flags.has_cat = true
+						state.Flags.has_pet = true
 						state:AddFeed("🐕 Your hard work paid off! You got a cat!")
 					elseif roll <= 75 then
 						state:ModifyStat("Happiness", 3)
@@ -1126,7 +1153,8 @@ EarlyLifeEvents.events = {
 			{
 				text = "Excited to be getting taller!",
 				effects = {},
-				feedText = "You embrace being taller...",
+				-- CRITICAL FIX: Remove contradictory feedText - let onResolve handle messaging
+				-- BUG: feedText said "embrace being taller" but onResolve could say "still shorter"
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					state.Flags = state.Flags or {}
@@ -1134,30 +1162,31 @@ EarlyLifeEvents.events = {
 					if roll <= 50 then
 						state:ModifyStat("Looks", 3)
 						state:ModifyStat("Health", 2)
-						state:AddFeed("📈 Growing up nicely! You're one of the taller kids now!")
+						state:AddFeed("📈 You embrace your height! You're one of the taller kids now!")
 					elseif roll <= 80 then
 						state:ModifyStat("Looks", 1)
-						state:AddFeed("📈 Average height for your age. Nothing wrong with that!")
+						state:AddFeed("📈 You're at average height for your age. Nothing wrong with that!")
 					else
 						state:ModifyStat("Happiness", -2)
-						state:AddFeed("📈 Still one of the shorter ones. Growth spurts happen at different times!")
+						state:AddFeed("📈 Still one of the shorter ones for now. Growth spurts happen at different times!")
 					end
 				end,
 			},
 			{
 				text = "Hope to be even taller!",
 				effects = {},
-				feedText = "Dreaming of being tall...",
+				-- CRITICAL FIX: Remove feedText - let onResolve handle all messaging
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					state.Flags = state.Flags or {}
+					state.Flags.had_growth_spurt = true
 					if roll <= 40 then
 						state:ModifyStat("Happiness", 5)
 						state:ModifyStat("Looks", 2)
-						state:AddFeed("📈 You keep growing! Looking good!")
+						state:AddFeed("📈 You keep growing! Your wish came true - looking good!")
 					else
 						state:ModifyStat("Happiness", 2)
-						state:AddFeed("📈 Whatever height you end up at, you're great!")
+						state:AddFeed("📈 Whatever height you end up at, you're great just as you are!")
 					end
 				end,
 			},
@@ -1445,8 +1474,16 @@ EarlyLifeEvents.events = {
 		text = "It's time to learn how to drive!",
 		question = "How's the driving practice going?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.8,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
+		oneTime = true, -- You only learn to drive once!
+		-- CRITICAL FIX: Block if already has license or learned to drive - check ALL flag variations!
+		blockedByFlags = { 
+			has_license = true, drivers_license = true, driver_license = true,
+			has_drivers_license = true, learned_driving = true, good_driver = true, driving_done = true 
+		},
+		category = "teen",
+		tags = { "driving", "milestone", "teen" },
 		
 		choices = {
 			{
@@ -1456,24 +1493,67 @@ EarlyLifeEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					state.Flags = state.Flags or {}
+					state.Flags.learned_driving = true -- CRITICAL FIX: Always set this so event doesn't repeat
 					if roll <= 40 then
 						state:ModifyStat("Smarts", 3)
 						state:ModifyStat("Happiness", 6)
 						state.Flags.good_driver = true
+						-- CRITICAL FIX: Set ALL license flag variations for compatibility!
+						state.Flags.has_drivers_license = true
+						state.Flags.has_license = true
+						state.Flags.drivers_license = true
+						state.Flags.driver_license = true
 						state:AddFeed("🚗 You're a natural! Passed the test first try!")
 					elseif roll <= 70 then
 						state:ModifyStat("Smarts", 2)
 						state:ModifyStat("Happiness", 3)
+						-- CRITICAL FIX: Set ALL license flag variations for compatibility!
+						state.Flags.has_drivers_license = true
+						state.Flags.has_license = true
+						state.Flags.drivers_license = true
+						state.Flags.driver_license = true
 						state:AddFeed("🚗 You passed! Took a few tries but you got your license!")
 					elseif roll <= 90 then
 						state:ModifyStat("Happiness", -2)
-						state:AddFeed("🚗 Failed the test. Parallel parking got you. Try again...")
+						state:AddFeed("🚗 Failed the test. Parallel parking got you. You'll need to try again later...")
 					else
 						state:ModifyStat("Happiness", -4)
 						state:ModifyStat("Health", -3)
 						state.Flags.minor_accident = true
 						state:AddFeed("🚗 You had a minor fender bender during practice. Scary!")
 					end
+				end,
+			},
+			{
+				text = "Barely practice",
+				effects = {},
+				feedText = "How hard can it be...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					state.Flags.learned_driving = true
+					if roll <= 20 then
+						state:ModifyStat("Happiness", 4)
+						-- CRITICAL FIX: Set ALL license flag variations for compatibility!
+						state.Flags.has_drivers_license = true
+						state.Flags.has_license = true
+						state.Flags.drivers_license = true
+						state.Flags.driver_license = true
+						state:AddFeed("🚗 Lucky! Passed despite barely practicing!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🚗 Failed! Should've practiced more...")
+					end
+				end,
+			},
+			{
+				text = "Wait until you're older",
+				effects = { Happiness = -2 },
+				feedText = "Not ready yet...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.delayed_driving = true
+					state:AddFeed("🚗 You decided to wait. Driving can be scary!")
 				end,
 			},
 		},
@@ -1534,8 +1614,13 @@ EarlyLifeEvents.events = {
 		text = "Everyone is talking about college. SATs, applications, the future...",
 		question = "How do you handle the pressure?",
 		minAge = 16, maxAge = 17,
-		baseChance = 0.8,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.55, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
+		oneTime = true, -- College decisions are once-in-a-lifetime
+		-- CRITICAL FIX: Proper blocking and category
+		blockedByFlags = { college_decision_made = true, in_college = true, skipping_college = true },
+		category = "teen",
+		tags = { "college", "education", "milestone", "teen" },
 		
 		choices = {
 			{
@@ -1549,18 +1634,22 @@ EarlyLifeEvents.events = {
 					roll = roll - bonus
 					
 					state.Flags = state.Flags or {}
+					state.Flags.college_decision_made = true -- CRITICAL: Mark as done
 					if roll <= 30 then
 						state:ModifyStat("Smarts", 8)
 						state:ModifyStat("Happiness", 5)
 						state.Flags.high_sat_score = true
+						state.Flags.college_bound = true -- CRITICAL: Link to college events
 						state:AddFeed("🎓 Crushed the SAT! Top percentile! College apps looking good!")
 					elseif roll <= 60 then
 						state:ModifyStat("Smarts", 4)
 						state:ModifyStat("Happiness", 2)
+						state.Flags.college_bound = true -- CRITICAL: Link to college events
 						state:AddFeed("🎓 Solid score! Not Ivy League but plenty of options!")
 					else
 						state:ModifyStat("Smarts", 2)
 						state:ModifyStat("Happiness", -3)
+						state.Flags.college_bound = true -- Still going to college
 						state:AddFeed("🎓 Score wasn't great. Maybe retake it?")
 					end
 				end,
@@ -1572,6 +1661,8 @@ EarlyLifeEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					state.Flags = state.Flags or {}
+					state.Flags.college_decision_made = true -- CRITICAL FIX: Mark as done
+					state.Flags.college_bound = true -- CRITICAL FIX: Link to college events
 					if roll <= 50 then
 						state:ModifyStat("Happiness", 5)
 						state.Flags.well_rounded = true
@@ -1589,13 +1680,16 @@ EarlyLifeEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					state.Flags = state.Flags or {}
+					state.Flags.college_decision_made = true -- CRITICAL FIX: Mark as done
 					if roll <= 40 then
 						state:ModifyStat("Happiness", 3)
 						state.Flags.alternative_path = true
+						state.Flags.skipping_college = true -- CRITICAL FIX: Different path
 						state:AddFeed("🎓 You're considering trade school or going straight to work. Valid path!")
 					else
 						state:ModifyStat("Happiness", -2)
-						state:AddFeed("🎓 Parents are NOT happy about this. Lots of arguments.")
+						state.Flags.college_bound = true -- Parents won, going to college
+						state:AddFeed("🎓 Parents are NOT happy. After many arguments, you agree to try college.")
 					end
 				end,
 			},
@@ -1725,8 +1819,9 @@ EarlyLifeEvents.events = {
 		text = "You're almost done with high school. Motivation is at an all-time low.",
 		question = "How do you handle senior year?",
 		minAge = 17, maxAge = 18,
-		baseChance = 0.8,
-		cooldown = 1,
+		baseChance = 0.55, -- CRITICAL FIX: Reduced from 0.8
+		cooldown = 5, -- CRITICAL FIX: Increased from 1 to prevent spam
+		oneTime = true, -- Senior year happens once!
 		requiresFlags = { in_high_school = true },
 		
 		choices = {
@@ -2626,8 +2721,11 @@ EarlyLifeEvents.events = {
 		text = "It's picture day at school!",
 		question = "How does your photo turn out?",
 		minAge = 5, maxAge = 17,
-		baseChance = 0.7,
-		cooldown = 1,
+		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.7
+		cooldown = 5, -- CRITICAL FIX: Increased from 1 to prevent spam
+		category = "school",
+		tags = { "picture", "school", "photo" },
+		blockedByFlags = { in_prison = true, dropped_out_high_school = true },
 		
 		choices = {
 			{
@@ -3041,8 +3139,12 @@ EarlyLifeEvents.events = {
 		text = "Your tooth is wiggling and about to fall out!",
 		question = "How do you handle it?",
 		minAge = 5, maxAge = 10,
-		baseChance = 0.6,
-		cooldown = 1,
+		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.6
+		cooldown = 6, -- CRITICAL FIX: Increased from 1 to prevent spam
+		category = "childhood",
+		tags = { "tooth", "milestone", "childhood" },
+		-- CRITICAL FIX: Block if already had a tooth event recently
+		blockedByFlags = { tooth_fell_out = true, recent_tooth_loss = true },
 		
 		choices = {
 			{
@@ -3351,8 +3453,8 @@ EarlyLifeEvents.events = {
 		text = "Your parents took you to the playground! So many things to explore!",
 		question = "What do you do first?",
 		minAge = 2, maxAge = 4,
-		baseChance = 0.85,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.85 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		
 		choices = {
 			{
@@ -3586,8 +3688,8 @@ EarlyLifeEvents.events = {
 		text = "It's your birthday! Your parents are throwing you a party!",
 		question = "What kind of party do you want?",
 		minAge = 4, maxAge = 10,
-		baseChance = 0.9,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.45, -- CRITICAL FIX: Reduced from 0.9 - not every year has an epic party!
+		cooldown = 6, -- CRITICAL FIX: Increased to prevent spam
 		
 		choices = {
 			{
@@ -3658,8 +3760,12 @@ EarlyLifeEvents.events = {
 		text = "There's a cute puppy at the park! It comes right up to you!",
 		question = "What do you do?",
 		minAge = 2, maxAge = 5,
-		baseChance = 0.75,
-		cooldown = 3,
+		baseChance = 0.45, -- CRITICAL FIX: Reduced from 0.75 to prevent spam
+		cooldown = 6, -- CRITICAL FIX: Increased from 3 to prevent spam
+		oneTime = true, -- CRITICAL FIX: Only happens once
+		maxOccurrences = 1,
+		-- CRITICAL FIX: Block if already has pet or already did this event
+		blockedByFlags = { has_pet = true, has_childhood_pet = true, toddler_pet_done = true },
 		
 		choices = {
 			{
@@ -3954,8 +4060,9 @@ EarlyLifeEvents.events = {
 		text = "You found a mysterious map in the backyard! X marks the spot!",
 		question = "Do you follow the treasure map?",
 		minAge = 3, maxAge = 6,
-		baseChance = 0.9,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.9 to prevent spam
+		cooldown = 6, -- CRITICAL FIX: Increased to prevent spam
+		oneTime = true, -- Finding a treasure map is a special event!
 		priority = "high",
 		
 		choices = {
@@ -4012,8 +4119,8 @@ EarlyLifeEvents.events = {
 		text = "Your friends are playing Truth or Dare! It's YOUR turn!",
 		question = "Truth or Dare?",
 		minAge = 5, maxAge = 10,
-		baseChance = 0.85,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.45, -- CRITICAL FIX: Reduced from 0.85 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		priority = "medium",
 		
 		choices = {
@@ -4074,8 +4181,8 @@ EarlyLifeEvents.events = {
 		text = "You're building the ULTIMATE blanket fort! This is serious business!",
 		question = "What kind of fort are you building?",
 		minAge = 4, maxAge = 10,
-		baseChance = 0.9,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.45, -- CRITICAL FIX: Reduced from 0.9 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		priority = "medium",
 		
 		choices = {
@@ -4322,9 +4429,12 @@ EarlyLifeEvents.events = {
 		text = "This is the BIGGEST choice you've ever made! Well... at your age anyway.",
 		question = "What major thing do you want?",
 		minAge = 2, maxAge = 4,
-		baseChance = 0.45, -- FIXED: Lowered from 0.75
-		cooldown = 4, -- FIXED: Increased from 2
-		oneTime = true, -- FIXED: Only once per life
+		baseChance = 0.4, -- CRITICAL FIX: Reduced from 0.45 to prevent spam
+		cooldown = 6, -- CRITICAL FIX: Increased from 4
+		oneTime = true, -- CRITICAL FIX: Only once per life
+		maxOccurrences = 1,
+		-- CRITICAL FIX: Block if already did this event
+		blockedByFlags = { toddler_big_choice_done = true },
 		
 		choices = {
 			{

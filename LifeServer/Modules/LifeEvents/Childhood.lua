@@ -102,11 +102,11 @@ Childhood.events = {
 			"The toy aisle is torture. You NEED that action figure, but it's a no.",
 			"Your parents are trying to leave the store, but you've spotted something...",
 		},
-		text = "You want a toy at the store, but your parents said no.",
-		question = "What do you do?",
-		minAge = 2, maxAge = 3,
-		baseChance = 0.8,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+	text = "You want a toy at the store, but your parents said no.",
+	question = "What do you do?",
+	minAge = 2, maxAge = 3,
+	baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
+	cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 
 		-- META
 		stage = STAGE,
@@ -343,8 +343,14 @@ Childhood.events = {
 		text = "An older kid at school has been picking on you and other kids.",
 		question = "How do you handle this?",
 		minAge = 6, maxAge = 10,
-		baseChance = 0.6,
-		cooldown = 3,
+		baseChance = 0.45, -- CRITICAL FIX: Reduced from 0.6 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased from 3
+		-- CRITICAL FIX: Add blockedByFlags to prevent random popups
+		blockedByFlags = { 
+			in_prison = true, 
+			dropped_out = true,
+			dealt_with_bully = true,  -- Prevent repeat if already dealt with
+		},
 
 		-- META
 		stage = STAGE,
@@ -393,8 +399,9 @@ Childhood.events = {
 		text = "Your classroom got a new pet hamster! The teacher needs someone to care for it.",
 		question = "Do you volunteer?",
 		minAge = 6, maxAge = 9,
-		baseChance = 0.7,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
+		blockedByFlags = { class_pet_done = true }, -- CRITICAL FIX: Prevent repeat
 
 		-- META
 		stage = STAGE,
@@ -530,8 +537,8 @@ Childhood.events = {
 		text = "It's science fair season! What kind of project will you do?",
 		question = "Choose your project:",
 		minAge = 7, maxAge = 11,
-		baseChance = 0.7,
-		cooldown = 3,
+		baseChance = 0.45, -- CRITICAL FIX: Reduced from 0.7
+		cooldown = 5, -- CRITICAL FIX: Increased from 3
 
 		-- META
 		stage = STAGE,
@@ -539,6 +546,7 @@ Childhood.events = {
 		category = "school",
 		tags = { "science", "project", "school" },
 		careerTags = { "science", "tech" },
+		blockedByFlags = { in_prison = true },
 
 		choices = {
 			{ text = "Volcano eruption", effects = { Smarts = 3, Happiness = 5 }, setFlags = { likes_chemistry = true }, hintCareer = "science", feedText = "Your baking soda volcano was the hit of the fair!" },
@@ -607,7 +615,11 @@ Childhood.events = {
 		question = "What do you do about these feelings?",
 		minAge = 9, maxAge = 12,
 		oneTime = true,
-		baseChance = 0.7,
+		maxOccurrences = 1,
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Added cooldown
+		-- CRITICAL FIX: Block if already experienced first crush
+		blockedByFlags = { had_first_crush = true, in_prison = true, dropped_out = true },
 
 		-- META
 		stage = STAGE,
@@ -1256,13 +1268,14 @@ Childhood.events = {
 		text = "It's your turn for show and tell at school!",
 		question = "What do you bring?",
 		minAge = 4, maxAge = 7,
-		baseChance = 0.8,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.8
+		cooldown = 5, -- CRITICAL FIX: Increased
 
 		stage = STAGE,
 		ageBand = "early_childhood",
 		category = "school",
 		tags = { "school", "presentation", "sharing" },
+		blockedByFlags = { in_prison = true },
 
 		choices = {
 			{ text = "My favorite toy", effects = { Happiness = 5 }, feedText = "Everyone loved your special toy!" },
@@ -1437,8 +1450,8 @@ Childhood.events = {
 		text = "The holidays are here! You're so excited!",
 		question = "What's your favorite part?",
 		minAge = 4, maxAge = 10,
-		baseChance = 0.8,
-		cooldown = 1,
+		baseChance = 0.45, -- CRITICAL FIX: Reduced from 0.8
+		cooldown = 4, -- CRITICAL FIX: Increased from 1 to prevent spam
 
 		stage = STAGE,
 		ageBand = "childhood",
@@ -1868,14 +1881,15 @@ Childhood.events = {
 		},
 	},
 	{
-		id = "birthday_party",
+		-- CRITICAL FIX: Renamed to avoid ID collision with other birthday events
+		id = "childhood_birthday_celebration",
 		title = "Birthday Celebration",
 		emoji = "🎂",
 		text = "It's your birthday! Time to celebrate!",
 		question = "What kind of party do you want?",
 		minAge = 3, maxAge = 12,
-		baseChance = 0.9,
-		cooldown = 1,
+		baseChance = 0.4, -- CRITICAL FIX: Reduced to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		
 		stage = STAGE,
 		ageBand = "childhood",
@@ -1896,8 +1910,8 @@ Childhood.events = {
 		text = "It's school picture day! Time to look your best.",
 		question = "How does picture day go?",
 		minAge = 5, maxAge = 12,
-		baseChance = 0.8,
-		cooldown = 1,
+		baseChance = 0.45, -- CRITICAL FIX: Reduced from 0.8
+		cooldown = 4, -- CRITICAL FIX: Increased from 1 to prevent spam
 		
 		stage = STAGE,
 		ageBand = "childhood",
@@ -2303,13 +2317,14 @@ Childhood.events = {
 		text = "The bell rings - it's recess! What do you do?",
 		question = "How do you spend recess?",
 		minAge = 5, maxAge = 11,
-		baseChance = 0.7,
-		cooldown = 1,
+		baseChance = 0.4, -- CRITICAL FIX: Reduced from 0.7
+		cooldown = 5, -- CRITICAL FIX: Increased from 1 to prevent spam
 		
 		stage = STAGE,
 		ageBand = "childhood",
 		category = "play",
 		tags = { "recess", "play", "social" },
+		blockedByFlags = { in_prison = true },
 		
 		choices = {
 			{ text = "Play sports with friends", effects = { Health = 4, Happiness = 5 }, setFlags = { athletic = true }, feedText = "You ran around playing kickball until you were out of breath!" },

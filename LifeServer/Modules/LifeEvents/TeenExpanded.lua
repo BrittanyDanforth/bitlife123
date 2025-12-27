@@ -1445,6 +1445,12 @@ TeenExpanded.events = {
 		ageBand = "teen",
 		category = "skills",
 		tags = { "driving", "license", "skills" },
+		-- CRITICAL FIX: Block if already learned to drive from ANY of the 3 driving events!
+		blockedByFlags = { 
+			has_license = true, drivers_license = true, driver_license = true, 
+			has_drivers_license = true, learned_driving = true, good_driver = true,
+			driving_done = true, in_prison = true 
+		},
 		
 		-- CRITICAL: Random driving test outcome
 		choices = {
@@ -1459,10 +1465,17 @@ TeenExpanded.events = {
 					if roll < successChance then
 						state:ModifyStat("Happiness", 10)
 						state.Flags = state.Flags or {}
+						-- CRITICAL FIX: Set ALL license flag variations for compatibility!
 						state.Flags.has_license = true
+						state.Flags.drivers_license = true
+						state.Flags.driver_license = true
+						state.Flags.has_drivers_license = true
+						state.Flags.learned_driving = true
 						state:AddFeed("🚗 PASSED! You have a LICENSE! FREEDOM!")
 					else
 						state:ModifyStat("Happiness", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.learned_driving = true -- Still mark as attempted
 						state:AddFeed("🚗 Failed the test. Gotta try again. Embarrassing.")
 					end
 				end,

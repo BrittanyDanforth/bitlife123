@@ -26,8 +26,9 @@ events[#events + 1] = {
 	text = "You dominated the playground today!",
 	question = "How did the other kids react?",
 	minAge = 3, maxAge = 6,
-	baseChance = 0.6,
-	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+	baseChance = 0.45, -- CRITICAL FIX: Reduced from 0.6 to prevent spam
+	cooldown = 5, -- CRITICAL FIX: Increased from 4 to reduce spam
+	maxOccurrences = 2, -- CRITICAL FIX: Limit to 2 times
 	category = "childhood",
 
 	choices = {
@@ -191,9 +192,12 @@ events[#events + 1] = {
 	text = "It's your first day and you cried when mom/dad left!",
 	question = "How did the day go after that?",
 	minAge = 3, maxAge = 5,
-	baseChance = 0.8,
+	baseChance = 0.65, -- CRITICAL FIX: Reduced from 0.8 to prevent too high frequency
 	oneTime = true,
+	maxOccurrences = 1,
 	category = "childhood",
+	-- CRITICAL FIX: Block if already experienced first day
+	blockedByFlags = { first_day_done = true, in_prison = true },
 
 	choices = {
 		{
@@ -317,8 +321,9 @@ events[#events + 1] = {
 	text = "It's show and tell day! What did you bring?",
 	question = "What happens?",
 	minAge = 4, maxAge = 6,
-	baseChance = 0.6,
-	cooldown = 3,
+	baseChance = 0.45, -- CRITICAL FIX: Reduced from 0.6 to prevent spam
+	cooldown = 5, -- CRITICAL FIX: Increased from 3 to reduce spam
+	maxOccurrences = 2, -- CRITICAL FIX: Limit to 2 times
 	category = "childhood",
 
 	choices = {
@@ -410,8 +415,9 @@ events[#events + 1] = {
 	text = "It's naptime but you're NOT tired!",
 	question = "What do you do?",
 	minAge = 3, maxAge = 5,
-	baseChance = 0.7,
-	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+	baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7 to prevent spam
+	cooldown = 6, -- CRITICAL FIX: Increased from 4 to reduce spam
+	maxOccurrences = 2, -- CRITICAL FIX: Only happens twice per childhood
 	category = "childhood",
 
 	choices = {
@@ -1272,7 +1278,8 @@ events[#events + 1] = {
 -- ════════════════════════════════════════════════════════════════════════════
 
 events[#events + 1] = {
-	id = "birthday_party",
+	-- CRITICAL FIX: Renamed to avoid ID collision with Childhood.lua birthday_party
+	id = "toddler_birthday_party",
 	title = "Birthday Party!",
 	emoji = "🎂",
 	textVariants = {
@@ -1285,9 +1292,10 @@ events[#events + 1] = {
 	text = "It's YOUR birthday! Party time!",
 	question = "How was your special day?",
 	minAge = 3, maxAge = 6,
-	baseChance = 0.9,
-	cooldown = 10,
+	baseChance = 0.45, -- CRITICAL FIX: Reduced to prevent spam
+	cooldown = 12, -- CRITICAL FIX: Increased - birthday parties aren't every year
 	category = "childhood",
+	tags = { "birthday", "party", "toddler" },
 
 	choices = {
 		{

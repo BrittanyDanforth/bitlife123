@@ -926,15 +926,15 @@ LifeExperiences.events = {
 		text = "Being an escaped convict is exhausting. Every day is a struggle to stay hidden.",
 		question = "How do you handle life as a fugitive?",
 		minAge = 18, maxAge = 80,
-		baseChance = 0.8,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.55, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "consequence",
 		tags = { "consequence", "prison", "escape", "fugitive" },
-		-- Only shows for escaped prisoners
-		requiresFlags = { escaped_prison = true },
-		blockedByFlags = { in_prison = true },
+		-- CRITICAL FIX: Check ANY escape flag variation for compatibility
+		requiresAnyFlags = { escaped_prison = true, escaped_prisoner = true, fugitive = true, on_the_run = true },
+		blockedByFlags = { in_prison = true, new_identity = true, fled_country = true },
 		
 		choices = {
 			{
@@ -1141,9 +1141,9 @@ LifeExperiences.events = {
 		ageBand = "adult",
 		category = "consequence",
 		tags = { "consequence", "romance", "past_actions", "cheating" },
-		-- Only shows if player cheated
-		requiresFlags = { cheated = true },
-		blockedByFlags = { affair_exposed = true },
+		-- CRITICAL FIX: Check for ANY cheating flag - affair, cheater, emotional_affair
+		requiresAnyFlags = { cheater = true, affair = true, emotional_affair = true },
+		blockedByFlags = { affair_exposed = true, in_prison = true },
 		
 		choices = {
 			{
@@ -1284,7 +1284,10 @@ LifeExperiences.events = {
 				effects = { Happiness = 10 },
 				feedText = "📢 They've heard how you climbed from nothing. Inspiration!",
 				eligibility = function(state)
-					return state.Flags and (state.Flags.rags_to_riches or state.Flags.self_made or state.Flags.successful_entrepreneur)
+					if not (state.Flags and (state.Flags.rags_to_riches or state.Flags.self_made or state.Flags.successful_entrepreneur)) then
+						return false, "You don't have a success story to share yet"
+					end
+					return true
 				end,
 			},
 			{
@@ -1292,7 +1295,10 @@ LifeExperiences.events = {
 				effects = { Happiness = 8 },
 				feedText = "📢 Word of your charity work has spread. People thank you!",
 				eligibility = function(state)
-					return state.Flags and (state.Flags.charitable or state.Flags.philanthropist or state.Flags.generous)
+					if not (state.Flags and (state.Flags.charitable or state.Flags.philanthropist or state.Flags.generous)) then
+						return false, "You haven't been notably generous yet"
+					end
+					return true
 				end,
 			},
 			{
@@ -1300,7 +1306,10 @@ LifeExperiences.events = {
 				effects = { Happiness = -8 },
 				feedText = "📢 They know what you did. The whispers follow you everywhere.",
 				eligibility = function(state)
-					return state.Flags and (state.Flags.has_criminal_record or state.Flags.scandal or state.Flags.controversial)
+					if not (state.Flags and (state.Flags.has_criminal_record or state.Flags.scandal or state.Flags.controversial)) then
+						return false, "You don't have a dark past to speak of"
+					end
+					return true
 				end,
 			},
 			{
@@ -1308,8 +1317,290 @@ LifeExperiences.events = {
 				effects = { Happiness = 6, Smarts = 2 },
 				feedText = "📢 You're known as an expert in your field. Respect!",
 				eligibility = function(state)
-					return state.Flags and (state.Flags.industry_expert or state.Flags.accomplished or state.Flags.promoted_multiple_times)
+					if not (state.Flags and (state.Flags.industry_expert or state.Flags.accomplished or state.Flags.promoted_multiple_times)) then
+						return false, "You haven't established professional expertise yet"
+					end
+					return true
 				end,
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: MORE CONSEQUENCE EVENTS FOR BETTER WIRING
+	-- These events make past actions matter and improve replayability
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "conseq_old_promise_remembered",
+		title = "A Promise You Made",
+		emoji = "🤝",
+		text = "Years ago, you made a promise to someone. They've come to collect.",
+		question = "What did you promise?",
+		minAge = 20, maxAge = 70,
+		baseChance = 0.3,
+		cooldown = 10,
+		oneTime = true,
+		category = "consequence",
+		tags = { "consequence", "promise", "past_actions" },
+		requiresAnyFlags = { made_important_promise = true, promised_friend_letters = true, promised_to_help = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "To help them when they needed it",
+				effects = {},
+				feedText = "Now they need help...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					if roll < 0.5 then
+						state.Money = math.max(0, (state.Money or 0) - 2000)
+						state:ModifyStat("Happiness", 10)
+						state.Flags.kept_promise = true
+						state:AddFeed("🤝 You helped them like you promised. They'll never forget your loyalty!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state.Flags.broke_promise = true
+						state:AddFeed("🤝 You couldn't help. They understand, but the friendship is strained.")
+					end
+				end,
+			},
+			{
+				text = "To be at their wedding",
+				effects = { Happiness = 8 },
+				setFlags = { attended_friend_wedding = true },
+				feedText = "🤝 You made it to their wedding! They cried when they saw you there.",
+			},
+			{
+				text = "To never forget them",
+				effects = { Happiness = 5 },
+				feedText = "Reconnecting after years apart...",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 8)
+					state.Flags = state.Flags or {}
+					state.Flags.reconnected_old_friend = true
+					state:AddFeed("🤝 After all these years, they tracked you down. The friendship reignites!")
+				end,
+			},
+		},
+	},
+	{
+		id = "conseq_childhood_bully_reunion",
+		title = "The Bully Returns",
+		emoji = "😬",
+		text = "You ran into your childhood bully after all these years...",
+		question = "How do you handle this?",
+		minAge = 25, maxAge = 60,
+		baseChance = 0.2,
+		cooldown = 15,
+		oneTime = true,
+		category = "consequence",
+		tags = { "consequence", "childhood", "confrontation" },
+		requiresAnyFlags = { was_bullied = true, had_bully = true, bully_victim = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Confront them about the past",
+				effects = {},
+				feedText = "Time to face this...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.4 then
+						state:ModifyStat("Happiness", 15)
+						state.Flags = state.Flags or {}
+						state.Flags.bully_apologized = true
+						state:AddFeed("😬 They apologized! Said they were dealing with stuff at home. Closure feels good.")
+					elseif roll < 0.7 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("😬 They don't even remember you. Somehow that's worse.")
+					else
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("😬 They're a total mess now. You've clearly won at life.")
+					end
+				end,
+			},
+			{
+				text = "Take the high road",
+				effects = { Happiness = 5, Smarts = 2 },
+				setFlags = { took_high_road = true },
+				feedText = "😬 You smiled and moved on. You're better than them anyway.",
+			},
+			{
+				text = "Walk away - not worth your energy",
+				effects = { Happiness = 3 },
+				feedText = "😬 You pretended not to see them. Some battles aren't worth fighting.",
+			},
+		},
+	},
+	{
+		id = "conseq_reckless_driving_consequences",
+		title = "Your Driving Catches Up",
+		emoji = "🚗",
+		text = "Your reckless driving habits have finally caught up to you...",
+		question = "What happened?",
+		minAge = 18, maxAge = 70,
+		baseChance = 0.4,
+		cooldown = 8,
+		oneTime = true,
+		category = "consequence",
+		tags = { "consequence", "driving", "reckless" },
+		requiresAnyFlags = { reckless_driver = true, speeding_tickets_incoming = true, bad_driver = true },
+		blockedByFlags = { in_prison = true, good_driver = true },
+		
+		choices = {
+			{
+				text = "Major accident (your fault)",
+				effects = { Health = -20, Happiness = -15, Money = -5000 },
+				setFlags = { caused_accident = true, learned_lesson_driving = true },
+				feedText = "🚗 You caused a serious accident. Hospital bills and guilt forever.",
+			},
+			{
+				text = "License suspended",
+				effects = { Happiness = -10 },
+				setFlags = { license_suspended = true },
+				feedText = "🚗 Too many points. No driving for 6 months. Life just got harder.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.has_license = nil -- Temporarily lose license
+					state.Flags.drivers_license = nil
+				end,
+			},
+			{
+				text = "Close call that scared you straight",
+				effects = { Happiness = -5, Smarts = 3 },
+				setFlags = { scared_straight = true, safe_driver = true },
+				feedText = "🚗 Almost killed someone. Never driving recklessly again.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.reckless_driver = nil -- No longer reckless
+				end,
+			},
+		},
+	},
+	{
+		id = "conseq_academic_achievement_payoff",
+		title = "Your Studies Paid Off!",
+		emoji = "🎓",
+		text = "All those years of hard work in school? They're paying dividends!",
+		question = "What opportunity arose?",
+		minAge = 22, maxAge = 45,
+		baseChance = 0.35,
+		cooldown = 10,
+		oneTime = true,
+		category = "consequence",
+		tags = { "consequence", "education", "reward" },
+		requiresAnyFlags = { honors_graduate = true, academic_achiever = true, valedictorian = true, straight_A_student = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Recruited for dream job",
+				effects = { Happiness = 20 },
+				setFlags = { dream_job_offer = true },
+				feedText = "🎓 Your academic record caught their attention. Dream company wants YOU!",
+				onResolve = function(state)
+					state.Money = (state.Money or 0) + 10000 -- Signing bonus
+					state:AddFeed("🎓 $10,000 signing bonus! Hard work finally paying off!")
+				end,
+			},
+			{
+				text = "Scholarship for grad school",
+				effects = { Happiness = 15, Smarts = 5 },
+				setFlags = { grad_school_scholarship = true },
+				feedText = "🎓 Full ride to graduate school! Your future is bright!",
+			},
+			{
+				text = "Mentorship from industry leader",
+				effects = { Happiness = 12, Smarts = 3 },
+				setFlags = { has_powerful_mentor = true },
+				feedText = "🎓 A CEO saw your thesis. They want to mentor you personally!",
+			},
+		},
+	},
+	{
+		id = "conseq_athletic_past_benefits",
+		title = "Your Athletic Past",
+		emoji = "💪",
+		text = "Those years of sports are still benefiting you!",
+		question = "How does your athletic background help?",
+		minAge = 25, maxAge = 60,
+		baseChance = 0.3,
+		cooldown = 12,
+		oneTime = true,
+		category = "consequence",
+		tags = { "consequence", "sports", "health" },
+		requiresAnyFlags = { athletic = true, sports_champion = true, varsity_athlete = true, sports_star = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Health advantage in later life",
+				effects = { Health = 15, Happiness = 10 },
+				feedText = "💪 Your body remembers those years of training. You're healthier than most your age!",
+			},
+			{
+				text = "Networking with old teammates",
+				effects = { Happiness = 8 },
+				setFlags = { valuable_network = true },
+				feedText = "💪 Old teammate is now a CEO. You've got an 'in' at their company!",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.5 then
+						state.Money = (state.Money or 0) + 5000
+						state:AddFeed("💪 They helped you land a great opportunity! +$5,000!")
+					end
+				end,
+			},
+			{
+				text = "Coaching the next generation",
+				effects = { Happiness = 12, Smarts = 2 },
+				setFlags = { youth_coach = true, giving_back = true },
+				feedText = "💪 You're coaching kids now. Passing on what you learned feels amazing!",
+			},
+		},
+	},
+	{
+		id = "conseq_artistic_talent_recognized",
+		title = "Your Art Gets Noticed",
+		emoji = "🎨",
+		text = "That creative hobby you've nurtured? Someone important saw it!",
+		question = "What opportunity appeared?",
+		minAge = 18, maxAge = 65,
+		baseChance = 0.25,
+		cooldown = 12,
+		oneTime = true,
+		category = "consequence",
+		tags = { "consequence", "art", "creative", "opportunity" },
+		requiresAnyFlags = { artistic = true, creative = true, talented_artist = true, musician = true, musical_talent = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Gallery wants to feature your work",
+				effects = { Happiness = 18, Looks = 3 },
+				setFlags = { gallery_featured = true },
+				feedText = "🎨 Your first gallery showing! People are buying your work!",
+				onResolve = function(state)
+					local earnings = math.random(2000, 8000)
+					state.Money = (state.Money or 0) + earnings
+					state:AddFeed(string.format("🎨 Sold several pieces! +$%d!", earnings))
+				end,
+			},
+			{
+				text = "Hired for creative project",
+				effects = { Happiness = 15 },
+				setFlags = { professional_artist = true },
+				feedText = "🎨 A company wants to pay you for your art! Dream come true!",
+				onResolve = function(state)
+					state.Money = (state.Money or 0) + 5000
+				end,
+			},
+			{
+				text = "Teaching workshops",
+				effects = { Happiness = 10, Money = 1000 },
+				setFlags = { art_teacher = true },
+				feedText = "🎨 People want to learn from YOU! Teaching workshops on the side!",
 			},
 		},
 	},

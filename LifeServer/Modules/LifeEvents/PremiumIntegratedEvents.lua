@@ -1147,7 +1147,11 @@ PremiumIntegratedEvents.events = {
 		tags = { "business", "investment", "opportunity" },
 		
 		eligibility = function(state)
-			return (state.Money or 0) >= 1000
+			local money = state.Money or 0
+			if money < 1000 then
+				return false, "💸 You need at least $1,000 to see this opportunity"
+			end
+			return true
 		end,
 		
 		choices = {
@@ -1664,7 +1668,11 @@ PremiumIntegratedEvents.events = {
 		tags = { "friend", "money", "loyalty" },
 		
 		eligibility = function(state)
-			return (state.Money or 0) >= 1000
+			local money = state.Money or 0
+			if money < 1000 then
+				return false, "💸 You don't have enough money to help"
+			end
+			return true
 		end,
 		
 		choices = {
@@ -2239,7 +2247,7 @@ PremiumIntegratedEvents.events = {
 		text = "It's career day at school! Everyone's talking about what they want to be when they grow up. What sounds exciting to you?",
 		question = "What catches your imagination?",
 		minAge = 5, maxAge = 7,
-		baseChance = 0.9, -- High chance - engaging early content
+		baseChance = 0.6, -- CRITICAL FIX: Reduced from 0.9 - still good chance but not guaranteed
 		cooldown = 99,
 		oneTime = true,
 		stage = "childhood",
@@ -2341,7 +2349,7 @@ PremiumIntegratedEvents.events = {
 		text = "You're blowing out your birthday candles! Everyone says if you make a wish without telling anyone, it might come true!",
 		question = "What do you wish for?",
 		minAge = 6, maxAge = 10,
-		baseChance = 0.85,
+		baseChance = 0.55, -- CRITICAL FIX: Reduced from 0.85 to prevent guaranteed trigger
 		cooldown = 99,
 		oneTime = true,
 		stage = "childhood",

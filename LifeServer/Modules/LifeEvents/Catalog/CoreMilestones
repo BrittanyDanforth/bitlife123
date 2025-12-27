@@ -234,6 +234,12 @@ local events = {
 		minAge = 15,
 		maxAge = 17,
 		oneTime = true,
+		-- CRITICAL FIX: Block if already learned to drive from ANY driving event!
+		blockedByFlags = { 
+			has_license = true, drivers_license = true, driver_license = true,
+			has_drivers_license = true, learned_driving = true, good_driver = true,
+			driving_done = true, in_prison = true
+		},
 		choices = {
 			{
 				index = 1,
@@ -529,7 +535,25 @@ local events = {
 		minAge = 18,
 		maxAge = 28,
 		oneTime = true,
-		blockedByFlags = { living_independently = true, in_prison = true },
+		blockedByFlags = { 
+			living_independently = true, 
+			in_prison = true,
+			moved_out = true,
+			has_own_place = true,
+			homeless = true,
+		},
+		
+		-- CRITICAL FIX: Event-level eligibility - need SOME money to even see this event!
+		-- This prevents broke players from getting "move out" popups when they can't afford it
+		eligibility = function(state)
+			local money = state.Money or 0
+			-- Need at least $500 to even consider moving out
+			if money < 500 then
+				return false, "💸 You need at least $500 saved before considering moving out!"
+			end
+			return true
+		end,
+		
 		choices = {
 			{
 				index = 1,

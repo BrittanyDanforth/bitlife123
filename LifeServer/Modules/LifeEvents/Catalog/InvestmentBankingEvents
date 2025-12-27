@@ -663,7 +663,8 @@ InvestmentBankingEvents.events = {
 						state:ModifyStat("Happiness", -10)
 						state:AddFeed("🌟 Can't afford to start your own fund. Need at least $500k.")
 					else
-						state.Money = state.Money - investment
+						-- CRITICAL FIX: Prevent negative money
+						state.Money = math.max(0, (state.Money or 0) - investment)
 						if roll <= 50 then
 							local returns = math.random(2000000, 10000000)
 							state.Money = (state.Money or 0) + returns

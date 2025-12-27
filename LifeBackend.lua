@@ -15387,11 +15387,25 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 	if choice.effects or eventDef.source == "lifeevents" or eventDef.source == "stage" then
 		local preStats = table.clone(state.Stats)
 		local preMoney = state.Money
-		local success, err = pcall(function()
-			EventEngine.completeEvent(eventDef, choiceIndex, state)
+		local success, result = pcall(function()
+			return EventEngine.completeEvent(eventDef, choiceIndex, state)
 		end)
 		if not success then
-			warn("[LifeBackend] Event resolution error:", err)
+			warn("[LifeBackend] Event resolution error:", result)
+		elseif result and result.failed then
+			-- CRITICAL FIX: Handle choice eligibility/affordability failures!
+			-- User bug: "IT SAYS MOVING OUT BUT DIDNT CHECK IF IM BROKE"
+			-- Show the error message to the player instead of applying the choice
+			warn("[LifeBackend] Choice failed eligibility:", result.failReason)
+			self:pushState(player, nil, {
+				showPopup = true,
+				emoji = "❌",
+				title = "Can't Do That!",
+				body = result.failReason or "You can't select this option right now.",
+				wasSuccess = false,
+			})
+			-- Don't continue with the rest of the event resolution
+			return
 		end
 		effectsSummary = {
 			Happiness = (state.Stats.Happiness - preStats.Happiness),
@@ -16807,8 +16821,11 @@ function LifeBackend:handlePrisonAction(player, actionId)
 		state.JailYearsLeft = 0
 		state.Flags.in_prison = nil
 		state.Flags.incarcerated = nil
+		-- CRITICAL FIX: Set ALL escape flag variations for compatibility!
 		state.Flags.escaped_prisoner = true
+		state.Flags.escaped_prison = true -- For LifeExperiences consequence events
 		state.Flags.fugitive = true
+		state.Flags.on_the_run = true
 		state.PendingFeed = nil
 		state.YearLog = {}
 		
@@ -16842,13 +16859,15 @@ function LifeBackend:handlePrisonAction(player, actionId)
 				{ 
 					text = "Lay low and start fresh", 
 					effects = { Happiness = 20 },
-					setFlags = { escaped_prisoner = true, fugitive = true, criminal_record = true },
+					-- CRITICAL FIX: Set ALL escape flags for compatibility!
+					setFlags = { escaped_prisoner = true, escaped_prison = true, fugitive = true, on_the_run = true, criminal_record = true },
 					feedText = "🏃 You escaped prison! Now living as a fugitive.",
 				},
 				{ 
 					text = "Leave the country", 
 					effects = { Happiness = 15, Money = -5000 },
-					setFlags = { escaped_prisoner = true, fugitive = true, fled_country = true },
+					-- CRITICAL FIX: Set ALL escape flags for compatibility!
+					setFlags = { escaped_prisoner = true, escaped_prison = true, fugitive = true, on_the_run = true, fled_country = true },
 					feedText = "🏃 You escaped and fled to another country!",
 				},
 			},
@@ -19794,8 +19813,31 @@ function LifeBackend:createBasicRelationship(state, relType)
 		"Clark", "Lewis", "Robinson", "Walker", "Hall", "Young", "Allen", "King", "Wright", "Lopez"
 	}
 	
-	-- Choose gender randomly for romance/friend, then select appropriate name
-	local gender = (math.random() > 0.5) and "male" or "female"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Choose gender based on player's gender for romance!
+	-- BUG REPORTED: "As a girl it only lets me romance girls"
+	-- The issue was random 50/50 gender instead of considering player's gender!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local gender
+	if relType == "romance" or relType == "partner" then
+		-- Romance: opposite gender by default, ~15% same-gender
+		local playerGender = state.Gender or "Male"
+		if playerGender == "Female" or playerGender == "female" then
+			gender = "male" -- Female player gets male partner by default
+			if math.random() < 0.15 then
+				gender = "female" -- Same-gender
+			end
+		else
+			gender = "female" -- Male player gets female partner by default
+			if math.random() < 0.15 then
+				gender = "male" -- Same-gender
+			end
+		end
+	else
+		-- Friends/enemies: random gender
+		gender = (math.random() > 0.5) and "male" or "female"
+	end
+	
 	local firstName
 	if gender == "male" then
 		firstName = maleFirstNames[math.random(#maleFirstNames)]

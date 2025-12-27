@@ -112,6 +112,9 @@ Random.events = {
 		oneTime = true,
 		-- CRITICAL FIX #4: Added "inheritance" category for green/gold event card
 		category = "inheritance",
+		tags = { "inheritance", "money", "family" },
+		-- CRITICAL FIX: Extra protection against repeats
+		blockedByFlags = { in_prison = true, inheritance_received = true },
 		-- CRITICAL FIX: Random inheritance instead of player picking what they get
 		choices = {
 			{
@@ -120,6 +123,8 @@ Random.events = {
 				feedText = "You attended the reading of the will...",
 				onResolve = function(state)
 					-- CRITICAL FIX: Added nil checks for all method calls
+					state.Flags = state.Flags or {}
+					state.Flags.inheritance_received = true -- CRITICAL FIX: Mark as done to prevent repeats
 					local roll = math.random()
 					if roll < 0.30 then -- 30% substantial money
 						local amount = math.random(5000, 25000)
@@ -127,7 +132,6 @@ Random.events = {
 						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
 						if state.AddFeed then state:AddFeed(string.format("📜 You inherited $%d! What a windfall!", amount)) end
 					elseif roll < 0.50 then -- 20% house
-						state.Flags = state.Flags or {}
 						state.Flags.inherited_property = true
 						state.Flags.homeowner = true
 						state.Flags.has_property = true
@@ -175,6 +179,7 @@ Random.events = {
 			{
 				text = "Decline the inheritance",
 				effects = { Happiness = -2 },
+				setFlags = { inheritance_received = true }, -- CRITICAL FIX: Mark as done to prevent repeats
 				feedText = "You declined to accept the inheritance. You never know what strings were attached.",
 			},
 		},
@@ -1891,10 +1896,25 @@ Random.events = {
 		emoji = "🎗️",
 		text = "You've found a concerning lump or had abnormal test results.",
 		question = "The doctor wants to run more tests...",
-		minAge = 25, maxAge = 90,
-		baseChance = 0.25,
-		cooldown = 4,
-		category = "illness",
+		minAge = 30, maxAge = 90, -- CRITICAL FIX: Start at 30, not 25
+		baseChance = 0.08, -- CRITICAL FIX: Reduced from 0.25 - cancer scares should be RARE
+		cooldown = 15, -- CRITICAL FIX: Increased massively - shouldn't repeat often
+		category = "health",
+		tags = { "illness", "cancer", "health_scare" },
+		oneTime = true, -- CRITICAL FIX: Only happens once per life!
+		-- CRITICAL FIX: Block if already had cancer scare or has cancer
+		blockedByFlags = { cancer_survivor = true, battling_cancer = true, has_cancer = true, cancer_scare_done = true, in_prison = true },
+		-- CRITICAL FIX: Require some health-related activity first
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Already dealt with cancer? Don't show
+			if flags.cancer_survivor or flags.battling_cancer or flags.has_cancer then return false end
+			-- Must have visited doctor or had some medical interaction
+			local hadMedical = flags.went_to_doctor or flags.doctor_checkup or flags.recent_checkup
+				or flags.health_checkup or flags.physical_exam or flags.found_lump
+			if not hadMedical then return false end
+			return true
+		end,
 		-- CRITICAL FIX: Random cancer outcome - player can't choose diagnosis
 		choices = {
 			{
@@ -1904,6 +1924,8 @@ Random.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					local age = state.Age or 40
+					state.Flags = state.Flags or {}
+					state.Flags.cancer_scare_done = true -- CRITICAL FIX: Mark as done to prevent repeats
 					-- Older = slightly higher cancer risk
 					local cancerRisk = 0.15 + (age - 25) / 200
 					if roll < 0.50 then -- 50% false alarm
@@ -1914,19 +1936,16 @@ Random.events = {
 						state:ModifyStat("Health", -18)
 						state:ModifyStat("Happiness", -10)
 						state.Money = math.max(0, (state.Money or 0) - 8000)
-						state.Flags = state.Flags or {}
 						state.Flags.cancer_survivor = true
 						state:AddFeed("🎗️ Cancer caught early. Treatment is working. You'll beat this.")
 					elseif roll < 0.50 + cancerRisk then -- Variable serious
 						state:ModifyStat("Health", -35)
 						state:ModifyStat("Happiness", -20)
 						state.Money = math.max(0, (state.Money or 0) - 20000)
-						state.Flags = state.Flags or {}
 						state.Flags.battling_cancer = true
 						state:AddFeed("🎗️ Serious diagnosis. The fight of your life begins.")
 					else -- Need more tests
 						state:ModifyStat("Happiness", -5)
-						state.Flags = state.Flags or {}
 						state.Flags.health_scare = true
 						state:AddFeed("🎗️ Results inconclusive. More tests needed...")
 					end
@@ -1938,6 +1957,7 @@ Random.events = {
 				feedText = "You put off facing the truth...",
 				onResolve = function(state)
 					state.Flags = state.Flags or {}
+					state.Flags.cancer_scare_done = true -- CRITICAL FIX: Mark as done to prevent repeats
 					state.Flags.delayed_diagnosis = true
 					state.Flags.health_scare = true
 					state:AddFeed("🎗️ The uncertainty weighs on you. Should get tested soon...")
@@ -2616,12 +2636,14 @@ Random.events = {
 		text = "You can't pay rent. Your landlord has given you an eviction notice.",
 		question = "What do you do?",
 		minAge = 18, maxAge = 80,
-		baseChance = 0.8, -- High chance if triggered
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.8
+		cooldown = 6, -- CRITICAL FIX: Increased to prevent spam
+		category = "homeless",
+		tags = { "eviction", "housing", "financial" },
 		-- CRITICAL FIX: Only triggers for people with bum_life flag AND low money
 		-- This prevents rich players from getting eviction notices!
 		requiresFlags = { bum_life = true },
-		blockedByFlags = { homeless = true },
+		blockedByFlags = { homeless = true, evicted = true },
 		-- CRITICAL FIX: Custom eligibility check to ensure player is actually broke
 		eligibility = function(state)
 			local money = state.Money or 0
@@ -2674,9 +2696,12 @@ Random.events = {
 		text = "Another day homeless. The streets are harsh and unforgiving.",
 		question = "How do you survive today?",
 		minAge = 18, maxAge = 80,
-		baseChance = 0.9,
-		cooldown = 1,
+		baseChance = 0.6, -- CRITICAL FIX: Reduced from 0.9 to prevent spam
+		cooldown = 3, -- CRITICAL FIX: Increased from 1 to prevent spam
+		category = "homeless", -- CRITICAL FIX: Proper category
+		tags = { "homeless", "survival" },
 		requiresFlags = { homeless = true },
+		blockedByFlags = { in_prison = true }, -- CRITICAL FIX: Can't be homeless in prison
 
 		choices = {
 			{ 

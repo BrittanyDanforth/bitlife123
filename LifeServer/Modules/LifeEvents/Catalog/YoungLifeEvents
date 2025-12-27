@@ -153,9 +153,11 @@ YoungLifeEvents.events = {
 		category = "childhood",
 		weight = 13,
 		minAge = 5, maxAge = 14,
-		baseChance = 0.45,
-		cooldown = 3,
-		blockedByFlags = { in_prison = true, has_childhood_pet = true },
+		baseChance = 0.25, -- CRITICAL FIX: Reduced from 0.45 - pet asks should be rare
+		cooldown = 12, -- CRITICAL FIX: Increased from 3 to prevent spam
+		oneTime = true, -- CRITICAL FIX: Only ask once
+		-- CRITICAL FIX: Block if already has a pet OR asked in childhood_pet_want event
+		blockedByFlags = { in_prison = true, has_childhood_pet = true, got_dog = true, got_cat = true, got_fish = true, has_dog = true, has_cat = true, pet_asked = true },
 		
 		choices = {
 			{
@@ -164,10 +166,13 @@ YoungLifeEvents.events = {
 				feedText = "Please please please please!",
 				onResolve = function(state)
 					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					state.Flags.pet_asked = true -- CRITICAL FIX: Always mark as asked to prevent repeats
 					if roll <= 30 then
 						state:ModifyStat("Happiness", 25)
-						state.Flags = state.Flags or {}
+						-- CRITICAL FIX: Set ALL pet flag variations for compatibility
 						state.Flags.has_childhood_pet = true
+						state.Flags.has_pet = true
 						state:AddFeed("🐕 THEY SAID YES! You got a pet! This is the best day!")
 					elseif roll <= 60 then
 						state:ModifyStat("Happiness", 8)

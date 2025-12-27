@@ -556,21 +556,30 @@ local C = {
 
 -- CRITICAL FIX #951: Fonts must ALWAYS have valid values to prevent nil errors
 -- "Unable to assign property Font. EnumItem, number, or string expected, got nil"
+local DEFAULT_FONT = Enum.Font.SourceSans
+
 local F = {
-	Title  = Enum.Font.GothamBold or Enum.Font.SourceSansBold,
-	Body   = Enum.Font.Gotham or Enum.Font.SourceSans,
-	Medium = Enum.Font.GothamMedium or Enum.Font.SourceSans,
-	Button = Enum.Font.GothamBold or Enum.Font.SourceSansBold,
+	Title  = Enum.Font.GothamBold or Enum.Font.SourceSansBold or DEFAULT_FONT,
+	Body   = Enum.Font.Gotham or Enum.Font.SourceSans or DEFAULT_FONT,
+	Medium = Enum.Font.GothamMedium or Enum.Font.SourceSans or DEFAULT_FONT,
+	Button = Enum.Font.GothamBold or Enum.Font.SourceSansBold or DEFAULT_FONT,
+	Bold   = Enum.Font.GothamBold or Enum.Font.SourceSansBold or DEFAULT_FONT,
 }
 
--- Safety: Ensure all font values are valid Enum.Font
-local DEFAULT_FONT = Enum.Font.SourceSans
+-- Safety: Ensure all font values are valid Enum.Font (double-check everything)
 for key, value in pairs(F) do
 	if type(value) ~= "userdata" then
 		warn("[LifeClient] Font", key, "was invalid, using default")
 		F[key] = DEFAULT_FONT
 	end
 end
+
+-- Triple safety: Explicit checks for commonly used fonts
+if not F.Title then F.Title = DEFAULT_FONT end
+if not F.Body then F.Body = DEFAULT_FONT end
+if not F.Medium then F.Medium = DEFAULT_FONT end
+if not F.Button then F.Button = DEFAULT_FONT end
+if not F.Bold then F.Bold = DEFAULT_FONT end
 
 local function ensureSharedUITheme()
 	local sharedUI = safeRequireRS("UIComponents")
@@ -755,16 +764,33 @@ local function detectMobile()
 	return hasTouch and not hasMouse
 end
 
+-- CRITICAL FIX: Wait for viewport to have valid dimensions before initializing Device
+-- This prevents the rare "UI completely broken" issue on slow mobile connections
+local function waitForValidViewport()
+	local attempts = 0
+	while (Camera.ViewportSize.X < 100 or Camera.ViewportSize.Y < 100) and attempts < 30 do
+		attempts = attempts + 1
+		task.wait(0.1)
+	end
+	if Camera.ViewportSize.X < 100 or Camera.ViewportSize.Y < 100 then
+		warn("[LifeClient] ⚠️ Viewport still invalid after waiting, using defaults")
+		return Vector2.new(390, 844)  -- Default to iPhone 12 size
+	end
+	return Camera.ViewportSize
+end
+
+local initialViewport = waitForValidViewport()
+
 local Device = {
-	ViewportSize = Camera.ViewportSize,
+	ViewportSize = initialViewport,
 	IS_MOBILE = detectMobile(),
 	IS_TABLET = false,
 	IS_SMALL_PHONE = false,
 	IS_TINY_PHONE = false,
 }
-Device.IS_TABLET = Device.IS_MOBILE and (Camera.ViewportSize.X >= 768 or Camera.ViewportSize.Y >= 768)
-Device.IS_SMALL_PHONE = Device.IS_MOBILE and not Device.IS_TABLET and (Camera.ViewportSize.X < 450 or Camera.ViewportSize.Y < 750)
-Device.IS_TINY_PHONE = Device.IS_MOBILE and not Device.IS_TABLET and (Camera.ViewportSize.X <= 380 or Camera.ViewportSize.Y <= 680)
+Device.IS_TABLET = Device.IS_MOBILE and (initialViewport.X >= 768 or initialViewport.Y >= 768)
+Device.IS_SMALL_PHONE = Device.IS_MOBILE and not Device.IS_TABLET and (initialViewport.X < 450 or initialViewport.Y < 750)
+Device.IS_TINY_PHONE = Device.IS_MOBILE and not Device.IS_TABLET and (initialViewport.X <= 380 or initialViewport.Y <= 680)
 
 -- Viewport tracking
 local function updateViewport()
@@ -904,12 +930,28 @@ end
 -- SCREEN GUI
 ----------------------------------------------------------------
 
+-- CRITICAL FIX: Add timeout and retry for PlayerGui to prevent UI from being "completely broken"
+local playerGui = nil
+local MAX_RETRIES = 5
+for attempt = 1, MAX_RETRIES do
+	playerGui = player:WaitForChild("PlayerGui", 5)
+	if playerGui then
+		break
+	end
+	warn("[LifeClient] ⚠️ PlayerGui not found, attempt", attempt, "of", MAX_RETRIES)
+	task.wait(1)
+end
+
+if not playerGui then
+	error("[LifeClient] ❌ CRITICAL: PlayerGui not found after", MAX_RETRIES, "attempts! UI cannot initialize.")
+end
+
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "BitLifeUI"
 screenGui.ResetOnSpawn = false
 screenGui.IgnoreGuiInset = true
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-screenGui.Parent = player:WaitForChild("PlayerGui")
+screenGui.Parent = playerGui
 
 local blurOverlay = Instance.new("Frame")
 blurOverlay.Name = "BlurOverlay"
@@ -1025,6 +1067,12 @@ local function createResultPopup()
 	-- TINY PHONE FIX: More compact popup width
 	local popupWidth = modalWidth(320)
 	
+	-- CRITICAL FIX: Calculate max popup height to prevent going off screen
+	local screenHeight = Device.ViewportSize.Y
+	local topReserved = Device.IS_TINY_PHONE and 60 or (Device.IS_SMALL_PHONE and 70 or 80)
+	local bottomReserved = Device.IS_TINY_PHONE and 40 or (Device.IS_SMALL_PHONE and 50 or 60)
+	local maxPopupHeight = screenHeight - topReserved - bottomReserved
+	
 	-- Shadow frame (matches event modal) - thinner borders on tiny phones
 	ResultUI.shadow = Instance.new("Frame")
 	ResultUI.shadow.Size = UDim2.new(0, popupWidth, 0, 0)
@@ -1034,8 +1082,14 @@ local function createResultPopup()
 	ResultUI.shadow.BackgroundColor3 = C.Black
 	ResultUI.shadow.BackgroundTransparency = 0.92
 	ResultUI.shadow.ZIndex = 81
+	ResultUI.shadow.ClipsDescendants = true  -- CRITICAL FIX: Clip overflow
 	ResultUI.shadow.Parent = ResultUI.overlay
 	corner(ResultUI.shadow, Device.IS_TINY_PHONE and 14 or px(28))
+	
+	-- CRITICAL FIX: Add max height constraint to prevent modal from going off screen
+	local resultSizeConstraint = Instance.new("UISizeConstraint")
+	resultSizeConstraint.MaxSize = Vector2.new(popupWidth, maxPopupHeight)
+	resultSizeConstraint.Parent = ResultUI.shadow
 
 	-- Green/Red shell - thinner on tiny phones
 	local shellMargin = Device.IS_TINY_PHONE and 2 or 6
@@ -1060,6 +1114,7 @@ local function createResultPopup()
 	ResultUI.card.Position = UDim2.new(0, cardMargin/2, 0, cardMargin/2)
 	ResultUI.card.BackgroundColor3 = C.White
 	ResultUI.card.ZIndex = 83
+	ResultUI.card.ClipsDescendants = true
 	ResultUI.card.Parent = ResultUI.shell
 	corner(ResultUI.card, Device.IS_TINY_PHONE and 10 or px(22))
 
@@ -1931,17 +1986,21 @@ local stats = {
 
 for i, stat in ipairs(stats) do
 	local row = Instance.new("Frame")
-	row.Size = UDim2.new(1, 0, 0, 40)
+	-- CRITICAL FIX: Better row sizing for mobile
+	local rowHeight = Device.IS_TINY_PHONE and 36 or 42
+	row.Size = UDim2.new(1, 0, 0, rowHeight)
 	row.BackgroundTransparency = 1
 	row.LayoutOrder = i
 	row.ZIndex = 153
 	row.Parent = statSection
 	
 	local lbl = Instance.new("TextLabel")
-	lbl.Size = UDim2.new(0, 80, 1, 0)
+	-- CRITICAL FIX: Responsive label width for mobile
+	local lblWidth = Device.IS_TINY_PHONE and 70 or 85
+	lbl.Size = UDim2.new(0, lblWidth, 1, 0)
 	lbl.BackgroundTransparency = 1
 	lbl.Font = F.Medium
-	lbl.TextSize = 14
+	lbl.TextSize = Device.IS_TINY_PHONE and 12 or 14
 	lbl.TextColor3 = C.Gray700
 	lbl.TextXAlignment = Enum.TextXAlignment.Left
 	lbl.Text = stat.emoji .. " " .. stat.key
@@ -1949,8 +2008,12 @@ for i, stat in ipairs(stats) do
 	lbl.Parent = row
 	
 	local sliderBg = Instance.new("Frame")
-	sliderBg.Size = UDim2.new(1, -130, 0, 20)
-	sliderBg.Position = UDim2.new(0, 85, 0.5, -10)
+	-- CRITICAL FIX: Better slider positioning for mobile - centered vertically
+	local sliderOffset = Device.IS_TINY_PHONE and 75 or 90
+	local sliderPadding = Device.IS_TINY_PHONE and 115 or 135
+	local sliderHeight = Device.IS_TINY_PHONE and 18 or 22
+	sliderBg.Size = UDim2.new(1, -sliderPadding, 0, sliderHeight)
+	sliderBg.Position = UDim2.new(0, sliderOffset, 0.5, -sliderHeight/2)
 	sliderBg.BackgroundColor3 = C.Gray200
 	sliderBg.ZIndex = 154
 	sliderBg.Parent = row
@@ -1964,11 +2027,15 @@ for i, stat in ipairs(stats) do
 	corner(sliderFill, 6)
 	
 	local valInput = Instance.new("TextBox")
-	valInput.Size = UDim2.new(0, 40, 0, 28)
-	valInput.Position = UDim2.new(1, -40, 0.5, -14)
+	-- CRITICAL FIX: Better input box sizing for mobile - properly centered
+	local inputW = Device.IS_TINY_PHONE and 36 or 42
+	local inputH = Device.IS_TINY_PHONE and 24 or 30
+	valInput.Size = UDim2.new(0, inputW, 0, inputH)
+	valInput.Position = UDim2.new(1, -inputW, 0.5, -inputH/2)
+	valInput.AnchorPoint = Vector2.new(0, 0) -- Explicitly anchor top-left
 	valInput.BackgroundColor3 = C.Gray100
 	valInput.Font = F.Medium
-	valInput.TextSize = 14
+	valInput.TextSize = Device.IS_TINY_PHONE and 12 or 14
 	valInput.TextColor3 = C.Gray800
 	valInput.Text = "50"
 	valInput.ZIndex = 154
@@ -2017,17 +2084,41 @@ actionsTitle.ZIndex = 153
 actionsTitle.LayoutOrder = 3
 actionsTitle.Parent = modalScroll
 
+-- CRITICAL FIX: Wrapper frame to center the grid
+local actionsGridWrapper = Instance.new("Frame")
+actionsGridWrapper.Size = UDim2.new(1, 0, 0, 0)
+actionsGridWrapper.AutomaticSize = Enum.AutomaticSize.Y
+actionsGridWrapper.BackgroundTransparency = 1
+actionsGridWrapper.ZIndex = 152
+actionsGridWrapper.LayoutOrder = 4
+actionsGridWrapper.Parent = modalScroll
+
 local actionsGrid = Instance.new("Frame")
 actionsGrid.Size = UDim2.new(1, 0, 0, 0)
 actionsGrid.AutomaticSize = Enum.AutomaticSize.Y
 actionsGrid.BackgroundTransparency = 1
 actionsGrid.ZIndex = 152
-actionsGrid.LayoutOrder = 4
-actionsGrid.Parent = modalScroll
+actionsGrid.AnchorPoint = Vector2.new(0.5, 0) -- CRITICAL FIX: Center anchor
+actionsGrid.Position = UDim2.new(0.5, 0, 0, 0) -- CRITICAL FIX: Center position
+actionsGrid.Parent = actionsGridWrapper
 
+-- CRITICAL FIX: Better grid layout for mobile - properly centered cells
 local gridLayout = Instance.new("UIGridLayout")
-gridLayout.CellSize = UDim2.new(0.48, 0, 0, 50)
-gridLayout.CellPadding = UDim2.new(0.02, 0, 0, 8)
+-- CRITICAL FIX: Calculate cell width based on modal width minus padding (20 on each side = 40 total)
+-- Modal is 320 on tiny, 420 on regular. Minus 40 padding = 280 or 380 usable
+local usableWidth = Device.IS_TINY_PHONE and 280 or 380
+local cellPad = 8
+-- Two columns: usableWidth = 2*cellWidth + cellPad
+local cellWidth = math.floor((usableWidth - cellPad) / 2)
+local cellHeight = Device.IS_TINY_PHONE and 48 or 52
+gridLayout.CellSize = UDim2.new(0, cellWidth, 0, cellHeight)
+gridLayout.CellPadding = UDim2.new(0, cellPad, 0, cellPad)
+-- CRITICAL FIX: Center the grid horizontally
+gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+gridLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+gridLayout.FillDirection = Enum.FillDirection.Horizontal
+gridLayout.FillDirectionMaxCells = 2 -- 2 columns
+gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
 gridLayout.Parent = actionsGrid
 
 -- CRITICAL FIX #164 + #183: Quick action buttons for God Mode - Expanded list
@@ -2048,12 +2139,17 @@ local godModeActionBtns = {}
 for i, action in ipairs(quickActions) do
 	local btn = Instance.new("TextButton")
 	btn.Name = action.id
-	btn.Size = UDim2.new(0.48, 0, 0, 50)
 	btn.BackgroundColor3 = C.Gray100
 	btn.Text = ""
 	btn.ZIndex = 153
 	btn.Parent = actionsGrid
 	corner(btn, 10)
+	
+	-- CRITICAL FIX: Add padding inside button for better mobile appearance
+	local btnPad = Instance.new("UIPadding")
+	btnPad.PaddingLeft = UDim.new(0, 6)
+	btnPad.PaddingRight = UDim.new(0, 6)
+	btnPad.Parent = btn
 	
 	local btnContent = Instance.new("Frame")
 	btnContent.Size = UDim2.fromScale(1, 1)
@@ -2061,36 +2157,44 @@ for i, action in ipairs(quickActions) do
 	btnContent.ZIndex = 154
 	btnContent.Parent = btn
 	
+	-- CRITICAL FIX: Better emoji positioning - left aligned, vertically centered
 	local emoji = Instance.new("TextLabel")
-	emoji.Size = UDim2.new(0, 30, 1, 0)
-	emoji.Position = UDim2.new(0, 5, 0, 0)
+	local emojiSize = Device.IS_TINY_PHONE and 22 or 26
+	emoji.Size = UDim2.new(0, emojiSize, 1, 0)
+	emoji.Position = UDim2.new(0, 2, 0, 0)
 	emoji.BackgroundTransparency = 1
 	emoji.Font = F.Body
-	emoji.TextSize = 20
+	emoji.TextSize = Device.IS_TINY_PHONE and 14 or 16
 	emoji.Text = action.emoji
+	emoji.TextYAlignment = Enum.TextYAlignment.Center
+	emoji.TextXAlignment = Enum.TextXAlignment.Center
 	emoji.ZIndex = 155
 	emoji.Parent = btnContent
 	
+	-- CRITICAL FIX: Better text positioning - properly aligned and sized
+	local textOffset = Device.IS_TINY_PHONE and 24 or 28
 	local name = Instance.new("TextLabel")
-	name.Size = UDim2.new(1, -40, 0, 20)
-	name.Position = UDim2.new(0, 35, 0, 5)
+	name.Size = UDim2.new(1, -textOffset - 4, 0, 16)
+	name.Position = UDim2.new(0, textOffset, 0, Device.IS_TINY_PHONE and 5 or 7)
 	name.BackgroundTransparency = 1
 	name.Font = F.Medium
-	name.TextSize = 12
+	name.TextSize = Device.IS_TINY_PHONE and 9 or 11
 	name.TextColor3 = C.Gray800
 	name.TextXAlignment = Enum.TextXAlignment.Left
+	name.TextTruncate = Enum.TextTruncate.AtEnd -- Prevent overflow
 	name.Text = action.name
 	name.ZIndex = 155
 	name.Parent = btnContent
 	
 	local desc = Instance.new("TextLabel")
-	desc.Size = UDim2.new(1, -40, 0, 16)
-	desc.Position = UDim2.new(0, 35, 0, 26)
+	desc.Size = UDim2.new(1, -textOffset - 4, 0, 12)
+	desc.Position = UDim2.new(0, textOffset, 0, Device.IS_TINY_PHONE and 21 or 25)
 	desc.BackgroundTransparency = 1
 	desc.Font = F.Body
-	desc.TextSize = 10
+	desc.TextSize = Device.IS_TINY_PHONE and 8 or 9
 	desc.TextColor3 = C.Gray500
 	desc.TextXAlignment = Enum.TextXAlignment.Left
+	desc.TextTruncate = Enum.TextTruncate.AtEnd -- Prevent overflow
 	desc.Text = action.desc
 	desc.ZIndex = 155
 	desc.Parent = btnContent
@@ -2114,24 +2218,31 @@ errorLabel.LayoutOrder = 5
 errorLabel.Parent = modalScroll
 
 -- Button bar
--- CRITICAL FIX #316: Properly centered button bar with fixed width buttons
+-- CRITICAL FIX: Properly centered button bar with fixed width buttons
 local buttonBar = Instance.new("Frame")
-buttonBar.Size = UDim2.new(1, 0, 0, 50)
+buttonBar.Size = UDim2.new(1, 0, 0, 55)
 buttonBar.BackgroundTransparency = 1
 buttonBar.ZIndex = 152
 buttonBar.LayoutOrder = 6
 buttonBar.Parent = modalScroll
 
+-- CRITICAL FIX: Add padding to center buttons properly
+local buttonBarPad = Instance.new("UIPadding")
+buttonBarPad.PaddingTop = UDim.new(0, 8)
+buttonBarPad.Parent = buttonBar
+
 local buttonLayout = Instance.new("UIListLayout")
 buttonLayout.FillDirection = Enum.FillDirection.Horizontal
 buttonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 buttonLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-buttonLayout.Padding = UDim.new(0, 12)
+buttonLayout.Padding = UDim.new(0, 16)
 buttonLayout.Parent = buttonBar
 
--- CRITICAL FIX #316: Fixed width buttons that fit nicely in the modal
-local btnWidth = Device.IS_TINY_PHONE and 130 or 160
-local btnHeight = Device.IS_TINY_PHONE and 38 or 42
+-- CRITICAL FIX: Calculate button width to fit 2 buttons + padding in modal
+-- Modal usable width: 280 (tiny) or 380 (regular) 
+-- Two buttons + 16px padding between = width/2 - 8
+local btnWidth = Device.IS_TINY_PHONE and 120 or 150
+local btnHeight = Device.IS_TINY_PHONE and 36 or 40
 
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, btnWidth, 0, btnHeight)
@@ -2528,7 +2639,8 @@ if false then -- Disabled: Old modal code kept for reference
 		end)
 
 		if ok and result and result.success then
-			addFeedEntry(result.message or "God Mode updated.")
+			-- CRITICAL FIX: Don't add feed here - pushState on server already sends it!
+			-- Adding it here was causing the message to appear TWICE
 			destroyGodModeModal()
 		else
 			errorLabel.Text = (result and result.message) or "Unable to apply changes."
@@ -2994,12 +3106,17 @@ local function buildEventModal()
 	local eventSizeConstraint = Instance.new("UISizeConstraint")
 	eventSizeConstraint.MaxSize = Vector2.new(eventWidth, maxEventHeight)
 	eventSizeConstraint.Parent = EventUI.shadowFrame
+	
+	-- CRITICAL FIX: Enable clipping on shadowFrame to prevent visual overflow
+	EventUI.shadowFrame.ClipsDescendants = true
 
 	-- Shell: autosize height (no Y scale) - fixes button overflow
 	EventUI.shell = Instance.new("Frame")
 	EventUI.shell.Name = "EventShell"
 	EventUI.shell.Size = UDim2.new(1, -shellMargin, 0, 0)
 	EventUI.shell.AutomaticSize = Enum.AutomaticSize.Y
+	-- CRITICAL FIX: Shell must also clip to prevent overflow
+	EventUI.shell.ClipsDescendants = true
 	EventUI.shell.Position = UDim2.new(0, shellMargin/2, 0, shellMargin/2)
 	EventUI.shell.BackgroundColor3 = C.Red
 	EventUI.shell.ZIndex = 62
@@ -3010,7 +3127,8 @@ local function buildEventModal()
 		createShadow(EventUI.shell, Device.IS_SMALL_PHONE and 4 or 6, Device.IS_SMALL_PHONE and px(14) or px(20), C.Black, 0.85)
 	end
 
-	-- Card: autosize height (no Y scale) - fixes button overflow
+	-- CRITICAL FIX: Card is a regular Frame - NO SCROLLING!
+	-- Text and buttons will be made smaller to fit screen perfectly
 	EventUI.card = Instance.new("Frame")
 	EventUI.card.Name = "EventCard"
 	EventUI.card.Size = UDim2.new(1, -cardMargin, 0, 0)
@@ -4750,6 +4868,11 @@ hideEvent = function()
 			EventUI.nameLbl.Text = ""
 			EventUI.relationLbl.Text = ""
 			EventUI.header.Visible = false
+			
+			-- CRITICAL FIX: Reset body scroll position
+			if EventUI.bodyScroll then
+				EventUI.bodyScroll.CanvasPosition = Vector2.new(0, 0)
+			end
 		end
 
 		EventUI.currentHideTween = nil
@@ -4988,12 +5111,35 @@ IntroUI.bonusPromptPadding.PaddingTop = UDim.new(0, 3)
 IntroUI.bonusPromptPadding.PaddingBottom = UDim.new(0, 3)
 IntroUI.bonusPromptPadding.Parent = IntroUI.bonusPromptText
 
--- AUTOMATICALLY activate bonus on load - NO BUTTON NEEDED!
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Check if player is ACTUALLY in group before giving bonus!
+-- Group ID: 706017476
+-- Bug: Was giving everyone bonus without checking group membership
+-- ═══════════════════════════════════════════════════════════════════════════════
+local GROUP_ID = 706017476
+local GroupService = game:GetService("GroupService")
+
 task.spawn(function()
-	task.wait(0.3) -- Small delay for remotes to be ready
+	task.wait(0.5) -- Wait for remotes and player to be ready
 	local SetEngagementBonus = remotesFolder and remotesFolder:FindFirstChild("SetEngagementBonus")
-	if SetEngagementBonus then
-		SetEngagementBonus:FireServer("both")
+	if not SetEngagementBonus then return end
+	
+	-- Check if player is in the group
+	local isInGroup = false
+	local success, err = pcall(function()
+		isInGroup = player:IsInGroup(GROUP_ID)
+	end)
+	
+	if not success then
+		warn("[LifeClient] Failed to check group membership:", err)
+	end
+	
+	-- Only give bonus if player is actually in the group
+	if isInGroup then
+		SetEngagementBonus:FireServer("group")
+		print("[LifeClient] ⭐ Player is in group - +25% income bonus activated!")
+	else
+		print("[LifeClient] Player not in group - no bonus applied (Join group for +25% income!)")
 	end
 end)
 

@@ -3512,6 +3512,134 @@ function LifeEvents.applyTextVariation(event)
 end
 
 -- ════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: TEMPLATE VARIABLE REPLACEMENT SYSTEM
+-- User bug: "it says {{AGE}}! and not correctly working"
+-- This function replaces {{AGE}}, {{NAME}}, {{GENDER}}, etc. with actual values
+-- ════════════════════════════════════════════════════════════════════════════════════
+
+function LifeEvents.replaceTemplateVariables(text, state)
+	if not text or type(text) ~= "string" then return text end
+	if not state then return text end
+	
+	local result = text
+	
+	-- Basic player info
+	result = result:gsub("{{AGE}}", tostring(state.Age or 0))
+	result = result:gsub("{{NAME}}", tostring(state.Name or "You"))
+	result = result:gsub("{{GENDER}}", tostring(state.Gender or "person"))
+	result = result:gsub("{{MONEY}}", tostring(state.Money or 0))
+	
+	-- Format money with commas
+	local formattedMoney = tostring(state.Money or 0):reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
+	result = result:gsub("{{FORMATTED_MONEY}}", formattedMoney)
+	
+	-- Stats
+	result = result:gsub("{{HAPPINESS}}", tostring((state.Stats and state.Stats.Happiness) or state.Happiness or 50))
+	result = result:gsub("{{HEALTH}}", tostring((state.Stats and state.Stats.Health) or state.Health or 100))
+	result = result:gsub("{{SMARTS}}", tostring((state.Stats and state.Stats.Smarts) or state.Smarts or 50))
+	result = result:gsub("{{LOOKS}}", tostring((state.Stats and state.Stats.Looks) or state.Looks or 50))
+	
+	-- Job/Career info
+	local job = state.CurrentJob or {}
+	result = result:gsub("{{JOB_TITLE}}", tostring(job.title or job.Title or "your job"))
+	result = result:gsub("{{COMPANY}}", tostring(job.company or job.Company or "the company"))
+	result = result:gsub("{{SALARY}}", tostring(job.salary or job.Salary or "your salary"))
+	result = result:gsub("{{YEARS_AT_JOB}}", tostring(job.yearsWorked or job.YearsWorked or 1))
+	
+	-- Family info (try to find relationships)
+	local fatherName = "Dad"
+	local motherName = "Mom"
+	local partnerName = "your partner"
+	
+	if state.Relationships then
+		for _, rel in pairs(state.Relationships) do
+			if rel.type == "Father" or rel.relationship == "Father" then
+				fatherName = rel.name or rel.Name or "Dad"
+			elseif rel.type == "Mother" or rel.relationship == "Mother" then
+				motherName = rel.name or rel.Name or "Mom"
+			elseif rel.type == "Partner" or rel.relationship == "Partner" or rel.type == "Spouse" or rel.relationship == "Spouse" then
+				partnerName = rel.name or rel.Name or "your partner"
+			end
+		end
+	end
+	
+	result = result:gsub("{{FATHER_NAME}}", fatherName)
+	result = result:gsub("{{MOTHER_NAME}}", motherName)
+	result = result:gsub("{{PARTNER_NAME}}", partnerName)
+	
+	-- Family status
+	local familyStatus = ""
+	if state.Flags and state.Flags.married then
+		familyStatus = "Your spouse is counting on you."
+	elseif state.Flags and state.Flags.has_kids then
+		familyStatus = "Your kids depend on you."
+	end
+	result = result:gsub("{{FAMILY_STATUS}}", familyStatus)
+	
+	-- Country
+	result = result:gsub("{{COUNTRY}}", tostring(state.Country or state.BirthCountry or "your country"))
+	
+	-- Pronouns based on gender
+	local gender = state.Gender or "male"
+	if gender == "female" then
+		result = result:gsub("{{HE_SHE}}", "she")
+		result = result:gsub("{{HIM_HER}}", "her")
+		result = result:gsub("{{HIS_HER}}", "her")
+		result = result:gsub("{{HIMSELF_HERSELF}}", "herself")
+	else
+		result = result:gsub("{{HE_SHE}}", "he")
+		result = result:gsub("{{HIM_HER}}", "him")
+		result = result:gsub("{{HIS_HER}}", "his")
+		result = result:gsub("{{HIMSELF_HERSELF}}", "himself")
+	end
+	
+	return result
+end
+
+-- Apply template replacement to all text fields in an event
+function LifeEvents.processEventText(event, state)
+	if not event then return event end
+	
+	-- Create a shallow copy to avoid modifying the original
+	local eventCopy = {}
+	for key, value in pairs(event) do
+		eventCopy[key] = value
+	end
+	
+	-- Replace template variables in text fields
+	if eventCopy.text then
+		eventCopy.text = LifeEvents.replaceTemplateVariables(eventCopy.text, state)
+	end
+	if eventCopy.title then
+		eventCopy.title = LifeEvents.replaceTemplateVariables(eventCopy.title, state)
+	end
+	if eventCopy.question then
+		eventCopy.question = LifeEvents.replaceTemplateVariables(eventCopy.question, state)
+	end
+	
+	-- Process choice text too
+	if eventCopy.choices then
+		local processedChoices = {}
+		for i, choice in ipairs(eventCopy.choices) do
+			local choiceCopy = {}
+			for k, v in pairs(choice) do
+				choiceCopy[k] = v
+			end
+			if choiceCopy.text then
+				choiceCopy.text = LifeEvents.replaceTemplateVariables(choiceCopy.text, state)
+			end
+			if choiceCopy.feedText then
+				choiceCopy.feedText = LifeEvents.replaceTemplateVariables(choiceCopy.feedText, state)
+			end
+			processedChoices[i] = choiceCopy
+		end
+		eventCopy.choices = processedChoices
+	end
+	
+	return eventCopy
+end
+
+-- ════════════════════════════════════════════════════════════════════════════════════
 -- ACCESSOR FUNCTIONS
 -- ════════════════════════════════════════════════════════════════════════════════════
 
@@ -3924,6 +4052,54 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 	if not choice then
 		warn("[EventEngine] Choice at index is nil:", choiceIndex)
 		return nil
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: AUTOMATIC AFFORDABILITY CHECK!
+	-- User bug: "IT SAYS MOVING OUT YOUR OWN PLACE BUT DIDNT CHECK IF IM BROKE"
+	-- This automatically checks if the player can afford choices with Money costs
+	-- BEFORE they can select them - prevents broke players from choosing expensive options!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if choice.effects and choice.effects.Money and choice.effects.Money < 0 then
+		local cost = math.abs(choice.effects.Money)
+		local playerMoney = state.Money or 0
+		
+		-- Check if player can afford this choice
+		if playerMoney < cost then
+			-- Format cost nicely
+			local costStr = "$" .. tostring(cost)
+			if cost >= 1000 then
+				costStr = "$" .. string.format("%.0f", cost / 1000) .. "K"
+			end
+			
+			warn("[EventEngine] Affordability check failed:", eventDef.id, "choice:", choiceIndex, 
+				"- costs", cost, "but player only has", playerMoney)
+			
+			return {
+				success = false,
+				failed = true,
+				failReason = "💸 You can't afford this! You need " .. costStr .. " but only have $" .. tostring(playerMoney) .. ".",
+				eventId = eventDef.id,
+				choiceIndex = choiceIndex,
+			}
+		end
+	end
+	
+	-- Also check 'cost' field which some events use instead of effects.Money
+	if choice.cost and choice.cost > 0 then
+		local playerMoney = state.Money or 0
+		if playerMoney < choice.cost then
+			local costStr = "$" .. tostring(choice.cost)
+			warn("[EventEngine] Cost check failed:", eventDef.id, "choice:", choiceIndex,
+				"- costs", choice.cost, "but player only has", playerMoney)
+			return {
+				success = false,
+				failed = true,
+				failReason = "💸 You can't afford this! You need $" .. tostring(choice.cost) .. " but only have $" .. tostring(playerMoney) .. ".",
+				eventId = eventDef.id,
+				choiceIndex = choiceIndex,
+			}
+		end
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -4459,7 +4635,44 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 		if not state.AddFeed then
 			state.AddFeed = function(self, text)
 				if text and text ~= "" then
-					self.PendingFeed = text
+					-- CRITICAL FIX: Replace template variables like {{AGE}} in feed text!
+					-- User bug: "it says {{AGE}}! and not correctly working"
+					local processedText = text
+					
+					-- Basic replacements
+					processedText = processedText:gsub("{{AGE}}", tostring(self.Age or 0))
+					processedText = processedText:gsub("{{NAME}}", tostring(self.Name or "You"))
+					processedText = processedText:gsub("{{MONEY}}", tostring(self.Money or 0))
+					
+					-- Parent names from relationships
+					local motherName = "Mom"
+					local fatherName = "Dad"
+					if self.Relationships then
+						for _, rel in pairs(self.Relationships) do
+							if type(rel) == "table" then
+								if rel.type == "Mother" or rel.relationship == "Mother" then
+									motherName = rel.name or rel.Name or "Mom"
+								elseif rel.type == "Father" or rel.relationship == "Father" then
+									fatherName = rel.name or rel.Name or "Dad"
+								end
+							end
+						end
+					end
+					processedText = processedText:gsub("{{MOTHER_NAME}}", motherName)
+					processedText = processedText:gsub("{{FATHER_NAME}}", fatherName)
+					
+					-- Job info
+					if self.CurrentJob then
+						processedText = processedText:gsub("{{JOB_NAME}}", tostring(self.CurrentJob.name or "your job"))
+						processedText = processedText:gsub("{{COMPANY}}", tostring(self.CurrentJob.company or "the company"))
+						processedText = processedText:gsub("{{SALARY}}", tostring(self.CurrentJob.salary or 0))
+					else
+						processedText = processedText:gsub("{{JOB_NAME}}", "your job")
+						processedText = processedText:gsub("{{COMPANY}}", "the company")
+						processedText = processedText:gsub("{{SALARY}}", "0")
+					end
+					
+					self.PendingFeed = processedText
 				end
 				return self
 			end

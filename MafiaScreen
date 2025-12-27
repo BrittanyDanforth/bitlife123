@@ -15,17 +15,32 @@ local F = UI.Fonts or {}
 -- Ensure ALL fonts exist so Font property never gets nil!
 -- ═══════════════════════════════════════════════════════════════════════════════
 local DEFAULT_FONT = Enum.Font.SourceSans
-F.Title  = F.Title  or Enum.Font.GothamBold   or Enum.Font.SourceSansBold or DEFAULT_FONT
-F.Body   = F.Body   or Enum.Font.Gotham       or Enum.Font.SourceSans     or DEFAULT_FONT
-F.Medium = F.Medium or Enum.Font.GothamMedium or Enum.Font.SourceSans     or DEFAULT_FONT
-F.Button = F.Button or Enum.Font.GothamBold   or Enum.Font.SourceSansBold or DEFAULT_FONT
+
+-- CRITICAL FIX: Force-initialize F table if it doesn't exist properly
+if not F or type(F) ~= "table" then
+	F = {}
+end
+
+-- CRITICAL FIX: Always set fonts directly with fallback chain
+F.Title  = Enum.Font.GothamBold or Enum.Font.SourceSansBold or DEFAULT_FONT
+F.Body   = Enum.Font.Gotham or Enum.Font.SourceSans or DEFAULT_FONT
+F.Medium = Enum.Font.GothamMedium or Enum.Font.SourceSans or DEFAULT_FONT
+F.Button = Enum.Font.GothamBold or Enum.Font.SourceSansBold or DEFAULT_FONT
+F.Bold   = Enum.Font.GothamBold or Enum.Font.SourceSansBold or DEFAULT_FONT
 
 -- Extra safety: ensure all F values are valid Enum.Font
 for key, value in pairs(F) do
-	if type(value) ~= "userdata" then
+	if type(value) ~= "userdata" or tostring(value):find("Font") == nil then
 		F[key] = DEFAULT_FONT
 	end
 end
+
+-- CRITICAL FIX: Verify fonts are actually set
+if not F.Bold then F.Bold = DEFAULT_FONT end
+if not F.Medium then F.Medium = DEFAULT_FONT end
+if not F.Body then F.Body = DEFAULT_FONT end
+if not F.Title then F.Title = DEFAULT_FONT end
+if not F.Button then F.Button = DEFAULT_FONT end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- COLOR SAFETY - Ensure ALL colors exist

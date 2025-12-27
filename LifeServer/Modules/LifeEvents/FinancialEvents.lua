@@ -19,12 +19,14 @@ FinancialEvents.events = {
 		text = "Money came from an unexpected source!",
 		question = "Where did it come from?",
 		minAge = 18, maxAge = 90,
-		baseChance = 0.4,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.4 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased from 4 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "finance",
 		tags = { "money", "income", "windfall" },
+		-- CRITICAL FIX: Block in prison/homeless situations
+		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
 		
 		-- CRITICAL: Random windfall amounts
 		choices = {
@@ -1288,7 +1290,11 @@ FinancialEvents.events = {
 					end
 				end,
 				eligibility = function(state)
-					return (state.Money or 0) >= 2000
+					local money = state.Money or 0
+					if money < 2000 then
+						return false, "💸 You need at least $2,000 for a deposit!"
+					end
+					return true
 				end,
 			},
 			{
@@ -1302,7 +1308,10 @@ FinancialEvents.events = {
 				effects = { Happiness = -2 },
 				feedText = "🏠 Housing requires income. Time to focus on employment.",
 				eligibility = function(state)
-					return not state.CurrentJob
+					if state.CurrentJob then
+						return false, "You already have a job!"
+					end
+					return true
 				end,
 			},
 			{
