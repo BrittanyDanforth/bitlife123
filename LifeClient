@@ -1107,22 +1107,15 @@ local function createResultPopup()
 	end
 
 	-- Inner white card - thinner on tiny phones
-	-- CRITICAL FIX: Make card a ScrollingFrame to handle long text
 	local cardMargin = Device.IS_TINY_PHONE and 4 or 10
-	ResultUI.card = Instance.new("ScrollingFrame")
+	ResultUI.card = Instance.new("Frame")
 	ResultUI.card.Name = "ResultCard"
 	ResultUI.card.Size = UDim2.new(1, -cardMargin, 1, -cardMargin)
 	ResultUI.card.Position = UDim2.new(0, cardMargin/2, 0, cardMargin/2)
 	ResultUI.card.BackgroundColor3 = C.White
 	ResultUI.card.ZIndex = 83
+	ResultUI.card.ClipsDescendants = true
 	ResultUI.card.Parent = ResultUI.shell
-	ResultUI.card.CanvasSize = UDim2.new(1, 0, 0, 0)
-	ResultUI.card.AutomaticCanvasSize = Enum.AutomaticSize.Y
-	ResultUI.card.ScrollingDirection = Enum.ScrollingDirection.Y
-	ResultUI.card.ScrollBarThickness = Device.IS_MOBILE and 3 or 5
-	ResultUI.card.ScrollBarImageColor3 = C.Gray400
-	ResultUI.card.ScrollingEnabled = true  -- Enable scrolling for long results
-	ResultUI.card.BorderSizePixel = 0
 	corner(ResultUI.card, Device.IS_TINY_PHONE and 10 or px(22))
 
 	local cardLayout = Instance.new("UIListLayout")
@@ -4830,38 +4823,13 @@ showEvent = function(payload)
 		EventUI.shadowFrame.Position = UDim2.new(0.5, 0, 0.5, 40)
 		EventUI.shadowFrame.BackgroundTransparency = 1
 		EventUI.shell.BackgroundTransparency = 1
-		EventUI.card.BackgroundTransparency = 0  -- Keep opaque for scroll to work
-		
-		-- CRITICAL FIX: Enable scrolling if card content exceeds max height
-		-- This prevents cards with lots of text/choices from going off screen
-		task.defer(function()
-			if EventUI.card and EventUI.maxCardContentHeight then
-				local canvasHeight = EventUI.card.AbsoluteCanvasSize.Y
-				local containerHeight = EventUI.maxCardContentHeight
-				
-				if canvasHeight > containerHeight then
-					-- Content overflows - enable scrolling and fix card height
-					EventUI.card.ScrollingEnabled = true
-					EventUI.card.AutomaticSize = Enum.AutomaticSize.None
-					EventUI.card.Size = UDim2.new(1, -8, 0, containerHeight)
-					-- Show subtle scroll indicator
-					EventUI.card.ScrollBarImageTransparency = 0.3
-				else
-					-- Content fits - disable scrolling, use auto-size
-					EventUI.card.ScrollingEnabled = false
-					EventUI.card.AutomaticSize = Enum.AutomaticSize.Y
-					EventUI.card.Size = UDim2.new(1, -8, 0, 0)
-					EventUI.card.ScrollBarImageTransparency = 1
-				end
-			end
-		end)
+		EventUI.card.BackgroundTransparency = 1
 
 		tween(EventUI.shadowFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
 			Position = UDim2.fromScale(0.5, 0.5),
 			BackgroundTransparency = 0.92,
 		})
 		tween(EventUI.shell, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
-		-- Card transparency handled above for scroll to work
 		tween(EventUI.card, TweenInfo.new(0.25), { BackgroundTransparency = 0 })
 	end) -- End of pcall
 
@@ -4901,15 +4869,7 @@ hideEvent = function()
 			EventUI.relationLbl.Text = ""
 			EventUI.header.Visible = false
 			
-			-- CRITICAL FIX: Reset card scroll position and state for next event
-			if EventUI.card then
-				EventUI.card.CanvasPosition = Vector2.new(0, 0)  -- Reset scroll to top
-				EventUI.card.ScrollingEnabled = false  -- Disable until needed
-				EventUI.card.AutomaticSize = Enum.AutomaticSize.Y  -- Restore auto-sizing
-				EventUI.card.Size = UDim2.new(1, -8, 0, 0)  -- Reset size for auto-sizing
-			end
-			
-			-- CRITICAL FIX: Reset body scroll position too
+			-- CRITICAL FIX: Reset body scroll position
 			if EventUI.bodyScroll then
 				EventUI.bodyScroll.CanvasPosition = Vector2.new(0, 0)
 			end

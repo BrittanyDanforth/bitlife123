@@ -1549,6 +1549,654 @@ ChildhoodExpanded.events = {
 			},
 		},
 	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- NEW ENGAGING SCHOOL EVENTS - Makes ages 5-18 less repetitive!
+	-- User feedback: "NO LIKE CLASSMATE HITS U OR SOMEBODY ASKS TO CHEAT OFF UR PAPER"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	{
+		id = "school_copy_homework",
+		title = "Homework Helper?",
+		emoji = "📝",
+		text = "A classmate slides up to you before class. 'Hey, can I copy your homework? I totally forgot to do it. Please? I'll owe you one!'",
+		question = "What do you do?",
+		minAge = 6, maxAge = 12,
+		baseChance = 0.55,
+		cooldown = 3,
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "school",
+		tags = { "homework", "cheating", "social", "ethics" },
+		blockedByFlags = { in_prison = true, dropped_out = true },
+		
+		choices = {
+			{
+				text = "Let them copy it",
+				effects = {},
+				feedText = "You handed over your homework...",
+				onResolve = function(state)
+					local roll = math.random(100)
+					state.Flags = state.Flags or {}
+					if roll <= 30 then
+						-- Teacher catches you both
+						state:ModifyStat("Happiness", -8)
+						state:ModifyStat("Smarts", -2)
+						state.Flags.caught_helping_cheat = true
+						state:AddFeed("📝 BUSTED! Teacher noticed identical answers. Both in trouble!")
+					elseif roll <= 60 then
+						-- They're grateful, friendship boost
+						state:ModifyStat("Happiness", 4)
+						state.Flags.helped_classmate = true
+						state:AddFeed("📝 They're SO grateful! You made a friend. Just don't tell anyone...")
+					else
+						-- They got away but feel weird about it
+						state:ModifyStat("Happiness", 1)
+						state:AddFeed("📝 They copied it. Felt kinda wrong but whatever.")
+					end
+				end,
+			},
+			{
+				text = "Say no, do your own work",
+				effects = { Smarts = 2 },
+				setFlags = { honest_student = true },
+				feedText = "📝 You said no. They were annoyed but you did the right thing.",
+			},
+			{
+				text = "Let them copy but change a few answers",
+				effects = {},
+				feedText = "You're sneaky...",
+				onResolve = function(state)
+					local roll = math.random(100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("📝 Smart! They didn't notice the changes. You're safe!")
+					else
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("📝 They got a bad grade and blamed you! Drama!")
+					end
+				end,
+			},
+			{
+				text = "Tell them you'll help them study instead",
+				effects = { Smarts = 3, Happiness = 3 },
+				setFlags = { good_tutor = true },
+				feedText = "📝 You offered to help them learn. They were impressed!",
+			},
+		},
+	},
+	{
+		id = "school_classmate_hits_you",
+		title = "Punched!",
+		emoji = "👊",
+		text = "Out of NOWHERE, a classmate punches you! Maybe you bumped into them, maybe they're having a bad day, maybe they just don't like your face. Either way - OW!",
+		question = "What do you do?",
+		minAge = 6, maxAge = 12,
+		baseChance = 0.45,
+		cooldown = 4,
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "conflict",
+		tags = { "fighting", "bullying", "school", "conflict" },
+		blockedByFlags = { in_prison = true, dropped_out = true },
+		
+		choices = {
+			{
+				text = "Hit them back!",
+				effects = {},
+				feedText = "You swung back...",
+				onResolve = function(state)
+					local health = (state.Stats and state.Stats.Health) or 50
+					local roll = math.random(100)
+					state.Flags = state.Flags or {}
+					if roll <= 40 then
+						-- You won the fight
+						state:ModifyStat("Health", -3)
+						state:ModifyStat("Happiness", 5)
+						state.Flags.can_fight = true
+						state.Flags.stood_up_for_self = true
+						state:AddFeed("👊 You won! They won't mess with you again. Both suspended though.")
+					elseif roll <= 70 then
+						-- Draw
+						state:ModifyStat("Health", -6)
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("👊 You both got hits in. Teachers broke it up. Double suspension.")
+					else
+						-- You lost
+						state:ModifyStat("Health", -10)
+						state:ModifyStat("Happiness", -8)
+						state.Flags.lost_fight = true
+						state:AddFeed("👊 Ouch... you lost. Bruised ego and bruised face.")
+					end
+				end,
+			},
+			{
+				text = "Tell a teacher immediately",
+				effects = { Happiness = -2 },
+				feedText = "You reported the assault...",
+				onResolve = function(state)
+					local roll = math.random(100)
+					state.Flags = state.Flags or {}
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 3)
+						state.Flags.reported_bully = true
+						state:AddFeed("👊 Teacher believed you! The other kid got in BIG trouble.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state.Flags.tattletale = true
+						state:AddFeed("👊 You snitched but now you're known as a tattletale...")
+					end
+				end,
+			},
+			{
+				text = "Just take it and walk away",
+				effects = { Happiness = -6 },
+				setFlags = { bullied = true, non_confrontational = true },
+				feedText = "👊 You walked away. The shame hurts more than the punch.",
+			},
+			{
+				text = "Cry and make a scene",
+				effects = {},
+				feedText = "The tears came flowing...",
+				onResolve = function(state)
+					local roll = math.random(100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("👊 Your crying brought adults running. They got in trouble!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state.Flags = state.Flags or {}
+						state.Flags.crybaby_reputation = true
+						state:AddFeed("👊 You cried and now everyone calls you a crybaby. Great.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "school_teacher_accuses",
+		title = "Falsely Accused!",
+		emoji = "😡",
+		text = "The teacher is FURIOUS. 'I KNOW it was YOU who [threw that paper ball/drew on the desk/started the commotion]!' But it WASN'T you! Someone else did it!",
+		question = "How do you respond?",
+		minAge = 6, maxAge = 12,
+		baseChance = 0.5,
+		cooldown = 4,
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "school",
+		tags = { "teacher", "accusation", "injustice", "school" },
+		blockedByFlags = { in_prison = true, dropped_out = true },
+		
+		choices = {
+			{
+				text = "Defend yourself calmly",
+				effects = {},
+				feedText = "You tried to explain...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random(100) + (smarts / 5)
+					state.Flags = state.Flags or {}
+					if roll >= 60 then
+						state:ModifyStat("Happiness", 5)
+						state:ModifyStat("Smarts", 2)
+						state.Flags.cleared_name = true
+						state:AddFeed("😡 You explained calmly and the teacher believed you! Justice!")
+					else
+						state:ModifyStat("Happiness", -6)
+						state.Flags.wrongly_punished = true
+						state:AddFeed("😡 Teacher didn't believe you. Detention anyway. Life is unfair.")
+					end
+				end,
+			},
+			{
+				text = "Point out who really did it",
+				effects = {},
+				feedText = "You pointed at the real culprit...",
+				onResolve = function(state)
+					local roll = math.random(100)
+					state.Flags = state.Flags or {}
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("😡 The real culprit was caught! Sweet vindication!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", -3)
+						state.Flags.snitch_reputation = true
+						state:AddFeed("😡 They got in trouble but now everyone thinks you're a snitch.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("😡 The other kid denied it and had 'witnesses'. Now you're in DOUBLE trouble!")
+					end
+				end,
+			},
+			{
+				text = "Just accept the punishment",
+				effects = { Happiness = -5 },
+				setFlags = { wrongly_punished = true, pushover = true },
+				feedText = "😡 You took the fall for something you didn't do. That's gonna sting for a while.",
+			},
+			{
+				text = "Get angry and argue back",
+				effects = {},
+				feedText = "You lost your temper...",
+				onResolve = function(state)
+					local roll = math.random(100)
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 3)
+						state.Flags = state.Flags or {}
+						state.Flags.stood_up_to_authority = true
+						state:AddFeed("😡 Your passion convinced the teacher to investigate. You were cleared!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.disrespected_teacher = true
+						state:AddFeed("😡 Now you're in trouble for the original thing AND for being disrespectful. Oops.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "school_bathroom_incident",
+		title = "Bathroom Ambush",
+		emoji = "🚽",
+		text = "You went to the bathroom between classes. Some older kids followed you in. The door closes behind them. This doesn't feel good...",
+		question = "What happens?",
+		minAge = 7, maxAge = 12,
+		baseChance = 0.4,
+		cooldown = 5,
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "conflict",
+		tags = { "bullying", "bathroom", "school", "danger" },
+		blockedByFlags = { in_prison = true, dropped_out = true, bathroom_incident_done = true },
+		
+		choices = {
+			{
+				text = "They demand your lunch money",
+				effects = {},
+				feedText = "They want your money...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.bathroom_incident_done = true
+					local roll = math.random(100)
+					if roll <= 40 then
+						-- You give it up
+						state:ModifyStat("Happiness", -8)
+						state.Money = math.max(0, (state.Money or 0) - 5)
+						state.Flags.extorted = true
+						state:AddFeed("🚽 You handed over $5. They laughed and left. You're shaking.")
+					elseif roll <= 70 then
+						-- You refuse and they back down
+						state:ModifyStat("Happiness", 2)
+						state.Flags.stood_up_to_bully = true
+						state:AddFeed("🚽 You said NO. They looked surprised and backed off. Respect.")
+					else
+						-- They take it by force
+						state:ModifyStat("Happiness", -10)
+						state:ModifyStat("Health", -5)
+						state.Money = math.max(0, (state.Money or 0) - 10)
+						state.Flags.robbed_at_school = true
+						state:AddFeed("🚽 They took everything. Pushed you down too. This is traumatic.")
+					end
+				end,
+			},
+			{
+				text = "They just want to talk (intimidate)",
+				effects = {},
+				feedText = "They got in your face...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.bathroom_incident_done = true
+					local roll = math.random(100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", -5)
+						state.Flags.intimidated = true
+						state:AddFeed("🚽 They just wanted to scare you. It worked. You're rattled.")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🚽 Turns out they just wanted directions? Weird but okay.")
+					end
+				end,
+			},
+			{
+				text = "A teacher walks in and saves you",
+				effects = { Happiness = 5 },
+				feedText = "🚽 Perfect timing! A teacher walked in and the kids scattered. Lucky!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.bathroom_incident_done = true
+				end,
+			},
+			{
+				text = "You manage to slip past them and run",
+				effects = {},
+				feedText = "You made a break for it...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.bathroom_incident_done = true
+					local health = (state.Stats and state.Stats.Health) or 50
+					local roll = math.random(100) + (health / 4)
+					if roll >= 50 then
+						state:ModifyStat("Happiness", 3)
+						state.Flags.quick_escape = true
+						state:AddFeed("🚽 You squeezed past them and RAN! Made it to safety!")
+					else
+						state:ModifyStat("Happiness", -6)
+						state:ModifyStat("Health", -3)
+						state:AddFeed("🚽 You tried to run but they grabbed you. Now they're extra mad.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "school_rumor_spreading",
+		title = "Rumors About You!",
+		emoji = "🗣️",
+		text = "You overhear kids whispering and pointing at you. Someone started a RUMOR about you! They're saying you [wet the bed/have a crush on the teacher/picked your nose and ate it]!",
+		question = "How do you handle this?",
+		minAge = 6, maxAge = 12,
+		baseChance = 0.5,
+		cooldown = 4,
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "social",
+		tags = { "rumors", "social", "reputation", "school" },
+		blockedByFlags = { in_prison = true, dropped_out = true },
+		
+		choices = {
+			{
+				text = "Laugh it off and own it",
+				effects = {},
+				feedText = "You decided to embrace it...",
+				onResolve = function(state)
+					local looks = (state.Stats and state.Stats.Looks) or 50
+					local roll = math.random(100) + (looks / 5)
+					state.Flags = state.Flags or {}
+					if roll >= 55 then
+						state:ModifyStat("Happiness", 6)
+						state.Flags.confident = true
+						state:AddFeed("🗣️ You laughed along. Everyone thought you were cool about it! Rumor died.")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🗣️ You tried to laugh but it came out awkward. Rumor persists.")
+					end
+				end,
+			},
+			{
+				text = "Confront the person who started it",
+				effects = {},
+				feedText = "You faced them directly...",
+				onResolve = function(state)
+					local roll = math.random(100)
+					state.Flags = state.Flags or {}
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 5)
+						state.Flags.confronted_bully = true
+						state:AddFeed("🗣️ You called them out. They backed down. People respect you now.")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("🗣️ They denied it. Now it's your word against theirs.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state.Flags.more_rumors = true
+						state:AddFeed("🗣️ They started ANOTHER rumor about you being aggressive!")
+					end
+				end,
+			},
+			{
+				text = "Tell a teacher or parent",
+				effects = {},
+				feedText = "You reported it to an adult...",
+				onResolve = function(state)
+					local roll = math.random(100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🗣️ The adult had a talk with everyone. Rumor stopped.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.tattletale = true
+						state:AddFeed("🗣️ Now you're known as someone who runs to adults. Social cost.")
+					end
+				end,
+			},
+			{
+				text = "Start a rumor about THEM",
+				effects = {},
+				feedText = "You decided to fight fire with fire...",
+				onResolve = function(state)
+					local roll = math.random(100)
+					state.Flags = state.Flags or {}
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 4)
+						state.Flags.rumor_starter = true
+						state:AddFeed("🗣️ Your counter-rumor DESTROYED them! Sweet revenge!")
+					else
+						state:ModifyStat("Happiness", -6)
+						state.Flags.troublemaker = true
+						state:AddFeed("🗣️ It backfired. Now you're known as someone who spreads rumors too.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "school_cafeteria_incident",
+		title = "Cafeteria Chaos!",
+		emoji = "🍽️",
+		text = "You're eating lunch when suddenly - SPLAT! Someone's food lands on you! Was it an accident? On purpose? Either way, your shirt is ruined and EVERYONE is looking!",
+		question = "What do you do?",
+		minAge = 6, maxAge = 12,
+		baseChance = 0.45,
+		cooldown = 4,
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "social",
+		tags = { "cafeteria", "food", "embarrassment", "school" },
+		blockedByFlags = { in_prison = true, dropped_out = true },
+		
+		choices = {
+			{
+				text = "Throw food back at them!",
+				effects = {},
+				feedText = "FOOD FIGHT!",
+				onResolve = function(state)
+					local roll = math.random(100)
+					state.Flags = state.Flags or {}
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 8)
+						state.Flags.started_food_fight = true
+						state:AddFeed("🍽️ EPIC FOOD FIGHT! The whole cafeteria joined in! Legendary!")
+					elseif roll <= 60 then
+						state:ModifyStat("Happiness", 2)
+						state:ModifyStat("Looks", -2)
+						state:AddFeed("🍽️ You got them good! But also detention. Worth it?")
+					else
+						state:ModifyStat("Happiness", -8)
+						state.Flags.cafeteria_banned = true
+						state:AddFeed("🍽️ You missed and hit a teacher. Suspended from cafeteria for a week!")
+					end
+				end,
+			},
+			{
+				text = "Play it cool, accidents happen",
+				effects = { Happiness = -2, Looks = -3 },
+				setFlags = { mature_response = true },
+				feedText = "🍽️ You shrugged it off. Cleaned up and moved on. Very mature.",
+			},
+			{
+				text = "Get upset and demand an apology",
+				effects = {},
+				feedText = "You confronted them...",
+				onResolve = function(state)
+					local roll = math.random(100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🍽️ They apologized! Turns out it really was an accident.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🍽️ They laughed at you. Now you're embarrassed AND angry.")
+					end
+				end,
+			},
+			{
+				text = "Leave and call your parent to bring new clothes",
+				effects = { Happiness = -4, Looks = 5 },
+				feedText = "🍽️ Parent came with fresh clothes. Crisis averted but you missed lunch.",
+			},
+		},
+	},
+	{
+		id = "school_group_project",
+		title = "Group Project Nightmare",
+		emoji = "📊",
+		text = "The teacher assigned a GROUP PROJECT. You're stuck with kids who don't want to do ANY work. The project is due tomorrow and they've done NOTHING!",
+		question = "What do you do?",
+		minAge = 7, maxAge = 12,
+		baseChance = 0.5,
+		cooldown = 4,
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "school",
+		tags = { "project", "teamwork", "frustration", "school" },
+		blockedByFlags = { in_prison = true, dropped_out = true },
+		
+		choices = {
+			{
+				text = "Do the whole thing yourself",
+				effects = {},
+				feedText = "You pulled an all-nighter...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random(100) + (smarts / 4)
+					state.Flags = state.Flags or {}
+					if roll >= 60 then
+						state:ModifyStat("Smarts", 5)
+						state:ModifyStat("Happiness", -3)
+						state:ModifyStat("Health", -2)
+						state.Flags.reliable_worker = true
+						state:AddFeed("📊 You did it all! A+ but you're EXHAUSTED. They don't deserve credit.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:ModifyStat("Health", -3)
+						state:AddFeed("📊 You tried but ran out of time. C grade. Everyone's disappointed.")
+					end
+				end,
+			},
+			{
+				text = "Tell the teacher your partners aren't helping",
+				effects = {},
+				feedText = "You reported the situation...",
+				onResolve = function(state)
+					local roll = math.random(100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 4)
+						state:ModifyStat("Smarts", 2)
+						state:AddFeed("📊 Teacher believed you! You got graded individually. Fair!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.snitch_reputation = true
+						state:AddFeed("📊 Teacher made you work it out. Now your group hates you.")
+					end
+				end,
+			},
+			{
+				text = "Threaten to tell unless they help NOW",
+				effects = {},
+				feedText = "You laid down the law...",
+				onResolve = function(state)
+					local roll = math.random(100)
+					state.Flags = state.Flags or {}
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 5)
+						state.Flags.takes_charge = true
+						state:AddFeed("📊 It worked! They scrambled and actually helped. Good grade!")
+					else
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("📊 They called your bluff and still did nothing. Ugh.")
+					end
+				end,
+			},
+			{
+				text = "Accept the bad grade together",
+				effects = { Happiness = -5, Smarts = -2 },
+				feedText = "📊 You all failed together. At least you're not alone in this disaster.",
+			},
+		},
+	},
+	{
+		id = "school_caught_passing_notes",
+		title = "Caught Passing Notes!",
+		emoji = "📝",
+		text = "You were passing a note to your friend when the teacher snatched it! They're reading it out loud to the WHOLE CLASS!",
+		question = "What was in the note?",
+		minAge = 7, maxAge = 12,
+		baseChance = 0.45,
+		cooldown = 4,
+		stage = STAGE,
+		ageBand = "childhood",
+		category = "school",
+		tags = { "notes", "embarrassment", "teacher", "school" },
+		blockedByFlags = { in_prison = true, dropped_out = true },
+		
+		choices = {
+			{
+				text = "Just doodles and silly drawings",
+				effects = { Happiness = -3 },
+				feedText = "📝 Embarrassing but not horrible. Teacher was not amused. Confiscated.",
+			},
+			{
+				text = "Gossip about another student",
+				effects = {},
+				feedText = "The gossip was exposed...",
+				onResolve = function(state)
+					local roll = math.random(100)
+					state.Flags = state.Flags or {}
+					if roll <= 50 then
+						state:ModifyStat("Happiness", -10)
+						state.Flags.gossip_exposed = true
+						state:AddFeed("📝 DISASTER! The person you wrote about heard EVERYTHING. Social death.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("📝 Teacher read it but didn't say the names. Close call!")
+					end
+				end,
+			},
+			{
+				text = "A secret crush confession",
+				effects = {},
+				feedText = "Your crush was revealed...",
+				onResolve = function(state)
+					local looks = (state.Stats and state.Stats.Looks) or 50
+					local roll = math.random(100) + (looks / 5)
+					state.Flags = state.Flags or {}
+					if roll >= 60 then
+						state:ModifyStat("Happiness", 5)
+						state.Flags.crush_knows = true
+						state:AddFeed("📝 Your crush smiled at you after! Maybe this was good?")
+					else
+						state:ModifyStat("Happiness", -12)
+						state.Flags.publicly_humiliated = true
+						state:AddFeed("📝 Everyone laughed. Your crush looked HORRIFIED. You want to disappear.")
+					end
+				end,
+			},
+			{
+				text = "A mean joke about the teacher",
+				effects = {},
+				feedText = "The teacher read their own roast...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state:ModifyStat("Happiness", -8)
+					state.Flags.disrespected_teacher = true
+					state:AddFeed("📝 Teacher was NOT happy. Detention plus a call home. You're in deep trouble.")
+				end,
+			},
+		},
+	},
 }
 
 return ChildhoodExpanded
