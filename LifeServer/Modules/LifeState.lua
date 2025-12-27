@@ -1924,7 +1924,8 @@ function LifeState:CheckAndInitializeRoyalty()
 		}
 		
 		local country = RoyalCountries[math.random(#RoyalCountries)]
-		local title = self.Gender == "male" and "Prince" or "Princess"
+		-- CRITICAL FIX: Case-insensitive gender check
+		local title = (self.Gender == "Male" or self.Gender == "male") and "Prince" or "Princess"
 		
 		return self:InitializeRoyalty(country, title)
 	end
@@ -3089,7 +3090,8 @@ function LifeState:CreatePartner(partnerData)
 		role = "Partner",
 		relationship = partnerData.relationship or 65,
 		age = partnerData.age or (self.Age + math.random(-5, 5)),
-		gender = partnerData.gender or (self.Gender == "male" and "female" or "male"),
+		-- CRITICAL FIX: Case-insensitive gender check - Gender is stored as "Male"/"Female" not "male"/"female"
+		gender = partnerData.gender or ((self.Gender == "Male" or self.Gender == "male") and "female" or "male"),
 		alive = true,
 	}
 	

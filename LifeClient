@@ -4988,12 +4988,35 @@ IntroUI.bonusPromptPadding.PaddingTop = UDim.new(0, 3)
 IntroUI.bonusPromptPadding.PaddingBottom = UDim.new(0, 3)
 IntroUI.bonusPromptPadding.Parent = IntroUI.bonusPromptText
 
--- AUTOMATICALLY activate bonus on load - NO BUTTON NEEDED!
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Check if player is ACTUALLY in group before giving bonus!
+-- Group ID: 706017476
+-- Bug: Was giving everyone bonus without checking group membership
+-- ═══════════════════════════════════════════════════════════════════════════════
+local GROUP_ID = 706017476
+local GroupService = game:GetService("GroupService")
+
 task.spawn(function()
-	task.wait(0.3) -- Small delay for remotes to be ready
+	task.wait(0.5) -- Wait for remotes and player to be ready
 	local SetEngagementBonus = remotesFolder and remotesFolder:FindFirstChild("SetEngagementBonus")
-	if SetEngagementBonus then
-		SetEngagementBonus:FireServer("both")
+	if not SetEngagementBonus then return end
+	
+	-- Check if player is in the group
+	local isInGroup = false
+	local success, err = pcall(function()
+		isInGroup = player:IsInGroup(GROUP_ID)
+	end)
+	
+	if not success then
+		warn("[LifeClient] Failed to check group membership:", err)
+	end
+	
+	-- Only give bonus if player is actually in the group
+	if isInGroup then
+		SetEngagementBonus:FireServer("group")
+		print("[LifeClient] ⭐ Player is in group - +25% income bonus activated!")
+	else
+		print("[LifeClient] Player not in group - no bonus applied (Join group for +25% income!)")
 	end
 end)
 
