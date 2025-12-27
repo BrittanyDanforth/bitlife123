@@ -4916,66 +4916,82 @@ IntroUI.content.Parent = IntroUI.overlay
 
 IntroUI.layout = Instance.new("UIListLayout")
 IntroUI.layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-IntroUI.layout.Padding = UDim.new(0, 20)
+IntroUI.layout.Padding = UDim.new(0, 10) -- MOBILE FIX: Reduced from 20 to fit on small screens
 IntroUI.layout.Parent = IntroUI.content
 
 IntroUI.genderTitle = Instance.new("TextLabel")
--- CRITICAL FIX: Moved title higher and gave it more space so it doesn't overlap buttons
-IntroUI.genderTitle.Size = UDim2.new(1, 0, 0, 48)
+-- MOBILE FIX: Compact title that fits on small screens
+IntroUI.genderTitle.Size = UDim2.new(1, 0, 0, 32) -- Reduced from 48
 IntroUI.genderTitle.BackgroundTransparency = 1
-IntroUI.genderTitle.Font = F.Title
-IntroUI.genderTitle.TextSize = 22
-IntroUI.genderTitle.TextColor3 = C.Gray900  -- was yellow; now black-ish so it doesn't look neon
+IntroUI.genderTitle.Font = F.Title or Enum.Font.GothamBold
+IntroUI.genderTitle.TextSize = 18 -- Reduced from 22
+IntroUI.genderTitle.TextScaled = true -- Scale for mobile
+IntroUI.genderTitle.TextColor3 = C.Gray900
 IntroUI.genderTitle.Text = "Start by picking a gender"
-IntroUI.genderTitle.TextYAlignment = Enum.TextYAlignment.Top
+IntroUI.genderTitle.TextYAlignment = Enum.TextYAlignment.Center
 IntroUI.genderTitle.LayoutOrder = 1
 IntroUI.genderTitle.ZIndex = 72
 IntroUI.genderTitle.Parent = IntroUI.content
 
+-- Constrain title text scaling
+IntroUI.genderTitleConstraint = Instance.new("UITextSizeConstraint")
+IntroUI.genderTitleConstraint.MaxTextSize = 20
+IntroUI.genderTitleConstraint.MinTextSize = 12
+IntroUI.genderTitleConstraint.Parent = IntroUI.genderTitle
+
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- BONUS INCOME PROMPT - "Join our group & like the game for 25% extra income!"
 -- Shows on intro screen to encourage engagement and increase retention
+-- MOBILE-FRIENDLY: Same size as buttons, compact text
 -- ═══════════════════════════════════════════════════════════════════════════════
 IntroUI.bonusPrompt = Instance.new("Frame")
 IntroUI.bonusPrompt.Name = "BonusPrompt"
-IntroUI.bonusPrompt.Size = UDim2.new(0.95, 0, 0, 50)
+IntroUI.bonusPrompt.Size = UDim2.new(0.85, 0, 0, 36) -- Same width/height as gender buttons
 IntroUI.bonusPrompt.BackgroundColor3 = Color3.fromRGB(34, 197, 94) -- Green
-IntroUI.bonusPrompt.BackgroundTransparency = 0.1
+IntroUI.bonusPrompt.BackgroundTransparency = 0
 IntroUI.bonusPrompt.LayoutOrder = 1.5 -- Between title and gender buttons
 IntroUI.bonusPrompt.ZIndex = 72
 IntroUI.bonusPrompt.Parent = IntroUI.content
 
 IntroUI.bonusPromptCorner = Instance.new("UICorner")
-IntroUI.bonusPromptCorner.CornerRadius = UDim.new(0, 12)
+IntroUI.bonusPromptCorner.CornerRadius = UDim.new(0, 8)
 IntroUI.bonusPromptCorner.Parent = IntroUI.bonusPrompt
 
 IntroUI.bonusPromptStroke = Instance.new("UIStroke")
 IntroUI.bonusPromptStroke.Color = Color3.fromRGB(22, 163, 74)
-IntroUI.bonusPromptStroke.Thickness = 2
+IntroUI.bonusPromptStroke.Thickness = 1
 IntroUI.bonusPromptStroke.Parent = IntroUI.bonusPrompt
 
 IntroUI.bonusPromptText = Instance.new("TextLabel")
 IntroUI.bonusPromptText.Name = "BonusText"
 IntroUI.bonusPromptText.Size = UDim2.fromScale(1, 1)
 IntroUI.bonusPromptText.BackgroundTransparency = 1
-IntroUI.bonusPromptText.Font = F.Title or Enum.Font.GothamBold
-IntroUI.bonusPromptText.TextSize = 14
+IntroUI.bonusPromptText.Font = F.Medium or Enum.Font.GothamMedium or Enum.Font.SourceSans
+IntroUI.bonusPromptText.TextSize = 11 -- Smaller text for mobile
 IntroUI.bonusPromptText.TextColor3 = Color3.fromRGB(255, 255, 255)
-IntroUI.bonusPromptText.Text = "⭐ Join our GROUP & LIKE the game for +25% INCOME! 💰"
-IntroUI.bonusPromptText.TextWrapped = true
+IntroUI.bonusPromptText.Text = "⭐ Join GROUP + LIKE = +25% Income! 💰"
+IntroUI.bonusPromptText.TextScaled = true -- Scale text to fit on small screens
 IntroUI.bonusPromptText.ZIndex = 73
 IntroUI.bonusPromptText.Parent = IntroUI.bonusPrompt
 
+-- Constrain text scaling so it doesn't get too big
+IntroUI.bonusPromptTextConstraint = Instance.new("UITextSizeConstraint")
+IntroUI.bonusPromptTextConstraint.MaxTextSize = 13
+IntroUI.bonusPromptTextConstraint.MinTextSize = 8
+IntroUI.bonusPromptTextConstraint.Parent = IntroUI.bonusPromptText
+
 -- Add padding to the text
 IntroUI.bonusPromptPadding = Instance.new("UIPadding")
-IntroUI.bonusPromptPadding.PaddingLeft = UDim.new(0, 10)
-IntroUI.bonusPromptPadding.PaddingRight = UDim.new(0, 10)
+IntroUI.bonusPromptPadding.PaddingLeft = UDim.new(0, 8)
+IntroUI.bonusPromptPadding.PaddingRight = UDim.new(0, 8)
+IntroUI.bonusPromptPadding.PaddingTop = UDim.new(0, 4)
+IntroUI.bonusPromptPadding.PaddingBottom = UDim.new(0, 4)
 IntroUI.bonusPromptPadding.Parent = IntroUI.bonusPromptText
 
 IntroUI.genderBtns = Instance.new("Frame")
--- CRITICAL FIX: Increased height to fit Male, Female, Born Royal, AND Customize Character buttons
--- Mobile needs more space for touch targets
-IntroUI.genderBtns.Size = UDim2.new(1, 0, 0, 280)
+-- MOBILE FIX: Use AutomaticSize so it fits content perfectly
+IntroUI.genderBtns.Size = UDim2.new(1, 0, 0, 0)
+IntroUI.genderBtns.AutomaticSize = Enum.AutomaticSize.Y -- Auto-size based on content
 IntroUI.genderBtns.BackgroundTransparency = 1
 IntroUI.genderBtns.LayoutOrder = 2
 IntroUI.genderBtns.ZIndex = 71
@@ -4983,8 +4999,8 @@ IntroUI.genderBtns.Parent = IntroUI.content
 
 IntroUI.genderBtnLayout = Instance.new("UIListLayout")
 IntroUI.genderBtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
--- CRITICAL FIX: Increased padding for better mobile touch targets
-IntroUI.genderBtnLayout.Padding = UDim.new(0, 12)
+-- MOBILE FIX: Reduced padding to fit more on small screens
+IntroUI.genderBtnLayout.Padding = UDim.new(0, 8)
 IntroUI.genderBtnLayout.Parent = IntroUI.genderBtns
 
 -- ═══════════════════════════════════════════════════════════════════════════════
@@ -5905,10 +5921,11 @@ local genderData = {
 
 for _, g in ipairs(genderData) do
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0.85, 0, 0, 58)
+	btn.Size = UDim2.new(0.85, 0, 0, 44) -- MOBILE FIX: Reduced from 58 to fit on small screens
 	btn.BackgroundColor3 = g.color
-	btn.Font = F.Title
-	btn.TextSize = 22
+	btn.Font = F.Title or Enum.Font.GothamBold
+	btn.TextSize = 18 -- MOBILE FIX: Reduced from 22
+	btn.TextScaled = true
 	btn.TextColor3 = C.White
 	btn.Text = g.icon .. " " .. g.gender
 	btn.AutoButtonColor = false
@@ -5916,12 +5933,18 @@ for _, g in ipairs(genderData) do
 	btn.Parent = IntroUI.genderBtns
 	pill(btn)
 	stroke(btn, 2, 0.5, C.White)
+	
+	-- Text size constraint for mobile
+	local textConstraint = Instance.new("UITextSizeConstraint")
+	textConstraint.MaxTextSize = 20
+	textConstraint.MinTextSize = 12
+	textConstraint.Parent = btn
 
 	btn.MouseEnter:Connect(function()
-		tween(btn, TweenInfo.new(0.1), { Size = UDim2.new(0.88, 0, 0, 62) })
+		tween(btn, TweenInfo.new(0.1), { Size = UDim2.new(0.88, 0, 0, 48) })
 	end)
 	btn.MouseLeave:Connect(function()
-		tween(btn, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 58) })
+		tween(btn, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 44) })
 	end)
 
 	btn.MouseButton1Click:Connect(function()
@@ -5966,10 +5989,11 @@ end
 do
 	local customizeGenderBtn = Instance.new("TextButton")
 	customizeGenderBtn.Name = "CustomizeGenderBtn"
-	customizeGenderBtn.Size = UDim2.new(0.85, 0, 0, 48)
+	customizeGenderBtn.Size = UDim2.new(0.85, 0, 0, 38) -- MOBILE FIX: Reduced from 48
 	customizeGenderBtn.BackgroundColor3 = Color3.fromRGB(253, 230, 138) -- Gold
-	customizeGenderBtn.Font = F.Title
-	customizeGenderBtn.TextSize = 16
+	customizeGenderBtn.Font = F.Title or Enum.Font.GothamBold
+	customizeGenderBtn.TextSize = 14 -- MOBILE FIX: Reduced from 16
+	customizeGenderBtn.TextScaled = true
 	customizeGenderBtn.TextColor3 = C.Gray900
 	customizeGenderBtn.Text = "⚡ Customize Character"
 	customizeGenderBtn.AutoButtonColor = false
@@ -5979,13 +6003,19 @@ do
 	pill(customizeGenderBtn)
 	stroke(customizeGenderBtn, 2, 0, Color3.fromRGB(217, 119, 6))
 	
+	-- Text size constraint for mobile
+	local customizeTextConstraint = Instance.new("UITextSizeConstraint")
+	customizeTextConstraint.MaxTextSize = 16
+	customizeTextConstraint.MinTextSize = 10
+	customizeTextConstraint.Parent = customizeGenderBtn
+	
 	IntroUI.customizeGenderBtn = customizeGenderBtn
 	
 	customizeGenderBtn.MouseEnter:Connect(function()
-		tween(customizeGenderBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.88, 0, 0, 52) })
+		tween(customizeGenderBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.88, 0, 0, 42) })
 	end)
 	customizeGenderBtn.MouseLeave:Connect(function()
-		tween(customizeGenderBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 48) })
+		tween(customizeGenderBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 38) })
 	end)
 	
 	customizeGenderBtn.MouseButton1Click:Connect(function()
@@ -6093,10 +6123,11 @@ IntroUI.showRoyalGenderSelection = nil
 do
 	local royaltyBtn = Instance.new("TextButton")
 	royaltyBtn.Name = "RoyaltyGenderBtn"
-	royaltyBtn.Size = UDim2.new(0.85, 0, 0, 48)
+	royaltyBtn.Size = UDim2.new(0.85, 0, 0, 38) -- MOBILE FIX: Reduced from 48
 	royaltyBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
-	royaltyBtn.Font = F.Title
-	royaltyBtn.TextSize = 16
+	royaltyBtn.Font = F.Title or Enum.Font.GothamBold
+	royaltyBtn.TextSize = 14 -- MOBILE FIX: Reduced from 16
+	royaltyBtn.TextScaled = true
 	royaltyBtn.TextColor3 = C.Gray900
 	royaltyBtn.Text = "👑 Born Royal"
 	royaltyBtn.AutoButtonColor = false
@@ -6106,13 +6137,19 @@ do
 	pill(royaltyBtn)
 	stroke(royaltyBtn, 2, 0, Color3.fromRGB(180, 140, 0))
 	
+	-- Text size constraint for mobile
+	local royaltyTextConstraint = Instance.new("UITextSizeConstraint")
+	royaltyTextConstraint.MaxTextSize = 16
+	royaltyTextConstraint.MinTextSize = 10
+	royaltyTextConstraint.Parent = royaltyBtn
+	
 	IntroUI.royaltyGenderBtn = royaltyBtn
 	
 	royaltyBtn.MouseEnter:Connect(function()
-		tween(royaltyBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.88, 0, 0, 52) })
+		tween(royaltyBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.88, 0, 0, 42) })
 	end)
 	royaltyBtn.MouseLeave:Connect(function()
-		tween(royaltyBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 48) })
+		tween(royaltyBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 38) })
 	end)
 	
 	royaltyBtn.MouseButton1Click:Connect(function()
