@@ -610,6 +610,651 @@ MusicianCareerEvents.events = {
 			},
 		},
 	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- NEW EVENTS - FLAG-LINKED CONSEQUENCES & VARIETY
+	-- ══════════════════════════════════════════════════════════════════════════════
+	
+	{
+		id = "musician_platinum_followup",
+		title = "🎵 Platinum Pressure",
+		emoji = "🎵",
+		text = "After your platinum album success, everyone expects your next release to be even BIGGER. The pressure is immense!",
+		category = "career_music",
+		weight = 12,
+		minAge = 18, maxAge = 55,
+		baseChance = 0.5,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = isSignedArtist,
+		-- LINKAGE: Only triggers if you had a platinum album
+		requiresFlags = { platinum_album = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Take time to craft a masterpiece",
+				effects = { Happiness = -5 },
+				feedText = "Perfectionism mode engaged...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						local earnings = math.random(800000, 2500000)
+						state.Money = (state.Money or 0) + earnings
+						state:ModifyStat("Happiness", 30)
+						state.Fame = (state.Fame or 0) + 60
+						state.Flags = state.Flags or {}
+						state.Flags.multi_platinum = true
+						state.Flags.music_legend = true
+						state:AddFeed(string.format("🎵 DOUBLE PLATINUM! Critics call it your best work! $%d earned!", earnings))
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🎵 Took 3 years but it didn't match expectations. 'Sophomore slump' they call it.")
+					end
+				end,
+			},
+			{
+				text = "Rush something out while you're hot",
+				effects = {},
+				feedText = "Strike while the iron is hot!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state.Money = (state.Money or 0) + math.random(300000, 700000)
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("🎵 Quick turnaround worked! Another hit in the making!")
+					else
+						state:ModifyStat("Happiness", -15)
+						state.Fame = (state.Fame or 0) - 20
+						state:AddFeed("🎵 'Clearly rushed' - reviews are harsh. Should have taken more time.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "musician_tour_burnout_consequence",
+		title = "🏥 Exhaustion Catches Up",
+		emoji = "🏥",
+		text = "Remember that brutal world tour? The months of no sleep are catching up. You collapsed during a show.",
+		category = "career_music",
+		weight = 10,
+		minAge = 20, maxAge = 50,
+		baseChance = 0.45,
+		cooldown = 5,
+		oneTime = true,
+		requiresJob = true,
+		eligibility = isSignedArtist,
+		-- LINKAGE: Only triggers if tour_burnout flag is set
+		requiresFlags = { tour_burnout = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Check into rehab/wellness center",
+				effects = { Health = 15, Happiness = 5 },
+				feedText = "Taking care of yourself...",
+				onResolve = function(state)
+					state.Money = math.max(0, (state.Money or 0) - 50000)
+					state.Flags = state.Flags or {}
+					state.Flags.tour_burnout = nil
+					state.Flags.recovered_artist = true
+					state:AddFeed("🏥 Spent 60 days in a wellness retreat. Your body and mind are healed. Ready to return.")
+				end,
+			},
+			{
+				text = "Cancel remaining shows",
+				effects = { Happiness = -10, Health = 5 },
+				feedText = "Health first...",
+				onResolve = function(state)
+					state.Money = math.max(0, (state.Money or 0) - 200000)
+					state:AddFeed("🏥 Cancelled 15 shows. Lost money but saved your health. Fans are understanding.")
+				end,
+			},
+			{
+				text = "Power through - the show must go on",
+				effects = { Health = -20, Happiness = -5 },
+				feedText = "Can't let fans down...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state.Money = (state.Money or 0) + math.random(100000, 300000)
+						state:AddFeed("🏥 Somehow finished the tour. You're a warrior! (But please rest now)")
+					else
+						state:ModifyStat("Health", -15)
+						state.Flags = state.Flags or {}
+						state.Flags.chronic_health_issues = true
+						state:AddFeed("🏥 Permanent damage. Chronic fatigue syndrome. Career may be over...")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "musician_artistic_integrity_payoff",
+		title = "🎨 Your Vision Validated",
+		emoji = "🎨",
+		text = "Remember when you fought the label for artistic control? Your album just won Album of the Year!",
+		category = "career_music",
+		weight = 8,
+		minAge = 20, maxAge = 60,
+		baseChance = 0.4,
+		cooldown = 5,
+		oneTime = true,
+		requiresJob = true,
+		eligibility = isSignedArtist,
+		-- LINKAGE: Only triggers if you maintained artistic integrity
+		requiresFlags = { artistic_integrity = true },
+		blockedByFlags = { in_prison = true, grammy_winner = true },
+		
+		choices = {
+			{
+				text = "Thank everyone who believed",
+				effects = { Happiness = 25 },
+				feedText = "Giving credit...",
+				onResolve = function(state)
+					state.Money = (state.Money or 0) + math.random(500000, 1500000)
+					state.Fame = (state.Fame or 0) + 80
+					state.Flags = state.Flags or {}
+					state.Flags.grammy_winner = true
+					state.Flags.critically_acclaimed = true
+					state:AddFeed("🎨 Standing ovation! Your artistic vision proved correct! Legend status achieved!")
+				end,
+			},
+			{
+				text = "Call out the label that doubted you",
+				effects = { Happiness = 15 },
+				feedText = "Sweet vindication...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state.Money = (state.Money or 0) + math.random(400000, 1000000)
+						state.Fame = (state.Fame or 0) + 50
+						state.Flags = state.Flags or {}
+						state.Flags.grammy_winner = true
+						state:AddFeed("🎨 Mic drop moment! 'They said no one would listen!' Viral speech!")
+					else
+						state.Fame = (state.Fame or 0) + 30
+						state:AddFeed("🎨 Came off as bitter. Still won though!")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "musician_label_conflict_consequence",
+		title = "💔 Label Drama Escalates",
+		emoji = "💔",
+		text = "The 'creative differences' with your label have turned ugly. They're threatening to shelve your album and sue you!",
+		category = "career_music",
+		weight = 10,
+		minAge = 20, maxAge = 50,
+		baseChance = 0.5,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = hasMusicJob,
+		-- LINKAGE: Only triggers if you had label conflict
+		requiresFlags = { label_conflict = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Buy out your contract",
+				effects = { Happiness = 10 },
+				feedText = "Freedom has a price...",
+				onResolve = function(state)
+					local buyout = math.random(500000, 2000000)
+					if (state.Money or 0) >= buyout then
+						state.Money = state.Money - buyout
+						state.Flags = state.Flags or {}
+						state.Flags.label_conflict = nil
+						state.Flags.independent_artist = true
+						state.Flags.free_from_contract = true
+						state:AddFeed(string.format("💔 Paid $%d to be free! Now independent! Your music, your rules!", buyout))
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed(string.format("💔 Can't afford the $%d buyout. Still trapped.", buyout))
+					end
+				end,
+			},
+			{
+				text = "Leak the album online yourself",
+				effects = { Happiness = 5 },
+				feedText = "Fans need to hear this...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state.Fame = (state.Fame or 0) + 40
+						state.Flags = state.Flags or {}
+						state.Flags.cult_following = true
+						state:AddFeed("💔 Leaked it! Went viral! Fans LOVE you for the rebellion! Label can't contain it!")
+					else
+						state.Money = math.max(0, (state.Money or 0) - math.random(200000, 800000))
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("💔 Sued for breach of contract. Massive legal fees. Was it worth it?")
+					end
+				end,
+			},
+			{
+				text = "Apologize and play by their rules",
+				effects = { Happiness = -15 },
+				feedText = "Swallowing pride...",
+				onResolve = function(state)
+					state.Money = (state.Money or 0) + math.random(50000, 150000)
+					state.Flags = state.Flags or {}
+					state.Flags.label_conflict = nil
+					state.Flags.sellout = true
+					state:AddFeed("💔 Apologized publicly. Made the album they wanted. It feels hollow.")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "musician_studio_session",
+		title = "🎙️ Studio Session Magic",
+		emoji = "🎙️",
+		text = "You're in the studio and something magical is happening. The track is coming together perfectly!",
+		category = "career_music",
+		weight = 16,
+		minAge = 18, maxAge = 65,
+		baseChance = 0.5,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasMusicJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Keep recording - ride the wave!",
+				effects = { Happiness = 8 },
+				feedText = "Catching lightning in a bottle...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						state.Flags = state.Flags or {}
+						state.Flags.hit_song_recorded = true
+						state.Money = (state.Money or 0) + math.random(50000, 200000)
+						state:AddFeed("🎙️ Recorded something SPECIAL! This track could be THE ONE!")
+					else
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🎙️ Great session! Maybe not a hit but solid work.")
+					end
+				end,
+			},
+			{
+				text = "Bring in a guest feature",
+				effects = { Money = -20000 },
+				feedText = "Calling in a favor...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state.Money = (state.Money or 0) + math.random(100000, 400000)
+						state.Fame = (state.Fame or 0) + 25
+						state.Flags = state.Flags or {}
+						state.Flags.collab_success = true
+						state:AddFeed("🎙️ The feature artist CRUSHED it! Instant chemistry! Hit incoming!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🎙️ The collab didn't gel. Wasted studio time and money.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "musician_fan_encounter",
+		title = "👥 Crazy Fan Encounter",
+		emoji = "👥",
+		text = "A fan waited outside your studio for 8 HOURS just to meet you. They're crying and shaking.",
+		category = "career_music",
+		weight = 14,
+		minAge = 18, maxAge = 70,
+		baseChance = 0.45,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = isSignedArtist,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Spend 30 minutes with them - make their day",
+				effects = { Happiness = 10 },
+				feedText = "They seem harmless...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 75 then
+						state.Fame = (state.Fame or 0) + 15
+						state.Flags = state.Flags or {}
+						state.Flags.beloved_by_fans = true
+						state:AddFeed("👥 They posted everything online! 'NICEST ARTIST EVER!' Going viral for being KIND!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.stalker_issues = true
+						state:AddFeed("👥 They started showing up everywhere. Might need to call security...")
+					end
+				end,
+			},
+			{
+				text = "Quick photo and autograph only",
+				effects = { Happiness = 3 },
+				feedText = "Boundaries matter...",
+				onResolve = function(state)
+					state:AddFeed("👥 Quick interaction. They're happy. You're safe. Professional.")
+				end,
+			},
+			{
+				text = "Have security escort them away",
+				effects = { Happiness = -3 },
+				feedText = "Safety first...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:AddFeed("👥 They understood. No drama. Good call.")
+					else
+						state.Fame = (state.Fame or 0) - 10
+						state:AddFeed("👥 They posted about it. 'Cold and rude!' Bad PR.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "musician_industry_party",
+		title = "🎉 Industry Party Invitation",
+		emoji = "🎉",
+		text = "You're invited to THE party of the year. Every major artist, producer, and exec will be there!",
+		category = "career_music",
+		weight = 12,
+		minAge = 18, maxAge = 55,
+		baseChance = 0.45,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = hasMusicJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Work the room - network aggressively",
+				effects = { Happiness = 5 },
+				feedText = "All about connections...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state.Money = (state.Money or 0) + math.random(10000, 50000)
+						state.Fame = (state.Fame or 0) + 20
+						state.Flags = state.Flags or {}
+						state.Flags.industry_connections = true
+						state:AddFeed("🎉 Exchanged numbers with 3 major producers! New opportunities coming!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🎉 Came off as desperate. People were polite but distant.")
+					end
+				end,
+			},
+			{
+				text = "Just have fun and be yourself",
+				effects = { Happiness = 8, Health = -2 },
+				feedText = "YOLO!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						state.Fame = (state.Fame or 0) + 15
+						state.Flags = state.Flags or {}
+						state.Flags.party_animal = true
+						state:AddFeed("🎉 Had an AMAZING time! People loved your energy! Organic connections!")
+					else
+						state.Fame = (state.Fame or 0) - 5
+						state:AddFeed("🎉 Might have had TOO much fun. Embarrassing videos circulating...")
+					end
+				end,
+			},
+			{
+				text = "Skip it - parties aren't your thing",
+				effects = { Health = 3, Happiness = 2 },
+				feedText = "Staying home...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.mysterious_artist = true
+					state:AddFeed("🎉 Stayed home. People asked where you were. Maybe mystery is good for the brand?")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "musician_remix_request",
+		title = "🔊 Hot Remix Request",
+		emoji = "🔊",
+		text = "A chart-topping DJ wants to remix your latest track. It could blow up in clubs worldwide!",
+		category = "career_music",
+		weight = 14,
+		minAge = 18, maxAge = 50,
+		baseChance = 0.45,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = hasMusicJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Let them do whatever they want",
+				effects = { Happiness = 5 },
+				feedText = "Trust the artist...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						state.Money = (state.Money or 0) + math.random(80000, 300000)
+						state.Fame = (state.Fame or 0) + 25
+						state:AddFeed("🔊 The remix is FIRE! Charting globally! Playing in every club!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("🔊 They butchered it. Unrecognizable. Your fans hate it.")
+					end
+				end,
+			},
+			{
+				text = "Stay involved in the creative process",
+				effects = { Smarts = 3 },
+				feedText = "Quality control...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 65 then
+						state.Money = (state.Money or 0) + math.random(100000, 250000)
+						state.Fame = (state.Fame or 0) + 20
+						state.Flags = state.Flags or {}
+						state.Flags.remix_success = true
+						state:AddFeed("🔊 Collaboration was perfect! Best of both worlds! Hit remix!")
+					else
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🔊 Solid remix. Not a smash but respectable.")
+					end
+				end,
+			},
+			{
+				text = "Decline - protect the original",
+				effects = { Happiness = 2 },
+				setFlags = { purist = true },
+				feedText = "The original stands alone.",
+				onResolve = function(state)
+					state:AddFeed("🔊 Declined the remix. Some fans appreciate your artistic integrity.")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "musician_viral_moment",
+		title = "📱 Viral Video Opportunity",
+		emoji = "📱",
+		text = "A clip of you doing something unexpected is going viral on TikTok! Millions of views already!",
+		category = "career_music",
+		weight = 12,
+		minAge = 18, maxAge = 50,
+		baseChance = 0.4,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = hasMusicJob,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Lean into it - make more content",
+				effects = { Happiness = 8 },
+				feedText = "Riding the wave...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state.Fame = (state.Fame or 0) + 40
+						state.Money = (state.Money or 0) + math.random(50000, 200000)
+						state.Flags = state.Flags or {}
+						state.Flags.social_media_star = true
+						state:AddFeed("📱 Embraced the meme! New fans pouring in! Streams through the ROOF!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("📱 Tried too hard. Cringe follow-up. Moment passed.")
+					end
+				end,
+			},
+			{
+				text = "Ignore it and focus on music",
+				effects = { Smarts = 3 },
+				feedText = "Stay focused...",
+				onResolve = function(state)
+					state:AddFeed("📱 Didn't engage. Some respect your seriousness. Others think you're no fun.")
+				end,
+			},
+			{
+				text = "Ask them to take it down",
+				effects = { Happiness = -5 },
+				feedText = "Damage control...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:AddFeed("📱 They removed it. Crisis averted maybe?")
+					else
+						state.Fame = (state.Fame or 0) - 10
+						state:AddFeed("📱 Streisand effect! Trying to remove it made it MORE viral!")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "musician_comeback_opportunity",
+		title = "🔥 Career Revival Chance",
+		emoji = "🔥",
+		text = "A hot new producer wants to work with you! They think they can bring you back to the charts!",
+		category = "career_music",
+		weight = 10,
+		minAge = 30, maxAge = 60,
+		baseChance = 0.4,
+		cooldown = 5,
+		requiresJob = true,
+		eligibility = hasMusicJob,
+		-- LINKAGE: More likely if you've had setbacks
+		boostedByFlags = { voice_damage = true, label_conflict = true, bad_advice = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Go all in on the new sound",
+				effects = { Happiness = 10 },
+				feedText = "Reinvention time!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 45 then
+						state.Money = (state.Money or 0) + math.random(200000, 800000)
+						state.Fame = (state.Fame or 0) + 45
+						state.Flags = state.Flags or {}
+						state.Flags.comeback_king = true
+						state.Flags.voice_damage = nil -- Recovery!
+						state:AddFeed("🔥 LEGENDARY COMEBACK! Critics are calling it a 'career resurrection'!")
+					elseif roll <= 75 then
+						state.Money = (state.Money or 0) + math.random(50000, 150000)
+						state.Fame = (state.Fame or 0) + 15
+						state:AddFeed("🔥 Decent comeback! Not chart-topping but respectable return!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🔥 The new sound didn't connect. Critics: 'Trying too hard.'")
+					end
+				end,
+			},
+			{
+				text = "Collaborate on a nostalgia project",
+				effects = { Happiness = 6 },
+				feedText = "Play the hits...",
+				onResolve = function(state)
+					state.Money = (state.Money or 0) + math.random(80000, 250000)
+					state.Fame = (state.Fame or 0) + 20
+					state:AddFeed("🔥 'Greatest Hits Reimagined' album! Fans love the nostalgia!")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "musician_documentary_offer",
+		title = "🎬 Documentary Offer",
+		emoji = "🎬",
+		text = "A streaming service wants to make a documentary about your life and career! Full access!",
+		category = "career_music",
+		weight = 8,
+		minAge = 25, maxAge = 70,
+		baseChance = 0.35,
+		cooldown = 6,
+		oneTime = true,
+		requiresJob = true,
+		eligibility = isSignedArtist,
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Let them tell the REAL story",
+				effects = { Happiness = -5 },
+				feedText = "Vulnerable but authentic...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						state.Money = (state.Money or 0) + math.random(300000, 1000000)
+						state.Fame = (state.Fame or 0) + 50
+						state.Flags = state.Flags or {}
+						state.Flags.documentary_star = true
+						state:AddFeed("🎬 'Raw and honest' - Critics LOVED it! Emmy nominated! Career peak!")
+					else
+						state:ModifyStat("Happiness", -15)
+						state.Fame = (state.Fame or 0) - 20
+						state:AddFeed("🎬 They exposed things you wish stayed buried. Regrets.")
+					end
+				end,
+			},
+			{
+				text = "Maintain editorial control",
+				effects = { Money = 100000, Happiness = 5 },
+				feedText = "Protect your image...",
+				onResolve = function(state)
+					state.Fame = (state.Fame or 0) + 25
+					state:AddFeed("🎬 Polished documentary. Critics say 'sanitized' but fans loved it!")
+				end,
+			},
+			{
+				text = "Decline - some things are private",
+				effects = { Happiness = 8 },
+				setFlags = { values_privacy = true },
+				feedText = "Not ready to share everything.",
+				onResolve = function(state)
+					state:AddFeed("🎬 Turned it down. Your story stays your own.")
+				end,
+			},
+		},
+	},
 }
 
 return MusicianCareerEvents
