@@ -136,8 +136,8 @@ local events = {
 		weight = 8,
 		minAge = 16,
 		maxAge = 60,
-		baseChance = 0.7,
-		cooldown = 1,
+		baseChance = 0.45, -- FIXED: Lowered from 0.7 to reduce spam
+		cooldown = 3, -- FIXED: Increased from 1 to reduce spam
 		requiresFlags = { street_hustler = true },
 		blockedByFlags = { in_prison = true },
 		

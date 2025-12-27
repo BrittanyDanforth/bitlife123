@@ -4942,15 +4942,17 @@ IntroUI.genderTitleConstraint.Parent = IntroUI.genderTitle
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- BONUS INCOME PROMPT - "Join our group & like the game for 25% extra income!"
 -- Shows on intro screen to encourage engagement and increase retention
--- MOBILE-FRIENDLY: Same size as buttons, compact text
+-- MOBILE-FRIENDLY: Clickable button that activates the bonus
 -- ═══════════════════════════════════════════════════════════════════════════════
-IntroUI.bonusPrompt = Instance.new("Frame")
+IntroUI.bonusPrompt = Instance.new("TextButton") -- Changed to TextButton so it's clickable!
 IntroUI.bonusPrompt.Name = "BonusPrompt"
-IntroUI.bonusPrompt.Size = UDim2.new(0.85, 0, 0, 36) -- Same width/height as gender buttons
+IntroUI.bonusPrompt.Size = UDim2.new(0.85, 0, 0, 38) -- Slightly taller for better touch
 IntroUI.bonusPrompt.BackgroundColor3 = Color3.fromRGB(34, 197, 94) -- Green
 IntroUI.bonusPrompt.BackgroundTransparency = 0
 IntroUI.bonusPrompt.LayoutOrder = 1.5 -- Between title and gender buttons
 IntroUI.bonusPrompt.ZIndex = 72
+IntroUI.bonusPrompt.AutoButtonColor = false
+IntroUI.bonusPrompt.Text = "" -- Text is in child label
 IntroUI.bonusPrompt.Parent = IntroUI.content
 
 IntroUI.bonusPromptCorner = Instance.new("UICorner")
@@ -4959,25 +4961,25 @@ IntroUI.bonusPromptCorner.Parent = IntroUI.bonusPrompt
 
 IntroUI.bonusPromptStroke = Instance.new("UIStroke")
 IntroUI.bonusPromptStroke.Color = Color3.fromRGB(22, 163, 74)
-IntroUI.bonusPromptStroke.Thickness = 1
+IntroUI.bonusPromptStroke.Thickness = 2
 IntroUI.bonusPromptStroke.Parent = IntroUI.bonusPrompt
 
 IntroUI.bonusPromptText = Instance.new("TextLabel")
 IntroUI.bonusPromptText.Name = "BonusText"
 IntroUI.bonusPromptText.Size = UDim2.fromScale(1, 1)
 IntroUI.bonusPromptText.BackgroundTransparency = 1
-IntroUI.bonusPromptText.Font = F.Medium or Enum.Font.GothamMedium or Enum.Font.SourceSans
-IntroUI.bonusPromptText.TextSize = 11 -- Smaller text for mobile
+IntroUI.bonusPromptText.Font = F.Title or Enum.Font.GothamBold or Enum.Font.SourceSansBold
+IntroUI.bonusPromptText.TextSize = 12
 IntroUI.bonusPromptText.TextColor3 = Color3.fromRGB(255, 255, 255)
-IntroUI.bonusPromptText.Text = "⭐ Join GROUP + LIKE = +25% Income! 💰"
-IntroUI.bonusPromptText.TextScaled = true -- Scale text to fit on small screens
+IntroUI.bonusPromptText.Text = "⭐ TAP for +25% Income Bonus! 💰"
+IntroUI.bonusPromptText.TextScaled = true
 IntroUI.bonusPromptText.ZIndex = 73
 IntroUI.bonusPromptText.Parent = IntroUI.bonusPrompt
 
--- Constrain text scaling so it doesn't get too big
+-- Constrain text scaling
 IntroUI.bonusPromptTextConstraint = Instance.new("UITextSizeConstraint")
-IntroUI.bonusPromptTextConstraint.MaxTextSize = 13
-IntroUI.bonusPromptTextConstraint.MinTextSize = 8
+IntroUI.bonusPromptTextConstraint.MaxTextSize = 14
+IntroUI.bonusPromptTextConstraint.MinTextSize = 9
 IntroUI.bonusPromptTextConstraint.Parent = IntroUI.bonusPromptText
 
 -- Add padding to the text
@@ -4987,6 +4989,44 @@ IntroUI.bonusPromptPadding.PaddingRight = UDim.new(0, 8)
 IntroUI.bonusPromptPadding.PaddingTop = UDim.new(0, 4)
 IntroUI.bonusPromptPadding.PaddingBottom = UDim.new(0, 4)
 IntroUI.bonusPromptPadding.Parent = IntroUI.bonusPromptText
+
+-- Track if bonus is activated
+local engagementBonusActivated = false
+
+-- Click handler - activates the bonus!
+IntroUI.bonusPrompt.MouseButton1Click:Connect(function()
+	if engagementBonusActivated then return end
+	engagementBonusActivated = true
+	
+	-- Send to server to activate bonus
+	local SetEngagementBonus = remotesFolder and remotesFolder:FindFirstChild("SetEngagementBonus")
+	if SetEngagementBonus then
+		SetEngagementBonus:FireServer("both")
+	end
+	
+	-- Update UI to show activated
+	IntroUI.bonusPrompt.BackgroundColor3 = Color3.fromRGB(22, 163, 74) -- Darker green
+	IntroUI.bonusPromptText.Text = "✅ +25% Income ACTIVATED! 🎉"
+	IntroUI.bonusPromptStroke.Color = Color3.fromRGB(255, 215, 0) -- Gold border
+	
+	-- Celebratory animation
+	tween(IntroUI.bonusPrompt, TweenInfo.new(0.2, Enum.EasingStyle.Back), { Size = UDim2.new(0.9, 0, 0, 42) })
+	task.delay(0.3, function()
+		tween(IntroUI.bonusPrompt, TweenInfo.new(0.2), { Size = UDim2.new(0.85, 0, 0, 38) })
+	end)
+end)
+
+-- Hover effects
+IntroUI.bonusPrompt.MouseEnter:Connect(function()
+	if not engagementBonusActivated then
+		tween(IntroUI.bonusPrompt, TweenInfo.new(0.1), { Size = UDim2.new(0.88, 0, 0, 40) })
+	end
+end)
+IntroUI.bonusPrompt.MouseLeave:Connect(function()
+	if not engagementBonusActivated then
+		tween(IntroUI.bonusPrompt, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 38) })
+	end
+end)
 
 IntroUI.genderBtns = Instance.new("Frame")
 -- MOBILE FIX: Use AutomaticSize so it fits content perfectly
@@ -5921,10 +5961,10 @@ local genderData = {
 
 for _, g in ipairs(genderData) do
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0.85, 0, 0, 44) -- MOBILE FIX: Reduced from 58 to fit on small screens
+	btn.Size = UDim2.new(0.85, 0, 0, 48) -- Slightly bigger for better touch targets
 	btn.BackgroundColor3 = g.color
 	btn.Font = F.Title or Enum.Font.GothamBold
-	btn.TextSize = 18 -- MOBILE FIX: Reduced from 22
+	btn.TextSize = 18
 	btn.TextScaled = true
 	btn.TextColor3 = C.White
 	btn.Text = g.icon .. " " .. g.gender
@@ -5941,10 +5981,10 @@ for _, g in ipairs(genderData) do
 	textConstraint.Parent = btn
 
 	btn.MouseEnter:Connect(function()
-		tween(btn, TweenInfo.new(0.1), { Size = UDim2.new(0.88, 0, 0, 48) })
+		tween(btn, TweenInfo.new(0.1), { Size = UDim2.new(0.88, 0, 0, 52) })
 	end)
 	btn.MouseLeave:Connect(function()
-		tween(btn, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 44) })
+		tween(btn, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 48) })
 	end)
 
 	btn.MouseButton1Click:Connect(function()
@@ -5989,10 +6029,10 @@ end
 do
 	local customizeGenderBtn = Instance.new("TextButton")
 	customizeGenderBtn.Name = "CustomizeGenderBtn"
-	customizeGenderBtn.Size = UDim2.new(0.85, 0, 0, 38) -- MOBILE FIX: Reduced from 48
+	customizeGenderBtn.Size = UDim2.new(0.85, 0, 0, 42) -- Slightly bigger for touch
 	customizeGenderBtn.BackgroundColor3 = Color3.fromRGB(253, 230, 138) -- Gold
 	customizeGenderBtn.Font = F.Title or Enum.Font.GothamBold
-	customizeGenderBtn.TextSize = 14 -- MOBILE FIX: Reduced from 16
+	customizeGenderBtn.TextSize = 14
 	customizeGenderBtn.TextScaled = true
 	customizeGenderBtn.TextColor3 = C.Gray900
 	customizeGenderBtn.Text = "⚡ Customize Character"
@@ -6012,10 +6052,10 @@ do
 	IntroUI.customizeGenderBtn = customizeGenderBtn
 	
 	customizeGenderBtn.MouseEnter:Connect(function()
-		tween(customizeGenderBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.88, 0, 0, 42) })
+		tween(customizeGenderBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.88, 0, 0, 46) })
 	end)
 	customizeGenderBtn.MouseLeave:Connect(function()
-		tween(customizeGenderBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 38) })
+		tween(customizeGenderBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 42) })
 	end)
 	
 	customizeGenderBtn.MouseButton1Click:Connect(function()
@@ -6123,10 +6163,10 @@ IntroUI.showRoyalGenderSelection = nil
 do
 	local royaltyBtn = Instance.new("TextButton")
 	royaltyBtn.Name = "RoyaltyGenderBtn"
-	royaltyBtn.Size = UDim2.new(0.85, 0, 0, 38) -- MOBILE FIX: Reduced from 48
+	royaltyBtn.Size = UDim2.new(0.85, 0, 0, 42) -- Slightly bigger for touch
 	royaltyBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
 	royaltyBtn.Font = F.Title or Enum.Font.GothamBold
-	royaltyBtn.TextSize = 14 -- MOBILE FIX: Reduced from 16
+	royaltyBtn.TextSize = 14
 	royaltyBtn.TextScaled = true
 	royaltyBtn.TextColor3 = C.Gray900
 	royaltyBtn.Text = "👑 Born Royal"
@@ -6146,10 +6186,10 @@ do
 	IntroUI.royaltyGenderBtn = royaltyBtn
 	
 	royaltyBtn.MouseEnter:Connect(function()
-		tween(royaltyBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.88, 0, 0, 42) })
+		tween(royaltyBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.88, 0, 0, 46) })
 	end)
 	royaltyBtn.MouseLeave:Connect(function()
-		tween(royaltyBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 38) })
+		tween(royaltyBtn, TweenInfo.new(0.1), { Size = UDim2.new(0.85, 0, 0, 42) })
 	end)
 	
 	royaltyBtn.MouseButton1Click:Connect(function()

@@ -8896,6 +8896,7 @@ function LifeBackend:setupRemotes()
 	self.remotes.PresentEvent = self:createRemote("PresentEvent", "RemoteEvent")
 	self.remotes.SubmitChoice = self:createRemote("SubmitChoice", "RemoteEvent")
 	self.remotes.SetLifeInfo = self:createRemote("SetLifeInfo", "RemoteEvent")
+	self.remotes.SetEngagementBonus = self:createRemote("SetEngagementBonus", "RemoteEvent") -- For group/like bonus
 	self.remotes.MinigameResult = self:createRemote("MinigameResult", "RemoteEvent")
 	self.remotes.MinigameStart = self:createRemote("MinigameStart", "RemoteEvent")
 
@@ -8954,6 +8955,29 @@ function LifeBackend:setupRemotes()
 	-- CRITICAL FIX: Now accepts country parameter for country selection feature
 	self.remotes.SetLifeInfo.OnServerEvent:Connect(function(player, name, gender, country)
 		self:setLifeInfo(player, name, gender, country)
+	end)
+	
+	-- ENGAGEMENT BONUS: Set flag when player joins group or likes game
+	-- Grants +25% income bonus on all salary payments
+	self.remotes.SetEngagementBonus.OnServerEvent:Connect(function(player, bonusType)
+		local state = self:getState(player)
+		if state then
+			state.Flags = state.Flags or {}
+			if bonusType == "group" then
+				state.Flags.joined_group = true
+				state.Flags.engagement_bonus = true
+				print("[LifeBackend] ⭐ Player", player.Name, "joined group - +25% income bonus activated!")
+			elseif bonusType == "like" then
+				state.Flags.liked_game = true
+				state.Flags.engagement_bonus = true
+				print("[LifeBackend] ⭐ Player", player.Name, "liked game - +25% income bonus activated!")
+			elseif bonusType == "both" then
+				state.Flags.joined_group = true
+				state.Flags.liked_game = true
+				state.Flags.engagement_bonus = true
+				print("[LifeBackend] ⭐ Player", player.Name, "engaged (group+like) - +25% income bonus activated!")
+			end
+		end
 	end)
 
 	self.remotes.SubmitChoice.OnServerEvent:Connect(function(player, eventId, choiceIndex)
@@ -10892,8 +10916,23 @@ function LifeBackend:tickCareer(state)
 	end
 	
 	if salary > 0 then
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- ENGAGEMENT BONUS: +25% income for players who joined group & liked the game!
+		-- This rewards engaged players and encourages community participation
+		-- Check flags set by client when player joins group/likes game
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local baseSalary = salary
+		local bonusAmount = 0
+		local hasEngagementBonus = false
+		
+		if state.Flags and (state.Flags.joined_group or state.Flags.liked_game or state.Flags.engagement_bonus) then
+			hasEngagementBonus = true
+			bonusAmount = math.floor(baseSalary * 0.25)
+			salary = baseSalary + bonusAmount
+		end
+		
 		self:addMoney(state, salary)
-		debugPrint("Salary paid:", salary, "to player. New balance:", state.Money)
+		debugPrint("Salary paid:", salary, "(base:", baseSalary, "+ bonus:", bonusAmount, ") to player. New balance:", state.Money)
 		
 		-- CRITICAL FIX: Store last paid salary for pension calculation
 		-- This ensures retirement events can calculate pension from actual income
@@ -10905,14 +10944,24 @@ function LifeBackend:tickCareer(state)
 		-- This was the bug - salary was paid but user didn't see any message
 		-- YearLog entries need 'text' field, not 'message' - that's what generateYearSummary looks for
 		state.YearLog = state.YearLog or {}
+		
+		local salaryText
+		if hasEngagementBonus then
+			salaryText = string.format("Earned %s from your job as %s (+25%% bonus!)", 
+				formatMoney(salary or 0) or "$0", 
+				tostring(state.CurrentJob.name or "employee"))
+		else
+			salaryText = string.format("Earned %s from your job as %s", 
+				formatMoney(salary or 0) or "$0", 
+				tostring(state.CurrentJob.name or "employee"))
+		end
+		
 		table.insert(state.YearLog, {
-		type = "salary",
-		emoji = "💰",
-		text = string.format("Earned %s from your job as %s", 
-			formatMoney(salary or 0) or "$0", 
-			tostring(state.CurrentJob.name or "employee")),
-		amount = salary or 0,
-	})
+			type = "salary",
+			emoji = hasEngagementBonus and "💰⭐" or "💰",
+			text = salaryText,
+			amount = salary or 0,
+		})
 	end
 end
 
