@@ -2130,11 +2130,14 @@ local AgeMilestoneEvents = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	-- BABY/TODDLER (0-4) - Lots of variety in early years
-	[0] = { "royal_birth_announcement", "baby_first_smile", "baby_first_laugh", "newborn_checkup", "first_photo", "naming_ceremony", "baby_discovered_talent", "baby_viral_moment", "baby_laugh_attack" },
-	[1] = { "royal_christening", "first_words", "first_steps", "baby_first_food", "baby_teething_pain", "first_birthday", "walk_talk_milestone", "baby_discovered_talent", "baby_viral_moment" },
+	-- CRITICAL FIX: Removed nonsensical events - newborns can't do talents/go viral/laugh attacks
+	-- Age 0 = birth events only (realistic for a newborn)
+	[0] = { "royal_birth_announcement", "baby_first_smile", "baby_first_laugh", "newborn_checkup", "first_photo", "naming_ceremony" },
+	[1] = { "royal_christening", "first_words", "first_steps", "baby_first_food", "baby_teething_pain", "first_birthday", "walk_talk_milestone", "baby_discovered_talent", "baby_laugh_attack" },
 	[2] = { "toddler_potty_training", "toddler_tantrum", "toddler_language_explosion", "terrible_twos", "playground_adventure", "toddler_art_masterpiece", "toddler_big_choice" },
-	[3] = { "first_public_appearance", "preschool_start", "imaginary_friend", "toddler_fear_dark", "first_pet_encounter", "bedtime_stories", "princess_prince_phase", "child_superpower_discovery", "toddler_big_choice" },
-	[4] = { "toddler_curiosity_incident", "toddler_sibling_dynamics", "toddler_picky_eater", "first_playdate", "learning_colors", "hide_and_seek_champion", "child_adventure_call", "child_superpower_discovery" },
+	[3] = { "first_public_appearance", "preschool_start", "imaginary_friend", "toddler_fear_dark", "first_pet_encounter", "bedtime_stories", "princess_prince_phase", "toddler_big_choice" },
+	-- FIXED: Removed events that don't make sense for this age (child_adventure_call now starts at 5, child_superpower_discovery at 4)
+	[4] = { "toddler_curiosity_incident", "toddler_sibling_dynamics", "toddler_picky_eater", "first_playdate", "learning_colors", "hide_and_seek_champion", "child_superpower_discovery" },
 	
 	-- EARLY CHILDHOOD (5-8) - School and discovery
 	-- CRITICAL FIX #604: Added premium events to age milestones for gamepass exposure

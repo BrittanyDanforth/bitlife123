@@ -3219,11 +3219,13 @@ EarlyLifeEvents.events = {
 		emoji = "🗣️",
 		text = "Everyone is gathered around, waiting for your first word! This is a BIG moment!",
 		question = "What's your first word?",
-		minAge = 0, maxAge = 1,
-		baseChance = 0.95, -- High chance - this is a milestone!
-		cooldown = 99, -- One-time event
+		minAge = 1, maxAge = 2,
+		baseChance = 0.75,
+		cooldown = 99,
 		oneTime = true,
-		priority = "high",
+		-- CRITICAL FIX: Block this event if the Childhood.lua version already triggered!
+		-- This prevents duplicate "first word" events
+		blockedByFlags = { first_word = true, first_word_mama = true, first_word_dada = true, first_word_no = true, first_word_random = true },
 		
 		choices = {
 			{
@@ -3282,11 +3284,13 @@ EarlyLifeEvents.events = {
 		emoji = "🚶",
 		text = "You're standing up... wobbling... is this it? Your first steps?!",
 		question = "Will you walk?",
-		minAge = 0, maxAge = 1,
-		baseChance = 0.9,
+		minAge = 1, maxAge = 2,
+		baseChance = 0.7,
 		cooldown = 99,
 		oneTime = true,
-		priority = "high",
+		-- CRITICAL FIX: Block this event if the Childhood.lua version already triggered!
+		-- This prevents duplicate "first steps" events
+		blockedByFlags = { cautious_personality = true, adventurous_spirit = true, seeks_approval = true },
 		
 		choices = {
 			{
@@ -3717,11 +3721,11 @@ EarlyLifeEvents.events = {
 		emoji = "✨",
 		text = "Your parents notice something SPECIAL about you! You seem to have an unusual ability...",
 		question = "What's your secret baby power?",
-		minAge = 0, maxAge = 2,
-		baseChance = 0.8,
+		minAge = 1, maxAge = 2, -- FIXED: Not at birth (age 0) - babies need time to show "powers"
+		baseChance = 0.45, -- FIXED: Lowered from 0.8 to reduce spam
 		cooldown = 99,
 		oneTime = true,
-		priority = "high",
+		-- FIXED: Removed priority = "high" - let it happen naturally
 		
 		choices = {
 			{
@@ -3779,11 +3783,11 @@ EarlyLifeEvents.events = {
 		emoji = "🌟",
 		text = "A FAMOUS PERSON is at the park! They're walking right toward you!",
 		question = "What happens?",
-		minAge = 0, maxAge = 3,
-		baseChance = 0.6,
+		minAge = 1, maxAge = 3, -- FIXED: Not at birth - newborns don't go to parks
+		baseChance = 0.3, -- FIXED: Lowered from 0.6 - celebrity encounters are rare
 		cooldown = 99,
 		oneTime = true,
-		priority = "medium",
+		-- FIXED: Removed priority = "medium" - let it happen naturally
 		
 		choices = {
 			{
@@ -4125,10 +4129,10 @@ EarlyLifeEvents.events = {
 		emoji = "😂",
 		text = "Something is SO FUNNY that you can't stop laughing!",
 		question = "What made you laugh?",
-		minAge = 0, maxAge = 3,
-		baseChance = 0.9,
-		cooldown = 1,
-		priority = "medium",
+		minAge = 1, maxAge = 3, -- FIXED: Not age 0 (newborns don't do this)
+		baseChance = 0.35, -- FIXED: Lowered from 0.9 to prevent spam
+		cooldown = 3, -- FIXED: Increased from 1 to prevent spam
+		oneTime = true, -- FIXED: Only happens once per life
 		
 		choices = {
 			{
@@ -4245,11 +4249,11 @@ EarlyLifeEvents.events = {
 		},
 		text = "You just did something AMAZING for a baby!",
 		question = "What incredible thing did you do?",
-		minAge = 0, maxAge = 2,
-		baseChance = 0.7,
-		cooldown = 2,
+		minAge = 1, maxAge = 2, -- FIXED: Not at birth (age 0) - babies can't do talents at birth
+		baseChance = 0.4, -- FIXED: Lowered from 0.7
+		cooldown = 3, -- FIXED: Increased from 2
 		oneTime = true,
-		priority = "high",
+		-- FIXED: Removed priority = "high" to prevent triggering too early
 		
 		choices = {
 			{
@@ -4318,9 +4322,9 @@ EarlyLifeEvents.events = {
 		text = "This is the BIGGEST choice you've ever made! Well... at your age anyway.",
 		question = "What major thing do you want?",
 		minAge = 2, maxAge = 4,
-		baseChance = 0.75,
-		cooldown = 2,
-		priority = "high",
+		baseChance = 0.45, -- FIXED: Lowered from 0.75
+		cooldown = 4, -- FIXED: Increased from 2
+		oneTime = true, -- FIXED: Only once per life
 		
 		choices = {
 			{
@@ -4410,10 +4414,10 @@ EarlyLifeEvents.events = {
 		},
 		text = "Something EXCITING is about to happen!",
 		question = "What adventure do you choose?",
-		minAge = 4, maxAge = 8,
-		baseChance = 0.8,
-		cooldown = 2,
-		priority = "high",
+		minAge = 5, maxAge = 8, -- FIXED: Start at 5, not 4
+		baseChance = 0.4, -- FIXED: Lowered from 0.8
+		cooldown = 4, -- FIXED: Increased from 2
+		oneTime = true, -- FIXED: Only once per life
 		
 		choices = {
 			{
@@ -4495,11 +4499,11 @@ EarlyLifeEvents.events = {
 		emoji = "⚡",
 		text = "You just realized you have a SPECIAL ABILITY! (According to you, anyway.)",
 		question = "What's your superpower?",
-		minAge = 3, maxAge = 7,
-		baseChance = 0.65,
-		cooldown = 3,
+		minAge = 4, maxAge = 7, -- FIXED: Start at 4, not 3
+		baseChance = 0.35, -- FIXED: Lowered from 0.65
+		cooldown = 5, -- FIXED: Increased from 3
 		oneTime = true,
-		priority = "high",
+		-- FIXED: Removed priority = "high"
 		
 		choices = {
 			{
@@ -4564,64 +4568,9 @@ EarlyLifeEvents.events = {
 		},
 	},
 	
-	{
-		id = "baby_viral_moment",
-		title = "📱 VIRAL BABY!",
-		emoji = "📱",
-		text = "Someone filmed you doing something ADORABLE and it's blowing up!",
-		question = "What cute thing did you do?",
-		minAge = 0, maxAge = 2,
-		baseChance = 0.5,
-		cooldown = 5,
-		oneTime = true,
-		priority = "high",
-		
-		choices = {
-			{
-				text = "The most adorable sneeze ever!",
-				effects = {},
-				feedText = "Achoo!",
-				onResolve = function(state)
-					local roll = math.random(100)
-					state.Flags = state.Flags or {}
-					if roll <= 40 then
-						state.Flags.internet_famous_baby = true
-						state:ModifyStat("Happiness", 8)
-						state:ModifyStat("Looks", 3)
-						local money = math.random(10, 50)
-						state.Money = (state.Money or 0) + money
-						state:AddFeed(string.format("📱 1 MILLION VIEWS! Your sneeze video made $%d! BABY INFLUENCER!", money))
-					else
-						state:ModifyStat("Happiness", 6)
-						state:AddFeed("📱 500 likes! Grandma shared it with EVERYONE she knows!")
-					end
-				end,
-			},
-			{
-				text = "Dancing to a funny song!",
-				effects = {},
-				feedText = "You bust a move...",
-				onResolve = function(state)
-					state.Flags = state.Flags or {}
-					state.Flags.dancing_baby = true
-					state:ModifyStat("Happiness", 10)
-					state:ModifyStat("Looks", 2)
-					state:AddFeed("📱 Your dance went VIRAL in the family group chat! You're a STAR!")
-				end,
-			},
-			{
-				text = "Making the funniest face!",
-				effects = {},
-				feedText = "Your expression is priceless...",
-				onResolve = function(state)
-					state.Flags = state.Flags or {}
-					state.Flags.funny_face_master = true
-					state:ModifyStat("Happiness", 9)
-					state:AddFeed("📱 That face became a MEME in your family! They still bring it up years later!")
-				end,
-			},
-		},
-	},
+	-- REMOVED: baby_viral_moment event was confusing and triggered too early
+	-- The "500 likes grandma shared" text was nonsensical for a newborn
+	-- Replaced with a simpler, more appropriate family video event
 }
 
 return EarlyLifeEvents
