@@ -42,8 +42,8 @@ InvestmentBankingEvents.events = {
 		category = "career_finance",
 		weight = 18,
 		minAge = 22, maxAge = 40,
-		baseChance = 0.55,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.3, -- LOWERED to prevent spam
+		cooldown = 5, -- INCREASED
 		requiresJob = true,
 		eligibility = isInvestmentBanker,
 		blockedByFlags = { in_prison = true },
@@ -99,8 +99,8 @@ InvestmentBankingEvents.events = {
 		category = "career_finance",
 		weight = 16,
 		minAge = 22, maxAge = 55,
-		baseChance = 0.5,
-		cooldown = 3,
+		baseChance = 0.3, -- LOWERED
+		cooldown = 5, -- INCREASED
 		requiresJob = true,
 		eligibility = isInvestmentBanker,
 		blockedByFlags = { in_prison = true },
@@ -148,11 +148,11 @@ InvestmentBankingEvents.events = {
 		category = "career_finance",
 		weight = 14,
 		minAge = 24, maxAge = 55,
-		baseChance = 0.5,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.25, -- LOWERED to prevent spam
+		cooldown = 5, -- INCREASED
 		requiresJob = true,
 		eligibility = hasFinanceJob,
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, lost_client = true },
 		
 		choices = {
 			{
@@ -494,15 +494,16 @@ InvestmentBankingEvents.events = {
 		emoji = "💎",
 		text = "Being named top performer has its perks! The MD is personally mentoring you now.",
 		category = "career_finance",
-		weight = 10,
+		weight = 6,
 		minAge = 24, maxAge = 45,
-		baseChance = 0.5,
-		cooldown = 5,
+		baseChance = 0.3, -- LOWERED
+		cooldown = 6, -- INCREASED
+		oneTime = true, -- Only once
 		requiresJob = true,
 		eligibility = isInvestmentBanker,
 		-- LINKAGE: Only triggers if you were named top performer
 		requiresFlags = { top_performer = true },
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, deal_leader = true },
 		
 		choices = {
 			{
@@ -546,13 +547,14 @@ InvestmentBankingEvents.events = {
 		category = "career_finance",
 		weight = 12,
 		minAge = 25, maxAge = 60,
-		baseChance = 0.6,
-		cooldown = 4,
+		baseChance = 0.35, -- LOWERED
+		cooldown = 5, -- INCREASED
+		oneTime = true, -- Only once!
 		requiresJob = true,
 		eligibility = hasFinanceJob,
 		-- LINKAGE: Only triggers if SEC is investigating
 		requiresFlags = { sec_investigation = true },
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, cleared_by_sec = true, banned_from_finance = true },
 		
 		choices = {
 			{
@@ -694,15 +696,15 @@ InvestmentBankingEvents.events = {
 		emoji = "🔥",
 		text = "You've closed 5 deals in a row! You're the hottest dealmaker in the firm!",
 		category = "career_finance",
-		weight = 10,
+		weight = 6,
 		minAge = 26, maxAge = 50,
-		baseChance = 0.45,
-		cooldown = 4,
+		baseChance = 0.2, -- LOWERED
+		cooldown = 6, -- INCREASED
 		requiresJob = true,
 		eligibility = isInvestmentBanker,
-		-- LINKAGE: More likely if you're already a dealmaker
-		boostedByFlags = { dealmaker = true },
-		blockedByFlags = { in_prison = true },
+		-- LINKAGE: REQUIRES dealmaker flag - not just boosted
+		requiresFlags = { dealmaker = true },
+		blockedByFlags = { in_prison = true, legendary_dealmaker = true },
 		
 		choices = {
 			{
@@ -922,13 +924,14 @@ InvestmentBankingEvents.events = {
 		emoji = "₿",
 		text = "A new crypto hedge fund is launching. They want YOU to run traditional finance operations!",
 		category = "career_finance",
-		weight = 10,
+		weight = 5,
 		minAge = 25, maxAge = 50,
-		baseChance = 0.4,
-		cooldown = 5,
+		baseChance = 0.15, -- LOWERED - rare opportunity
+		cooldown = 8, -- INCREASED
+		oneTime = true, -- Only once
 		requiresJob = true,
 		eligibility = hasFinanceJob,
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, crypto_millionaire = true },
 		
 		choices = {
 			{

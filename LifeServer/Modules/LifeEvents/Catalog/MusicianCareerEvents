@@ -114,8 +114,8 @@ MusicianCareerEvents.events = {
 		category = "career_music",
 		weight = 18,
 		minAge = 16, maxAge = 70,
-		baseChance = 0.55,
-		cooldown = 3,
+		baseChance = 0.3, -- LOWERED to prevent spam
+		cooldown = 5, -- INCREASED
 		requiresJob = true,
 		eligibility = isSignedArtist,
 		blockedByFlags = { in_prison = true },
@@ -188,8 +188,8 @@ MusicianCareerEvents.events = {
 		careerPath = "musician",  -- CRITICAL: Only for musicians!
 		weight = 15,
 		minAge = 18, maxAge = 50,
-		baseChance = 0.5,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.25, -- LOWERED to prevent spam
+		cooldown = 5, -- INCREASED
 		requiresJob = true,
 		eligibility = function(state)
 			-- CRITICAL: Must have a music career to receive label demands
@@ -621,15 +621,16 @@ MusicianCareerEvents.events = {
 		emoji = "🎵",
 		text = "After your platinum album success, everyone expects your next release to be even BIGGER. The pressure is immense!",
 		category = "career_music",
-		weight = 12,
+		weight = 8,
 		minAge = 18, maxAge = 55,
-		baseChance = 0.5,
-		cooldown = 4,
+		baseChance = 0.3, -- LOWERED to prevent spam
+		cooldown = 6, -- INCREASED
+		oneTime = true, -- Only happens once!
 		requiresJob = true,
 		eligibility = isSignedArtist,
 		-- LINKAGE: Only triggers if you had a platinum album
 		requiresFlags = { platinum_album = true },
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, multi_platinum = true },
 		
 		choices = {
 			{
@@ -859,13 +860,13 @@ MusicianCareerEvents.events = {
 		emoji = "🎙️",
 		text = "You're in the studio and something magical is happening. The track is coming together perfectly!",
 		category = "career_music",
-		weight = 16,
+		weight = 10,
 		minAge = 18, maxAge = 65,
-		baseChance = 0.5,
-		cooldown = 3,
+		baseChance = 0.25, -- LOWERED to prevent spam
+		cooldown = 5, -- INCREASED
 		requiresJob = true,
 		eligibility = hasMusicJob,
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, hit_song_recorded = true },
 		
 		choices = {
 			{
@@ -912,13 +913,13 @@ MusicianCareerEvents.events = {
 		emoji = "👥",
 		text = "A fan waited outside your studio for 8 HOURS just to meet you. They're crying and shaking.",
 		category = "career_music",
-		weight = 14,
+		weight = 8,
 		minAge = 18, maxAge = 70,
-		baseChance = 0.45,
-		cooldown = 3,
+		baseChance = 0.2, -- LOWERED to prevent spam
+		cooldown = 5, -- INCREASED
 		requiresJob = true,
 		eligibility = isSignedArtist,
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, stalker_issues = true },
 		
 		choices = {
 			{
@@ -971,13 +972,13 @@ MusicianCareerEvents.events = {
 		emoji = "🎉",
 		text = "You're invited to THE party of the year. Every major artist, producer, and exec will be there!",
 		category = "career_music",
-		weight = 12,
+		weight = 8,
 		minAge = 18, maxAge = 55,
-		baseChance = 0.45,
-		cooldown = 4,
+		baseChance = 0.2, -- LOWERED
+		cooldown = 6, -- INCREASED
 		requiresJob = true,
 		eligibility = hasMusicJob,
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, industry_connections = true },
 		
 		choices = {
 			{
@@ -1034,13 +1035,13 @@ MusicianCareerEvents.events = {
 		emoji = "🔊",
 		text = "A chart-topping DJ wants to remix your latest track. It could blow up in clubs worldwide!",
 		category = "career_music",
-		weight = 14,
+		weight = 8,
 		minAge = 18, maxAge = 50,
-		baseChance = 0.45,
-		cooldown = 4,
+		baseChance = 0.2, -- LOWERED
+		cooldown = 6, -- INCREASED
 		requiresJob = true,
 		eligibility = hasMusicJob,
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, remix_success = true },
 		
 		choices = {
 			{
@@ -1095,13 +1096,14 @@ MusicianCareerEvents.events = {
 		emoji = "📱",
 		text = "A clip of you doing something unexpected is going viral on TikTok! Millions of views already!",
 		category = "career_music",
-		weight = 12,
+		weight = 6,
 		minAge = 18, maxAge = 50,
-		baseChance = 0.4,
-		cooldown = 4,
+		baseChance = 0.15, -- LOWERED - viral moments are rare
+		cooldown = 8, -- INCREASED
+		oneTime = true, -- Only once per career
 		requiresJob = true,
 		eligibility = hasMusicJob,
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, social_media_star = true },
 		
 		choices = {
 			{
@@ -1153,15 +1155,16 @@ MusicianCareerEvents.events = {
 		emoji = "🔥",
 		text = "A hot new producer wants to work with you! They think they can bring you back to the charts!",
 		category = "career_music",
-		weight = 10,
+		weight = 6,
 		minAge = 30, maxAge = 60,
-		baseChance = 0.4,
-		cooldown = 5,
+		baseChance = 0.2, -- LOWERED
+		cooldown = 6, -- INCREASED
+		oneTime = true, -- Only once per career
 		requiresJob = true,
 		eligibility = hasMusicJob,
 		-- LINKAGE: More likely if you've had setbacks
 		boostedByFlags = { voice_damage = true, label_conflict = true, bad_advice = true },
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, comeback_king = true },
 		
 		choices = {
 			{

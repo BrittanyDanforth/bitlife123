@@ -136,8 +136,8 @@ local events = {
 		weight = 8,
 		minAge = 16,
 		maxAge = 60,
-		baseChance = 0.45, -- FIXED: Lowered from 0.7 to reduce spam
-		cooldown = 3, -- FIXED: Increased from 1 to reduce spam
+		baseChance = 0.25, -- FIXED: Further lowered to prevent spam
+		cooldown = 4, -- FIXED: Further increased
 		requiresFlags = { street_hustler = true },
 		blockedByFlags = { in_prison = true },
 		
@@ -640,10 +640,10 @@ local events = {
 		weight = 5,
 		minAge = 18,
 		maxAge = 50,
-		baseChance = 0.55,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.3, -- LOWERED to prevent spam
+		cooldown = 5, -- INCREASED
 		requiresFlags = { street_hustler = true },
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, trusted_in_the_game = true },
 		
 		choices = {
 			{
@@ -792,10 +792,10 @@ local events = {
 		weight = 5,
 		minAge = 20,
 		maxAge = 45,
-		baseChance = 0.55,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.25, -- LOWERED to prevent spam
+		cooldown = 5, -- INCREASED
 		requiresFlags = { street_hustler = true },
-		blockedByFlags = { in_prison = true, laying_low = true },
+		blockedByFlags = { in_prison = true, laying_low = true, expanded_territory = true },
 		
 		choices = {
 			{
@@ -1001,10 +1001,10 @@ local events = {
 		weight = 6,
 		minAge = 18,
 		maxAge = 55,
-		baseChance = 0.55,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.3, -- LOWERED to prevent spam
+		cooldown = 5, -- INCREASED
 		requiresFlags = { street_hustler = true },
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, laying_low = true },
 		
 		choices = {
 			{
@@ -1079,8 +1079,8 @@ local events = {
 		weight = 5,
 		minAge = 18,
 		maxAge = 50,
-		baseChance = 0.55,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.25, -- LOWERED to prevent spam
+		cooldown = 5, -- INCREASED
 		requiresFlags = { street_hustler = true },
 		blockedByFlags = { in_prison = true },
 		
@@ -1227,14 +1227,15 @@ local events = {
 		text = "Someone found out you snitched on that rival dealer. There's a target on your back now.",
 		question = "What do you do?",
 		category = "career",
-		weight = 10,
+		weight = 6,
 		minAge = 16,
 		maxAge = 55,
-		baseChance = 0.6,
-		cooldown = 3,
+		baseChance = 0.35, -- LOWERED
+		cooldown = 5, -- INCREASED
+		oneTime = true, -- Only happens once!
 		-- CRITICAL LINKAGE: Only triggers if you snitched
 		requiresFlags = { snitch = true, street_hustler = true },
-		blockedByFlags = { in_prison = true, got_revenge_on_snitch = true },
+		blockedByFlags = { in_prison = true, got_revenge_on_snitch = true, relocated_for_safety = true },
 		
 		choices = {
 			{
@@ -1314,14 +1315,15 @@ local events = {
 		text = "Remember when you snitched on your rival and they found out? They've been planning something.",
 		question = "How do you respond?",
 		category = "career",
-		weight = 10,
+		weight = 6,
 		minAge = 16,
 		maxAge = 50,
-		baseChance = 0.55,
-		cooldown = 4,
+		baseChance = 0.3, -- LOWERED
+		cooldown = 5, -- INCREASED
+		oneTime = true, -- Only once!
 		-- CRITICAL LINKAGE: Only triggers if marked by rivals
 		requiresFlags = { marked_by_rivals = true, street_hustler = true },
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, escaped_the_life = true },
 		
 		choices = {
 			{
@@ -1392,14 +1394,15 @@ local events = {
 		text = "Remember when you proved your loyalty? Your connect is rewarding you with a bigger territory.",
 		question = "How do you handle this opportunity?",
 		category = "career",
-		weight = 8,
+		weight = 5,
 		minAge = 18,
 		maxAge = 50,
-		baseChance = 0.5,
-		cooldown = 4,
+		baseChance = 0.25, -- LOWERED
+		cooldown = 6, -- INCREASED
+		oneTime = true, -- Only once!
 		-- CRITICAL LINKAGE: Only triggers if trusted
 		requiresFlags = { trusted_in_the_game = true, street_hustler = true },
-		blockedByFlags = { in_prison = true, supplier = true },
+		blockedByFlags = { in_prison = true, supplier = true, expanded_territory = true },
 		
 		choices = {
 			{
@@ -1437,14 +1440,15 @@ local events = {
 		text = "Your reputation for being diplomatic is spreading. A neutral party wants to negotiate a major deal through you.",
 		question = "Do you become a broker?",
 		category = "career",
-		weight = 6,
+		weight = 4,
 		minAge = 22,
 		maxAge = 50,
-		baseChance = 0.45,
-		cooldown = 5,
+		baseChance = 0.2, -- LOWERED
+		cooldown = 6, -- INCREASED
+		oneTime = true, -- Only once!
 		-- CRITICAL LINKAGE: Only triggers if you've been diplomatic
 		requiresFlags = { diplomatic_hustler = true, street_hustler = true },
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, street_broker = true },
 		
 		choices = {
 			{
@@ -1487,14 +1491,14 @@ local events = {
 		text = "The young hustlers are coming to you for advice. Your OG status is paying off.",
 		question = "How do you use this influence?",
 		category = "career",
-		weight = 6,
+		weight = 4,
 		minAge = 30,
 		maxAge = 60,
-		baseChance = 0.45,
-		cooldown = 4,
+		baseChance = 0.2, -- LOWERED
+		cooldown = 6, -- INCREASED
 		-- CRITICAL LINKAGE: Only triggers if you're an OG
 		requiresFlags = { street_og = true },
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, runs_organization = true, receiving_tribute = true },
 		
 		choices = {
 			{
@@ -1549,15 +1553,15 @@ local events = {
 		text = "Your family's support to quit is making a difference. They found you a job opportunity.",
 		question = "Do you take it?",
 		category = "career",
-		weight = 6,
+		weight = 5,
 		minAge = 18,
 		maxAge = 45,
-		baseChance = 0.5,
-		cooldown = 4,
+		baseChance = 0.3, -- LOWERED
+		cooldown = 5, -- INCREASED
 		oneTime = true,
 		-- CRITICAL LINKAGE: Only triggers if family is helping
 		requiresFlags = { family_support_to_quit = true, street_hustler = true },
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, family_saved_me = true, disappointed_family = true },
 		
 		choices = {
 			{
@@ -1605,14 +1609,14 @@ local events = {
 		text = "You've been laying low for a while. The police attention seems to have moved on.",
 		question = "What now?",
 		category = "career",
-		weight = 8,
+		weight = 6,
 		minAge = 18,
 		maxAge = 55,
-		baseChance = 0.55,
-		cooldown = 3,
+		baseChance = 0.35, -- LOWERED
+		cooldown = 4, -- INCREASED
 		-- CRITICAL LINKAGE: Only triggers if laying low
 		requiresFlags = { laying_low = true },
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, clean_exit = true },
 		
 		choices = {
 			{
@@ -1672,14 +1676,15 @@ local events = {
 		text = "That huge score changed everything. Now everyone knows you're sitting on serious cash.",
 		question = "How do you protect your wealth?",
 		category = "career",
-		weight = 6,
+		weight = 5,
 		minAge = 22,
 		maxAge = 55,
-		baseChance = 0.45,
-		cooldown = 5,
+		baseChance = 0.25, -- LOWERED
+		cooldown = 6, -- INCREASED
+		oneTime = true, -- Only once!
 		-- CRITICAL LINKAGE: Only triggers after a big score
 		requiresFlags = { big_score_winner = true },
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, has_legitimate_investments = true, paranoid_rich = true },
 		
 		choices = {
 			{
@@ -1738,14 +1743,14 @@ local events = {
 		text = "Running a legit business is HARD. Taxes, permits, employees... it's a lot.",
 		question = "How do you handle the pressure?",
 		category = "career",
-		weight = 8,
+		weight = 5,
 		minAge = 20,
 		maxAge = 55,
-		baseChance = 0.5,
-		cooldown = 4,
+		baseChance = 0.25, -- LOWERED
+		cooldown = 5, -- INCREASED
 		-- CRITICAL LINKAGE: Only triggers if you went legit
 		requiresFlags = { went_legit = true },
-		blockedByFlags = { in_prison = true, street_hustler = true },
+		blockedByFlags = { in_prison = true, street_hustler = true, successful_business_owner = true },
 		
 		choices = {
 			{
@@ -1808,14 +1813,15 @@ local events = {
 		text = "Word spread that you refused a loyalty test. Now you're getting cut out of deals.",
 		question = "How do you handle this isolation?",
 		category = "career",
-		weight = 10,
+		weight = 6,
 		minAge = 18,
 		maxAge = 50,
-		baseChance = 0.55,
-		cooldown = 4,
+		baseChance = 0.3, -- LOWERED
+		cooldown = 5, -- INCREASED
+		oneTime = true, -- Only once!
 		-- CRITICAL LINKAGE: Only triggers if untrusted
 		requiresFlags = { untrusted = true, street_hustler = true },
-		blockedByFlags = { in_prison = true },
+		blockedByFlags = { in_prison = true, redeemed = true, new_crew = true, solo_hustler = true },
 		
 		choices = {
 			{
