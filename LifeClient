@@ -3300,11 +3300,10 @@ local function buildEventModal()
 	bodyLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 4 or padSize(10)))
 	bodyLayout.Parent = bodySection
 
-	-- CRITICAL FIX: Scrollable container for body text
-	-- Uses AutomaticSize to shrink to fit short text, UISizeConstraint caps max height
+	-- Scrollable container for body text - FIXED height, content scrolls inside
 	EventUI.bodyScroll = Instance.new("ScrollingFrame")
-	EventUI.bodyScroll.Size = UDim2.new(1, 0, 0, 0)
-	EventUI.bodyScroll.AutomaticSize = Enum.AutomaticSize.Y  -- Shrinks to fit!
+	EventUI.bodyScroll.Size = UDim2.new(1, 0, 0, maxBodyHeight)
+	EventUI.bodyScroll.AutomaticSize = Enum.AutomaticSize.None
 	EventUI.bodyScroll.BackgroundTransparency = 1
 	EventUI.bodyScroll.BorderSizePixel = 0
 	EventUI.bodyScroll.ScrollBarThickness = Device.IS_MOBILE and 4 or 6
@@ -3315,12 +3314,6 @@ local function buildEventModal()
 	EventUI.bodyScroll.LayoutOrder = 1
 	EventUI.bodyScroll.ZIndex = 65
 	EventUI.bodyScroll.Parent = bodySection
-	
-	-- Initial max height constraint (will be updated per-event based on choice count)
-	local initialBodyConstraint = Instance.new("UISizeConstraint")
-	initialBodyConstraint.Name = "BodySizeConstraint"
-	initialBodyConstraint.MaxSize = Vector2.new(math.huge, maxBodyHeight)
-	initialBodyConstraint.Parent = EventUI.bodyScroll
 
 	local eventBodyTextSize = Device.IS_TINY_PHONE and 14 or (Device.IS_SMALL_PHONE and 16 or textSize(20))
 	EventUI.body = Instance.new("TextLabel")
@@ -4593,46 +4586,46 @@ showEvent = function(payload)
 		EventUI.question.Text  = payload.question or "What will you do?"
 
 		-- ═══════════════════════════════════════════════════════════════════════════════
-		-- CRITICAL FIX: Body scroll shrinks to fit short text, but caps at max for long text
-		-- User feedback: "HUGE GAP BETWEEN TEXT AND BUTTONS" - fixed by using AutomaticSize
+		-- Body scroll height: estimate based on text length, cap based on choice count
+		-- Short text = small scroll area (no gap), Long text = max height with scrolling
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		if EventUI.bodyScroll then
 			local localNumChoices = payload.choices and #payload.choices or 1
 			local bodyMaxH
 			
+			-- Max height based on number of choices (leave room for buttons)
 			if Device.IS_TINY_PHONE then
-				if localNumChoices >= 5 then bodyMaxH = 40
-				elseif localNumChoices >= 4 then bodyMaxH = 50
-				elseif localNumChoices >= 3 then bodyMaxH = 60
-				elseif localNumChoices >= 2 then bodyMaxH = 75
-				else bodyMaxH = 95 end
+				if localNumChoices >= 5 then bodyMaxH = 45
+				elseif localNumChoices >= 4 then bodyMaxH = 55
+				elseif localNumChoices >= 3 then bodyMaxH = 70
+				elseif localNumChoices >= 2 then bodyMaxH = 85
+				else bodyMaxH = 100 end
 			elseif Device.IS_SMALL_PHONE then
-				if localNumChoices >= 5 then bodyMaxH = 55
-				elseif localNumChoices >= 4 then bodyMaxH = 70
-				elseif localNumChoices >= 3 then bodyMaxH = 90
-				elseif localNumChoices >= 2 then bodyMaxH = 110
-				else bodyMaxH = 130 end
+				if localNumChoices >= 5 then bodyMaxH = 60
+				elseif localNumChoices >= 4 then bodyMaxH = 80
+				elseif localNumChoices >= 3 then bodyMaxH = 100
+				elseif localNumChoices >= 2 then bodyMaxH = 120
+				else bodyMaxH = 140 end
 			else
-				if localNumChoices >= 5 then bodyMaxH = 110
-				elseif localNumChoices >= 4 then bodyMaxH = 140
+				if localNumChoices >= 5 then bodyMaxH = 120
+				elseif localNumChoices >= 4 then bodyMaxH = 150
 				else bodyMaxH = 200 end
 			end
 			
-			-- Use AutomaticSize so short text = no gap, but constrain max height
-			EventUI.bodyScroll.Size = UDim2.new(1, 0, 0, 0)
-			EventUI.bodyScroll.AutomaticSize = Enum.AutomaticSize.Y
+			-- Estimate text height based on character count and font size
+			-- Rough estimate: ~45 chars per line on mobile, lineHeight * fontSize per line
+			local charsPerLine = Device.IS_TINY_PHONE and 30 or (Device.IS_SMALL_PHONE and 35 or 45)
+			local lineH = adjustedBodyTextSize * adjustedLineHeight
+			local estimatedLines = math.ceil(textLen / charsPerLine)
+			local estimatedHeight = estimatedLines * lineH + 10 -- +10 for padding
 			
-			-- Remove old constraint if exists, add new one
-			local oldConstraint = EventUI.bodyScroll:FindFirstChild("BodySizeConstraint")
-			if oldConstraint then oldConstraint:Destroy() end
+			-- Use smaller of estimated height or max height
+			local finalHeight = math.min(estimatedHeight, bodyMaxH)
+			finalHeight = math.max(finalHeight, 30) -- minimum 30px
 			
-			local sizeConstraint = Instance.new("UISizeConstraint")
-			sizeConstraint.Name = "BodySizeConstraint"
-			sizeConstraint.MaxSize = Vector2.new(math.huge, bodyMaxH)
-			sizeConstraint.Parent = EventUI.bodyScroll
-			
-			-- Enable scrolling only if content would overflow
-			EventUI.bodyScroll.ScrollingEnabled = true
+			EventUI.bodyScroll.AutomaticSize = Enum.AutomaticSize.None
+			EventUI.bodyScroll.Size = UDim2.new(1, 0, 0, finalHeight)
+			EventUI.bodyScroll.ScrollingEnabled = (estimatedHeight > bodyMaxH)
 		end
 
 		local choiceHandlers = {}
