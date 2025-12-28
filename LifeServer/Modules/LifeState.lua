@@ -862,7 +862,51 @@ end
 
 function LifeState:AddFeed(text)
 	if text and text ~= "" then
-		self.PendingFeed = text
+		-- CRITICAL FIX: Replace template variables like {{AGE}} in feed text!
+		-- User bug: "it says {{AGE}}! and not correctly working"
+		local processedText = text
+		
+		-- Basic replacements
+		processedText = processedText:gsub("{{AGE}}", tostring(self.Age or 0))
+		processedText = processedText:gsub("{{NAME}}", tostring(self.Name or "You"))
+		processedText = processedText:gsub("{{MONEY}}", tostring(self.Money or 0))
+		processedText = processedText:gsub("{{GENDER}}", tostring(self.Gender or "person"))
+		
+		-- Parent names from relationships
+		local motherName = "Mom"
+		local fatherName = "Dad"
+		local partnerName = "your partner"
+		if self.Relationships then
+			for id, rel in pairs(self.Relationships) do
+				if type(rel) == "table" then
+					local relType = (rel.type or rel.relationship or ""):lower()
+					local relRole = (rel.role or ""):lower()
+					if relType == "mother" or relRole == "mother" then
+						motherName = rel.name or rel.Name or "Mom"
+					elseif relType == "father" or relRole == "father" then
+						fatherName = rel.name or rel.Name or "Dad"
+					elseif relType == "partner" or relType == "spouse" or relRole == "partner" or relRole == "spouse" then
+						partnerName = rel.name or rel.Name or "your partner"
+					end
+				end
+			end
+		end
+		processedText = processedText:gsub("{{MOTHER_NAME}}", motherName)
+		processedText = processedText:gsub("{{FATHER_NAME}}", fatherName)
+		processedText = processedText:gsub("{{PARTNER_NAME}}", partnerName)
+		
+		-- Job info
+		if self.CurrentJob then
+			processedText = processedText:gsub("{{JOB_NAME}}", tostring(self.CurrentJob.name or "your job"))
+			processedText = processedText:gsub("{{COMPANY}}", tostring(self.CurrentJob.company or "the company"))
+			processedText = processedText:gsub("{{SALARY}}", tostring(self.CurrentJob.salary or 0))
+		else
+			processedText = processedText:gsub("{{JOB_NAME}}", "your job")
+			processedText = processedText:gsub("{{COMPANY}}", "the company")
+			processedText = processedText:gsub("{{SALARY}}", "0")
+		end
+		
+		self.PendingFeed = processedText
 	end
 	return self
 end

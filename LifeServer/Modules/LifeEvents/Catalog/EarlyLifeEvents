@@ -4391,7 +4391,9 @@ EarlyLifeEvents.events = {
 					state.Flags.problem_solver = true
 					state:ModifyStat("Smarts", 6)
 					state:ModifyStat("Happiness", 4)
-					state:AddFeed("🌟 PUZZLE MASTER! You solved a 5-year-old's puzzle at age {{AGE}}!")
+					-- CRITICAL FIX: Use actual age value instead of template variable
+					local ageText = tostring(state.Age or 1)
+					state:AddFeed("🌟 PUZZLE MASTER! You solved a 5-year-old's puzzle at age " .. ageText .. "!")
 				end,
 			},
 			{

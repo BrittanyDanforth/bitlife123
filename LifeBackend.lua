@@ -15587,6 +15587,37 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 		popupBody = "Something happened..."
 	end
 	
+	-- CRITICAL FIX: Replace any remaining template variables in popup body
+	-- User bug: "it says {{AGE}}! and not correctly working"
+	if type(popupBody) == "string" then
+		popupBody = popupBody:gsub("{{AGE}}", tostring(state.Age or 0))
+		popupBody = popupBody:gsub("{{NAME}}", tostring(state.Name or "You"))
+		popupBody = popupBody:gsub("{{MONEY}}", tostring(state.Money or 0))
+		popupBody = popupBody:gsub("{{GENDER}}", tostring(state.Gender or "person"))
+		-- Parent names
+		local motherName, fatherName = "Mom", "Dad"
+		if state.Relationships then
+			if state.Relationships.mother and state.Relationships.mother.name then
+				motherName = state.Relationships.mother.name
+			end
+			if state.Relationships.father and state.Relationships.father.name then
+				fatherName = state.Relationships.father.name
+			end
+		end
+		popupBody = popupBody:gsub("{{MOTHER_NAME}}", motherName)
+		popupBody = popupBody:gsub("{{FATHER_NAME}}", fatherName)
+		-- Job info
+		if state.CurrentJob then
+			popupBody = popupBody:gsub("{{JOB_NAME}}", tostring(state.CurrentJob.name or "your job"))
+			popupBody = popupBody:gsub("{{COMPANY}}", tostring(state.CurrentJob.company or "the company"))
+			popupBody = popupBody:gsub("{{SALARY}}", tostring(state.CurrentJob.salary or 0))
+		else
+			popupBody = popupBody:gsub("{{JOB_NAME}}", "your job")
+			popupBody = popupBody:gsub("{{COMPANY}}", "the company")
+			popupBody = popupBody:gsub("{{SALARY}}", "0")
+		end
+	end
+	
 	resultData = {
 		showPopup = true,
 		emoji = jailPopupEmoji or eventDef.emoji,
