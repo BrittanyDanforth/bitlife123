@@ -15411,29 +15411,93 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 		if not success then
 			warn("[LifeBackend] Event resolution error:", result)
 		elseif result and result.failed then
-			-- CRITICAL FIX: Handle choice eligibility/affordability failures!
-			-- User bug: "IT SAYS MOVING OUT BUT DIDNT CHECK IF IM BROKE"
-			-- Show the error message to the player instead of applying the choice
-			warn("[LifeBackend] Choice failed eligibility:", result.failReason)
-			
 			-- ═══════════════════════════════════════════════════════════════════════════════
-			-- CRITICAL FIX: CLEAR awaitingDecision and pendingEvents to prevent GAME-BREAKING SOFTLOCK!
+			-- CRITICAL FIX: When choice fails eligibility, FIND A FREE ALTERNATIVE!
 			-- User bug: "WHEN THAT CANT DO THAT! POPS UP IT BREAKS MY GAME COMPLETELY"
-			-- Bug: When choice fails eligibility, game was stuck because awaitingDecision wasn't cleared!
-			-- Player couldn't age up anymore - clicking age did NOTHING!
+			-- 
+			-- Solution: Find and auto-select the first FREE choice, or skip event
+			-- This prevents softlock and keeps the game moving!
 			-- ═══════════════════════════════════════════════════════════════════════════════
-			state.awaitingDecision = false
-			self.pendingEvents[player.UserId] = nil
+			local errorMessage = result.failReason or "You can't select this option right now."
+			warn("[LifeBackend] Choice", choiceIndex, "failed eligibility:", errorMessage)
 			
-			self:pushState(player, nil, {
-				showPopup = true,
-				emoji = "❌",
-				title = "Can't Do That!",
-				body = result.failReason or "You can't select this option right now.",
-				wasSuccess = false,
-			})
-			-- Don't continue with the rest of the event resolution
-			return
+			-- Track failed choices to prevent infinite recursion
+			eventDef._failedChoices = eventDef._failedChoices or {}
+			eventDef._failedChoices[choiceIndex] = true
+			
+			-- Try to find an affordable alternative choice
+			local alternativeChoiceIndex = nil
+			local playerMoney = state.Money or 0
+			
+			for i, c in ipairs(choices) do
+				-- Skip choices that failed (including from recursive calls)
+				if not eventDef._failedChoices[i] then
+					local choiceCost = 0
+					
+					-- Check effects.Money cost
+					if c.effects and c.effects.Money and c.effects.Money < 0 then
+						choiceCost = math.abs(c.effects.Money)
+					end
+					-- Check direct cost field
+					if c.cost and c.cost > 0 then
+						choiceCost = math.max(choiceCost, c.cost)
+					end
+					
+					-- Check if we can afford this choice
+					if playerMoney >= choiceCost then
+						-- Check eligibility function if it exists
+						local eligible = true
+						if c.eligibility and type(c.eligibility) == "function" then
+							local success, isEligible = pcall(c.eligibility, state)
+							if success and isEligible == false then
+								eligible = false
+							end
+						end
+						
+						if eligible then
+							alternativeChoiceIndex = i
+							-- Prefer free options (cost = 0)
+							if choiceCost == 0 then
+								break -- Found a free option, use it!
+							end
+						end
+					end
+				end
+			end
+			
+			if alternativeChoiceIndex then
+				-- Found an alternative! Auto-select it
+				warn("[LifeBackend] Auto-selecting alternative choice", alternativeChoiceIndex, "for player")
+				
+				-- Add message about what happened to state
+				local altChoice = choices[alternativeChoiceIndex]
+				local altText = altChoice.text or "another option"
+				
+				-- RECURSIVELY call resolvePendingEvent with the NEW choice
+				-- First, add a prefix to the feed so player knows what happened
+				if altChoice.feedText then
+					altChoice.feedText = "❌ Couldn't afford first choice.\n✅ " .. altChoice.feedText
+				elseif altChoice.feed then
+					altChoice.feed = "❌ Couldn't afford first choice.\n✅ " .. altChoice.feed
+				end
+				
+				-- Call ourselves with the alternative choice
+				return self:resolvePendingEvent(player, eventId, alternativeChoiceIndex)
+			else
+				-- No affordable alternative found - skip the event entirely
+				warn("[LifeBackend] No affordable choices available - skipping event")
+				state.awaitingDecision = false
+				self.pendingEvents[player.UserId] = nil
+				
+				self:pushState(player, "💸 " .. errorMessage .. " (Event skipped)", {
+					showPopup = true,
+					emoji = "💸",
+					title = "Can't Afford Any Option",
+					body = errorMessage .. "\n\nEvent skipped - save up some money first!",
+					wasSuccess = false,
+				})
+				return
+			end
 		end
 		effectsSummary = {
 			Happiness = (state.Stats.Happiness - preStats.Happiness),
