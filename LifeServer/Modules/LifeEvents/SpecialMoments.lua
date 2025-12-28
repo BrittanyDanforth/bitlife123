@@ -162,7 +162,7 @@ SpecialMoments.events = {
 						state:ModifyStat("Happiness", 15)
 						state.Flags = state.Flags or {}
 						state.Flags.first_apartment = true
-						state:AddFeed("🏠 YOUR OWN PLACE! Freedom! Adulting! Walking around naked!")
+						state:AddFeed("🏠 YOUR OWN PLACE! Freedom! Adulting! Your own rules!")
 					elseif roll < 0.85 then
 						state:ModifyStat("Happiness", 10)
 						state.Flags = state.Flags or {}

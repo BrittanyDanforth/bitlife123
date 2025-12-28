@@ -119,7 +119,7 @@ EarlyLifeEvents.events = {
 					elseif roll <= 80 then
 						state:ModifyStat("Health", 2)
 						state:ModifyStat("Happiness", -2)
-						state:AddFeed("🏥 You screamed bloody murder, but you're healthy!")
+						state:AddFeed("🏥 You screamed SO LOUD, but you're healthy!")
 					else
 						state:ModifyStat("Health", 1)
 						state:ModifyStat("Happiness", -4)

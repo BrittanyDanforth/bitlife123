@@ -2355,7 +2355,7 @@ Career.events = {
 },
 {
 	id = "retail_difficult_customer",
-	title = "Customer From Hell",
+	title = "Nightmare Customer",
 	emoji = "😤",
 	text = "A customer is screaming at you over something that isn't your fault.",
 	question = "How do you handle this Karen/Kevin?",

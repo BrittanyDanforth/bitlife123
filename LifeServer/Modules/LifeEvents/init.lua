@@ -362,7 +362,7 @@ function LifeEvents.init()
 		
 		-- ══════════════════════════════════════════════════════════════════════════════
 		-- RANDOM LIFE EVENTS - For variety so no two lives are the same!
-		-- User request: "ENSURE EVERY LIFE ISN'T THE SAME CREATE SO MUCH GOOD AS HELL"
+		-- User request: "ENSURE EVERY LIFE ISN'T THE SAME CREATE SO MUCH GOOD CONTENT"
 		-- ══════════════════════════════════════════════════════════════════════════════
 		{ name = "RandomLifeEvents",          category = "random" },            -- Random encounters, luck, surprises
 		{ name = "YoungLifeEvents",           category = "childhood" },         -- Childhood and teen random events

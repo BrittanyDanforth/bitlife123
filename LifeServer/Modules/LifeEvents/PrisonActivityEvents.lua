@@ -544,7 +544,7 @@ PrisonEvents.Riot = {
 			{
 				text = "Settle a score",
 				feedback = {
-					"You find that inmate who's been making your life hell.",
+					"You find that inmate who's been making your life miserable.",
 					"Time for payback with no witnesses.",
 					"This is personal.",
 				},

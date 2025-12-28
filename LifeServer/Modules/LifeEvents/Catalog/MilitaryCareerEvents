@@ -326,7 +326,7 @@ MilitaryCareerEvents.events = {
 						state:ModifyStat("Happiness", 10)
 						state.Flags = state.Flags or {}
 						state.Flags.mission_focused_commander = true
-						state:AddFeed("⚔️ Mission accomplished. Acceptable casualties. War is hell.")
+						state:AddFeed("⚔️ Mission accomplished. Acceptable casualties. War is tough.")
 					else
 						state:ModifyStat("Happiness", -15)
 						state:AddFeed("⚔️ Mission failed AND took casualties. Heavy burden to carry.")

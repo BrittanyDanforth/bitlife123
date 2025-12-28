@@ -171,7 +171,7 @@ RapperContentCreatorEvents.events = {
 		id = "rapper_first_track",
 		title = "🎤 Recording Your First Track",
 		emoji = "🎤",
-		text = "You've been writing bars in your Notes app for MONTHS. Rhymes in the shower, freestyling on the bus, beatboxing in class. Now it's time to make something REAL. You found a basement studio run by some dude named Marcus who charges $50/hour. The equipment is old, the room smells like weed and pizza, but this is where legends start. Your heart is pounding. This is the moment you stop being someone who WANTS to rap and become someone who ACTUALLY raps. What sound defines YOU?",
+		text = "You've been writing bars in your Notes app for MONTHS. Rhymes in the shower, freestyling on the bus, beatboxing in class. Now it's time to make something REAL. You found a basement studio run by some dude named Marcus who charges $50/hour. The equipment is old, the room smells like sweat and pizza, but this is where legends start. Your heart is pounding. This is the moment you stop being someone who WANTS to rap and become someone who ACTUALLY raps. What sound defines YOU?",
 		question = "This first track will shape your whole career. What's your style?",
 		minAge = 14, maxAge = 55,
 		baseChance = 1.0,

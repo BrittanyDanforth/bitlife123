@@ -29,7 +29,7 @@ local function shouldBlockCrimeForRoyalty(state, eventId)
 		-- CRITICAL FIX: Roblox TOS - Removed drug reference
 		local seriousCrimes = {
 			"smuggling", "armed_robbery", "burglary", "car_theft", "fraud",
-			"assault", "murder", "kidnapping", "heist", "gang"
+			"assault", "serious_crime", "kidnapping", "heist", "gang"
 		}
 		eventId = (eventId or ""):lower()
 		for _, crime in ipairs(seriousCrimes) do
@@ -1134,7 +1134,7 @@ local events = {
 				onResolve = function(state)
 					local caught = RANDOM:NextNumber() < 0.20
 					if caught then
-						local years = incarceratePlayer(state, 20, 50, "murder")
+						local years = incarceratePlayer(state, 20, 50, "serious crime")
 						if state.AddFeed then
 							state:AddFeed(string.format("💀 Evidence tied you to the hit. Life sentence: %.1f years.", years))
 						end

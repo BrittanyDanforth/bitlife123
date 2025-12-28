@@ -188,7 +188,7 @@ local events = {
     {
         id = "fast_food_rush_hour",
         emoji = "🍔",
-        title = "The Lunch Rush From Hell",
+        title = "The WORST Lunch Rush",
         text = "It's noon on a Saturday. The line is OUT THE DOOR. Someone called in sick. The fryer is making weird noises. A kid just THREW UP in the play area. Your manager is hiding in the office. The drive-thru is 20 cars deep. Orders are piling up. Everyone is screaming. This is your Vietnam. This is your test.",
         question = "How do you survive?",
         category = "career_service",
