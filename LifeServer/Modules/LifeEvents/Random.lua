@@ -2705,12 +2705,13 @@ Random.events = {
 		text = "Another day homeless. The streets are harsh and unforgiving.",
 		question = "How do you survive today?",
 		minAge = 18, maxAge = 80,
-		baseChance = 0.6, -- CRITICAL FIX: Reduced from 0.9 to prevent spam
-		cooldown = 3, -- CRITICAL FIX: Increased from 1 to prevent spam
-		category = "homeless", -- CRITICAL FIX: Proper category
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.6
+		cooldown = 4, -- CRITICAL FIX: Increased from 3
+		maxOccurrences = 8, -- CRITICAL FIX: Limit homeless events per life - can't be stuck forever
+		category = "homeless",
 		tags = { "homeless", "survival" },
 		requiresFlags = { homeless = true },
-		blockedByFlags = { in_prison = true }, -- CRITICAL FIX: Can't be homeless in prison
+		blockedByFlags = { in_prison = true, renting = true, has_apartment = true, has_home = true }, -- CRITICAL FIX: Block if has home!
 
 		choices = {
 			{ 

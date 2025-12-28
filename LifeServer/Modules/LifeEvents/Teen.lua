@@ -203,8 +203,10 @@ Teen.events = {
 				-- CRITICAL FIX: Actually create the partner object!
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
-					local isMale = state.Gender == "male" and false or (state.Gender == "female" and true or math.random() > 0.5)
-					local names = isMale 
+					-- CRITICAL FIX: Partner should be OPPOSITE gender by default!
+					local playerGender = state.Gender or "male"
+					local partnerIsMale = (playerGender == "female") -- If player is female, partner is male
+					local names = partnerIsMale 
 						and {"Jake", "Tyler", "Brandon", "Kyle", "Zach", "Dylan", "Josh", "Austin", "Connor", "Trevor"}
 						or {"Emma", "Olivia", "Hannah", "Madison", "Chloe", "Alexis", "Taylor", "Savannah", "Kayla", "Hailey"}
 					local partnerName = names[math.random(1, #names)]
@@ -212,10 +214,10 @@ Teen.events = {
 						id = "partner",
 						name = partnerName,
 						type = "romantic",
-						role = isMale and "Boyfriend" or "Girlfriend",
+						role = partnerIsMale and "Boyfriend" or "Girlfriend",
 						relationship = 70,
 						age = state.Age or 15,
-						gender = isMale and "male" or "female",
+						gender = partnerIsMale and "male" or "female",
 						alive = true,
 						metThrough = "high_school",
 						isClassmate = true,
@@ -868,8 +870,10 @@ Teen.events = {
 						state.Flags.dating = true
 						-- CRITICAL FIX: Actually create the partner object!
 						state.Relationships = state.Relationships or {}
-						local isMale = state.Gender == "male" and false or (state.Gender == "female" and true or math.random() > 0.5)
-						local names = isMale 
+						-- CRITICAL FIX: Partner should be OPPOSITE gender by default!
+						local playerGender = state.Gender or "male"
+						local partnerIsMale = (playerGender == "female") -- If player is female, partner is male
+						local names = partnerIsMale 
 							and {"Ryan", "Tyler", "Brandon", "Kyle", "Zach", "Dylan", "Josh", "Austin", "Connor", "Trevor"}
 							or {"Lily", "Sophie", "Grace", "Chloe", "Zoe", "Bella", "Mia", "Emma", "Ava", "Harper"}
 						local partnerName = names[math.random(1, #names)]
@@ -877,10 +881,10 @@ Teen.events = {
 							id = "partner",
 							name = partnerName,
 							type = "romantic",
-							role = isMale and "Boyfriend" or "Girlfriend",
+							role = partnerIsMale and "Boyfriend" or "Girlfriend",
 							relationship = 65,
 							age = state.Age or 15,
-							gender = isMale and "male" or "female",
+							gender = partnerIsMale and "male" or "female",
 							alive = true,
 							metThrough = "summer_vacation",
 							longDistance = true,
@@ -938,8 +942,10 @@ Teen.events = {
 		text = "Your family takes you on a college tour.",
 		question = "What kind of school appeals to you?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.6,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.5, -- CRITICAL FIX: Reduced
+		cooldown = 5,
+		maxOccurrences = 2, -- Can tour twice max
+		oneTime = true, -- CRITICAL FIX: Only one college tour decision needed
 
 		choices = {
 			{ text = "Big university with lots of options", effects = { Happiness = 4, Smarts = 2 }, setFlags = { wants_big_school = true }, feedText = "You loved the energy of a big campus!" },
@@ -1482,8 +1488,10 @@ Teen.events = {
 						state.Flags.dating = true
 						-- Create partner
 						state.Relationships = state.Relationships or {}
-						local isMale = state.Gender == "male" and false or (state.Gender == "female" and true or math.random() > 0.5)
-						local names = isMale 
+						-- CRITICAL FIX: Partner should be OPPOSITE gender by default!
+						local playerGender = state.Gender or "male"
+						local partnerIsMale = (playerGender == "female") -- If player is female, partner is male
+						local names = partnerIsMale 
 							and {"Mason", "Ethan", "Noah", "Liam", "Lucas", "Oliver", "Aiden", "Elijah"}
 							or {"Ava", "Isabella", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn", "Luna"}
 						local partnerName = names[math.random(1, #names)]
@@ -1491,10 +1499,10 @@ Teen.events = {
 							id = "partner",
 							name = partnerName,
 							type = "romantic",
-							role = isMale and "Boyfriend" or "Girlfriend",
+							role = partnerIsMale and "Boyfriend" or "Girlfriend",
 							relationship = 75,
 							age = state.Age or 15,
-							gender = isMale and "male" or "female",
+							gender = partnerIsMale and "male" or "female",
 							alive = true,
 							metThrough = "school",
 						}
@@ -1522,8 +1530,10 @@ Teen.events = {
 					state.Flags.has_partner = true
 					state.Flags.dating = true
 					state.Relationships = state.Relationships or {}
-					local isMale = state.Gender == "male" and false or (state.Gender == "female" and true or math.random() > 0.5)
-					local names = isMale 
+					-- CRITICAL FIX: Partner should be OPPOSITE gender by default!
+					local playerGender = state.Gender or "male"
+					local partnerIsMale = (playerGender == "female") -- If player is female, partner is male
+					local names = partnerIsMale 
 						and {"Mason", "Ethan", "Noah", "Liam", "Lucas", "Oliver", "Aiden", "Elijah"}
 						or {"Ava", "Isabella", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn", "Luna"}
 					local partnerName = names[math.random(1, #names)]
@@ -1531,10 +1541,10 @@ Teen.events = {
 						id = "partner",
 						name = partnerName,
 						type = "romantic",
-						role = isMale and "Boyfriend" or "Girlfriend",
+						role = partnerIsMale and "Boyfriend" or "Girlfriend",
 						relationship = 70,
 						age = state.Age or 15,
-						gender = isMale and "male" or "female",
+						gender = partnerIsMale and "male" or "female",
 						alive = true,
 						metThrough = "school",
 					}

@@ -876,6 +876,9 @@ function LifeState:AddFeed(text)
 		local motherName = "Mom"
 		local fatherName = "Dad"
 		local partnerName = "your partner"
+		local friendName = "your friend"
+		local siblingName = "your sibling"
+		local childName = "your child"
 		if self.Relationships then
 			for id, rel in pairs(self.Relationships) do
 				if type(rel) == "table" then
@@ -885,15 +888,29 @@ function LifeState:AddFeed(text)
 						motherName = rel.name or rel.Name or "Mom"
 					elseif relType == "father" or relRole == "father" then
 						fatherName = rel.name or rel.Name or "Dad"
-					elseif relType == "partner" or relType == "spouse" or relRole == "partner" or relRole == "spouse" then
+					elseif relType == "partner" or relType == "spouse" or relType == "romantic" or relType == "fiance" or relRole == "partner" or relRole == "spouse" or relRole == "boyfriend" or relRole == "girlfriend" or relRole == "husband" or relRole == "wife" then
 						partnerName = rel.name or rel.Name or "your partner"
+					elseif relType == "friend" or relRole == "friend" then
+						friendName = rel.name or rel.Name or "your friend"
+					elseif relType == "sibling" or relRole == "sibling" or relRole == "brother" or relRole == "sister" then
+						siblingName = rel.name or rel.Name or "your sibling"
+					elseif relType == "child" or relRole == "child" or relRole == "son" or relRole == "daughter" then
+						childName = rel.name or rel.Name or "your child"
 					end
 				end
+			end
+			-- Also check direct partner reference
+			if self.Relationships.partner and type(self.Relationships.partner) == "table" then
+				partnerName = self.Relationships.partner.name or self.Relationships.partner.Name or partnerName
 			end
 		end
 		processedText = processedText:gsub("{{MOTHER_NAME}}", motherName)
 		processedText = processedText:gsub("{{FATHER_NAME}}", fatherName)
 		processedText = processedText:gsub("{{PARTNER_NAME}}", partnerName)
+		-- CRITICAL FIX: Add FRIEND_NAME and other relationship templates!
+		processedText = processedText:gsub("{{FRIEND_NAME}}", friendName)
+		processedText = processedText:gsub("{{SIBLING_NAME}}", siblingName)
+		processedText = processedText:gsub("{{CHILD_NAME}}", childName)
 		
 		-- Job info
 		if self.CurrentJob then

@@ -670,8 +670,9 @@ Childhood.events = {
 		text = "You fell off the monkey bars!",
 		question = "Do you tell a grown-up?",
 		minAge = 4, maxAge = 10,
-		baseChance = 0.6,
-		cooldown = 3,
+		baseChance = 0.4, -- CRITICAL FIX: Reduced from 0.6
+		cooldown = 5, -- CRITICAL FIX: Increased
+		maxOccurrences = 2, -- Can only fall twice per childhood
 
 		stage = STAGE,
 		ageBand = "childhood",
@@ -779,8 +780,10 @@ Childhood.events = {
 		text = "Your school is having a talent show! Will you participate?",
 		question = "What's your act?",
 		minAge = 6, maxAge = 12,
-		baseChance = 0.6,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.45, -- CRITICAL FIX: Reduced from 0.6
+		cooldown = 5,
+		maxOccurrences = 2, -- CRITICAL FIX: Can only do talent show twice per childhood
+		blockedByFlags = { in_prison = true, dropped_out = true },
 
 		stage = STAGE,
 		ageBand = "childhood",

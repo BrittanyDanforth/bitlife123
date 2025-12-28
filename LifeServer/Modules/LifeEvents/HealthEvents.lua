@@ -991,9 +991,9 @@ HealthEvents.events = {
 		emoji = "🎗️",
 		text = "The biopsy results have come back. The news is serious.",
 		question = "Your diagnosis: CANCER DETECTED\n\n🔬 Finding: Malignant cells detected\n⚠️ Severity: CRITICAL\n🏥 Treatment: Chemotherapy/Radiation/Surgery\n⏰ Early detection increases survival rate\n\nThis is a life-changing diagnosis.",
-		minAge = 20, maxAge = 100,
-		baseChance = 0.18,
-		cooldown = 40,
+		minAge = 30, maxAge = 100, -- CRITICAL FIX: Cancer rare under 30
+		baseChance = 0.10, -- CRITICAL FIX: Reduced from 0.18 - cancer is rare
+		cooldown = 50, -- CRITICAL FIX: Increased - cancer shouldn't pop up often
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",

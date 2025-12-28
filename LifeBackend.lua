@@ -16230,21 +16230,23 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 			state.Relationships = state.Relationships or {}
 			state.Flags = state.Flags or {}
 			
-			-- Generate partner
-			local isMale = RANDOM:NextNumber() > 0.5
+			-- CRITICAL FIX: Partner should be OPPOSITE gender by default!
+			-- User bug: "As a girl it only lets me romance girls"
+			local playerGender = (state.Gender or "male"):lower()
+			local partnerIsMale = (playerGender == "female") -- If player is female, partner is male
 			local maleNames = {"James", "Michael", "David", "John", "Alex", "Ryan", "Chris", "Brandon", "Tyler", "Jake", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Ben", "Sam", "Will", "Matt", "Nick"}
 			local femaleNames = {"Emma", "Olivia", "Sophia", "Ava", "Isabella", "Mia", "Emily", "Grace", "Lily", "Chloe", "Harper", "Aria", "Luna", "Zoe", "Riley", "Ella", "Scarlett", "Victoria", "Madison", "Hannah"}
-			local names = isMale and maleNames or femaleNames
+			local names = partnerIsMale and maleNames or femaleNames
 			local partnerName = names[RANDOM:NextInteger(1, #names)]
 			
 			state.Relationships.partner = {
 				id = "partner",
 				name = partnerName,
 				type = "romantic",
-				role = isMale and "Boyfriend" or "Girlfriend",
+				role = partnerIsMale and "Boyfriend" or "Girlfriend",
 				relationship = RANDOM:NextInteger(55, 75),
 				age = (state.Age or 20) + RANDOM:NextInteger(-5, 5),
-				gender = isMale and "male" or "female",
+				gender = partnerIsMale and "male" or "female",
 				alive = true,
 				metAge = state.Age,
 				metYear = state.Year or 2025,

@@ -486,8 +486,10 @@ EarlyLifeEvents.events = {
 		text = "An older kid at school has been picking on you.",
 		question = "How do you handle this?",
 		minAge = 5, maxAge = 10,
-		baseChance = 0.6,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.4, -- CRITICAL FIX: Reduced from 0.6
+		cooldown = 6, -- CRITICAL FIX: Increased
+		maxOccurrences = 2, -- Only twice per childhood
+		blockedByFlags = { in_prison = true, dropped_out = true },
 		
 		choices = {
 			{
@@ -769,8 +771,10 @@ EarlyLifeEvents.events = {
 		text = "You've been invited to sleep over at a friend's house!",
 		question = "How does the sleepover go?",
 		minAge = 7, maxAge = 12,
-		baseChance = 0.7,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7
+		cooldown = 5, -- CRITICAL FIX: Increased
+		maxOccurrences = 3, -- Can have a few sleepovers
+		blockedByFlags = { in_prison = true, dropped_out = true },
 		
 		choices = {
 			{
