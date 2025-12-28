@@ -941,7 +941,8 @@ Adult.events = {
 				-- CRITICAL FIX #2008: Partner gender based on PLAYER gender!
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
-					local playerGender = state.Gender or "male"
+					-- BUG FIX: Normalize gender to lowercase for comparison
+					local playerGender = (state.Gender or "male"):lower()
 					local partnerIsMale = (playerGender == "female")
 					local names = partnerIsMale 
 						and {"Mike", "Chris", "Jason", "Brian", "Matt", "Steve", "Dave", "Tom", "Nick", "Ben"}

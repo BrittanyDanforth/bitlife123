@@ -62,6 +62,29 @@ F.Body = F.Body or DEFAULT_FONT
 F.Title = F.Title or DEFAULT_FONT
 F.Button = F.Button or DEFAULT_FONT
 
+-- BUG FIX: Create wrapper function to always return valid font
+local function getFont(fontKey)
+	local font = F[fontKey]
+	if font and type(font) == "userdata" then
+		return font
+	end
+	return DEFAULT_FONT
+end
+
+-- Apply safe fonts to F table (ensures all access is safe)
+local SafeF = setmetatable({}, {
+	__index = function(_, key)
+		local font = rawget(F, key)
+		if font and type(font) == "userdata" then
+			return font
+		end
+		return DEFAULT_FONT
+	end
+})
+
+-- Replace F with SafeF for all subsequent use
+F = SafeF
+
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- COLOR SAFETY
 -- Ensure ALL colors exist so TextColor3/BackgroundColor3 never get nil.

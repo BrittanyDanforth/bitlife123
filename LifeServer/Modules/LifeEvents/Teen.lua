@@ -204,7 +204,8 @@ Teen.events = {
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
 					-- CRITICAL FIX: Partner should be OPPOSITE gender by default!
-					local playerGender = state.Gender or "male"
+					-- BUG FIX: Normalize gender to lowercase for comparison
+					local playerGender = (state.Gender or "male"):lower()
 					local partnerIsMale = (playerGender == "female") -- If player is female, partner is male
 					local names = partnerIsMale 
 						and {"Jake", "Tyler", "Brandon", "Kyle", "Zach", "Dylan", "Josh", "Austin", "Connor", "Trevor"}
@@ -873,7 +874,8 @@ Teen.events = {
 						-- CRITICAL FIX: Actually create the partner object!
 						state.Relationships = state.Relationships or {}
 						-- CRITICAL FIX: Partner should be OPPOSITE gender by default!
-						local playerGender = state.Gender or "male"
+						-- BUG FIX: Normalize gender to lowercase for comparison
+						local playerGender = (state.Gender or "male"):lower()
 						local partnerIsMale = (playerGender == "female") -- If player is female, partner is male
 						local names = partnerIsMale 
 							and {"Ryan", "Tyler", "Brandon", "Kyle", "Zach", "Dylan", "Josh", "Austin", "Connor", "Trevor"}
@@ -1491,7 +1493,8 @@ Teen.events = {
 						-- Create partner
 						state.Relationships = state.Relationships or {}
 						-- CRITICAL FIX: Partner should be OPPOSITE gender by default!
-						local playerGender = state.Gender or "male"
+						-- BUG FIX: Normalize gender to lowercase for comparison
+						local playerGender = (state.Gender or "male"):lower()
 						local partnerIsMale = (playerGender == "female") -- If player is female, partner is male
 						local names = partnerIsMale 
 							and {"Mason", "Ethan", "Noah", "Liam", "Lucas", "Oliver", "Aiden", "Elijah"}
@@ -1533,7 +1536,8 @@ Teen.events = {
 					state.Flags.dating = true
 					state.Relationships = state.Relationships or {}
 					-- CRITICAL FIX: Partner should be OPPOSITE gender by default!
-					local playerGender = state.Gender or "male"
+					-- BUG FIX: Normalize gender to lowercase for comparison
+					local playerGender = (state.Gender or "male"):lower()
 					local partnerIsMale = (playerGender == "female") -- If player is female, partner is male
 					local names = partnerIsMale 
 						and {"Mason", "Ethan", "Noah", "Liam", "Lucas", "Oliver", "Aiden", "Elijah"}

@@ -1111,7 +1111,8 @@ Career.events = {
 				-- CRITICAL FIX #2009: Partner gender based on PLAYER gender!
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
-					local playerGender = state.Gender or "male"
+					-- BUG FIX: Normalize gender to lowercase for comparison
+					local playerGender = (state.Gender or "male"):lower()
 					local partnerIsMale = (playerGender == "female")
 					local names = partnerIsMale 
 						and {"Brian", "Kevin", "Scott", "Greg", "Craig", "Derek", "Todd", "Chad", "Brett", "Lance"}
@@ -1143,7 +1144,8 @@ Career.events = {
 				-- CRITICAL FIX #2010: Partner gender based on PLAYER gender!
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
-					local playerGender = state.Gender or "male"
+					-- BUG FIX: Normalize gender to lowercase for comparison
+					local playerGender = (state.Gender or "male"):lower()
 					local partnerIsMale = (playerGender == "female")
 					local names = partnerIsMale 
 						and {"Brian", "Kevin", "Scott", "Greg", "Craig", "Derek", "Todd", "Chad", "Brett", "Lance"}

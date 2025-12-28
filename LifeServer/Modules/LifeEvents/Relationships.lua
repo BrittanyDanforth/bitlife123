@@ -36,7 +36,8 @@ Relationships.events = {
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
 					-- CRITICAL FIX: Partner should be OPPOSITE gender by default!
-					local playerGender = state.Gender or "male"
+					-- BUG FIX: Normalize gender to lowercase for comparison
+					local playerGender = (state.Gender or "male"):lower()
 					local partnerIsMale = (playerGender == "female") -- If player is female, partner is male
 					local names = partnerIsMale 
 						and {"James", "Michael", "David", "Chris", "Ryan", "Alex", "Matt", "Jake", "Tyler", "Jordan", "Liam", "Noah", "Ethan", "Mason", "Lucas"}
@@ -86,7 +87,7 @@ Relationships.events = {
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
 					-- CRITICAL FIX: Partner should be OPPOSITE gender by default!
-					local playerGender = state.Gender or "male"
+					local playerGender = (state.Gender or "male"):lower()
 					local partnerIsMale = (playerGender == "female") -- If player is female, partner is male
 					local names = partnerIsMale 
 						and {"Daniel", "Marcus", "Andrew", "Joshua", "Brandon", "Kevin", "Justin", "Eric", "Sean", "Derek", "William", "Benjamin", "Henry", "Alexander", "Sebastian"}
@@ -866,7 +867,7 @@ Relationships.events = {
 						state.Flags.great_first_date = true
 						-- CRITICAL FIX #2003: Partner gender based on PLAYER gender!
 						state.Relationships = state.Relationships or {}
-						local playerGender = state.Gender or "male"
+						local playerGender = (state.Gender or "male"):lower()
 						local partnerIsMale = (playerGender == "female")
 						local names = partnerIsMale 
 							and {"Liam", "Noah", "Oliver", "Elijah", "Lucas", "Mason", "Logan", "Henry", "Jack", "Owen"}
@@ -908,7 +909,7 @@ Relationships.events = {
 						state.Flags.dating = true
 						-- CRITICAL FIX #2004: Partner gender based on PLAYER gender!
 						state.Relationships = state.Relationships or {}
-						local playerGender = state.Gender or "male"
+						local playerGender = (state.Gender or "male"):lower()
 						local partnerIsMale = (playerGender == "female")
 						local names = partnerIsMale 
 							and {"Ethan", "Aiden", "Jackson", "Sebastian", "Mateo", "Leo", "Asher", "Benjamin", "Ezra", "Miles"}
@@ -946,7 +947,7 @@ Relationships.events = {
 						state.Flags.dating = true
 						-- CRITICAL FIX #2005: Partner gender based on PLAYER gender!
 						state.Relationships = state.Relationships or {}
-						local playerGender = state.Gender or "male"
+						local playerGender = (state.Gender or "male"):lower()
 						local partnerIsMale = (playerGender == "female")
 						local names = partnerIsMale 
 							and {"Carter", "Jayden", "Luke", "Dylan", "Grayson", "Isaac", "Nathan", "Caleb", "Ryan", "Adrian"}
@@ -997,7 +998,7 @@ Relationships.events = {
 				-- CRITICAL FIX #2006: Partner gender based on PLAYER gender!
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
-					local playerGender = state.Gender or "male"
+					local playerGender = (state.Gender or "male"):lower()
 					local partnerIsMale = (playerGender == "female")
 					local names = partnerIsMale 
 						and {"Jason", "Kyle", "Brian", "Steven", "Patrick", "Nathan", "Cody", "Trevor", "Austin", "Zach"}
@@ -2022,7 +2023,7 @@ Relationships.events = {
 				-- CRITICAL FIX #2007: Partner gender based on PLAYER gender!
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
-					local playerGender = state.Gender or "male"
+					local playerGender = (state.Gender or "male"):lower()
 					local partnerIsMale = (playerGender == "female")
 					local names = partnerIsMale 
 						and {"Richard", "Thomas", "Gregory", "Peter", "Jeffrey", "Mark", "Timothy", "Douglas", "Scott", "Gary"}

@@ -5885,8 +5885,12 @@ end)()
 	IntroUI.godModeStartBtn.MouseButton1Click:Connect(function()
 		local cName = GodModeCreateData.customName:gsub("^%s+", ""):gsub("%s+$", "")
 		if cName == "" then
-			local n = GodModeCreateData.gender == "Male" and NameData.currentMaleNames or NameData.currentFemaleNames
-			cName = #n > 0 and n[1] or (GodModeCreateData.gender == "Male" and "John Doe" or "Jane Doe")
+			-- BUG FIX: Guard against nil NameData (may not be initialized yet)
+			local n = {}
+			if NameData and NameData.currentMaleNames and NameData.currentFemaleNames then
+				n = GodModeCreateData.gender == "Male" and NameData.currentMaleNames or NameData.currentFemaleNames
+			end
+			cName = (n and #n > 0) and n[1] or (GodModeCreateData.gender == "Male" and "John Doe" or "Jane Doe")
 		end
 		SetLifeInfo:FireServer(cName, GodModeCreateData.gender)
 		-- CRITICAL FIX #28: Pass royal birth information to server
