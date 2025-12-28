@@ -59,8 +59,11 @@ Adult.events = {
 
 		choices = {
 			{
-				text = "Get my own apartment",
+				text = "Get my own apartment ($500 deposit)",
 				effects = { Happiness = 10, Money = -500 },
+				-- CRITICAL FIX #SOFTLOCK: Add eligibility check to prevent game-breaking bug!
+				-- User bug: "IT SAYS MOVING OUT YOUR OWN PLACE! BUT DIDNT CHECK IF IM BROKE"
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 You need at least $500 for deposit! Save up first." end,
 				-- CRITICAL FIX: Set ALL the housing flags that other systems check for!
 				-- AssetsScreen checks: has_apartment, renting, moved_out, has_own_place
 				-- Homeless events check: moved_out, has_own_place, renting, has_apartment
@@ -88,8 +91,10 @@ Adult.events = {
 				end,
 			},
 			{
-				text = "Find roommates",
+				text = "Find roommates ($200 deposit)",
 				effects = { Happiness = 5, Money = -200 },
+				-- CRITICAL FIX #SOFTLOCK: Add eligibility check!
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 You need at least $200 for your share of deposit!" end,
 				-- CRITICAL FIX: Roommates still means moved out!
 				setFlags = { 
 					has_roommates = true,
@@ -1776,10 +1781,16 @@ Adult.events = {
 		requiresFlags = { married = true },
 
 		choices = {
-			{ text = "Amicable split", effects = { Happiness = -10, Money = -5000 }, setFlags = { divorced = true, recently_single = true }, feedText = "You parted ways peacefully. Still hurts." },
-			{ text = "Bitter court battle", effects = { Happiness = -20, Money = -20000, Health = -5 }, setFlags = { divorced = true, messy_divorce = true, recently_single = true }, feedText = "The divorce was ugly and expensive." },
-			{ text = "You cheated - you're the villain", effects = { Happiness = -15, Money = -10000 }, setFlags = { divorced = true, cheater = true, recently_single = true }, feedText = "You destroyed the marriage. Living with guilt." },
-			{ text = "They cheated - you're devastated", effects = { Happiness = -25, Money = -5000, Health = -5 }, setFlags = { divorced = true, cheated_on = true, recently_single = true }, feedText = "Betrayal. The trust is shattered." },
+			{ text = "Amicable split ($5,000)", effects = { Happiness = -10, Money = -5000 }, setFlags = { divorced = true, recently_single = true }, feedText = "You parted ways peacefully. Still hurts.",
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Can't afford divorce settlement ($5,000 needed)" end,
+			},
+			{ text = "Bitter court battle ($20,000)", effects = { Happiness = -20, Money = -20000, Health = -5 }, setFlags = { divorced = true, messy_divorce = true, recently_single = true }, feedText = "The divorce was ugly and expensive.",
+				eligibility = function(state) return (state.Money or 0) >= 20000, "💸 Can't afford court battle ($20,000 needed)" end,
+			},
+			{ text = "You cheated - accept the blame", effects = { Happiness = -15, Money = -10000 }, setFlags = { divorced = true, cheater = true, recently_single = true }, feedText = "You destroyed the marriage. Living with guilt.",
+				eligibility = function(state) return (state.Money or 0) >= 10000, "💸 Can't afford alimony ($10,000 needed)" end,
+			},
+			{ text = "They cheated - take what you can", effects = { Happiness = -25, Money = 2000, Health = -5 }, setFlags = { divorced = true, cheated_on = true, recently_single = true }, feedText = "Betrayal. At least you got some compensation." },
 		},
 		-- CRITICAL FIX: Properly clear ALL relationship flags on divorce
 		onComplete = function(state)
@@ -2158,7 +2169,28 @@ Adult.events = {
 		choices = {
 			{ text = "Move to assisted living", effects = { Health = 5, Happiness = -5, Money = -3000 }, setFlags = { assisted_living = true }, feedText = "You moved to a facility. Safer, but different." },
 			{ text = "Hire in-home care", effects = { Health = 5, Money = -2000 }, setFlags = { has_caregiver = true }, feedText = "Help comes to you. You stay home." },
-			{ text = "Move in with family", effects = { Happiness = 5 }, setFlags = { lives_with_family = true }, feedText = "Your kids welcomed you into their home." },
+			{ 
+			text = "Move in with family", 
+			effects = { Happiness = 5 }, 
+			setFlags = { lives_with_family = true }, 
+			feedText = "Your family welcomed you into their home.",
+			-- CRITICAL FIX: Can only move in with family if you have family
+			eligibility = function(state)
+				local flags = state.Flags or {}
+				if flags.has_child or flags.has_children or flags.parent then
+					return true
+				end
+				-- Could also move in with siblings
+				if state.Relationships then
+					for _, rel in pairs(state.Relationships) do
+						if rel.type == "sibling" or rel.type == "family" then
+							return true
+						end
+					end
+				end
+				return false, "You don't have any family to move in with"
+			end,
+		},
 			{ text = "Stubbornly stay independent", effects = { Happiness = 3, Health = -5 }, setFlags = { fiercely_independent = true }, feedText = "You'll manage on your own, thank you very much!" },
 		},
 	},

@@ -786,9 +786,13 @@ Random.events = {
 			return true
 		end,
 		choices = {
-			{ text = "Absolutely, adventure awaits!", effects = { Happiness = 12, Money = -1000 }, setFlags = { well_traveled = true }, feedText = "You went on an amazing trip!" },
-			{ text = "Go on a budget", effects = { Happiness = 7, Money = -300 }, setFlags = { well_traveled = true }, feedText = "You traveled smart!" },
-			{ text = "Not the right time", effects = { Happiness = -2, Money = 200 }, feedText = "You saved the money instead." },
+			{ text = "Absolutely, adventure awaits! ($1000)", effects = { Happiness = 12, Money = -1000 }, setFlags = { well_traveled = true }, feedText = "You went on an amazing trip!",
+				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Can't afford the full trip ($1000 needed)" end,
+			},
+			{ text = "Go on a budget ($300)", effects = { Happiness = 7, Money = -300 }, setFlags = { well_traveled = true }, feedText = "You traveled smart!",
+				eligibility = function(state) return (state.Money or 0) >= 300, "💸 Can't afford even a budget trip ($300 needed)" end,
+			},
+			{ text = "Not the right time (Save money)", effects = { Happiness = -2, Money = 200 }, feedText = "You saved the money instead." },
 		},
 	},
 	{
@@ -823,9 +827,10 @@ Random.events = {
 		-- CRITICAL FIX: Random injury location/severity
 		choices = {
 			{
-				text = "Go to the emergency room",
+				text = "Go to the emergency room ($500)",
 				effects = { Money = -500 },
 				feedText = "You rushed to the ER...",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Can't afford ER visit ($500 needed) - try home treatment" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.10 then -- 10% head injury
@@ -2640,10 +2645,11 @@ Random.events = {
 		cooldown = 6, -- CRITICAL FIX: Increased to prevent spam
 		category = "homeless",
 		tags = { "eviction", "housing", "financial" },
-		-- CRITICAL FIX: Only triggers for people with bum_life flag AND low money
-		-- This prevents rich players from getting eviction notices!
-		requiresFlags = { bum_life = true },
-		blockedByFlags = { homeless = true, evicted = true },
+	-- CRITICAL FIX: Only triggers for people with bum_life flag AND low money
+	-- This prevents rich players from getting eviction notices!
+	requiresFlags = { bum_life = true },
+	-- CRITICAL FIX: Can't be evicted if living with family!
+	blockedByFlags = { homeless = true, evicted = true, lives_with_parents = true, living_with_family = true, boomerang_kid = true },
 		-- CRITICAL FIX: Custom eligibility check to ensure player is actually broke
 		eligibility = function(state)
 			local money = state.Money or 0
@@ -2655,21 +2661,29 @@ Random.events = {
 		end,
 
 		choices = {
-			{ 
-				text = "Beg family for help", 
-				effects = { Happiness = -8 }, 
-				feedText = "You swallowed your pride and asked family for help.",
-				onResolve = function(state)
-					if math.random() < 0.6 then
-						state.Money = (state.Money or 0) + 500
-						state:AddFeed("💕 Your family helped you out this time...")
-					else
-						state.Flags.homeless = true
-						state.Flags.at_risk_homeless = nil
-						state:AddFeed("😢 They couldn't help. You're on the streets now.")
-					end
-				end,
-			},
+		{ 
+			text = "Beg family for help", 
+			effects = { Happiness = -8 }, 
+			feedText = "You swallowed your pride and asked family for help.",
+			-- CRITICAL FIX: Can't beg family if already living with them!
+			eligibility = function(state)
+				local flags = state.Flags or {}
+				if flags.lives_with_parents or flags.living_with_family or flags.boomerang_kid then
+					return false, "You already live with your family!"
+				end
+				return true
+			end,
+			onResolve = function(state)
+				if math.random() < 0.6 then
+					state.Money = (state.Money or 0) + 500
+					state:AddFeed("💕 Your family helped you out this time...")
+				else
+					state.Flags.homeless = true
+					state.Flags.at_risk_homeless = nil
+					state:AddFeed("😢 They couldn't help. You're on the streets now.")
+				end
+			end,
+		},
 			{ 
 				text = "Try to find any job fast", 
 				effects = { Happiness = -5 },
@@ -2696,12 +2710,13 @@ Random.events = {
 		text = "Another day homeless. The streets are harsh and unforgiving.",
 		question = "How do you survive today?",
 		minAge = 18, maxAge = 80,
-		baseChance = 0.6, -- CRITICAL FIX: Reduced from 0.9 to prevent spam
-		cooldown = 3, -- CRITICAL FIX: Increased from 1 to prevent spam
-		category = "homeless", -- CRITICAL FIX: Proper category
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.6
+		cooldown = 4, -- CRITICAL FIX: Increased from 3
+		maxOccurrences = 8, -- CRITICAL FIX: Limit homeless events per life - can't be stuck forever
+		category = "homeless",
 		tags = { "homeless", "survival" },
 		requiresFlags = { homeless = true },
-		blockedByFlags = { in_prison = true }, -- CRITICAL FIX: Can't be homeless in prison
+		blockedByFlags = { in_prison = true, renting = true, has_apartment = true, has_home = true }, -- CRITICAL FIX: Block if has home!
 
 		choices = {
 			{ 

@@ -177,8 +177,10 @@ FamilyEvents.events = {
 					end
 				end,
 			},
-			{ text = "Get help from family", effects = { Happiness = 4, Health = 1 }, feedText = "🍼 Grandparents to the rescue! Grateful for the support!" },
-			{ text = "Hire night nurse", effects = { Money = -500, Happiness = 6, Health = 4 }, feedText = "🍼 Worth every penny. SLEEP!" },
+			{ text = "Get help from family (Free)", effects = { Happiness = 4, Health = 1 }, feedText = "🍼 Grandparents to the rescue! Grateful for the support!" },
+			{ text = "Hire night nurse ($500)", effects = { Money = -500, Happiness = 6, Health = 4 }, feedText = "🍼 Worth every penny. SLEEP!",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Can't afford night nurse ($500 needed)" end,
+			},
 		},
 	},
 	{
@@ -538,8 +540,10 @@ FamilyEvents.events = {
 					end
 				end,
 			},
-			{ text = "Move them to assisted living", effects = { Happiness = -4, Money = -1000 }, setFlags = { parents_in_care = true }, feedText = "👴 Hard decision but necessary. Guilt but relief." },
-			{ text = "Check in from afar", effects = { Happiness = 2 }, feedText = "👴 Calling regularly. Doing what you can from distance." },
+			{ text = "Move them to assisted living ($1000)", effects = { Happiness = -4, Money = -1000 }, setFlags = { parents_in_care = true }, feedText = "👴 Hard decision but necessary. Guilt but relief.",
+				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Can't afford assisted living deposit ($1000 needed)" end,
+			},
+			{ text = "Check in from afar (Free)", effects = { Happiness = 2 }, feedText = "👴 Calling regularly. Doing what you can from distance." },
 		},
 	},
 	{
@@ -683,9 +687,11 @@ FamilyEvents.events = {
 		
 		choices = {
 			{
-				text = "Honor their memory with a charity donation",
+				text = "Honor their memory with a charity donation ($2,000)",
 				effects = { Money = -2000, Happiness = 8 },
 				feedText = "🕯️ Donated to their favorite cause. They would be proud.",
+				-- BUG FIX #6: Add eligibility check for donation cost
+				eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Can't afford donation ($2,000 needed)" end,
 				onResolve = function(state)
 					state.Flags.charitable = true
 					state.Flags.honoring_parent = true
@@ -883,9 +889,11 @@ FamilyEvents.events = {
 				end,
 			},
 			{
-				text = "Fight it in court - you were the executor",
+				text = "Fight it in court ($3,000 in legal fees)",
 				effects = { Money = -3000, Happiness = -5 },
 				feedText = "Lawyer up...",
+				-- BUG FIX #7: Add eligibility check for legal costs
+				eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Can't afford legal fees ($3,000 needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.6 then

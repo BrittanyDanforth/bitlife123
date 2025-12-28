@@ -513,7 +513,9 @@ HealthEvents.events = {
 			},
 			{ text = "Talk to someone you trust", effects = { Happiness = 5, Health = 2 }, feedText = "😔 Opening up helped. Connection matters." },
 			{ text = "Isolate", effects = { Happiness = -6, Health = -3 }, setFlags = { isolating = true }, feedText = "😔 Pushing everyone away. Spiral continues." },
-			{ text = "Start therapy/medication", effects = { Money = -100, Happiness = 4, Health = 4 }, setFlags = { depression_treatment = true }, feedText = "😔 Getting help. It's okay to not be okay." },
+			{ text = "Start therapy/medication ($100)", effects = { Money = -100, Happiness = 4, Health = 4 }, setFlags = { depression_treatment = true }, feedText = "😔 Getting help. It's okay to not be okay.",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Can't afford treatment ($100 needed)" end,
+			},
 		},
 	},
 	{
@@ -978,10 +980,12 @@ HealthEvents.events = {
 				feedText = "❤️‍🩹 Heart disease diagnosed. On medication and strict diet now.",
 			},
 			{
-				text = "Get bypass surgery if needed",
+				text = "Get bypass surgery if needed ($5,000)",
 				effects = { Happiness = -15, Money = -5000, Health = 5 },
 				setFlags = { heart_disease = true, had_heart_surgery = true },
 				feedText = "❤️‍🩹 Underwent heart surgery. Long recovery ahead.",
+				-- BUG FIX #2: Add eligibility check for surgery cost
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Can't afford surgery ($5,000 needed)" end,
 			},
 		},
 	},
@@ -991,9 +995,9 @@ HealthEvents.events = {
 		emoji = "🎗️",
 		text = "The biopsy results have come back. The news is serious.",
 		question = "Your diagnosis: CANCER DETECTED\n\n🔬 Finding: Malignant cells detected\n⚠️ Severity: CRITICAL\n🏥 Treatment: Chemotherapy/Radiation/Surgery\n⏰ Early detection increases survival rate\n\nThis is a life-changing diagnosis.",
-		minAge = 20, maxAge = 100,
-		baseChance = 0.18,
-		cooldown = 40,
+		minAge = 30, maxAge = 100, -- CRITICAL FIX: Cancer rare under 30
+		baseChance = 0.10, -- CRITICAL FIX: Reduced from 0.18 - cancer is rare
+		cooldown = 50, -- CRITICAL FIX: Increased - cancer shouldn't pop up often
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",
@@ -1025,10 +1029,11 @@ HealthEvents.events = {
 		
 		choices = {
 			{
-				text = "Fight it - start treatment",
+				text = "Fight it - start treatment ($10,000)",
 				effects = { Happiness = -20, Money = -10000, Health = -25 },
 				setFlags = { has_cancer = true, cancer = true, in_treatment = true, fighting_cancer = true },
 				feedText = "🎗️ Cancer diagnosis. Starting chemotherapy. Fight of your life.",
+				eligibility = function(state) return (state.Money or 0) >= 10000, "💸 Can't afford cancer treatment ($10,000 needed). Try alternative options or seek financial help." end,
 				onResolve = function(state)
 					-- CRITICAL FIX: Treatment doesn't immediately resolve - it takes time
 					-- First treatment has 40% chance to show improvement
@@ -1054,9 +1059,10 @@ HealthEvents.events = {
 				end,
 			},
 			{
-				text = "Get second opinion first",
+				text = "Get second opinion first ($500)",
 				effects = { Happiness = -5, Money = -500 },
 				feedText = "🎗️ Seeking another doctor's perspective...",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Can't afford second opinion ($500 needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					state.Flags = state.Flags or {}
@@ -1109,9 +1115,11 @@ HealthEvents.events = {
 		
 		choices = {
 			{
-				text = "Continue aggressive treatment",
+				text = "Continue aggressive treatment ($5,000)",
 				effects = { Money = -5000, Health = -10, Happiness = -5 },
 				feedText = "🎗️ Pushing through more treatment...",
+				-- BUG FIX #3: Add eligibility check for treatment cost
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Can't afford treatment ($5,000 needed)" end,
 				onResolve = function(state)
 					state.Flags = state.Flags or {}
 					local rounds = (state.Flags.cancer_treatment_rounds or 1) + 1
@@ -1158,9 +1166,11 @@ HealthEvents.events = {
 				end,
 			},
 			{
-				text = "Try alternative treatments",
+				text = "Try alternative treatments ($3,000)",
 				effects = { Money = -3000, Happiness = 2 },
 				feedText = "🎗️ Exploring other options...",
+				-- BUG FIX #4: Add eligibility check for treatment cost
+				eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Can't afford alternative treatment ($3,000 needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					state.Flags = state.Flags or {}
@@ -1427,10 +1437,12 @@ HealthEvents.events = {
 				feedText = "🦴 Bone set, cast on. 6 weeks of limited mobility.",
 			},
 			{
-				text = "Surgery if needed",
+				text = "Surgery if needed ($3,000)",
 				effects = { Money = -3000, Health = 5, Happiness = -8 },
 				setFlags = { had_bone_surgery = true },
 				feedText = "🦴 Needed surgery to fix properly. Pins and plates inserted.",
+				-- BUG FIX #5: Add eligibility check for surgery cost
+				eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Can't afford surgery ($3,000 needed)" end,
 			},
 		},
 	},

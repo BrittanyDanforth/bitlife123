@@ -934,7 +934,7 @@ RelationshipsExpanded.events = {
 		end,
 		
 		choices = {
-			{ text = "Embrace the freedom", effects = { Happiness = 8, Money = 200 }, setFlags = { enjoying_empty_nest = true }, feedText = "🏠 FREEDOM! Quiet house! Walk around naked! Travel!" },
+			{ text = "Embrace the freedom", effects = { Happiness = 8, Money = 200 }, setFlags = { enjoying_empty_nest = true }, feedText = "🏠 FREEDOM! Quiet house! Do whatever you want! Travel!" },
 			{ text = "Devastated - miss them terribly", effects = { Happiness = -8 }, setFlags = { empty_nest_sad = true }, feedText = "🏠 The house feels so empty. Purpose feels lost." },
 			{ text = "Rediscover your relationship", effects = { Happiness = 6 }, setFlags = { rekindled_partnership = true }, feedText = "🏠 It's like dating again! Just the two of you!" },
 			{ text = "Fill time with new hobbies", effects = { Happiness = 5, Smarts = 3 }, setFlags = { new_chapter = true }, feedText = "🏠 New hobbies, classes, activities! Reinvention!" },

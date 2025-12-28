@@ -490,6 +490,27 @@ local function applyChoiceEffects(state, choice, isSuccess)
 		state.Money = (state.Money or 0) + choice.salaryBonus
 	end
 	
+	-- BUG FIX #11: Handle followersGain (celebrity/influencer events)
+	if choice.followersGain then
+		state.FameState = state.FameState or {}
+		state.FameState.followers = (state.FameState.followers or 0) + choice.followersGain
+		state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + choice.followersGain
+	end
+	
+	-- BUG FIX #11: Handle subscribersGain (streamer events)
+	if choice.subscribersGain then
+		state.FameState = state.FameState or {}
+		state.FameState.subscribers = (state.FameState.subscribers or 0) + choice.subscribersGain
+	end
+	
+	-- BUG FIX #11: Handle subscribersLoss (platform ban, etc.)
+	if choice.subscribersLoss then
+		state.FameState = state.FameState or {}
+		local currentSubs = state.FameState.subscribers or 0
+		local lossAmount = math.floor(currentSubs * (choice.subscribersLoss / 100))
+		state.FameState.subscribers = math.max(0, currentSubs - lossAmount)
+	end
+	
 	-- Handle healthLoss/healthGain
 	if choice.healthLoss then
 		if state.ModifyStat then

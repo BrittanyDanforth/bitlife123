@@ -5748,6 +5748,24 @@ local ActivityCatalog = {
 	nightclub = { stats = { Happiness = 6, Health = -2 }, feed = "went clubbing", cost = 50 },
 	host_party = { stats = { Happiness = 8 }, feed = "hosted a party", cost = 300 },
 	
+	-- CRITICAL FIX: Missing combat activities (caused "Unknown activity" error)
+	pick_fight = {
+		stats = { Happiness = -2, Health = -5 },
+		feed = "got into a fight",
+		cost = 0,
+		requiresAge = 14,
+		isCombat = true,
+		riskOfArrest = 0.15, -- 15% chance of arrest
+	},
+	club_fight = {
+		stats = { Happiness = -3, Health = -8 },
+		feed = "got into a club fight",
+		cost = 0,
+		requiresAge = 21,
+		isCombat = true,
+		riskOfArrest = 0.25, -- 25% chance of arrest
+	},
+	
 	-- ═══════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: ROMANCE & DATING ACTIVITIES - These were completely missing!
 	-- ═══════════════════════════════════════════════════════════════════════════
@@ -9232,7 +9250,8 @@ function LifeBackend:handleRoyalDuty(player, dutyId)
 	end
 	
 	local message = string.format("%s Completed: %s (+%d popularity)", duty.emoji, duty.name, popGain)
-	appendFeed(state, message)
+	-- CRITICAL FIX: Only pushState, don't appendFeed (avoid duplicate message)
+	-- appendFeed would show again at next age-up
 	self:pushState(player, message)
 	
 	return { 
@@ -9270,7 +9289,7 @@ function LifeBackend:handleAbdication(player)
 	state.Flags.former_monarch = true
 	
 	local message = "👑 You have abdicated the throne! The nation is shocked."
-	appendFeed(state, message)
+	-- CRITICAL FIX: Only pushState, don't appendFeed (avoid duplicate message)
 	self:pushState(player, message)
 	
 	return { success = true, message = message }
@@ -13482,7 +13501,120 @@ function LifeBackend:presentEvent(player, eventDef, feedText)
 	pending.feedText = feedText or pending.feedText
 	self.pendingEvents[player.UserId] = pending
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Send state update BEFORE showing the event!
+	-- User bug: "cash doesn't update until I pick my choice"
+	-- Problem: Living expenses were deducted but client still showed OLD money
+	-- So player thought they had $400 but actually had $0 after expenses!
+	-- Solution: Push state FIRST so player sees their ACTUAL balance
+	-- NOTE: Pass nil for feedText - PresentEvent will add it to feed (avoid duplicate!)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	self:pushState(player, nil)
+	
+	-- Now show the event (player can see their actual money when making choice)
+	-- feedText is passed here and PresentEvent handler will add it to feed
 	self.remotes.PresentEvent:FireClient(player, eventPayload, feedText)
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Re-present an event when player couldn't afford their first choice
+-- Keeps the SAME eventId so pendingEvents still works
+-- Marks unavailable choices so player knows which ones they can't pick
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:presentEventForRetry(player, eventDef, existingEventId)
+	if not eventDef or not existingEventId then
+		warn("[LifeBackend] presentEventForRetry called with missing data")
+		return
+	end
+	
+	local state = self:getState(player)
+	if not state then return end
+	
+	-- Use the SAME eventId - don't generate a new one!
+	local eventId = existingEventId
+	
+	-- Get the text (might already be processed from first presentation)
+	local eventText = eventDef.text or ""
+	local eventTitle = eventDef.title or "Life Event"
+	local eventQuestion = eventDef.question or "What will you do?"
+	
+	-- Replace text variables
+	local processedText = self:replaceTextVariables(eventText, state)
+	local processedTitle = self:replaceTextVariables(eventTitle, state)
+	local processedQuestion = self:replaceTextVariables(eventQuestion, state)
+	
+	-- Add retry message to the text
+	processedText = "⚠️ Pick a different option:\n\n" .. processedText
+	
+	local eventPayload = {
+		id = eventId,
+		title = processedTitle,
+		emoji = eventDef.emoji,
+		text = processedText,
+		question = processedQuestion,
+		category = eventDef.category or "life",
+		choices = {},
+		isRetry = true, -- Signal to client this is a retry
+	}
+	
+	-- Build choices, marking unavailable ones
+	local unavailableChoices = eventDef._unavailableChoices or {}
+	local flags = state.Flags or {}
+	local gamepassOwnership = state.GamepassOwnership or {}
+	
+	for index, choice in ipairs(eventDef.choices or {}) do
+		local unavailableReason = unavailableChoices[index]
+		
+		local choiceData = {
+			index = index,
+			text = self:replaceTextVariables(choice.text or ("Choice " .. index), state),
+			minigame = choice.minigame,
+		}
+		
+		-- Mark if this choice is unavailable (player already tried and failed)
+		if unavailableReason then
+			choiceData.unavailable = true
+			choiceData.unavailableReason = unavailableReason
+			-- Modify text to show it's unavailable
+			choiceData.text = "❌ " .. choiceData.text .. " (Can't afford)"
+		end
+		
+		-- Add premium choice info if this choice requires a gamepass
+		if choice.requiresGamepass then
+			choiceData.requiresGamepass = choice.requiresGamepass
+			choiceData.gamepassEmoji = choice.gamepassEmoji
+			
+			local gamepassToFlag = {
+				GOD_MODE = "god_mode_gamepass",
+				MAFIA = "mafia_gamepass", 
+				CELEBRITY = "celebrity_gamepass",
+				ROYALTY = "royalty_gamepass",
+				TIME_MACHINE = "time_machine_gamepass",
+			}
+			local gamepassToOwnership = {
+				GOD_MODE = "godMode",
+				MAFIA = "mafia",
+				CELEBRITY = "celebrity",
+				ROYALTY = "royalty",
+				TIME_MACHINE = "timeMachine",
+			}
+			
+			local flagName = gamepassToFlag[choice.requiresGamepass]
+			local ownershipName = gamepassToOwnership[choice.requiresGamepass]
+			local hasGamepass = flags[flagName] or gamepassOwnership[ownershipName]
+			
+			choiceData.hasGamepass = hasGamepass
+		end
+		
+		eventPayload.choices[index] = choiceData
+	end
+	
+	-- Don't update pendingEvents - it should already have this event stored
+	-- Push state first so money display is current (nil to avoid duplicate feed message)
+	self:pushState(player, nil)
+	-- Then re-send the event to the client (PresentEvent adds the feed message)
+	self.remotes.PresentEvent:FireClient(player, eventPayload, "Pick a different option!")
+	debugPrint("[LifeBackend] Re-presented event for retry:", eventId)
 end
 
 -- ============================================================================
@@ -15325,6 +15457,32 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 		clearAwaitingOnError()
 		return
 	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Check if this choice was already marked unavailable
+	-- Prevents player from clicking the same unaffordable choice repeatedly
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if eventDef._unavailableChoices and eventDef._unavailableChoices[choiceIndex] then
+		local reason = eventDef._unavailableChoices[choiceIndex]
+		warn("[LifeBackend] Player tried to select unavailable choice", choiceIndex, ":", reason)
+		
+		-- Re-show the event so they can pick something else
+		self:pushState(player, nil, {
+			showPopup = true,
+			emoji = "❌",
+			title = "Can't Do That!",
+			body = reason .. "\n\nPlease pick a different option.",
+			wasSuccess = false,
+		})
+		
+		-- Re-present the event after brief delay
+		task.delay(0.1, function()
+			if self.pendingEvents[player.UserId] then
+				self:presentEventForRetry(player, eventDef, eventId)
+			end
+		end)
+		return
+	end
 
 	debugPrint(string.format("Resolving event %s for %s with choice #%d", eventId or "unknown", player.Name, choiceIndex))
 
@@ -15393,18 +15551,42 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 		if not success then
 			warn("[LifeBackend] Event resolution error:", result)
 		elseif result and result.failed then
-			-- CRITICAL FIX: Handle choice eligibility/affordability failures!
-			-- User bug: "IT SAYS MOVING OUT BUT DIDNT CHECK IF IM BROKE"
-			-- Show the error message to the player instead of applying the choice
-			warn("[LifeBackend] Choice failed eligibility:", result.failReason)
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX: When choice fails, RE-SHOW the event so player can pick another!
+			-- User feedback: "have it just u click OK and it goes back to let u choose"
+			-- 
+			-- Flow: Error popup → Click OK → Same event re-appears → Pick different choice
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			local errorMessage = result.failReason or "You can't select this option right now."
+			warn("[LifeBackend] Choice", choiceIndex, "failed eligibility:", errorMessage, "- will re-show event")
+			
+			-- DON'T clear awaitingDecision or pendingEvents - event stays active!
+			-- The pendingEvent is still there, player just needs to pick again
+			
+			-- Mark this choice as unavailable so UI can gray it out
+			eventDef._unavailableChoices = eventDef._unavailableChoices or {}
+			eventDef._unavailableChoices[choiceIndex] = errorMessage
+			
+			-- Send special response that will show error then re-present the event
 			self:pushState(player, nil, {
 				showPopup = true,
 				emoji = "❌",
 				title = "Can't Do That!",
-				body = result.failReason or "You can't select this option right now.",
+				body = errorMessage,
 				wasSuccess = false,
+				-- After dismissing this popup, re-show the event
+				reshowEvent = true,
+				reshowEventId = eventId,
 			})
-			-- Don't continue with the rest of the event resolution
+			
+			-- Schedule re-presenting the event after a brief delay for popup
+			-- This gives time for the error popup to show first
+			task.delay(0.1, function()
+				if self.pendingEvents[player.UserId] then
+					-- Re-present the same event with updated unavailable choices info
+					self:presentEventForRetry(player, eventDef, eventId)
+				end
+			end)
 			return
 		end
 		effectsSummary = {
@@ -15567,6 +15749,37 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 	local popupBody = jailPopupBody or state.PendingFeed or feedText
 	if popupBody == nil or popupBody == "" then
 		popupBody = "Something happened..."
+	end
+	
+	-- CRITICAL FIX: Replace any remaining template variables in popup body
+	-- User bug: "it says {{AGE}}! and not correctly working"
+	if type(popupBody) == "string" then
+		popupBody = popupBody:gsub("{{AGE}}", tostring(state.Age or 0))
+		popupBody = popupBody:gsub("{{NAME}}", tostring(state.Name or "You"))
+		popupBody = popupBody:gsub("{{MONEY}}", tostring(state.Money or 0))
+		popupBody = popupBody:gsub("{{GENDER}}", tostring(state.Gender or "person"))
+		-- Parent names
+		local motherName, fatherName = "Mom", "Dad"
+		if state.Relationships then
+			if state.Relationships.mother and state.Relationships.mother.name then
+				motherName = state.Relationships.mother.name
+			end
+			if state.Relationships.father and state.Relationships.father.name then
+				fatherName = state.Relationships.father.name
+			end
+		end
+		popupBody = popupBody:gsub("{{MOTHER_NAME}}", motherName)
+		popupBody = popupBody:gsub("{{FATHER_NAME}}", fatherName)
+		-- Job info
+		if state.CurrentJob then
+			popupBody = popupBody:gsub("{{JOB_NAME}}", tostring(state.CurrentJob.name or "your job"))
+			popupBody = popupBody:gsub("{{COMPANY}}", tostring(state.CurrentJob.company or "the company"))
+			popupBody = popupBody:gsub("{{SALARY}}", tostring(state.CurrentJob.salary or 0))
+		else
+			popupBody = popupBody:gsub("{{JOB_NAME}}", "your job")
+			popupBody = popupBody:gsub("{{COMPANY}}", "the company")
+			popupBody = popupBody:gsub("{{SALARY}}", "0")
+		end
 	end
 	
 	resultData = {
@@ -16181,21 +16394,23 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 			state.Relationships = state.Relationships or {}
 			state.Flags = state.Flags or {}
 			
-			-- Generate partner
-			local isMale = RANDOM:NextNumber() > 0.5
+			-- CRITICAL FIX: Partner should be OPPOSITE gender by default!
+			-- User bug: "As a girl it only lets me romance girls"
+			local playerGender = (state.Gender or "male"):lower()
+			local partnerIsMale = (playerGender == "female") -- If player is female, partner is male
 			local maleNames = {"James", "Michael", "David", "John", "Alex", "Ryan", "Chris", "Brandon", "Tyler", "Jake", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Ben", "Sam", "Will", "Matt", "Nick"}
 			local femaleNames = {"Emma", "Olivia", "Sophia", "Ava", "Isabella", "Mia", "Emily", "Grace", "Lily", "Chloe", "Harper", "Aria", "Luna", "Zoe", "Riley", "Ella", "Scarlett", "Victoria", "Madison", "Hannah"}
-			local names = isMale and maleNames or femaleNames
+			local names = partnerIsMale and maleNames or femaleNames
 			local partnerName = names[RANDOM:NextInteger(1, #names)]
 			
 			state.Relationships.partner = {
 				id = "partner",
 				name = partnerName,
 				type = "romantic",
-				role = isMale and "Boyfriend" or "Girlfriend",
+				role = partnerIsMale and "Boyfriend" or "Girlfriend",
 				relationship = RANDOM:NextInteger(55, 75),
 				age = (state.Age or 20) + RANDOM:NextInteger(-5, 5),
-				gender = isMale and "male" or "female",
+				gender = partnerIsMale and "male" or "female",
 				alive = true,
 				metAge = state.Age,
 				metYear = state.Year or 2025,

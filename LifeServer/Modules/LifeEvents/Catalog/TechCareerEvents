@@ -372,7 +372,7 @@ TechCareerEvents.events = {
 			{
 				text = "Accept the challenge",
 				effects = { Smarts = 4, Happiness = -1 },
-				feedText = "Entering YAML hell...",
+				feedText = "Entering YAML nightmare...",
 				onResolve = function(state)
 					local flags = ensureFlags(state)
 					modStatIfPossible(state, "Smarts", 4)

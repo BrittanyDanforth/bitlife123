@@ -323,7 +323,18 @@ DailyLifeEvents.events = {
 			{ text = "Packed lunch", effects = { Health = 2, Happiness = 3, Money = 5 }, feedText = "🥪 Healthy and economical! Adult achievement!" },
 			{ text = "Buy lunch", effects = { Happiness = 4, Money = -15, Health = -1 }, feedText = "🥪 Treating yourself! Restaurant/takeout life!" },
 			{ text = "Skip lunch (busy)", effects = { Health = -3, Happiness = -2, Smarts = 1 }, feedText = "🥪 No time! Working through. Hangry later." },
-			{ text = "Social lunch with coworkers", effects = { Happiness = 6, Money = -15 }, feedText = "🥪 Great conversation! Work friendships building!" },
+			{ 
+			text = "Social lunch with coworkers", 
+			effects = { Happiness = 6, Money = -15 }, 
+			feedText = "🥪 Great conversation! Work friendships building!",
+			-- CRITICAL FIX: Can only have lunch with coworkers if you HAVE coworkers (a job)
+			eligibility = function(state)
+				if not state.CurrentJob then
+					return false, "You don't have coworkers - you don't have a job!"
+				end
+				return true
+			end,
+		},
 		},
 	},
 	{
@@ -364,7 +375,14 @@ DailyLifeEvents.events = {
 		ageBand = "any",
 		category = "daily",
 		tags = { "evening", "leisure", "home" },
-		blockedByFlags = { in_prison = true, incarcerated = true },  -- CRITICAL FIX: No "after work" in prison!
+		blockedByFlags = { in_prison = true, incarcerated = true, retired = true },  -- CRITICAL FIX: No "after work" in prison or retired!
+		-- CRITICAL FIX: Requires having a job to have "after work" time
+		eligibility = function(state)
+			if not state.CurrentJob and not (state.Flags and state.Flags.employed) then
+				return false, "You don't have work to be 'after'!"
+			end
+			return true
+		end,
 		
 		choices = {
 			{ text = "Exercise/gym", effects = { Health = 5, Happiness = 4, Money = -5 }, setFlags = { regular_exerciser = true }, feedText = "🏠 Post-work workout! Stress relief! Endorphins!" },
@@ -647,8 +665,12 @@ DailyLifeEvents.events = {
 					end
 				end,
 			},
-			{ text = "Impulse buy everything", effects = { Happiness = 5, Money = -100, Health = -1 }, feedText = "🛒 Bought ALL THE THINGS! Budget destroyed! No regrets?" },
-			{ text = "Shop hungry", effects = { Happiness = 2, Money = -80 }, feedText = "🛒 Mistake. Bought so much junk. Why did you shop hungry?" },
+			{ text = "Impulse buy everything ($100)", effects = { Happiness = 5, Money = -100, Health = -1 }, feedText = "🛒 Bought ALL THE THINGS! Budget destroyed! No regrets?",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Can't afford impulse shopping ($100 needed)" end,
+			},
+			{ text = "Shop hungry ($80)", effects = { Happiness = 2, Money = -80 }, feedText = "🛒 Mistake. Bought so much junk. Why did you shop hungry?",
+				eligibility = function(state) return (state.Money or 0) >= 80, "💸 Not enough for hungry shopping ($80 needed)" end,
+			},
 		},
 	},
 	{
