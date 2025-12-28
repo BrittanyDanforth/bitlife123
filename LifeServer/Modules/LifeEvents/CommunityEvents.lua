@@ -254,9 +254,10 @@ CommunityEvents.events = {
 		
 		choices = {
 			{
-				text = "Participate in charity run/walk",
+				text = "Participate in charity run/walk ($30)",
 				effects = { Health = 3, Money = -30 },
 				feedText = "Running for a cause...",
+				eligibility = function(state) return (state.Money or 0) >= 30, "💸 Can't afford entry fee ($30)" end,
 				onResolve = function(state)
 					local health = (state.Stats and state.Stats.Health) or 50
 					local roll = math.random()
@@ -270,9 +271,13 @@ CommunityEvents.events = {
 					end
 				end,
 			},
-			{ text = "Attend charity gala", effects = { Happiness = 7, Money = -100, Looks = 2 }, feedText = "💝 Fancy night for a good cause. Networking bonus!" },
-			{ text = "Silent auction bid", effects = { Money = -200, Happiness = 6 }, feedText = "💝 Won something nice! And supported charity!" },
-			{ text = "Just donate", effects = { Money = -25, Happiness = 4 }, feedText = "💝 Quick donation. Every bit helps." },
+			{ text = "Attend charity gala ($100)", effects = { Happiness = 7, Money = -100, Looks = 2 }, feedText = "💝 Fancy night for a good cause. Networking bonus!",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Can't afford gala ticket ($100)" end },
+			{ text = "Silent auction bid ($200)", effects = { Money = -200, Happiness = 6 }, feedText = "💝 Won something nice! And supported charity!",
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Can't afford to bid ($200)" end },
+			{ text = "Just donate ($25)", effects = { Money = -25, Happiness = 4 }, feedText = "💝 Quick donation. Every bit helps.",
+				eligibility = function(state) return (state.Money or 0) >= 25, "💸 Can't afford donation ($25)" end },
+			{ text = "Volunteer time instead (free)", effects = { Happiness = 8, Health = -1 }, feedText = "💝 Time is valuable too! Helped set up and run the event." },
 		},
 	},
 	{
@@ -473,9 +478,10 @@ CommunityEvents.events = {
 		tags = { "business", "local", "shopping" },
 		
 		choices = {
-			{ text = "Grand opening celebration", effects = { Happiness = 6, Money = -20 }, feedText = "🏪 New store! Free samples! Supporting local!" },
-			{ text = "Going out of business sale", effects = { Happiness = 3, Money = -50 }, feedText = "🏪 Sad to see them go. Got some deals though." },
-			{ text = "Become a regular customer", effects = { Happiness = 5, Money = -30 }, setFlags = { supports_local = true }, feedText = "🏪 Know the staff by name now. Community!" },
+			{ text = "Grand opening celebration ($20)", effects = { Happiness = 6, Money = -20 }, feedText = "🏪 New store! Free samples! Supporting local!" },
+			{ text = "Going out of business sale ($50)", effects = { Happiness = 3, Money = -50 }, feedText = "🏪 Sad to see them go. Got some deals though." },
+			{ text = "Become a regular customer ($30)", effects = { Happiness = 5, Money = -30 }, setFlags = { supports_local = true }, feedText = "🏪 Know the staff by name now. Community!" },
+			{ text = "Just window shopping (free)", effects = { Happiness = 3 }, feedText = "🏪 Nice to look around! Didn't buy anything but enjoyed it." },
 			{ text = "Bad service experience", effects = { Happiness = -4 }, feedText = "🏪 Not going back there. Left bad review." },
 		},
 	},
@@ -494,9 +500,10 @@ CommunityEvents.events = {
 		tags = { "farmers_market", "food", "local" },
 		
 		choices = {
-			{ text = "Buy fresh local produce", effects = { Happiness = 6, Health = 3, Money = -25 }, feedText = "🥕 Fresh veggies! Supporting local farmers!" },
-			{ text = "Browse and sample", effects = { Happiness = 4, Money = -5 }, feedText = "🥕 Free samples! Discovered new favorite foods!" },
-			{ text = "Buy artisan goods", effects = { Happiness = 5, Money = -40 }, feedText = "🥕 Unique handmade items. Worth the premium." },
+			{ text = "Buy fresh local produce ($25)", effects = { Happiness = 6, Health = 3, Money = -25 }, feedText = "🥕 Fresh veggies! Supporting local farmers!" },
+			{ text = "Browse and sample ($5)", effects = { Happiness = 4, Money = -5 }, feedText = "🥕 Free samples! Discovered new favorite foods!" },
+			{ text = "Buy artisan goods ($40)", effects = { Happiness = 5, Money = -40 }, feedText = "🥕 Unique handmade items. Worth the premium." },
+			{ text = "Just enjoy the atmosphere (free)", effects = { Happiness = 4 }, feedText = "🥕 Live music, fresh air, good vibes! No purchase needed." },
 			{ text = "Too crowded - leave", effects = { Happiness = -1 }, feedText = "🥕 Wall-to-wall people. Maybe next time." },
 		},
 	},
