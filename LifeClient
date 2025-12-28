@@ -4593,12 +4593,51 @@ showEvent = function(payload)
 		EventUI.body.Text = bodyText
 		EventUI.question.Text  = payload.question or "What will you do?"
 
-		-- CRITICAL FIX: Dynamically resize scroll frame based on actual text height
-		-- If text is short, shrink the scroll area. If long, cap at maxBodyHeight and enable scrolling
+		-- CRITICAL FIX: Dynamically resize scroll frame based on actual text height AND number of choices
+		-- Must leave room for ALL buttons to be visible!
 		task.defer(function()
 			if EventUI.bodyScroll and EventUI.body then
-				-- CRITICAL: Same maxBodyHeight as in buildEventModal - SMALLER for tiny phones!
-				local maxBodyHeight = Device.IS_TINY_PHONE and 85 or (Device.IS_SMALL_PHONE and 110 or 180)
+				local numChoices = payload.choices and #payload.choices or 1
+				
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				-- CRITICAL FIX: SMALLER body area when there are MANY choices!
+				-- This ensures buttons don't get cut off on small screens
+				-- User feedback: "buttons not visible on small mobile screen"
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				local maxBodyHeight
+				if Device.IS_TINY_PHONE then
+					-- Tiny phones: very aggressive shrinking
+					if numChoices >= 5 then
+						maxBodyHeight = 50  -- Super tiny for 5+ choices
+					elseif numChoices >= 4 then
+						maxBodyHeight = 60
+					elseif numChoices >= 3 then
+						maxBodyHeight = 70
+					else
+						maxBodyHeight = 85
+					end
+				elseif Device.IS_SMALL_PHONE then
+					-- Small phones
+					if numChoices >= 5 then
+						maxBodyHeight = 65
+					elseif numChoices >= 4 then
+						maxBodyHeight = 80
+					elseif numChoices >= 3 then
+						maxBodyHeight = 95
+					else
+						maxBodyHeight = 110
+					end
+				else
+					-- Regular/large screens
+					if numChoices >= 5 then
+						maxBodyHeight = 100
+					elseif numChoices >= 4 then
+						maxBodyHeight = 130
+					else
+						maxBodyHeight = 180
+					end
+				end
+				
 				local actualTextHeight = EventUI.body.AbsoluteSize.Y
 
 				if actualTextHeight < maxBodyHeight then
@@ -4630,6 +4669,12 @@ showEvent = function(payload)
 			btn.AutomaticSize = Enum.AutomaticSize.Y
 			
 			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX: Handle UNAVAILABLE choices (from retry after can't afford)
+			-- Gray out choices that player already tried and couldn't afford
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			local isUnavailable = choice.unavailable == true
+			
+			-- ═══════════════════════════════════════════════════════════════════════════════
 			-- CRITICAL FIX: Premium choices have distinct GOLD/PURPLE colors!
 			-- This makes it clear which choices require gamepasses
 			-- ═══════════════════════════════════════════════════════════════════════════════
@@ -4637,6 +4682,13 @@ showEvent = function(payload)
 			local btnColor = C.Blue  -- Default color
 			local btnDarkColor = C.BlueDark
 			local strokeColor = C.BlueLight
+			
+			-- Override colors for unavailable choices
+			if isUnavailable then
+				btnColor = Color3.fromRGB(120, 120, 120)  -- Gray
+				btnDarkColor = Color3.fromRGB(100, 100, 100)
+				strokeColor = Color3.fromRGB(150, 150, 150)
+			end
 			
 			if isPremiumChoice then
 				-- Check which gamepass and use appropriate color
@@ -4724,6 +4776,17 @@ showEvent = function(payload)
 
 			local function handleChoice()
 				if not EventUI.currentEventId then return end
+				
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				-- CRITICAL FIX: Block clicking UNAVAILABLE choices (from retry after can't afford)
+				-- These choices are grayed out and player should pick a different one
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				if isUnavailable then
+					-- Show feedback that this choice isn't available
+					flashScreen(Color3.fromRGB(255, 100, 100), 0.5, 0.2)
+					-- Don't process - they need to pick a different choice
+					return
+				end
 
 				-- ═══════════════════════════════════════════════════════════════════════════════
 				-- CRITICAL FIX: CHECK GAMEPASS REQUIREMENTS BEFORE ALLOWING PREMIUM CHOICES!

@@ -13503,6 +13503,105 @@ function LifeBackend:presentEvent(player, eventDef, feedText)
 	self.remotes.PresentEvent:FireClient(player, eventPayload, feedText)
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Re-present an event when player couldn't afford their first choice
+-- Keeps the SAME eventId so pendingEvents still works
+-- Marks unavailable choices so player knows which ones they can't pick
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:presentEventForRetry(player, eventDef, existingEventId)
+	if not eventDef or not existingEventId then
+		warn("[LifeBackend] presentEventForRetry called with missing data")
+		return
+	end
+	
+	local state = self:getState(player)
+	if not state then return end
+	
+	-- Use the SAME eventId - don't generate a new one!
+	local eventId = existingEventId
+	
+	-- Get the text (might already be processed from first presentation)
+	local eventText = eventDef.text or ""
+	local eventTitle = eventDef.title or "Life Event"
+	local eventQuestion = eventDef.question or "What will you do?"
+	
+	-- Replace text variables
+	local processedText = self:replaceTextVariables(eventText, state)
+	local processedTitle = self:replaceTextVariables(eventTitle, state)
+	local processedQuestion = self:replaceTextVariables(eventQuestion, state)
+	
+	-- Add retry message to the text
+	processedText = "⚠️ Pick a different option:\n\n" .. processedText
+	
+	local eventPayload = {
+		id = eventId,
+		title = processedTitle,
+		emoji = eventDef.emoji,
+		text = processedText,
+		question = processedQuestion,
+		category = eventDef.category or "life",
+		choices = {},
+		isRetry = true, -- Signal to client this is a retry
+	}
+	
+	-- Build choices, marking unavailable ones
+	local unavailableChoices = eventDef._unavailableChoices or {}
+	local flags = state.Flags or {}
+	local gamepassOwnership = state.GamepassOwnership or {}
+	
+	for index, choice in ipairs(eventDef.choices or {}) do
+		local unavailableReason = unavailableChoices[index]
+		
+		local choiceData = {
+			index = index,
+			text = self:replaceTextVariables(choice.text or ("Choice " .. index), state),
+			minigame = choice.minigame,
+		}
+		
+		-- Mark if this choice is unavailable (player already tried and failed)
+		if unavailableReason then
+			choiceData.unavailable = true
+			choiceData.unavailableReason = unavailableReason
+			-- Modify text to show it's unavailable
+			choiceData.text = "❌ " .. choiceData.text .. " (Can't afford)"
+		end
+		
+		-- Add premium choice info if this choice requires a gamepass
+		if choice.requiresGamepass then
+			choiceData.requiresGamepass = choice.requiresGamepass
+			choiceData.gamepassEmoji = choice.gamepassEmoji
+			
+			local gamepassToFlag = {
+				GOD_MODE = "god_mode_gamepass",
+				MAFIA = "mafia_gamepass", 
+				CELEBRITY = "celebrity_gamepass",
+				ROYALTY = "royalty_gamepass",
+				TIME_MACHINE = "time_machine_gamepass",
+			}
+			local gamepassToOwnership = {
+				GOD_MODE = "godMode",
+				MAFIA = "mafia",
+				CELEBRITY = "celebrity",
+				ROYALTY = "royalty",
+				TIME_MACHINE = "timeMachine",
+			}
+			
+			local flagName = gamepassToFlag[choice.requiresGamepass]
+			local ownershipName = gamepassToOwnership[choice.requiresGamepass]
+			local hasGamepass = flags[flagName] or gamepassOwnership[ownershipName]
+			
+			choiceData.hasGamepass = hasGamepass
+		end
+		
+		eventPayload.choices[index] = choiceData
+	end
+	
+	-- Don't update pendingEvents - it should already have this event stored
+	-- Just re-send the event to the client
+	self.remotes.PresentEvent:FireClient(player, eventPayload, "Pick a different option!")
+	debugPrint("[LifeBackend] Re-presented event for retry:", eventId)
+end
+
 -- ============================================================================
 -- CRITICAL FIX: Log significant events that occur during the year
 -- These get used in the year summary instead of random generic messages
@@ -15343,6 +15442,32 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 		clearAwaitingOnError()
 		return
 	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Check if this choice was already marked unavailable
+	-- Prevents player from clicking the same unaffordable choice repeatedly
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if eventDef._unavailableChoices and eventDef._unavailableChoices[choiceIndex] then
+		local reason = eventDef._unavailableChoices[choiceIndex]
+		warn("[LifeBackend] Player tried to select unavailable choice", choiceIndex, ":", reason)
+		
+		-- Re-show the event so they can pick something else
+		self:pushState(player, nil, {
+			showPopup = true,
+			emoji = "❌",
+			title = "Can't Do That!",
+			body = reason .. "\n\nPlease pick a different option.",
+			wasSuccess = false,
+		})
+		
+		-- Re-present the event after brief delay
+		task.delay(0.1, function()
+			if self.pendingEvents[player.UserId] then
+				self:presentEventForRetry(player, eventDef, eventId)
+			end
+		end)
+		return
+	end
 
 	debugPrint(string.format("Resolving event %s for %s with choice #%d", eventId or "unknown", player.Name, choiceIndex))
 
@@ -15412,92 +15537,42 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 			warn("[LifeBackend] Event resolution error:", result)
 		elseif result and result.failed then
 			-- ═══════════════════════════════════════════════════════════════════════════════
-			-- CRITICAL FIX: When choice fails eligibility, FIND A FREE ALTERNATIVE!
-			-- User bug: "WHEN THAT CANT DO THAT! POPS UP IT BREAKS MY GAME COMPLETELY"
+			-- CRITICAL FIX: When choice fails, RE-SHOW the event so player can pick another!
+			-- User feedback: "have it just u click OK and it goes back to let u choose"
 			-- 
-			-- Solution: Find and auto-select the first FREE choice, or skip event
-			-- This prevents softlock and keeps the game moving!
+			-- Flow: Error popup → Click OK → Same event re-appears → Pick different choice
 			-- ═══════════════════════════════════════════════════════════════════════════════
 			local errorMessage = result.failReason or "You can't select this option right now."
-			warn("[LifeBackend] Choice", choiceIndex, "failed eligibility:", errorMessage)
+			warn("[LifeBackend] Choice", choiceIndex, "failed eligibility:", errorMessage, "- will re-show event")
 			
-			-- Track failed choices to prevent infinite recursion
-			eventDef._failedChoices = eventDef._failedChoices or {}
-			eventDef._failedChoices[choiceIndex] = true
+			-- DON'T clear awaitingDecision or pendingEvents - event stays active!
+			-- The pendingEvent is still there, player just needs to pick again
 			
-			-- Try to find an affordable alternative choice
-			local alternativeChoiceIndex = nil
-			local playerMoney = state.Money or 0
+			-- Mark this choice as unavailable so UI can gray it out
+			eventDef._unavailableChoices = eventDef._unavailableChoices or {}
+			eventDef._unavailableChoices[choiceIndex] = errorMessage
 			
-			for i, c in ipairs(choices) do
-				-- Skip choices that failed (including from recursive calls)
-				if not eventDef._failedChoices[i] then
-					local choiceCost = 0
-					
-					-- Check effects.Money cost
-					if c.effects and c.effects.Money and c.effects.Money < 0 then
-						choiceCost = math.abs(c.effects.Money)
-					end
-					-- Check direct cost field
-					if c.cost and c.cost > 0 then
-						choiceCost = math.max(choiceCost, c.cost)
-					end
-					
-					-- Check if we can afford this choice
-					if playerMoney >= choiceCost then
-						-- Check eligibility function if it exists
-						local eligible = true
-						if c.eligibility and type(c.eligibility) == "function" then
-							local success, isEligible = pcall(c.eligibility, state)
-							if success and isEligible == false then
-								eligible = false
-							end
-						end
-						
-						if eligible then
-							alternativeChoiceIndex = i
-							-- Prefer free options (cost = 0)
-							if choiceCost == 0 then
-								break -- Found a free option, use it!
-							end
-						end
-					end
+			-- Send special response that will show error then re-present the event
+			self:pushState(player, nil, {
+				showPopup = true,
+				emoji = "❌",
+				title = "Can't Do That!",
+				body = errorMessage,
+				wasSuccess = false,
+				-- After dismissing this popup, re-show the event
+				reshowEvent = true,
+				reshowEventId = eventId,
+			})
+			
+			-- Schedule re-presenting the event after a brief delay for popup
+			-- This gives time for the error popup to show first
+			task.delay(0.1, function()
+				if self.pendingEvents[player.UserId] then
+					-- Re-present the same event with updated unavailable choices info
+					self:presentEventForRetry(player, eventDef, eventId)
 				end
-			end
-			
-			if alternativeChoiceIndex then
-				-- Found an alternative! Auto-select it
-				warn("[LifeBackend] Auto-selecting alternative choice", alternativeChoiceIndex, "for player")
-				
-				-- Add message about what happened to state
-				local altChoice = choices[alternativeChoiceIndex]
-				local altText = altChoice.text or "another option"
-				
-				-- RECURSIVELY call resolvePendingEvent with the NEW choice
-				-- First, add a prefix to the feed so player knows what happened
-				if altChoice.feedText then
-					altChoice.feedText = "❌ Couldn't afford first choice.\n✅ " .. altChoice.feedText
-				elseif altChoice.feed then
-					altChoice.feed = "❌ Couldn't afford first choice.\n✅ " .. altChoice.feed
-				end
-				
-				-- Call ourselves with the alternative choice
-				return self:resolvePendingEvent(player, eventId, alternativeChoiceIndex)
-			else
-				-- No affordable alternative found - skip the event entirely
-				warn("[LifeBackend] No affordable choices available - skipping event")
-				state.awaitingDecision = false
-				self.pendingEvents[player.UserId] = nil
-				
-				self:pushState(player, "💸 " .. errorMessage .. " (Event skipped)", {
-					showPopup = true,
-					emoji = "💸",
-					title = "Can't Afford Any Option",
-					body = errorMessage .. "\n\nEvent skipped - save up some money first!",
-					wasSuccess = false,
-				})
-				return
-			end
+			end)
+			return
 		end
 		effectsSummary = {
 			Happiness = (state.Stats.Happiness - preStats.Happiness),
