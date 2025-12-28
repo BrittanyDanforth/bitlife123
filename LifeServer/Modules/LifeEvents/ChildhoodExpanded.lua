@@ -521,11 +521,12 @@ ChildhoodExpanded.events = {
 		careerTags = { "finance" },
 		
 		choices = {
-			{
-				text = "Buy the toy you've wanted forever",
-				effects = { Happiness = 8, Money = -30 },
-				feedText = "FINALLY! The toy is YOURS!",
-			},
+		{
+			text = "Buy the toy you've wanted forever ($30)",
+			effects = { Happiness = 8, Money = -30 },
+			feedText = "FINALLY! The toy is YOURS!",
+			eligibility = function(state) return (state.Money or 0) >= 30, "💸 Need $30" end,
+		},
 			{
 				text = "Save it for something bigger",
 				effects = { Smarts = 3, Money = 20 },
@@ -1010,10 +1011,10 @@ ChildhoodExpanded.events = {
 				feedText = "Hard to focus when home life is stressful.",
 			},
 			{
-				text = "Get a tutor and improve",
-				effects = { Smarts = 3, Money = -50 },
-				feedText = "Extra help is making a difference!",
-			},
+			text = "Get a tutor and improve (parents pay)",
+			effects = { Smarts = 3 },
+			feedText = "Extra help is making a difference!",
+		},
 		},
 	},
 	{

@@ -180,10 +180,10 @@ SeniorExpanded.events = {
 		end,
 		
 		choices = {
-			{ text = "Spoil them rotten", effects = { Happiness = 10, Money = -200 }, setFlags = { spoiling_grandkids = true }, feedText = "Candy, presents, NO rules. That's grandparent privilege!" },
+			{ text = "Spoil them rotten ($200)", effects = { Happiness = 10, Money = -200 }, setFlags = { spoiling_grandkids = true }, feedText = "Candy, presents, NO rules. That's grandparent privilege!", eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 to spoil grandkids" end },
 			{ text = "Teach them your skills/hobbies", effects = { Happiness = 8, Smarts = 2 }, setFlags = { teaching_grandkids = true }, feedText = "Fishing, cooking, gardening - passing down traditions." },
 			{ text = "Share family stories", effects = { Happiness = 8, Smarts = 1 }, setFlags = { family_historian = true }, feedText = "They love hearing about 'the old days'." },
-			{ text = "Be the babysitter", effects = { Happiness = 6, Health = -2, Money = -50 }, feedText = "Helping out with childcare. Tiring but worth it." },
+			{ text = "Be the babysitter ($50)", effects = { Happiness = 6, Health = -2, Money = -50 }, feedText = "Helping out with childcare. Tiring but worth it.", eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 for babysitting supplies" end },
 			{ text = "Stay connected digitally", effects = { Happiness = 5, Smarts = 2 }, feedText = "Video calls, texting - technology bridges the distance." },
 		},
 	},
@@ -205,7 +205,7 @@ SeniorExpanded.events = {
 			{ text = "Gardening - beautiful results", effects = { Happiness = 8, Health = 3 }, setFlags = { master_gardener = true }, feedText = "Your garden is the envy of the neighborhood!" },
 			{ text = "Woodworking/crafts", effects = { Happiness = 7, Smarts = 2 }, setFlags = { craftsperson = true }, feedText = "Creating beautiful handmade pieces." },
 			{ text = "Painting/art", effects = { Happiness = 9, Smarts = 2 }, setFlags = { senior_artist = true }, feedText = "Your art is getting good enough to sell!" },
-			{ text = "Golf - finally breaking par", effects = { Happiness = 8, Health = 2, Money = -100 }, setFlags = { golf_master = true }, feedText = "Finally playing at the level you always wanted!" },
+			{ text = "Golf - finally breaking par ($100)", effects = { Happiness = 8, Health = 2, Money = -100 }, setFlags = { golf_master = true }, feedText = "Finally playing at the level you always wanted!", eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for golf" end },
 			{ text = "Writing memoirs", effects = { Happiness = 7, Smarts = 4 }, setFlags = { memoir_writer = true }, feedText = "Recording your life story. What a journey it's been!" },
 		},
 	},
@@ -549,7 +549,7 @@ SeniorExpanded.events = {
 			{ text = "Role reversal - they parent you now", effects = { Happiness = -3, Health = 1 }, setFlags = { role_reversal = true }, feedText = "They worry about YOU now. Strange but touching." },
 			{ text = "Conflict over your independence", effects = { Happiness = -6 }, setFlags = { independence_conflict = true }, feedText = "They want to help. You want to do it yourself. Friction." },
 			{ text = "Estranged - don't talk much", effects = { Happiness = -8 }, setFlags = { estranged_children = true }, feedText = "Painful distance. Regrets about what went wrong." },
-			{ text = "Providing financial help to them", effects = { Happiness = 2, Money = -500 }, setFlags = { supporting_adult_kids = true }, feedText = "Kids need help. Generations supporting each other." },
+			{ text = "Providing financial help to them ($500)", effects = { Happiness = 2, Money = -500 }, setFlags = { supporting_adult_kids = true }, feedText = "Kids need help. Generations supporting each other.", eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 to help kids" end },
 		},
 	},
 	{
@@ -657,11 +657,12 @@ SeniorExpanded.events = {
 		
 		-- CRITICAL: Random reunion outcome
 		choices = {
-			{
-				text = "Host the gathering",
-				effects = { Money = -300 },
-				feedText = "Everyone coming to your place...",
-				onResolve = function(state)
+		{
+			text = "Host the gathering ($300)",
+			effects = { Money = -300 },
+			feedText = "Everyone coming to your place...",
+			eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 to host gathering" end,
+			onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.60 then
 						state:ModifyStat("Happiness", 12)
@@ -820,12 +821,13 @@ SeniorExpanded.events = {
 					end
 				end,
 			},
-			{
-				text = "Learn something you never did",
-				effects = { Smarts = 5, Happiness = 8, Money = -200 },
-				setFlags = { lifelong_learner = true },
-				feedText = "New language, instrument, skill. Never too old to learn!",
-			},
+		{
+			text = "Learn something you never did ($200)",
+			effects = { Smarts = 5, Happiness = 8, Money = -200 },
+			setFlags = { lifelong_learner = true },
+			feedText = "New language, instrument, skill. Never too old to learn!",
+			eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for learning" end,
+		},
 			{
 				text = "Write letters to loved ones",
 				effects = { Happiness = 8 },
@@ -865,12 +867,13 @@ SeniorExpanded.events = {
 					end
 				end,
 			},
-			{
-				text = "Take a senior tech class",
-				effects = { Money = -50, Smarts = 4, Happiness = 4 },
-				setFlags = { tech_savvy_senior = true },
-				feedText = "Class at your pace. Actually understanding it now!",
-			},
+		{
+			text = "Take a senior tech class ($50)",
+			effects = { Money = -50, Smarts = 4, Happiness = 4 },
+			setFlags = { tech_savvy_senior = true },
+			feedText = "Class at your pace. Actually understanding it now!",
+			eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 for tech class" end,
+		},
 			{
 				text = "Give up - prefer the old ways",
 				effects = { Happiness = 2 },
@@ -992,7 +995,7 @@ SeniorExpanded.events = {
 		tags = { "birthday", "milestone", "celebration" },
 		
 		choices = {
-			{ text = "Big party with everyone", effects = { Happiness = 15, Money = -500 }, setFlags = { milestone_celebration = true }, feedText = "What a celebration! Everyone you love in one place!" },
+			{ text = "Big party with everyone ($500)", effects = { Happiness = 15, Money = -500 }, setFlags = { milestone_celebration = true }, feedText = "What a celebration! Everyone you love in one place!", eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for big party" end },
 			{ text = "Quiet dinner with close family", effects = { Happiness = 10 }, feedText = "Intimate and meaningful. Perfect." },
 			{ text = "Reflection on how far you've come", effects = { Happiness = 8, Smarts = 2 }, feedText = "Made it this far. Still here. Grateful." },
 			{ text = "Feel old - not celebrating", effects = { Happiness = -4 }, feedText = "Another year older. Nothing to celebrate." },

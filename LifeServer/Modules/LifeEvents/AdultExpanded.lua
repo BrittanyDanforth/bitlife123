@@ -750,9 +750,10 @@ AdultExpanded.events = {
 				end,
 			},
 			{
-				text = "Invest conservatively",
+				text = "Invest conservatively ($200)",
 				effects = { Money = -200 },
 				feedText = "Playing it safe...",
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 to invest" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.70 then

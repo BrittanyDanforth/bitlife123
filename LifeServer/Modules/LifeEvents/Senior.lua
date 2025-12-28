@@ -206,9 +206,10 @@ Senior.events = {
         -- CRITICAL FIX: Random health outcome based on current health, not player choice
         choices = {
             {
-                text = "Get the full screening done",
+                text = "Get the full screening done ($300)",
                 effects = { Money = -300 },
                 feedText = "The doctor reviews your results...",
+                eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for screening" end,
                 onResolve = function(state)
                     local health = (state.Stats and state.Stats.Health) or 50
                     local age = state.Age or 70
@@ -277,10 +278,11 @@ Senior.events = {
         
         choices = {
             { 
-                text = "Spoil them with treats and gifts", 
+                text = "Spoil them with treats and gifts ($100)", 
                 effects = { Happiness = 12, Money = -100 }, 
                 setFlags = { spoiling_grandparent = true }, 
-                feedText = "What are grandparents for if not spoiling?!" 
+                feedText = "What are grandparents for if not spoiling?!",
+                eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100" end,
             },
             { 
                 text = "Share stories from your life", 
@@ -341,10 +343,11 @@ Senior.events = {
                 feedText = "Building things with your hands is satisfying." 
             },
             { 
-                text = "Golf", 
+                text = "Golf ($200)", 
                 effects = { Happiness = 6, Health = 3, Money = -200 }, 
                 setFlags = { golfer = true }, 
-                feedText = "Out on the course several times a week!" 
+                feedText = "Out on the course several times a week!",
+                eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for golf" end,
             },
             { 
                 text = "Writing memoirs", 
@@ -551,16 +554,18 @@ Senior.events = {
                 feedText = "Pride aside, the cane really helps." 
             },
             { 
-                text = "Physical therapy", 
+                text = "Physical therapy ($500)", 
                 effects = { Health = 8, Money = -500, Happiness = 3 }, 
                 setFlags = { physical_therapy = true }, 
-                feedText = "The exercises are helping! Slowly improving." 
+                feedText = "The exercises are helping! Slowly improving.",
+                eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for therapy" end,
             },
             { 
-                text = "Modify the house", 
+                text = "Modify the house ($2,000)", 
                 effects = { Happiness = 5, Money = -2000 }, 
                 setFlags = { accessible_home = true }, 
-                feedText = "Grab bars, no-step entry... home is safer now." 
+                feedText = "Grab bars, no-step entry... home is safer now.",
+                eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2,000 for modifications" end,
             },
             { 
                 text = "Push through the pain", 
@@ -589,9 +594,10 @@ Senior.events = {
         -- CRITICAL FIX: Random outcome - memory issues aren't always serious
         choices = {
             {
-                text = "See a doctor about it",
+                text = "See a doctor about it ($300)",
                 effects = { Money = -300 },
                 feedText = "The doctor ran some cognitive tests...",
+                eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for tests" end,
                 onResolve = function(state)
                     local age = state.Age or 75
                     local smarts = (state.Stats and state.Stats.Smarts) or 50
@@ -762,10 +768,11 @@ Senior.events = {
         
         choices = {
             { 
-                text = "Take a senior driving course", 
+                text = "Take a senior driving course ($100)", 
                 effects = { Smarts = 3, Money = -100 }, 
                 setFlags = { senior_driver_trained = true }, 
-                feedText = "The refresher course helped! Insurance discount too!" 
+                feedText = "The refresher course helped! Insurance discount too!",
+                eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for course" end,
             },
             { 
                 text = "Give up the keys voluntarily", 
@@ -866,14 +873,16 @@ Senior.events = {
         
         choices = {
             { 
-                text = "Move to assisted living", 
+                text = "Move to assisted living ($5,000)", 
                 effects = { Health = 5, Happiness = -5, Money = -5000 }, 
                 setFlags = { assisted_living = true }, 
-                feedText = "It's different, but the care is good." 
+                feedText = "It's different, but the care is good.",
+                eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000" end,
             },
             { 
-                text = "In-home caregiver", 
-                effects = { Health = 3, Happiness = 3, Money = -3000 }, 
+                text = "In-home caregiver ($3,000)", 
+                effects = { Health = 3, Happiness = 3, Money = -3000 },
+                eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Need $3,000" end, 
                 setFlags = { has_caregiver = true }, 
                 feedText = "Help comes to you. Staying home is important." 
             },
@@ -910,9 +919,10 @@ Senior.events = {
         -- CRITICAL FIX: Random emergency type, not player choice
         choices = {
             {
-                text = "Get emergency care",
+                text = "Get emergency care ($2,000)",
                 effects = { Money = -2000 },
                 feedText = "In the ambulance...",
+                eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2,000 for emergency care" end,
                 onResolve = function(state)
                     local health = (state.Stats and state.Stats.Health) or 50
                     local age = state.Age or 80
@@ -995,10 +1005,11 @@ Senior.events = {
         
         choices = {
             { 
-                text = "Pre-plan and pre-pay everything", 
+                text = "Pre-plan and pre-pay everything ($5,000)", 
                 effects = { Happiness = 5, Smarts = 3, Money = -5000 }, 
                 setFlags = { funeral_planned = true, prepaid_funeral = true }, 
-                feedText = "One less thing for family to worry about." 
+                feedText = "One less thing for family to worry about.",
+                eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000" end,
             },
             { 
                 text = "Write down my wishes", 

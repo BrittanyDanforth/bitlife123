@@ -28,11 +28,12 @@ SeasonalEvents.events = {
 		
 		-- CRITICAL: Random holiday outcome
 		choices = {
-			{
-				text = "Big family celebration ($200)",
-				effects = { Money = -200 },
-				feedText = "Gathering with loved ones...",
-				onResolve = function(state)
+		{
+			text = "Big family celebration ($200)",
+			effects = { Money = -200 },
+			feedText = "Gathering with loved ones...",
+			eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for celebration" end,
+			onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.60 then
 						state:ModifyStat("Happiness", 15)
@@ -92,7 +93,7 @@ SeasonalEvents.events = {
 					end
 				end,
 			},
-			{ text = "Intimate gathering ($20)", effects = { Happiness = 8, Money = -20 }, feedText = "🎆 Small circle, big laughs. Perfect way to end the year." },
+			{ text = "Intimate gathering ($20)", effects = { Happiness = 8, Money = -20 }, feedText = "🎆 Small circle, big laughs. Perfect way to end the year.", eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20" end },
 			{ text = "Reflect and set intentions (free)", effects = { Happiness = 6, Smarts = 3 }, setFlags = { has_resolutions = true }, feedText = "🎆 Mindful new year. Goals set. Feeling hopeful!" },
 			{ text = "Asleep before midnight (free)", effects = { Happiness = 4, Health = 3 }, feedText = "🎆 Slept through it. New year started with good rest!" },
 		},
@@ -215,9 +216,10 @@ SeasonalEvents.events = {
 		-- CRITICAL: Random allergy severity
 		choices = {
 			{
-				text = "Antihistamines and push through",
+				text = "Antihistamines and push through ($20)",
 				effects = { Money = -20 },
 				feedText = "Medicating...",
+				eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20 for meds" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.55 then
@@ -231,7 +233,8 @@ SeasonalEvents.events = {
 				end,
 			},
 			{ text = "Stay indoors", effects = { Happiness = 1, Health = 1 }, feedText = "🤧 Missing the nice weather but at least not sneezing." },
-			{ text = "Natural remedies", effects = { Happiness = 4, Health = 2, Money = -30 }, feedText = "🤧 Local honey, neti pot, supplements. Actually helping!" },
+			{ text = "Natural remedies ($30)", effects = { Happiness = 4, Health = 2, Money = -30 }, feedText = "🤧 Local honey, neti pot, supplements. Actually helping!", eligibility = function(state) return (state.Money or 0) >= 30, "💸 Need $30" end },
+		{ text = "Suffer through it (free)", effects = { Happiness = -2, Health = -1 }, feedText = "🤧 Sneezing and miserable but saving money." },
 		},
 	},
 	
@@ -279,7 +282,8 @@ SeasonalEvents.events = {
 					end
 				end,
 			},
-			{ text = "Staycation ($50)", effects = { Happiness = 8, Money = -50, Health = 2 }, feedText = "☀️ Local exploration! Saved money, still relaxed!" },
+			{ text = "Staycation ($50)", effects = { Happiness = 8, Money = -50, Health = 2 }, feedText = "☀️ Local exploration! Saved money, still relaxed!", eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50" end },
+		{ text = "Enjoy local parks (free)", effects = { Happiness = 6, Health = 2 }, feedText = "☀️ Free fun in the sun! Parks and picnics!" },
 			{ 
 				-- CRITICAL FIX: Show price and add eligibility check
 				text = "Summer camp/program ($300)", 

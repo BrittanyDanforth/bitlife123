@@ -572,7 +572,7 @@ SchoolExpanded.events = {
 				end,
 			},
 			{ text = "Stay a regular member", effects = { Happiness = 2, Smarts = 1 }, feedText = "📋 Less responsibility, same fun. Good choice." },
-			{ text = "Start your own club", effects = { Happiness = 6, Smarts = 3, Money = -20 }, setFlags = { club_founder = true }, feedText = "📋 Founded something new! Initiative recognized!" },
+			{ text = "Start your own club ($20)", effects = { Happiness = 6, Smarts = 3, Money = -20 }, setFlags = { club_founder = true }, feedText = "📋 Founded something new! Initiative recognized!", eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20 for club startup" end },
 		},
 	},
 	{

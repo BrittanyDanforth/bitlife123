@@ -204,6 +204,7 @@ local events = {
 				effects = { Happiness = 8, Money = -5000 },
 				setFlags = { quit_toxic_job = true, prioritizes_mental_health = true },
 				feedText = "You gave 2 weeks notice. Your mental health matters MORE. You found a new job with better culture. Jessica won the battle. You won the WAR by leaving.",
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need savings to quit" end,
 			},
 		},
 	},
@@ -232,7 +233,7 @@ local events = {
 			{
 				index = 2,
 				text = "Decline and suggest Sarah instead",
-				effects = { Happiness = 5, Money = -5000 },
+				effects = { Happiness = 5 },
 				setFlags = { loyal = true, selfless = true, missed_opportunity = true },
 				feedText = "'Sarah deserves this more.' Your boss was surprised. Sarah got it. She hugged you. 'Thank you.' Friendship saved. Career momentum: stalled. Trade-off made.",
 			},
@@ -307,6 +308,7 @@ local events = {
 				effects = { Happiness = 9, Money = -3000 },
 				setFlags = { quit_for_self_worth = true, career_mover = true },
 				feedText = "You resigned. 'I know my worth.' Found a new job at $74K with better culture. Your old boss was shocked. You moved UP by moving OUT! Winning!",
+				eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Need savings to quit" end,
 			},
 		},
 	},
@@ -337,10 +339,11 @@ local events = {
 			},
 			{
 				index = 2,
-				text = "Document everything - build a lawsuit case",
+				text = "Document everything - build a lawsuit case ($5,000)",
 				effects = { Happiness = -8, Smarts = 6, Money = -5000 },
 				setFlags = { potential_lawsuit = true, strategic = true },
 				feedText = "You hired an employment lawyer. $5,000 retainer. You're building a case. Hostile work environment. This will take months. But you're fighting back legally.",
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 for lawyer" end,
 			},
 			{
 				index = 3,
@@ -348,6 +351,7 @@ local events = {
 				effects = { Happiness = 10, Money = -10000, Health = 8 },
 				setFlags = { quit_toxic_job = true, mental_health_priority = true },
 				feedText = "You quit. No plan. Just OUT. Your friends thought you were crazy. But you can BREATHE again. You'll figure it out. Sanity > Paycheck. Worth it.",
+				eligibility = function(state) return (state.Money or 0) >= 10000, "💸 Need savings to quit without a plan" end,
 			},
 			{
 				index = 4,
@@ -598,7 +602,7 @@ local events = {
 			{
 				index = 2,
 				text = "Leave quietly - don't burn bridges",
-				effects = { Happiness = -12, Money = -5000 },
+				effects = { Happiness = -12 },
 				setFlags = { fired = true, no_severance = true, just_fired = true },
 				feedText = "You left. Humiliated. Security walked you out. 20 years of loyalty for THIS. You cried in your car. Unemployed. No severance. Rock bottom.",
 				-- CRITICAL FIX: Clear job after being fired

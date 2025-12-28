@@ -192,11 +192,12 @@ PetEvents.events = {
 		
 		-- CRITICAL: Random vet outcome
 		choices = {
-			{
-				text = "Get the checkup",
-				effects = { Money = -100 },
-				feedText = "At the vet...",
-				onResolve = function(state)
+		{
+			text = "Get the checkup ($100)",
+			effects = { Money = -100 },
+			feedText = "At the vet...",
+			eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for vet checkup" end,
+			onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.55 then
 						if state.ModifyStat then state:ModifyStat("Happiness", 6) end
@@ -262,7 +263,7 @@ PetEvents.events = {
 					end
 				end,
 			},
-			{ text = "Hire professional trainer", effects = { Money = -200, Happiness = 6 }, setFlags = { well_trained_pet = true }, feedText = "🎓 Pro trainer worked wonders! Well-behaved pet!" },
+			{ text = "Hire professional trainer ($200)", effects = { Money = -200, Happiness = 6 }, setFlags = { well_trained_pet = true }, feedText = "🎓 Pro trainer worked wonders! Well-behaved pet!", eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for trainer" end },
 			{ text = "Accept them as they are", effects = { Happiness = 4 }, feedText = "🎓 They're perfect even untrained. Love them anyway." },
 		},
 	},
@@ -300,7 +301,7 @@ PetEvents.events = {
 		choices = {
 			{ text = "Cuddles on the couch", effects = { Happiness = 10, Health = 2 }, feedText = "💕 Pure love. Best stress relief. Pet therapy!" },
 			{ text = "Playtime", effects = { Happiness = 8, Health = 3 }, feedText = "💕 Running, playing, laughing! Joy for both of you!" },
-			{ text = "Adventures together", effects = { Happiness = 10, Health = 4, Money = -20 }, feedText = "💕 Park/hike/outing! Making memories together!" },
+			{ text = "Adventures together ($20)", effects = { Happiness = 10, Health = 4, Money = -20 }, feedText = "💕 Park/hike/outing! Making memories together!", eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20" end },
 			{ text = "Just appreciate them", effects = { Happiness = 6 }, feedText = "💕 Watching them sleep. How did you get so lucky?" },
 		},
 	},
@@ -481,7 +482,7 @@ PetEvents.events = {
 		end,
 		
 		choices = {
-			{ text = "Extra love and comfort ($50)", effects = { Happiness = 6, Money = -50 }, feedText = "🐕‍🦺 Making their senior years the best. Soft beds, gentle walks." },
+			{ text = "Extra love and comfort ($50)", effects = { Happiness = 6, Money = -50 }, feedText = "🐕‍🦺 Making their senior years the best. Soft beds, gentle walks.", eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50" end },
 			{ 
 				-- CRITICAL FIX: Show price and add per-choice eligibility check
 				text = "Expensive treatments ($500)", 
@@ -536,11 +537,12 @@ PetEvents.events = {
 					state:AddFeed("🌈 Hardest goodbye. They were family. Heartbroken but grateful for the time.")
 				end,
 			},
-			{
-				text = "Create a memorial",
-				effects = { Money = -100 },
-				feedText = "Honoring their memory...",
-				onResolve = function(state)
+		{
+			text = "Create a memorial ($100)",
+			effects = { Money = -100 },
+			feedText = "Honoring their memory...",
+			eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for memorial" end,
+			onResolve = function(state)
 					state:ModifyStat("Happiness", -8)
 					state:ModifyStat("Smarts", 2)
 					state.Flags = state.Flags or {}
@@ -570,11 +572,12 @@ PetEvents.events = {
 		requiresFlags = { grieving_pet = true },
 		
 		choices = {
-			{
-				text = "Adopt again",
-				effects = { Money = -250 },
-				feedText = "Opening your home and heart...",
-				onResolve = function(state)
+		{
+			text = "Adopt again ($250)",
+			effects = { Money = -250 },
+			feedText = "Opening your home and heart...",
+			eligibility = function(state) return (state.Money or 0) >= 250, "💸 Need $250 for adoption" end,
+			onResolve = function(state)
 					state:ModifyStat("Happiness", 12)
 					state.Flags = state.Flags or {}
 					state.Flags.grieving_pet = nil
