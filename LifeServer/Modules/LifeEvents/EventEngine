@@ -490,6 +490,27 @@ local function applyChoiceEffects(state, choice, isSuccess)
 		state.Money = (state.Money or 0) + choice.salaryBonus
 	end
 	
+	-- BUG FIX #11: Handle followersGain (celebrity/influencer events)
+	if choice.followersGain then
+		state.FameState = state.FameState or {}
+		state.FameState.followers = (state.FameState.followers or 0) + choice.followersGain
+		state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + choice.followersGain
+	end
+	
+	-- BUG FIX #11: Handle subscribersGain (streamer events)
+	if choice.subscribersGain then
+		state.FameState = state.FameState or {}
+		state.FameState.subscribers = (state.FameState.subscribers or 0) + choice.subscribersGain
+	end
+	
+	-- BUG FIX #11: Handle subscribersLoss (platform ban, etc.)
+	if choice.subscribersLoss then
+		state.FameState = state.FameState or {}
+		local currentSubs = state.FameState.subscribers or 0
+		local lossAmount = math.floor(currentSubs * (choice.subscribersLoss / 100))
+		state.FameState.subscribers = math.max(0, currentSubs - lossAmount)
+	end
+	
 	-- Handle healthLoss/healthGain
 	if choice.healthLoss then
 		if state.ModifyStat then
@@ -1464,19 +1485,20 @@ function EventEngine.createRelationship(state, relType, options)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local newGender = options.gender
 	if not newGender and (relType == "romance" or relType == "partner") then
-		-- Romance partners: opposite gender by default, ~15% chance same-gender
-		local playerGender = state.Gender or "Male"
-		if playerGender == "Female" or playerGender == "female" then
+		-- Romance partners: opposite gender by default
+		-- BUG FIX: Normalize gender to lowercase for comparison, reduce same-gender chance to 5%
+		local playerGender = (state.Gender or "male"):lower()
+		if playerGender == "female" then
 			-- Female player: default to male partner
 			newGender = "male"
-			if math.random() < 0.15 then
-				newGender = "female" -- Same-gender relationship
+			if math.random() < 0.05 then
+				newGender = "female" -- Rare same-gender relationship
 			end
 		else
 			-- Male player: default to female partner
 			newGender = "female"
-			if math.random() < 0.15 then
-				newGender = "male" -- Same-gender relationship
+			if math.random() < 0.05 then
+				newGender = "male" -- Rare same-gender relationship
 			end
 		end
 	elseif not newGender then

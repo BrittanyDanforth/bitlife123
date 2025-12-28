@@ -934,7 +934,7 @@ RelationshipsExpanded.events = {
 		end,
 		
 		choices = {
-			{ text = "Embrace the freedom", effects = { Happiness = 8, Money = 200 }, setFlags = { enjoying_empty_nest = true }, feedText = "🏠 FREEDOM! Quiet house! Walk around naked! Travel!" },
+			{ text = "Embrace the freedom", effects = { Happiness = 8, Money = 200 }, setFlags = { enjoying_empty_nest = true }, feedText = "🏠 FREEDOM! Quiet house! Do whatever you want! Travel!" },
 			{ text = "Devastated - miss them terribly", effects = { Happiness = -8 }, setFlags = { empty_nest_sad = true }, feedText = "🏠 The house feels so empty. Purpose feels lost." },
 			{ text = "Rediscover your relationship", effects = { Happiness = 6 }, setFlags = { rekindled_partnership = true }, feedText = "🏠 It's like dating again! Just the two of you!" },
 			{ text = "Fill time with new hobbies", effects = { Happiness = 5, Smarts = 3 }, setFlags = { new_chapter = true }, feedText = "🏠 New hobbies, classes, activities! Reinvention!" },
@@ -1599,7 +1599,7 @@ RelationshipsExpanded.events = {
 	id = "rel_friend_toxic",
 	title = "Toxic Friend Behavior",
 	emoji = "☢️",
-	text = "A friend has been acting really poorly lately - gossiping, being negative, or taking advantage.",
+	text = "{{FRIEND_NAME}} has been acting really poorly lately - gossiping, being negative, or taking advantage.",
 	question = "What do you do about this friendship?",
 	minAge = 16, maxAge = 70,
 	baseChance = 0.4,
@@ -1608,6 +1608,22 @@ RelationshipsExpanded.events = {
 	ageBand = "any",
 	category = "relationships",
 	tags = { "friend", "toxic", "boundaries", "dynamic" },
+	-- CRITICAL FIX: Only show if player has friends!
+	eligibility = function(state)
+		local hasFriends = state.Relationships and state.Relationships.friends and #state.Relationships.friends > 0
+		if not hasFriends then
+			-- Also check flat relationship table for friend types
+			if state.Relationships then
+				for _, rel in pairs(state.Relationships) do
+					if type(rel) == "table" and (rel.type == "friend" or rel.role == "Friend") then
+						hasFriends = true
+						break
+					end
+				end
+			end
+		end
+		return hasFriends, "You don't have any friends"
+	end,
 	
 	choices = {
 		{

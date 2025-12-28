@@ -120,28 +120,29 @@ SocialMediaEvents.events = {
 					end
 				end,
 			},
-			{
-				text = "Start streaming",
-				effects = { Money = -50 },
-				feedText = "Going live...",
-				onResolve = function(state)
-					local roll = math.random()
-					if roll < 0.20 then
-						-- AAA FIX: Nil check for all state methods
-						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
-						state.Money = (state.Money or 0) + 200
-						state.Flags = state.Flags or {}
-						state.Flags.streamer = true
-						if state.AddFeed then state:AddFeed("🎬 Built a community! Donations rolling in! Streamer life!") end
-					elseif roll < 0.55 then
-						if state.ModifyStat then state:ModifyStat("Happiness", 6) end
-						if state.AddFeed then state:AddFeed("🎬 Small but loyal viewers. Building something!") end
-					else
-						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
-						if state.AddFeed then state:AddFeed("🎬 Talking to empty room. Streaming is hard.") end
-					end
-				end,
-			},
+		{
+			text = "Start streaming ($50)",
+			effects = { Money = -50 },
+			feedText = "Going live...",
+			eligibility = function(state) return (state.Money or 0) >= 50, "💸 Can't afford streaming setup ($50)" end,
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.20 then
+					-- AAA FIX: Nil check for all state methods
+					if state.ModifyStat then state:ModifyStat("Happiness", 12) end
+					state.Money = (state.Money or 0) + 200
+					state.Flags = state.Flags or {}
+					state.Flags.streamer = true
+					if state.AddFeed then state:AddFeed("🎬 Built a community! Donations rolling in! Streamer life!") end
+				elseif roll < 0.55 then
+					if state.ModifyStat then state:ModifyStat("Happiness", 6) end
+					if state.AddFeed then state:AddFeed("🎬 Small but loyal viewers. Building something!") end
+				else
+					if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+					if state.AddFeed then state:AddFeed("🎬 Talking to empty room. Streaming is hard.") end
+				end
+			end,
+		},
 			{ text = "Share photos", effects = { Happiness = 5 }, feedText = "🎬 Posted some pics. Likes make you feel good!" },
 		},
 	},
@@ -411,9 +412,10 @@ SocialMediaEvents.events = {
 		-- CRITICAL: Random learning outcome
 		choices = {
 			{
-				text = "Enroll and commit",
+				text = "Enroll and commit ($50)",
 				effects = { Money = -50 },
 				feedText = "Taking the course...",
+				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Can't afford course ($50)" end,
 				onResolve = function(state)
 					local smarts = (state.Stats and state.Stats.Smarts) or 50
 					local roll = math.random()

@@ -362,7 +362,7 @@ function LifeEvents.init()
 		
 		-- ══════════════════════════════════════════════════════════════════════════════
 		-- RANDOM LIFE EVENTS - For variety so no two lives are the same!
-		-- User request: "ENSURE EVERY LIFE ISN'T THE SAME CREATE SO MUCH GOOD AS HELL"
+		-- User request: "ENSURE EVERY LIFE ISN'T THE SAME CREATE SO MUCH GOOD CONTENT"
 		-- ══════════════════════════════════════════════════════════════════════════════
 		{ name = "RandomLifeEvents",          category = "random" },            -- Random encounters, luck, surprises
 		{ name = "YoungLifeEvents",           category = "childhood" },         -- Childhood and teen random events
@@ -3550,22 +3550,43 @@ function LifeEvents.replaceTemplateVariables(text, state)
 	local fatherName = "Dad"
 	local motherName = "Mom"
 	local partnerName = "your partner"
+	local friendName = "your friend"
+	local siblingName = "your sibling"
+	local childName = "your child"
 	
 	if state.Relationships then
 		for _, rel in pairs(state.Relationships) do
-			if rel.type == "Father" or rel.relationship == "Father" then
-				fatherName = rel.name or rel.Name or "Dad"
-			elseif rel.type == "Mother" or rel.relationship == "Mother" then
-				motherName = rel.name or rel.Name or "Mom"
-			elseif rel.type == "Partner" or rel.relationship == "Partner" or rel.type == "Spouse" or rel.relationship == "Spouse" then
-				partnerName = rel.name or rel.Name or "your partner"
+			if type(rel) == "table" then
+				local relType = (rel.type or rel.relationship or ""):lower()
+				local relRole = (rel.role or ""):lower()
+				if relType == "father" or relRole == "father" then
+					fatherName = rel.name or rel.Name or "Dad"
+				elseif relType == "mother" or relRole == "mother" then
+					motherName = rel.name or rel.Name or "Mom"
+				elseif relType == "partner" or relType == "spouse" or relType == "romantic" or relType == "fiance" or relRole == "partner" or relRole == "spouse" or relRole == "boyfriend" or relRole == "girlfriend" or relRole == "husband" or relRole == "wife" then
+					partnerName = rel.name or rel.Name or "your partner"
+				elseif relType == "friend" or relRole == "friend" then
+					friendName = rel.name or rel.Name or "your friend"
+				elseif relType == "sibling" or relRole == "sibling" or relRole == "brother" or relRole == "sister" then
+					siblingName = rel.name or rel.Name or "your sibling"
+				elseif relType == "child" or relRole == "child" or relRole == "son" or relRole == "daughter" then
+					childName = rel.name or rel.Name or "your child"
+				end
 			end
+		end
+		-- Also check direct partner reference
+		if state.Relationships.partner and type(state.Relationships.partner) == "table" then
+			partnerName = state.Relationships.partner.name or state.Relationships.partner.Name or partnerName
 		end
 	end
 	
 	result = result:gsub("{{FATHER_NAME}}", fatherName)
 	result = result:gsub("{{MOTHER_NAME}}", motherName)
 	result = result:gsub("{{PARTNER_NAME}}", partnerName)
+	-- CRITICAL FIX: Add FRIEND_NAME replacement!
+	result = result:gsub("{{FRIEND_NAME}}", friendName)
+	result = result:gsub("{{SIBLING_NAME}}", siblingName)
+	result = result:gsub("{{CHILD_NAME}}", childName)
 	
 	-- Family status
 	local familyStatus = ""

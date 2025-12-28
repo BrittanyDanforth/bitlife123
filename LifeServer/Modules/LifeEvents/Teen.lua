@@ -203,8 +203,11 @@ Teen.events = {
 				-- CRITICAL FIX: Actually create the partner object!
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
-					local isMale = state.Gender == "male" and false or (state.Gender == "female" and true or math.random() > 0.5)
-					local names = isMale 
+					-- CRITICAL FIX: Partner should be OPPOSITE gender by default!
+					-- BUG FIX: Normalize gender to lowercase for comparison
+					local playerGender = (state.Gender or "male"):lower()
+					local partnerIsMale = (playerGender == "female") -- If player is female, partner is male
+					local names = partnerIsMale 
 						and {"Jake", "Tyler", "Brandon", "Kyle", "Zach", "Dylan", "Josh", "Austin", "Connor", "Trevor"}
 						or {"Emma", "Olivia", "Hannah", "Madison", "Chloe", "Alexis", "Taylor", "Savannah", "Kayla", "Hailey"}
 					local partnerName = names[math.random(1, #names)]
@@ -212,10 +215,10 @@ Teen.events = {
 						id = "partner",
 						name = partnerName,
 						type = "romantic",
-						role = isMale and "Boyfriend" or "Girlfriend",
+						role = partnerIsMale and "Boyfriend" or "Girlfriend",
 						relationship = 70,
 						age = state.Age or 15,
-						gender = isMale and "male" or "female",
+						gender = partnerIsMale and "male" or "female",
 						alive = true,
 						metThrough = "high_school",
 						isClassmate = true,
@@ -654,9 +657,11 @@ Teen.events = {
 		-- CRITICAL FIX: Random promposal outcomes
 		choices = {
 			{
-				text = "Ask my crush with a big promposal",
+				text = "Ask my crush with a big promposal ($100)",
 				effects = { Money = -100 },
 				feedText = "You planned an elaborate promposal...",
+				-- CRITICAL FIX: Add eligibility to prevent softlock
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Can't afford a fancy promposal ($100 needed). Try a different approach!" end,
 				onResolve = function(state)
 					local looks = (state.Stats and state.Stats.Looks) or 50
 					local happiness = (state.Stats and state.Stats.Happiness) or 50
@@ -868,8 +873,11 @@ Teen.events = {
 						state.Flags.dating = true
 						-- CRITICAL FIX: Actually create the partner object!
 						state.Relationships = state.Relationships or {}
-						local isMale = state.Gender == "male" and false or (state.Gender == "female" and true or math.random() > 0.5)
-						local names = isMale 
+						-- CRITICAL FIX: Partner should be OPPOSITE gender by default!
+						-- BUG FIX: Normalize gender to lowercase for comparison
+						local playerGender = (state.Gender or "male"):lower()
+						local partnerIsMale = (playerGender == "female") -- If player is female, partner is male
+						local names = partnerIsMale 
 							and {"Ryan", "Tyler", "Brandon", "Kyle", "Zach", "Dylan", "Josh", "Austin", "Connor", "Trevor"}
 							or {"Lily", "Sophie", "Grace", "Chloe", "Zoe", "Bella", "Mia", "Emma", "Ava", "Harper"}
 						local partnerName = names[math.random(1, #names)]
@@ -877,10 +885,10 @@ Teen.events = {
 							id = "partner",
 							name = partnerName,
 							type = "romantic",
-							role = isMale and "Boyfriend" or "Girlfriend",
+							role = partnerIsMale and "Boyfriend" or "Girlfriend",
 							relationship = 65,
 							age = state.Age or 15,
-							gender = isMale and "male" or "female",
+							gender = partnerIsMale and "male" or "female",
 							alive = true,
 							metThrough = "summer_vacation",
 							longDistance = true,
@@ -938,8 +946,10 @@ Teen.events = {
 		text = "Your family takes you on a college tour.",
 		question = "What kind of school appeals to you?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.6,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.5, -- CRITICAL FIX: Reduced
+		cooldown = 5,
+		maxOccurrences = 2, -- Can tour twice max
+		oneTime = true, -- CRITICAL FIX: Only one college tour decision needed
 
 		choices = {
 			{ text = "Big university with lots of options", effects = { Happiness = 4, Smarts = 2 }, setFlags = { wants_big_school = true }, feedText = "You loved the energy of a big campus!" },
@@ -1482,8 +1492,11 @@ Teen.events = {
 						state.Flags.dating = true
 						-- Create partner
 						state.Relationships = state.Relationships or {}
-						local isMale = state.Gender == "male" and false or (state.Gender == "female" and true or math.random() > 0.5)
-						local names = isMale 
+						-- CRITICAL FIX: Partner should be OPPOSITE gender by default!
+						-- BUG FIX: Normalize gender to lowercase for comparison
+						local playerGender = (state.Gender or "male"):lower()
+						local partnerIsMale = (playerGender == "female") -- If player is female, partner is male
+						local names = partnerIsMale 
 							and {"Mason", "Ethan", "Noah", "Liam", "Lucas", "Oliver", "Aiden", "Elijah"}
 							or {"Ava", "Isabella", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn", "Luna"}
 						local partnerName = names[math.random(1, #names)]
@@ -1491,10 +1504,10 @@ Teen.events = {
 							id = "partner",
 							name = partnerName,
 							type = "romantic",
-							role = isMale and "Boyfriend" or "Girlfriend",
+							role = partnerIsMale and "Boyfriend" or "Girlfriend",
 							relationship = 75,
 							age = state.Age or 15,
-							gender = isMale and "male" or "female",
+							gender = partnerIsMale and "male" or "female",
 							alive = true,
 							metThrough = "school",
 						}
@@ -1522,8 +1535,11 @@ Teen.events = {
 					state.Flags.has_partner = true
 					state.Flags.dating = true
 					state.Relationships = state.Relationships or {}
-					local isMale = state.Gender == "male" and false or (state.Gender == "female" and true or math.random() > 0.5)
-					local names = isMale 
+					-- CRITICAL FIX: Partner should be OPPOSITE gender by default!
+					-- BUG FIX: Normalize gender to lowercase for comparison
+					local playerGender = (state.Gender or "male"):lower()
+					local partnerIsMale = (playerGender == "female") -- If player is female, partner is male
+					local names = partnerIsMale 
 						and {"Mason", "Ethan", "Noah", "Liam", "Lucas", "Oliver", "Aiden", "Elijah"}
 						or {"Ava", "Isabella", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn", "Luna"}
 					local partnerName = names[math.random(1, #names)]
@@ -1531,10 +1547,10 @@ Teen.events = {
 						id = "partner",
 						name = partnerName,
 						type = "romantic",
-						role = isMale and "Boyfriend" or "Girlfriend",
+						role = partnerIsMale and "Boyfriend" or "Girlfriend",
 						relationship = 70,
 						age = state.Age or 15,
-						gender = isMale and "male" or "female",
+						gender = partnerIsMale and "male" or "female",
 						alive = true,
 						metThrough = "school",
 					}
@@ -1890,9 +1906,10 @@ Teen.events = {
 		
 		choices = {
 			{
-				text = "See a dermatologist",
+				text = "See a dermatologist ($80)",
 				effects = { Money = -80 },
 				feedText = "You got professional treatment...",
+				eligibility = function(state) return (state.Money or 0) >= 80, "💸 Can't afford dermatologist ($80 needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.70 then
@@ -1906,9 +1923,13 @@ Teen.events = {
 					end
 				end,
 			},
-			{ text = "Try over-the-counter products", effects = { Money = -20, Looks = 2 }, feedText = "Some improvement with drugstore products." },
-			{ text = "Accept it as part of being a teen", effects = { Happiness = 3 }, setFlags = { self_accepting = true }, feedText = "It's temporary. You're still you." },
-			{ text = "Cover it with makeup", effects = { Looks = 3, Money = -30 }, feedText = "Learned some concealing techniques!" },
+			{ text = "Try over-the-counter products ($20)", effects = { Money = -20, Looks = 2 }, feedText = "Some improvement with drugstore products.",
+				eligibility = function(state) return (state.Money or 0) >= 20, "💸 Can't afford skincare products ($20 needed)" end,
+			},
+			{ text = "Accept it as part of being a teen (Free)", effects = { Happiness = 3 }, setFlags = { self_accepting = true }, feedText = "It's temporary. You're still you." },
+			{ text = "Cover it with makeup ($30)", effects = { Looks = 3, Money = -30 }, feedText = "Learned some concealing techniques!",
+				eligibility = function(state) return (state.Money or 0) >= 30, "💸 Can't afford makeup ($30 needed)" end,
+			},
 		},
 	},
 	{
@@ -2215,11 +2236,13 @@ Teen.events = {
 		baseChance = 0.5,
 		
 		choices = {
-			{ text = "Trendy and fashion-forward", effects = { Looks = 5, Money = -100 }, setFlags = { fashionista = true }, feedText = "Always on top of the latest trends!" },
-			{ text = "Athletic and casual", effects = { Looks = 2, Health = 2 }, setFlags = { sporty_style = true }, feedText = "Comfort and function first." },
-			{ text = "Alternative and unique", effects = { Looks = 3, Happiness = 4 }, setFlags = { alternative_style = true }, feedText = "You march to your own beat." },
-			{ text = "Classic and understated", effects = { Looks = 3, Smarts = 2 }, setFlags = { classic_style = true }, feedText = "Timeless and sophisticated." },
-			{ text = "Whatever's clean", effects = { Happiness = 2 }, feedText = "Fashion? More like comfortable." },
+			{ text = "Trendy and fashion-forward ($100)", effects = { Looks = 5, Money = -100 }, setFlags = { fashionista = true }, feedText = "Always on top of the latest trends!",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Trendy clothes cost $100!" end,
+			},
+			{ text = "Athletic and casual (Free)", effects = { Looks = 2, Health = 2 }, setFlags = { sporty_style = true }, feedText = "Comfort and function first." },
+			{ text = "Alternative and unique (Free)", effects = { Looks = 3, Happiness = 4 }, setFlags = { alternative_style = true }, feedText = "You march to your own beat." },
+			{ text = "Classic and understated (Free)", effects = { Looks = 3, Smarts = 2 }, setFlags = { classic_style = true }, feedText = "Timeless and sophisticated." },
+			{ text = "Whatever's clean (Free)", effects = { Happiness = 2 }, feedText = "Fashion? More like comfortable." },
 		},
 	},
 	{

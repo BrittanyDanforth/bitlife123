@@ -71,7 +71,7 @@ HealthEvents.events = {
 				end,
 			},
 			{ text = "Push through it", effects = { Health = -3, Happiness = -2, Smarts = 1 }, feedText = "🤒 Working sick. Spreading germs. Delayed recovery." },
-			{ text = "Go to doctor", effects = { Money = -50, Health = 3 }, feedText = "🤒 Got proper treatment. Meds helping." },
+			{ text = "Go to doctor ($50)", effects = { Money = -50, Health = 3 }, feedText = "🤒 Got proper treatment. Meds helping." },
 		},
 	},
 	{
@@ -248,12 +248,12 @@ HealthEvents.events = {
 		category = "health",
 		tags = { "dental", "teeth", "checkup" },
 		
-		-- CRITICAL: Random dental outcome
-		choices = {
-			{
-				text = "Open wide",
-				effects = { Money = -75 },
-				feedText = "In the dentist chair...",
+	-- CRITICAL: Random dental outcome - checkups are free/covered by insurance!
+	choices = {
+		{
+			text = "Open wide",
+			effects = {},  -- FREE - dental checkups covered by insurance/parents
+			feedText = "In the dentist chair...",
 				onResolve = function(state)
 					local health = (state.Stats and state.Stats.Health) or 50
 					local roll = math.random()
@@ -423,7 +423,7 @@ HealthEvents.events = {
 				end,
 			},
 			{ text = "Suffer through it", effects = { Happiness = -5, Health = -2 }, feedText = "🤧 Sneezing, itching, misery. Toughing it out." },
-			{ text = "Allergy shots", effects = { Money = -100, Happiness = 2, Health = 3 }, setFlags = { allergy_treatment = true }, feedText = "🤧 Long-term solution! Building immunity!" },
+			{ text = "Allergy shots ($100)", effects = { Money = -100, Happiness = 2, Health = 3 }, setFlags = { allergy_treatment = true }, feedText = "🤧 Long-term solution! Building immunity!" },
 		},
 	},
 	
@@ -470,7 +470,7 @@ HealthEvents.events = {
 			},
 			{ text = "Reach out for support", effects = { Happiness = 4, Health = 2 }, feedText = "😰 Talked to someone. Not alone. That helps." },
 			{ text = "Avoid triggers (hide)", effects = { Happiness = -3 }, setFlags = { avoiding_anxiety_triggers = true }, feedText = "😰 Hiding makes it worse. Avoidance isn't coping." },
-			{ text = "Seek professional help", effects = { Money = -80, Happiness = 6, Health = 3 }, setFlags = { therapy = true }, feedText = "😰 Therapist appointment made. Healing begins." },
+			{ text = "Seek professional help ($80)", effects = { Money = -80, Happiness = 6, Health = 3 }, setFlags = { therapy = true }, feedText = "😰 Therapist appointment made. Healing begins." },
 		},
 	},
 	{
@@ -513,7 +513,9 @@ HealthEvents.events = {
 			},
 			{ text = "Talk to someone you trust", effects = { Happiness = 5, Health = 2 }, feedText = "😔 Opening up helped. Connection matters." },
 			{ text = "Isolate", effects = { Happiness = -6, Health = -3 }, setFlags = { isolating = true }, feedText = "😔 Pushing everyone away. Spiral continues." },
-			{ text = "Start therapy/medication", effects = { Money = -100, Happiness = 4, Health = 4 }, setFlags = { depression_treatment = true }, feedText = "😔 Getting help. It's okay to not be okay." },
+			{ text = "Start therapy/medication ($100)", effects = { Money = -100, Happiness = 4, Health = 4 }, setFlags = { depression_treatment = true }, feedText = "😔 Getting help. It's okay to not be okay.",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Can't afford treatment ($100 needed)" end,
+			},
 		},
 	},
 	{
@@ -632,7 +634,7 @@ HealthEvents.events = {
 					end
 				end,
 			},
-			{ text = "Use meditation app", effects = { Money = -10, Happiness = 4, Health = 3 }, feedText = "🧘 App helps! Structure and guidance working!" },
+			{ text = "Use meditation app ($10)", effects = { Money = -10, Happiness = 4, Health = 3 }, feedText = "🧘 App helps! Structure and guidance working!" },
 			{ text = "Too restless to meditate", effects = { Happiness = 1 }, feedText = "🧘 Not for everyone. Other ways to find peace." },
 		},
 	},
@@ -680,7 +682,7 @@ HealthEvents.events = {
 					end
 				end,
 			},
-			{ text = "Take sleep aids", effects = { Money = -20, Health = -1 }, feedText = "😴 Meds knock you out but groggy mornings.",
+			{ text = "Take sleep aids ($20)", effects = { Money = -20, Health = -1 }, feedText = "😴 Meds knock you out but groggy mornings.",
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.60 then
@@ -694,7 +696,7 @@ HealthEvents.events = {
 					end
 				end,
 			},
-			{ text = "See sleep specialist", effects = { Money = -150, Health = 5, Happiness = 4 }, feedText = "😴 Sleep study revealed issues. Treatment helping!" },
+			{ text = "See sleep specialist ($150)", effects = { Money = -150, Health = 5, Happiness = 4 }, feedText = "😴 Sleep study revealed issues. Treatment helping!" },
 		},
 	},
 	{
@@ -756,7 +758,7 @@ HealthEvents.events = {
 					end
 				end,
 			},
-			{ text = "Go vegetarian/vegan", effects = { Health = 3, Happiness = 4, Money = -20 }, setFlags = { vegetarian = true }, feedText = "🥗 Plant-based life! Feel lighter and cleaner!" },
+			{ text = "Go vegetarian/vegan ($20)", effects = { Health = 3, Happiness = 4, Money = -20 }, setFlags = { vegetarian = true }, feedText = "🥗 Plant-based life! Feel lighter and cleaner!" },
 			{ text = "Keep eating whatever", effects = { Happiness = 2, Health = -1 }, feedText = "🥗 YOLO. Pizza is a vegetable, right?" },
 		},
 	},
@@ -777,7 +779,7 @@ HealthEvents.events = {
 		choices = {
 			{ text = "Start drinking more water", effects = { Health = 3, Happiness = 2 }, setFlags = { hydrated = true }, feedText = "💧 8 glasses a day! Skin better! More energy!" },
 			{ text = "Living on coffee/soda", effects = { Health = -2, Happiness = 1 }, feedText = "💧 Caffeine is technically water, right? Wrong." },
-			{ text = "Get a nice water bottle", effects = { Money = -20, Health = 2, Happiness = 3 }, feedText = "💧 Fancy bottle motivates you! Hydration achievement!" },
+			{ text = "Get a nice water bottle ($20)", effects = { Money = -20, Health = 2, Happiness = 3 }, feedText = "💧 Fancy bottle motivates you! Hydration achievement!" },
 		},
 	},
 	{
@@ -838,7 +840,7 @@ HealthEvents.events = {
 		choices = {
 			{ text = "Balanced approach", effects = { Happiness = 3, Health = 2 }, feedText = "🍵 Taking a balanced approach to life. Everything in moderation!" },
 			{ text = "Focus on healthy living", effects = { Happiness = 4, Health = 6, Money = 50 }, setFlags = { health_conscious = true }, feedText = "🥗 Making healthier choices. Feeling great!" },
-			{ text = "Commit to fitness", effects = { Happiness = 6, Health = 8, Money = -50 }, setFlags = { fitness_focused = true }, feedText = "💪 All in on fitness! Best shape of your life!" },
+			{ text = "Commit to fitness ($50)", effects = { Happiness = 6, Health = 8, Money = -50 }, setFlags = { fitness_focused = true }, feedText = "💪 All in on fitness! Best shape of your life!" },
 			{ text = "Ignore health for now", effects = { Happiness = 2, Health = -5 }, setFlags = { unhealthy_habits = true }, feedText = "🍔 Not prioritizing health. May regret this later." },
 		},
 	},
@@ -869,7 +871,7 @@ HealthEvents.events = {
 		
 		choices = {
 			{ text = "Rest at home", effects = { Health = 3, Happiness = -2 }, setFlags = { has_cold = true }, feedText = "🤒 Resting at home. Should recover in a week." },
-			{ text = "Take medication", effects = { Money = -30, Health = 5, Happiness = 1 }, feedText = "🤒 Over-the-counter meds helping with symptoms." },
+			{ text = "Take medication ($30)", effects = { Money = -30, Health = 5, Happiness = 1 }, feedText = "🤒 Over-the-counter meds helping with symptoms." },
 			{ text = "Push through it", effects = { Health = -3, Happiness = -4 }, setFlags = { prolonged_illness = true }, feedText = "🤒 Made it worse by not resting. Recovery delayed." },
 		},
 	},
@@ -978,10 +980,12 @@ HealthEvents.events = {
 				feedText = "❤️‍🩹 Heart disease diagnosed. On medication and strict diet now.",
 			},
 			{
-				text = "Get bypass surgery if needed",
+				text = "Get bypass surgery if needed ($5,000)",
 				effects = { Happiness = -15, Money = -5000, Health = 5 },
 				setFlags = { heart_disease = true, had_heart_surgery = true },
 				feedText = "❤️‍🩹 Underwent heart surgery. Long recovery ahead.",
+				-- BUG FIX #2: Add eligibility check for surgery cost
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Can't afford surgery ($5,000 needed)" end,
 			},
 		},
 	},
@@ -991,9 +995,9 @@ HealthEvents.events = {
 		emoji = "🎗️",
 		text = "The biopsy results have come back. The news is serious.",
 		question = "Your diagnosis: CANCER DETECTED\n\n🔬 Finding: Malignant cells detected\n⚠️ Severity: CRITICAL\n🏥 Treatment: Chemotherapy/Radiation/Surgery\n⏰ Early detection increases survival rate\n\nThis is a life-changing diagnosis.",
-		minAge = 20, maxAge = 100,
-		baseChance = 0.18,
-		cooldown = 40,
+		minAge = 30, maxAge = 100, -- CRITICAL FIX: Cancer rare under 30
+		baseChance = 0.10, -- CRITICAL FIX: Reduced from 0.18 - cancer is rare
+		cooldown = 50, -- CRITICAL FIX: Increased - cancer shouldn't pop up often
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",
@@ -1025,10 +1029,11 @@ HealthEvents.events = {
 		
 		choices = {
 			{
-				text = "Fight it - start treatment",
+				text = "Fight it - start treatment ($10,000)",
 				effects = { Happiness = -20, Money = -10000, Health = -25 },
 				setFlags = { has_cancer = true, cancer = true, in_treatment = true, fighting_cancer = true },
 				feedText = "🎗️ Cancer diagnosis. Starting chemotherapy. Fight of your life.",
+				eligibility = function(state) return (state.Money or 0) >= 10000, "💸 Can't afford cancer treatment ($10,000 needed). Try alternative options or seek financial help." end,
 				onResolve = function(state)
 					-- CRITICAL FIX: Treatment doesn't immediately resolve - it takes time
 					-- First treatment has 40% chance to show improvement
@@ -1054,9 +1059,10 @@ HealthEvents.events = {
 				end,
 			},
 			{
-				text = "Get second opinion first",
+				text = "Get second opinion first ($500)",
 				effects = { Happiness = -5, Money = -500 },
 				feedText = "🎗️ Seeking another doctor's perspective...",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Can't afford second opinion ($500 needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					state.Flags = state.Flags or {}
@@ -1109,9 +1115,11 @@ HealthEvents.events = {
 		
 		choices = {
 			{
-				text = "Continue aggressive treatment",
+				text = "Continue aggressive treatment ($5,000)",
 				effects = { Money = -5000, Health = -10, Happiness = -5 },
 				feedText = "🎗️ Pushing through more treatment...",
+				-- BUG FIX #3: Add eligibility check for treatment cost
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Can't afford treatment ($5,000 needed)" end,
 				onResolve = function(state)
 					state.Flags = state.Flags or {}
 					local rounds = (state.Flags.cancer_treatment_rounds or 1) + 1
@@ -1158,9 +1166,11 @@ HealthEvents.events = {
 				end,
 			},
 			{
-				text = "Try alternative treatments",
+				text = "Try alternative treatments ($3,000)",
 				effects = { Money = -3000, Happiness = 2 },
 				feedText = "🎗️ Exploring other options...",
+				-- BUG FIX #4: Add eligibility check for treatment cost
+				eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Can't afford alternative treatment ($3,000 needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					state.Flags = state.Flags or {}
@@ -1427,10 +1437,12 @@ HealthEvents.events = {
 				feedText = "🦴 Bone set, cast on. 6 weeks of limited mobility.",
 			},
 			{
-				text = "Surgery if needed",
+				text = "Surgery if needed ($3,000)",
 				effects = { Money = -3000, Health = 5, Happiness = -8 },
 				setFlags = { had_bone_surgery = true },
 				feedText = "🦴 Needed surgery to fix properly. Pins and plates inserted.",
+				-- BUG FIX #5: Add eligibility check for surgery cost
+				eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Can't afford surgery ($3,000 needed)" end,
 			},
 		},
 	},

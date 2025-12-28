@@ -171,7 +171,7 @@ RapperContentCreatorEvents.events = {
 		id = "rapper_first_track",
 		title = "🎤 Recording Your First Track",
 		emoji = "🎤",
-		text = "You've been writing bars in your Notes app for MONTHS. Rhymes in the shower, freestyling on the bus, beatboxing in class. Now it's time to make something REAL. You found a basement studio run by some dude named Marcus who charges $50/hour. The equipment is old, the room smells like weed and pizza, but this is where legends start. Your heart is pounding. This is the moment you stop being someone who WANTS to rap and become someone who ACTUALLY raps. What sound defines YOU?",
+		text = "You've been writing bars in your Notes app for MONTHS. Rhymes in the shower, freestyling on the bus, beatboxing in class. Now it's time to make something REAL. You found a basement studio run by some dude named Marcus who charges $50/hour. The equipment is old, the room smells like sweat and pizza, but this is where legends start. Your heart is pounding. This is the moment you stop being someone who WANTS to rap and become someone who ACTUALLY raps. What sound defines YOU?",
 		question = "This first track will shape your whole career. What's your style?",
 		minAge = 14, maxAge = 55,
 		baseChance = 1.0,
@@ -975,12 +975,13 @@ RapperContentCreatorEvents.events = {
 		end,
 		
 		choices = {
-			{
-				text = "Go all out - $50K production budget",
-				effects = { Happiness = 30, Money = -50000 },
-				setFlags = { debut_album = true },
-				feedText = "💿 ALBUM DROPPED! World-class production! Critics calling it 'impressive debut!' Career ELEVATED!",
-				onResolve = function(state)
+		{
+			text = "Go all out - $50K production budget",
+			effects = { Happiness = 30, Money = -50000 },
+			setFlags = { debut_album = true },
+			feedText = "💿 ALBUM DROPPED! World-class production! Critics calling it 'impressive debut!' Career ELEVATED!",
+			eligibility = function(state) return (state.Money or 0) >= 50000, "💸 Need $50K for album production" end,
+			onResolve = function(state)
 					state.FameState = state.FameState or {}
 					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(100000, 300000)
 					state.FameState.albumsReleased = (state.FameState.albumsReleased or 0) + 1
@@ -1132,12 +1133,13 @@ RapperContentCreatorEvents.events = {
 		end,
 		
 		choices = {
-			{
-				text = "Throw a MASSIVE party",
-				effects = { Happiness = 40, Money = -20000, Health = -5 },
-				setFlags = { platinum_artist = true },
-				feedText = "💎 PLATINUM PARTY! A-list guests! You're officially in the elite club! LEGENDARY!",
-				onResolve = function(state)
+		{
+			text = "Throw a MASSIVE party ($20K)",
+			effects = { Happiness = 40, Money = -20000, Health = -5 },
+			setFlags = { platinum_artist = true },
+			feedText = "💎 PLATINUM PARTY! A-list guests! You're officially in the elite club! LEGENDARY!",
+			eligibility = function(state) return (state.Money or 0) >= 20000, "💸 Need $20K for party" end,
+			onResolve = function(state)
 					state.FameState = state.FameState or {}
 					state.FameState.platinumRecords = (state.FameState.platinumRecords or 0) + 1
 					state.Fame = (state.Fame or 0) + 40
@@ -1618,12 +1620,13 @@ RapperContentCreatorEvents.events = {
 		end,
 		
 		choices = {
-			{
-				text = "Massive celebration event",
-				effects = { Happiness = 50, Money = -10000 },
-				setFlags = { gold_play_button = true, millionaire_creator = true },
-				feedText = "🥇 1 MILLION! Party was LEGENDARY! You're an ICON! Career established FOREVER!",
-				onResolve = function(state)
+		{
+			text = "Massive celebration event ($10K)",
+			effects = { Happiness = 50, Money = -10000 },
+			setFlags = { gold_play_button = true, millionaire_creator = true },
+			feedText = "🥇 1 MILLION! Party was LEGENDARY! You're an ICON! Career established FOREVER!",
+			eligibility = function(state) return (state.Money or 0) >= 10000, "💸 Need $10K for celebration" end,
+			onResolve = function(state)
 					state.Fame = math.min(100, (state.Fame or 0) + 50)
 					state.Money = (state.Money or 0) + 500000 -- Brand deals flowing
 					state.CurrentJob = state.CurrentJob or {}
@@ -1899,11 +1902,12 @@ RapperContentCreatorEvents.events = {
 		requiresFlags = { has_mixtape = true },
 		
 		choices = {
-			{
-				text = "Pay for clearance ($10,000)",
-				effects = { Happiness = -5, Money = -10000 },
-				feedText = "⚠️ Expensive lesson. Sample cleared. Song stays up. Budget hurting though.",
-				onResolve = function(state)
+		{
+			text = "Pay for clearance ($10K)",
+			effects = { Happiness = -5, Money = -10000 },
+			feedText = "⚠️ Expensive lesson. Sample cleared. Song stays up. Budget hurting though.",
+			eligibility = function(state) return (state.Money or 0) >= 10000, "💸 Need $10K for sample clearance" end,
+			onResolve = function(state)
 					state.Flags = state.Flags or {}
 					state.Flags.sample_cleared = true
 				end,
@@ -2101,12 +2105,13 @@ RapperContentCreatorEvents.events = {
 					state.CurrentJob.salary = 250000
 				end,
 			},
-			{
-				text = "Build your own label",
-				effects = { Happiness = 30, Money = -50000 },
-				setFlags = { mainstream_rapper = true, label_owner = true },
-				feedText = "🔥 Started your OWN LABEL! Signing other artists. Building an EMPIRE!",
-				onResolve = function(state)
+		{
+			text = "Build your own label ($50K)",
+			effects = { Happiness = 30, Money = -50000 },
+			setFlags = { mainstream_rapper = true, label_owner = true },
+			feedText = "🔥 Started your OWN LABEL! Signing other artists. Building an EMPIRE!",
+			eligibility = function(state) return (state.Money or 0) >= 50000, "💸 Need $50K to start a label" end,
+			onResolve = function(state)
 					state.Fame = (state.Fame or 0) + 30
 					state.CurrentJob = state.CurrentJob or {}
 					state.CurrentJob.name = "Rapper/Label Owner"

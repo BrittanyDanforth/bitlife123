@@ -146,9 +146,10 @@ LegalEvents.events = {
 		-- CRITICAL: Random small claims outcome
 		choices = {
 			{
-				text = "Present your case",
+				text = "Present your case ($50 filing fee)",
 				effects = { Money = -50 },
 				feedText = "In front of the judge...",
+				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Can't afford filing fee ($50 needed)" end,
 				onResolve = function(state)
 					local smarts = (state.Stats and state.Stats.Smarts) or 50
 					local roll = math.random()
@@ -167,6 +168,11 @@ LegalEvents.events = {
 						state:AddFeed("⚖️ Lost the case. Judge didn't see it your way. Frustrating.")
 					end
 				end,
+			},
+			{
+				text = "Drop the case (free)",
+				effects = { Happiness = -3 },
+				feedText = "⚖️ Not worth the hassle. Letting it go.",
 			},
 		},
 	},
@@ -188,9 +194,10 @@ LegalEvents.events = {
 		-- CRITICAL: Random divorce outcome
 		choices = {
 			{
-				text = "Amicable divorce",
+				text = "Amicable divorce ($500)",
 				effects = { Money = -500 },
 				feedText = "Working through separation...",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Can't afford divorce fees ($500 needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.50 then
@@ -211,9 +218,11 @@ LegalEvents.events = {
 				end,
 			},
 			{
-				text = "Contested divorce",
+				text = "Contested divorce ($2,000 legal fees)",
 				effects = { Money = -2000 },
 				feedText = "Fighting in court...",
+				-- BUG FIX #15: Add eligibility check for legal fees
+				eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Can't afford legal fees ($2,000 needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.40 then
@@ -231,6 +240,11 @@ LegalEvents.events = {
 						state:AddFeed("💔 Brutal court battle. Lost a lot. Traumatic process.")
 					end
 				end,
+			},
+			{
+				text = "Try to work things out (free)",
+				effects = { Happiness = 3 },
+				feedText = "💔 Decided to give it another chance. Marriage counseling maybe.",
 			},
 		},
 	},
@@ -454,9 +468,11 @@ LegalEvents.events = {
 		-- CRITICAL: Random lawsuit defense outcome
 		choices = {
 			{
-				text = "Hire defense lawyer",
+				text = "Hire defense lawyer ($1,000)",
 				effects = { Money = -1000 },
 				feedText = "Fighting the lawsuit...",
+				-- BUG FIX #16: Add eligibility check for legal fees
+				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Can't afford lawyer ($1,000 needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.45 then

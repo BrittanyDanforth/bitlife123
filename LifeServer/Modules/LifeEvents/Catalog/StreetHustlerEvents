@@ -525,13 +525,14 @@ local events = {
 		end,
 		
 		choices = {
-			{
-				index = 1,
-				text = "Open a legitimate business",
-				effects = { Happiness = 15, Money = -10000 },
-				setFlags = { went_legit = true, entrepreneur = true },
-				feedText = "You invested your money into a legit business!",
-				onResolve = function(state)
+		{
+			index = 1,
+			text = "Open a legitimate business ($10K)",
+			effects = { Happiness = 15, Money = -10000 },
+			setFlags = { went_legit = true, entrepreneur = true },
+			feedText = "You invested your money into a legit business!",
+			eligibility = function(state) return (state.Money or 0) >= 10000, "💸 Need $10K for business" end,
+			onResolve = function(state)
 					state.Flags.street_hustler = nil
 					state.Flags.dealer = nil
 					state.Flags.supplier = nil
@@ -1238,12 +1239,13 @@ local events = {
 		blockedByFlags = { in_prison = true, got_revenge_on_snitch = true, relocated_for_safety = true },
 		
 		choices = {
-			{
-				index = 1,
-				text = "Leave town immediately",
-				effects = { Money = -3000, Happiness = -10 },
-				feedText = "Running for your life...",
-				onResolve = function(state)
+		{
+			index = 1,
+			text = "Leave town immediately ($3K)",
+			effects = { Money = -3000, Happiness = -10 },
+			feedText = "Running for your life...",
+			eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Need $3K to leave town" end,
+			onResolve = function(state)
 					state.Flags = state.Flags or {}
 					state.Flags.snitch = nil -- Fresh start
 					state.Flags.relocated_for_safety = true
@@ -1251,24 +1253,18 @@ local events = {
 					state:AddFeed("🎯 Left everything behind. New city. New name. Starting from scratch.")
 				end,
 			},
-			{
-				index = 2,
-				text = "Hire protection",
-				effects = { Money = -5000 },
-				feedText = "Bodyguards 24/7...",
-				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 5000 then
-						state.Money = money - 5000
-						state.Flags = state.Flags or {}
-						state.Flags.has_protection = true
-						state:AddFeed("🎯 Got serious muscle watching your back. Expensive but alive.")
-					else
-						state:ModifyStat("Health", -20)
-						state:AddFeed("🎯 Couldn't afford protection. They caught up to you. Hospital time.")
-					end
-				end,
-			},
+		{
+			index = 2,
+			text = "Hire protection ($5K)",
+			effects = { Money = -5000 },
+			feedText = "Bodyguards 24/7...",
+			eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5K for protection" end,
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags.has_protection = true
+				state:AddFeed("🎯 Got serious muscle watching your back. Expensive but alive.")
+			end,
+		},
 			{
 				index = 3,
 				text = "Go to the police for witness protection",

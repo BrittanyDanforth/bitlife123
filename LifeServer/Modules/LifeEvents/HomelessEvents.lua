@@ -76,13 +76,22 @@ events[#events + 1] = {
 	end,
 	-- CRITICAL FIX #HOMELESS-9: Mark as high priority so it doesn't get lost in pool
 	priority = "high",
-	blockedByFlags = { homeless = true, in_prison = true, couch_surfing = true, living_in_car = true },
+	-- CRITICAL FIX: Can't be evicted if living with family (they don't pay rent!)
+	blockedByFlags = { homeless = true, in_prison = true, couch_surfing = true, living_in_car = true, lives_with_parents = true, living_with_family = true, boomerang_kid = true },
 	
 	choices = {
 		{
 			text = "Call family for help",
 			effects = { Happiness = -10 },
 			feedText = "Swallowing your pride, you reach out to family...",
+			-- CRITICAL FIX: Can't call family if already living with them
+			eligibility = function(state)
+				local flags = state.Flags or {}
+				if flags.lives_with_parents or flags.living_with_family or flags.boomerang_kid then
+					return false, "You already live with your family!"
+				end
+				return true
+			end,
 			onResolve = function(state)
 				if math.random() < 0.5 then
 					state.Money = (state.Money or 0) + 800

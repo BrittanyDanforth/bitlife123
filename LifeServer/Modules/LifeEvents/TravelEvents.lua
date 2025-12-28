@@ -293,9 +293,11 @@ TravelEvents.events = {
 				end,
 			},
 			{
-				text = "Tropical paradise",
+				text = "Tropical paradise ($2,000)",
 				effects = { Money = -2000 },
 				feedText = "Island hopping...",
+				-- BUG FIX #8: Add eligibility check for trip cost
+				eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Can't afford trip ($2,000 needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.70 then
@@ -394,9 +396,11 @@ TravelEvents.events = {
 		-- CRITICAL: Random cruise outcome
 		choices = {
 			{
-				text = "Book the cruise",
+				text = "Book the cruise ($1,500)",
 				effects = { Money = -1500 },
 				feedText = "All aboard...",
+				-- BUG FIX #9: Add eligibility check for cruise cost
+				eligibility = function(state) return (state.Money or 0) >= 1500, "💸 Can't afford cruise ($1,500 needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.55 then
@@ -542,10 +546,10 @@ TravelEvents.events = {
 		tags = { "local", "explore", "adventure" },
 		
 		choices = {
-			{ text = "Try a new restaurant", effects = { Money = -40, Happiness = 6 }, feedText = "🗺️ Hidden gem! Best meal in months!" },
-			{ text = "Explore a park you've never visited", effects = { Health = 3, Happiness = 5 }, feedText = "🗺️ Can't believe you never came here! Beautiful!" },
-			{ text = "Check out a local attraction", effects = { Money = -20, Smarts = 2, Happiness = 4 }, feedText = "🗺️ Tourist in your own town! Actually really cool!" },
-			{ text = "Take a different route home", effects = { Happiness = 3, Smarts = 1 }, feedText = "🗺️ Found a great shortcut/view/shop you never knew!" },
+			{ text = "Try a new restaurant ($40)", effects = { Money = -40, Happiness = 6 }, feedText = "🗺️ Hidden gem! Best meal in months!" },
+			{ text = "Explore a park you've never visited (free)", effects = { Health = 3, Happiness = 5 }, feedText = "🗺️ Can't believe you never came here! Beautiful!" },
+			{ text = "Check out a local attraction ($20)", effects = { Money = -20, Smarts = 2, Happiness = 4 }, feedText = "🗺️ Tourist in your own town! Actually really cool!" },
+			{ text = "Take a different route home (free)", effects = { Happiness = 3, Smarts = 1 }, feedText = "🗺️ Found a great shortcut/view/shop you never knew!" },
 		},
 	},
 	{
@@ -783,17 +787,19 @@ TravelEvents.events = {
 		
 		eligibility = function(state)
 			local money = state.Money or 0
-			if money < 3000 then
-				return false, "Need significant savings for bucket list trip"
+			if money < 4000 then
+				return false, "Need significant savings for bucket list trip ($4,000)"
 			end
 			return true
 		end,
 		
 		choices = {
 			{
-				text = "Make it happen",
+				text = "Make it happen ($4,000)",
 				effects = { Money = -4000 },
 				feedText = "Dream trip becoming reality...",
+				-- BUG FIX #10: Add eligibility check for trip cost
+				eligibility = function(state) return (state.Money or 0) >= 4000, "💸 Can't afford trip ($4,000 needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.70 then

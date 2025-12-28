@@ -862,7 +862,68 @@ end
 
 function LifeState:AddFeed(text)
 	if text and text ~= "" then
-		self.PendingFeed = text
+		-- CRITICAL FIX: Replace template variables like {{AGE}} in feed text!
+		-- User bug: "it says {{AGE}}! and not correctly working"
+		local processedText = text
+		
+		-- Basic replacements
+		processedText = processedText:gsub("{{AGE}}", tostring(self.Age or 0))
+		processedText = processedText:gsub("{{NAME}}", tostring(self.Name or "You"))
+		processedText = processedText:gsub("{{MONEY}}", tostring(self.Money or 0))
+		processedText = processedText:gsub("{{GENDER}}", tostring(self.Gender or "person"))
+		
+		-- Parent names from relationships
+		local motherName = "Mom"
+		local fatherName = "Dad"
+		local partnerName = "your partner"
+		local friendName = "your friend"
+		local siblingName = "your sibling"
+		local childName = "your child"
+		if self.Relationships then
+			for id, rel in pairs(self.Relationships) do
+				if type(rel) == "table" then
+					local relType = (rel.type or rel.relationship or ""):lower()
+					local relRole = (rel.role or ""):lower()
+					if relType == "mother" or relRole == "mother" then
+						motherName = rel.name or rel.Name or "Mom"
+					elseif relType == "father" or relRole == "father" then
+						fatherName = rel.name or rel.Name or "Dad"
+					elseif relType == "partner" or relType == "spouse" or relType == "romantic" or relType == "fiance" or relRole == "partner" or relRole == "spouse" or relRole == "boyfriend" or relRole == "girlfriend" or relRole == "husband" or relRole == "wife" then
+						partnerName = rel.name or rel.Name or "your partner"
+					elseif relType == "friend" or relRole == "friend" then
+						friendName = rel.name or rel.Name or "your friend"
+					elseif relType == "sibling" or relRole == "sibling" or relRole == "brother" or relRole == "sister" then
+						siblingName = rel.name or rel.Name or "your sibling"
+					elseif relType == "child" or relRole == "child" or relRole == "son" or relRole == "daughter" then
+						childName = rel.name or rel.Name or "your child"
+					end
+				end
+			end
+			-- Also check direct partner reference
+			if self.Relationships.partner and type(self.Relationships.partner) == "table" then
+				partnerName = self.Relationships.partner.name or self.Relationships.partner.Name or partnerName
+			end
+		end
+		processedText = processedText:gsub("{{MOTHER_NAME}}", motherName)
+		processedText = processedText:gsub("{{FATHER_NAME}}", fatherName)
+		processedText = processedText:gsub("{{PARTNER_NAME}}", partnerName)
+		-- CRITICAL FIX: Add FRIEND_NAME and other relationship templates!
+		processedText = processedText:gsub("{{FRIEND_NAME}}", friendName)
+		processedText = processedText:gsub("{{SIBLING_NAME}}", siblingName)
+		processedText = processedText:gsub("{{CHILD_NAME}}", childName)
+		
+		-- Job info
+		if self.CurrentJob then
+			processedText = processedText:gsub("{{JOB_NAME}}", tostring(self.CurrentJob.name or "your job"))
+			processedText = processedText:gsub("{{COMPANY}}", tostring(self.CurrentJob.company or "the company"))
+			processedText = processedText:gsub("{{SALARY}}", tostring(self.CurrentJob.salary or 0))
+		else
+			processedText = processedText:gsub("{{JOB_NAME}}", "your job")
+			processedText = processedText:gsub("{{COMPANY}}", "the company")
+			processedText = processedText:gsub("{{SALARY}}", "0")
+		end
+		
+		self.PendingFeed = processedText
 	end
 	return self
 end

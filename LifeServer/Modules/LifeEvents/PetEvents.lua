@@ -105,10 +105,11 @@ PetEvents.events = {
 				end,
 			},
 			{ 
-			text = "Get a small pet", 
+			text = "Get a small pet ($100)", 
 			effects = { Money = -100, Happiness = 8 }, 
 			setFlags = { has_small_pet = true }, 
 			feedText = "🐾 Hamster/fish/bird! Low maintenance joy!",
+			eligibility = function(state) return (state.Money or 0) >= 100, "💸 Can't afford small pet ($100)" end,
 			-- CRITICAL FIX: Initialize PetData for small pet lifecycle tracking
 			onResolve = function(state)
 				state.PetData = state.PetData or {}
@@ -136,9 +137,10 @@ PetEvents.events = {
 		-- CRITICAL: Random stray outcome
 		choices = {
 			{
-				text = "Take it in",
+				text = "Take it in ($150)",
 				effects = { Money = -150 },
 				feedText = "Rescuing the stray...",
+				eligibility = function(state) return (state.Money or 0) >= 150, "💸 Can't afford to rescue ($150 needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.60 then

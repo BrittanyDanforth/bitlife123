@@ -192,17 +192,22 @@ PropertyEvents.events = {
                 effects = { Happiness = -5 },
                 feedText = "🏚️ Police are investigating. They'll do what they can. Feeling unsafe.",
             },
-            {
-                text = "Install a security system ($500)",
-                effects = { Money = -500 },
-                feedText = "🏚️ Never again! Installed a top-notch security system.",
-                eligibility = function(state) return (state.Money or 0) >= 500, "Need $500" end,
-                onResolve = function(state)
-                    state.Flags = state.Flags or {}
-                    state.Flags.home_security = true
-                    state.Flags.alarm_system = true
-                end,
-            },
+			{
+				text = "Install a security system ($500)",
+				effects = { Money = -500 },
+				feedText = "🏚️ Never again! Installed a top-notch security system.",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Can't afford security system ($500)" end,
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.home_security = true
+					state.Flags.alarm_system = true
+				end,
+			},
+			{
+				text = "Just be more vigilant (free)",
+				effects = { Happiness = -3 },
+				feedText = "🏚️ Can't afford a security system but you'll be more careful. Triple-check the locks!",
+			},
         },
     },
     

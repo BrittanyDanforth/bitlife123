@@ -29,7 +29,7 @@ SeasonalEvents.events = {
 		-- CRITICAL: Random holiday outcome
 		choices = {
 			{
-				text = "Big family celebration",
+				text = "Big family celebration ($200)",
 				effects = { Money = -200 },
 				feedText = "Gathering with loved ones...",
 				onResolve = function(state)
@@ -48,9 +48,10 @@ SeasonalEvents.events = {
 					end
 				end,
 			},
-			{ text = "Quiet cozy celebration", effects = { Money = -50, Happiness = 10, Health = 2 }, feedText = "🎄 Peaceful holiday. No drama. Just warmth and comfort." },
-			{ text = "Volunteer/give back", effects = { Happiness = 12, Money = -30 }, setFlags = { holiday_volunteer = true }, feedText = "🎄 Helping others made it meaningful! True spirit!" },
-			{ text = "Working through the holidays", effects = { Happiness = -4, Money = 100 }, feedText = "🎄 Missed celebrations. Holiday pay but empty feeling." },
+		{ text = "Quiet cozy celebration ($50)", effects = { Money = -50, Happiness = 10, Health = 2 }, feedText = "🎄 Peaceful holiday. No drama. Just warmth and comfort.", eligibility = function(state) return (state.Money or 0) >= 50, "Can't afford this" end },
+		{ text = "Volunteer/give back ($30)", effects = { Happiness = 12, Money = -30 }, setFlags = { holiday_volunteer = true }, feedText = "🎄 Helping others made it meaningful! True spirit!", eligibility = function(state) return (state.Money or 0) >= 30, "Can't afford donation" end },
+			{ text = "Working through the holidays", effects = { Happiness = -4, Money = 100 }, feedText = "🎄 Missed celebrations. Holiday pay but empty feeling.", eligibility = function(state) return state.CurrentJob ~= nil, "You don't have a job" end },
+			{ text = "Simple celebration at home (free)", effects = { Happiness = 6 }, feedText = "🎄 Low-key but nice. Watched movies and relaxed." },
 		},
 	},
 	{
@@ -69,11 +70,12 @@ SeasonalEvents.events = {
 		
 		-- CRITICAL: Random New Year's outcome
 		choices = {
-			{
-				text = "Big party",
-				effects = { Money = -50 },
-				feedText = "Celebrating with the crowd...",
-				onResolve = function(state)
+		{
+			text = "Big party ($50)",
+			effects = { Money = -50 },
+			feedText = "Celebrating with the crowd...",
+			eligibility = function(state) return (state.Money or 0) >= 50, "Can't afford party" end,
+			onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.55 then
 						state:ModifyStat("Happiness", 12)
@@ -90,9 +92,9 @@ SeasonalEvents.events = {
 					end
 				end,
 			},
-			{ text = "Intimate gathering", effects = { Happiness = 8, Money = -20 }, feedText = "🎆 Small circle, big laughs. Perfect way to end the year." },
-			{ text = "Reflect and set intentions", effects = { Happiness = 6, Smarts = 3 }, setFlags = { has_resolutions = true }, feedText = "🎆 Mindful new year. Goals set. Feeling hopeful!" },
-			{ text = "Asleep before midnight", effects = { Happiness = 4, Health = 3 }, feedText = "🎆 Slept through it. New year started with good rest!" },
+			{ text = "Intimate gathering ($20)", effects = { Happiness = 8, Money = -20 }, feedText = "🎆 Small circle, big laughs. Perfect way to end the year." },
+			{ text = "Reflect and set intentions (free)", effects = { Happiness = 6, Smarts = 3 }, setFlags = { has_resolutions = true }, feedText = "🎆 Mindful new year. Goals set. Feeling hopeful!" },
+			{ text = "Asleep before midnight (free)", effects = { Happiness = 4, Health = 3 }, feedText = "🎆 Slept through it. New year started with good rest!" },
 		},
 	},
 	{
@@ -171,8 +173,8 @@ SeasonalEvents.events = {
 					end
 				end,
 			},
-			{ text = "Just the essentials", effects = { Happiness = 4 }, feedText = "🧹 Quick clean. Good enough. Not everything needs perfection." },
-			{ text = "Hire cleaning help", effects = { Money = -100, Happiness = 8 }, feedText = "🧹 Professionals handled it! Worth every penny!" },
+		{ text = "Just the essentials", effects = { Happiness = 4 }, feedText = "🧹 Quick clean. Good enough. Not everything needs perfection." },
+		{ text = "Hire cleaning help ($100)", effects = { Money = -100, Happiness = 8 }, feedText = "🧹 Professionals handled it! Worth every penny!", eligibility = function(state) return (state.Money or 0) >= 100, "Can't afford cleaners" end },
 		},
 	},
 	{
@@ -189,13 +191,13 @@ SeasonalEvents.events = {
 		category = "seasonal",
 		tags = { "easter", "spring", "celebration" },
 		
-		choices = {
-			{ text = "Egg hunt fun", effects = { Happiness = 10 }, feedText = "🐰 Found the golden egg! Or watched kids find it! Joy!" },
-			{ text = "Family brunch", effects = { Happiness = 8, Money = -40 }, feedText = "🐰 Beautiful spring brunch! Good food, good company!" },
-			{ text = "Religious observance", effects = { Happiness = 6, Smarts = 1 }, feedText = "🐰 Meaningful spiritual celebration. Renewal." },
-			{ text = "Just another Sunday", effects = { Happiness = 2 }, feedText = "🐰 Didn't celebrate. Quiet day off." },
-		},
+	choices = {
+		{ text = "Egg hunt fun", effects = { Happiness = 10 }, feedText = "🐰 Found the golden egg! Or watched kids find it! Joy!" },
+		{ text = "Family brunch ($40)", effects = { Happiness = 8, Money = -40 }, feedText = "🐰 Beautiful spring brunch! Good food, good company!", eligibility = function(state) return (state.Money or 0) >= 40, "Can't afford brunch" end },
+		{ text = "Religious observance", effects = { Happiness = 6, Smarts = 1 }, feedText = "🐰 Meaningful spiritual celebration. Renewal." },
+		{ text = "Just another Sunday", effects = { Happiness = 2 }, feedText = "🐰 Didn't celebrate. Quiet day off." },
 	},
+},
 	{
 		id = "seasonal_allergies",
 		title = "Allergy Season",
@@ -290,7 +292,7 @@ SeasonalEvents.events = {
 					return true
 				end,
 			},
-			{ text = "Working all summer", effects = { Happiness = -2, Money = 500 }, feedText = "☀️ No vacation. But bank account looking good." },
+			{ text = "Working all summer", effects = { Happiness = -2, Money = 500 }, feedText = "☀️ No vacation. But bank account looking good.", eligibility = function(state) return state.CurrentJob ~= nil, "You need a job first" end },
 		},
 	},
 	{
@@ -307,12 +309,13 @@ SeasonalEvents.events = {
 		category = "seasonal",
 		tags = { "july_4th", "patriotic", "celebration" },
 		
-		choices = {
-			{
-				text = "Big BBQ party",
-				effects = { Money = -50 },
-				feedText = "Grilling and celebrating...",
-				onResolve = function(state)
+	choices = {
+		{
+			text = "Big BBQ party ($50)",
+			effects = { Money = -50 },
+			feedText = "Grilling and celebrating...",
+			eligibility = function(state) return (state.Money or 0) >= 50, "Can't afford BBQ" end,
+			onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.70 then
 						state:ModifyStat("Happiness", 10)
@@ -385,7 +388,7 @@ SeasonalEvents.events = {
 		-- CRITICAL: Random Halloween outcome
 		choices = {
 			{
-				text = "Epic costume party",
+				text = "Epic costume party ($50)",
 				effects = { Money = -50 },
 				feedText = "Showing off your costume...",
 				onResolve = function(state)
@@ -403,9 +406,9 @@ SeasonalEvents.events = {
 					end
 				end,
 			},
-			{ text = "Hand out candy", effects = { Money = -30, Happiness = 6 }, feedText = "🎃 Cute trick-or-treaters! Spreading joy!" },
-			{ text = "Haunted house/scary movies", effects = { Happiness = 8 }, feedText = "🎃 Terrified and loving it! Adrenaline rush!" },
-			{ text = "Skip Halloween", effects = { Happiness = 2 }, feedText = "🎃 Not into it this year. Quiet night in." },
+			{ text = "Hand out candy ($30)", effects = { Money = -30, Happiness = 6 }, feedText = "🎃 Cute trick-or-treaters! Spreading joy!" },
+			{ text = "Haunted house/scary movies (free)", effects = { Happiness = 8 }, feedText = "🎃 Terrified and loving it! Adrenaline rush!" },
+			{ text = "Skip Halloween (free)", effects = { Happiness = 2 }, feedText = "🎃 Not into it this year. Quiet night in." },
 		},
 	},
 	{
@@ -425,7 +428,7 @@ SeasonalEvents.events = {
 		-- CRITICAL: Random Thanksgiving outcome
 		choices = {
 			{
-				text = "Host the gathering",
+				text = "Host the gathering ($150)",
 				effects = { Money = -150 },
 				feedText = "Cooking and hosting...",
 				onResolve = function(state)
@@ -442,9 +445,9 @@ SeasonalEvents.events = {
 					end
 				end,
 			},
-			{ text = "Be a guest", effects = { Happiness = 8, Money = -20 }, feedText = "🦃 Just showed up with pie! No cooking stress! Smart!" },
-			{ text = "Friendsgiving", effects = { Happiness = 10, Money = -40 }, setFlags = { friendsgiving = true }, feedText = "🦃 Chosen family! No drama! Best Thanksgiving!" },
-			{ text = "Volunteering", effects = { Happiness = 10 }, setFlags = { thanksgiving_volunteer = true }, feedText = "🦃 Serving others! True gratitude in action!" },
+			{ text = "Be a guest ($20)", effects = { Happiness = 8, Money = -20 }, feedText = "🦃 Just showed up with pie! No cooking stress! Smart!" },
+			{ text = "Friendsgiving ($40)", effects = { Happiness = 10, Money = -40 }, setFlags = { friendsgiving = true }, feedText = "🦃 Chosen family! No drama! Best Thanksgiving!" },
+			{ text = "Volunteering (free)", effects = { Happiness = 10 }, setFlags = { thanksgiving_volunteer = true }, feedText = "🦃 Serving others! True gratitude in action!" },
 		},
 	},
 	{
@@ -461,13 +464,14 @@ SeasonalEvents.events = {
 		category = "seasonal",
 		tags = { "fall", "autumn", "activities" },
 		
-		choices = {
-			{ text = "Apple/pumpkin picking", effects = { Happiness = 8, Health = 2, Money = -25 }, feedText = "🍂 Fall harvest fun! Great photos! Seasonal joy!" },
-			{ text = "Leaf peeping road trip", effects = { Happiness = 10, Money = -50 }, feedText = "🍂 Beautiful foliage! Nature's colors! Perfect drive!" },
-			{ text = "Football game", effects = { Happiness = 8, Money = -30 }, feedText = "🍂 Game day! Team spirit! Fall vibes!" },
-			{ text = "Cozy inside with PSL", effects = { Happiness = 6, Money = -5 }, feedText = "🍂 Basic but happy. Sweater weather perfection." },
-		},
+	choices = {
+		{ text = "Apple/pumpkin picking ($25)", effects = { Happiness = 8, Health = 2, Money = -25 }, feedText = "🍂 Fall harvest fun! Great photos! Seasonal joy!", eligibility = function(state) return (state.Money or 0) >= 25, "Can't afford this" end },
+		{ text = "Leaf peeping road trip ($50)", effects = { Happiness = 10, Money = -50 }, feedText = "🍂 Beautiful foliage! Nature's colors! Perfect drive!", eligibility = function(state) return (state.Money or 0) >= 50, "Can't afford this" end },
+		{ text = "Football game ($30)", effects = { Happiness = 8, Money = -30 }, feedText = "🍂 Game day! Team spirit! Fall vibes!", eligibility = function(state) return (state.Money or 0) >= 30, "Can't afford this" end },
+		{ text = "Cozy inside with pumpkin spice latte ($5)", effects = { Happiness = 6, Money = -5 }, feedText = "🍂 Basic but happy. Sweater weather perfection.", eligibility = function(state) return (state.Money or 0) >= 5, "Can't afford this" end },
+		{ text = "Just enjoy the weather", effects = { Happiness = 4 }, feedText = "🍂 Crisp air and changing leaves. Simple fall vibes." },
 	},
+},
 	
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- BIRTHDAY EVENTS
@@ -489,9 +493,10 @@ SeasonalEvents.events = {
 		-- CRITICAL: Random birthday outcome
 		choices = {
 			{
-				text = "Big party",
+				text = "Big party ($100)",
 				effects = { Money = -100 },
 				feedText = "Celebrating with friends and family...",
+				eligibility = function(state) return (state.Money or 0) >= 100, "Can't afford party" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.60 then
@@ -663,9 +668,9 @@ SeasonalEvents.events = {
 					end
 				end,
 			},
-			{ text = "Galentine's/Palentine's", effects = { Money = -20, Happiness = 8 }, feedText = "💝 Celebrated with friends! Who needs romance? Fun!" },
-			{ text = "Self-love day", effects = { Money = -30, Happiness = 6, Health = 2 }, feedText = "💝 Treated yourself! Self-care is important!" },
-			{ text = "Ignore it completely", effects = { Happiness = 2 }, feedText = "💝 Hallmark holiday. Didn't participate. Saved money." },
+			{ text = "Galentine's/Palentine's ($20)", effects = { Money = -20, Happiness = 8 }, feedText = "💝 Celebrated with friends! Who needs romance? Fun!" },
+			{ text = "Self-love day ($30)", effects = { Money = -30, Happiness = 6, Health = 2 }, feedText = "💝 Treated yourself! Self-care is important!" },
+			{ text = "Ignore it completely (free)", effects = { Happiness = 2 }, feedText = "💝 Hallmark holiday. Didn't participate. Saved money." },
 		},
 	},
 }

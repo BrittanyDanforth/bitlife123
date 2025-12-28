@@ -206,6 +206,13 @@ LifeExperiences.events = {
 					return true
 				end,
 			},
+			{
+				-- CRITICAL FIX: FREE OPTION to prevent player lock!
+				text = "Cross off something free (free)",
+				effects = { Happiness = 8, Smarts = 2 },
+				setFlags = { small_achievement = true },
+				feedText = "✅ Reconnected with an old friend, watched a sunrise, wrote a letter - some bucket list items are priceless!",
+			},
 		},
 	},
 	
@@ -1264,67 +1271,86 @@ LifeExperiences.events = {
 		},
 	},
 	
-	{
-		id = "conseq_reputation_precedes",
-		title = "Your Reputation Precedes You",
-		emoji = "📢",
-		text = "Everywhere you go, people seem to already know about you...",
-		question = "What have they heard?",
-		minAge = 21, maxAge = 80,
-		baseChance = 0.45,
-		cooldown = 3,
-		stage = STAGE,
-		ageBand = "adult",
-		category = "consequence",
-		tags = { "consequence", "reputation", "past_actions" },
-		
-		choices = {
-			{
-				text = "Your success story",
-				effects = { Happiness = 10 },
-				feedText = "📢 They've heard how you climbed from nothing. Inspiration!",
-				eligibility = function(state)
-					if not (state.Flags and (state.Flags.rags_to_riches or state.Flags.self_made or state.Flags.successful_entrepreneur)) then
-						return false, "You don't have a success story to share yet"
-					end
-					return true
-				end,
-			},
-			{
-				text = "Your generous acts",
-				effects = { Happiness = 8 },
-				feedText = "📢 Word of your charity work has spread. People thank you!",
-				eligibility = function(state)
-					if not (state.Flags and (state.Flags.charitable or state.Flags.philanthropist or state.Flags.generous)) then
-						return false, "You haven't been notably generous yet"
-					end
-					return true
-				end,
-			},
-			{
-				text = "Your dark past",
-				effects = { Happiness = -8 },
-				feedText = "📢 They know what you did. The whispers follow you everywhere.",
-				eligibility = function(state)
-					if not (state.Flags and (state.Flags.has_criminal_record or state.Flags.scandal or state.Flags.controversial)) then
-						return false, "You don't have a dark past to speak of"
-					end
-					return true
-				end,
-			},
-			{
-				text = "Your professional expertise",
-				effects = { Happiness = 6, Smarts = 2 },
-				feedText = "📢 You're known as an expert in your field. Respect!",
-				eligibility = function(state)
-					if not (state.Flags and (state.Flags.industry_expert or state.Flags.accomplished or state.Flags.promoted_multiple_times)) then
-						return false, "You haven't established professional expertise yet"
-					end
-					return true
-				end,
-			},
+{
+	id = "conseq_reputation_precedes",
+	title = "Your Reputation Precedes You",
+	emoji = "📢",
+	text = "Everywhere you go, people seem to already know about you...",
+	question = "What have they heard?",
+	minAge = 21, maxAge = 80,
+	baseChance = 0.45,
+	cooldown = 3,
+	stage = STAGE,
+	ageBand = "adult",
+	category = "consequence",
+	tags = { "consequence", "reputation", "past_actions" },
+	-- CRITICAL FIX: Event should only appear if player has SOME reputation!
+	eligibility = function(state)
+		local flags = state.Flags or {}
+		local hasReputation = flags.rags_to_riches or flags.self_made or flags.successful_entrepreneur
+			or flags.charitable or flags.philanthropist or flags.generous
+			or flags.has_criminal_record or flags.scandal or flags.controversial
+			or flags.industry_expert or flags.accomplished or flags.promoted_multiple_times
+			or flags.famous or flags.celebrity or flags.well_known
+		if not hasReputation then
+			return false, "No notable reputation yet"
+		end
+		return true
+	end,
+	
+	choices = {
+		{
+			text = "Your success story",
+			effects = { Happiness = 10 },
+			feedText = "📢 They've heard how you climbed from nothing. Inspiration!",
+			eligibility = function(state)
+				if not (state.Flags and (state.Flags.rags_to_riches or state.Flags.self_made or state.Flags.successful_entrepreneur)) then
+					return false, "You don't have a success story to share yet"
+				end
+				return true
+			end,
+		},
+		{
+			text = "Your generous acts",
+			effects = { Happiness = 8 },
+			feedText = "📢 Word of your charity work has spread. People thank you!",
+			eligibility = function(state)
+				if not (state.Flags and (state.Flags.charitable or state.Flags.philanthropist or state.Flags.generous)) then
+					return false, "You haven't been notably generous yet"
+				end
+				return true
+			end,
+		},
+		{
+			text = "Your dark past",
+			effects = { Happiness = -8 },
+			feedText = "📢 They know what you did. The whispers follow you everywhere.",
+			eligibility = function(state)
+				if not (state.Flags and (state.Flags.has_criminal_record or state.Flags.scandal or state.Flags.controversial)) then
+					return false, "You don't have a dark past to speak of"
+				end
+				return true
+			end,
+		},
+		{
+			text = "Your professional expertise",
+			effects = { Happiness = 6, Smarts = 2 },
+			feedText = "📢 You're known as an expert in your field. Respect!",
+			eligibility = function(state)
+				if not (state.Flags and (state.Flags.industry_expert or state.Flags.accomplished or state.Flags.promoted_multiple_times)) then
+					return false, "You haven't established professional expertise yet"
+				end
+				return true
+			end,
+		},
+		{
+			-- CRITICAL FIX: Default option so event is always completable!
+			text = "Just general awareness",
+			effects = { Happiness = 3 },
+			feedText = "📢 People recognize your face but can't quite place you. Mild fame!",
 		},
 	},
+},
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: MORE CONSEQUENCE EVENTS FOR BETTER WIRING

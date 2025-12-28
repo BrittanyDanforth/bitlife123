@@ -163,23 +163,31 @@ PremiumIntegratedEvents.events = {
 				setFlags = { overworked = true },
 				feedText = "Working double shifts. Exhausting but the bills are paid.",
 			},
-			{
-				text = "Ask family for help",
-				effects = {},
-				feedText = "Swallowing your pride...",
-				onResolve = function(state)
-					local roll = math.random()
-					if roll < 0.60 then
-						local help = math.random(500, 2000)
-						state.Money = (state.Money or 0) + help
-						state:ModifyStat("Happiness", 5)
-						state:AddFeed(string.format("💸 Family came through! Got $%d in help.", help))
-					else
-						state:ModifyStat("Happiness", -8)
-						state:AddFeed("💸 Family couldn't help. You're on your own.")
-					end
-				end,
-			},
+		{
+			text = "Ask family for help",
+			effects = {},
+			feedText = "Swallowing your pride...",
+			-- CRITICAL FIX: Can't ask family for help if already living with them!
+			eligibility = function(state)
+				local flags = state.Flags or {}
+				if flags.lives_with_parents or flags.living_with_family or flags.boomerang_kid then
+					return false, "You already live with your family!"
+				end
+				return true
+			end,
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.60 then
+					local help = math.random(500, 2000)
+					state.Money = (state.Money or 0) + help
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed(string.format("💸 Family came through! Got $%d in help.", help))
+				else
+					state:ModifyStat("Happiness", -8)
+					state:AddFeed("💸 Family couldn't help. You're on your own.")
+				end
+			end,
+		},
 			{
 				text = "File for bankruptcy",
 				effects = { Happiness = -15 },
@@ -2360,31 +2368,25 @@ PremiumIntegratedEvents.events = {
 		-- CRITICAL FIX: Block if player already made a premium wish
 		blockedByFlags = { primary_wish_type = true },
 		
-		choices = {
-			{
-				text = "To be happy forever!",
-				effects = { Happiness = 10 },
-				setFlags = { wished_happiness = true },
-				feedText = "🎂 You close your eyes tight and wish with all your heart. Happy birthday!",
-			},
-			{
-				text = "For my family to be healthy!",
-				effects = { Happiness = 6, Health = 3 },
-				setFlags = { wished_family = true, caring_heart = true },
-				feedText = "🎂 Such a sweet wish! Your parents are touched when you finally tell them years later.",
-			},
-			{
-				text = "To be super smart!",
-				effects = { Smarts = 5, Happiness = 5 },
-				setFlags = { wished_intelligence = true },
-				feedText = "🎂 Knowledge is power! Maybe this wish will help in school!",
-			},
-			{
-				text = "For a puppy!",
-				effects = { Happiness = 8 },
-				setFlags = { wants_pet = true },
-				feedText = "🎂 A classic wish! You look at your parents with hopeful eyes...",
-			},
+	choices = {
+		{
+			text = "For my family to be healthy!",
+			effects = { Happiness = 6, Health = 3 },
+			setFlags = { wished_family = true, caring_heart = true },
+			feedText = "🎂 Such a sweet wish! Your parents are touched when you finally tell them years later.",
+		},
+		{
+			text = "To be super smart!",
+			effects = { Smarts = 5, Happiness = 5 },
+			setFlags = { wished_intelligence = true },
+			feedText = "🎂 Knowledge is power! Maybe this wish will help in school!",
+		},
+		{
+			text = "For a puppy!",
+			effects = { Happiness = 8 },
+			setFlags = { wants_pet = true },
+			feedText = "🎂 A classic wish! You look at your parents with hopeful eyes...",
+		},
 			-- PREMIUM OPTIONS
 			-- CRITICAL FIX: Premium wishes now set primary_wish_type to prevent conflicts
 			{

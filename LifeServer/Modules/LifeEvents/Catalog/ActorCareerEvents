@@ -244,11 +244,12 @@ ActorCareerEvents.events = {
 		blockedByFlags = { in_prison = true, oscar_winner = true },
 		
 		choices = {
-			{
-				text = "Campaign hard for the win",
-				effects = { Money = -50000, Health = -3 },
-				feedText = "For Your Consideration...",
-				onResolve = function(state)
+		{
+			text = "Campaign hard for the win ($50K)",
+			effects = { Money = -50000, Health = -3 },
+			feedText = "For Your Consideration...",
+			eligibility = function(state) return (state.Money or 0) >= 50000, "💸 Need $50K for Oscar campaign" end,
+			onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 40 then
 						state.Money = (state.Money or 0) + math.random(500000, 2000000)

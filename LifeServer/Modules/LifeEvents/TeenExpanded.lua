@@ -518,11 +518,17 @@ TeenExpanded.events = {
 		tags = { "college", "future", "applications" },
 		
 		choices = {
-			{ text = "Tutors, SAT prep, perfect applications", effects = { Smarts = 5, Happiness = -3, Money = -500 }, setFlags = { overachiever = true }, feedText = "Every advantage possible. This is your life now." },
-			{ text = "Doing your best without extra help", effects = { Smarts = 3, Happiness = 1 }, feedText = "Working hard with what you have. That's commendable." },
-			{ text = "Considering trade school instead", effects = { Smarts = 2, Happiness = 3 }, setFlags = { trade_school_path = true }, hintCareer = "trades", feedText = "College isn't the only path. Skills matter." },
-			{ text = "No idea what you want to do", effects = { Happiness = -4 }, setFlags = { undecided_future = true }, feedText = "Everyone else has a plan. You're lost." },
-			{ text = "Taking a gap year", effects = { Happiness = 4 }, setFlags = { gap_year_planned = true }, feedText = "Time to figure things out. No rush." },
+			{ 
+				text = "Tutors, SAT prep, perfect applications ($500)", 
+				effects = { Smarts = 5, Happiness = -3, Money = -500 }, 
+				setFlags = { overachiever = true }, 
+				feedText = "Every advantage possible. This is your life now.",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Can't afford tutors/SAT prep ($500)" end,
+			},
+			{ text = "Doing your best without extra help (free)", effects = { Smarts = 3, Happiness = 1 }, feedText = "Working hard with what you have. That's commendable." },
+			{ text = "Considering trade school instead (free)", effects = { Smarts = 2, Happiness = 3 }, setFlags = { trade_school_path = true }, hintCareer = "trades", feedText = "College isn't the only path. Skills matter." },
+			{ text = "No idea what you want to do (free)", effects = { Happiness = -4 }, setFlags = { undecided_future = true }, feedText = "Everyone else has a plan. You're lost." },
+			{ text = "Taking a gap year (free)", effects = { Happiness = 4 }, setFlags = { gap_year_planned = true }, feedText = "Time to figure things out. No rush." },
 		},
 	},
 	{

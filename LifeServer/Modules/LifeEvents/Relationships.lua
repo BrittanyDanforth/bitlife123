@@ -36,7 +36,8 @@ Relationships.events = {
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
 					-- CRITICAL FIX: Partner should be OPPOSITE gender by default!
-					local playerGender = state.Gender or "male"
+					-- BUG FIX: Normalize gender to lowercase for comparison
+					local playerGender = (state.Gender or "male"):lower()
 					local partnerIsMale = (playerGender == "female") -- If player is female, partner is male
 					local names = partnerIsMale 
 						and {"James", "Michael", "David", "Chris", "Ryan", "Alex", "Matt", "Jake", "Tyler", "Jordan", "Liam", "Noah", "Ethan", "Mason", "Lucas"}
@@ -86,7 +87,7 @@ Relationships.events = {
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
 					-- CRITICAL FIX: Partner should be OPPOSITE gender by default!
-					local playerGender = state.Gender or "male"
+					local playerGender = (state.Gender or "male"):lower()
 					local partnerIsMale = (playerGender == "female") -- If player is female, partner is male
 					local names = partnerIsMale 
 						and {"Daniel", "Marcus", "Andrew", "Joshua", "Brandon", "Kevin", "Justin", "Eric", "Sean", "Derek", "William", "Benjamin", "Henry", "Alexander", "Sebastian"}
@@ -492,7 +493,9 @@ Relationships.events = {
 		requiresPartner = true,
 		choices = {
 			{ text = "Communicate openly", effects = { Happiness = 5, Smarts = 2 }, feedText = "You talked it through. Things improved." },
-			{ text = "Seek couples counseling", effects = { Happiness = 7, Money = -300 }, feedText = "Professional help made a difference." },
+			{ text = "Seek couples counseling ($300)", effects = { Happiness = 7, Money = -300 }, feedText = "Professional help made a difference.",
+				eligibility = function(state) return (state.Money or 0) >= 300, "💸 Can't afford counseling ($300 needed)" end,
+			},
 			{ text = "Give each other space", effects = { Happiness = 3 }, feedText = "Some distance helped." },
 			{ 
 				text = "It's time to break up", 
@@ -527,8 +530,10 @@ Relationships.events = {
 		cooldown = 3,
 		requiresPartner = true,
 		choices = {
-			{ text = "Throw a celebration", effects = { Happiness = 10, Money = -200 }, feedText = "You celebrated together!" },
-			{ text = "Heartfelt congratulations", effects = { Happiness = 8 }, feedText = "Your sincere joy meant everything to them." },
+			{ text = "Throw a celebration ($200)", effects = { Happiness = 10, Money = -200 }, feedText = "You celebrated together!",
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Can't afford a celebration ($200 needed)" end,
+			},
+			{ text = "Heartfelt congratulations (Free)", effects = { Happiness = 8 }, feedText = "Your sincere joy meant everything to them." },
 			{ text = "Feel a bit jealous", effects = { Happiness = -3 }, setFlags = { competitive_with_partner = true }, feedText = "You struggled with mixed feelings." },
 		},
 	},
@@ -543,7 +548,9 @@ Relationships.events = {
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresPartner = true,
 		choices = {
-			{ text = "We'll make it work", effects = { Happiness = 3, Money = -500 }, setFlags = { long_distance = true }, feedText = "You're committed despite the distance." },
+			{ text = "We'll make it work ($500)", effects = { Happiness = 3, Money = -500 }, setFlags = { long_distance = true }, feedText = "You're committed despite the distance.",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Long-distance requires $500 for travel/calls" end,
+			},
 			{ text = "Move with them", effects = { Happiness = 8 }, setFlags = { relocated_for_love = true }, feedText = "You moved to stay together!" },
 			{ 
 				text = "Break up but stay friends", 
@@ -860,7 +867,7 @@ Relationships.events = {
 						state.Flags.great_first_date = true
 						-- CRITICAL FIX #2003: Partner gender based on PLAYER gender!
 						state.Relationships = state.Relationships or {}
-						local playerGender = state.Gender or "male"
+						local playerGender = (state.Gender or "male"):lower()
 						local partnerIsMale = (playerGender == "female")
 						local names = partnerIsMale 
 							and {"Liam", "Noah", "Oliver", "Elijah", "Lucas", "Mason", "Logan", "Henry", "Jack", "Owen"}
@@ -902,7 +909,7 @@ Relationships.events = {
 						state.Flags.dating = true
 						-- CRITICAL FIX #2004: Partner gender based on PLAYER gender!
 						state.Relationships = state.Relationships or {}
-						local playerGender = state.Gender or "male"
+						local playerGender = (state.Gender or "male"):lower()
 						local partnerIsMale = (playerGender == "female")
 						local names = partnerIsMale 
 							and {"Ethan", "Aiden", "Jackson", "Sebastian", "Mateo", "Leo", "Asher", "Benjamin", "Ezra", "Miles"}
@@ -940,7 +947,7 @@ Relationships.events = {
 						state.Flags.dating = true
 						-- CRITICAL FIX #2005: Partner gender based on PLAYER gender!
 						state.Relationships = state.Relationships or {}
-						local playerGender = state.Gender or "male"
+						local playerGender = (state.Gender or "male"):lower()
 						local partnerIsMale = (playerGender == "female")
 						local names = partnerIsMale 
 							and {"Carter", "Jayden", "Luke", "Dylan", "Grayson", "Isaac", "Nathan", "Caleb", "Ryan", "Adrian"}
@@ -991,7 +998,7 @@ Relationships.events = {
 				-- CRITICAL FIX #2006: Partner gender based on PLAYER gender!
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
-					local playerGender = state.Gender or "male"
+					local playerGender = (state.Gender or "male"):lower()
 					local partnerIsMale = (playerGender == "female")
 					local names = partnerIsMale 
 						and {"Jason", "Kyle", "Brian", "Steven", "Patrick", "Nathan", "Cody", "Trevor", "Austin", "Zach"}
@@ -2016,7 +2023,7 @@ Relationships.events = {
 				-- CRITICAL FIX #2007: Partner gender based on PLAYER gender!
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
-					local playerGender = state.Gender or "male"
+					local playerGender = (state.Gender or "male"):lower()
 					local partnerIsMale = (playerGender == "female")
 					local names = partnerIsMale 
 						and {"Richard", "Thomas", "Gregory", "Peter", "Jeffrey", "Mark", "Timothy", "Douglas", "Scott", "Gary"}
@@ -2026,10 +2033,10 @@ Relationships.events = {
 						id = "partner",
 						name = partnerName,
 						type = "romantic",
-						role = isMale and "Boyfriend" or "Girlfriend",
+						role = partnerIsMale and "Boyfriend" or "Girlfriend",
 						relationship = 60,
 						age = (state.Age or 35) + math.random(-5, 5),
-						gender = isMale and "male" or "female",
+						gender = partnerIsMale and "male" or "female",
 						alive = true,
 						metThrough = "rekindled_flame",
 						rekindled = true,

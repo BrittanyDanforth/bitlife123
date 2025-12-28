@@ -10,37 +10,80 @@ local C  = UI.Colors or {}
 local F  = UI.Fonts or {}
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- FONT SAFETY - CRITICAL FIX #953
+-- FONT SAFETY - CRITICAL FIX #953 (REVISED)
 -- Ensure ALL fonts exist so Font property never gets nil!
 -- Error was: "Unable to assign property Font. EnumItem, number, or string expected, got nil"
 -- ═══════════════════════════════════════════════════════════════════════════════
 local DEFAULT_FONT = Enum.Font.SourceSans
 
--- CRITICAL FIX: Force-initialize F table if it doesn't exist properly
-if not F or type(F) ~= "table" then
-	F = {}
+-- CRITICAL FIX: Create a safe font getter function
+local function safeFont(fontEnum)
+	if fontEnum and type(fontEnum) == "userdata" then
+		return fontEnum
+	end
+	return DEFAULT_FONT
 end
 
--- CRITICAL FIX: Always set fonts directly with fallback chain
-F.Title  = Enum.Font.GothamBold or Enum.Font.SourceSansBold or DEFAULT_FONT
-F.Body   = Enum.Font.Gotham or Enum.Font.SourceSans or DEFAULT_FONT
-F.Medium = Enum.Font.GothamMedium or Enum.Font.SourceSans or DEFAULT_FONT
-F.Button = Enum.Font.GothamBold or Enum.Font.SourceSansBold or DEFAULT_FONT
-F.Bold   = Enum.Font.GothamBold or Enum.Font.SourceSansBold or DEFAULT_FONT
+-- CRITICAL FIX: Force-initialize F table - completely rebuild it
+F = {}
 
--- Extra safety: ensure all F values are valid Enum.Font
+-- CRITICAL FIX: Use pcall to safely try each font with multiple fallbacks
+local function tryFont(...)
+	local fonts = {...}
+	for _, fontName in ipairs(fonts) do
+		local success, font = pcall(function()
+			return Enum.Font[fontName]
+		end)
+		if success and font then
+			return font
+		end
+	end
+	return DEFAULT_FONT
+end
+
+-- Set all fonts with safe fallback chain
+F.Title  = tryFont("GothamBold", "GothamBlack", "SourceSansBold", "SourceSans")
+F.Body   = tryFont("Gotham", "GothamMedium", "SourceSans")
+F.Medium = tryFont("GothamMedium", "Gotham", "SourceSans")
+F.Button = tryFont("GothamBold", "GothamSemibold", "SourceSansBold", "SourceSans")
+F.Bold   = tryFont("GothamBold", "GothamBlack", "SourceSansBold", "SourceSans")
+
+-- CRITICAL FIX: Triple-check all fonts are valid
 for key, value in pairs(F) do
-	if type(value) ~= "userdata" or tostring(value):find("Font") == nil then
+	if not value or type(value) ~= "userdata" then
 		F[key] = DEFAULT_FONT
 	end
 end
 
--- CRITICAL FIX: Verify fonts are actually set
-if not F.Bold then F.Bold = DEFAULT_FONT end
-if not F.Medium then F.Medium = DEFAULT_FONT end
-if not F.Body then F.Body = DEFAULT_FONT end
-if not F.Title then F.Title = DEFAULT_FONT end
-if not F.Button then F.Button = DEFAULT_FONT end
+-- CRITICAL FIX: Final fallback - directly assign if still nil
+F.Bold = F.Bold or DEFAULT_FONT
+F.Medium = F.Medium or DEFAULT_FONT
+F.Body = F.Body or DEFAULT_FONT
+F.Title = F.Title or DEFAULT_FONT
+F.Button = F.Button or DEFAULT_FONT
+
+-- BUG FIX: Create wrapper function to always return valid font
+local function getFont(fontKey)
+	local font = F[fontKey]
+	if font and type(font) == "userdata" then
+		return font
+	end
+	return DEFAULT_FONT
+end
+
+-- Apply safe fonts to F table (ensures all access is safe)
+local SafeF = setmetatable({}, {
+	__index = function(_, key)
+		local font = rawget(F, key)
+		if font and type(font) == "userdata" then
+			return font
+		end
+		return DEFAULT_FONT
+	end
+})
+
+-- Replace F with SafeF for all subsequent use
+F = SafeF
 
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- COLOR SAFETY
@@ -378,7 +421,7 @@ local function categorizeRelationship(rel, flags)
 
 	if t == "family" then
 		return "family"
-	elseif t == "romance" or t == "partner" or t == "lover" or t == "spouse" or t == "fiance" then
+	elseif t == "romance" or t == "romantic" or t == "partner" or t == "lover" or t == "spouse" or t == "fiance" then
 		return "romance"
 	elseif t == "friend" or t == "friends" then
 		return "friend"
@@ -395,7 +438,9 @@ local function categorizeRelationship(rel, flags)
 	if rel.isFriend or rel.is_friend then
 		return "friend"
 	end
-	if rel.isRomance or rel.is_romance or rel.isPartner or rel.is_partner then
+	-- CRITICAL FIX: More comprehensive romance detection including marriage
+	if rel.isRomance or rel.is_romance or rel.isPartner or rel.is_partner 
+		or rel.isSpouse or rel.is_spouse or rel.isMarried or rel.married then
 		return "romance"
 	end
 	if rel.isEnemy or rel.is_enemy then

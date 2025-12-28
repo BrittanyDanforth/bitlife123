@@ -48,6 +48,8 @@ SpecialMoments.events = {
 				text = "Buy a used beater ($1,500)",
 				effects = { Money = -1500 },
 				feedText = "Getting your first wheels...",
+				-- BUG FIX #12: Add eligibility check for car purchase
+				eligibility = function(state) return (state.Money or 0) >= 1500, "💸 Can't afford car ($1,500 needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					-- CRITICAL FIX: Add car to Assets!
@@ -83,6 +85,8 @@ SpecialMoments.events = {
 				effects = { Money = -5000, Happiness = 10 }, 
 				setFlags = { has_first_car = true, has_car = true, has_vehicle = true }, 
 				feedText = "🚗 Decent car! Should last years! Smart choice!",
+				-- BUG FIX #13: Add eligibility check for car purchase
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Can't afford car ($5,000 needed)" end,
 				-- CRITICAL FIX: Add car to Assets!
 				onResolve = function(state)
 					state.Assets = state.Assets or {}
@@ -106,6 +110,7 @@ SpecialMoments.events = {
 				effects = { Money = -500, Happiness = 10 }, 
 				setFlags = { has_first_car = true, has_car = true, has_vehicle = true }, 
 				feedText = "🚗 Parents helped! Lucky! Grateful for the assist!",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Can't afford ($500 needed)" end,
 				-- CRITICAL FIX: Add car to Assets!
 				onResolve = function(state)
 					state.Assets = state.Assets or {}
@@ -124,6 +129,11 @@ SpecialMoments.events = {
 						wasGift = true,
 					})
 				end,
+			},
+			{
+				text = "Not ready for a car yet (free)",
+				effects = { Happiness = -2 },
+				feedText = "🚗 Maybe someday. Public transit works for now.",
 			},
 		},
 	},
@@ -153,16 +163,18 @@ SpecialMoments.events = {
 		-- CRITICAL: Random first apartment outcome
 		choices = {
 			{
-				text = "Sign the lease!",
+				text = "Sign the lease ($1,500 deposit)",
 				effects = { Money = -1500 },
 				feedText = "Moving in...",
+				-- BUG FIX #14: Add eligibility check for apartment deposit
+				eligibility = function(state) return (state.Money or 0) >= 1500, "💸 Can't afford deposit ($1,500 needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.55 then
 						state:ModifyStat("Happiness", 15)
 						state.Flags = state.Flags or {}
 						state.Flags.first_apartment = true
-						state:AddFeed("🏠 YOUR OWN PLACE! Freedom! Adulting! Walking around naked!")
+						state:AddFeed("🏠 YOUR OWN PLACE! Freedom! Adulting! Your own rules!")
 					elseif roll < 0.85 then
 						state:ModifyStat("Happiness", 10)
 						state.Flags = state.Flags or {}
@@ -175,6 +187,11 @@ SpecialMoments.events = {
 						state:AddFeed("🏠 Surprise roaches/issues but still proud! Independence!")
 					end
 				end,
+			},
+			{
+				text = "Stay with family for now (free)",
+				effects = { Happiness = -3 },
+				feedText = "🏠 Not ready yet. Saving up makes more sense.",
 			},
 		},
 	},

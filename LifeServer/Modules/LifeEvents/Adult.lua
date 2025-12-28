@@ -59,8 +59,11 @@ Adult.events = {
 
 		choices = {
 			{
-				text = "Get my own apartment",
+				text = "Get my own apartment ($500 deposit)",
 				effects = { Happiness = 10, Money = -500 },
+				-- CRITICAL FIX #SOFTLOCK: Add eligibility check to prevent game-breaking bug!
+				-- User bug: "IT SAYS MOVING OUT YOUR OWN PLACE! BUT DIDNT CHECK IF IM BROKE"
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 You need at least $500 for deposit! Save up first." end,
 				-- CRITICAL FIX: Set ALL the housing flags that other systems check for!
 				-- AssetsScreen checks: has_apartment, renting, moved_out, has_own_place
 				-- Homeless events check: moved_out, has_own_place, renting, has_apartment
@@ -88,8 +91,10 @@ Adult.events = {
 				end,
 			},
 			{
-				text = "Find roommates",
+				text = "Find roommates ($200 deposit)",
 				effects = { Happiness = 5, Money = -200 },
+				-- CRITICAL FIX #SOFTLOCK: Add eligibility check!
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 You need at least $200 for your share of deposit!" end,
 				-- CRITICAL FIX: Roommates still means moved out!
 				setFlags = { 
 					has_roommates = true,
@@ -831,8 +836,9 @@ Adult.events = {
 
 		choices = {
 			{ text = "Noisy neighbors keep you up", effects = { Health = -3, Happiness = -4 }, feedText = "Sleep deprivation is real. These walls are paper thin." },
-			{ text = "Pests - roaches or mice!", effects = { Happiness = -6, Health = -2, Money = -100 }, feedText = "You spent money on pest control. Gross." },
-			{ text = "Landlord won't fix anything", effects = { Happiness = -4, Money = -200 }, setFlags = { bad_landlord = true }, feedText = "You had to pay for repairs yourself." },
+		{ text = "Pests - roaches or mice!", effects = { Happiness = -6, Health = -2, Money = -100 }, feedText = "You spent money on pest control. Gross." },
+		{ text = "Landlord won't fix anything", effects = { Happiness = -4, Money = -200 }, setFlags = { bad_landlord = true }, feedText = "You had to pay for repairs yourself." },
+		{ text = "Minor annoyances", effects = { Happiness = -2 }, feedText = "Small complaints but nothing major." },
 			{ text = "Actually, it's not so bad", effects = { Happiness = 3 }, feedText = "You lucked out with a decent place!" },
 		},
 	},
@@ -936,7 +942,8 @@ Adult.events = {
 				-- CRITICAL FIX #2008: Partner gender based on PLAYER gender!
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
-					local playerGender = state.Gender or "male"
+					-- BUG FIX: Normalize gender to lowercase for comparison
+					local playerGender = (state.Gender or "male"):lower()
 					local partnerIsMale = (playerGender == "female")
 					local names = partnerIsMale 
 						and {"Mike", "Chris", "Jason", "Brian", "Matt", "Steve", "Dave", "Tom", "Nick", "Ben"}
@@ -1003,35 +1010,44 @@ Adult.events = {
 					if money >= weddingCost then
 						state.Money = money - weddingCost
 						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
-						-- Update partner role to spouse
-						if state.Relationships and state.Relationships.partner then
-							local partnerGender = state.Relationships.partner.gender or "female"
-							state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
-						end
+				-- Update partner to spouse
+					if state.Relationships and state.Relationships.partner then
+						local partnerGender = state.Relationships.partner.gender or "female"
+						state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
+						state.Relationships.partner.isSpouse = true
+						state.Relationships.partner.married = true
+						state.Relationships.partner.type = "spouse"
+					end
 						if state.AddFeed then
 							state:AddFeed("💒 A beautiful $15,000 wedding! Your wallet hurts but it was worth it!")
 						end
 					elseif money >= 8000 then
 						state.Money = money - 8000
 						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
-						if state.Relationships and state.Relationships.partner then
-							local partnerGender = state.Relationships.partner.gender or "female"
-							state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
-						end
-						if state.AddFeed then
-							state:AddFeed("💒 Nice wedding for $8,000! Cut some corners but still beautiful!")
-						end
+				if state.Relationships and state.Relationships.partner then
+					local partnerGender = state.Relationships.partner.gender or "female"
+					state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
+					state.Relationships.partner.isSpouse = true
+					state.Relationships.partner.married = true
+					state.Relationships.partner.type = "spouse"
+				end
+				if state.AddFeed then
+					state:AddFeed("💒 Nice wedding for $8,000! Cut some corners but still beautiful!")
+				end
 					else
 						-- Default to small wedding
 						state.Money = math.max(0, money - 3000)
 						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
-						if state.Relationships and state.Relationships.partner then
-							local partnerGender = state.Relationships.partner.gender or "female"
-							state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
-						end
-						if state.AddFeed then
-							state:AddFeed("💒 Had a smaller wedding you could afford. Still special!")
-						end
+				if state.Relationships and state.Relationships.partner then
+					local partnerGender = state.Relationships.partner.gender or "female"
+					state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
+					state.Relationships.partner.isSpouse = true
+					state.Relationships.partner.married = true
+					state.Relationships.partner.type = "spouse"
+				end
+				if state.AddFeed then
+					state:AddFeed("💒 Had a smaller wedding you could afford. Still special!")
+				end
 					end
 					state.Flags = state.Flags or {}
 					state.Flags.engaged = nil
@@ -1053,13 +1069,16 @@ Adult.events = {
 						state.Money = math.max(0, money - 500)
 						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
 					end
-					if state.Relationships and state.Relationships.partner then
-						local partnerGender = state.Relationships.partner.gender or "female"
-						state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
-					end
-					if state.AddFeed then
-						state:AddFeed("💒 Just close friends and family. Perfect!")
-					end
+				if state.Relationships and state.Relationships.partner then
+					local partnerGender = state.Relationships.partner.gender or "female"
+					state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
+					state.Relationships.partner.isSpouse = true
+					state.Relationships.partner.married = true
+					state.Relationships.partner.type = "spouse"
+				end
+				if state.AddFeed then
+					state:AddFeed("💒 Just close friends and family. Perfect!")
+				end
 					state.Flags = state.Flags or {}
 					state.Flags.engaged = nil
 				end,
@@ -1099,30 +1118,36 @@ Adult.events = {
 							state:AddFeed("💒 Destination too expensive. Had a local wedding instead.")
 						end
 					end
-					if state.Relationships and state.Relationships.partner then
-						local partnerGender = state.Relationships.partner.gender or "female"
-						state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
-					end
-					state.Flags = state.Flags or {}
-					state.Flags.engaged = nil
-				end,
-			},
-			{ 
-				text = "Courthouse and save the money", 
+				if state.Relationships and state.Relationships.partner then
+					local partnerGender = state.Relationships.partner.gender or "female"
+					state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
+					state.Relationships.partner.isSpouse = true
+					state.Relationships.partner.married = true
+					state.Relationships.partner.type = "spouse"
+				end
+				state.Flags = state.Flags or {}
+				state.Flags.engaged = nil
+			end,
+		},
+		{ 
+			text = "Courthouse and save the money",
 				effects = { Happiness = 5, Money = -100 }, 
 				setFlags = { married = true, practical_wedding = true }, 
 				feedText = "Quick and easy. More money for the honeymoon!",
-				onResolve = function(state)
-					if state.Relationships and state.Relationships.partner then
-						local partnerGender = state.Relationships.partner.gender or "female"
-						state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
-					end
-					state.Flags = state.Flags or {}
-					state.Flags.engaged = nil
-				end,
-			},
-			{ 
-				text = "Called off the wedding", 
+			onResolve = function(state)
+				if state.Relationships and state.Relationships.partner then
+					local partnerGender = state.Relationships.partner.gender or "female"
+					state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
+					state.Relationships.partner.isSpouse = true
+					state.Relationships.partner.married = true
+					state.Relationships.partner.type = "spouse"
+				end
+				state.Flags = state.Flags or {}
+				state.Flags.engaged = nil
+			end,
+		},
+		{ 
+			text = "Called off the wedding",
 				-- CRITICAL FIX: Validate money for deposits lost
 				effects = {}, -- Money handled in onResolve
 				setFlags = { wedding_canceled = true }, 
@@ -1308,13 +1333,13 @@ Adult.events = {
 		cooldown = 3,
 		requiresJob = true, -- CRITICAL FIX: Only show for employed players!
 
-		choices = {
-			{ text = "Chase the promotion", effects = { Money = 1000, Happiness = -3, Health = -3 }, setFlags = { workaholic = true }, hintCareer = "management", feedText = "You're climbing the ladder. At what cost?" },
-			{ text = "Start my own business", effects = { Money = -5000, Happiness = 5 }, setFlags = { entrepreneur = true }, hintCareer = "business", feedText = "You took the entrepreneurial leap!" },
-			{ text = "Change careers entirely", effects = { Happiness = 8, Money = -1000, Smarts = 5 }, setFlags = { career_changer = true }, feedText = "A fresh start in a new field!" },
-			{ text = "Focus on work-life balance", effects = { Happiness = 10, Health = 5, Money = -500 }, setFlags = { balanced_life = true }, feedText = "You prioritized quality of life." },
-		},
+	choices = {
+		{ text = "Chase the promotion", effects = { Money = 1000, Happiness = -3, Health = -3 }, setFlags = { workaholic = true }, hintCareer = "management", feedText = "You're climbing the ladder. At what cost?" },
+		{ text = "Start my own business ($5,000)", effects = { Money = -5000, Happiness = 5 }, setFlags = { entrepreneur = true }, hintCareer = "business", feedText = "You took the entrepreneurial leap!", eligibility = function(state) return (state.Money or 0) >= 5000, "Need $5K for startup" end },
+		{ text = "Change careers entirely ($1,000)", effects = { Happiness = 8, Money = -1000, Smarts = 5 }, setFlags = { career_changer = true }, feedText = "A fresh start in a new field!", eligibility = function(state) return (state.Money or 0) >= 1000, "Need $1K for retraining" end },
+		{ text = "Stay the course - stability is fine", effects = { Happiness = 2 }, feedText = "Sometimes the best move is no move. You're content." },
 	},
+},
 	-- CRITICAL FIX: Renamed from "workplace_conflict" to avoid ID conflict with Career.lua
 	{
 		id = "workplace_conflict_serious",
@@ -1775,12 +1800,16 @@ Adult.events = {
 		oneTime = true,
 		requiresFlags = { married = true },
 
-		choices = {
-			{ text = "Amicable split", effects = { Happiness = -10, Money = -5000 }, setFlags = { divorced = true, recently_single = true }, feedText = "You parted ways peacefully. Still hurts." },
-			{ text = "Bitter court battle", effects = { Happiness = -20, Money = -20000, Health = -5 }, setFlags = { divorced = true, messy_divorce = true, recently_single = true }, feedText = "The divorce was ugly and expensive." },
-			{ text = "You cheated - you're the villain", effects = { Happiness = -15, Money = -10000 }, setFlags = { divorced = true, cheater = true, recently_single = true }, feedText = "You destroyed the marriage. Living with guilt." },
-			{ text = "They cheated - you're devastated", effects = { Happiness = -25, Money = -5000, Health = -5 }, setFlags = { divorced = true, cheated_on = true, recently_single = true }, feedText = "Betrayal. The trust is shattered." },
+	choices = {
+		{ text = "Amicable split ($5,000)", effects = { Happiness = -10, Money = -5000 }, setFlags = { divorced = true, recently_single = true }, feedText = "You parted ways peacefully. Still hurts.",
+			eligibility = function(state) return (state.Money or 0) >= 5000, "Can't afford settlement" end,
 		},
+		{ text = "Bitter court battle ($20,000)", effects = { Happiness = -20, Money = -20000, Health = -5 }, setFlags = { divorced = true, messy_divorce = true, recently_single = true }, feedText = "The divorce was ugly and expensive.",
+			eligibility = function(state) return (state.Money or 0) >= 20000, "Can't afford lawyers" end,
+		},
+		{ text = "Separate quietly - minimal costs", effects = { Happiness = -12, Health = -3 }, setFlags = { divorced = true, recently_single = true }, feedText = "No lawyers, just signed papers. Walked away with nothing." },
+		{ text = "They cheated - take what you can", effects = { Happiness = -25, Money = 2000, Health = -5 }, setFlags = { divorced = true, cheated_on = true, recently_single = true }, feedText = "Betrayal. At least you got some compensation." },
+	},
 		-- CRITICAL FIX: Properly clear ALL relationship flags on divorce
 		onComplete = function(state)
 			state.Flags = state.Flags or {}
@@ -2158,7 +2187,28 @@ Adult.events = {
 		choices = {
 			{ text = "Move to assisted living", effects = { Health = 5, Happiness = -5, Money = -3000 }, setFlags = { assisted_living = true }, feedText = "You moved to a facility. Safer, but different." },
 			{ text = "Hire in-home care", effects = { Health = 5, Money = -2000 }, setFlags = { has_caregiver = true }, feedText = "Help comes to you. You stay home." },
-			{ text = "Move in with family", effects = { Happiness = 5 }, setFlags = { lives_with_family = true }, feedText = "Your kids welcomed you into their home." },
+			{ 
+			text = "Move in with family", 
+			effects = { Happiness = 5 }, 
+			setFlags = { lives_with_family = true }, 
+			feedText = "Your family welcomed you into their home.",
+			-- CRITICAL FIX: Can only move in with family if you have family
+			eligibility = function(state)
+				local flags = state.Flags or {}
+				if flags.has_child or flags.has_children or flags.parent then
+					return true
+				end
+				-- Could also move in with siblings
+				if state.Relationships then
+					for _, rel in pairs(state.Relationships) do
+						if rel.type == "sibling" or rel.type == "family" then
+							return true
+						end
+					end
+				end
+				return false, "You don't have any family to move in with"
+			end,
+		},
 			{ text = "Stubbornly stay independent", effects = { Happiness = 3, Health = -5 }, setFlags = { fiercely_independent = true }, feedText = "You'll manage on your own, thank you very much!" },
 		},
 	},
@@ -3068,15 +3118,27 @@ Adult.events = {
 		cooldown = 4,
 		blockedByFlags = { in_prison = true },
 		
-		choices = {
-			{ text = "Can't wait to see everyone!", effects = { Happiness = 10, Money = -200 }, setFlags = { family_connected = true }, feedText = "Catching up with relatives you haven't seen in years!" },
-			{ text = "Dreading the awkward questions", effects = { Happiness = -3 }, feedText = "So, when are you getting married? Having kids? Getting a real job?" },
-			{ text = "Skip it - too much drama", effects = { Happiness = 2 }, setFlags = { avoids_family = true }, feedText = "You made an excuse. Some family is best in small doses." },
-			{ text = "Organizing it yourself", effects = { Happiness = 5, Money = -500, Smarts = 2 }, setFlags = { family_planner = true }, feedText = "You're bringing everyone together!" },
+	choices = {
+		{ 
+			text = "Go and have fun ($200 travel/gifts)", 
+			effects = { Happiness = 10, Money = -200 }, 
+			setFlags = { family_connected = true }, 
+			feedText = "Catching up with relatives you haven't seen in years!",
+			eligibility = function(state) return (state.Money or 0) >= 200, "Can't afford travel costs" end,
+		},
+		{ text = "Dreading the awkward questions", effects = { Happiness = -3 }, feedText = "So, when are you getting married? Having kids? Getting a real job?" },
+		{ text = "Skip it - too much drama", effects = { Happiness = 2 }, setFlags = { avoids_family = true }, feedText = "You made an excuse. Some family is best in small doses." },
+		{ 
+			text = "Organize it yourself ($500)", 
+			effects = { Happiness = 5, Money = -500, Smarts = 2 }, 
+			setFlags = { family_planner = true }, 
+			feedText = "You're bringing everyone together!",
+			eligibility = function(state) return (state.Money or 0) >= 500, "Can't afford to host" end,
 		},
 	},
-	{
-		id = "coworker_friendship",
+},
+{
+	id = "coworker_friendship",
 		title = "Work Friend",
 		emoji = "👥",
 		text = "You've become close friends with a coworker.",
@@ -3397,6 +3459,15 @@ Adult.events = {
 		category = "social",
 		tags = { "viral", "fame", "social_media", "opportunity" },
 		blockedByFlags = { in_prison = true, went_viral_before = true },
+		-- CRITICAL FIX: Only show if player uses social media!
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			local usesSocialMedia = flags.content_creator or flags.streamer or flags.social_media_active
+				or flags.posts_online or flags.vlogger or flags.gaming_content
+				or flags.has_social_media or flags.influencer_wannabe or flags.social_butterfly
+				or flags.online_presence or flags.digital_native
+			return usesSocialMedia, "Need social media presence"
+		end,
 		choices = {
 			{
 				text = "Monetize it - get sponsors!",

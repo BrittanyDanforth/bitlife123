@@ -119,7 +119,7 @@ EarlyLifeEvents.events = {
 					elseif roll <= 80 then
 						state:ModifyStat("Health", 2)
 						state:ModifyStat("Happiness", -2)
-						state:AddFeed("🏥 You screamed bloody murder, but you're healthy!")
+						state:AddFeed("🏥 You screamed SO LOUD, but you're healthy!")
 					else
 						state:ModifyStat("Health", 1)
 						state:ModifyStat("Happiness", -4)
@@ -486,8 +486,10 @@ EarlyLifeEvents.events = {
 		text = "An older kid at school has been picking on you.",
 		question = "How do you handle this?",
 		minAge = 5, maxAge = 10,
-		baseChance = 0.6,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.4, -- CRITICAL FIX: Reduced from 0.6
+		cooldown = 6, -- CRITICAL FIX: Increased
+		maxOccurrences = 2, -- Only twice per childhood
+		blockedByFlags = { in_prison = true, dropped_out = true },
 		
 		choices = {
 			{
@@ -769,8 +771,10 @@ EarlyLifeEvents.events = {
 		text = "You've been invited to sleep over at a friend's house!",
 		question = "How does the sleepover go?",
 		minAge = 7, maxAge = 12,
-		baseChance = 0.7,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7
+		cooldown = 5, -- CRITICAL FIX: Increased
+		maxOccurrences = 3, -- Can have a few sleepovers
+		blockedByFlags = { in_prison = true, dropped_out = true },
 		
 		choices = {
 			{
@@ -4391,7 +4395,9 @@ EarlyLifeEvents.events = {
 					state.Flags.problem_solver = true
 					state:ModifyStat("Smarts", 6)
 					state:ModifyStat("Happiness", 4)
-					state:AddFeed("🌟 PUZZLE MASTER! You solved a 5-year-old's puzzle at age {{AGE}}!")
+					-- CRITICAL FIX: Use actual age value instead of template variable
+					local ageText = tostring(state.Age or 1)
+					state:AddFeed("🌟 PUZZLE MASTER! You solved a 5-year-old's puzzle at age " .. ageText .. "!")
 				end,
 			},
 			{
@@ -4490,7 +4496,7 @@ EarlyLifeEvents.events = {
 						state:AddFeed("🎯 Victory! You got to stay up until 8:30! You fell asleep at 8:35.")
 					else
 						state:ModifyStat("Happiness", -2)
-						state:AddFeed("🎯 Nope. Bedtime is bedtime. This is TYRANNY!")
+						state:AddFeed("🎯 Nope. Bedtime is bedtime. So unfair!")
 					end
 				end,
 			},
