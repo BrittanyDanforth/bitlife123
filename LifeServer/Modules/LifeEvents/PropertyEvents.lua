@@ -278,6 +278,7 @@ PropertyEvents.events = {
                 text = "Minor updates ($5,000)",
                 effects = { Money = -5000 },
                 feedText = "🔨 Some paint, new fixtures, minor repairs. Freshened up the place nicely!",
+                eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 for updates" end,
                 onResolve = function(state)
                     state:ModifyStat("Happiness", 8)
                 end,
@@ -327,6 +328,7 @@ PropertyEvents.events = {
                 text = "Throw an epic house party! ($300)",
                 effects = { Money = -300 },
                 feedText = "Party time!",
+                eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for party" end,
                 onResolve = function(state)
                     local tier, propertyName = getPropertyTier(state)
                     local roll = math.random()
@@ -367,6 +369,7 @@ PropertyEvents.events = {
                 text = "Small dinner party ($100)",
                 effects = { Money = -100, Happiness = 12 },
                 feedText = "🎉 Intimate gathering with close friends. Great conversations. Perfect evening!",
+                eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100" end,
             },
             {
                 text = "Just a casual hangout",
@@ -442,9 +445,10 @@ PropertyEvents.events = {
                 end,
             },
             {
-                text = "Bring them cookies as peace offering",
+                text = "Bring them cookies as peace offering ($20)",
                 effects = { Money = -20, Happiness = 8 },
                 feedText = "🏘️ Cookies worked magic! They're your friend now! Kill 'em with kindness!",
+                eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20 for cookies" end,
                 onResolve = function(state)
                     state.Flags = state.Flags or {}
                     state.Flags.good_neighbor = true

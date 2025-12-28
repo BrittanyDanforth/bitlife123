@@ -60,7 +60,8 @@ LegalEvents.events = {
 					end
 				end,
 			},
-			{ text = "Hire accident lawyer", effects = { Money = -500 }, feedText = "Getting legal representation...",
+			{ text = "Hire accident lawyer ($500)", effects = { Money = -500 }, feedText = "Getting legal representation...",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for lawyer" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.60 then
@@ -113,7 +114,8 @@ LegalEvents.events = {
 					end
 				end,
 			},
-			{ text = "Hire a lawyer", effects = { Money = -800 }, feedText = "Legal action...",
+			{ text = "Hire a lawyer ($800)", effects = { Money = -800 }, feedText = "Legal action...",
+				eligibility = function(state) return (state.Money or 0) >= 800, "💸 Need $800 for lawyer" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.55 then
@@ -326,9 +328,9 @@ LegalEvents.events = {
 		tags = { "will", "estate", "planning" },
 		
 		choices = {
-			{ text = "Create a comprehensive will", effects = { Money = -300, Happiness = 4, Smarts = 3 }, setFlags = { has_will = true }, feedText = "📋 Proper legal will created. Peace of mind." },
-			{ text = "DIY will kit", effects = { Money = -30, Happiness = 2, Smarts = 2 }, setFlags = { has_will = true }, feedText = "📋 Basic will done. Better than nothing." },
-			{ text = "Put it off - morbid topic", effects = { Happiness = 1 }, feedText = "📋 Don't want to think about it. Later." },
+			{ text = "Create a comprehensive will ($300)", effects = { Money = -300, Happiness = 4, Smarts = 3 }, setFlags = { has_will = true }, feedText = "📋 Proper legal will created. Peace of mind.", eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for lawyer" end },
+			{ text = "DIY will kit ($30)", effects = { Money = -30, Happiness = 2, Smarts = 2 }, setFlags = { has_will = true }, feedText = "📋 Basic will done. Better than nothing.", eligibility = function(state) return (state.Money or 0) >= 30, "💸 Need $30 for will kit" end },
+			{ text = "Put it off - morbid topic (free)", effects = { Happiness = 1 }, feedText = "📋 Don't want to think about it. Later." },
 		},
 	},
 	{

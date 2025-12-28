@@ -116,11 +116,12 @@ RelationshipsExpanded.events = {
 		
 		-- CRITICAL: Random date outcome
 		choices = {
-			{
-				text = "Fancy restaurant",
-				effects = { Money = -150 },
-				feedText = "Dressing up for a nice dinner...",
-				onResolve = function(state)
+		{
+			text = "Fancy restaurant ($150)",
+			effects = { Money = -150 },
+			feedText = "Dressing up for a nice dinner...",
+			eligibility = function(state) return (state.Money or 0) >= 150, "💸 Need $150 for fancy dinner" end,
+			onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.70 then
 						state:ModifyStat("Happiness", 8)
@@ -131,16 +132,18 @@ RelationshipsExpanded.events = {
 					end
 				end,
 			},
-			{
-				text = "Movie and couch cuddles",
-				effects = { Money = -20, Happiness = 6 },
-				feedText = "Low-key and perfect. Just being together.",
-			},
-			{
-				text = "Adventure activity together",
-				effects = { Money = -100 },
-				feedText = "Trying something new together...",
-				onResolve = function(state)
+		{
+			text = "Movie and couch cuddles ($20)",
+			effects = { Money = -20, Happiness = 6 },
+			feedText = "Low-key and perfect. Just being together.",
+			eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20 for movie night" end,
+		},
+		{
+			text = "Adventure activity together ($100)",
+			effects = { Money = -100 },
+			feedText = "Trying something new together...",
+			eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for adventure" end,
+			onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.60 then
 						state:ModifyStat("Happiness", 10)
@@ -152,11 +155,17 @@ RelationshipsExpanded.events = {
 					end
 				end,
 			},
-			{
-				text = "Cook dinner at home",
-				effects = { Money = -30, Happiness = 7 },
-				feedText = "Homemade meal and quality time. Perfect.",
-			},
+		{
+			text = "Cook dinner at home ($30)",
+			effects = { Money = -30, Happiness = 7 },
+			feedText = "Homemade meal and quality time. Perfect.",
+			eligibility = function(state) return (state.Money or 0) >= 30, "💸 Need $30 for groceries" end,
+		},
+		{
+			text = "Free walk in the park",
+			effects = { Happiness = 5, Health = 2 },
+			feedText = "Simple and romantic. Just enjoying each other's company.",
+		},
 		},
 	},
 	{
@@ -236,10 +245,11 @@ RelationshipsExpanded.events = {
 		tags = { "anniversary", "celebration", "romance" },
 		
 		choices = {
-			{ text = "Grand romantic gesture", effects = { Money = -500, Happiness = 12 }, setFlags = { romantic = true }, feedText = "💑 Surprised them with something amazing! They cried happy tears!" },
-			{ text = "Simple but meaningful", effects = { Money = -50, Happiness = 8 }, feedText = "💑 Quality time together. That's all that matters." },
-			{ text = "Completely forget", effects = { Happiness = -10 }, setFlags = { forgot_anniversary = true }, feedText = "💑 Oh no. They remember. You didn't. TROUBLE." },
-			{ text = "Re-create your first date", effects = { Money = -100, Happiness = 10 }, feedText = "💑 Nostalgic and romantic! They loved it!" },
+		{ text = "Grand romantic gesture ($500)", effects = { Money = -500, Happiness = 12 }, setFlags = { romantic = true }, feedText = "💑 Surprised them with something amazing! They cried happy tears!", eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for grand gesture" end },
+		{ text = "Simple but meaningful ($50)", effects = { Money = -50, Happiness = 8 }, feedText = "💑 Quality time together. That's all that matters.", eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50" end },
+		{ text = "Completely forget (free)", effects = { Happiness = -10 }, setFlags = { forgot_anniversary = true }, feedText = "💑 Oh no. They remember. You didn't. TROUBLE." },
+		{ text = "Re-create your first date ($100)", effects = { Money = -100, Happiness = 10 }, feedText = "💑 Nostalgic and romantic! They loved it!", eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100" end },
+		{ text = "Homemade card and cuddles (free)", effects = { Happiness = 6 }, feedText = "💑 It's the thought that counts! Sweet and heartfelt." },
 		},
 	},
 	{
@@ -327,7 +337,7 @@ RelationshipsExpanded.events = {
 		tags = { "career", "relationship", "sacrifice" },
 		
 		choices = {
-			{ text = "Support them - go together", effects = { Happiness = 4, Money = -500 }, setFlags = { moved_for_partner = true }, feedText = "⚖️ Your turn to support their dreams. New adventure together!" },
+			{ text = "Support them - go together ($500)", effects = { Happiness = 4, Money = -500 }, setFlags = { moved_for_partner = true }, feedText = "⚖️ Your turn to support their dreams. New adventure together!", eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 to relocate" end },
 			{ text = "Ask them not to go", effects = {}, feedText = "You ask them to stay...",
 				onResolve = function(state)
 					local roll = math.random()
@@ -455,10 +465,11 @@ RelationshipsExpanded.events = {
 		tags = { "wedding", "stress", "planning" },
 		
 		choices = {
-			{ text = "Bridezilla/Groomzilla mode", effects = { Happiness = -5, Money = -1000 }, setFlags = { wedding_drama = true }, feedText = "📋 This wedding WILL be perfect. Everyone is terrified of you." },
-			{ text = "Stay calm and delegate", effects = { Happiness = 2, Money = -500 }, feedText = "📋 Wedding planner, family help. Manageable." },
-			{ text = "Elope instead", effects = { Happiness = 8, Money = -200 }, setFlags = { eloped = true, married = true }, feedText = "📋 Forget all this! Just the two of you! MARRIED!" },
-			{ text = "Push through together", effects = { Happiness = 4, Money = -700 }, feedText = "📋 Stressful but you're doing it as a team. That matters." },
+		{ text = "Bridezilla/Groomzilla mode ($1,000)", effects = { Happiness = -5, Money = -1000 }, setFlags = { wedding_drama = true }, feedText = "📋 This wedding WILL be perfect. Everyone is terrified of you.", eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000" end },
+		{ text = "Stay calm and delegate ($500)", effects = { Happiness = 2, Money = -500 }, feedText = "📋 Wedding planner, family help. Manageable.", eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500" end },
+		{ text = "Elope instead ($200)", effects = { Happiness = 8, Money = -200 }, setFlags = { eloped = true, married = true }, feedText = "📋 Forget all this! Just the two of you! MARRIED!", eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200" end },
+		{ text = "Push through together ($700)", effects = { Happiness = 4, Money = -700 }, feedText = "📋 Stressful but you're doing it as a team. That matters.", eligibility = function(state) return (state.Money or 0) >= 700, "💸 Need $700" end },
+		{ text = "Courthouse wedding (free)", effects = { Happiness = 5 }, setFlags = { courthouse_wedding = true, married = true }, feedText = "📋 Just you, a judge, and your love. Simple and beautiful." },
 		},
 	},
 	
@@ -482,7 +493,7 @@ RelationshipsExpanded.events = {
 		choices = {
 			{ text = "Drop everything to be there", effects = { Happiness = 5, Smarts = 1 }, setFlags = { loyal_friend = true }, feedText = "🆘 You showed up. That's what matters most." },
 			{ text = "Help from a distance - check in", effects = { Happiness = 2 }, feedText = "🆘 Texts and calls. Support without overwhelming." },
-			{ text = "Offer financial help", effects = { Money = -200, Happiness = 4 }, feedText = "🆘 Put your money where your mouth is. They're grateful." },
+			{ text = "Offer financial help ($200)", effects = { Money = -200, Happiness = 4 }, feedText = "🆘 Put your money where your mouth is. They're grateful.", eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 to help" end },
 			{ text = "Too caught up in own life", effects = { Happiness = -4 }, setFlags = { bad_friend_moment = true }, feedText = "🆘 Wasn't there for them. The guilt lingers." },
 		},
 	},
@@ -534,11 +545,12 @@ RelationshipsExpanded.events = {
 		
 		-- CRITICAL: Random friend-making outcome
 		choices = {
-			{
-				text = "Join clubs or activities",
-				effects = { Money = -50 },
-				feedText = "Putting yourself out there...",
-				onResolve = function(state)
+		{
+			text = "Join clubs or activities ($50)",
+			effects = { Money = -50 },
+			feedText = "Putting yourself out there...",
+			eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 for club dues" end,
+			onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.55 then
 						state:ModifyStat("Happiness", 8)
@@ -653,11 +665,12 @@ RelationshipsExpanded.events = {
 				effects = { Happiness = -2 },
 				feedText = "📵 People grow apart. That's life.",
 			},
-			{
-				text = "Plan a reunion",
-				effects = { Money = -100 },
-				feedText = "Getting the old gang together...",
-				onResolve = function(state)
+		{
+			text = "Plan a reunion ($100)",
+			effects = { Money = -100 },
+			feedText = "Getting the old gang together...",
+			eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for reunion" end,
+			onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.65 then
 						state:ModifyStat("Happiness", 12)
@@ -851,8 +864,8 @@ RelationshipsExpanded.events = {
 		end,
 		
 		choices = {
-			{ text = "Move them in with you", effects = { Happiness = 3, Money = -200, Health = -2 }, setFlags = { live_in_caregiver = true }, feedText = "👴 They live with you now. Hard but right." },
-			{ text = "Hire professional help", effects = { Money = -500, Happiness = 2 }, setFlags = { hired_caregiver = true }, feedText = "👴 Professional care. Expensive but quality." },
+		{ text = "Move them in with you ($200)", effects = { Happiness = 3, Money = -200, Health = -2 }, setFlags = { live_in_caregiver = true }, feedText = "👴 They live with you now. Hard but right.", eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for setup" end },
+		{ text = "Hire professional help ($500)", effects = { Money = -500, Happiness = 2 }, setFlags = { hired_caregiver = true }, feedText = "👴 Professional care. Expensive but quality.", eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for caregiver" end },
 			{ text = "Share duties with siblings", effects = { Happiness = 2 }, feedText = "👴 Family teamwork. Splitting the responsibility." },
 			{ text = "Struggling to balance everything", effects = { Happiness = -5, Health = -3 }, setFlags = { caregiver_burnout = true }, feedText = "👴 It's overwhelming. Your own life suffers." },
 		},

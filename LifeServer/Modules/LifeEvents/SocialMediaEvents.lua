@@ -324,8 +324,9 @@ SocialMediaEvents.events = {
 					end
 				end,
 			},
-			{ text = "Meet in person", effects = { Money = -50 }, feedText = "Meeting your online friend IRL...",
-				onResolve = function(state)
+		{ text = "Meet in person ($50)", effects = { Money = -50 }, feedText = "Meeting your online friend IRL...",
+			eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 for meetup" end,
+			onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.65 then
 						state:ModifyStat("Happiness", 10)
@@ -392,7 +393,7 @@ SocialMediaEvents.events = {
 				end,
 			},
 			{ text = "Add to cart but don't checkout", effects = { Happiness = 4, Smarts = 2 }, feedText = "🛒 Filled cart. Closed tab. Self-control win!" },
-			{ text = "Treat yourself responsibly", effects = { Money = -50, Happiness = 5 }, feedText = "🛒 One nice thing. Budget maintained. Balance." },
+			{ text = "Treat yourself responsibly ($50)", effects = { Money = -50, Happiness = 5 }, feedText = "🛒 One nice thing. Budget maintained. Balance.", eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50" end },
 		},
 	},
 	{

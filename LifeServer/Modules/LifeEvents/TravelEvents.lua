@@ -338,11 +338,12 @@ TravelEvents.events = {
 		
 		-- CRITICAL: Random road trip outcome
 		choices = {
-			{
-				text = "Go on the adventure",
-				effects = { Money = -200 },
-				feedText = "Driving into the sunset...",
-				onResolve = function(state)
+		{
+			text = "Go on the adventure ($200)",
+			effects = { Money = -200 },
+			feedText = "Driving into the sunset...",
+			eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for road trip" end,
+			onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.55 then
 						state:ModifyStat("Happiness", 12)
@@ -367,7 +368,8 @@ TravelEvents.events = {
 					end
 				end,
 			},
-			{ text = "Day trip instead", effects = { Money = -50, Happiness = 6 }, feedText = "🚗 Quick adventure! Back home for dinner!" },
+			{ text = "Day trip instead ($50)", effects = { Money = -50, Happiness = 6 }, feedText = "🚗 Quick adventure! Back home for dinner!", eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 for day trip" end },
+		{ text = "Explore locally for free", effects = { Happiness = 4 }, feedText = "🚗 Found some cool spots nearby without spending a dime!" },
 			{ text = "Not in the mood", effects = { Happiness = 1 }, feedText = "🚗 Road trips sound exhausting right now." },
 		},
 	},
@@ -452,11 +454,12 @@ TravelEvents.events = {
 		
 		-- CRITICAL: Random camping outcome
 		choices = {
-			{
-				text = "Rough it in the wilderness",
-				effects = { Money = -100 },
-				feedText = "Setting up camp...",
-				onResolve = function(state)
+		{
+			text = "Rough it in the wilderness ($100)",
+			effects = { Money = -100 },
+			feedText = "Setting up camp...",
+			eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for camping gear" end,
+			onResolve = function(state)
 					local health = (state.Stats and state.Stats.Health) or 50
 					local roll = math.random()
 					
@@ -481,8 +484,9 @@ TravelEvents.events = {
 					end
 				end,
 			},
-			{ text = "Glamping (fancy camping)", effects = { Money = -300, Happiness = 10, Health = 2 }, feedText = "⛺ Nature with amenities! Best of both worlds!" },
-			{ text = "Not outdoorsy", effects = { Happiness = 1 }, feedText = "⛺ Hotels exist for a reason. Pass." },
+		{ text = "Glamping (fancy camping) ($300)", effects = { Money = -300, Happiness = 10, Health = 2 }, feedText = "⛺ Nature with amenities! Best of both worlds!", eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for glamping" end },
+		{ text = "Not outdoorsy (free)", effects = { Happiness = 1 }, feedText = "⛺ Hotels exist for a reason. Pass." },
+		{ text = "Backyard camping (free)", effects = { Happiness = 4, Health = 1 }, feedText = "⛺ Set up a tent in the backyard. Stars and fresh air!" },
 		},
 	},
 	
@@ -546,9 +550,9 @@ TravelEvents.events = {
 		tags = { "local", "explore", "adventure" },
 		
 		choices = {
-			{ text = "Try a new restaurant ($40)", effects = { Money = -40, Happiness = 6 }, feedText = "🗺️ Hidden gem! Best meal in months!" },
-			{ text = "Explore a park you've never visited (free)", effects = { Health = 3, Happiness = 5 }, feedText = "🗺️ Can't believe you never came here! Beautiful!" },
-			{ text = "Check out a local attraction ($20)", effects = { Money = -20, Smarts = 2, Happiness = 4 }, feedText = "🗺️ Tourist in your own town! Actually really cool!" },
+		{ text = "Try a new restaurant ($40)", effects = { Money = -40, Happiness = 6 }, feedText = "🗺️ Hidden gem! Best meal in months!", eligibility = function(state) return (state.Money or 0) >= 40, "💸 Need $40" end },
+		{ text = "Explore a park you've never visited (free)", effects = { Health = 3, Happiness = 5 }, feedText = "🗺️ Can't believe you never came here! Beautiful!" },
+		{ text = "Check out a local attraction ($20)", effects = { Money = -20, Smarts = 2, Happiness = 4 }, feedText = "🗺️ Tourist in your own town! Actually really cool!", eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20" end },
 			{ text = "Take a different route home (free)", effects = { Happiness = 3, Smarts = 1 }, feedText = "🗺️ Found a great shortcut/view/shop you never knew!" },
 		},
 	},
@@ -577,11 +581,12 @@ TravelEvents.events = {
 		
 		-- CRITICAL: Random adventure outcome
 		choices = {
-			{
-				text = "Skydiving",
-				effects = { Money = -250 },
-				feedText = "Jumping out of a plane...",
-				onResolve = function(state)
+		{
+			text = "Skydiving ($250)",
+			effects = { Money = -250 },
+			feedText = "Jumping out of a plane...",
+			eligibility = function(state) return (state.Money or 0) >= 250, "💸 Need $250 for skydiving" end,
+			onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.80 then
 						state:ModifyStat("Happiness", 18)

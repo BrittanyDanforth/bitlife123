@@ -409,9 +409,10 @@ DailyLifeEvents.events = {
 		-- CRITICAL: Random dinner outcome
 		choices = {
 			{
-				text = "Cook a nice meal",
+				text = "Cook a nice meal ($15 groceries)",
 				effects = { Money = -15 },
 				feedText = "In the kitchen...",
+				eligibility = function(state) return (state.Money or 0) >= 15, "Need $15 for ingredients" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.55 then
@@ -647,9 +648,10 @@ DailyLifeEvents.events = {
 		-- CRITICAL: Random grocery outcome
 		choices = {
 			{
-				text = "Stick to the list",
+				text = "Stick to the list ($50)",
 				effects = { Money = -50 },
 				feedText = "Shopping strategically...",
+				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need at least $50 for groceries" end,
 				onResolve = function(state)
 					local smarts = (state.Stats and state.Stats.Smarts) or 50
 					local roll = math.random()
@@ -671,6 +673,7 @@ DailyLifeEvents.events = {
 			{ text = "Shop hungry ($80)", effects = { Happiness = 2, Money = -80 }, feedText = "🛒 Mistake. Bought so much junk. Why did you shop hungry?",
 				eligibility = function(state) return (state.Money or 0) >= 80, "💸 Not enough for hungry shopping ($80 needed)" end,
 			},
+			{ text = "Skip it - eat what's at home (free)", effects = { Happiness = -2, Health = -1 }, feedText = "🛒 Making do with what's in the pantry. Creative meals ahead." },
 		},
 	},
 	{

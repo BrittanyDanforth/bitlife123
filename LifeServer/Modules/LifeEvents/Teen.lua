@@ -1293,7 +1293,7 @@ Teen.events = {
 
 		choices = {
 			{ text = "Promise to stay in touch forever", effects = { Happiness = -4 }, setFlags = { long_distance_friendship = true }, feedText = "Distance doesn't end real friendships." },
-			{ text = "Throw them a going-away party", effects = { Happiness = 3, Money = -50 }, feedText = "You gave them an amazing send-off!" },
+			{ text = "Throw them a going-away party ($50)", effects = { Happiness = 3, Money = -50 }, feedText = "You gave them an amazing send-off!", eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 for party supplies" end },
 			{ text = "Pretend you don't care", effects = { Happiness = -6 }, setFlags = { hides_feelings = true }, feedText = "You're heartbroken but hiding it." },
 			{ text = "Make plans to visit each other", effects = { Happiness = 2 }, feedText = "You're already planning summer visits!" },
 		},

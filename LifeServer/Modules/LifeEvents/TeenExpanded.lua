@@ -1373,7 +1373,7 @@ TeenExpanded.events = {
 		
 		choices = {
 			{ text = "Saving everything", effects = { Smarts = 3, Money = 200 }, setFlags = { teen_saver = true }, hintCareer = "finance", feedText = "Every dollar saved. Watching that balance grow." },
-			{ text = "Spending it all immediately", effects = { Happiness = 4, Money = -100 }, setFlags = { teen_spender = true }, feedText = "Money burns a hole in your pocket. Broke but happy?" },
+			{ text = "Spending it all immediately ($100)", effects = { Happiness = 4, Money = -100 }, setFlags = { teen_spender = true }, feedText = "Money burns a hole in your pocket. Broke but happy?", eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 to spend" end },
 			{ text = "Investing with help from parents", effects = { Smarts = 5, Money = 100 }, setFlags = { young_investor = true }, hintCareer = "finance", feedText = "Learning about stocks and compound interest. Head start!" },
 			{ text = "Don't really have money to manage", effects = { Happiness = -2 }, feedText = "What money? You're broke." },
 		},
@@ -1528,12 +1528,13 @@ TeenExpanded.events = {
 					end
 				end,
 			},
-			{
-				text = "Survive on snacks and takeout",
-				effects = { Health = -3, Happiness = 2, Money = -50 },
-				setFlags = { cant_cook = true },
-				feedText = "Who needs to cook? That's future you's problem.",
-			},
+		{
+			text = "Survive on snacks and takeout ($50)",
+			effects = { Health = -3, Happiness = 2, Money = -50 },
+			setFlags = { cant_cook = true },
+			feedText = "Who needs to cook? That's future you's problem.",
+			eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 for takeout" end,
+		},
 		},
 	},
 	{

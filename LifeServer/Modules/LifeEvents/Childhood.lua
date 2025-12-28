@@ -654,7 +654,7 @@ Childhood.events = {
 
 		choices = {
 			{ text = "Save it all", effects = { Smarts = 3, Money = 50 }, setFlags = { saver = true }, hintCareer = "finance", feedText = "You save every penny. Future financial whiz!" },
-			{ text = "Spend it on candy and toys", effects = { Happiness = 5, Money = -20 }, setFlags = { spender = true }, feedText = "You enjoy your money while you have it!" },
+			{ text = "Spend it on candy and toys ($20)", effects = { Happiness = 5, Money = -20 }, setFlags = { spender = true }, feedText = "You enjoy your money while you have it!", eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20" end },
 			{ text = "Save some, spend some", effects = { Smarts = 2, Happiness = 3, Money = 25 }, setFlags = { balanced_spender = true }, feedText = "You're learning balance with money." },
 			{ text = "Try to invest it somehow", effects = { Smarts = 5, Money = 30 }, setFlags = { entrepreneur = true }, hintCareer = "finance", feedText = "You're already thinking about growing your money!" },
 		},
@@ -1901,10 +1901,10 @@ Childhood.events = {
 		tags = { "birthday", "party", "celebration" },
 		
 		choices = {
-			{ text = "Big party with all my friends", effects = { Happiness = 10, Money = -30 }, setFlags = { party_person = true }, feedText = "Best birthday ever! So many friends and presents!" },
-			{ text = "Small family celebration", effects = { Happiness = 7 }, setFlags = { family_oriented = true }, feedText = "Cozy and special with the people who matter most." },
-			{ text = "Special outing instead", effects = { Happiness = 8, Money = -20 }, feedText = "An adventure for your birthday! So memorable." },
-			{ text = "Themed costume party", effects = { Happiness = 9, Looks = 2, Money = -25 }, setFlags = { loves_costumes = true }, feedText = "Everyone dressed up! It was magical." },
+		{ text = "Big party with all my friends (parents pay)", effects = { Happiness = 10 }, setFlags = { party_person = true }, feedText = "Best birthday ever! So many friends and presents!" },
+		{ text = "Small family celebration (free)", effects = { Happiness = 7 }, setFlags = { family_oriented = true }, feedText = "Cozy and special with the people who matter most." },
+		{ text = "Special outing instead (parents pay)", effects = { Happiness = 8 }, feedText = "An adventure for your birthday! So memorable." },
+		{ text = "Themed costume party (parents pay)", effects = { Happiness = 9, Looks = 2 }, setFlags = { loves_costumes = true }, feedText = "Everyone dressed up! It was magical." },
 		},
 	},
 	{

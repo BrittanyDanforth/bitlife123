@@ -171,11 +171,12 @@ RandomExpanded.events = {
 					end
 				end,
 			},
-			{
-				text = "Call roadside assistance",
-				effects = { Money = -50, Happiness = 1 },
-				feedText = "That's what you pay for! Help arrives.",
-			},
+		{
+			text = "Call roadside assistance ($50)",
+			effects = { Money = -50, Happiness = 1 },
+			feedText = "That's what you pay for! Help arrives.",
+			eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 for roadside service" end,
+		},
 			{
 				text = "Call someone to help",
 				effects = { Happiness = 2 },

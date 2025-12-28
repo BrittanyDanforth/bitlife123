@@ -46,10 +46,11 @@ HobbyEvents.events = {
 				feedText = "📚 You joined the library and got a library card! So many books!",
 			},
 			{
-				text = "👨‍🍳 Cooking/baking",
+				text = "👨‍🍳 Cooking/baking ($30)",
 				effects = { Happiness = 4, Money = -30 },
 				setFlags = { pursuing_cooking = true, interested_in_cooking = true },
 				feedText = "👨‍🍳 You bought a cookbook and some kitchen supplies! Let's cook!",
+				eligibility = function(state) return (state.Money or 0) >= 30, "Need $30 for cooking supplies" end,
 			},
 			{
 				text = "💪 Fitness/exercise",
@@ -400,9 +401,10 @@ HobbyEvents.events = {
 		-- CRITICAL: Random art creation outcome
 		choices = {
 			{
-				text = "Create a new piece",
+				text = "Create a new piece ($30 supplies)",
 				effects = { Money = -30 },
 				feedText = "Creating art...",
+				eligibility = function(state) return (state.Money or 0) >= 30, "Need $30 for art supplies" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.40 then
@@ -423,7 +425,7 @@ HobbyEvents.events = {
 					end
 				end,
 			},
-			{ text = "Take an art class", effects = { Money = -80, Happiness = 6, Smarts = 4 }, feedText = "🎨 Learning new techniques! Skill level up!" },
+			{ text = "Take an art class ($80)", effects = { Money = -80, Happiness = 6, Smarts = 4 }, feedText = "🎨 Learning new techniques! Skill level up!", eligibility = function(state) return (state.Money or 0) >= 80, "Need $80 for art class" end },
 			{ text = "Share your art online", effects = {}, feedText = "Posting your work...",
 				onResolve = function(state)
 					local roll = math.random()
