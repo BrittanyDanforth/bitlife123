@@ -980,10 +980,12 @@ HealthEvents.events = {
 				feedText = "❤️‍🩹 Heart disease diagnosed. On medication and strict diet now.",
 			},
 			{
-				text = "Get bypass surgery if needed",
+				text = "Get bypass surgery if needed ($5,000)",
 				effects = { Happiness = -15, Money = -5000, Health = 5 },
 				setFlags = { heart_disease = true, had_heart_surgery = true },
 				feedText = "❤️‍🩹 Underwent heart surgery. Long recovery ahead.",
+				-- BUG FIX #2: Add eligibility check for surgery cost
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Can't afford surgery ($5,000 needed)" end,
 			},
 		},
 	},
@@ -1113,9 +1115,11 @@ HealthEvents.events = {
 		
 		choices = {
 			{
-				text = "Continue aggressive treatment",
+				text = "Continue aggressive treatment ($5,000)",
 				effects = { Money = -5000, Health = -10, Happiness = -5 },
 				feedText = "🎗️ Pushing through more treatment...",
+				-- BUG FIX #3: Add eligibility check for treatment cost
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Can't afford treatment ($5,000 needed)" end,
 				onResolve = function(state)
 					state.Flags = state.Flags or {}
 					local rounds = (state.Flags.cancer_treatment_rounds or 1) + 1
@@ -1162,9 +1166,11 @@ HealthEvents.events = {
 				end,
 			},
 			{
-				text = "Try alternative treatments",
+				text = "Try alternative treatments ($3,000)",
 				effects = { Money = -3000, Happiness = 2 },
 				feedText = "🎗️ Exploring other options...",
+				-- BUG FIX #4: Add eligibility check for treatment cost
+				eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Can't afford alternative treatment ($3,000 needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					state.Flags = state.Flags or {}
@@ -1431,10 +1437,12 @@ HealthEvents.events = {
 				feedText = "🦴 Bone set, cast on. 6 weeks of limited mobility.",
 			},
 			{
-				text = "Surgery if needed",
+				text = "Surgery if needed ($3,000)",
 				effects = { Money = -3000, Health = 5, Happiness = -8 },
 				setFlags = { had_bone_surgery = true },
 				feedText = "🦴 Needed surgery to fix properly. Pins and plates inserted.",
+				-- BUG FIX #5: Add eligibility check for surgery cost
+				eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Can't afford surgery ($3,000 needed)" end,
 			},
 		},
 	},

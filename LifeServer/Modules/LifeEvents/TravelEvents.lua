@@ -293,9 +293,11 @@ TravelEvents.events = {
 				end,
 			},
 			{
-				text = "Tropical paradise",
+				text = "Tropical paradise ($2,000)",
 				effects = { Money = -2000 },
 				feedText = "Island hopping...",
+				-- BUG FIX #8: Add eligibility check for trip cost
+				eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Can't afford trip ($2,000 needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.70 then
@@ -394,9 +396,11 @@ TravelEvents.events = {
 		-- CRITICAL: Random cruise outcome
 		choices = {
 			{
-				text = "Book the cruise",
+				text = "Book the cruise ($1,500)",
 				effects = { Money = -1500 },
 				feedText = "All aboard...",
+				-- BUG FIX #9: Add eligibility check for cruise cost
+				eligibility = function(state) return (state.Money or 0) >= 1500, "💸 Can't afford cruise ($1,500 needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.55 then
@@ -783,17 +787,19 @@ TravelEvents.events = {
 		
 		eligibility = function(state)
 			local money = state.Money or 0
-			if money < 3000 then
-				return false, "Need significant savings for bucket list trip"
+			if money < 4000 then
+				return false, "Need significant savings for bucket list trip ($4,000)"
 			end
 			return true
 		end,
 		
 		choices = {
 			{
-				text = "Make it happen",
+				text = "Make it happen ($4,000)",
 				effects = { Money = -4000 },
 				feedText = "Dream trip becoming reality...",
+				-- BUG FIX #10: Add eligibility check for trip cost
+				eligibility = function(state) return (state.Money or 0) >= 4000, "💸 Can't afford trip ($4,000 needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.70 then

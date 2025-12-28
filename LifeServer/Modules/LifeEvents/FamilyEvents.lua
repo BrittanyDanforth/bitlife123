@@ -687,9 +687,11 @@ FamilyEvents.events = {
 		
 		choices = {
 			{
-				text = "Honor their memory with a charity donation",
+				text = "Honor their memory with a charity donation ($2,000)",
 				effects = { Money = -2000, Happiness = 8 },
 				feedText = "🕯️ Donated to their favorite cause. They would be proud.",
+				-- BUG FIX #6: Add eligibility check for donation cost
+				eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Can't afford donation ($2,000 needed)" end,
 				onResolve = function(state)
 					state.Flags.charitable = true
 					state.Flags.honoring_parent = true
@@ -887,9 +889,11 @@ FamilyEvents.events = {
 				end,
 			},
 			{
-				text = "Fight it in court - you were the executor",
+				text = "Fight it in court ($3,000 in legal fees)",
 				effects = { Money = -3000, Happiness = -5 },
 				feedText = "Lawyer up...",
+				-- BUG FIX #7: Add eligibility check for legal costs
+				eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Can't afford legal fees ($3,000 needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.6 then

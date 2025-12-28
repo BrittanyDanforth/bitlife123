@@ -4290,7 +4290,9 @@ local FamePathEvents = {
 				feedText = "You created your first gaming YouTube channel! Time to start uploading.",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
-					state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + math.random(10, 50)
+					local gain = math.random(10, 50)
+					state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + gain
+					state.FameState.followers = (state.FameState.followers or 0) + gain  -- BUG FIX: Sync followers
 					state.FameState.contentPlatforms = state.FameState.contentPlatforms or {}
 					state.FameState.contentPlatforms.youtube = true
 					state.Fame = (state.Fame or 0) + 2
@@ -4303,7 +4305,9 @@ local FamePathEvents = {
 				feedText = "You started your vlogging journey! Your first video got 23 views.",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
-					state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + math.random(10, 50)
+					local gain = math.random(10, 50)
+					state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + gain
+					state.FameState.followers = (state.FameState.followers or 0) + gain  -- BUG FIX: Sync followers
 					state.FameState.contentPlatforms = state.FameState.contentPlatforms or {}
 					state.FameState.contentPlatforms.youtube = true
 					state.Fame = (state.Fame or 0) + 2
@@ -4340,12 +4344,14 @@ local FamePathEvents = {
 				minigameOptions = { difficulty = "easy" },
 				onResolve = function(state, minigameResult)
 					if minigameResult and minigameResult.success then
-						local followers = math.random(100, 5000)
+						local followersGain = math.random(100, 5000)
 						state.FameState = state.FameState or {}
-						state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + followers
-						state.Fame = (state.Fame or 0) + math.floor(followers / 200)
+						-- BUG FIX #1: Sync socialFollowers with main followers counter
+						state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + followersGain
+						state.FameState.followers = (state.FameState.followers or 0) + followersGain
+						state.Fame = (state.Fame or 0) + math.floor(followersGain / 200)
 						if state.AddFeed then
-							state:AddFeed("📱 Your TikTok went semi-viral! +" .. followers .. " followers!")
+							state:AddFeed("📱 Your TikTok went semi-viral! +" .. followersGain .. " followers!")
 						end
 					else
 						if state.AddFeed then
@@ -4396,7 +4402,9 @@ local FamePathEvents = {
 				feedText = "The giveaway brought in even more followers!",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
-					state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + math.random(200, 500)
+					local gain = math.random(200, 500)
+					state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + gain
+					state.FameState.followers = (state.FameState.followers or 0) + gain  -- BUG FIX: Sync followers
 					state.Fame = (state.Fame or 0) + 5
 				end,
 			},
@@ -4507,7 +4515,9 @@ local FamePathEvents = {
 						-- Drama brings attention
 						state.Fame = (state.Fame or 0) + 5
 						state.FameState = state.FameState or {}
-						state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + math.random(100, 500)
+						local gain = math.random(100, 500)
+						state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + gain
+						state.FameState.followers = (state.FameState.followers or 0) + gain  -- BUG FIX: Sync followers
 						if state.AddFeed then
 							state:AddFeed("🔥 The drama went viral! People love the content!")
 						end
