@@ -546,10 +546,10 @@ TravelEvents.events = {
 		tags = { "local", "explore", "adventure" },
 		
 		choices = {
-			{ text = "Try a new restaurant", effects = { Money = -40, Happiness = 6 }, feedText = "🗺️ Hidden gem! Best meal in months!" },
-			{ text = "Explore a park you've never visited", effects = { Health = 3, Happiness = 5 }, feedText = "🗺️ Can't believe you never came here! Beautiful!" },
-			{ text = "Check out a local attraction", effects = { Money = -20, Smarts = 2, Happiness = 4 }, feedText = "🗺️ Tourist in your own town! Actually really cool!" },
-			{ text = "Take a different route home", effects = { Happiness = 3, Smarts = 1 }, feedText = "🗺️ Found a great shortcut/view/shop you never knew!" },
+			{ text = "Try a new restaurant ($40)", effects = { Money = -40, Happiness = 6 }, feedText = "🗺️ Hidden gem! Best meal in months!" },
+			{ text = "Explore a park you've never visited (free)", effects = { Health = 3, Happiness = 5 }, feedText = "🗺️ Can't believe you never came here! Beautiful!" },
+			{ text = "Check out a local attraction ($20)", effects = { Money = -20, Smarts = 2, Happiness = 4 }, feedText = "🗺️ Tourist in your own town! Actually really cool!" },
+			{ text = "Take a different route home (free)", effects = { Happiness = 3, Smarts = 1 }, feedText = "🗺️ Found a great shortcut/view/shop you never knew!" },
 		},
 	},
 	{
