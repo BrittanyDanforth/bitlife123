@@ -110,6 +110,7 @@ SpecialMoments.events = {
 				effects = { Money = -500, Happiness = 10 }, 
 				setFlags = { has_first_car = true, has_car = true, has_vehicle = true }, 
 				feedText = "🚗 Parents helped! Lucky! Grateful for the assist!",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Can't afford ($500 needed)" end,
 				-- CRITICAL FIX: Add car to Assets!
 				onResolve = function(state)
 					state.Assets = state.Assets or {}
@@ -128,6 +129,11 @@ SpecialMoments.events = {
 						wasGift = true,
 					})
 				end,
+			},
+			{
+				text = "Not ready for a car yet (free)",
+				effects = { Happiness = -2 },
+				feedText = "🚗 Maybe someday. Public transit works for now.",
 			},
 		},
 	},
@@ -181,6 +187,11 @@ SpecialMoments.events = {
 						state:AddFeed("🏠 Surprise roaches/issues but still proud! Independence!")
 					end
 				end,
+			},
+			{
+				text = "Stay with family for now (free)",
+				effects = { Happiness = -3 },
+				feedText = "🏠 Not ready yet. Saving up makes more sense.",
 			},
 		},
 	},

@@ -97,9 +97,10 @@ LifeChallenges.events = {
 		-- CRITICAL: Random setback type and recovery
 		choices = {
 			{
-				text = "Career setback",
+				text = "Career setback (-$500)",
 				effects = { Money = -500 },
 				feedText = "Dealing with professional blow...",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Can't afford this setback" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.50 then
@@ -136,9 +137,10 @@ LifeChallenges.events = {
 				end,
 			},
 			{
-				text = "Financial setback",
+				text = "Financial setback (-$1,000)",
 				effects = { Money = -1000 },
 				feedText = "Dealing with financial blow...",
+				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Can't afford this setback" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.45 then
