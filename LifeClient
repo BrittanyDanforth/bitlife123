@@ -3070,19 +3070,21 @@ local function buildEventModal()
 	
 	if Device.IS_TINY_PHONE then
 		-- ULTRA COMPACT: Tiny phones (iPhone 6: 667x375, iPhone SE: 568x320)
-		-- These phones have 667px height max, need cards to be ~450-480px max
+		-- BUG FIX: Increased maxEventHeight to prevent buttons from being cut off
+		-- User report: "I JUST SEE THE TEXT AND BRUH??? NO OPTIONS"
 		eventWidth = math.min(screenWidth - 12, 280)  -- 6px margin each side, cap at 280
-		maxEventHeight = math.min(safeHeight, 480)  -- Never exceed 480px tall
+		maxEventHeight = math.min(safeHeight, 550)  -- Increased from 480 to 550
 	elseif Device.IS_SMALL_PHONE then
 		-- Small phones (under 750px height)
+		-- BUG FIX: Increased to give more room for buttons
 		eventWidth = math.min(screenWidth - 16, 310)  -- 8px margin each side
-		maxEventHeight = math.min(safeHeight, 520)  -- Cap at 520px
+		maxEventHeight = math.min(safeHeight, 580)  -- Increased from 520 to 580
 	elseif Device.IS_MOBILE then
 		eventWidth = modalWidth(330)
-		maxEventHeight = math.min(safeHeight, 580)
+		maxEventHeight = math.min(safeHeight, 620)  -- Increased from 580
 	else
 		eventWidth = modalWidth(360)
-		maxEventHeight = math.min(safeHeight, 650)
+		maxEventHeight = math.min(safeHeight, 680)  -- Increased from 650
 	end
 	
 	-- Calculate responsive corner radii and margins (slightly larger for cleaner look)
@@ -3222,9 +3224,10 @@ local function buildEventModal()
 	titleSection.Parent = EventUI.card
 
 	-- MOBILE FIX: Very tight padding on tiny phones to fit cards on small screens
-	local titlePadTop = Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 6 or padSize(14))
-	local titlePadBottom = Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 6 or padSize(8))
-	local titlePadSide = Device.IS_TINY_PHONE and 8 or (Device.IS_SMALL_PHONE and 10 or padSize(16))
+	-- BUG FIX: Even tighter padding so buttons always visible
+	local titlePadTop = Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 4 or padSize(14))
+	local titlePadBottom = Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 4 or padSize(8))
+	local titlePadSide = Device.IS_TINY_PHONE and 6 or (Device.IS_SMALL_PHONE and 8 or padSize(16))
 	local titlePadding = Instance.new("UIPadding")
 	titlePadding.PaddingTop = UDim.new(0, titlePadTop)
 	titlePadding.PaddingBottom = UDim.new(0, titlePadBottom)
@@ -3235,12 +3238,13 @@ local function buildEventModal()
 	local titleLayout = Instance.new("UIListLayout")
 	titleLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	titleLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-	titleLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 4 or padSize(10))
+	titleLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 2 or padSize(10))
 	titleLayout.Parent = titleSection
 
 	-- MOBILE FIX: Responsive emoji sizing - SMALLER on tiny phones to save vertical space
-	local eventEmojiSize = Device.IS_TINY_PHONE and 26 or (Device.IS_SMALL_PHONE and 36 or px(56))
-	local eventEmojiTextSize = Device.IS_TINY_PHONE and 22 or (Device.IS_SMALL_PHONE and 32 or textSize(46))
+	-- BUG FIX: Even smaller emoji to leave room for buttons
+	local eventEmojiSize = Device.IS_TINY_PHONE and 22 or (Device.IS_SMALL_PHONE and 32 or px(56))
+	local eventEmojiTextSize = Device.IS_TINY_PHONE and 18 or (Device.IS_SMALL_PHONE and 28 or textSize(46))
 	EventUI.emoji = Instance.new("TextLabel")
 	EventUI.emoji.Size = UDim2.new(0, eventEmojiSize, 0, eventEmojiSize)
 	EventUI.emoji.BackgroundTransparency = 1
@@ -3253,7 +3257,8 @@ local function buildEventModal()
 
 	-- MOBILE FIX: Responsive title text - scaled for tiny phones
 	-- CRITICAL FIX: SMALLER title on tiny phones to fit card better
-	local eventTitleTextSize = Device.IS_TINY_PHONE and 14 or (Device.IS_SMALL_PHONE and 17 or textSize(24))
+	-- BUG FIX: Even smaller title so buttons always visible
+	local eventTitleTextSize = Device.IS_TINY_PHONE and 12 or (Device.IS_SMALL_PHONE and 15 or textSize(24))
 	EventUI.title = Instance.new("TextLabel")
 	EventUI.title.Size = UDim2.new(1, 0, 0, 0)
 	EventUI.title.AutomaticSize = Enum.AutomaticSize.Y
@@ -3288,14 +3293,15 @@ local function buildEventModal()
 	bodySection.LayoutOrder = 3
 	bodySection.ZIndex = 64
 	bodySection.Parent = EventUI.card
-	local bodyPadSide = Device.IS_TINY_PHONE and 6 or (Device.IS_SMALL_PHONE and 10 or padSize(24))
-	local bodyPadBottom = Device.IS_TINY_PHONE and 3 or (Device.IS_SMALL_PHONE and 5 or padSize(10))
+	-- BUG FIX: Tighter padding to leave room for buttons
+	local bodyPadSide = Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 8 or padSize(24))
+	local bodyPadBottom = Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 4 or padSize(10))
 	pad(bodySection, bodyPadSide, bodyPadSide, 0, bodyPadBottom)
 
 	local bodyLayout = Instance.new("UIListLayout")
 	bodyLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	bodyLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-	bodyLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 6 or padSize(10)))
+	bodyLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 4 or padSize(10)))
 	bodyLayout.Parent = bodySection
 
 	-- CRITICAL FIX: Scrollable container for body text
@@ -3333,7 +3339,8 @@ local function buildEventModal()
 
 	-- MOBILE FIX: Responsive question text
 	-- CRITICAL FIX: Smaller question text on tiny phones to fit cards better
-	local eventQuestionTextSize = Device.IS_TINY_PHONE and 12 or (Device.IS_SMALL_PHONE and 14 or textSize(18))
+	-- BUG FIX: Even smaller to guarantee buttons visible
+	local eventQuestionTextSize = Device.IS_TINY_PHONE and 10 or (Device.IS_SMALL_PHONE and 12 or textSize(18))
 	EventUI.question = Instance.new("TextLabel")
 	EventUI.question.Name = "EventQuestion"
 	EventUI.question.Size = UDim2.new(1, 0, 0, 0)
@@ -3372,7 +3379,8 @@ local function buildEventModal()
 	choicesLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	choicesLayout.SortOrder = Enum.SortOrder.LayoutOrder  -- CRITICAL: Force correct order
 	-- MOBILE FIX: Very tight spacing between buttons on tiny phones
-	choicesLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 3 or (Device.IS_SMALL_PHONE and 5 or padSize(8)))
+	-- BUG FIX: Even tighter spacing to fit all buttons
+	choicesLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 4 or padSize(8)))
 	choicesLayout.Parent = EventUI.choicesSection
 end
 
@@ -4603,29 +4611,34 @@ showEvent = function(payload)
 				-- CRITICAL FIX: SMALLER body area when there are MANY choices!
 				-- This ensures buttons don't get cut off on small screens
 				-- User feedback: "buttons not visible on small mobile screen"
+				-- BUG FIX: Even more aggressive shrinking - buttons MUST always be visible!
 				-- ═══════════════════════════════════════════════════════════════════════════════
 				local maxBodyHeight
 				if Device.IS_TINY_PHONE then
-					-- Tiny phones: very aggressive shrinking
+					-- Tiny phones: ULTRA aggressive shrinking - buttons ALWAYS visible
 					if numChoices >= 5 then
-						maxBodyHeight = 50  -- Super tiny for 5+ choices
+						maxBodyHeight = 35  -- Super tiny for 5+ choices
 					elseif numChoices >= 4 then
-						maxBodyHeight = 60
+						maxBodyHeight = 45
 					elseif numChoices >= 3 then
+						maxBodyHeight = 55
+					elseif numChoices >= 2 then
 						maxBodyHeight = 70
 					else
-						maxBodyHeight = 85
+						maxBodyHeight = 90
 					end
 				elseif Device.IS_SMALL_PHONE then
-					-- Small phones
+					-- Small phones: aggressive shrinking
 					if numChoices >= 5 then
-						maxBodyHeight = 65
+						maxBodyHeight = 50
 					elseif numChoices >= 4 then
-						maxBodyHeight = 80
+						maxBodyHeight = 65
 					elseif numChoices >= 3 then
-						maxBodyHeight = 95
+						maxBodyHeight = 80
+					elseif numChoices >= 2 then
+						maxBodyHeight = 100
 					else
-						maxBodyHeight = 110
+						maxBodyHeight = 120
 					end
 				else
 					-- Regular/large screens
@@ -4656,11 +4669,13 @@ showEvent = function(payload)
 
 		-- MOBILE FIX: Self-sizing choice buttons with minimum tap height
 		-- CRITICAL FIX: SMALLER buttons on tiny phones (iPhone 6)
-		local baseMinHeight = Device.IS_TINY_PHONE and 32 or (Device.IS_SMALL_PHONE and 36 or 44)
-		local choiceBtnTextSize = Device.IS_TINY_PHONE and 11 or (Device.IS_SMALL_PHONE and 13 or 15)
-		local choiceBtnCorner = Device.IS_TINY_PHONE and 6 or (Device.IS_SMALL_PHONE and 8 or 10)
-		local choiceBtnPadH = Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 6 or 8)
-		local choiceBtnPadV = Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 3 or 4)
+		-- BUG FIX: Even smaller buttons to guarantee they fit on screen
+		-- User report: "NO OPTIONS MY GOD ON SMALL MOBILE PHONE"
+		local baseMinHeight = Device.IS_TINY_PHONE and 28 or (Device.IS_SMALL_PHONE and 32 or 44)
+		local choiceBtnTextSize = Device.IS_TINY_PHONE and 10 or (Device.IS_SMALL_PHONE and 12 or 15)
+		local choiceBtnCorner = Device.IS_TINY_PHONE and 5 or (Device.IS_SMALL_PHONE and 7 or 10)
+		local choiceBtnPadH = Device.IS_TINY_PHONE and 3 or (Device.IS_SMALL_PHONE and 5 or 8)
+		local choiceBtnPadV = Device.IS_TINY_PHONE and 1 or (Device.IS_SMALL_PHONE and 2 or 4)
 		
 		for i, choice in ipairs(payload.choices or {}) do
 			local btn = Instance.new("TextButton")
