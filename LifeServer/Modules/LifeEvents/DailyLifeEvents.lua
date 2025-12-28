@@ -665,8 +665,12 @@ DailyLifeEvents.events = {
 					end
 				end,
 			},
-			{ text = "Impulse buy everything", effects = { Happiness = 5, Money = -100, Health = -1 }, feedText = "🛒 Bought ALL THE THINGS! Budget destroyed! No regrets?" },
-			{ text = "Shop hungry", effects = { Happiness = 2, Money = -80 }, feedText = "🛒 Mistake. Bought so much junk. Why did you shop hungry?" },
+			{ text = "Impulse buy everything ($100)", effects = { Happiness = 5, Money = -100, Health = -1 }, feedText = "🛒 Bought ALL THE THINGS! Budget destroyed! No regrets?",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Can't afford impulse shopping ($100 needed)" end,
+			},
+			{ text = "Shop hungry ($80)", effects = { Happiness = 2, Money = -80 }, feedText = "🛒 Mistake. Bought so much junk. Why did you shop hungry?",
+				eligibility = function(state) return (state.Money or 0) >= 80, "💸 Not enough for hungry shopping ($80 needed)" end,
+			},
 		},
 	},
 	{

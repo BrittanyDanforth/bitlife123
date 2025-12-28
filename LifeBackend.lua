@@ -15415,6 +15415,16 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 			-- User bug: "IT SAYS MOVING OUT BUT DIDNT CHECK IF IM BROKE"
 			-- Show the error message to the player instead of applying the choice
 			warn("[LifeBackend] Choice failed eligibility:", result.failReason)
+			
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX: CLEAR awaitingDecision and pendingEvents to prevent GAME-BREAKING SOFTLOCK!
+			-- User bug: "WHEN THAT CANT DO THAT! POPS UP IT BREAKS MY GAME COMPLETELY"
+			-- Bug: When choice fails eligibility, game was stuck because awaitingDecision wasn't cleared!
+			-- Player couldn't age up anymore - clicking age did NOTHING!
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			state.awaitingDecision = false
+			self.pendingEvents[player.UserId] = nil
+			
 			self:pushState(player, nil, {
 				showPopup = true,
 				emoji = "❌",

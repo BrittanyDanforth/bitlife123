@@ -786,9 +786,13 @@ Random.events = {
 			return true
 		end,
 		choices = {
-			{ text = "Absolutely, adventure awaits!", effects = { Happiness = 12, Money = -1000 }, setFlags = { well_traveled = true }, feedText = "You went on an amazing trip!" },
-			{ text = "Go on a budget", effects = { Happiness = 7, Money = -300 }, setFlags = { well_traveled = true }, feedText = "You traveled smart!" },
-			{ text = "Not the right time", effects = { Happiness = -2, Money = 200 }, feedText = "You saved the money instead." },
+			{ text = "Absolutely, adventure awaits! ($1000)", effects = { Happiness = 12, Money = -1000 }, setFlags = { well_traveled = true }, feedText = "You went on an amazing trip!",
+				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Can't afford the full trip ($1000 needed)" end,
+			},
+			{ text = "Go on a budget ($300)", effects = { Happiness = 7, Money = -300 }, setFlags = { well_traveled = true }, feedText = "You traveled smart!",
+				eligibility = function(state) return (state.Money or 0) >= 300, "💸 Can't afford even a budget trip ($300 needed)" end,
+			},
+			{ text = "Not the right time (Save money)", effects = { Happiness = -2, Money = 200 }, feedText = "You saved the money instead." },
 		},
 	},
 	{
@@ -823,9 +827,10 @@ Random.events = {
 		-- CRITICAL FIX: Random injury location/severity
 		choices = {
 			{
-				text = "Go to the emergency room",
+				text = "Go to the emergency room ($500)",
 				effects = { Money = -500 },
 				feedText = "You rushed to the ER...",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Can't afford ER visit ($500 needed) - try home treatment" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.10 then -- 10% head injury

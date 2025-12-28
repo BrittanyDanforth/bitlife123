@@ -513,7 +513,9 @@ HealthEvents.events = {
 			},
 			{ text = "Talk to someone you trust", effects = { Happiness = 5, Health = 2 }, feedText = "😔 Opening up helped. Connection matters." },
 			{ text = "Isolate", effects = { Happiness = -6, Health = -3 }, setFlags = { isolating = true }, feedText = "😔 Pushing everyone away. Spiral continues." },
-			{ text = "Start therapy/medication", effects = { Money = -100, Happiness = 4, Health = 4 }, setFlags = { depression_treatment = true }, feedText = "😔 Getting help. It's okay to not be okay." },
+			{ text = "Start therapy/medication ($100)", effects = { Money = -100, Happiness = 4, Health = 4 }, setFlags = { depression_treatment = true }, feedText = "😔 Getting help. It's okay to not be okay.",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Can't afford treatment ($100 needed)" end,
+			},
 		},
 	},
 	{
@@ -1025,10 +1027,11 @@ HealthEvents.events = {
 		
 		choices = {
 			{
-				text = "Fight it - start treatment",
+				text = "Fight it - start treatment ($10,000)",
 				effects = { Happiness = -20, Money = -10000, Health = -25 },
 				setFlags = { has_cancer = true, cancer = true, in_treatment = true, fighting_cancer = true },
 				feedText = "🎗️ Cancer diagnosis. Starting chemotherapy. Fight of your life.",
+				eligibility = function(state) return (state.Money or 0) >= 10000, "💸 Can't afford cancer treatment ($10,000 needed). Try alternative options or seek financial help." end,
 				onResolve = function(state)
 					-- CRITICAL FIX: Treatment doesn't immediately resolve - it takes time
 					-- First treatment has 40% chance to show improvement
@@ -1054,9 +1057,10 @@ HealthEvents.events = {
 				end,
 			},
 			{
-				text = "Get second opinion first",
+				text = "Get second opinion first ($500)",
 				effects = { Happiness = -5, Money = -500 },
 				feedText = "🎗️ Seeking another doctor's perspective...",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Can't afford second opinion ($500 needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					state.Flags = state.Flags or {}

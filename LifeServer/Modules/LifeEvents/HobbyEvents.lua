@@ -155,8 +155,9 @@ HobbyEvents.events = {
 		
 		choices = {
 			{
-				text = "Yes! Sign me up!",
+				text = "Yes! Sign me up! ($50)",
 				effects = { Happiness = 5, Health = 2, Money = -50 },
+				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Can't afford yoga class ($50 needed)" end,
 				setFlags = { pursuing_yoga = true, wellness_focused = true },
 				feedText = "🧘 First class was challenging but peaceful!",
 				eligibility = function(state) return (state.Money or 0) >= 50, "Can't afford yoga class" end,
@@ -192,13 +193,17 @@ HobbyEvents.events = {
 		
 		choices = {
 			{
-				text = "Start collecting!",
+				text = "Start collecting! ($50)",
 				effects = { Happiness = 5, Money = -50 },
 				setFlags = { collector = true, has_collection = true, likes_collecting = true },
 				feedText = "🏆 Your first piece! The start of a collection!",
+				-- CRITICAL FIX: Prevent softlock by checking affordability upfront
+				eligibility = function(state)
+					return (state.Money or 0) >= 50, "💸 You need $50 to start collecting! (You have $" .. tostring(state.Money or 0) .. ")"
+				end,
 			},
 			{
-				text = "Maybe just this one item",
+				text = "Maybe just this one item (Free)",
 				effects = { Happiness = 2 },
 				feedText = "🏆 Nice find, but collecting's not your thing.",
 			},
@@ -284,9 +289,10 @@ HobbyEvents.events = {
 		
 		choices = {
 			{
-				text = "Practice an instrument",
+				text = "Practice an instrument ($50)",
 				effects = { Money = -50 },
 				feedText = "Practicing...",
+				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Can't afford instrument supplies ($50 needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.45 then

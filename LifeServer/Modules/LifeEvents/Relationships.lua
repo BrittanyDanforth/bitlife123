@@ -492,7 +492,9 @@ Relationships.events = {
 		requiresPartner = true,
 		choices = {
 			{ text = "Communicate openly", effects = { Happiness = 5, Smarts = 2 }, feedText = "You talked it through. Things improved." },
-			{ text = "Seek couples counseling", effects = { Happiness = 7, Money = -300 }, feedText = "Professional help made a difference." },
+			{ text = "Seek couples counseling ($300)", effects = { Happiness = 7, Money = -300 }, feedText = "Professional help made a difference.",
+				eligibility = function(state) return (state.Money or 0) >= 300, "💸 Can't afford counseling ($300 needed)" end,
+			},
 			{ text = "Give each other space", effects = { Happiness = 3 }, feedText = "Some distance helped." },
 			{ 
 				text = "It's time to break up", 
@@ -527,8 +529,10 @@ Relationships.events = {
 		cooldown = 3,
 		requiresPartner = true,
 		choices = {
-			{ text = "Throw a celebration", effects = { Happiness = 10, Money = -200 }, feedText = "You celebrated together!" },
-			{ text = "Heartfelt congratulations", effects = { Happiness = 8 }, feedText = "Your sincere joy meant everything to them." },
+			{ text = "Throw a celebration ($200)", effects = { Happiness = 10, Money = -200 }, feedText = "You celebrated together!",
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Can't afford a celebration ($200 needed)" end,
+			},
+			{ text = "Heartfelt congratulations (Free)", effects = { Happiness = 8 }, feedText = "Your sincere joy meant everything to them." },
 			{ text = "Feel a bit jealous", effects = { Happiness = -3 }, setFlags = { competitive_with_partner = true }, feedText = "You struggled with mixed feelings." },
 		},
 	},
@@ -543,7 +547,9 @@ Relationships.events = {
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresPartner = true,
 		choices = {
-			{ text = "We'll make it work", effects = { Happiness = 3, Money = -500 }, setFlags = { long_distance = true }, feedText = "You're committed despite the distance." },
+			{ text = "We'll make it work ($500)", effects = { Happiness = 3, Money = -500 }, setFlags = { long_distance = true }, feedText = "You're committed despite the distance.",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Long-distance requires $500 for travel/calls" end,
+			},
 			{ text = "Move with them", effects = { Happiness = 8 }, setFlags = { relocated_for_love = true }, feedText = "You moved to stay together!" },
 			{ 
 				text = "Break up but stay friends", 

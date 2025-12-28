@@ -177,8 +177,10 @@ FamilyEvents.events = {
 					end
 				end,
 			},
-			{ text = "Get help from family", effects = { Happiness = 4, Health = 1 }, feedText = "🍼 Grandparents to the rescue! Grateful for the support!" },
-			{ text = "Hire night nurse", effects = { Money = -500, Happiness = 6, Health = 4 }, feedText = "🍼 Worth every penny. SLEEP!" },
+			{ text = "Get help from family (Free)", effects = { Happiness = 4, Health = 1 }, feedText = "🍼 Grandparents to the rescue! Grateful for the support!" },
+			{ text = "Hire night nurse ($500)", effects = { Money = -500, Happiness = 6, Health = 4 }, feedText = "🍼 Worth every penny. SLEEP!",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Can't afford night nurse ($500 needed)" end,
+			},
 		},
 	},
 	{
@@ -538,8 +540,10 @@ FamilyEvents.events = {
 					end
 				end,
 			},
-			{ text = "Move them to assisted living", effects = { Happiness = -4, Money = -1000 }, setFlags = { parents_in_care = true }, feedText = "👴 Hard decision but necessary. Guilt but relief." },
-			{ text = "Check in from afar", effects = { Happiness = 2 }, feedText = "👴 Calling regularly. Doing what you can from distance." },
+			{ text = "Move them to assisted living ($1000)", effects = { Happiness = -4, Money = -1000 }, setFlags = { parents_in_care = true }, feedText = "👴 Hard decision but necessary. Guilt but relief.",
+				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Can't afford assisted living deposit ($1000 needed)" end,
+			},
+			{ text = "Check in from afar (Free)", effects = { Happiness = 2 }, feedText = "👴 Calling regularly. Doing what you can from distance." },
 		},
 	},
 	{

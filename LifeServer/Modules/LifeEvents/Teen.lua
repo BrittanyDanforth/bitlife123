@@ -656,9 +656,11 @@ Teen.events = {
 		-- CRITICAL FIX: Random promposal outcomes
 		choices = {
 			{
-				text = "Ask my crush with a big promposal",
+				text = "Ask my crush with a big promposal ($100)",
 				effects = { Money = -100 },
 				feedText = "You planned an elaborate promposal...",
+				-- CRITICAL FIX: Add eligibility to prevent softlock
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Can't afford a fancy promposal ($100 needed). Try a different approach!" end,
 				onResolve = function(state)
 					local looks = (state.Stats and state.Stats.Looks) or 50
 					local happiness = (state.Stats and state.Stats.Happiness) or 50
@@ -1900,9 +1902,10 @@ Teen.events = {
 		
 		choices = {
 			{
-				text = "See a dermatologist",
+				text = "See a dermatologist ($80)",
 				effects = { Money = -80 },
 				feedText = "You got professional treatment...",
+				eligibility = function(state) return (state.Money or 0) >= 80, "💸 Can't afford dermatologist ($80 needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.70 then
@@ -1916,9 +1919,13 @@ Teen.events = {
 					end
 				end,
 			},
-			{ text = "Try over-the-counter products", effects = { Money = -20, Looks = 2 }, feedText = "Some improvement with drugstore products." },
-			{ text = "Accept it as part of being a teen", effects = { Happiness = 3 }, setFlags = { self_accepting = true }, feedText = "It's temporary. You're still you." },
-			{ text = "Cover it with makeup", effects = { Looks = 3, Money = -30 }, feedText = "Learned some concealing techniques!" },
+			{ text = "Try over-the-counter products ($20)", effects = { Money = -20, Looks = 2 }, feedText = "Some improvement with drugstore products.",
+				eligibility = function(state) return (state.Money or 0) >= 20, "💸 Can't afford skincare products ($20 needed)" end,
+			},
+			{ text = "Accept it as part of being a teen (Free)", effects = { Happiness = 3 }, setFlags = { self_accepting = true }, feedText = "It's temporary. You're still you." },
+			{ text = "Cover it with makeup ($30)", effects = { Looks = 3, Money = -30 }, feedText = "Learned some concealing techniques!",
+				eligibility = function(state) return (state.Money or 0) >= 30, "💸 Can't afford makeup ($30 needed)" end,
+			},
 		},
 	},
 	{
@@ -2225,11 +2232,13 @@ Teen.events = {
 		baseChance = 0.5,
 		
 		choices = {
-			{ text = "Trendy and fashion-forward", effects = { Looks = 5, Money = -100 }, setFlags = { fashionista = true }, feedText = "Always on top of the latest trends!" },
-			{ text = "Athletic and casual", effects = { Looks = 2, Health = 2 }, setFlags = { sporty_style = true }, feedText = "Comfort and function first." },
-			{ text = "Alternative and unique", effects = { Looks = 3, Happiness = 4 }, setFlags = { alternative_style = true }, feedText = "You march to your own beat." },
-			{ text = "Classic and understated", effects = { Looks = 3, Smarts = 2 }, setFlags = { classic_style = true }, feedText = "Timeless and sophisticated." },
-			{ text = "Whatever's clean", effects = { Happiness = 2 }, feedText = "Fashion? More like comfortable." },
+			{ text = "Trendy and fashion-forward ($100)", effects = { Looks = 5, Money = -100 }, setFlags = { fashionista = true }, feedText = "Always on top of the latest trends!",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Trendy clothes cost $100!" end,
+			},
+			{ text = "Athletic and casual (Free)", effects = { Looks = 2, Health = 2 }, setFlags = { sporty_style = true }, feedText = "Comfort and function first." },
+			{ text = "Alternative and unique (Free)", effects = { Looks = 3, Happiness = 4 }, setFlags = { alternative_style = true }, feedText = "You march to your own beat." },
+			{ text = "Classic and understated (Free)", effects = { Looks = 3, Smarts = 2 }, setFlags = { classic_style = true }, feedText = "Timeless and sophisticated." },
+			{ text = "Whatever's clean (Free)", effects = { Happiness = 2 }, feedText = "Fashion? More like comfortable." },
 		},
 	},
 	{
