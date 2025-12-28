@@ -3301,20 +3301,26 @@ local function buildEventModal()
 	bodyLayout.Parent = bodySection
 
 	-- CRITICAL FIX: Scrollable container for body text
-	-- This allows long event text to scroll while keeping buttons visible
+	-- Uses AutomaticSize to shrink to fit short text, UISizeConstraint caps max height
 	EventUI.bodyScroll = Instance.new("ScrollingFrame")
-	EventUI.bodyScroll.Size = UDim2.new(1, 0, 0, maxBodyHeight)
-	EventUI.bodyScroll.AutomaticSize = Enum.AutomaticSize.None
+	EventUI.bodyScroll.Size = UDim2.new(1, 0, 0, 0)
+	EventUI.bodyScroll.AutomaticSize = Enum.AutomaticSize.Y  -- Shrinks to fit!
 	EventUI.bodyScroll.BackgroundTransparency = 1
 	EventUI.bodyScroll.BorderSizePixel = 0
 	EventUI.bodyScroll.ScrollBarThickness = Device.IS_MOBILE and 4 or 6
 	EventUI.bodyScroll.ScrollBarImageColor3 = C.Gray400
-	EventUI.bodyScroll.CanvasSize = UDim2.new(1, 0, 0, 0)  -- Will be updated dynamically
+	EventUI.bodyScroll.CanvasSize = UDim2.new(1, 0, 0, 0)
 	EventUI.bodyScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	EventUI.bodyScroll.ScrollingDirection = Enum.ScrollingDirection.Y
 	EventUI.bodyScroll.LayoutOrder = 1
 	EventUI.bodyScroll.ZIndex = 65
 	EventUI.bodyScroll.Parent = bodySection
+	
+	-- Initial max height constraint (will be updated per-event based on choice count)
+	local initialBodyConstraint = Instance.new("UISizeConstraint")
+	initialBodyConstraint.Name = "BodySizeConstraint"
+	initialBodyConstraint.MaxSize = Vector2.new(math.huge, maxBodyHeight)
+	initialBodyConstraint.Parent = EventUI.bodyScroll
 
 	local eventBodyTextSize = Device.IS_TINY_PHONE and 14 or (Device.IS_SMALL_PHONE and 16 or textSize(20))
 	EventUI.body = Instance.new("TextLabel")
@@ -4587,37 +4593,45 @@ showEvent = function(payload)
 		EventUI.question.Text  = payload.question or "What will you do?"
 
 		-- ═══════════════════════════════════════════════════════════════════════════════
-		-- CRITICAL FIX: Set body scroll height IMMEDIATELY (no defer = no visible resize!)
-		-- User feedback: "IM WATCHING THE CARD POPUP NORMAL SIZED THEN BOOM NOW SIZES SMALLER"
-		-- Must leave room for ALL buttons to be visible!
+		-- CRITICAL FIX: Body scroll shrinks to fit short text, but caps at max for long text
+		-- User feedback: "HUGE GAP BETWEEN TEXT AND BUTTONS" - fixed by using AutomaticSize
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		if EventUI.bodyScroll then
 			local localNumChoices = payload.choices and #payload.choices or 1
 			local bodyMaxH
 			
 			if Device.IS_TINY_PHONE then
-				-- Tiny phones: ULTRA aggressive shrinking - buttons ALWAYS visible
-				if localNumChoices >= 5 then bodyMaxH = 35
-				elseif localNumChoices >= 4 then bodyMaxH = 45
-				elseif localNumChoices >= 3 then bodyMaxH = 55
-				elseif localNumChoices >= 2 then bodyMaxH = 70
-				else bodyMaxH = 90 end
+				if localNumChoices >= 5 then bodyMaxH = 40
+				elseif localNumChoices >= 4 then bodyMaxH = 50
+				elseif localNumChoices >= 3 then bodyMaxH = 60
+				elseif localNumChoices >= 2 then bodyMaxH = 75
+				else bodyMaxH = 95 end
 			elseif Device.IS_SMALL_PHONE then
-				-- Small phones: aggressive shrinking
-				if localNumChoices >= 5 then bodyMaxH = 50
-				elseif localNumChoices >= 4 then bodyMaxH = 65
-				elseif localNumChoices >= 3 then bodyMaxH = 80
-				elseif localNumChoices >= 2 then bodyMaxH = 100
-				else bodyMaxH = 120 end
+				if localNumChoices >= 5 then bodyMaxH = 55
+				elseif localNumChoices >= 4 then bodyMaxH = 70
+				elseif localNumChoices >= 3 then bodyMaxH = 90
+				elseif localNumChoices >= 2 then bodyMaxH = 110
+				else bodyMaxH = 130 end
 			else
-				-- Regular/large screens
-				if localNumChoices >= 5 then bodyMaxH = 100
-				elseif localNumChoices >= 4 then bodyMaxH = 130
-				else bodyMaxH = 180 end
+				if localNumChoices >= 5 then bodyMaxH = 110
+				elseif localNumChoices >= 4 then bodyMaxH = 140
+				else bodyMaxH = 200 end
 			end
 			
-			-- Set scroll frame size IMMEDIATELY - AutomaticCanvasSize handles content
-			EventUI.bodyScroll.Size = UDim2.new(1, 0, 0, bodyMaxH)
+			-- Use AutomaticSize so short text = no gap, but constrain max height
+			EventUI.bodyScroll.Size = UDim2.new(1, 0, 0, 0)
+			EventUI.bodyScroll.AutomaticSize = Enum.AutomaticSize.Y
+			
+			-- Remove old constraint if exists, add new one
+			local oldConstraint = EventUI.bodyScroll:FindFirstChild("BodySizeConstraint")
+			if oldConstraint then oldConstraint:Destroy() end
+			
+			local sizeConstraint = Instance.new("UISizeConstraint")
+			sizeConstraint.Name = "BodySizeConstraint"
+			sizeConstraint.MaxSize = Vector2.new(math.huge, bodyMaxH)
+			sizeConstraint.Parent = EventUI.bodyScroll
+			
+			-- Enable scrolling only if content would overflow
 			EventUI.bodyScroll.ScrollingEnabled = true
 		end
 
