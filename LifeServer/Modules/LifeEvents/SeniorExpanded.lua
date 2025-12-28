@@ -783,9 +783,10 @@ SeniorExpanded.events = {
 		-- CRITICAL: Random bucket list outcome
 		choices = {
 			{
-				text = "Try something adventurous",
+				text = "Try something adventurous ($500)",
 				effects = { Money = -500 },
 				feedText = "Going for an adventure...",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Can't afford adventure ($500)" end,
 				onResolve = function(state)
 					local health = (state.Stats and state.Stats.Health) or 50
 					local roll = math.random()

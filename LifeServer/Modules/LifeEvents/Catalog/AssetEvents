@@ -2341,12 +2341,13 @@ local events = {
 					end
 				end,
 			},
-			{
-				index = 3,
-				text = "Invest in improvements",
-				effects = { Money = -30000, Happiness = 5 },
-				feedText = "You're trying to improve the area yourself!",
-				onResolve = function(state)
+		{
+			index = 3,
+			text = "Invest in improvements ($30K)",
+			effects = { Money = -30000, Happiness = 5 },
+			feedText = "You're trying to improve the area yourself!",
+			eligibility = function(state) return (state.Money or 0) >= 30000, "💸 Need $30K for improvements" end,
+			onResolve = function(state)
 					state.Flags = state.Flags or {}
 					state.Flags.community_investor = true
 					if RANDOM:NextNumber() < 0.5 then

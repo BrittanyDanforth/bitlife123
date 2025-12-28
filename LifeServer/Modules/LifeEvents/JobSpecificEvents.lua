@@ -449,7 +449,7 @@ JobSpecificEvents.events = {
 		
 		choices = {
 			{ text = "Work through it - need the hours", effects = { Money = 100, Health = -3, Happiness = -2 }, feedText = "Miserable but money is money. Power through." },
-			{ text = "Call it a day - safety first", effects = { Money = -50, Health = 1, Happiness = 1 }, feedText = "Lost wages but better than injury or illness." },
+			{ text = "Call it a day - safety first ($50 lost wages)", effects = { Money = -50, Health = 1, Happiness = 1 }, feedText = "Lost wages but better than injury or illness.", eligibility = function(state) return (state.Money or 0) >= 50, "💸 Can't afford lost wages ($50)" end },
 			{ text = "Find indoor tasks instead", effects = { Money = 50, Smarts = 1 }, feedText = "Productive regardless. Found other work to do." },
 		},
 	},
@@ -473,11 +473,12 @@ JobSpecificEvents.events = {
 		
 		-- CRITICAL: Random certification outcome
 		choices = {
-			{
-				text = "Study and take the exam",
-				effects = { Money = -200 },
-				feedText = "Hitting the books and taking the test...",
-				onResolve = function(state)
+		{
+			text = "Study and take the exam ($200)",
+			effects = { Money = -200 },
+			feedText = "Hitting the books and taking the test...",
+			eligibility = function(state) return (state.Money or 0) >= 200, "💸 Can't afford exam fees ($200)" end,
+			onResolve = function(state)
 					local smarts = (state.Stats and state.Stats.Smarts) or 50
 					local roll = math.random()
 					local successChance = 0.40 + (smarts / 150)
@@ -1041,7 +1042,7 @@ JobSpecificEvents.events = {
 		choices = {
 			{ text = "Long hours - get it done", effects = { Money = 300, Health = -5, Happiness = -4 }, setFlags = { audit_survivor = true }, feedText = "80-hour weeks. No life. But you survived." },
 			{ text = "Delegate effectively", effects = { Money = 200, Smarts = 2, Happiness = 1 }, feedText = "Leadership shining through. Team handles it together." },
-			{ text = "Make mistakes from exhaustion", effects = { Happiness = -6, Money = -200 }, setFlags = { audit_mistakes = true }, feedText = "Errors found. Rework required. Nightmare." },
+			{ text = "Make mistakes from exhaustion ($200 cost)", effects = { Happiness = -6, Money = -200 }, setFlags = { audit_mistakes = true }, feedText = "Errors found. Rework required. Nightmare.", eligibility = function(state) return (state.Money or 0) >= 200, "💸 Can't afford the mistake costs ($200)" end },
 			{ text = "Questioning life choices", effects = { Happiness = -5 }, setFlags = { reconsidering_finance = true }, feedText = "Is this worth it? Every year same misery." },
 		},
 	},
@@ -1146,7 +1147,7 @@ JobSpecificEvents.events = {
 					end
 				end,
 			},
-			{ text = "Panic like everyone else", effects = { Happiness = -5, Money = -200 }, feedText = "Sold at the bottom. Classic retail investor move." },
+			{ text = "Panic like everyone else ($200 loss)", effects = { Happiness = -5, Money = -200 }, feedText = "Sold at the bottom. Classic retail investor move.", eligibility = function(state) return (state.Money or 0) >= 200, "💸 Can't afford market losses ($200)" end },
 		},
 	},
 	
@@ -1766,16 +1767,18 @@ JobSpecificEvents.events = {
 					end
 				end,
 			},
-			{
-				text = "Take time to properly heal",
-				effects = { Health = 5, Happiness = -3, Money = -500 },
-				setFlags = { taking_recovery = true },
-				feedText = "Missing games but long-term health matters more.",
-			},
-			{
-				text = "Consult specialists",
-				effects = { Money = -300 },
-				feedText = "Getting the best medical advice...",
+		{
+			text = "Take time to properly heal ($500)",
+			effects = { Health = 5, Happiness = -3, Money = -500 },
+			setFlags = { taking_recovery = true },
+			feedText = "Missing games but long-term health matters more.",
+			eligibility = function(state) return (state.Money or 0) >= 500, "💸 Can't afford recovery time ($500)" end,
+		},
+		{
+			text = "Consult specialists ($300)",
+			effects = { Money = -300 },
+			feedText = "Getting the best medical advice...",
+			eligibility = function(state) return (state.Money or 0) >= 300, "💸 Can't afford specialists ($300)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.60 then
@@ -2020,11 +2023,12 @@ JobSpecificEvents.events = {
 				effects = { Happiness = 3, Smarts = 2 },
 				feedText = "Clear communication about expectations.",
 			},
-			{
-				text = "Drop the client entirely",
-				effects = { Money = -500, Happiness = 8 },
-				feedText = "Some clients aren't worth the stress.",
-			},
+		{
+			text = "Drop the client entirely ($500 fee loss)",
+			effects = { Money = -500, Happiness = 8 },
+			feedText = "Some clients aren't worth the stress.",
+			eligibility = function(state) return (state.Money or 0) >= 500, "💸 Can't afford to lose fees ($500)" end,
+		},
 			{
 				text = "Tolerate them - they pay well",
 				effects = { Happiness = -5, Money = 1000 },

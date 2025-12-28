@@ -839,12 +839,15 @@ VehicleEvents.events = {
         
         choices = {
             {
-                text = "Throw an EPIC yacht party! 🎉",
+                text = "Throw an EPIC yacht party! ($5,000-15,000) 🎉",
                 effects = {},
                 feedText = "Party preparations begin...",
+                eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Can't afford a yacht party (need at least $5,000)" end,
                 onResolve = function(state)
                     local roll = math.random(100)
                     local cost = math.random(5000, 15000)
+                    -- CRITICAL: Double-check affordability before spending
+                    cost = math.min(cost, state.Money or 0)
                     state.Money = math.max(0, (state.Money or 0) - cost)
                     
                     if roll <= 60 then

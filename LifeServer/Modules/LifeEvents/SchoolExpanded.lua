@@ -592,9 +592,10 @@ SchoolExpanded.events = {
 		
 		choices = {
 			{
-				text = "Apply to dream colleges",
+				text = "Apply to dream colleges ($100)",
 				effects = { Money = -100 },
 				feedText = "Submitting applications...",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Can't afford application fees ($100)" end,
 				onResolve = function(state)
 					local smarts = (state.Stats and state.Stats.Smarts) or 50
 					local roll = math.random()
@@ -644,7 +645,7 @@ SchoolExpanded.events = {
 		
 		choices = {
 			{
-				text = "Roommate issues",
+				text = "Roommate issues (free)",
 				effects = {},
 				feedText = "Dealing with roommate problems...",
 				onResolve = function(state)
@@ -665,8 +666,13 @@ SchoolExpanded.events = {
 					end
 				end,
 			},
-			{ text = "Dorm floor bonding", effects = { Happiness = 7 }, setFlags = { floor_family = true }, feedText = "🛏️ Whole floor is like family. Late night hangs!" },
-			{ text = "Need a single room", effects = { Happiness = 4, Money = -500 }, feedText = "🛏️ Worth the extra cost. Privacy is priceless." },
+			{ text = "Dorm floor bonding (free)", effects = { Happiness = 7 }, setFlags = { floor_family = true }, feedText = "🛏️ Whole floor is like family. Late night hangs!" },
+			{ 
+				text = "Need a single room ($500)", 
+				effects = { Happiness = 4, Money = -500 }, 
+				feedText = "🛏️ Worth the extra cost. Privacy is priceless.",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Can't afford single room ($500)" end,
+			},
 		},
 	},
 	{
@@ -686,10 +692,16 @@ SchoolExpanded.events = {
 		requiresFlags = { college_bound = true },
 		
 		choices = {
-			{ text = "Follow your passion", effects = { Happiness = 8, Smarts = 4 }, setFlags = { passion_major = true }, feedText = "📚 Studying what you love! Classes are exciting!" },
-			{ text = "Practical/high-paying field", effects = { Happiness = 2, Smarts = 4, Money = 50 }, setFlags = { practical_major = true }, feedText = "📚 Engineering/Business/Medicine - future financial security." },
-			{ text = "Undeclared - need more time", effects = { Happiness = 4, Smarts = 2 }, feedText = "📚 Exploring options. No need to rush this decision." },
-			{ text = "Change major three times", effects = { Happiness = 2, Money = -200 }, setFlags = { changed_majors = true }, feedText = "📚 Finding yourself is a journey. Extra semester worth it." },
+			{ text = "Follow your passion (free)", effects = { Happiness = 8, Smarts = 4 }, setFlags = { passion_major = true }, feedText = "📚 Studying what you love! Classes are exciting!" },
+			{ text = "Practical/high-paying field (free)", effects = { Happiness = 2, Smarts = 4, Money = 50 }, setFlags = { practical_major = true }, feedText = "📚 Engineering/Business/Medicine - future financial security." },
+			{ text = "Undeclared - need more time (free)", effects = { Happiness = 4, Smarts = 2 }, feedText = "📚 Exploring options. No need to rush this decision." },
+			{ 
+				text = "Change major three times ($200)", 
+				effects = { Happiness = 2, Money = -200 }, 
+				setFlags = { changed_majors = true }, 
+				feedText = "📚 Finding yourself is a journey. Extra semester worth it.",
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Can't afford to change majors ($200)" end,
+			},
 		},
 	},
 	{

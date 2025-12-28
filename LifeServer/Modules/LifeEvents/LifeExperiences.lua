@@ -206,6 +206,13 @@ LifeExperiences.events = {
 					return true
 				end,
 			},
+			{
+				-- CRITICAL FIX: FREE OPTION to prevent player lock!
+				text = "Cross off something free (free)",
+				effects = { Happiness = 8, Smarts = 2 },
+				setFlags = { small_achievement = true },
+				feedText = "✅ Reconnected with an old friend, watched a sunrise, wrote a letter - some bucket list items are priceless!",
+			},
 		},
 	},
 	

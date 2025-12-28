@@ -295,9 +295,14 @@ CommunityEvents.events = {
 		tags = { "food_bank", "volunteer", "helping" },
 		
 		choices = {
-			{ text = "Volunteer to sort/distribute", effects = { Happiness = 10, Health = -1 }, setFlags = { food_bank_volunteer = true }, feedText = "🍲 Hard work but so rewarding! Making a difference!" },
-			{ text = "Donate food items", effects = { Happiness = 6, Money = -40 }, feedText = "🍲 Cleaned out pantry for a good cause!" },
-			{ text = "Organize a food drive", effects = { Happiness = 8, Smarts = 2 }, setFlags = { organized_drive = true }, feedText = "🍲 Rallied the community! Collected tons!" },
+			{ text = "Volunteer to sort/distribute (free)", effects = { Happiness = 10, Health = -1 }, setFlags = { food_bank_volunteer = true }, feedText = "🍲 Hard work but so rewarding! Making a difference!" },
+			{ 
+				text = "Donate food items ($40)", 
+				effects = { Happiness = 6, Money = -40 }, 
+				feedText = "🍲 Cleaned out pantry for a good cause!",
+				eligibility = function(state) return (state.Money or 0) >= 40, "💸 Can't afford to donate food ($40)" end,
+			},
+			{ text = "Organize a food drive (free)", effects = { Happiness = 8, Smarts = 2 }, setFlags = { organized_drive = true }, feedText = "🍲 Rallied the community! Collected tons!" },
 		},
 	},
 	{
@@ -333,9 +338,27 @@ CommunityEvents.events = {
 					end
 				end,
 			},
-			{ text = "Foster an animal temporarily", effects = { Happiness = 8, Money = -50 }, setFlags = { fostered_animal = true }, feedText = "🐕 Temporary pet parent! Emotional but rewarding!" },
-			{ text = "Donate supplies", effects = { Happiness = 5, Money = -30 }, feedText = "🐕 Food, toys, blankets - they need it all!" },
-			{ text = "Adopt!", effects = { Happiness = 15, Money = -100 }, setFlags = { adopted_pet = true }, feedText = "🐕 Fell in love. Now have a furry family member!" },
+			{ 
+				text = "Foster an animal temporarily ($50)", 
+				effects = { Happiness = 8, Money = -50 }, 
+				setFlags = { fostered_animal = true }, 
+				feedText = "🐕 Temporary pet parent! Emotional but rewarding!",
+				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Can't afford fostering supplies ($50)" end,
+			},
+			{ 
+				text = "Donate supplies ($30)", 
+				effects = { Happiness = 5, Money = -30 }, 
+				feedText = "🐕 Food, toys, blankets - they need it all!",
+				eligibility = function(state) return (state.Money or 0) >= 30, "💸 Can't afford to donate ($30)" end,
+			},
+			{ 
+				text = "Adopt! ($100)", 
+				effects = { Happiness = 15, Money = -100 }, 
+				setFlags = { adopted_pet = true }, 
+				feedText = "🐕 Fell in love. Now have a furry family member!",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Can't afford adoption fee ($100)" end,
+			},
+			{ text = "Just spend time with the animals (free)", effects = { Happiness = 6 }, feedText = "🐕 Petted all the cute animals! They love visitors!" },
 		},
 	},
 	

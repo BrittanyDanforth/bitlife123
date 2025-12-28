@@ -396,11 +396,12 @@ MusicianCareerEvents.events = {
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
-			{
-				text = "Sue for copyright infringement",
-				effects = { Money = -20000, Happiness = -5 },
-				feedText = "See you in court!",
-				onResolve = function(state)
+		{
+			text = "Sue for copyright infringement ($20K)",
+			effects = { Money = -20000, Happiness = -5 },
+			feedText = "See you in court!",
+			eligibility = function(state) return (state.Money or 0) >= 20000, "💸 Need $20K for legal fees" end,
+			onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 40 then
 						local settlement = math.random(200000, 1000000)
@@ -887,11 +888,12 @@ MusicianCareerEvents.events = {
 					end
 				end,
 			},
-			{
-				text = "Bring in a guest feature",
-				effects = { Money = -20000 },
-				feedText = "Calling in a favor...",
-				onResolve = function(state)
+		{
+			text = "Bring in a guest feature ($20K)",
+			effects = { Money = -20000 },
+			feedText = "Calling in a favor...",
+			eligibility = function(state) return (state.Money or 0) >= 20000, "💸 Need $20K for guest feature" end,
+			onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 60 then
 						state.Money = (state.Money or 0) + math.random(100000, 400000)

@@ -185,11 +185,12 @@ AthleteCareerEvents.events = {
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
-			{
-				text = "Get the full medical workup",
-				effects = { Money = -5000 },
-				feedText = "Health comes first...",
-				onResolve = function(state)
+		{
+			text = "Get the full medical workup ($5K)",
+			effects = { Money = -5000 },
+			feedText = "Health comes first...",
+			eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5K for medical workup" end,
+			onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 40 then
 						state:ModifyStat("Happiness", 10)
@@ -791,11 +792,12 @@ AthleteCareerEvents.events = {
 					state:AddFeed("❤️ Great event! Made some kids' dreams come true! Wholesome content!")
 				end,
 			},
-			{
-				text = "Go all out - donate and organize",
-				effects = { Happiness = 15, Money = -25000 },
-				feedText = "Let's make it special!",
-				onResolve = function(state)
+		{
+			text = "Go all out - donate and organize ($25K)",
+			effects = { Happiness = 15, Money = -25000 },
+			feedText = "Let's make it special!",
+			eligibility = function(state) return (state.Money or 0) >= 25000, "💸 Need $25K for charity event" end,
+			onResolve = function(state)
 					state.Fame = (state.Fame or 0) + 35
 					state.Flags = state.Flags or {}
 					state.Flags.community_hero = true
