@@ -5748,6 +5748,24 @@ local ActivityCatalog = {
 	nightclub = { stats = { Happiness = 6, Health = -2 }, feed = "went clubbing", cost = 50 },
 	host_party = { stats = { Happiness = 8 }, feed = "hosted a party", cost = 300 },
 	
+	-- CRITICAL FIX: Missing combat activities (caused "Unknown activity" error)
+	pick_fight = {
+		stats = { Happiness = -2, Health = -5 },
+		feed = "got into a fight",
+		cost = 0,
+		requiresAge = 14,
+		isCombat = true,
+		riskOfArrest = 0.15, -- 15% chance of arrest
+	},
+	club_fight = {
+		stats = { Happiness = -3, Health = -8 },
+		feed = "got into a club fight",
+		cost = 0,
+		requiresAge = 21,
+		isCombat = true,
+		riskOfArrest = 0.25, -- 25% chance of arrest
+	},
+	
 	-- ═══════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: ROMANCE & DATING ACTIVITIES - These were completely missing!
 	-- ═══════════════════════════════════════════════════════════════════════════
