@@ -1082,15 +1082,11 @@ local function createResultPopup()
 	ResultUI.shadow.BackgroundColor3 = C.Black
 	ResultUI.shadow.BackgroundTransparency = 0.92
 	ResultUI.shadow.ZIndex = 81
-	ResultUI.shadow.ClipsDescendants = true  -- Keep clipping for clean edges
+	ResultUI.shadow.ClipsDescendants = true
 	ResultUI.shadow.Parent = ResultUI.overlay
 	corner(ResultUI.shadow, Device.IS_TINY_PHONE and 14 or px(28))
 	
-	-- Store max height for scaling calculation
-	ResultUI.maxPopupHeight = maxPopupHeight
-	ResultUI.popupWidth = popupWidth
-	
-	-- Add size constraint for normal popups (scaling handles overflow)
+	-- Add max height constraint to prevent modal from going off screen
 	local resultSizeConstraint = Instance.new("UISizeConstraint")
 	resultSizeConstraint.MaxSize = Vector2.new(popupWidth, maxPopupHeight)
 	resultSizeConstraint.Parent = ResultUI.shadow
@@ -1221,10 +1217,6 @@ end
 hideResultPopup = function()
 	if not ResultUI.overlay then return end
 	resultVisible = false
-	
-	-- BUG FIX: Remove scale before hiding (reset for next popup)
-	local oldScale = ResultUI.shadow:FindFirstChild("ResultScale")
-	if oldScale then oldScale:Destroy() end
 
 	tween(ResultUI.shadow, TweenInfo.new(0.2), {
 		Position = UDim2.new(0.5, 0, 0.5, 40),
@@ -1446,36 +1438,6 @@ local function showResultPopup(data, callback)
 	ResultUI.shell.BackgroundTransparency = 1
 	ResultUI.card.BackgroundTransparency = 1
 	
-	-- BUG FIX: Scale down ONLY if content is too tall (large cards only!)
-	-- User report: "I CANT SEE THE GREEN OK BUTTON"
-	-- IMPORTANT: Normal result popups should stay at full size!
-	task.defer(function()
-		if not ResultUI.shadow then return end
-		
-		-- Wait for AutomaticSize to fully calculate
-		task.wait(0.05)
-		
-		local actualHeight = ResultUI.shadow.AbsoluteSize.Y
-		local maxHeight = ResultUI.maxPopupHeight or 500
-		
-		-- Remove old UIScale if exists
-		local oldScale = ResultUI.shadow:FindFirstChild("ResultScale")
-		if oldScale then oldScale:Destroy() end
-		
-		-- ONLY scale if popup is SIGNIFICANTLY taller than max (10%+ over)
-		-- This prevents normal popups from being scaled
-		if actualHeight > (maxHeight * 1.05) then
-			-- Calculate scale factor to fit
-			local scaleFactor = (maxHeight * 0.95) / actualHeight
-			scaleFactor = math.max(0.70, scaleFactor) -- Never scale below 70%
-			
-			local uiScale = Instance.new("UIScale")
-			uiScale.Name = "ResultScale"
-			uiScale.Scale = scaleFactor
-			uiScale.Parent = ResultUI.shadow
-		end
-	end)
-
 	tween(ResultUI.shadow, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
 		Position = UDim2.fromScale(0.5, 0.5),
 		BackgroundTransparency = 0.92,
@@ -3108,21 +3070,18 @@ local function buildEventModal()
 	
 	if Device.IS_TINY_PHONE then
 		-- ULTRA COMPACT: Tiny phones (iPhone 6: 667x375, iPhone SE: 568x320)
-		-- BUG FIX: Increased maxEventHeight to prevent buttons from being cut off
-		-- User report: "I JUST SEE THE TEXT AND BRUH??? NO OPTIONS"
-		eventWidth = math.min(screenWidth - 12, 280)  -- 6px margin each side, cap at 280
-		maxEventHeight = math.min(safeHeight, 550)  -- Increased from 480 to 550
+		eventWidth = math.min(screenWidth - 12, 280)
+		maxEventHeight = math.min(safeHeight, 480)
 	elseif Device.IS_SMALL_PHONE then
 		-- Small phones (under 750px height)
-		-- BUG FIX: Increased to give more room for buttons
-		eventWidth = math.min(screenWidth - 16, 310)  -- 8px margin each side
-		maxEventHeight = math.min(safeHeight, 580)  -- Increased from 520 to 580
+		eventWidth = math.min(screenWidth - 16, 310)
+		maxEventHeight = math.min(safeHeight, 520)
 	elseif Device.IS_MOBILE then
 		eventWidth = modalWidth(330)
-		maxEventHeight = math.min(safeHeight, 620)  -- Increased from 580
+		maxEventHeight = math.min(safeHeight, 580)
 	else
 		eventWidth = modalWidth(360)
-		maxEventHeight = math.min(safeHeight, 680)  -- Increased from 650
+		maxEventHeight = math.min(safeHeight, 650)
 	end
 	
 	-- Calculate responsive corner radii and margins (slightly larger for cleaner look)
@@ -3142,11 +3101,7 @@ local function buildEventModal()
 	EventUI.shadowFrame.Parent = EventUI.overlay
 	corner(EventUI.shadowFrame, eventCornerRadius)
 	
-	-- Store max height for scaling calculation (for oversized cards only)
-	EventUI.maxEventHeight = maxEventHeight
-	EventUI.eventWidth = eventWidth
-	
-	-- Add size constraint for normal cards (scaling handles overflow)
+	-- Add size constraint to prevent modal from being too tall
 	local eventSizeConstraint = Instance.new("UISizeConstraint")
 	eventSizeConstraint.MaxSize = Vector2.new(eventWidth, maxEventHeight)
 	eventSizeConstraint.Parent = EventUI.shadowFrame
@@ -3322,11 +3277,10 @@ local function buildEventModal()
 	-- ═══════════════════════════════════════════════════════════════════════════════
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX: Much smaller body text area on tiny phones
-	-- User feedback: "cards cutting off on iPhone 6"
-	-- The body scroll area must be SMALL to leave room for title, question, and buttons
+	-- Body scroll area - sized dynamically per-event based on number of choices
+	-- Default to middle-ground value (showEvent will resize based on actual choice count)
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	local maxBodyHeight = Device.IS_TINY_PHONE and 85 or (Device.IS_SMALL_PHONE and 110 or 180)
+	local maxBodyHeight = Device.IS_TINY_PHONE and 70 or (Device.IS_SMALL_PHONE and 100 or 180)
 
 	local bodySection = Instance.new("Frame")
 	bodySection.Size = UDim2.new(1, 0, 0, 0)
@@ -4608,33 +4562,22 @@ showEvent = function(payload)
 		EventUI.title.Text     = payload.title or "Life Event"
 		
 		-- ═══════════════════════════════════════════════════════════════════════════════
-		-- CRITICAL FIX: SMALLER text on tiny phones (iPhone 6 - 667x375)
-		-- User feedback: "cards getting cut off on small phones"
-		-- Reduce text sizes more aggressively to fit content
+		-- CRITICAL FIX: Dynamic text sizing - only shrink for VERY long text
+		-- Normal cards should look the same as before!
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		local bodyText = payload.text or ""
 		local textLen = #bodyText
-		local baseBodyTextSize = Device.IS_TINY_PHONE and 13 or (Device.IS_SMALL_PHONE and 15 or textSize(20))
+		local baseBodyTextSize = Device.IS_TINY_PHONE and 14 or (Device.IS_SMALL_PHONE and 16 or textSize(18))
 		local adjustedBodyTextSize = baseBodyTextSize
-		local adjustedLineHeight = Device.IS_TINY_PHONE and 1.15 or (Device.IS_SMALL_PHONE and 1.2 or 1.35)
+		local adjustedLineHeight = Device.IS_TINY_PHONE and 1.2 or (Device.IS_SMALL_PHONE and 1.25 or 1.35)
 		
-		-- Aggressively reduce text size for long text on tiny phones
-		if textLen > 300 then
-			-- Very long text 
+		-- Only shrink text for VERY long content (300+ characters)
+		if textLen > 400 then
 			adjustedBodyTextSize = Device.IS_TINY_PHONE and 11 or (Device.IS_SMALL_PHONE and 12 or 14)
 			adjustedLineHeight = 1.1
-		elseif textLen > 200 then
-			-- Long text
-			adjustedBodyTextSize = Device.IS_TINY_PHONE and 12 or (Device.IS_SMALL_PHONE and 13 or 15)
-			adjustedLineHeight = 1.12
-		elseif textLen > 150 then
-			-- Medium-long text
-			adjustedBodyTextSize = Device.IS_TINY_PHONE and 12 or (Device.IS_SMALL_PHONE and 14 or 17)
+		elseif textLen > 300 then
+			adjustedBodyTextSize = Device.IS_TINY_PHONE and 12 or (Device.IS_SMALL_PHONE and 14 or 16)
 			adjustedLineHeight = 1.15
-		elseif textLen > 100 then
-			-- Moderate text
-			adjustedBodyTextSize = Device.IS_TINY_PHONE and 13 or (Device.IS_SMALL_PHONE and 15 or 18)
-			adjustedLineHeight = 1.18
 		end
 		
 		-- CRITICAL FIX: Use safe text size setter to prevent UITextSizeConstraint errors
@@ -4643,69 +4586,40 @@ showEvent = function(payload)
 		EventUI.body.Text = bodyText
 		EventUI.question.Text  = payload.question or "What will you do?"
 
-		-- CRITICAL FIX: Dynamically resize scroll frame based on actual text height AND number of choices
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Set body scroll height IMMEDIATELY (no defer = no visible resize!)
+		-- User feedback: "IM WATCHING THE CARD POPUP NORMAL SIZED THEN BOOM NOW SIZES SMALLER"
 		-- Must leave room for ALL buttons to be visible!
-		task.defer(function()
-			if EventUI.bodyScroll and EventUI.body then
-				local numChoices = payload.choices and #payload.choices or 1
-				
-				-- ═══════════════════════════════════════════════════════════════════════════════
-				-- CRITICAL FIX: SMALLER body area when there are MANY choices!
-				-- This ensures buttons don't get cut off on small screens
-				-- User feedback: "buttons not visible on small mobile screen"
-				-- BUG FIX: Even more aggressive shrinking - buttons MUST always be visible!
-				-- ═══════════════════════════════════════════════════════════════════════════════
-				local maxBodyHeight
-				if Device.IS_TINY_PHONE then
-					-- Tiny phones: ULTRA aggressive shrinking - buttons ALWAYS visible
-					if numChoices >= 5 then
-						maxBodyHeight = 35  -- Super tiny for 5+ choices
-					elseif numChoices >= 4 then
-						maxBodyHeight = 45
-					elseif numChoices >= 3 then
-						maxBodyHeight = 55
-					elseif numChoices >= 2 then
-						maxBodyHeight = 70
-					else
-						maxBodyHeight = 90
-					end
-				elseif Device.IS_SMALL_PHONE then
-					-- Small phones: aggressive shrinking
-					if numChoices >= 5 then
-						maxBodyHeight = 50
-					elseif numChoices >= 4 then
-						maxBodyHeight = 65
-					elseif numChoices >= 3 then
-						maxBodyHeight = 80
-					elseif numChoices >= 2 then
-						maxBodyHeight = 100
-					else
-						maxBodyHeight = 120
-					end
-				else
-					-- Regular/large screens
-					if numChoices >= 5 then
-						maxBodyHeight = 100
-					elseif numChoices >= 4 then
-						maxBodyHeight = 130
-					else
-						maxBodyHeight = 180
-					end
-				end
-				
-				local actualTextHeight = EventUI.body.AbsoluteSize.Y
-
-				if actualTextHeight < maxBodyHeight then
-					-- Short text - shrink scroll area to fit content (no scrolling needed)
-					EventUI.bodyScroll.Size = UDim2.new(1, 0, 0, actualTextHeight + 2)
-					EventUI.bodyScroll.ScrollingEnabled = false
-				else
-					-- Long text - use max height and enable scrolling
-					EventUI.bodyScroll.Size = UDim2.new(1, 0, 0, maxBodyHeight)
-					EventUI.bodyScroll.ScrollingEnabled = true
-				end
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		if EventUI.bodyScroll then
+			local localNumChoices = payload.choices and #payload.choices or 1
+			local bodyMaxH
+			
+			if Device.IS_TINY_PHONE then
+				-- Tiny phones: ULTRA aggressive shrinking - buttons ALWAYS visible
+				if localNumChoices >= 5 then bodyMaxH = 35
+				elseif localNumChoices >= 4 then bodyMaxH = 45
+				elseif localNumChoices >= 3 then bodyMaxH = 55
+				elseif localNumChoices >= 2 then bodyMaxH = 70
+				else bodyMaxH = 90 end
+			elseif Device.IS_SMALL_PHONE then
+				-- Small phones: aggressive shrinking
+				if localNumChoices >= 5 then bodyMaxH = 50
+				elseif localNumChoices >= 4 then bodyMaxH = 65
+				elseif localNumChoices >= 3 then bodyMaxH = 80
+				elseif localNumChoices >= 2 then bodyMaxH = 100
+				else bodyMaxH = 120 end
+			else
+				-- Regular/large screens
+				if localNumChoices >= 5 then bodyMaxH = 100
+				elseif localNumChoices >= 4 then bodyMaxH = 130
+				else bodyMaxH = 180 end
 			end
-		end)
+			
+			-- Set scroll frame size IMMEDIATELY - AutomaticCanvasSize handles content
+			EventUI.bodyScroll.Size = UDim2.new(1, 0, 0, bodyMaxH)
+			EventUI.bodyScroll.ScrollingEnabled = true
+		end
 
 		local choiceHandlers = {}
 
@@ -4945,36 +4859,6 @@ showEvent = function(payload)
 		EventUI.shell.BackgroundTransparency = 1
 		EventUI.card.BackgroundTransparency = 1
 		
-		-- BUG FIX: Scale down ONLY if content is too tall (large cards only!)
-		-- User report: "TOP OF CARD AND BOTTOM ARE CUT OFF" on long cards
-		-- IMPORTANT: Normal cards should stay at full size!
-		task.defer(function()
-			if not EventUI.shadowFrame then return end
-			
-			-- Wait for AutomaticSize to fully calculate
-			task.wait(0.05)
-			
-			local actualHeight = EventUI.shadowFrame.AbsoluteSize.Y
-			local maxHeight = EventUI.maxEventHeight or 550
-			
-			-- Remove old UIScale if exists
-			local oldScale = EventUI.shadowFrame:FindFirstChild("EventScale")
-			if oldScale then oldScale:Destroy() end
-			
-			-- ONLY scale if card is SIGNIFICANTLY taller than max (10%+ over)
-			-- This prevents normal cards from being scaled
-			if actualHeight > (maxHeight * 1.05) then
-				-- Calculate scale factor to fit
-				local scaleFactor = (maxHeight * 0.95) / actualHeight
-				scaleFactor = math.max(0.65, scaleFactor) -- Never scale below 65%
-				
-				local uiScale = Instance.new("UIScale")
-				uiScale.Name = "EventScale"
-				uiScale.Scale = scaleFactor
-				uiScale.Parent = EventUI.shadowFrame
-			end
-		end)
-
 		tween(EventUI.shadowFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
 			Position = UDim2.fromScale(0.5, 0.5),
 			BackgroundTransparency = 0.92,
@@ -4995,10 +4879,6 @@ end
 hideEvent = function()
 	awaitingEvent  = false
 	EventUI.currentEventId = nil
-	
-	-- BUG FIX: Remove scale before hiding (reset for next event)
-	local oldScale = EventUI.shadowFrame:FindFirstChild("EventScale")
-	if oldScale then oldScale:Destroy() end
 
 	-- Create the hide tween and track it
 	EventUI.currentHideTween = tween(EventUI.shadowFrame, TweenInfo.new(0.2), {
