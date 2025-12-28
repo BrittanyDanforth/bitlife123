@@ -13500,6 +13500,16 @@ function LifeBackend:presentEvent(player, eventDef, feedText)
 	pending.feedText = feedText or pending.feedText
 	self.pendingEvents[player.UserId] = pending
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Send state update BEFORE showing the event!
+	-- User bug: "cash doesn't update until I pick my choice"
+	-- Problem: Living expenses were deducted but client still showed OLD money
+	-- So player thought they had $400 but actually had $0 after expenses!
+	-- Solution: Push state FIRST so player sees their ACTUAL balance
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	self:pushState(player, feedText)
+	
+	-- Now show the event (player can see their actual money when making choice)
 	self.remotes.PresentEvent:FireClient(player, eventPayload, feedText)
 end
 
@@ -13597,7 +13607,9 @@ function LifeBackend:presentEventForRetry(player, eventDef, existingEventId)
 	end
 	
 	-- Don't update pendingEvents - it should already have this event stored
-	-- Just re-send the event to the client
+	-- Push state first so money display is current
+	self:pushState(player, "Pick a different option!")
+	-- Then re-send the event to the client
 	self.remotes.PresentEvent:FireClient(player, eventPayload, "Pick a different option!")
 	debugPrint("[LifeBackend] Re-presented event for retry:", eventId)
 end
