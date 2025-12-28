@@ -4496,7 +4496,7 @@ EarlyLifeEvents.events = {
 						state:AddFeed("🎯 Victory! You got to stay up until 8:30! You fell asleep at 8:35.")
 					else
 						state:ModifyStat("Happiness", -2)
-						state:AddFeed("🎯 Nope. Bedtime is bedtime. This is TYRANNY!")
+						state:AddFeed("🎯 Nope. Bedtime is bedtime. So unfair!")
 					end
 				end,
 			},
