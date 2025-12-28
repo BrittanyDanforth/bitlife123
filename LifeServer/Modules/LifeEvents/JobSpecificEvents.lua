@@ -449,7 +449,7 @@ JobSpecificEvents.events = {
 		
 		choices = {
 			{ text = "Work through it - need the hours", effects = { Money = 100, Health = -3, Happiness = -2 }, feedText = "Miserable but money is money. Power through." },
-			{ text = "Call it a day - safety first ($50 lost wages)", effects = { Money = -50, Health = 1, Happiness = 1 }, feedText = "Lost wages but better than injury or illness.", eligibility = function(state) return (state.Money or 0) >= 50, "💸 Can't afford lost wages ($50)" end },
+			{ text = "Call it a day - safety first", effects = { Health = 1, Happiness = 1 }, feedText = "Lost wages but better than injury or illness." },
 			{ text = "Find indoor tasks instead", effects = { Money = 50, Smarts = 1 }, feedText = "Productive regardless. Found other work to do." },
 		},
 	},
@@ -1042,7 +1042,7 @@ JobSpecificEvents.events = {
 		choices = {
 			{ text = "Long hours - get it done", effects = { Money = 300, Health = -5, Happiness = -4 }, setFlags = { audit_survivor = true }, feedText = "80-hour weeks. No life. But you survived." },
 			{ text = "Delegate effectively", effects = { Money = 200, Smarts = 2, Happiness = 1 }, feedText = "Leadership shining through. Team handles it together." },
-			{ text = "Make mistakes from exhaustion ($200 cost)", effects = { Happiness = -6, Money = -200 }, setFlags = { audit_mistakes = true }, feedText = "Errors found. Rework required. Nightmare.", eligibility = function(state) return (state.Money or 0) >= 200, "💸 Can't afford the mistake costs ($200)" end },
+			{ text = "Make mistakes from exhaustion", effects = { Happiness = -6 }, setFlags = { audit_mistakes = true }, feedText = "Errors found. Rework required. Nightmare." },
 			{ text = "Questioning life choices", effects = { Happiness = -5 }, setFlags = { reconsidering_finance = true }, feedText = "Is this worth it? Every year same misery." },
 		},
 	},
@@ -1147,7 +1147,7 @@ JobSpecificEvents.events = {
 					end
 				end,
 			},
-			{ text = "Panic like everyone else ($200 loss)", effects = { Happiness = -5, Money = -200 }, feedText = "Sold at the bottom. Classic retail investor move.", eligibility = function(state) return (state.Money or 0) >= 200, "💸 Can't afford market losses ($200)" end },
+			{ text = "Panic like everyone else", effects = { Happiness = -5 }, feedText = "Sold at the bottom. Classic retail investor move." },
 		},
 	},
 	

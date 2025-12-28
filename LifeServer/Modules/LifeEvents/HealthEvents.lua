@@ -248,12 +248,12 @@ HealthEvents.events = {
 		category = "health",
 		tags = { "dental", "teeth", "checkup" },
 		
-		-- CRITICAL: Random dental outcome
-		choices = {
-			{
-				text = "Open wide",
-				effects = { Money = -75 },
-				feedText = "In the dentist chair...",
+	-- CRITICAL: Random dental outcome - checkups are free/covered by insurance!
+	choices = {
+		{
+			text = "Open wide",
+			effects = {},  -- FREE - dental checkups covered by insurance/parents
+			feedText = "In the dentist chair...",
 				onResolve = function(state)
 					local health = (state.Stats and state.Stats.Health) or 50
 					local roll = math.random()

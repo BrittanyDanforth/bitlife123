@@ -438,7 +438,9 @@ local function categorizeRelationship(rel, flags)
 	if rel.isFriend or rel.is_friend then
 		return "friend"
 	end
-	if rel.isRomance or rel.is_romance or rel.isPartner or rel.is_partner then
+	-- CRITICAL FIX: More comprehensive romance detection including marriage
+	if rel.isRomance or rel.is_romance or rel.isPartner or rel.is_partner 
+		or rel.isSpouse or rel.is_spouse or rel.isMarried or rel.married then
 		return "romance"
 	end
 	if rel.isEnemy or rel.is_enemy then
