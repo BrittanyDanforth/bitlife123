@@ -3276,11 +3276,7 @@ local function buildEventModal()
 	-- Solution: Scrollable body area with max height, buttons always visible
 	-- ═══════════════════════════════════════════════════════════════════════════════
 
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- Body scroll area - sized dynamically per-event based on number of choices
-	-- Default to middle-ground value (showEvent will resize based on actual choice count)
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	local maxBodyHeight = Device.IS_TINY_PHONE and 70 or (Device.IS_SMALL_PHONE and 100 or 180)
+	-- Body text area - uses AutomaticSize, no scrolling
 
 	local bodySection = Instance.new("Frame")
 	bodySection.Size = UDim2.new(1, 0, 0, 0)
@@ -3300,17 +3296,12 @@ local function buildEventModal()
 	bodyLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 4 or padSize(10)))
 	bodyLayout.Parent = bodySection
 
-	-- Scrollable container for body text - FIXED height, content scrolls inside
-	EventUI.bodyScroll = Instance.new("ScrollingFrame")
-	EventUI.bodyScroll.Size = UDim2.new(1, 0, 0, maxBodyHeight)
-	EventUI.bodyScroll.AutomaticSize = Enum.AutomaticSize.None
+	-- Body text container - NO SCROLLING, card expands to fit
+	EventUI.bodyScroll = Instance.new("Frame")
+	EventUI.bodyScroll.Size = UDim2.new(1, 0, 0, 0)
+	EventUI.bodyScroll.AutomaticSize = Enum.AutomaticSize.Y
 	EventUI.bodyScroll.BackgroundTransparency = 1
 	EventUI.bodyScroll.BorderSizePixel = 0
-	EventUI.bodyScroll.ScrollBarThickness = Device.IS_MOBILE and 4 or 6
-	EventUI.bodyScroll.ScrollBarImageColor3 = C.Gray400
-	EventUI.bodyScroll.CanvasSize = UDim2.new(1, 0, 0, 0)
-	EventUI.bodyScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-	EventUI.bodyScroll.ScrollingDirection = Enum.ScrollingDirection.Y
 	EventUI.bodyScroll.LayoutOrder = 1
 	EventUI.bodyScroll.ZIndex = 65
 	EventUI.bodyScroll.Parent = bodySection
@@ -4585,48 +4576,7 @@ showEvent = function(payload)
 		EventUI.body.Text = bodyText
 		EventUI.question.Text  = payload.question or "What will you do?"
 
-		-- ═══════════════════════════════════════════════════════════════════════════════
-		-- Body scroll height: estimate based on text length, cap based on choice count
-		-- Short text = small scroll area (no gap), Long text = max height with scrolling
-		-- ═══════════════════════════════════════════════════════════════════════════════
-		if EventUI.bodyScroll then
-			local localNumChoices = payload.choices and #payload.choices or 1
-			local bodyMaxH
-			
-			-- Max height based on number of choices (leave room for buttons)
-			if Device.IS_TINY_PHONE then
-				if localNumChoices >= 5 then bodyMaxH = 45
-				elseif localNumChoices >= 4 then bodyMaxH = 55
-				elseif localNumChoices >= 3 then bodyMaxH = 70
-				elseif localNumChoices >= 2 then bodyMaxH = 85
-				else bodyMaxH = 100 end
-			elseif Device.IS_SMALL_PHONE then
-				if localNumChoices >= 5 then bodyMaxH = 60
-				elseif localNumChoices >= 4 then bodyMaxH = 80
-				elseif localNumChoices >= 3 then bodyMaxH = 100
-				elseif localNumChoices >= 2 then bodyMaxH = 120
-				else bodyMaxH = 140 end
-			else
-				if localNumChoices >= 5 then bodyMaxH = 120
-				elseif localNumChoices >= 4 then bodyMaxH = 150
-				else bodyMaxH = 200 end
-			end
-			
-			-- Estimate text height based on character count and font size
-			-- Rough estimate: ~45 chars per line on mobile, lineHeight * fontSize per line
-			local charsPerLine = Device.IS_TINY_PHONE and 30 or (Device.IS_SMALL_PHONE and 35 or 45)
-			local lineH = adjustedBodyTextSize * adjustedLineHeight
-			local estimatedLines = math.ceil(textLen / charsPerLine)
-			local estimatedHeight = estimatedLines * lineH + 10 -- +10 for padding
-			
-			-- Use smaller of estimated height or max height
-			local finalHeight = math.min(estimatedHeight, bodyMaxH)
-			finalHeight = math.max(finalHeight, 30) -- minimum 30px
-			
-			EventUI.bodyScroll.AutomaticSize = Enum.AutomaticSize.None
-			EventUI.bodyScroll.Size = UDim2.new(1, 0, 0, finalHeight)
-			EventUI.bodyScroll.ScrollingEnabled = (estimatedHeight > bodyMaxH)
-		end
+		-- Body container uses AutomaticSize - NO scrolling, card expands to fit text
 
 		local choiceHandlers = {}
 
@@ -4910,10 +4860,6 @@ hideEvent = function()
 			EventUI.relationLbl.Text = ""
 			EventUI.header.Visible = false
 			
-			-- CRITICAL FIX: Reset body scroll position
-			if EventUI.bodyScroll then
-				EventUI.bodyScroll.CanvasPosition = Vector2.new(0, 0)
-			end
 		end
 
 		EventUI.currentHideTween = nil
