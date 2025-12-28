@@ -203,9 +203,10 @@ Random.events = {
 		-- CRITICAL FIX: Random injury type and severity
 		choices = {
 			{
-				text = "Go to the doctor",
+				text = "Go to the doctor ($100)",
 				effects = { Money = -100 },
 				feedText = "You went to see a doctor...",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for doctor visit" end,
 				onResolve = function(state)
 					local roll = math.random()
 					local injuries = {
@@ -2011,9 +2012,10 @@ Random.events = {
 		-- CRITICAL FIX: Random surgery outcome - player doesn't choose success
 		choices = {
 			{
-				text = "Top-rated hospital (expensive)",
+				text = "Top-rated hospital ($10K)",
 				effects = { Money = -10000 },
 				feedText = "You chose the best medical care available...",
+				eligibility = function(state) return (state.Money or 0) >= 10000, "💸 Can't afford top-rated hospital ($10K needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					state.Flags = state.Flags or {}
@@ -2035,9 +2037,10 @@ Random.events = {
 				end,
 			},
 			{
-				text = "Regular hospital",
+				text = "Regular hospital ($5K)",
 				effects = { Money = -5000 },
 				feedText = "You went to a standard hospital...",
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Can't afford regular hospital ($5K needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					state.Flags = state.Flags or {}
@@ -2059,9 +2062,10 @@ Random.events = {
 				end,
 			},
 			{
-				text = "Cheapest option available",
+				text = "Cheapest option available ($2K)",
 				effects = { Money = -2000 },
 				feedText = "You went with budget surgery...",
+				eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Can't afford budget surgery ($2K needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					state.Flags = state.Flags or {}
@@ -2079,6 +2083,30 @@ Random.events = {
 						state:ModifyStat("Happiness", -12)
 						state.Flags.needs_more_surgery = true
 						state:AddFeed("🏥 Surgery went badly. You get what you pay for...")
+					end
+				end,
+			},
+			{
+				text = "Emergency charity care (free - risky)",
+				effects = {},
+				feedText = "You had no choice but to use emergency charity care...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					state.Flags.needs_surgery = nil
+					if roll < 0.25 then
+						state:ModifyStat("Health", 5)
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("🏥 The charity hospital did their best. You survived.")
+					elseif roll < 0.55 then
+						state:ModifyStat("Health", -5)
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("🏥 Long wait, limited resources. Surgery barely helped.")
+					else
+						state:ModifyStat("Health", -15)
+						state:ModifyStat("Happiness", -15)
+						state.Flags.needs_more_surgery = true
+						state:AddFeed("🏥 Serious complications. Emergency care has its limits.")
 					end
 				end,
 			},
@@ -2101,10 +2129,10 @@ Random.events = {
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		choices = {
-			{ text = "Adopt a dog", effects = { Happiness = 15, Money = -500, Health = 3 }, setFlags = { has_pet = true, has_dog = true }, feedText = "You adopted a dog! Best friend for life." },
-			{ text = "Adopt a cat", effects = { Happiness = 12, Money = -300 }, setFlags = { has_pet = true, has_cat = true }, feedText = "You got a cat! Independent but loving." },
-			{ text = "Get a small pet (hamster, fish, etc.)", effects = { Happiness = 8, Money = -100 }, setFlags = { has_pet = true }, feedText = "You got a small pet! Easy to care for." },
-			{ text = "Not ready for a pet yet", effects = { Happiness = -2 }, feedText = "Maybe someday. Pets are a big responsibility." },
+			{ text = "Adopt a dog ($500)", effects = { Happiness = 15, Money = -500, Health = 3 }, setFlags = { has_pet = true, has_dog = true }, feedText = "You adopted a dog! Best friend for life.", eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for dog adoption" end },
+			{ text = "Adopt a cat ($300)", effects = { Happiness = 12, Money = -300 }, setFlags = { has_pet = true, has_cat = true }, feedText = "You got a cat! Independent but loving.", eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for cat adoption" end },
+			{ text = "Get a small pet ($100)", effects = { Happiness = 8, Money = -100 }, setFlags = { has_pet = true }, feedText = "You got a small pet! Easy to care for.", eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for small pet" end },
+			{ text = "Not ready for a pet yet (free)", effects = { Happiness = -2 }, feedText = "Maybe someday. Pets are a big responsibility." },
 		},
 	},
 	{

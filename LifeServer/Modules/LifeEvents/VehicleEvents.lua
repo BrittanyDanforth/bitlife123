@@ -145,6 +145,7 @@ VehicleEvents.events = {
                 text = "Enter the race! ($500)",
                 effects = { Money = -500 },
                 feedText = "You pay the entry fee and line up...",
+                eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for race entry fee" end,
                 onResolve = function(state)
                     local vehicle, tier = getPlayerVehicle(state)
                     local vehicleName = vehicle and vehicle.name or "your car"
@@ -548,6 +549,7 @@ VehicleEvents.events = {
                 text = "Enter the show! ($100)",
                 effects = { Money = -100 },
                 feedText = "Polishing your ride for the show...",
+                eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for entry fee" end,
                 onResolve = function(state)
                     local vehicle, tier = getPlayerVehicle(state)
                     local vehicleName = vehicle and vehicle.name or "your car"

@@ -860,7 +860,7 @@ Adult.events = {
 			{ text = "They eat my food", effects = { Happiness = -3, Money = -50 }, feedText = "Your groceries keep disappearing." },
 			{ text = "They're too loud", effects = { Happiness = -3, Health = -2 }, setFlags = { poor_sleep = true }, feedText = "Parties every night. You're exhausted." },
 			{ text = "We're actually great friends!", effects = { Happiness = 6 }, setFlags = { good_roommates = true }, feedText = "Living together strengthened your friendship!" },
-			{ text = "Time to move out", effects = { Money = -300, Happiness = 3 }, setFlags = { lives_alone = true }, feedText = "You got your own place. Peace at last." },
+			{ text = "Time to move out ($300)", effects = { Money = -300, Happiness = 3 }, setFlags = { lives_alone = true }, feedText = "You got your own place. Peace at last.", eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 deposit to move out" end },
 		},
 	},
 	{
@@ -1988,8 +1988,8 @@ Adult.events = {
 		end,
 
 		choices = {
-			{ text = "Become their primary caregiver", effects = { Happiness = -10, Health = -8, Money = -2000 }, setFlags = { family_caregiver = true }, feedText = "You've taken on a huge responsibility." },
-			{ text = "Help coordinate their care", effects = { Happiness = -5, Money = -1000 }, feedText = "You're organizing doctors, nurses, and family." },
+			{ text = "Become their primary caregiver ($2,000)", effects = { Happiness = -10, Health = -8, Money = -2000 }, setFlags = { family_caregiver = true }, feedText = "You've taken on a huge responsibility.", eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2,000 for care expenses" end },
+			{ text = "Help coordinate their care ($1,000)", effects = { Happiness = -5, Money = -1000 }, feedText = "You're organizing doctors, nurses, and family.", eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 to help with care" end },
 			{ text = "Struggle to be there - too far away", effects = { Happiness = -12 }, setFlags = { family_guilt = true }, feedText = "Distance makes this heartbreaking." },
 			{ text = "They passed away", effects = { Happiness = -20, Health = -5 }, setFlags = { lost_parent = true }, feedText = "Your parent is gone. Grief is overwhelming." },
 		},
@@ -2118,10 +2118,10 @@ Adult.events = {
 		cooldown = 6, -- CRITICAL FIX #709: Reduced from 10
 
 		choices = {
-			{ text = "Fight with everything you have", effects = { Health = -10, Happiness = -10, Money = -10000 }, setFlags = { battling_illness = true, fighter = true }, feedText = "You're in the fight of your life." },
-			{ text = "Accept it and make peace", effects = { Health = -5, Happiness = -5 }, setFlags = { at_peace = true }, feedText = "You've found acceptance." },
-			{ text = "Seek alternative treatments", effects = { Health = -8, Happiness = -5, Money = -5000 }, setFlags = { alternative_medicine = true }, feedText = "You're trying every option." },
-			{ text = "It's treatable - caught it early", effects = { Health = -5, Money = -3000, Happiness = 5 }, setFlags = { health_recovered = true }, feedText = "Caught early! Treatment is working." },
+			{ text = "Fight with everything you have ($10K)", effects = { Health = -10, Happiness = -10, Money = -10000 }, setFlags = { battling_illness = true, fighter = true }, feedText = "You're in the fight of your life.", eligibility = function(state) return (state.Money or 0) >= 10000, "💸 Need $10K for treatment" end },
+			{ text = "Accept it and make peace (free)", effects = { Health = -5, Happiness = -5 }, setFlags = { at_peace = true }, feedText = "You've found acceptance." },
+			{ text = "Seek alternative treatments ($5K)", effects = { Health = -8, Happiness = -5, Money = -5000 }, setFlags = { alternative_medicine = true }, feedText = "You're trying every option.", eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5K for alternative treatments" end },
+			{ text = "It's treatable - caught it early ($3K)", effects = { Health = -5, Money = -3000, Happiness = 5 }, setFlags = { health_recovered = true }, feedText = "Caught early! Treatment is working.", eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Need $3K for treatment" end },
 		},
 	},
 	{
@@ -2444,11 +2444,11 @@ Adult.events = {
 		oneTime = true,
 
 		choices = {
-			{ text = "World cruise", effects = { Money = -15000, Happiness = 20, Health = 3 }, setFlags = { world_traveler = true }, feedText = "Seeing the world at sea. Magnificent!" },
-			{ text = "Visit every grandchild", effects = { Money = -3000, Happiness = 15 }, feedText = "Quality time with each grandchild. Priceless." },
-			{ text = "Return to your birthplace", effects = { Money = -2000, Happiness = 12 }, setFlags = { returned_home = true }, feedText = "Revisiting where it all began. Emotional." },
-			{ text = "Learn to paint/play music", effects = { Money = -500, Happiness = 10, Smarts = 3 }, setFlags = { artist_senior = true }, feedText = "Never too late to be creative!" },
-			{ text = "Write your life story", effects = { Happiness = 8, Smarts = 3 }, setFlags = { memoir_complete = true }, feedText = "Your story is now preserved for generations." },
+			{ text = "World cruise ($15K)", effects = { Money = -15000, Happiness = 20, Health = 3 }, setFlags = { world_traveler = true }, feedText = "Seeing the world at sea. Magnificent!", eligibility = function(state) return (state.Money or 0) >= 15000, "💸 Need $15K for world cruise" end },
+			{ text = "Visit every grandchild ($3K)", effects = { Money = -3000, Happiness = 15 }, feedText = "Quality time with each grandchild. Priceless.", eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Need $3K for travel" end },
+			{ text = "Return to your birthplace ($2K)", effects = { Money = -2000, Happiness = 12 }, setFlags = { returned_home = true }, feedText = "Revisiting where it all began. Emotional.", eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2K for travel" end },
+			{ text = "Learn to paint/play music ($500)", effects = { Money = -500, Happiness = 10, Smarts = 3 }, setFlags = { artist_senior = true }, feedText = "Never too late to be creative!", eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for supplies/lessons" end },
+			{ text = "Write your life story (free)", effects = { Happiness = 8, Smarts = 3 }, setFlags = { memoir_complete = true }, feedText = "Your story is now preserved for generations." },
 		},
 	},
 	
@@ -2739,11 +2739,11 @@ Adult.events = {
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
-			{ text = "Gardening", effects = { Happiness = 6, Health = 3 }, setFlags = { gardener = true }, feedText = "Growing things is incredibly satisfying!" },
-			{ text = "Cooking/Baking", effects = { Happiness = 5, Health = 2 }, setFlags = { home_chef = true }, feedText = "You're becoming quite the chef!" },
-			{ text = "Photography", effects = { Happiness = 5, Smarts = 2, Money = -300 }, setFlags = { photographer = true }, feedText = "Capturing beautiful moments!" },
-			{ text = "Woodworking", effects = { Happiness = 5, Smarts = 3, Money = -200 }, setFlags = { woodworker = true }, feedText = "Making things with your hands is therapeutic." },
-			{ text = "Playing an instrument", effects = { Happiness = 6, Smarts = 3, Money = -400 }, setFlags = { musician_hobby = true }, feedText = "Music brings you so much joy!" },
+			{ text = "Gardening (free)", effects = { Happiness = 6, Health = 3 }, setFlags = { gardener = true }, feedText = "Growing things is incredibly satisfying!" },
+			{ text = "Cooking/Baking (free)", effects = { Happiness = 5, Health = 2 }, setFlags = { home_chef = true }, feedText = "You're becoming quite the chef!" },
+			{ text = "Photography ($300)", effects = { Happiness = 5, Smarts = 2, Money = -300 }, setFlags = { photographer = true }, feedText = "Capturing beautiful moments!", eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for camera equipment" end },
+			{ text = "Woodworking ($200)", effects = { Happiness = 5, Smarts = 3, Money = -200 }, setFlags = { woodworker = true }, feedText = "Making things with your hands is therapeutic.", eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for tools" end },
+			{ text = "Playing an instrument ($400)", effects = { Happiness = 6, Smarts = 3, Money = -400 }, setFlags = { musician_hobby = true }, feedText = "Music brings you so much joy!", eligibility = function(state) return (state.Money or 0) >= 400, "💸 Need $400 for an instrument" end },
 		},
 	},
 	{
@@ -2923,10 +2923,10 @@ Adult.events = {
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
-			{ text = "Started exercising regularly", effects = { Health = 8, Happiness = 5, Money = -200 }, setFlags = { exercises = true }, feedText = "Gym membership! Feeling stronger!" },
-			{ text = "Improved diet significantly", effects = { Health = 6, Happiness = 3, Money = -100 }, setFlags = { healthy_eater = true }, feedText = "Eating better. More energy!" },
-			{ text = "Both diet and exercise", effects = { Health = 12, Happiness = 7, Money = -300 }, setFlags = { health_focused = true }, feedText = "Complete lifestyle change! Looking and feeling great!" },
-			{ text = "Still neglecting health", effects = { Health = -5, Happiness = -2 }, setFlags = { unhealthy_habits = true }, feedText = "You know you should do better..." },
+			{ text = "Started exercising regularly ($200)", effects = { Health = 8, Happiness = 5, Money = -200 }, setFlags = { exercises = true }, feedText = "Gym membership! Feeling stronger!", eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for gym membership" end },
+			{ text = "Improved diet significantly ($100)", effects = { Health = 6, Happiness = 3, Money = -100 }, setFlags = { healthy_eater = true }, feedText = "Eating better. More energy!", eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for healthy groceries" end },
+			{ text = "Both diet and exercise ($300)", effects = { Health = 12, Happiness = 7, Money = -300 }, setFlags = { health_focused = true }, feedText = "Complete lifestyle change! Looking and feeling great!", eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for gym + groceries" end },
+			{ text = "Still neglecting health (free)", effects = { Health = -5, Happiness = -2 }, setFlags = { unhealthy_habits = true }, feedText = "You know you should do better..." },
 		},
 	},
 	{
@@ -2941,11 +2941,11 @@ Adult.events = {
 		blockedByFlags = { in_prison = true, has_pet = true },
 		
 		choices = {
-			{ text = "Adopt a dog", effects = { Happiness = 10, Health = 3, Money = -300 }, setFlags = { has_pet = true, has_dog = true }, feedText = "You adopted a dog! Unconditional love awaits!" },
-			{ text = "Adopt a cat", effects = { Happiness = 8, Money = -150 }, setFlags = { has_pet = true, has_cat = true }, feedText = "You adopted a cat! Independent but loving!" },
-			{ text = "Get a fish tank", effects = { Happiness = 4, Smarts = 1, Money = -100 }, setFlags = { has_pet = true, has_fish = true }, feedText = "Fish tank set up! Very relaxing to watch." },
-			{ text = "Rescue an older pet", effects = { Happiness = 12, Money = -200 }, setFlags = { has_pet = true, pet_rescuer = true }, feedText = "Gave a senior pet a loving home! You're their hero!" },
-			{ text = "Not the right time", effects = { Happiness = -2 }, feedText = "Maybe when life is more stable." },
+			{ text = "Adopt a dog ($300)", effects = { Happiness = 10, Health = 3, Money = -300 }, setFlags = { has_pet = true, has_dog = true }, feedText = "You adopted a dog! Unconditional love awaits!", eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for dog adoption + supplies" end },
+			{ text = "Adopt a cat ($150)", effects = { Happiness = 8, Money = -150 }, setFlags = { has_pet = true, has_cat = true }, feedText = "You adopted a cat! Independent but loving!", eligibility = function(state) return (state.Money or 0) >= 150, "💸 Need $150 for cat adoption + supplies" end },
+			{ text = "Get a fish tank ($100)", effects = { Happiness = 4, Smarts = 1, Money = -100 }, setFlags = { has_pet = true, has_fish = true }, feedText = "Fish tank set up! Very relaxing to watch.", eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for fish tank setup" end },
+			{ text = "Rescue an older pet ($200)", effects = { Happiness = 12, Money = -200 }, setFlags = { has_pet = true, pet_rescuer = true }, feedText = "Gave a senior pet a loving home! You're their hero!", eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for pet rescue + supplies" end },
+			{ text = "Not the right time (free)", effects = { Happiness = -2 }, feedText = "Maybe when life is more stable." },
 		},
 	},
 	{
