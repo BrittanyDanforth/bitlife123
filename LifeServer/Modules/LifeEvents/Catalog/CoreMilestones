@@ -127,37 +127,72 @@ local events = {
 		minAge = 7,
 		maxAge = 10,
 		oneTime = true,
-		choices = {
-			{
-				index = 1,
-				text = "Take the training wheels off - full send!",
-				effects = { Happiness = 8, Health = -3, Looks = -2 },
-				setFlags = { bike_rider = true, brave = true, scarred_knees = true },
-				feedText = "You fell SEVEN TIMES. Blood, tears, and scraped knees. But on try #8? YOU DID IT! You rode a whole block! You felt like you could FLY!",
-			},
-			{
-				index = 2,
-				text = "Practice with training wheels first - be smart",
-				effects = { Happiness = 4, Smarts = 3 },
-				setFlags = { cautious = true, practical = true },
-				feedText = "You practiced balance with training wheels for 2 weeks. When you finally took them off? You got it in ONE TRY. Preparation paid off!",
-			},
-			{
-				index = 3,
-				text = "Too scary - keep the training wheels on",
-				effects = { Happiness = -3, Health = 2 },
-				setFlags = { risk_averse = true, scared_of_failure = true },
-				feedText = "You told your dad you're not ready yet. Your friends rode past you doing wheelies. You felt... small. But safe. Safe is okay, right?",
-			},
-			{
-				index = 4,
-				text = "Ask your older sibling/friend to teach you instead",
-				effects = { Happiness = 6, Health = -1 },
-				setFlags = { bike_rider = true, learns_from_peers = true },
-				feedText = "Your older cousin taught you! They were patient and funny. You learned in an afternoon! Peer teaching works! You're riding!",
-			},
+	choices = {
+		{
+			index = 1,
+			text = "Take the training wheels off - full send!",
+			effects = { Happiness = 8, Health = -3, Looks = -2 },
+			setFlags = { bike_rider = true, brave = true, scarred_knees = true },
+			feedText = "Going for it...",
+			onResolve = function(state)
+				local outcomes = {
+					"🚴 You fell THREE TIMES. Scraped your knees. But on try #4? YOU DID IT! Pure freedom!",
+					"🚴 FIVE CRASHES later, you finally got it! Blood, tears, but VICTORY! You rode a whole block!",
+					"🚴 You wobbled, nearly fell, but stayed up! First try success! Natural talent!",
+					"🚴 Crashed hard on try one. Got back up. Crashed again. But try #6? NAILED IT! Champion!",
+					"🚴 The neighbor kids cheered you on! You fell twice but the crowd gave you courage! YOU DID IT!",
+					"🚴 Dad ran beside you for the first 10 feet, then let go. You didn't even notice! YOU WERE RIDING!",
+				}
+				state:AddFeed(outcomes[math.random(#outcomes)])
+			end,
+		},
+		{
+			index = 2,
+			text = "Practice with training wheels first - be smart",
+			effects = { Happiness = 4, Smarts = 3 },
+			setFlags = { cautious = true, practical = true },
+			feedText = "Smart approach...",
+			onResolve = function(state)
+				local outcomes = {
+					"🚴 Two weeks of practice paid off! When the wheels came off? ONE TRY. Genius!",
+					"🚴 You practiced balance for a week. Then? Easy peasy! No scraped knees for you!",
+					"🚴 The preparation method worked! Your friends called you 'the planner' but you're also RIDING!",
+				}
+				state:AddFeed(outcomes[math.random(#outcomes)])
+			end,
+		},
+		{
+			index = 3,
+			text = "Too scary - keep the training wheels on",
+			effects = { Happiness = -3, Health = 2 },
+			setFlags = { risk_averse = true, scared_of_failure = true },
+			feedText = "Not ready yet...",
+			onResolve = function(state)
+				local outcomes = {
+					"🚴 You kept the training wheels. Your friends zoomed past. You felt small... but safe.",
+					"🚴 'Maybe next year,' you told dad. He looked disappointed. You felt guilty. But uninjured!",
+					"🚴 Training wheels stayed on. Some kids laughed. But you avoided the hospital! Smart or scared?",
+				}
+				state:AddFeed(outcomes[math.random(#outcomes)])
+			end,
+		},
+		{
+			index = 4,
+			text = "Ask your older sibling/friend to teach you instead",
+			effects = { Happiness = 6, Health = -1 },
+			setFlags = { bike_rider = true, learns_from_peers = true },
+			feedText = "Peer teaching...",
+			onResolve = function(state)
+				local outcomes = {
+					"🚴 Your older cousin was patient! Learned in an afternoon! No parental pressure!",
+					"🚴 Your friend's older brother taught you. Way less stressful! You're riding!",
+					"🚴 Peer teaching worked! Your neighbor showed you their secret technique. NAILED IT!",
+				}
+				state:AddFeed(outcomes[math.random(#outcomes)])
+			end,
 		},
 	},
+},
 
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- TEEN MILESTONES (Ages 13-17)

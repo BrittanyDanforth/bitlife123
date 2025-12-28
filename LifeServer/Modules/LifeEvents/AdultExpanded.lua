@@ -462,7 +462,7 @@ AdultExpanded.events = {
 		tags = { "career", "choices", "future" },
 		
 		choices = {
-			{ text = "Follow your passion", effects = { Happiness = 6, Money = -100 }, setFlags = { follows_passion = true }, feedText = "Money isn't everything. Do what you love!" },
+			{ text = "Follow your passion", effects = { Happiness = 6 }, setFlags = { follows_passion = true }, feedText = "Money isn't everything. Do what you love!" },
 			{ text = "Chase the money", effects = { Happiness = -2, Money = 300 }, setFlags = { money_motivated = true }, feedText = "Passion doesn't pay bills. Money first." },
 			{ text = "Practical middle ground", effects = { Happiness = 3, Money = 100, Smarts = 2 }, setFlags = { pragmatic_career = true }, feedText = "Something you like that also pays. Balance." },
 			{ text = "Still figuring it out", effects = { Happiness = -3 }, setFlags = { career_lost = true }, feedText = "No idea what you want. Floating." },
@@ -1023,7 +1023,7 @@ AdultExpanded.events = {
 			{ text = "Struggling with anxiety", effects = { Happiness = -5, Health = -2 }, setFlags = { adult_anxiety = true }, feedText = "Constant worry. Hard to enjoy anything." },
 			{ text = "Dealing with depression", effects = { Happiness = -8, Health = -3 }, setFlags = { adult_depression = true }, feedText = "Dark clouds won't lift. Getting through each day." },
 			{ text = "Overwhelmed by stress", effects = { Happiness = -4, Health = -2 }, setFlags = { chronic_stress = true }, feedText = "Too much on your plate. Cracking under pressure." },
-			{ text = "Actively working on improvement", effects = { Happiness = 3, Smarts = 2, Money = -50 }, setFlags = { mental_health_work = true }, feedText = "Therapy, meditation, self-care. Investing in yourself." },
+			{ text = "Working on self-improvement", effects = { Happiness = 3, Smarts = 2 }, setFlags = { mental_health_work = true }, feedText = "Self-care through free resources. YouTube meditation, journaling." },
 		},
 	},
 	{
@@ -1034,11 +1034,19 @@ AdultExpanded.events = {
 		question = "What are you struggling with?",
 		minAge = 20, maxAge = 60,
 		baseChance = 0.4,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		cooldown = 4,
 		stage = STAGE,
 		ageBand = "adult",
 		category = "health",
 		tags = { "addiction", "struggle", "health" },
+		-- CRITICAL FIX: Only show if player actually has addiction/substance issues!
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			local hasAddiction = flags.has_addiction or flags.substance_abuse or flags.alcoholic 
+				or flags.party_lifestyle or flags.excessive_drinking or flags.drug_use
+				or flags.gambling_problem or flags.gaming_addiction or flags.social_media_addiction
+			return hasAddiction, "No addiction issues"
+		end,
 		
 		choices = {
 			{
@@ -1067,11 +1075,11 @@ AdultExpanded.events = {
 				feedText = "It's not that bad. You can stop anytime. (You can't.)",
 			},
 			{
-				text = "Hit rock bottom first ($500 lost)",
-				effects = { Happiness = -12, Health = -10, Money = -500 },
-				setFlags = { rock_bottom = true },
-				feedText = "Lost so much. Maybe now you'll change.",
-				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Can't lose $500 you don't have" end,
+			text = "Hit rock bottom first",
+			effects = { Happiness = -12, Health = -10, Money = -500 },
+			setFlags = { rock_bottom = true },
+			feedText = "Lost so much. Maybe now you'll change.",
+			-- No eligibility - this is a consequence, not a purchase
 			},
 		},
 	},
@@ -1417,7 +1425,7 @@ AdultExpanded.events = {
 			{ text = "Outdoor activities", effects = { Happiness = 6, Health = 5 }, setFlags = { outdoor_hobby = true }, feedText = "Hiking, camping, nature. Fresh air and adventure!" },
 			{ text = "Creative pursuits", effects = { Happiness = 6, Smarts = 3 }, setFlags = { creative_hobby = true }, feedText = "Art, music, writing. Expressing yourself." },
 			{ text = "Learning new skills", effects = { Smarts = 6, Happiness = 4 }, setFlags = { skill_hobby = true }, feedText = "Languages, coding, instruments. Never stop learning." },
-			{ text = "Collecting something", effects = { Happiness = 4, Money = -100 }, setFlags = { collector = true }, feedText = "The thrill of the hunt. Your collection grows." },
+			{ text = "Start a collection", effects = { Happiness = 4 }, setFlags = { collector = true }, feedText = "The thrill of the hunt. Starting small!" },
 			{ text = "Gaming community", effects = { Happiness = 5, Smarts = 2 }, setFlags = { gamer_adult = true }, feedText = "Found your people. Gaming isn't just for kids." },
 		},
 	},
@@ -1692,7 +1700,7 @@ AdultExpanded.events = {
 		choices = {
 			{ text = "Work is consuming everything", effects = { Happiness = -6, Money = 200, Health = -4 }, setFlags = { workaholic = true }, feedText = "All work, no life. Making money but at what cost?" },
 			{ text = "Found a good balance", effects = { Happiness = 6, Health = 2 }, setFlags = { balanced_life = true }, feedText = "Work stays at work. Life stays rich." },
-			{ text = "Prioritizing life over work", effects = { Happiness = 5, Money = -100 }, setFlags = { life_prioritizer = true }, feedText = "Career taking backseat but happier." },
+			{ text = "Prioritizing life over work", effects = { Happiness = 5 }, setFlags = { life_prioritizer = true }, feedText = "Career taking backseat but happier." },
 			{ text = "Boundaries constantly violated", effects = { Happiness = -4, Health = -2 }, setFlags = { bad_boundaries = true }, feedText = "Work calls at night, emails on vacation. Toxic." },
 		},
 	},

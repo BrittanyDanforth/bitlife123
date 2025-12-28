@@ -320,7 +320,7 @@ DailyLifeEvents.events = {
 		tags = { "lunch", "break", "food" },
 		
 		choices = {
-			{ text = "Packed lunch (+$5)", effects = { Health = 2, Happiness = 3, Money = 5 }, feedText = "🥪 Healthy and economical! Adult achievement!" },
+			{ text = "Packed lunch (saves money)", effects = { Health = 2, Happiness = 3, Money = 5 }, feedText = "🥪 Healthy and economical! Adult achievement!" },
 			{ text = "Buy lunch ($15)", effects = { Happiness = 4, Money = -15, Health = -1 }, feedText = "🥪 Treating yourself! Restaurant/takeout life!" },
 			{ text = "Skip lunch (busy)", effects = { Health = -3, Happiness = -2, Smarts = 1 }, feedText = "🥪 No time! Working through. Hangry later." },
 			{ 

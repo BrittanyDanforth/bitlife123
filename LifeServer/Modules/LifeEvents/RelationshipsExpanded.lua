@@ -1599,7 +1599,7 @@ RelationshipsExpanded.events = {
 	id = "rel_friend_toxic",
 	title = "Toxic Friend Behavior",
 	emoji = "☢️",
-	text = "A friend has been acting really poorly lately - gossiping, being negative, or taking advantage.",
+	text = "{{FRIEND_NAME}} has been acting really poorly lately - gossiping, being negative, or taking advantage.",
 	question = "What do you do about this friendship?",
 	minAge = 16, maxAge = 70,
 	baseChance = 0.4,
@@ -1608,6 +1608,22 @@ RelationshipsExpanded.events = {
 	ageBand = "any",
 	category = "relationships",
 	tags = { "friend", "toxic", "boundaries", "dynamic" },
+	-- CRITICAL FIX: Only show if player has friends!
+	eligibility = function(state)
+		local hasFriends = state.Relationships and state.Relationships.friends and #state.Relationships.friends > 0
+		if not hasFriends then
+			-- Also check flat relationship table for friend types
+			if state.Relationships then
+				for _, rel in pairs(state.Relationships) do
+					if type(rel) == "table" and (rel.type == "friend" or rel.role == "Friend") then
+						hasFriends = true
+						break
+					end
+				end
+			end
+		end
+		return hasFriends, "You don't have any friends"
+	end,
 	
 	choices = {
 		{

@@ -421,7 +421,7 @@ local function categorizeRelationship(rel, flags)
 
 	if t == "family" then
 		return "family"
-	elseif t == "romance" or t == "partner" or t == "lover" or t == "spouse" or t == "fiance" then
+	elseif t == "romance" or t == "romantic" or t == "partner" or t == "lover" or t == "spouse" or t == "fiance" then
 		return "romance"
 	elseif t == "friend" or t == "friends" then
 		return "friend"

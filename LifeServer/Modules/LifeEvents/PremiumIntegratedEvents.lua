@@ -2368,31 +2368,25 @@ PremiumIntegratedEvents.events = {
 		-- CRITICAL FIX: Block if player already made a premium wish
 		blockedByFlags = { primary_wish_type = true },
 		
-		choices = {
-			{
-				text = "To be happy forever!",
-				effects = { Happiness = 10 },
-				setFlags = { wished_happiness = true },
-				feedText = "🎂 You close your eyes tight and wish with all your heart. Happy birthday!",
-			},
-			{
-				text = "For my family to be healthy!",
-				effects = { Happiness = 6, Health = 3 },
-				setFlags = { wished_family = true, caring_heart = true },
-				feedText = "🎂 Such a sweet wish! Your parents are touched when you finally tell them years later.",
-			},
-			{
-				text = "To be super smart!",
-				effects = { Smarts = 5, Happiness = 5 },
-				setFlags = { wished_intelligence = true },
-				feedText = "🎂 Knowledge is power! Maybe this wish will help in school!",
-			},
-			{
-				text = "For a puppy!",
-				effects = { Happiness = 8 },
-				setFlags = { wants_pet = true },
-				feedText = "🎂 A classic wish! You look at your parents with hopeful eyes...",
-			},
+	choices = {
+		{
+			text = "For my family to be healthy!",
+			effects = { Happiness = 6, Health = 3 },
+			setFlags = { wished_family = true, caring_heart = true },
+			feedText = "🎂 Such a sweet wish! Your parents are touched when you finally tell them years later.",
+		},
+		{
+			text = "To be super smart!",
+			effects = { Smarts = 5, Happiness = 5 },
+			setFlags = { wished_intelligence = true },
+			feedText = "🎂 Knowledge is power! Maybe this wish will help in school!",
+		},
+		{
+			text = "For a puppy!",
+			effects = { Happiness = 8 },
+			setFlags = { wants_pet = true },
+			feedText = "🎂 A classic wish! You look at your parents with hopeful eyes...",
+		},
 			-- PREMIUM OPTIONS
 			-- CRITICAL FIX: Premium wishes now set primary_wish_type to prevent conflicts
 			{

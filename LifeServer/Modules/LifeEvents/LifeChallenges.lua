@@ -136,24 +136,36 @@ LifeChallenges.events = {
 					end
 				end,
 			},
-			{
-				text = "Financial setback (-$1,000)",
-				effects = { Money = -1000 },
-				feedText = "Dealing with financial blow...",
-				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Can't afford this setback" end,
-				onResolve = function(state)
-					local roll = math.random()
-					if roll < 0.45 then
-						state:ModifyStat("Happiness", -5)
-						state:ModifyStat("Smarts", 4)
-						state:AddFeed("🔙 Lost money but learned lesson. Rebuilding smarter.")
+		{
+			text = "Financial setback",
+			effects = {},  -- Don't force money loss - it's in onResolve based on what you have
+			feedText = "Dealing with financial blow...",
+			onResolve = function(state)
+				-- Take proportional money loss (50% of what you have, max $1000)
+				local currentMoney = state.Money or 0
+				local lossAmount = math.min(1000, math.floor(currentMoney * 0.5))
+				state.Money = math.max(0, currentMoney - lossAmount)
+				
+				local roll = math.random()
+				if roll < 0.45 then
+					state:ModifyStat("Happiness", -5)
+					state:ModifyStat("Smarts", 4)
+					if lossAmount > 0 then
+						state:AddFeed(string.format("🔙 Lost $%d but learned lesson. Rebuilding smarter.", lossAmount))
 					else
-						state:ModifyStat("Happiness", -10)
-						state.Flags = state.Flags or {}
-						state.Flags.financial_crisis = true
-						state:AddFeed("🔙 Financial devastation. Years of progress gone. Starting over.")
+						state:AddFeed("🔙 Financial setback but already had nothing. Rock bottom.")
 					end
-				end,
+				else
+					state:ModifyStat("Happiness", -10)
+					state.Flags = state.Flags or {}
+					state.Flags.financial_crisis = true
+					if lossAmount > 0 then
+						state:AddFeed(string.format("🔙 Financial devastation. Lost $%d. Starting over.", lossAmount))
+					else
+						state:AddFeed("🔙 Financial crisis. Already broke. Things got worse somehow.")
+					end
+				end
+			end,
 			},
 		},
 	},
@@ -205,23 +217,23 @@ LifeChallenges.events = {
 		id = "challenge_chronic_illness",
 		title = "Chronic Illness Diagnosis",
 		emoji = "🏥",
-		text = "You've been diagnosed with a chronic condition.",
-		question = "How do you adapt to life with chronic illness?",
-		minAge = 20, maxAge = 100,
-		baseChance = 0.32,
-		cooldown = 4,
+		text = "The doctor has some difficult news. After running tests, you've been diagnosed with a chronic condition that will require ongoing management.",
+		question = "How do you adapt to this new reality?",
+		minAge = 25, maxAge = 100,
+		baseChance = 0.20, -- Reduced from 0.32 to make it less common
+		cooldown = 10, -- Higher cooldown - life-changing diagnosis shouldn't spam
 		oneTime = true,
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",
 		tags = { "chronic", "illness", "health" },
 		
-		-- CRITICAL: Random chronic illness management
 		choices = {
 			{
-				text = "Follow treatment plan",
+				text = "Follow treatment plan ($200)",
 				effects = { Money = -200 },
 				feedText = "Managing the condition...",
+				eligibility = function(state) return (state.Money or 0) >= 200, "Can't afford treatment" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.55 then
@@ -239,10 +251,11 @@ LifeChallenges.events = {
 					end
 				end,
 			},
-			{ text = "Join support community", effects = { Happiness = 5, Health = -5 }, setFlags = { chronic_illness = true, illness_support_group = true }, feedText = "🏥 Others understand. Not alone in this. Community helps." },
-			{ text = "Struggle to accept", effects = { Happiness = -8, Health = -8 }, setFlags = { chronic_illness = true, illness_denial = true }, feedText = "🏥 Can't accept this is your life now. Grieving health." },
-		},
+		{ text = "Join support community", effects = { Happiness = 5, Health = -5 }, setFlags = { chronic_illness = true, illness_support_group = true }, feedText = "🏥 Others understand. Not alone in this. Community helps." },
+		{ text = "Research everything online", effects = { Happiness = -2, Smarts = 3, Health = -5 }, setFlags = { chronic_illness = true, illness_researcher = true }, feedText = "🏥 Became an expert on your condition. Knowledge is power." },
+		{ text = "Struggle to accept", effects = { Happiness = -8, Health = -8 }, setFlags = { chronic_illness = true, illness_denial = true }, feedText = "🏥 Can't accept this is your life now. Grieving health." },
 	},
+},
 	{
 		id = "challenge_burnout_recovery",
 		title = "Recovering from Burnout",
