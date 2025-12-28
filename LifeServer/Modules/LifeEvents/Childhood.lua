@@ -386,9 +386,9 @@ Childhood.events = {
 					end
 				end,
 			},
-			{ text = "Stand up verbally", effects = { Happiness = 5 }, setFlags = { brave = true }, feedText = "You stood up to the bully with words. It was scary, but you earned respect." },
-			{ text = "Tell a teacher", effects = { Happiness = 2, Smarts = 2 }, setFlags = { trusts_authority = true }, feedText = "You told an adult. The bully got in trouble." },
-			{ text = "Try to befriend them", effects = { Smarts = 3 }, setFlags = { peacemaker = true }, hintCareer = "social_work", feedText = "You tried to understand why they're mean. Sometimes kindness works." },
+		{ text = "Stand up verbally", effects = { Happiness = 5 }, setFlags = { brave = true, dealt_with_bully = true }, feedText = "You stood up to the bully with words. It was scary, but you earned respect." },
+		{ text = "Tell a teacher", effects = { Happiness = 2, Smarts = 2 }, setFlags = { trusts_authority = true, dealt_with_bully = true }, feedText = "You told an adult. The bully got in trouble." },
+		{ text = "Try to befriend them", effects = { Smarts = 3 }, setFlags = { peacemaker = true, dealt_with_bully = true }, hintCareer = "social_work", feedText = "You tried to understand why they're mean. Sometimes kindness works." },
 		},
 	},
 
@@ -1072,8 +1072,9 @@ Childhood.events = {
 		text = "Your tooth is really loose and wiggling around. It's about to fall out!",
 		question = "How do you handle it?",
 		minAge = 5, maxAge = 8,
-		baseChance = 0.7,
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7 to prevent spam
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		maxOccurrences = 3, -- Kids lose multiple teeth but not infinite
 
 		stage = STAGE,
 		ageBand = "childhood",

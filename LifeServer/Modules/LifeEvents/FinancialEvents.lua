@@ -854,19 +854,27 @@ FinancialEvents.events = {
 				state:AddFeed("⚠️ Chapter 7 Bankruptcy filed. ALL debts discharged. Credit ruined for 7-10 years. Fresh start, but lost most assets.")
 			end,
 		},
-			{ text = "Try to power through", effects = { Happiness = -5, Health = -3 }, setFlags = { struggling_financially = true }, feedText = "⚠️ Won't give up. Extra jobs, cutting everything." },
-			{ text = "Ask family for help", effects = { Happiness = 2 }, feedText = "⚠️ Swallowed pride. Family helped out. Grateful.",
-				onResolve = function(state)
-					local roll = math.random()
-					if roll < 0.60 then
-						state.Money = (state.Money or 0) + 500
-						state:AddFeed("⚠️ Family came through! Loan to get back on feet!")
-					else
-						state:ModifyStat("Happiness", -4)
-						state:AddFeed("⚠️ Family can't help. They're struggling too.")
-					end
-				end,
-			},
+		{ text = "Try to power through", effects = { Happiness = -5, Health = -3 }, setFlags = { struggling_financially = true }, feedText = "⚠️ Won't give up. Extra jobs, cutting everything." },
+		{ text = "Ask family for help", effects = { Happiness = 2 }, feedText = "⚠️ Swallowed pride. Family helped out. Grateful.",
+			-- CRITICAL FIX: Can't ask family for help if ALREADY living with family!
+			eligibility = function(state)
+				local flags = state.Flags or {}
+				if flags.lives_with_parents or flags.living_with_family or flags.boomerang_kid then
+					return false, "You already live with your family!"
+				end
+				return true
+			end,
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.60 then
+					state.Money = (state.Money or 0) + 500
+					state:AddFeed("⚠️ Family came through! Loan to get back on feet!")
+				else
+					state:ModifyStat("Happiness", -4)
+					state:AddFeed("⚠️ Family can't help. They're struggling too.")
+				end
+			end,
+		},
 		},
 	},
 	
@@ -1336,12 +1344,17 @@ FinancialEvents.events = {
 		category = "finance",
 		tags = { "housing", "rent", "bills" },
 		
-		-- Only for renters
-		eligibility = function(state)
-			local flags = state.Flags or {}
-			local housing = state.HousingState or {}
-			return (flags.renting or housing.status == "renter") and not flags.homeless
-		end,
+	-- CRITICAL FIX: Only for renters who DON'T live with family
+	blockedByFlags = { lives_with_parents = true, living_with_family = true, boomerang_kid = true, homeless = true },
+	eligibility = function(state)
+		local flags = state.Flags or {}
+		local housing = state.HousingState or {}
+		-- Must be renting AND not living with family
+		if flags.lives_with_parents or flags.living_with_family or flags.boomerang_kid then
+			return false, "You don't pay rent - you live with family!"
+		end
+		return (flags.renting or housing.status == "renter") and not flags.homeless
+	end,
 		
 		preProcess = function(state, eventDef)
 			local rent = 1000

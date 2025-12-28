@@ -163,23 +163,31 @@ PremiumIntegratedEvents.events = {
 				setFlags = { overworked = true },
 				feedText = "Working double shifts. Exhausting but the bills are paid.",
 			},
-			{
-				text = "Ask family for help",
-				effects = {},
-				feedText = "Swallowing your pride...",
-				onResolve = function(state)
-					local roll = math.random()
-					if roll < 0.60 then
-						local help = math.random(500, 2000)
-						state.Money = (state.Money or 0) + help
-						state:ModifyStat("Happiness", 5)
-						state:AddFeed(string.format("💸 Family came through! Got $%d in help.", help))
-					else
-						state:ModifyStat("Happiness", -8)
-						state:AddFeed("💸 Family couldn't help. You're on your own.")
-					end
-				end,
-			},
+		{
+			text = "Ask family for help",
+			effects = {},
+			feedText = "Swallowing your pride...",
+			-- CRITICAL FIX: Can't ask family for help if already living with them!
+			eligibility = function(state)
+				local flags = state.Flags or {}
+				if flags.lives_with_parents or flags.living_with_family or flags.boomerang_kid then
+					return false, "You already live with your family!"
+				end
+				return true
+			end,
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.60 then
+					local help = math.random(500, 2000)
+					state.Money = (state.Money or 0) + help
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed(string.format("💸 Family came through! Got $%d in help.", help))
+				else
+					state:ModifyStat("Happiness", -8)
+					state:AddFeed("💸 Family couldn't help. You're on your own.")
+				end
+			end,
+		},
 			{
 				text = "File for bankruptcy",
 				effects = { Happiness = -15 },

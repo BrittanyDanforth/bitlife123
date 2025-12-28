@@ -2158,7 +2158,28 @@ Adult.events = {
 		choices = {
 			{ text = "Move to assisted living", effects = { Health = 5, Happiness = -5, Money = -3000 }, setFlags = { assisted_living = true }, feedText = "You moved to a facility. Safer, but different." },
 			{ text = "Hire in-home care", effects = { Health = 5, Money = -2000 }, setFlags = { has_caregiver = true }, feedText = "Help comes to you. You stay home." },
-			{ text = "Move in with family", effects = { Happiness = 5 }, setFlags = { lives_with_family = true }, feedText = "Your kids welcomed you into their home." },
+			{ 
+			text = "Move in with family", 
+			effects = { Happiness = 5 }, 
+			setFlags = { lives_with_family = true }, 
+			feedText = "Your family welcomed you into their home.",
+			-- CRITICAL FIX: Can only move in with family if you have family
+			eligibility = function(state)
+				local flags = state.Flags or {}
+				if flags.has_child or flags.has_children or flags.parent then
+					return true
+				end
+				-- Could also move in with siblings
+				if state.Relationships then
+					for _, rel in pairs(state.Relationships) do
+						if rel.type == "sibling" or rel.type == "family" then
+							return true
+						end
+					end
+				end
+				return false, "You don't have any family to move in with"
+			end,
+		},
 			{ text = "Stubbornly stay independent", effects = { Happiness = 3, Health = -5 }, setFlags = { fiercely_independent = true }, feedText = "You'll manage on your own, thank you very much!" },
 		},
 	},

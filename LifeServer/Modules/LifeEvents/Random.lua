@@ -2640,10 +2640,11 @@ Random.events = {
 		cooldown = 6, -- CRITICAL FIX: Increased to prevent spam
 		category = "homeless",
 		tags = { "eviction", "housing", "financial" },
-		-- CRITICAL FIX: Only triggers for people with bum_life flag AND low money
-		-- This prevents rich players from getting eviction notices!
-		requiresFlags = { bum_life = true },
-		blockedByFlags = { homeless = true, evicted = true },
+	-- CRITICAL FIX: Only triggers for people with bum_life flag AND low money
+	-- This prevents rich players from getting eviction notices!
+	requiresFlags = { bum_life = true },
+	-- CRITICAL FIX: Can't be evicted if living with family!
+	blockedByFlags = { homeless = true, evicted = true, lives_with_parents = true, living_with_family = true, boomerang_kid = true },
 		-- CRITICAL FIX: Custom eligibility check to ensure player is actually broke
 		eligibility = function(state)
 			local money = state.Money or 0
@@ -2655,21 +2656,29 @@ Random.events = {
 		end,
 
 		choices = {
-			{ 
-				text = "Beg family for help", 
-				effects = { Happiness = -8 }, 
-				feedText = "You swallowed your pride and asked family for help.",
-				onResolve = function(state)
-					if math.random() < 0.6 then
-						state.Money = (state.Money or 0) + 500
-						state:AddFeed("💕 Your family helped you out this time...")
-					else
-						state.Flags.homeless = true
-						state.Flags.at_risk_homeless = nil
-						state:AddFeed("😢 They couldn't help. You're on the streets now.")
-					end
-				end,
-			},
+		{ 
+			text = "Beg family for help", 
+			effects = { Happiness = -8 }, 
+			feedText = "You swallowed your pride and asked family for help.",
+			-- CRITICAL FIX: Can't beg family if already living with them!
+			eligibility = function(state)
+				local flags = state.Flags or {}
+				if flags.lives_with_parents or flags.living_with_family or flags.boomerang_kid then
+					return false, "You already live with your family!"
+				end
+				return true
+			end,
+			onResolve = function(state)
+				if math.random() < 0.6 then
+					state.Money = (state.Money or 0) + 500
+					state:AddFeed("💕 Your family helped you out this time...")
+				else
+					state.Flags.homeless = true
+					state.Flags.at_risk_homeless = nil
+					state:AddFeed("😢 They couldn't help. You're on the streets now.")
+				end
+			end,
+		},
 			{ 
 				text = "Try to find any job fast", 
 				effects = { Happiness = -5 },
