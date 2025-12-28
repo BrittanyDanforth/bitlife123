@@ -1518,19 +1518,32 @@ Relationships.events = {
 	},
 	{
 		id = "toxic_friendship",
-		title = "Toxic Friendship",
+		title = "Toxic Friend Behavior",
 		emoji = "☢️",
-		text = "A friendship has become toxic and draining.",
-		question = "What do you do?",
+		-- PERSONALIZATION: Now uses actual friend name via template
+		text = "{{FRIEND_NAME}} has been acting really poorly lately - gossiping, being negative, or taking advantage of you.",
+		question = "What do you do about this friendship?",
 		minAge = 15, maxAge = 60,
-		baseChance = 0.55,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
-
+		baseChance = 0.45,
+		cooldown = 5,
+		category = "relationships",
+		tags = { "friendship", "drama", "conflict" },
+		-- Only show if player actually has friends
+		eligibility = function(state)
+			local rels = state.Relationships or {}
+			for _, rel in pairs(rels) do
+				if rel.type == "friend" and rel.alive ~= false then
+					return true
+				end
+			end
+			return false, "No friends to have drama with"
+		end,
+		blockedByFlags = { in_prison = true },
 		choices = {
 			{ text = "Cut them off completely", effects = { Happiness = 5, Health = 3 }, setFlags = { ended_toxic_friendship = true }, feedText = "You're free from that negativity!" },
 			{ text = "Distance yourself gradually", effects = { Happiness = 3 }, feedText = "You're slowly pulling away." },
-			{ text = "Try to fix the friendship", effects = { Happiness = -3, Smarts = 2 }, feedText = "You're trying to work it out." },
-			{ text = "Keep enabling the toxicity", effects = { Happiness = -8, Health = -3 }, feedText = "This friendship is draining you." },
+			{ text = "Have an honest conversation", effects = { Happiness = 2, Smarts = 2 }, feedText = "You talked it out. Time will tell if things improve." },
+			{ text = "Keep putting up with it", effects = { Happiness = -8, Health = -3 }, feedText = "This friendship is draining you." },
 		},
 	},
 	{

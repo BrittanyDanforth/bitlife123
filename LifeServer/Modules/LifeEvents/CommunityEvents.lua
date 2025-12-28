@@ -30,8 +30,9 @@ CommunityEvents.events = {
 		-- CRITICAL: Random neighbor outcome
 		choices = {
 			{
-				text = "Bring them a welcome gift",
+				text = "Bring them a welcome gift ($20)",
 				effects = { Money = -20 },
+				eligibility = function(state) return (state.Money or 0) >= 20, "Can't afford a gift right now" end,
 				feedText = "Knocking on their door...",
 				onResolve = function(state)
 					local roll = math.random()
@@ -124,9 +125,10 @@ CommunityEvents.events = {
 		
 		choices = {
 			{
-				text = "Help organize and host",
+				text = "Help organize and host ($30)",
 				effects = { Money = -30 },
 				feedText = "Setting up the party...",
+				eligibility = function(state) return (state.Money or 0) >= 30, "Need $30 to help with supplies" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.70 then

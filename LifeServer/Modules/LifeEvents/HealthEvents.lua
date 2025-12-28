@@ -572,9 +572,10 @@ HealthEvents.events = {
 		-- CRITICAL: Random therapy progress
 		choices = {
 			{
-				text = "Have a breakthrough session",
+				text = "Have a breakthrough session ($80)",
 				effects = { Money = -80 },
 				feedText = "Processing in therapy...",
+				eligibility = function(state) return (state.Money or 0) >= 80, "💸 Can't afford this session ($80 needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.40 then
@@ -594,6 +595,8 @@ HealthEvents.events = {
 					end
 				end,
 			},
+			{ text = "Skip this week - can't afford it", effects = { Happiness = -2 }, feedText = "🛋️ Missed a session. Financial stress affecting mental health." },
+			{ text = "Try self-help techniques instead (free)", effects = { Happiness = 3, Smarts = 1 }, feedText = "🛋️ Journaling, deep breathing, applying what you've learned." },
 		},
 	},
 	{
@@ -917,9 +920,10 @@ HealthEvents.events = {
 				feedText = "💉 Diabetes diagnosis. Started insulin and lifestyle changes.",
 			},
 			{
-				text = "Get second opinion",
+				text = "Get second opinion ($200)",
 				effects = { Money = -200, Happiness = -3 },
 				feedText = "💉 Second doctor confirmed. You have diabetes.",
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Can't afford second opinion ($200 needed)" end,
 				onResolve = function(state)
 					state.Flags = state.Flags or {}
 					state.Flags.diabetes = true
@@ -974,19 +978,20 @@ HealthEvents.events = {
 		
 		choices = {
 			{
-				text = "Start treatment immediately",
+				text = "Start treatment immediately ($500)",
 				effects = { Happiness = -10, Money = -500, Health = -15 },
 				setFlags = { heart_disease = true, chronic_illness = true, on_heart_medication = true },
 				feedText = "❤️‍🩹 Heart disease diagnosed. On medication and strict diet now.",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Can't afford treatment ($500 needed)" end,
 			},
 			{
 				text = "Get bypass surgery if needed ($5,000)",
 				effects = { Happiness = -15, Money = -5000, Health = 5 },
 				setFlags = { heart_disease = true, had_heart_surgery = true },
 				feedText = "❤️‍🩹 Underwent heart surgery. Long recovery ahead.",
-				-- BUG FIX #2: Add eligibility check for surgery cost
 				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Can't afford surgery ($5,000 needed)" end,
 			},
+			{ text = "Try lifestyle changes only (free but risky)", effects = { Happiness = -5, Health = -20 }, setFlags = { heart_disease = true, untreated_heart_condition = true }, feedText = "❤️‍🩹 No treatment. Trying diet and exercise only. Very risky choice." },
 		},
 	},
 	{
@@ -1297,17 +1302,20 @@ HealthEvents.events = {
 		
 		choices = {
 			{
-				text = "Start treatment",
+				text = "Start treatment ($100)",
 				effects = { Money = -100, Happiness = 5 },
 				setFlags = { anxiety = true, mental_illness = true, anxiety_treatment = true },
 				feedText = "😰 Anxiety diagnosed. Starting therapy and learning coping strategies.",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Can't afford treatment ($100 needed)" end,
 			},
 			{
-				text = "Try medication",
+				text = "Try medication ($50)",
 				effects = { Money = -50, Happiness = 3, Health = 1 },
 				setFlags = { anxiety = true, on_anxiety_meds = true },
 				feedText = "😰 Anti-anxiety medication prescribed. Taking the edge off.",
+				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Can't afford medication ($50 needed)" end,
 			},
+			{ text = "Try to manage it without treatment", effects = { Happiness = -5 }, setFlags = { anxiety = true, untreated_anxiety = true }, feedText = "😰 Trying to cope on your own. Breathing exercises, research, self-help." },
 		},
 	},
 	-- REMOVED: STI and HIV events (inappropriate for Roblox)
@@ -1345,13 +1353,14 @@ HealthEvents.events = {
 		
 		choices = {
 			{
-				text = "Take antibiotics as prescribed",
+				text = "Take antibiotics as prescribed ($100)",
 				effects = { Money = -100, Happiness = -5, Health = 10 },
 				setFlags = { recovering_from_infection = true },
 				feedText = "🦠 Infection treated with antibiotics. Feeling better!",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Can't afford antibiotics ($100 needed)" end,
 			},
 			{
-				text = "Try to tough it out",
+				text = "Try to tough it out (free but risky)",
 				effects = { Health = -10, Happiness = -8 },
 				setFlags = { untreated_infection = true },
 				feedText = "🦠 The infection lingered. Should have taken the medicine.",
@@ -1431,19 +1440,20 @@ HealthEvents.events = {
 		
 		choices = {
 			{
-				text = "Get it set and wear the cast",
+				text = "Get it set and wear the cast ($500)",
 				effects = { Money = -500, Health = -5, Happiness = -5 },
 				setFlags = { broken_bone = true, in_cast = true },
 				feedText = "🦴 Bone set, cast on. 6 weeks of limited mobility.",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Can't afford hospital visit ($500 needed)" end,
 			},
 			{
 				text = "Surgery if needed ($3,000)",
 				effects = { Money = -3000, Health = 5, Happiness = -8 },
 				setFlags = { had_bone_surgery = true },
 				feedText = "🦴 Needed surgery to fix properly. Pins and plates inserted.",
-				-- BUG FIX #5: Add eligibility check for surgery cost
 				eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Can't afford surgery ($3,000 needed)" end,
 			},
+			{ text = "Try to heal it yourself (risky - free)", effects = { Health = -15, Happiness = -10 }, setFlags = { broken_bone = true, untreated_injury = true }, feedText = "🦴 No doctor. Hoping it heals right. Risky move." },
 		},
 	},
 	{

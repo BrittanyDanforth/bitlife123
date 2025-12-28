@@ -85,9 +85,13 @@ FamilyEvents.events = {
 		choices = {
 			{
 				text = "Welcome the new arrival",
-				effects = { Money = -1000 },
+				effects = {},  -- Handle costs in onResolve based on what player has
 				feedText = "In the delivery room...",
 				onResolve = function(state)
+					-- Take hospital costs proportionally - poor players pay less
+					local currentMoney = state.Money or 0
+					local hospitalCost = math.min(1000, math.max(100, math.floor(currentMoney * 0.2)))
+					state.Money = math.max(0, currentMoney - hospitalCost)
 					local roll = math.random()
 					
 					-- CRITICAL FIX: Create child relationship
@@ -359,9 +363,10 @@ FamilyEvents.events = {
 		-- CRITICAL: Random family reunion outcome
 		choices = {
 			{
-				text = "Go and participate",
+				text = "Go and participate ($50)",
 				effects = { Money = -50 },
 				feedText = "At the family reunion...",
+				eligibility = function(state) return (state.Money or 0) >= 50, "Can't afford travel costs" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.50 then
