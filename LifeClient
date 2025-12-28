@@ -1082,14 +1082,13 @@ local function createResultPopup()
 	ResultUI.shadow.BackgroundColor3 = C.Black
 	ResultUI.shadow.BackgroundTransparency = 0.92
 	ResultUI.shadow.ZIndex = 81
-	ResultUI.shadow.ClipsDescendants = true  -- CRITICAL FIX: Clip overflow
+	ResultUI.shadow.ClipsDescendants = false  -- BUG FIX: Don't clip - scale instead!
 	ResultUI.shadow.Parent = ResultUI.overlay
 	corner(ResultUI.shadow, Device.IS_TINY_PHONE and 14 or px(28))
 	
-	-- CRITICAL FIX: Add max height constraint to prevent modal from going off screen
-	local resultSizeConstraint = Instance.new("UISizeConstraint")
-	resultSizeConstraint.MaxSize = Vector2.new(popupWidth, maxPopupHeight)
-	resultSizeConstraint.Parent = ResultUI.shadow
+	-- BUG FIX: Store max height for scaling calculation (no UISizeConstraint - we scale instead)
+	ResultUI.maxPopupHeight = maxPopupHeight
+	ResultUI.popupWidth = popupWidth
 
 	-- Green/Red shell - thinner on tiny phones
 	local shellMargin = Device.IS_TINY_PHONE and 2 or 6
@@ -1217,6 +1216,10 @@ end
 hideResultPopup = function()
 	if not ResultUI.overlay then return end
 	resultVisible = false
+	
+	-- BUG FIX: Remove scale before hiding (reset for next popup)
+	local oldScale = ResultUI.shadow:FindFirstChild("ResultScale")
+	if oldScale then oldScale:Destroy() end
 
 	tween(ResultUI.shadow, TweenInfo.new(0.2), {
 		Position = UDim2.new(0.5, 0, 0.5, 40),
@@ -1437,6 +1440,33 @@ local function showResultPopup(data, callback)
 	ResultUI.shadow.BackgroundTransparency = 1
 	ResultUI.shell.BackgroundTransparency = 1
 	ResultUI.card.BackgroundTransparency = 1
+	
+	-- BUG FIX: Scale down if content is too tall (instead of clipping)
+	-- User report: "I CANT SEE THE GREEN OK BUTTON"
+	task.defer(function()
+		if not ResultUI.shadow then return end
+		
+		-- Wait a frame for AutomaticSize to calculate
+		task.wait()
+		
+		local actualHeight = ResultUI.shadow.AbsoluteSize.Y
+		local maxHeight = ResultUI.maxPopupHeight or 500
+		
+		-- Remove old UIScale if exists
+		local oldScale = ResultUI.shadow:FindFirstChild("ResultScale")
+		if oldScale then oldScale:Destroy() end
+		
+		if actualHeight > maxHeight then
+			-- Calculate scale factor to fit
+			local scaleFactor = maxHeight / actualHeight
+			scaleFactor = math.max(0.65, scaleFactor) -- Never scale below 65%
+			
+			local uiScale = Instance.new("UIScale")
+			uiScale.Name = "ResultScale"
+			uiScale.Scale = scaleFactor
+			uiScale.Parent = ResultUI.shadow
+		end
+	end)
 
 	tween(ResultUI.shadow, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
 		Position = UDim2.fromScale(0.5, 0.5),
@@ -3104,21 +3134,21 @@ local function buildEventModal()
 	EventUI.shadowFrame.Parent = EventUI.overlay
 	corner(EventUI.shadowFrame, eventCornerRadius)
 	
-	-- Add size constraint to prevent modal from being too tall
-	local eventSizeConstraint = Instance.new("UISizeConstraint")
-	eventSizeConstraint.MaxSize = Vector2.new(eventWidth, maxEventHeight)
-	eventSizeConstraint.Parent = EventUI.shadowFrame
+	-- BUG FIX: Store max height for scaling - don't use UISizeConstraint which clips
+	-- User report: "TOP OF CARD AND BOTTOM WHERE IT SAYS ROYALTY BUTTON ARE CUT OFF"
+	EventUI.maxEventHeight = maxEventHeight
+	EventUI.eventWidth = eventWidth
 	
-	-- CRITICAL FIX: Enable clipping on shadowFrame to prevent visual overflow
-	EventUI.shadowFrame.ClipsDescendants = true
+	-- BUG FIX: Don't clip - we'll scale instead
+	EventUI.shadowFrame.ClipsDescendants = false
 
 	-- Shell: autosize height (no Y scale) - fixes button overflow
 	EventUI.shell = Instance.new("Frame")
 	EventUI.shell.Name = "EventShell"
 	EventUI.shell.Size = UDim2.new(1, -shellMargin, 0, 0)
 	EventUI.shell.AutomaticSize = Enum.AutomaticSize.Y
-	-- CRITICAL FIX: Shell must also clip to prevent overflow
-	EventUI.shell.ClipsDescendants = true
+	-- BUG FIX: Don't clip - we scale to fit instead
+	EventUI.shell.ClipsDescendants = false
 	EventUI.shell.Position = UDim2.new(0, shellMargin/2, 0, shellMargin/2)
 	EventUI.shell.BackgroundColor3 = C.Red
 	EventUI.shell.ZIndex = 62
@@ -4902,6 +4932,33 @@ showEvent = function(payload)
 		EventUI.shadowFrame.BackgroundTransparency = 1
 		EventUI.shell.BackgroundTransparency = 1
 		EventUI.card.BackgroundTransparency = 1
+		
+		-- BUG FIX: Scale down if content is too tall (instead of clipping)
+		-- User report: "TOP OF CARD AND BOTTOM ARE CUT OFF" on long cards
+		task.defer(function()
+			if not EventUI.shadowFrame then return end
+			
+			-- Wait a frame for AutomaticSize to calculate
+			task.wait()
+			
+			local actualHeight = EventUI.shadowFrame.AbsoluteSize.Y
+			local maxHeight = EventUI.maxEventHeight or 550
+			
+			-- Remove old UIScale if exists
+			local oldScale = EventUI.shadowFrame:FindFirstChild("EventScale")
+			if oldScale then oldScale:Destroy() end
+			
+			if actualHeight > maxHeight then
+				-- Calculate scale factor to fit
+				local scaleFactor = maxHeight / actualHeight
+				scaleFactor = math.max(0.60, scaleFactor) -- Never scale below 60%
+				
+				local uiScale = Instance.new("UIScale")
+				uiScale.Name = "EventScale"
+				uiScale.Scale = scaleFactor
+				uiScale.Parent = EventUI.shadowFrame
+			end
+		end)
 
 		tween(EventUI.shadowFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
 			Position = UDim2.fromScale(0.5, 0.5),
@@ -4923,6 +4980,10 @@ end
 hideEvent = function()
 	awaitingEvent  = false
 	EventUI.currentEventId = nil
+	
+	-- BUG FIX: Remove scale before hiding (reset for next event)
+	local oldScale = EventUI.shadowFrame:FindFirstChild("EventScale")
+	if oldScale then oldScale:Destroy() end
 
 	-- Create the hide tween and track it
 	EventUI.currentHideTween = tween(EventUI.shadowFrame, TweenInfo.new(0.2), {
