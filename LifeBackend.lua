@@ -9250,7 +9250,8 @@ function LifeBackend:handleRoyalDuty(player, dutyId)
 	end
 	
 	local message = string.format("%s Completed: %s (+%d popularity)", duty.emoji, duty.name, popGain)
-	appendFeed(state, message)
+	-- CRITICAL FIX: Only pushState, don't appendFeed (avoid duplicate message)
+	-- appendFeed would show again at next age-up
 	self:pushState(player, message)
 	
 	return { 
@@ -9288,7 +9289,7 @@ function LifeBackend:handleAbdication(player)
 	state.Flags.former_monarch = true
 	
 	local message = "👑 You have abdicated the throne! The nation is shocked."
-	appendFeed(state, message)
+	-- CRITICAL FIX: Only pushState, don't appendFeed (avoid duplicate message)
 	self:pushState(player, message)
 	
 	return { success = true, message = message }
@@ -13506,10 +13507,12 @@ function LifeBackend:presentEvent(player, eventDef, feedText)
 	-- Problem: Living expenses were deducted but client still showed OLD money
 	-- So player thought they had $400 but actually had $0 after expenses!
 	-- Solution: Push state FIRST so player sees their ACTUAL balance
+	-- NOTE: Pass nil for feedText - PresentEvent will add it to feed (avoid duplicate!)
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	self:pushState(player, feedText)
+	self:pushState(player, nil)
 	
 	-- Now show the event (player can see their actual money when making choice)
+	-- feedText is passed here and PresentEvent handler will add it to feed
 	self.remotes.PresentEvent:FireClient(player, eventPayload, feedText)
 end
 
@@ -13607,9 +13610,9 @@ function LifeBackend:presentEventForRetry(player, eventDef, existingEventId)
 	end
 	
 	-- Don't update pendingEvents - it should already have this event stored
-	-- Push state first so money display is current
-	self:pushState(player, "Pick a different option!")
-	-- Then re-send the event to the client
+	-- Push state first so money display is current (nil to avoid duplicate feed message)
+	self:pushState(player, nil)
+	-- Then re-send the event to the client (PresentEvent adds the feed message)
 	self.remotes.PresentEvent:FireClient(player, eventPayload, "Pick a different option!")
 	debugPrint("[LifeBackend] Re-presented event for retry:", eventId)
 end
