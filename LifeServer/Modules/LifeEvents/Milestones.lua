@@ -453,6 +453,25 @@ Milestones.events = {
 				feedText = "Investing in your education!",
 				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5K for grad school" end,
 			},
+			{
+				-- CRITICAL FIX: Add student loan option so players aren't locked out!
+				text = "Get student loans for grad school",
+				effects = { Smarts = 6 },
+				setFlags = { college_grad = true, bachelor_degree = true, grad_school = true, pursuing_graduate = true, has_student_loans = true, student_loans = true },
+				feedText = "Taking on debt for education. Hope it pays off!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.student_loan_amount = (state.Flags.student_loan_amount or 0) + 15000
+					state:AddFeed("📚 Took $15K in student loans for grad school. Monthly payments start after graduation.")
+				end,
+			},
+			{
+				-- CRITICAL FIX: Add free option - enter workforce instead
+				text = "Enter workforce with bachelor's",
+				effects = { Happiness = 5 },
+				setFlags = { college_grad = true, bachelor_degree = true },
+				feedText = "Ready to start earning! No more school for now.",
+			},
 		},
 	},
 	{
@@ -1608,6 +1627,28 @@ Milestones.events = {
 					saving_for_apartment = true,
 				}, 
 				feedText = "🏠 Staying with family a bit longer. Smart financial move. No rush!",
+				-- CRITICAL FIX: Can't stay with parents if they're dead!
+				eligibility = function(state)
+					local flags = state.Flags or {}
+					if flags.orphan or flags.lost_both_parents then
+						return false, "Your parents have passed away"
+					end
+					if state.Relationships then
+						local hasLivingParent = false
+						for id, rel in pairs(state.Relationships) do
+							if rel and (rel.role == "Mother" or rel.role == "Father" or rel.type == "parent") then
+								if rel.alive ~= false and rel.deceased ~= true then
+									hasLivingParent = true
+									break
+								end
+							end
+						end
+						if not hasLivingParent then
+							return false, "Your parents have passed away"
+						end
+					end
+					return true
+				end,
 			},
 		},
 	},

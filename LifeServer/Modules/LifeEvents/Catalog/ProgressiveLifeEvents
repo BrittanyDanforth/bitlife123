@@ -1175,28 +1175,31 @@ ProgressiveLifeEvents.events = {
 		tags = { "fitness", "health", "lifestyle" },
 		choices = {
 			{
-				text = "Join a gym",
+				-- CRITICAL FIX: Show price in text and add eligibility check!
+				-- User complaint: "FITNESS JOURNEY SAYS JOIN A GYM AND ITS PAID BUT DOSENT SHOW THE AMT"
+				text = "Join a gym ($50/month)",
 				effects = { Health = 5, Money = -50 },
 				setFlags = { gym_member = true },
-				feedText = "Time to pump some iron! You joined a gym.",
+				feedText = "💪 Time to pump some iron! You joined a gym.",
+				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 for gym membership" end,
 			},
 			{
-				text = "Take up running",
+				text = "Take up running (free!)",
 				effects = { Health = 5, Happiness = 2 },
 				setFlags = { runner = true },
-				feedText = "You started running! It's free and effective.",
+				feedText = "💪 You started running! It's free and effective.",
 			},
 			{
-				text = "Try yoga/pilates",
+				text = "Try yoga at home (free!)",
 				effects = { Health = 4, Happiness = 3 },
 				setFlags = { yoga_practitioner = true },
-				feedText = "Flexibility and mindfulness combined. Namaste!",
+				feedText = "💪 Flexibility and mindfulness combined. Namaste!",
 			},
 			{
-				text = "Workout at home",
+				text = "Workout at home (free!)",
 				effects = { Health = 4 },
 				setFlags = { home_workout = true },
-				feedText = "YouTube workouts and pushups. No excuses!",
+				feedText = "💪 YouTube workouts and pushups. No excuses!",
 			},
 		},
 	},

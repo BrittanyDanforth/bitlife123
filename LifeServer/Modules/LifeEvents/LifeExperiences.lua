@@ -411,9 +411,11 @@ LifeExperiences.events = {
 				end,
 			},
 			{
-				text = "Take lessons/courses",
+				-- CRITICAL FIX: Show price and add eligibility!
+				text = "Take lessons/courses ($100)",
 				effects = { Money = -100 },
 				feedText = "Investing in education...",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for lessons" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.70 then
@@ -793,9 +795,11 @@ LifeExperiences.events = {
 			end,
 		},
 			{
-				text = "Make it right financially",
+				-- CRITICAL FIX: Show price and add eligibility!
+				text = "Pay to make it right ($1,000)",
 				effects = { Money = -1000 },
 				feedText = "Money talks...",
+				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 to make amends" end,
 				onResolve = function(state)
 					state:ModifyStat("Happiness", 5)
 					state.Flags.betrayed_friend = nil
@@ -948,14 +952,18 @@ LifeExperiences.events = {
 		
 		choices = {
 			{
-				text = "Keep moving - new city",
+				-- CRITICAL FIX: Show price and add eligibility!
+				text = "Keep moving - new city ($500)",
 				effects = { Happiness = -3, Money = -500 },
 				feedText = "🏃 Another bus ticket. Another cheap motel. The running never stops.",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for travel" end,
 			},
 			{
-				text = "Get fake papers",
+				-- CRITICAL FIX: Show price and add eligibility!
+				text = "Get fake papers ($2,000)",
 				effects = { Money = -2000 },
 				feedText = "Buying a new identity...",
+				eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2,000 for papers" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.6 then
@@ -1253,9 +1261,22 @@ LifeExperiences.events = {
 		
 		choices = {
 			{
-				text = "Everything breaks down",
-				effects = { Happiness = -8, Money = -500 },
-				feedText = "⚡ Car troubles, phone died, lost wallet. All in the same day. The universe is sending a message.",
+				-- CRITICAL FIX: This is a CONSEQUENCE not a choice - reframe it
+				-- Player doesn't "choose" for everything to break down
+				text = "Everything keeps breaking down",
+				effects = { Happiness = -8 },
+				feedText = "⚡ Car troubles, phone died, lost wallet. The universe is sending a message.",
+				onResolve = function(state)
+					-- Randomly lose some money if they have it
+					local money = state.Money or 0
+					if money > 100 then
+						local loss = math.min(500, math.floor(money * 0.2))
+						state.Money = money - loss
+						state:AddFeed(string.format("💸 Lost $%d dealing with all the problems!", loss))
+					else
+						state:AddFeed("😭 Everything is falling apart and you can't afford to fix it!")
+					end
+				end,
 			},
 			{
 				text = "Public humiliation",

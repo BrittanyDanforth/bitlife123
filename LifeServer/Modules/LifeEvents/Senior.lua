@@ -1144,10 +1144,12 @@ Senior.events = {
         
         choices = {
             { 
-                text = "Big family celebration", 
+                -- CRITICAL FIX: Show price!
+                text = "Big family celebration ($500)", 
                 effects = { Happiness = 15, Money = -500 }, 
                 setFlags = { celebrated_80 = true }, 
-                feedText = "Everyone came together to honor you!" 
+                feedText = "Everyone came together to honor you!",
+                eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for celebration" end,
             },
             { 
                 text = "Quiet reflection", 

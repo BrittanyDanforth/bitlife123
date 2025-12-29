@@ -125,6 +125,33 @@ Adult.events = {
 					-- CRITICAL: Do NOT set moved_out, has_apartment, etc.
 				},
 				feedText = "You're staying home. Smart financially, but maybe a bit cramped.",
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				-- CRITICAL FIX: Can't stay with parents if they're dead!
+				-- User complaint: "IT SAYS LIVING WITH PARENTS BUT MY PARENTS ARE DEAD"
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				eligibility = function(state)
+					local flags = state.Flags or {}
+					-- Check if both parents are dead
+					if flags.orphan or flags.lost_both_parents then
+						return false, "Your parents have passed away"
+					end
+					-- Check Relationships for living parents
+					if state.Relationships then
+						local hasLivingParent = false
+						for id, rel in pairs(state.Relationships) do
+							if rel and (rel.role == "Mother" or rel.role == "Father" or rel.type == "parent") then
+								if rel.alive ~= false and rel.deceased ~= true then
+									hasLivingParent = true
+									break
+								end
+							end
+						end
+						if not hasLivingParent then
+							return false, "Your parents have passed away"
+						end
+					end
+					return true
+				end,
 				onResolve = function(state)
 					state.HousingState = state.HousingState or {}
 					state.HousingState.status = "with_parents"
@@ -2224,10 +2251,30 @@ Adult.events = {
 		minAge = 60, maxAge = 95,
 		oneTime = true,
 
+		-- CRITICAL FIX: Dynamic charity donation based on player's actual wealth!
 		choices = {
 			{ text = "Everything split equally among children", effects = { Happiness = 5 }, setFlags = { has_will = true }, feedText = "Fair and simple. Fewer arguments later." },
 			{ text = "Leave more to those who need it", effects = { Happiness = 3 }, setFlags = { has_will = true }, feedText = "You considered each person's situation." },
-			{ text = "Donate much of it to charity ($5,000)", effects = { Happiness = 10, Money = -5000 }, setFlags = { has_will = true, charitable_legacy = true }, feedText = "Your wealth will help many causes.", eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 to donate" end },
+			{ 
+				text = "Donate most of it to charity", 
+				effects = { Happiness = 10 }, 
+				setFlags = { has_will = true, charitable_legacy = true }, 
+				feedText = "Your wealth will help many causes.",
+				eligibility = function(state) 
+					local money = state.Money or 0
+					if money < 1000 then
+						return false, "💸 Need at least $1,000 to donate"
+					end
+					return true 
+				end,
+				onResolve = function(state)
+					-- CRITICAL FIX: Donate 60% of player's money, not a hardcoded $5000!
+					local money = state.Money or 0
+					local donation = math.floor(money * 0.6)
+					state.Money = money - donation
+					state:AddFeed(string.format("📜 You donated $%s to charity. Your legacy will help many!", tostring(donation)))
+				end,
+			},
 			{ text = "Leave it all to one person", effects = { Happiness = -2 }, setFlags = { has_will = true, contentious_will = true }, feedText = "This might cause family drama later..." },
 		},
 	},
@@ -2392,9 +2439,17 @@ Adult.events = {
 				end,
 			},
 			{
-				text = "Use public transit/rideshare instead",
+				-- CRITICAL FIX: Show the cost!
+				text = "Use public transit/rideshare ($100)",
 				effects = { Money = -100, Happiness = -2 },
 				feedText = "Getting by without the car for now...",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for transit/rideshare" end,
+			},
+			{
+				-- CRITICAL FIX: Add a FREE option so players aren't hard-locked!
+				text = "Walk or bike everywhere",
+				effects = { Health = 3, Happiness = -3 },
+				feedText = "Getting fit but transportation is tough!",
 			},
 		},
 	},
@@ -3389,11 +3444,14 @@ Adult.events = {
 		},
 	},
 	{
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Made inheritance a TRUE SURPRISE - player doesn't choose!
+		-- User complaint: "SUPRISE INHERITANCE ISNT A SUPRISE CUZ ITS LEGIT LETTING ME CHOOSE"
+		-- Now the inheritance amount is determined randomly and shown directly in text!
+		-- ═══════════════════════════════════════════════════════════════════════════════
 		id = "unexpected_inheritance",
-		title = "💌 A Letter From The Past",
+		title = "💌 Surprise Inheritance!",
 		emoji = "📜",
-		text = "A lawyer contacts you. A distant relative you barely knew has passed away, and they left something for you in their will...",
-		question = "What did they leave you?",
 		minAge = 25, maxAge = 70,
 		baseChance = 0.12,
 		cooldown = 25,
@@ -3401,36 +3459,74 @@ Adult.events = {
 		category = "money",
 		tags = { "inheritance", "surprise", "family", "money" },
 		blockedByFlags = { in_prison = true, got_inheritance = true },
+		
+		-- Dynamic text showing the actual inheritance amount!
+		preProcess = function(state, eventDef)
+			local roll = math.random()
+			local amount = 0
+			local itemDesc = ""
+			local reaction = ""
+			
+			if roll < 0.15 then
+				amount = 500000
+				itemDesc = "their entire estate - $500,000!"
+				reaction = "You're RICH! Life-changing money!"
+			elseif roll < 0.35 then
+				amount = 75000
+				itemDesc = "a nice sum - $75,000!"
+				reaction = "What a generous surprise!"
+			elseif roll < 0.55 then
+				amount = 15000
+				itemDesc = "$15,000 in savings!"
+				reaction = "Better than nothing!"
+			elseif roll < 0.75 then
+				amount = 5000
+				itemDesc = "an old antique worth about $5,000!"
+				reaction = "It might be worth something!"
+			else
+				amount = 500
+				itemDesc = "a box of old photographs and $500 for 'safekeeping'."
+				reaction = "Mostly sentimental value..."
+			end
+			
+			-- Store the amount for onComplete
+			state._inheritanceAmount = amount
+			
+			eventDef.text = string.format("A lawyer contacts you with unexpected news! A distant relative you barely knew has passed away, and they left you %s", itemDesc)
+			eventDef.question = string.format("%s How do you feel?", reaction)
+			return true
+		end,
+		
 		choices = {
 			{
-				text = "Open the will anxiously",
-				effects = {},
+				text = "Wow! Thank you, Great Uncle!",
+				effects = { Happiness = 15 },
 				setFlags = { got_inheritance = true },
-				feedText = "Reading the will...",
+				feedText = "What an unexpected blessing!",
 				onResolve = function(state)
-					local roll = math.random()
+					local amount = state._inheritanceAmount or 15000
+					state.Money = (state.Money or 0) + amount
+					state._inheritanceAmount = nil
 					state.Flags = state.Flags or {}
-					if roll < 0.2 then
-						state.Money = (state.Money or 0) + 500000
-						state:ModifyStat("Happiness", 35)
+					state.Flags.got_inheritance = true
+					if amount >= 100000 then
 						state.Flags.wealthy_inheritance = true
-						state:AddFeed("💰 WHAT?! They left you $500,000! You're rich!")
-					elseif roll < 0.4 then
-						state.Money = (state.Money or 0) + 75000
-						state:ModifyStat("Happiness", 20)
-						state:AddFeed("💰 A nice surprise! They left you $75,000!")
-					elseif roll < 0.6 then
-						state.Money = (state.Money or 0) + 15000
-						state:ModifyStat("Happiness", 10)
-						state:AddFeed("💰 They left you $15,000. Better than nothing!")
-					elseif roll < 0.8 then
-						state:ModifyStat("Happiness", 5)
-						state.Flags.inherited_antique = true
-						state:AddFeed("🏺 They left you an antique! Might be worth something...")
-					else
-						state:ModifyStat("Happiness", -3)
-						state:AddFeed("📦 They left you... a box of old photographs. Sentimental value only.")
 					end
+					state:AddFeed(string.format("💰 Inherited $%s from a distant relative!", tostring(amount)))
+				end,
+			},
+			{
+				text = "I wish I'd known them better...",
+				effects = { Happiness = 5 },
+				setFlags = { got_inheritance = true },
+				feedText = "Bittersweet feelings about the loss.",
+				onResolve = function(state)
+					local amount = state._inheritanceAmount or 15000
+					state.Money = (state.Money or 0) + amount
+					state._inheritanceAmount = nil
+					state.Flags = state.Flags or {}
+					state.Flags.got_inheritance = true
+					state:AddFeed(string.format("💰 Inherited $%s. You regret not knowing them better.", tostring(amount)))
 				end,
 			},
 		},
@@ -3548,10 +3644,12 @@ Adult.events = {
 		blockedByFlags = { in_prison = true },
 		choices = {
 			{
-				text = "Help them generously",
+				-- CRITICAL FIX: Show price in button text and add eligibility check!
+				text = "Help them generously ($50)",
 				effects = { Happiness = 10, Money = -50 },
 				setFlags = { kind_soul = true },
 				feedText = "You helped and it felt amazing.",
+				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 to help generously" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.3 then
@@ -3682,10 +3780,11 @@ Adult.events = {
 				end,
 			},
 			{
-				text = "Safari in Africa!",
+				-- CRITICAL FIX: Show price in text!
+				text = "Safari in Africa ($3,000)!",
 				effects = { Money = -3000, Happiness = 25 },
 				setFlags = { adventurer = true, safari_done = true },
-				feedText = "The wild calls!",
+				feedText = "The wild calls! Lions and elephants!",
 				eligibility = function(state)
 					if (state.Money or 0) < 3000 then
 						return false, "Can't afford the $3,000 safari trip"

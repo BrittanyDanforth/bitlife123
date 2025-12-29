@@ -214,27 +214,28 @@ SeasonalEvents.events = {
 		tags = { "allergies", "spring", "health" },
 		
 		-- CRITICAL: Random allergy severity
+		-- CRITICAL FIX: Changed "Antihistamines" to "allergy medicine" - kid-friendly language!
 		choices = {
 			{
-				text = "Antihistamines and push through ($20)",
+				text = "Take allergy medicine ($20)",
 				effects = { Money = -20 },
-				feedText = "Medicating...",
-				eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20 for meds" end,
+				feedText = "Taking medicine...",
+				eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20 for medicine" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.55 then
 						state:ModifyStat("Happiness", 3)
-						state:AddFeed("🤧 Meds working! Manageable allergies!")
+						state:AddFeed("🤧 Medicine working! Feeling much better!")
 					else
 						state:ModifyStat("Happiness", -4)
 						state:ModifyStat("Health", -2)
-						state:AddFeed("🤧 Meds barely help. Miserable. When will pollen stop?")
+						state:AddFeed("🤧 Medicine barely helps. Still sneezing. Ugh!")
 					end
 				end,
 			},
 			{ text = "Stay indoors", effects = { Happiness = 1, Health = 1 }, feedText = "🤧 Missing the nice weather but at least not sneezing." },
-			{ text = "Natural remedies ($30)", effects = { Happiness = 4, Health = 2, Money = -30 }, feedText = "🤧 Local honey, neti pot, supplements. Actually helping!", eligibility = function(state) return (state.Money or 0) >= 30, "💸 Need $30" end },
-		{ text = "Suffer through it", effects = { Happiness = -2, Health = -1 }, feedText = "🤧 Sneezing and miserable but saving money." },
+			{ text = "Try home remedies ($30)", effects = { Happiness = 4, Health = 2, Money = -30 }, feedText = "🤧 Honey, tea, and rest. Actually helping!", eligibility = function(state) return (state.Money or 0) >= 30, "💸 Need $30" end },
+			{ text = "Just deal with it", effects = { Happiness = -2, Health = -1 }, feedText = "🤧 Sneezing and miserable but saving money." },
 		},
 	},
 	

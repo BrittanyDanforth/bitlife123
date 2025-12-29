@@ -1248,16 +1248,20 @@ HealthEvents.events = {
 		
 		choices = {
 			{
-				text = "Start therapy and medication",
+				-- CRITICAL FIX: Show price and add eligibility!
+				text = "Start therapy and medication ($100)",
 				effects = { Money = -100, Happiness = 5, Health = 3 },
 				setFlags = { depression = true, mental_illness = true, depression_treatment = true, therapy = true },
 				feedText = "😔 Depression diagnosed. Starting treatment. It gets better.",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for treatment" end,
 			},
 			{
-				text = "Try therapy only",
+				-- CRITICAL FIX: Show price and add eligibility!
+				text = "Try therapy only ($80)",
 				effects = { Money = -80, Happiness = 3 },
 				setFlags = { depression = true, mental_illness = true, therapy = true },
 				feedText = "😔 Starting therapy for depression. Taking the first step.",
+				eligibility = function(state) return (state.Money or 0) >= 80, "💸 Need $80 for therapy" end,
 			},
 			{
 				text = "Deny the diagnosis",
@@ -1438,6 +1442,32 @@ HealthEvents.events = {
 		tags = { "diagnosis", "injury", "bone" },
 		isDiagnosisCard = true,
 		diagnosisType = "broken_bone",
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Broken bone should ONLY appear if player had an accident/injury!
+		-- User complaint: "DIAGNOSIS BROKEN BONE POPPED UP RANDOMLY BRO I DIDNT GET IN A FIGHT"
+		-- Must require: car accident, fight, fall, sports injury, or similar event
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Check if player had any event that could cause a broken bone
+			local hadInjuryEvent = flags.car_accident or flags.car_crash or flags.was_in_accident
+				or flags.got_in_fight or flags.fight or flags.lost_fight or flags.attacked
+				or flags.fell or flags.slipped or flags.tripped or flags.fell_down
+				or flags.sports_injury or flags.injured_playing or flags.workout_injury
+				or flags.serious_injury or flags.injured or flags.hurt
+				or flags.bike_accident or flags.skateboard_accident
+				or flags.hospitalized or flags.emergency_room
+				or flags.physical_altercation or flags.assault_victim
+			-- Also check if went to doctor after feeling pain
+			local wentToDoctor = flags.went_to_doctor or flags.doctor_checkup
+			local hasPain = flags.severe_pain or flags.limping or flags.cant_walk
+			
+			if not hadInjuryEvent and not (wentToDoctor and hasPain) then
+				return false
+			end
+			return true
+		end,
 		
 		choices = {
 			{
@@ -2054,9 +2084,11 @@ HealthEvents.events[#HealthEvents.events + 1] = {
 	
 	choices = {
 		{
-			text = "Strict diet + regular insulin",
+			-- CRITICAL FIX: Show price and add eligibility!
+			text = "Strict diet + insulin treatment ($100)",
 			effects = { Money = -100, Health = 5, Happiness = -2 },
 			feedText = "Managing carefully...",
+			eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for insulin" end,
 			onResolve = function(state)
 				local roll = math.random(1, 100)
 				if roll <= 40 then
@@ -2074,9 +2106,11 @@ HealthEvents.events[#HealthEvents.events + 1] = {
 			end,
 		},
 		{
-			text = "Try new medication",
+			-- CRITICAL FIX: Show price and add eligibility!
+			text = "Try new medication ($300)",
 			effects = { Money = -300 },
 			feedText = "Trying new approach...",
+			eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for new medication" end,
 			onResolve = function(state)
 				local roll = math.random(1, 100)
 				if roll <= 20 then

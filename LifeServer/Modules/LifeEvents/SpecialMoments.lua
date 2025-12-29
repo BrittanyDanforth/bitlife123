@@ -192,6 +192,28 @@ SpecialMoments.events = {
 				text = "Stay with family for now",
 				effects = { Happiness = -3 },
 				feedText = "🏠 Not ready yet. Saving up makes more sense.",
+				-- CRITICAL FIX: Can't stay with family if parents are dead!
+				eligibility = function(state)
+					local flags = state.Flags or {}
+					if flags.orphan or flags.lost_both_parents then
+						return false, "Your parents have passed away"
+					end
+					if state.Relationships then
+						local hasLivingParent = false
+						for id, rel in pairs(state.Relationships) do
+							if rel and (rel.role == "Mother" or rel.role == "Father" or rel.type == "parent") then
+								if rel.alive ~= false and rel.deceased ~= true then
+									hasLivingParent = true
+									break
+								end
+							end
+						end
+						if not hasLivingParent then
+							return false, "Your parents have passed away"
+						end
+					end
+					return true
+				end,
 			},
 		},
 	},

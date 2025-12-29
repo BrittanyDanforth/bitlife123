@@ -267,13 +267,17 @@ FinancialEvents.events = {
 				state.Money = math.max(0, (state.Money or 0) - math.floor(200 + (roll * 1000)))
 			end,
 			},
-			-- CRITICAL FIX: Pet emergency requires owning a pet!
+			-- CRITICAL FIX: Pet emergency requires owning a pet and show price!
 			{ 
-				text = "Pet emergency", 
+				text = "Pet emergency ($500)", 
 				effects = { Happiness = -6, Money = -500 }, 
 				setFlags = { pet_medical_bills = true }, 
 				feedText = "💸 Vet bills are brutal but you love your pet.",
 				eligibility = function(state)
+					-- Must have money AND a pet
+					if (state.Money or 0) < 500 then
+						return false, "💸 Need $500 for vet bills"
+					end
 					local flags = state.Flags or {}
 					return flags.has_pet or flags.has_dog or flags.has_cat or flags.has_small_pet
 				end,
@@ -913,9 +917,11 @@ FinancialEvents.events = {
 		-- CRITICAL: High variance gambling outcomes
 		choices = {
 			{
-				text = "Play it safe, small bets",
+				-- CRITICAL FIX: Show price and add eligibility!
+				text = "Play it safe, small bets ($50)",
 				effects = { Money = -50 },
 				feedText = "Playing conservatively...",
+				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 to gamble" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.20 then
@@ -933,9 +939,11 @@ FinancialEvents.events = {
 				end,
 			},
 			{
-				text = "Go big or go home",
+				-- CRITICAL FIX: Show price and add eligibility!
+				text = "Go big or go home ($300)",
 				effects = { Money = -300 },
 				feedText = "High stakes...",
+				eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 to bet big" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.10 then
@@ -1046,9 +1054,11 @@ FinancialEvents.events = {
 		-- CRITICAL: Mostly bad outcomes - it's a scam
 		choices = {
 			{
-				text = "Invest your savings",
+				-- CRITICAL FIX: Show price and add eligibility!
+				text = "Invest your savings ($500)",
 				effects = { Money = -500 },
 				feedText = "Handing over your money...",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 to invest" end,
 				onResolve = function(state)
 					local smarts = (state.Stats and state.Stats.Smarts) or 50
 					local roll = math.random()
@@ -1119,7 +1129,12 @@ FinancialEvents.events = {
 					end
 				end,
 			},
-			{ text = "Hire an accountant", effects = { Money = -100, Smarts = 1 }, feedText = "📋 Professional handled it. Peace of mind worth $100.",
+			{ 
+				-- CRITICAL FIX: Show price in text!
+				text = "Hire an accountant ($100)", 
+				effects = { Money = -100, Smarts = 1 }, 
+				feedText = "📋 Professional handled it. Peace of mind worth $100.",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for accountant" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.60 then

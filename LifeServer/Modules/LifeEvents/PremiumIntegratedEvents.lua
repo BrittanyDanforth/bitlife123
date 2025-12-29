@@ -1805,20 +1805,17 @@ PremiumIntegratedEvents.events = {
 				feedText = "Words from the heart. Your partner was moved to tears.",
 			},
 			{
-				text = "Plan an expensive trip",
-				effects = {},
-				feedText = "Planning a getaway...",
-				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 3000 then
-						state.Money = money - 3000
-						state:ModifyStat("Happiness", 20)
-						state:AddFeed("💕 The trip was AMAZING! Memories for a lifetime!")
-					else
-						state:ModifyStat("Happiness", 8)
-						state:AddFeed("💕 Stayed local but made it special. It's the thought that counts.")
-					end
-				end,
+				-- CRITICAL FIX: Show price and add eligibility check!
+				text = "Plan a romantic trip ($3,000)",
+				effects = { Money = -3000, Happiness = 20 },
+				feedText = "💕 The trip was AMAZING! Memories for a lifetime!",
+				eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Need $3,000 for the trip" end,
+			},
+			{
+				-- CRITICAL FIX: Add a FREE alternative so players aren't stuck!
+				text = "Plan a special local date",
+				effects = { Happiness = 10 },
+				feedText = "💕 Stayed local but made it special. It's the thought that counts.",
 			},
 			-- ⭐ CELEBRITY PREMIUM OPTION
 			{
