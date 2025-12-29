@@ -390,31 +390,73 @@ SeasonalEvents.events = {
 		category = "seasonal",
 		tags = { "halloween", "spooky", "celebration" },
 		
-		-- CRITICAL: Random Halloween outcome
+		-- CRITICAL FIX: Age-appropriate Halloween choices!
+		-- Kids go trick-or-treating, adults hand out candy
+		getDynamicChoices = function(state)
+			local age = state.Age or 10
+			local money = state.Money or 0
+			local choices = {}
+			
+			if age <= 17 then
+				-- KIDS: Trick-or-treating is FREE and the main activity!
+				table.insert(choices, {
+					text = "Go trick-or-treating! 🍬",
+					effects = { Happiness = 10 },
+					feedText = "🎃 CANDY HAUL! Best Halloween ever! So much candy!",
+				})
+				table.insert(choices, {
+					text = "Epic costume party with friends",
+					effects = { Happiness = 8 },
+					feedText = "🎃 Awesome party! Everyone loved our costumes!",
+				})
+				table.insert(choices, {
+					text = "Scary movie marathon",
+					effects = { Happiness = 6 },
+					feedText = "🎃 Spooky movie night! Screamed so much!",
+				})
+			else
+				-- ADULTS: Different activities
+				if money >= 50 then
+					table.insert(choices, {
+						text = "Throw a Halloween party ($50)",
+						effects = { Money = -50, Happiness = 12 },
+						feedText = "🎃 EPIC PARTY! Best costumes! Everyone had a blast!",
+					})
+				end
+				if money >= 30 then
+					table.insert(choices, {
+						text = "Hand out candy to kids ($30)",
+						effects = { Money = -30, Happiness = 8 },
+						feedText = "🎃 Adorable trick-or-treaters! Spreading Halloween joy!",
+					})
+				end
+				table.insert(choices, {
+					text = "Haunted house adventure",
+					effects = { Happiness = 7 },
+					feedText = "🎃 Terrified and loved it! Heart still racing!",
+				})
+				table.insert(choices, {
+					text = "Horror movie marathon",
+					effects = { Happiness = 5 },
+					feedText = "🎃 Scary movies all night! Perfect spooky vibes!",
+				})
+			end
+			
+			-- Everyone can skip
+			table.insert(choices, {
+				text = "Skip Halloween",
+				effects = { Happiness = 2 },
+				feedText = "🎃 Not feeling it this year. Quiet night in.",
+			})
+			
+			return choices
+		end,
+		
 		choices = {
-			{
-				text = "Epic costume party ($50)",
-				effects = { Money = -50 },
-				feedText = "Showing off your costume...",
-				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 for costume" end,
-				onResolve = function(state)
-					local looks = (state.Stats and state.Stats.Looks) or 50
-					local roll = math.random()
-					
-					if roll < 0.55 then
-						state:ModifyStat("Happiness", 12)
-						state.Flags = state.Flags or {}
-						state.Flags.costume_winner = true
-						state:AddFeed("🎃 BEST COSTUME! Everyone loved it! Party was amazing!")
-					else
-						state:ModifyStat("Happiness", 7)
-						state:AddFeed("🎃 Fun party! Good costume vibes! Spooky good time!")
-					end
-				end,
-			},
-			{ text = "Hand out candy ($30)", effects = { Money = -30, Happiness = 6 }, feedText = "🎃 Cute trick-or-treaters! Spreading joy!", eligibility = function(state) return (state.Money or 0) >= 30, "💸 Need $30 for candy" end },
-			{ text = "Haunted house/scary movies", effects = { Happiness = 8 }, feedText = "🎃 Terrified and loving it! Adrenaline rush!" },
-			{ text = "Skip Halloween", effects = { Happiness = 2 }, feedText = "🎃 Not into it this year. Quiet night in." },
+			-- Fallback choices if getDynamicChoices fails
+			{ text = "Go trick-or-treating! 🍬", effects = { Happiness = 10 }, feedText = "🎃 CANDY HAUL! Best Halloween ever!" },
+			{ text = "Scary movie marathon", effects = { Happiness = 6 }, feedText = "🎃 Spooky movies all night!" },
+			{ text = "Skip Halloween", effects = { Happiness = 2 }, feedText = "🎃 Not into it this year." },
 		},
 	},
 	{
@@ -472,11 +514,11 @@ SeasonalEvents.events = {
 		tags = { "fall", "autumn", "activities" },
 		
 	choices = {
-		{ text = "Apple/pumpkin picking ($25)", effects = { Happiness = 8, Health = 2, Money = -25 }, feedText = "🍂 Fall harvest fun! Great photos! Seasonal joy!", eligibility = function(state) return (state.Money or 0) >= 25, "Can't afford this" end },
-		{ text = "Leaf peeping road trip ($50)", effects = { Happiness = 10, Money = -50 }, feedText = "🍂 Beautiful foliage! Nature's colors! Perfect drive!", eligibility = function(state) return (state.Money or 0) >= 50, "Can't afford this" end },
-		{ text = "Football game ($30)", effects = { Happiness = 8, Money = -30 }, feedText = "🍂 Game day! Team spirit! Fall vibes!", eligibility = function(state) return (state.Money or 0) >= 30, "Can't afford this" end },
-		{ text = "Cozy inside with pumpkin spice latte ($5)", effects = { Happiness = 6, Money = -5 }, feedText = "🍂 Basic but happy. Sweater weather perfection.", eligibility = function(state) return (state.Money or 0) >= 5, "Can't afford this" end },
-		{ text = "Just enjoy the weather", effects = { Happiness = 4 }, feedText = "🍂 Crisp air and changing leaves. Simple fall vibes." },
+		{ text = "Apple/pumpkin picking ($25)", effects = { Happiness = 8, Health = 2, Money = -25 }, feedText = "🍂 Fall harvest fun! Great photos! Seasonal joy!", eligibility = function(state) return (state.Money or 0) >= 25, "💸 Need $25 for picking trip" end },
+		{ text = "Scenic nature walk", effects = { Happiness = 8, Health = 3 }, feedText = "🍂 Beautiful foliage! Nature's colors! Perfect walk!" },
+		{ text = "Football game ($30)", effects = { Happiness = 8, Money = -30 }, feedText = "🍂 Game day! Team spirit! Fall vibes!", eligibility = function(state) return (state.Money or 0) >= 30, "💸 Need $30 for tickets" end },
+		{ text = "Cozy inside with hot cocoa", effects = { Happiness = 6 }, feedText = "🍂 Warm and happy. Sweater weather perfection." },
+		{ text = "Enjoy the crisp fall air", effects = { Happiness = 5, Health = 1 }, feedText = "🍂 Crisp air and changing leaves. Simple fall vibes." },
 	},
 },
 	
