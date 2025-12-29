@@ -215,6 +215,20 @@ SpecialMoments.events = {
 					return true
 				end,
 			},
+			{
+				-- CRITICAL FIX: Add cheaper roommate option to prevent hard lock!
+				text = "Find a cheap room with roommates ($500)",
+				effects = { Money = -500, Happiness = 5 },
+				feedText = "🏠 Split rent with others. Not ideal but affordable!",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for first month" end,
+				setFlags = { first_apartment = true, has_roommates = true },
+			},
+			{
+				-- CRITICAL FIX: Always-available free option to prevent hard lock!
+				text = "Keep looking for cheaper options",
+				effects = { Happiness = -2 },
+				feedText = "🏠 Housing market is rough. Still searching...",
+			},
 		},
 	},
 	{

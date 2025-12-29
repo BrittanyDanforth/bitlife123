@@ -215,9 +215,11 @@ ReputationEvents.events = {
 		-- CRITICAL: Random social climbing outcome
 		choices = {
 			{
-				text = "Network and climb",
+				-- CRITICAL FIX: Show price!
+				text = "Network and climb ($50)",
 				effects = { Money = -50 },
 				feedText = "Working the social scene...",
+				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 for networking" end,
 				onResolve = function(state)
 					local looks = (state.Stats and state.Stats.Looks) or 50
 					local smarts = (state.Stats and state.Stats.Smarts) or 50
