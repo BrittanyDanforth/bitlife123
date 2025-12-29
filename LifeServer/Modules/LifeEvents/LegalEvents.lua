@@ -310,7 +310,7 @@ LegalEvents.events = {
 				end,
 			},
 			{ text = "Repair/maintenance dispute", effects = { Happiness = -3 }, feedText = "🏠 Landlord won't fix things. Escalating issue." },
-			{ text = "Eviction situation", effects = { Happiness = -8, Money = -500 }, setFlags = { eviction_on_record = true }, feedText = "🏠 Facing eviction. Stressful housing crisis." },
+			{ text = "Eviction situation (costs $500)", effects = { Happiness = -8, Money = -500 }, setFlags = { eviction_on_record = true }, feedText = "🏠 Facing eviction. Stressful housing crisis.", eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for moving expenses" end },
 		},
 	},
 	{
@@ -450,7 +450,7 @@ LegalEvents.events = {
 				end,
 			},
 			{ text = "Nuisance complaint", effects = { Happiness = -3 }, feedText = "🏘️ Filed complaint about noise/eyesore. Relations strained." },
-			{ text = "Mediation", effects = { Money = -100, Happiness = 3 }, feedText = "🏘️ Third party helped resolve. Better outcome." },
+			{ text = "Mediation ($100)", effects = { Money = -100, Happiness = 3 }, feedText = "🏘️ Third party helped resolve. Better outcome.", eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for mediator" end },
 		},
 	},
 	{
@@ -495,7 +495,8 @@ LegalEvents.events = {
 					end
 				end,
 			},
-			{ text = "Counter-sue", effects = { Money = -500 }, feedText = "Fighting back...",
+			{ text = "Counter-sue ($500)", effects = { Money = -500 }, feedText = "Fighting back...",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 to file counter-suit" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.30 then
@@ -564,8 +565,8 @@ LegalEvents.events = {
 					end
 				end,
 			},
-			{ text = "Pay the fine", effects = { Money = -150, Happiness = -2 }, feedText = "🚦 Paid it. Easier than fighting. Points on license." },
-			{ text = "Traffic school", effects = { Money = -75, Smarts = 2, Happiness = -1 }, feedText = "🚦 Boring class but keeps points off license." },
+			{ text = "Pay the fine ($150)", effects = { Money = -150, Happiness = -2 }, feedText = "🚦 Paid it. Easier than fighting. Points on license.", eligibility = function(state) return (state.Money or 0) >= 150, "💸 Need $150 for fine" end },
+			{ text = "Traffic school ($75)", effects = { Money = -75, Smarts = 2, Happiness = -1 }, feedText = "🚦 Boring class but keeps points off license.", eligibility = function(state) return (state.Money or 0) >= 75, "💸 Need $75 for traffic school" end },
 		},
 	},
 }

@@ -942,17 +942,19 @@ CelebrityEvents.GeneralFameEvents = {
 				feed = "You took legal action for your safety.",
 			},
 			{
-				text = "Hire more security",
+				text = "Hire more security ($100K)",
 				effects = { Happiness = -5, Money = -100000 },
 				fameEffect = 0,
 				setFlags = { increased_security = true },
 				feed = "You beefed up your security team.",
+				eligibility = function(state) return (state.Money or 0) >= 100000, "💸 Need $100K for security" end,
 			},
 			{
-				text = "Move to a new location",
+				text = "Move to a new location ($500K)",
 				effects = { Happiness = -15, Money = -500000 },
 				fameEffect = -5,
 				feed = "You had to relocate for safety.",
+				eligibility = function(state) return (state.Money or 0) >= 500000, "💸 Need $500K to relocate" end,
 			},
 		},
 	},
@@ -1068,10 +1070,11 @@ CelebrityEvents.GeneralFameEvents = {
 		minFame = 40,
 		choices = {
 			{
-				text = "Wear designer outfit",
+				text = "Wear designer outfit ($50K)",
 				effects = { Happiness = 10, Money = -50000 },
 				fameEffect = 8,
 				feed = "You looked stunning on the red carpet!",
+				eligibility = function(state) return (state.Money or 0) >= 50000, "💸 Need $50K for designer outfit" end,
 			},
 			{
 				text = "Wear something bold/controversial",
@@ -1163,11 +1166,12 @@ CelebrityEvents.GeneralFameEvents = {
 		minFame = 45,
 		choices = {
 			{
-				text = "Pay them off",
+				text = "Pay them off ($500K)",
 				effects = { Money = -500000 },
 				fameEffect = 0,
 				setFlags = { paid_blackmail = true },
 				feed = "You made the problem go away... for now.",
+				eligibility = function(state) return (state.Money or 0) >= 500000, "💸 Need $500K to pay off" end,
 			},
 			{
 				text = "Get ahead of it and confess",

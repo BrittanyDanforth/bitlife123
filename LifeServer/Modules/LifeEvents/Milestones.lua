@@ -489,10 +489,11 @@ Milestones.events = {
 				feedText = "The college years were special.",
 			},
 			{
-				text = "Time for grad school",
+				text = "Time for grad school ($5K)",
 				effects = { Smarts = 7, Money = -5000 },
 				setFlags = { college_grad = true, bachelor_degree = true, grad_school = true, pursuing_graduate = true },
 				feedText = "You're continuing your education!",
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5K for grad school" end,
 			},
 		},
 	},
@@ -1382,10 +1383,11 @@ Milestones.events = {
 				feedText = "So much candy! Your teeth might regret this!" 
 			},
 			{ 
-				text = "Buy a toy I've been wanting! 🎮", 
+				text = "Buy a toy I've been wanting! 🎮 ($20)", 
 				effects = { Happiness = 10, Money = -20 }, 
 				setFlags = { goal_saver = true }, 
-				feedText = "You saved up and bought something special!" 
+				feedText = "You saved up and bought something special!",
+				eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20 for the toy" end,
 			},
 			{ 
 				text = "Share with my friends! 💝", 
@@ -1501,10 +1503,11 @@ Milestones.events = {
 				feedText = "Your family appreciates your contribution!" 
 			},
 			{ 
-				text = "Blow it all on a weekend!", 
+				text = "Blow it all on a weekend! ($150)", 
 				effects = { Happiness = 12, Money = -150 }, 
 				setFlags = { yolo_spender = true }, 
-				feedText = "That was FUN! ...now you're broke again." 
+				feedText = "That was FUN! ...now you're broke again.",
+				eligibility = function(state) return (state.Money or 0) >= 150, "💸 Need $150 to splurge" end,
 			},
 		},
 	},

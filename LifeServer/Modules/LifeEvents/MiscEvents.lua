@@ -288,7 +288,7 @@ MiscEvents.events = {
 					end
 				end,
 			},
-			{ text = "Panic and find charger", effects = { Happiness = -2, Money = -10 }, feedText = "🔋 Found a charger! Sweet relief! Never again!" },
+			{ text = "Panic and find charger ($10)", effects = { Happiness = -2, Money = -10 }, feedText = "🔋 Found a charger! Sweet relief! Never again!", eligibility = function(state) return (state.Money or 0) >= 10, "💸 Need $10 for charger" end },
 		},
 	},
 	{
@@ -404,7 +404,7 @@ MiscEvents.events = {
 				end,
 			},
 			{ text = "Go outside", effects = { Happiness = 5, Health = 3 }, feedText = "📶 Forced to go outside! Actually nice! Nature exists!" },
-			{ text = "Use mobile data", effects = { Happiness = 2, Money = -20 }, feedText = "📶 Burning through data plan! Desperate times!" },
+			{ text = "Use mobile data ($20)", effects = { Happiness = 2, Money = -20 }, feedText = "📶 Burning through data plan! Desperate times!", eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20 for extra data" end },
 		},
 	},
 	{
@@ -423,7 +423,7 @@ MiscEvents.events = {
 		
 		choices = {
 			{ text = "Sleep in and relax", effects = { Happiness = 10, Health = 4 }, feedText = "🎉 SLEPT IN! Glorious rest! Self-care day!" },
-			{ text = "Spontaneous adventure", effects = { Happiness = 12, Money = -50 }, feedText = "🎉 Impromptu trip/activity! Best kind of day!" },
+			{ text = "Spontaneous adventure ($50)", effects = { Happiness = 12, Money = -50 }, feedText = "🎉 Impromptu trip/activity! Best kind of day!", eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 for adventure" end },
 			{ text = "Catch up on errands", effects = { Happiness = 6, Smarts = 2 }, feedText = "🎉 Productive day off! Got so much done!" },
 			{ text = "Waste it on nothing", effects = { Happiness = 4 }, feedText = "🎉 Scrolled phone all day. Relaxing I guess?" },
 		},
@@ -570,7 +570,7 @@ MiscEvents.events = {
 					end
 				end,
 			},
-			{ text = "Go somewhere with power", effects = { Money = -30, Happiness = 3 }, feedText = "💡 Found a cafe/friend's place. Charged devices. Survived!" },
+			{ text = "Go somewhere with power ($30)", effects = { Money = -30, Happiness = 3 }, feedText = "💡 Found a cafe/friend's place. Charged devices. Survived!", eligibility = function(state) return (state.Money or 0) >= 30, "💸 Need $30 for cafe" end },
 		},
 	},
 }
