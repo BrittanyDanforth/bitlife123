@@ -351,9 +351,10 @@ SeasonalEvents.events = {
 		-- CRITICAL: Random heat wave outcome
 		choices = {
 			{
-				text = "Stay inside with AC",
+				text = "Stay inside with AC ($50)",
 				effects = { Money = -50 },
 				feedText = "Cranking the AC...",
+				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 for AC" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.70 then
@@ -367,7 +368,7 @@ SeasonalEvents.events = {
 					end
 				end,
 			},
-			{ text = "Hit the pool/water", effects = { Happiness = 8, Health = 2, Money = -10 }, feedText = "🥵 Best idea ever! Cooling off in the water!" },
+			{ text = "Hit the pool/water ($10)", effects = { Happiness = 8, Health = 2, Money = -10 }, feedText = "🥵 Best idea ever! Cooling off in the water!", eligibility = function(state) return (state.Money or 0) >= 10, "💸 Need $10" end },
 			{ text = "Suffer through it", effects = { Happiness = -6, Health = -4 }, feedText = "🥵 Miserable. So hot. When will it end?" },
 		},
 	},
@@ -395,6 +396,7 @@ SeasonalEvents.events = {
 				text = "Epic costume party ($50)",
 				effects = { Money = -50 },
 				feedText = "Showing off your costume...",
+				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 for costume" end,
 				onResolve = function(state)
 					local looks = (state.Stats and state.Stats.Looks) or 50
 					local roll = math.random()
@@ -410,7 +412,7 @@ SeasonalEvents.events = {
 					end
 				end,
 			},
-			{ text = "Hand out candy ($30)", effects = { Money = -30, Happiness = 6 }, feedText = "🎃 Cute trick-or-treaters! Spreading joy!" },
+			{ text = "Hand out candy ($30)", effects = { Money = -30, Happiness = 6 }, feedText = "🎃 Cute trick-or-treaters! Spreading joy!", eligibility = function(state) return (state.Money or 0) >= 30, "💸 Need $30 for candy" end },
 			{ text = "Haunted house/scary movies (free)", effects = { Happiness = 8 }, feedText = "🎃 Terrified and loving it! Adrenaline rush!" },
 			{ text = "Skip Halloween (free)", effects = { Happiness = 2 }, feedText = "🎃 Not into it this year. Quiet night in." },
 		},
@@ -435,6 +437,7 @@ SeasonalEvents.events = {
 				text = "Host the gathering ($150)",
 				effects = { Money = -150 },
 				feedText = "Cooking and hosting...",
+				eligibility = function(state) return (state.Money or 0) >= 150, "💸 Need $150 to host" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.55 then
@@ -449,8 +452,8 @@ SeasonalEvents.events = {
 					end
 				end,
 			},
-			{ text = "Be a guest ($20)", effects = { Happiness = 8, Money = -20 }, feedText = "🦃 Just showed up with pie! No cooking stress! Smart!" },
-			{ text = "Friendsgiving ($40)", effects = { Happiness = 10, Money = -40 }, setFlags = { friendsgiving = true }, feedText = "🦃 Chosen family! No drama! Best Thanksgiving!" },
+			{ text = "Be a guest ($20)", effects = { Happiness = 8, Money = -20 }, feedText = "🦃 Just showed up with pie! No cooking stress! Smart!", eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20 for pie" end },
+			{ text = "Friendsgiving ($40)", effects = { Happiness = 10, Money = -40 }, setFlags = { friendsgiving = true }, feedText = "🦃 Chosen family! No drama! Best Thanksgiving!", eligibility = function(state) return (state.Money or 0) >= 40, "💸 Need $40" end },
 			{ text = "Volunteering (free)", effects = { Happiness = 10 }, setFlags = { thanksgiving_volunteer = true }, feedText = "🦃 Serving others! True gratitude in action!" },
 		},
 	},
@@ -517,8 +520,9 @@ SeasonalEvents.events = {
 					end
 				end,
 			},
-			{ text = "Treat yourself day", effects = { Money = -75, Happiness = 10, Health = 2 }, feedText = "🎂 Self-care birthday! Spoiled yourself! Perfect day!" },
-			{ text = "Quiet celebration", effects = { Happiness = 6, Money = -20 }, feedText = "🎂 Low key but nice. Cake and close ones." },
+			{ text = "Treat yourself day ($75)", effects = { Money = -75, Happiness = 10, Health = 2 }, feedText = "🎂 Self-care birthday! Spoiled yourself! Perfect day!", eligibility = function(state) return (state.Money or 0) >= 75, "💸 Need $75" end },
+			{ text = "Quiet celebration ($20)", effects = { Happiness = 6, Money = -20 }, feedText = "🎂 Low key but nice. Cake and close ones.", eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20" end },
+			{ text = "Just enjoy your day (free)", effects = { Happiness = 4 }, feedText = "🎂 Simple but nice. Birthday vibes." },
 			{ text = "Work through it", effects = { Happiness = -4, Money = 50 }, feedText = "🎂 Forgot own birthday. Just another day. Sad." },
 		},
 	},
@@ -602,9 +606,10 @@ SeasonalEvents.events = {
 		-- CRITICAL: Random anniversary outcome
 		choices = {
 			{
-				text = "Romantic dinner",
+				text = "Romantic dinner ($100)",
 				effects = { Money = -100 },
 				feedText = "Special dinner together...",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for dinner" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.65 then
@@ -631,7 +636,8 @@ SeasonalEvents.events = {
 				end,
 			},
 			{ text = "Forgot the anniversary", effects = { Happiness = -8 }, setFlags = { forgot_anniversary = true }, feedText = "💕 OH NO! Completely forgot! In the doghouse now!" },
-			{ text = "Simple but meaningful", effects = { Happiness = 8, Money = -30 }, feedText = "💕 Thoughtful gift and quality time. Love isn't expensive." },
+			{ text = "Simple but meaningful ($30)", effects = { Happiness = 8, Money = -30 }, feedText = "💕 Thoughtful gift and quality time. Love isn't expensive.", eligibility = function(state) return (state.Money or 0) >= 30, "💸 Need $30" end },
+			{ text = "Homemade celebration (free)", effects = { Happiness = 6 }, feedText = "💕 Cooked dinner together! Quality time over expense!" },
 		},
 	},
 	{
@@ -651,9 +657,10 @@ SeasonalEvents.events = {
 		-- CRITICAL: Random Valentine's outcome based on relationship status
 		choices = {
 			{
-				text = "Romantic plans with partner",
+				text = "Romantic plans with partner ($75)",
 				effects = { Money = -75 },
 				feedText = "Valentine's date...",
+				eligibility = function(state) return (state.Money or 0) >= 75, "💸 Need $75 for date" end,
 				onResolve = function(state)
 					local hasPartner = state.Flags and (state.Flags.married or state.Flags.engaged or state.Flags.dating_app_match)
 					if not hasPartner then
@@ -672,8 +679,8 @@ SeasonalEvents.events = {
 					end
 				end,
 			},
-			{ text = "Galentine's/Palentine's ($20)", effects = { Money = -20, Happiness = 8 }, feedText = "💝 Celebrated with friends! Who needs romance? Fun!" },
-			{ text = "Self-love day ($30)", effects = { Money = -30, Happiness = 6, Health = 2 }, feedText = "💝 Treated yourself! Self-care is important!" },
+			{ text = "Galentine's/Palentine's ($20)", effects = { Money = -20, Happiness = 8 }, feedText = "💝 Celebrated with friends! Who needs romance? Fun!", eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20" end },
+			{ text = "Self-love day ($30)", effects = { Money = -30, Happiness = 6, Health = 2 }, feedText = "💝 Treated yourself! Self-care is important!", eligibility = function(state) return (state.Money or 0) >= 30, "💸 Need $30" end },
 			{ text = "Ignore it completely (free)", effects = { Happiness = 2 }, feedText = "💝 Hallmark holiday. Didn't participate. Saved money." },
 		},
 	},

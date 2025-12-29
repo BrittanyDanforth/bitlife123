@@ -566,7 +566,8 @@ HobbyEvents.events = {
 		{ text = "Upgrade equipment ($500)", effects = { Money = -500, Happiness = 6, Smarts = 2 }, feedText = "📷 New camera! Better lenses! The gear helps!",
 			eligibility = function(state) return (state.Money or 0) >= 500, "Can't afford $500 upgrade" end,
 		},
-			{ text = "Enter a photo contest", effects = { Money = -20 }, feedText = "Submitting to contest...",
+			{ text = "Enter a photo contest ($20)", effects = { Money = -20 }, feedText = "Submitting to contest...",
+				eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20 entry fee" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.10 then
@@ -665,9 +666,10 @@ HobbyEvents.events = {
 		-- CRITICAL: Random cooking outcome
 		choices = {
 			{
-				text = "Try a challenging recipe",
+				text = "Try a challenging recipe ($30)",
 				effects = { Money = -30 },
 				feedText = "In the kitchen...",
+				eligibility = function(state) return (state.Money or 0) >= 30, "💸 Need $30 for ingredients" end,
 				onResolve = function(state)
 					local smarts = (state.Stats and state.Stats.Smarts) or 50
 					local roll = math.random()
@@ -687,7 +689,7 @@ HobbyEvents.events = {
 					end
 				end,
 			},
-			{ text = "Take a cooking class", effects = { Money = -75, Happiness = 7, Smarts = 4 }, feedText = "👨‍🍳 Learning from pros! Knife skills improved!" },
+			{ text = "Take a cooking class ($75)", effects = { Money = -75, Happiness = 7, Smarts = 4 }, feedText = "👨‍🍳 Learning from pros! Knife skills improved!", eligibility = function(state) return (state.Money or 0) >= 75, "💸 Need $75 for class" end },
 			{ text = "Meal prep for the week", effects = { Health = 3, Happiness = 4, Money = 30 }, feedText = "👨‍🍳 Organized! Healthy meals ready! Productive!" },
 		},
 	},
@@ -720,9 +722,10 @@ HobbyEvents.events = {
 		-- CRITICAL: Random sports outcome
 		choices = {
 			{
-				text = "Play in a rec league",
+				text = "Play in a rec league ($30)",
 				effects = { Money = -30 },
 				feedText = "Game day...",
+				eligibility = function(state) return (state.Money or 0) >= 30, "💸 Need $30 for league fee" end,
 				onResolve = function(state)
 					local health = (state.Stats and state.Stats.Health) or 50
 					local roll = math.random()
@@ -792,7 +795,7 @@ HobbyEvents.events = {
 					end
 				end,
 			},
-			{ text = "Try hot yoga", effects = { Health = 4, Happiness = 6, Money = -20 }, feedText = "🧘 Sweating out toxins! Intense but cleansing!" },
+			{ text = "Try hot yoga ($20)", effects = { Health = 4, Happiness = 6, Money = -20 }, feedText = "🧘 Sweating out toxins! Intense but cleansing!", eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20 for hot yoga" end },
 			-- MINOR FIX: Show price in choice text
 		{ text = "Yoga retreat ($300)", effects = { Money = -300, Happiness = 12, Health = 5 }, setFlags = { yoga_retreat = true }, feedText = "🧘 Weekend of peace and practice! Transformed!",
 			eligibility = function(state) return (state.Money or 0) >= 300, "Can't afford $300 retreat" end,
@@ -893,9 +896,10 @@ HobbyEvents.events = {
 		-- CRITICAL: Random collecting outcome
 		choices = {
 			{
-				text = "Hunt for new items",
+				text = "Hunt for new items ($50)",
 				effects = { Money = -50 },
 				feedText = "Searching for treasures...",
+				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 for hunting" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.30 then
@@ -946,9 +950,10 @@ HobbyEvents.events = {
 		-- CRITICAL: Random board game night
 		choices = {
 			{
-				text = "Host game night",
+				text = "Host game night ($30)",
 				effects = { Money = -30 },
 				feedText = "Rolling dice, playing cards...",
+				eligibility = function(state) return (state.Money or 0) >= 30, "💸 Need $30 for snacks/drinks" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.55 then
@@ -967,7 +972,7 @@ HobbyEvents.events = {
 				end,
 			},
 			{ text = "Learn a complex new game", effects = { Smarts = 4, Happiness = 4 }, feedText = "🎲 Brain workout! Strategy game mastered!" },
-			{ text = "Visit board game cafe", effects = { Money = -20, Happiness = 7 }, feedText = "🎲 So many games! Great atmosphere! Found new favorites!" },
+			{ text = "Visit board game cafe ($20)", effects = { Money = -20, Happiness = 7 }, feedText = "🎲 So many games! Great atmosphere! Found new favorites!", eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20 for cafe" end },
 		},
 	},
 	{
@@ -1008,9 +1013,10 @@ HobbyEvents.events = {
 		-- CRITICAL: Random DIY outcome
 		choices = {
 			{
-				text = "Take on the project",
+				text = "Take on the project ($75)",
 				effects = { Money = -75 },
 				feedText = "Building/crafting...",
+				eligibility = function(state) return (state.Money or 0) >= 75, "💸 Need $75 for materials" end,
 				onResolve = function(state)
 					local smarts = (state.Stats and state.Stats.Smarts) or 50
 					local roll = math.random()
@@ -1033,8 +1039,9 @@ HobbyEvents.events = {
 					end
 				end,
 			},
-			{ text = "Small craft project", effects = { Money = -20, Happiness = 6, Smarts = 2 }, feedText = "🔨 Handmade creation! Cute and personal!" },
-			{ text = "Furniture restoration", effects = { Money = -40, Happiness = 8 }, feedText = "🔨 Old made new! Upcycling success! Sustainable!" },
+			{ text = "Small craft project ($20)", effects = { Money = -20, Happiness = 6, Smarts = 2 }, feedText = "🔨 Handmade creation! Cute and personal!", eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20 for supplies" end },
+			{ text = "Furniture restoration ($40)", effects = { Money = -40, Happiness = 8 }, feedText = "🔨 Old made new! Upcycling success! Sustainable!", eligibility = function(state) return (state.Money or 0) >= 40, "💸 Need $40 for supplies" end },
+			{ text = "Watch DIY tutorials (free)", effects = { Smarts = 3, Happiness = 2 }, feedText = "🔨 Learning skills online! Free education!" },
 		},
 	},
 	{

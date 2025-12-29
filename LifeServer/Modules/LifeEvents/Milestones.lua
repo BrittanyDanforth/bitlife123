@@ -483,16 +483,26 @@ Milestones.events = {
 				feedText = "Finally done with school!",
 			},
 			{
-				text = "Already missing it",
+				text = "Already missing it (free)",
 				effects = { Happiness = 8, Smarts = 5 },
 				setFlags = { college_grad = true, bachelor_degree = true },
 				feedText = "The college years were special.",
 			},
 			{
-				text = "Time for grad school ($5K)",
+				text = "Grad school with scholarship! (free)",
+				effects = { Smarts = 8, Happiness = 5 },
+				setFlags = { college_grad = true, bachelor_degree = true, grad_school = true, pursuing_graduate = true, has_scholarship = true },
+				feedText = "Your grades earned you a full scholarship!",
+				eligibility = function(state) 
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					return smarts >= 70, "Need 70+ Smarts for scholarship"
+				end,
+			},
+			{
+				text = "Pay for grad school ($5K)",
 				effects = { Smarts = 7, Money = -5000 },
 				setFlags = { college_grad = true, bachelor_degree = true, grad_school = true, pursuing_graduate = true },
-				feedText = "You're continuing your education!",
+				feedText = "Investing in your education!",
 				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5K for grad school" end,
 			},
 		},
