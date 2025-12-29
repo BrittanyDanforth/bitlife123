@@ -447,7 +447,7 @@ RelationshipsExpanded.events = {
 			},
 			-- CRITICAL FIX: FREE OPTION to prevent hard lock!
 			{
-				text = "Just words, no ring (free)",
+				text = "Just speak from the heart",
 				effects = {},
 				feedText = "Proposing with just your heart...",
 				onResolve = function(state)
