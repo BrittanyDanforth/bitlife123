@@ -125,8 +125,8 @@ MiscEvents.events = {
 		choices = {
 			{ text = "Faith in humanity restored", effects = { Happiness = 8, Smarts = 2 }, setFlags = { believes_in_good = true }, feedText = "💖 Beautiful moment! People CAN be good! Touched!" },
 			{ 
-				text = "Inspired to pay it forward ($20)", 
-				effects = { Happiness = 6, Money = -20 }, 
+				text = "Inspired to pay it forward", 
+				effects = { Happiness = 6 }, 
 				feedText = "💖 Immediately helped someone else! Chain of kindness!",
 				eligibility = function(state) return (state.Money or 0) >= 20, "💸 Can't afford to help right now" end,
 			},

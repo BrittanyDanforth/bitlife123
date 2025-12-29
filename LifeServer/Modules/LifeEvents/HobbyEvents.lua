@@ -33,11 +33,11 @@ HobbyEvents.events = {
 		
 		choices = {
 			{
-				text = "🎮 Video games!",
+				text = "🎮 Video games! ($150)",
 				effects = { Happiness = 5, Money = -150 },
 				setFlags = { gamer = true, plays_video_games = true, owns_console = true },
 				feedText = "🎮 You bought a gaming console! Time to play!",
-				eligibility = function(state) return (state.Money or 0) >= 150, "Can't afford gaming setup" end,
+				eligibility = function(state) return (state.Money or 0) >= 150, "💸 Can't afford gaming setup ($150)" end,
 			},
 			{
 				text = "📚 Reading more",
@@ -345,18 +345,18 @@ HobbyEvents.events = {
 		
 		choices = {
 			{
-				text = "Yes! Get me some art supplies!",
+				text = "Yes! Get me some art supplies! ($50)",
 				effects = { Happiness = 5, Money = -50 },
 				setFlags = { pursuing_art = true, started_art_hobby = true },
 				feedText = "🎨 You bought paints, brushes, canvas! Let's create!",
-				eligibility = function(state) return (state.Money or 0) >= 50, "Can't afford art supplies" end,
+				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Can't afford art supplies ($50)" end,
 			},
 			{
-				text = "Maybe just some drawing",
+				text = "Maybe just some drawing ($20)",
 				effects = { Happiness = 4, Money = -20 },
 				setFlags = { pursuing_art = true, pursuing_drawing = true },
 				feedText = "🎨 You got a sketchbook and pencils! Simple but fun!",
-				eligibility = function(state) return (state.Money or 0) >= 20, "Can't afford supplies" end,
+				eligibility = function(state) return (state.Money or 0) >= 20, "💸 Can't afford supplies ($20)" end,
 			},
 			{
 				text = "I prefer to appreciate art, not create it",

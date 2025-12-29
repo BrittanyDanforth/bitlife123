@@ -344,9 +344,10 @@ OfficeCareerEvents.events = {
 				end,
 			},
 			{
-				text = "Join coworkers at a restaurant",
+				text = "Join coworkers at a restaurant ($20)",
 				effects = { Money = -20 },
 				feedText = "You head out with the team...",
+				eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20 for lunch" end,
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 60 then

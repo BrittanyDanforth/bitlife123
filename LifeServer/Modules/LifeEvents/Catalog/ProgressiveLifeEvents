@@ -908,10 +908,11 @@ ProgressiveLifeEvents.events = {
 		tags = { "housing", "independence", "milestone" },
 		choices = {
 			{
-				text = "Decorate it perfectly",
+				text = "Decorate it perfectly ($200)",
 				effects = { Happiness = 6, Money = -200 },
 				setFlags = { interior_designer = true },
 				feedText = "Your place looks AMAZING. Pinterest-worthy!",
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for decorations" end,
 			},
 			{
 				text = "Keep it minimal",

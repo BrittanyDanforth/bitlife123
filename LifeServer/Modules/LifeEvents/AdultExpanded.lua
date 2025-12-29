@@ -46,14 +46,14 @@ AdultExpanded.events = {
 		-- CRITICAL: Random move out outcome
 		choices = {
 			{
-				text = "Move out and thrive",
+				text = "Move out and thrive ($1,000)",
 				effects = { Money = -1000 }, -- CRITICAL FIX: Moving out costs money!
 				feedText = "On your own for the first time...",
 				-- CRITICAL FIX: Check if player can afford to move out
 				eligibility = function(state)
 					local money = state.Money or 0
 					if money < 1000 then
-						return false, "Need at least $1,000 to move out (deposit + first month)"
+						return false, "💸 Need at least $1,000 to move out (deposit + first month)"
 					end
 					return true
 				end,
@@ -88,14 +88,14 @@ AdultExpanded.events = {
 				feedText = "Reality hit hard. Back to parents' house. Humbling.",
 			},
 			{
-				text = "Get roommates to afford it",
+				text = "Get roommates to afford it ($500)",
 				effects = { Money = -500 }, -- CRITICAL FIX: Shared costs
 				feedText = "Living with strangers...",
 				-- CRITICAL FIX: Check if player can afford roommate situation
 				eligibility = function(state)
 					local money = state.Money or 0
 					if money < 500 then
-						return false, "Need at least $500 for shared deposit"
+						return false, "💸 Need at least $500 for shared deposit"
 					end
 					return true
 				end,

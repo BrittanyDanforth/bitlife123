@@ -206,10 +206,11 @@ RapperContentCreatorEvents.events = {
 		
 		choices = {
 			{
-				text = "🔥 Aggressive trap banger - 808s and energy",
+				text = "🔥 Aggressive trap banger - 808s and energy ($50)",
 				effects = { Happiness = 15, Smarts = 2, Health = -3, Money = -50 },  -- ENHANCED: Recording is tiring!
 				setFlags = { first_track_recorded = true, trap_rapper = true },
 				feedText = "🎤 YOU DID IT! 4 hours in that basement, voice raw from 23 takes, but you walked out with YOUR FIRST SONG. It's aggressive, the 808s hit hard, and when you played it back in the car... goosebumps. You sent it to 3 friends - they're already asking for more. This is just the beginning. Your Spotify artist page is LIVE.",
+				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 for studio time" end,
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					-- CRITICAL FIX: Ensure careerPath is set so FameState gets serialized!
@@ -223,10 +224,11 @@ RapperContentCreatorEvents.events = {
 				end,
 			},
 			{
-				text = "📚 Lyrical conscious rap - real bars, real message",
+				text = "📚 Lyrical conscious rap - real bars, real message ($50)",
 				effects = { Happiness = 12, Smarts = 5, Health = -2, Money = -50 },  -- ENHANCED: Lyrical = smarts boost
 				setFlags = { first_track_recorded = true, lyrical_rapper = true },
 				feedText = "🎤 YOU POURED YOUR SOUL INTO THOSE BARS. 3 verses, no hook, just pure lyrics about life, struggle, and dreams. Marcus said 'yo, you actually have something to say.' The underground will respect this. It's not for everyone, but the ones who get it will REALLY get it. Posted on SoundCloud - 47 plays in the first week. Small start, big potential.",
+				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 for studio time" end,
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					-- CRITICAL FIX: Ensure careerPath is set so FameState gets serialized!
@@ -240,10 +242,11 @@ RapperContentCreatorEvents.events = {
 				end,
 			},
 			{
-				text = "🎵 Melodic auto-tune vibes - modern sound",
+				text = "🎵 Melodic auto-tune vibes - modern sound ($50)",
 				effects = { Happiness = 15, Looks = 2, Health = -2, Money = -50 },  -- ENHANCED: Melodic = image boost
 				setFlags = { first_track_recorded = true, melodic_rapper = true },
 				feedText = "🎤 THE AUTO-TUNE MADE YOUR VOICE SOUND CRAZY. That melodic flow, the emotional delivery... Marcus had to double-check you hadn't done this before. You layered harmonies, ad-libs, everything. It sounds like something that could be on the radio. TikTok could blow this up. You're already thinking about the music video...",
+				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 for studio time" end,
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					-- CRITICAL FIX: Ensure careerPath is set so FameState gets serialized!
@@ -257,10 +260,11 @@ RapperContentCreatorEvents.events = {
 				end,
 			},
 			{
-				text = "🔫 Drill/Street rap - raw and real",
+				text = "🔫 Drill/Street rap - raw and real ($50)",
 				effects = { Happiness = 12, Health = -4, Money = -50 },  -- ENHANCED: Drill is risky
 				setFlags = { first_track_recorded = true, drill_rapper = true },
 				feedText = "🎤 You recorded your first track! Hard drill beat. Streets will feel this!",
+				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 for studio time" end,
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					-- CRITICAL FIX: Ensure careerPath is set so FameState gets serialized!
@@ -270,6 +274,22 @@ RapperContentCreatorEvents.events = {
 					state.FameState.totalStreams = math.random(50, 500)
 					state.FameState.totalTracks = 1
 					state.FameState.style = "drill"
+					state.Fame = (state.Fame or 0) + 1
+				end,
+			},
+			{
+				text = "📱 Record on phone/free software - DIY style",
+				effects = { Happiness = 8, Smarts = 3 },
+				setFlags = { first_track_recorded = true, bedroom_producer = true },
+				feedText = "🎤 You recorded on your phone with free beats from YouTube! Quality isn't studio-level but you're in the game now! Started from the bottom!",
+				onResolve = function(state)
+					state.FameState = state.FameState or {}
+					state.FameState.careerPath = state.FameState.careerPath or "rapper"
+					state.FameState.isFamous = true
+					state.FameState.monthlyListeners = math.random(5, 30)
+					state.FameState.totalStreams = math.random(20, 100)
+					state.FameState.totalTracks = 1
+					state.FameState.style = "underground"
 					state.Fame = (state.Fame or 0) + 1
 				end,
 			},
