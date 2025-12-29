@@ -473,11 +473,12 @@ Adult.events = {
 		end,
 
 		choices = {
-			{
-				text = "Complete lifestyle overhaul",
-				effects = { Health = 15, Happiness = 5, Money = -500 },
-				setFlags = { health_conscious = true, midlife_health_done = true },
-				feedText = "You transformed your lifestyle. Feeling great!",
+		{
+			text = "Complete lifestyle overhaul ($500)",
+			effects = { Health = 15, Happiness = 5, Money = -500 },
+			setFlags = { health_conscious = true, midlife_health_done = true },
+			feedText = "You transformed your lifestyle. Feeling great!",
+			eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for lifestyle changes" end,
 				onResolve = function(state)
 					local health = (state.Stats and state.Stats.Health) or state.Health or 50
 					if health < 40 then
@@ -498,12 +499,13 @@ Adult.events = {
 				setFlags = { midlife_health_done = true, ignores_health = true },
 				feedText = "You ignored the warning signs..."
 			},
-			{
-				text = "Become obsessive about health",
-				effects = { Health = 10, Happiness = -5, Money = -1000 },
-				setFlags = { health_obsessed = true, midlife_health_done = true },
-				feedText = "Health became your entire focus. Maybe too much."
-			},
+		{
+			text = "Become obsessive about health ($1,000)",
+			effects = { Health = 10, Happiness = -5, Money = -1000 },
+			setFlags = { health_obsessed = true, midlife_health_done = true },
+			feedText = "Health became your entire focus. Maybe too much.",
+			eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 for health obsession" end,
+		},
 		},
 	},
 
@@ -524,11 +526,12 @@ Adult.events = {
 		tags = { "retirement", "money_long_term" },
 		-- CRITICAL FIX: Retirement readiness based on life choices, not direct selection
 		choices = {
-			{
-				text = "Get a full retirement assessment",
-				effects = { Money = -200 },
-				feedText = "The advisor runs the numbers...",
-				onResolve = function(state)
+		{
+			text = "Get a full retirement assessment ($200)",
+			effects = { Money = -200 },
+			feedText = "The advisor runs the numbers...",
+			eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for assessment" end,
+			onResolve = function(state)
 					-- Base readiness on accumulated wealth and smart decisions
 					local money = state.Money or 0
 					local smarts = (state.Stats and state.Stats.Smarts) or 50
@@ -650,13 +653,14 @@ Adult.events = {
 					end
 				end,
 			},
-			{
-				text = "Focus on hobbies and travel",
-				effects = { Happiness = 12, Money = -1000 },
-				setFlags = { retired = true },
-				feedText = "Time to enjoy life to the fullest! Your pension awaits.",
-				-- Retire and travel
-				onResolve = function(state)
+		{
+			text = "Focus on hobbies and travel ($1,000)",
+			effects = { Happiness = 12, Money = -1000 },
+			setFlags = { retired = true },
+			feedText = "Time to enjoy life to the fullest! Your pension awaits.",
+			eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 for travel" end,
+			-- Retire and travel
+			onResolve = function(state)
 					local pensionBase = 0
 					if state.CurrentJob and state.CurrentJob.salary then
 						pensionBase = math.floor(state.CurrentJob.salary * 0.4)
@@ -794,12 +798,13 @@ Adult.events = {
 		category = "health",
 		tags = { "aging", "doctor", "health_risk" },
 
-		choices = {
-			{
-				text = "Follow doctor's orders carefully",
-				effects = { Health = 5, Money = -500 },
-				feedText = "You're taking good care of yourself."
-			},
+	choices = {
+		{
+			text = "Follow doctor's orders carefully ($500)",
+			effects = { Health = 5, Money = -500 },
+			feedText = "You're taking good care of yourself.",
+			eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for medical care" end,
+		},
 			{
 				text = "Stay as active as possible",
 				effects = { Health = 8, Happiness = 5 },
@@ -1129,12 +1134,13 @@ Adult.events = {
 				state.Flags.engaged = nil
 			end,
 		},
-		{ 
-			text = "Courthouse and save the money",
-				effects = { Happiness = 5, Money = -100 }, 
-				setFlags = { married = true, practical_wedding = true }, 
-				feedText = "Quick and easy. More money for the honeymoon!",
-			onResolve = function(state)
+	{ 
+		text = "Courthouse and save the money ($100)",
+			effects = { Happiness = 5, Money = -100 }, 
+			setFlags = { married = true, practical_wedding = true }, 
+			feedText = "Quick and easy. More money for the honeymoon!",
+			eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for courthouse fee" end,
+		onResolve = function(state)
 				if state.Relationships and state.Relationships.partner then
 					local partnerGender = state.Relationships.partner.gender or "female"
 					state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
@@ -3095,16 +3101,18 @@ Adult.events = {
 					end
 				end,
 			},
-			{
-				text = "Staycation at home",
-				effects = { Happiness = 6, Health = 3, Money = -100 },
-				feedText = "Sometimes home is the best vacation. Relaxed and recharged!",
-			},
-			{
-				text = "Visit family",
-				effects = { Happiness = 8, Money = -300 },
-				feedText = "Quality time with family. Worth the trip!",
-			},
+		{
+			text = "Staycation at home ($100)",
+			effects = { Happiness = 6, Health = 3, Money = -100 },
+			feedText = "Sometimes home is the best vacation. Relaxed and recharged!",
+			eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for staycation" end,
+		},
+		{
+			text = "Visit family ($300)",
+			effects = { Happiness = 8, Money = -300 },
+			feedText = "Quality time with family. Worth the trip!",
+			eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for travel" end,
+		},
 		},
 	},
 	{

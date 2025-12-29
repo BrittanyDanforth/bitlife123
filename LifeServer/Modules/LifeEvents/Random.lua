@@ -918,11 +918,12 @@ Random.events = {
 		category = "injury",
 		-- CRITICAL FIX: Random injury type and severity
 		choices = {
-			{
-				text = "Get medical attention immediately",
-				effects = { Money = -300 },
-				feedText = "You got checked out right away...",
-				onResolve = function(state)
+		{
+			text = "Get medical attention immediately ($300)",
+			effects = { Money = -300 },
+			feedText = "You got checked out right away...",
+			eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for medical care" end,
+			onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.15 then -- Ankle
 						state:ModifyStat("Health", -8)
@@ -1021,11 +1022,12 @@ Random.events = {
 		blockedByFlags = { in_prison = true },
 		-- CRITICAL FIX: Random accident severity - player doesn't choose how hurt they are
 		choices = {
-			{
-				text = "Accept emergency care",
-				effects = { Money = -1000 },
-				feedText = "Paramedics rushed you to the hospital...",
-				onResolve = function(state)
+		{
+			text = "Accept emergency care ($1,000)",
+			effects = { Money = -1000 },
+			feedText = "Paramedics rushed you to the hospital...",
+			eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 for emergency care" end,
+			onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.05 then -- 5% severe trauma
 						state:ModifyStat("Health", -32)
@@ -1652,11 +1654,12 @@ Random.events = {
 					end
 				end,
 			},
-			{ 
-				text = "See a doctor immediately", 
-				effects = { Money = -100 },
-				feedText = "You went to the doctor...",
-				onResolve = function(state)
+		{ 
+			text = "See a doctor immediately ($100)", 
+			effects = { Money = -100 },
+			feedText = "You went to the doctor...",
+			eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for doctor" end,
+			onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.70 then
 						state:ModifyStat("Health", -3)
@@ -1731,11 +1734,12 @@ Random.events = {
 					end
 				end,
 			},
-			{ 
-				text = "Go to urgent care", 
-				effects = { Money = -150 },
-				feedText = "You went to get checked out...",
-				onResolve = function(state)
+		{ 
+			text = "Go to urgent care ($150)", 
+			effects = { Money = -150 },
+			feedText = "You went to get checked out...",
+			eligibility = function(state) return (state.Money or 0) >= 150, "💸 Need $150 for urgent care" end,
+			onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.80 then
 						state:ModifyStat("Health", -4)
