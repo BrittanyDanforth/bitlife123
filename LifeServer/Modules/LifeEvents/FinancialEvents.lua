@@ -1277,38 +1277,21 @@ FinancialEvents.events = {
 		
 		choices = {
 			{
-				text = "Look for an apartment to rent",
-				effects = {},
-				feedText = "Searching for apartments...",
+				text = "Get an apartment ($2,000 deposit)",
+				effects = { Money = -2000 },
+				eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2,000 for deposit" end,
+				feedText = "🏠 Found an apartment! $1000/month rent. Your own place at last!",
 				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 3000 then
-						state.Money = money - 2000 -- Deposit + first month
-						state.Flags = state.Flags or {}
-						state.Flags.has_apartment = true
-						state.Flags.renting = true
-						state.Flags.has_own_place = true
-						state.Flags.living_with_parents = nil
-						state.HousingState = state.HousingState or {}
-						state.HousingState.status = "renter"
-						state.HousingState.type = "apartment"
-						state.HousingState.rent = 1000
-						state.HousingState.moveInYear = state.Year or 2025
-						if state.AddFeed then
-							state:AddFeed("🏠 Found an apartment! $1000/month rent. Your own place at last!")
-						end
-					else
-						if state.AddFeed then
-							state:AddFeed("🏠 Couldn't afford the deposit. Need to save more.")
-						end
-					end
-				end,
-				eligibility = function(state)
-					local money = state.Money or 0
-					if money < 2000 then
-						return false, "💸 You need at least $2,000 for a deposit!"
-					end
-					return true
+					state.Flags = state.Flags or {}
+					state.Flags.has_apartment = true
+					state.Flags.renting = true
+					state.Flags.has_own_place = true
+					state.Flags.living_with_parents = nil
+					state.HousingState = state.HousingState or {}
+					state.HousingState.status = "renter"
+					state.HousingState.type = "apartment"
+					state.HousingState.rent = 1000
+					state.HousingState.moveInYear = state.Year or 2025
 				end,
 			},
 			{
@@ -1371,33 +1354,54 @@ FinancialEvents.events = {
 			return true
 		end,
 		
+		getDynamicChoices = function(state)
+			local rent = 1000
+			if state.HousingState and state.HousingState.rent then
+				rent = state.HousingState.rent
+			end
+			return {
+				{
+					text = string.format("Pay rent in full ($%d)", rent),
+					effects = { Happiness = 2, Money = -rent },
+					eligibility = function(s) return (s.Money or 0) >= rent, string.format("💸 Need $%d for rent", rent) end,
+					feedText = string.format("💸 Rent paid! -$%d. Roof over your head secured.", rent),
+					onResolve = function(s)
+						s.HousingState = s.HousingState or {}
+						s.HousingState.missedRentYears = 0
+					end,
+				},
+				{
+					text = "Ask for an extension",
+					effects = { Happiness = -3 },
+					feedText = "Requesting more time...",
+					onResolve = function(s)
+						if math.random() < 0.5 then
+							if s.AddFeed then s:AddFeed("💸 Landlord gave you until end of month.") end
+						else
+							s.HousingState = s.HousingState or {}
+							s.HousingState.missedRentYears = (s.HousingState.missedRentYears or 0) + 1
+							if s.AddFeed then s:AddFeed("💸 No extension. Late fees added.") end
+						end
+					end,
+				},
+				{
+					text = "Skip this month",
+					effects = { Happiness = -5 },
+					feedText = "💸 Skipped rent. This will catch up to you.",
+					onResolve = function(s)
+						s.HousingState = s.HousingState or {}
+						s.HousingState.missedRentYears = (s.HousingState.missedRentYears or 0) + 1
+						s.Flags = s.Flags or {}
+						s.Flags.rent_delinquent = true
+						if s.HousingState.missedRentYears >= 2 then
+							s.Flags.eviction_warning = true
+							if s.AddFeed then s:AddFeed("⚠️ EVICTION WARNING!") end
+						end
+					end,
+				},
+			}
+		end,
 		choices = {
-			{
-				text = "Pay in full - on time",
-				effects = { Happiness = 2 },
-				feedText = "Paying rent...",
-				onResolve = function(state)
-					local rent = 1000
-					if state.HousingState and state.HousingState.rent then
-						rent = state.HousingState.rent
-					end
-					local money = state.Money or 0
-					if money >= rent then
-						state.Money = money - rent
-						state.HousingState = state.HousingState or {}
-						state.HousingState.missedRentYears = 0
-						if state.AddFeed then
-							state:AddFeed(string.format("💸 Rent paid! -$%d. Roof over your head secured.", rent))
-						end
-					else
-						state.HousingState = state.HousingState or {}
-						state.HousingState.missedRentYears = (state.HousingState.missedRentYears or 0) + 1
-						if state.AddFeed then
-							state:AddFeed("💸 Couldn't afford full rent. Landlord is not happy.")
-						end
-					end
-				end,
-			},
 			{
 				text = "Ask for an extension",
 				effects = { Happiness = -3 },

@@ -390,83 +390,43 @@ Senior.events = {
         
         choices = {
             {
-                text = "Cruise vacation",
-                effects = {},
-                feedText = "You booked a cruise...",
-                onResolve = function(state)
-                    local money = state.Money or 0
-                    if money >= 5000 then
-                        state.Money = money - 5000
-                        state:ModifyStat("Happiness", 15)
-                        state:ModifyStat("Health", 3)
-                        state:AddFeed("🚢 Luxury cruise! Fine dining, ports of call, paradise!")
-                    elseif money >= 2000 then
-                        state.Money = money - 2000
-                        state:ModifyStat("Happiness", 10)
-                        state:AddFeed("🚢 Nice cruise! Saw beautiful places from the ship!")
-                    else
-                        state.Money = money - 500
-                        state:ModifyStat("Happiness", 6)
-                        state:AddFeed("🚢 Budget cruise but still amazing to travel!")
-                    end
-                end,
+                text = "Luxury cruise ($2,000)",
+                effects = { Money = -2000, Happiness = 12, Health = 3 },
+                eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2,000 for cruise" end,
+                feedText = "🚢 Amazing cruise! Fine dining and beautiful ports!",
             },
             {
-                text = "National Parks road trip",
-                effects = {},
-                feedText = "You hit the open road...",
-                onResolve = function(state)
-                    local money = state.Money or 0
-                    if money >= 3000 then
-                        state.Money = money - 3000
-                        state:ModifyStat("Happiness", 12)
-                        state:ModifyStat("Health", 5)
-                        state.Flags = state.Flags or {}
-                        state.Flags.nature_lover = true
-                        state:AddFeed("🏞️ Incredible trip! Saw the Grand Canyon, Yellowstone, and more!")
-                    elseif money >= 1000 then
-                        state.Money = money - 1000
-                        state:ModifyStat("Happiness", 8)
-                        state:ModifyStat("Health", 3)
-                        state:AddFeed("🏞️ Great trip to nearby parks! America is beautiful.")
-                    else
-                        state.Money = money - 300
-                        state:ModifyStat("Happiness", 5)
-                        state:AddFeed("🏞️ Day trips to local parks. Still wonderful!")
-                    end
-                end,
+                text = "Budget cruise ($500)",
+                effects = { Money = -500, Happiness = 6 },
+                eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for cruise" end,
+                feedText = "🚢 Budget cruise but still amazing to travel!",
             },
             {
-                text = "International adventure",
-                effects = {},
-                feedText = "You booked an international trip...",
-                onResolve = function(state)
-                    local money = state.Money or 0
-                    if money >= 8000 then
-                        state.Money = money - 8000
-                        state:ModifyStat("Happiness", 18)
-                        state:ModifyStat("Smarts", 3)
-                        state.Flags = state.Flags or {}
-                        state.Flags.world_traveler = true
-                        state:AddFeed("🌍 Dream trip of a lifetime! Europe/Asia/wherever you dreamed!")
-                    elseif money >= 4000 then
-                        state.Money = money - 4000
-                        state:ModifyStat("Happiness", 12)
-                        state:ModifyStat("Smarts", 2)
-                        state:AddFeed("🌍 Great international trip! Crossed places off your bucket list!")
-                    else
-                        state:ModifyStat("Happiness", -2)
-                        state:AddFeed("🌍 Can't quite afford international travel right now...")
-                    end
-                end,
+                text = "National Parks road trip ($1,000)",
+                effects = { Money = -1000, Happiness = 10, Health = 4 },
+                setFlags = { nature_lover = true },
+                eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 for road trip" end,
+                feedText = "🏞️ Incredible trip! America is beautiful.",
             },
             {
-                text = "Visit family across the country",
-                effects = {},
-                feedText = "You visited family...",
+                text = "Day trips to local parks ($100)",
+                effects = { Money = -100, Happiness = 5, Health = 2 },
+                eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for day trips" end,
+                feedText = "🏞️ Day trips to local parks. Still wonderful!",
+            },
+            {
+                text = "International adventure ($4,000)",
+                effects = { Money = -4000, Happiness = 15, Smarts = 3 },
+                setFlags = { world_traveler = true },
+                eligibility = function(state) return (state.Money or 0) >= 4000, "💸 Need $4,000 for international trip" end,
+                feedText = "🌍 Amazing trip! Crossed places off your bucket list!",
+            },
+            {
+                text = "Visit family ($500)",
+                effects = { Money = -500, Happiness = 10 },
+                eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for travel" end,
+                feedText = "👨‍👩‍👧‍👦 Wonderful time with family!",
                 onResolve = function(state)
-                    local money = state.Money or 0
-                    state.Money = math.max(0, money - math.min(1500, money * 0.3))
                     state:ModifyStat("Happiness", 10)
                     state:AddFeed("👨‍👩‍👧‍👦 Wonderful time reconnecting with family!")
                 end,

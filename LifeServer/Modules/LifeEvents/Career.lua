@@ -351,31 +351,17 @@ Career.events = {
 			{ text = "Push for a promotion", effects = { Smarts = 2, Money = 500, Happiness = 5 }, feedText = "You went for the promotion!" },
 			{ text = "Change companies for better pay", effects = { Money = 1000, Happiness = 3 }, setFlags = { job_hopper = true }, feedText = "You switched jobs for a raise!" },
 			{ 
-				text = "Pivot to a new career entirely", 
-				effects = { Smarts = 5, Happiness = 5 }, 
+				text = "Pivot to a new career ($500 training)", 
+				effects = { Smarts = 5, Happiness = 5, Money = -500 }, 
 				setFlags = { career_changer = true }, 
-				feedText = "Pivoting to a new career...",
-				-- CRITICAL FIX: Money validation for $1000 career change costs
-				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 1000 then
-						state.Money = money - 1000
-						if state.AddFeed then
-							state:AddFeed("🛤️ You're starting over in a new field! Invested $1000 in training!")
-						end
-					elseif money >= 500 then
-						state.Money = money - 500
-						if state.ModifyStat then state:ModifyStat("Smarts", -1) end
-						if state.AddFeed then
-							state:AddFeed("🛤️ Budget career pivot! Self-teaching with online courses.")
-						end
-					else
-						if state.ModifyStat then state:ModifyStat("Smarts", -2) end
-						if state.AddFeed then
-							state:AddFeed("🛤️ Can't afford training. Starting from scratch with just determination!")
-						end
-					end
-				end,
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for training" end,
+				feedText = "🛤️ You're starting over in a new field! Invested in training!",
+			},
+			{ 
+				text = "Self-teach and pivot (free)", 
+				effects = { Smarts = 3, Happiness = 3 }, 
+				setFlags = { career_changer = true }, 
+				feedText = "🛤️ Self-teaching with free online courses. Slower but free!",
 			},
 			{ text = "Stay the course", effects = { Happiness = 2 }, feedText = "You're content where you are." },
 		},
@@ -407,40 +393,18 @@ Career.events = {
 		choices = {
 			{ text = "Pitch it to your company", effects = { Happiness = 8, Money = 1000, Smarts = 3 }, feedText = "You pitched your big idea!" },
 			{ 
-				text = "Start your own company with it", 
-				effects = { Happiness = 10 }, 
+				text = "Start your own company ($1,000)", 
+				effects = { Happiness = 10, Money = -1000 }, 
 				setFlags = { entrepreneur = true, startup_founder = true }, 
-				feedText = "Starting your own company...",
-				-- CRITICAL FIX: Money validation for $3000 startup costs
-				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 3000 then
-						state.Money = money - 3000
-						if state.AddFeed then
-							state:AddFeed("💡 You founded your own tech startup! $3000 invested to get started!")
-						end
-					elseif money >= 1000 then
-						state.Money = money - 1000
-						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
-						if state.AddFeed then
-							state:AddFeed("💡 Bootstrapping a lean startup! Working from your garage with $1000.")
-						end
-					elseif money >= 200 then
-						state.Money = money - 200
-						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
-						if state.AddFeed then
-							state:AddFeed("💡 Micro-startup! Just $200 for domain and hosting. Living the dream... barely.")
-						end
-					else
-						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
-						if state.AddFeed then
-							state:AddFeed("💡 Can't afford startup costs. Keeping it as a side project for now.")
-						end
-						state.Flags = state.Flags or {}
-						state.Flags.startup_founder = nil
-						state.Flags.side_hustler = true
-					end
-				end,
+				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 to start a company" end,
+				feedText = "💡 You founded your own tech startup!",
+			},
+			{ 
+				text = "Bootstrap a lean startup ($200)", 
+				effects = { Happiness = 5, Money = -200 }, 
+				setFlags = { entrepreneur = true, side_hustler = true }, 
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for domain and hosting" end,
+				feedText = "💡 Micro-startup! Just $200 for domain and hosting!",
 			},
 			{ text = "Keep developing it as a side project", effects = { Smarts = 5, Health = -2 }, setFlags = { side_hustler = true }, feedText = "You're building something on the side." },
 			{ text = "Forget it, too risky", effects = { Happiness = -3 }, feedText = "The idea faded away..." },
@@ -1191,28 +1155,7 @@ Career.events = {
 				text = "Take a medical leave", 
 				effects = { Health = 15, Happiness = 10 }, 
 				setFlags = { took_leave = true }, 
-				feedText = "Taking medical leave...",
-				-- CRITICAL FIX: Money validation for $1000 leave expenses
-				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 1000 then
-						state.Money = money - 1000
-						if state.AddFeed then
-							state:AddFeed("🔥 You took paid leave. The break is desperately needed.")
-						end
-					elseif money >= 300 then
-						state.Money = money - 300
-						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
-						if state.AddFeed then
-							state:AddFeed("🔥 Unpaid leave - tight budget but mental health is priceless.")
-						end
-					else
-						if state.ModifyStat then state:ModifyStat("Happiness", -4) end
-						if state.AddFeed then
-							state:AddFeed("🔥 Can't afford time off. Taking sick days and resting at home.")
-						end
-					end
-				end,
+				feedText = "🔥 You took time off to recover. The break was desperately needed.",
 			},
 			{ text = "Push through - can't afford to stop", effects = { Health = -15, Happiness = -10 }, setFlags = { severe_burnout = true }, feedText = "You're destroying yourself..." },
 			{ 

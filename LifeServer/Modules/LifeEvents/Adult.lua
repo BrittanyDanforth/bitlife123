@@ -1920,68 +1920,33 @@ Adult.events = {
 		end,
 		choices = {
 			{ 
-				text = "Dream vacation trip", 
-				-- CRITICAL FIX: Validate money before $5000 trip
-				effects = {}, -- Money handled in onResolve
+				text = "Dream vacation trip ($2,000)", 
+				effects = { Happiness = 12, Health = 3, Money = -2000 },
 				setFlags = { traveled_world = true }, 
-				feedText = "Planning the trip of a lifetime...",
-				onResolve = function(state)
-					local money = state.Money or 0
-					local tripCost = 5000
-					if money >= tripCost then
-						state.Money = money - tripCost
-						if state.ModifyStat then 
-							state:ModifyStat("Happiness", 15)
-							state:ModifyStat("Health", 3)
-						end
-						if state.AddFeed then
-							state:AddFeed("✈️ Dream vacation! Worth every penny!")
-						end
-					elseif money >= 2000 then
-						state.Money = money - 2000
-						if state.ModifyStat then 
-							state:ModifyStat("Happiness", 10)
-							state:ModifyStat("Health", 2)
-						end
-						if state.AddFeed then
-							state:AddFeed("✈️ Budget dream trip! Still amazing!")
-						end
-					elseif money >= 500 then
-						state.Money = money - 500
-						if state.ModifyStat then state:ModifyStat("Happiness", 6) end
-						if state.AddFeed then
-							state:AddFeed("✈️ Took a local adventure. Dreams don't have to be expensive!")
-						end
-					else
-						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
-						if state.AddFeed then
-							state:AddFeed("💸 Can't afford the trip right now...")
-						end
-					end
-				end,
+				eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2,000 for trip" end,
+				feedText = "✈️ Dream vacation! Worth every penny!",
 			},
 			{ 
-				text = "Learn a new skill", 
-				-- CRITICAL FIX: Validate money for classes
-				effects = {}, -- Money handled in onResolve
+				text = "Local adventure ($500)", 
+				effects = { Happiness = 8, Money = -500 },
+				setFlags = { traveled_world = true }, 
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for trip" end,
+				feedText = "✈️ Local adventure! Dreams don't have to be expensive!",
+			},
+			{ 
+				text = "Learn a new skill ($200 class)", 
+				effects = { Happiness = 8, Smarts = 5, Money = -200 },
 				setFlags = { lifelong_learner = true }, 
-				feedText = "Starting to learn something new...",
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for class" end,
+				feedText = "📚 You're never too old to learn something new!",
+			},
+			{ 
+				text = "Learn online (free)", 
+				effects = { Happiness = 5, Smarts = 3 },
+				setFlags = { lifelong_learner = true }, 
+				feedText = "📚 Free online courses! Self-taught and proud!",
 				onResolve = function(state)
-					local money = state.Money or 0
-					local classCost = 500
-					if money >= classCost then
-						state.Money = money - classCost
-						if state.ModifyStat then 
-							state:ModifyStat("Happiness", 8)
-							state:ModifyStat("Smarts", 5)
-						end
-						if state.AddFeed then
-							state:AddFeed("📚 You're never too old to learn something new!")
-						end
-					else
-						-- Free online learning
-						if state.ModifyStat then 
-							state:ModifyStat("Happiness", 5)
+					if state.ModifyStat then
 							state:ModifyStat("Smarts", 3)
 						end
 						if state.AddFeed then

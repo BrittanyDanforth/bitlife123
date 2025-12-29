@@ -568,26 +568,12 @@ PremiumIntegratedEvents.events = {
 				end,
 			},
 			{
-				text = "Big expensive wedding",
-				effects = {},
-				setFlags = { married = true, has_partner = true, engaged = false },
-				feedText = "Going all out...",
+				text = "Big expensive wedding ($10,000)",
+				effects = { Money = -10000, Happiness = 18 },
+				setFlags = { married = true, has_partner = true, engaged = false, lavish_wedding = true },
+				eligibility = function(state) return (state.Money or 0) >= 10000, "💸 Need $10,000 for big wedding" end,
+				feedText = "💒 SPECTACULAR wedding! Everyone will remember it!",
 				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 20000 then
-						state.Money = money - 20000
-						state:ModifyStat("Happiness", 18)
-						state:AddFeed("💒 SPECTACULAR wedding! Everyone will remember it!")
-						state.Flags = state.Flags or {}
-						state.Flags.lavish_wedding = true
-					else
-						state.Money = math.max(0, money - 15000)
-						state:ModifyStat("Happiness", 10)
-						state:AddFeed("💒 Great wedding but went over budget. Worth it?")
-						state.Flags = state.Flags or {}
-						state.Flags.wedding_debt = true
-					end
-					-- CRITICAL FIX: Convert partner to spouse
 					if state.Relationships and state.Relationships.partner then
 						state.Relationships.spouse = state.Relationships.partner
 						state.Relationships.spouse.type = "spouse"
@@ -1013,24 +999,33 @@ PremiumIntegratedEvents.events = {
 		
 		choices = {
 			{
-				text = "Hire an expensive lawyer",
-				effects = {},
+				text = "Hire an expensive lawyer ($5,000)",
+				effects = { Money = -5000 },
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 for lawyer" end,
 				feedText = "Getting professional representation...",
 				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 5000 then
-						state.Money = money - 5000
-						local roll = math.random()
-						if roll < 0.70 then
-							state:ModifyStat("Happiness", 15)
-							state:AddFeed("⚖️ WON the case! Expensive lawyer was worth it!")
-						else
-							state:ModifyStat("Happiness", -5)
-							state:AddFeed("⚖️ Lost despite the expensive lawyer. System is broken.")
-						end
+					local roll = math.random()
+					if roll < 0.70 then
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("⚖️ WON the case! Expensive lawyer was worth it!")
 					else
 						state:ModifyStat("Happiness", -5)
-						state:AddFeed("⚖️ Couldn't afford the good lawyer. Had to go with public defender.")
+						state:AddFeed("⚖️ Lost despite the expensive lawyer. System is broken.")
+					end
+				end,
+			},
+			{
+				text = "Use public defender (free)",
+				effects = {},
+				feedText = "Getting public defender...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("⚖️ Won with public defender! Lucky!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("⚖️ Lost the case. Should've gotten a better lawyer.")
 					end
 				end,
 			},
@@ -1685,39 +1680,32 @@ PremiumIntegratedEvents.events = {
 		
 		choices = {
 			{
-				text = "Give them the money",
-				effects = {},
-				feedText = "Helping a friend in need...",
+				text = "Loan them $5,000",
+				effects = { Money = -5000 },
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 to lend" end,
+				feedText = "🤝 Helping a friend in need...",
 				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 5000 then
-						state.Money = money - 5000
-						local roll = math.random()
-						if roll < 0.60 then
-							state:ModifyStat("Happiness", 15)
-							state:AddFeed("🤝 They paid you back! True friend!")
-							state.Money = (state.Money or 0) + 5000
-						else
-							state:ModifyStat("Happiness", -5)
-							state:AddFeed("🤝 Never saw that money again. Lesson learned.")
-						end
+					local roll = math.random()
+					if roll < 0.60 then
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("🤝 They paid you back! True friend!")
+						state.Money = (state.Money or 0) + 5000
 					else
-						state:ModifyStat("Happiness", 5)
-						local gift = math.floor(money * 0.5)
-						state.Money = money - gift
-						state:AddFeed(string.format("🤝 Gave what you could: $%d. They appreciated it.", gift))
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🤝 Never saw that money again. Lesson learned.")
 					end
 				end,
 			},
 			{
-				text = "Say no",
-				effects = { Happiness = -5 },
-				feedText = "You can't afford to help. They understood... sort of.",
+				text = "Give them $1,000",
+				effects = { Money = -1000, Happiness = 3 },
+				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 to give" end,
+				feedText = "🤝 You gave $1,000. They appreciated it.",
 			},
 			{
-				text = "Offer less",
-				effects = { Money = -1000, Happiness = 3 },
-				feedText = "You gave $1,000. It's something.",
+				text = "Say no",
+				effects = { Happiness = -5 },
+				feedText = "You can't help right now. They understood... sort of.",
 			},
 			-- ⚡ GOD MODE PREMIUM OPTION
 			{

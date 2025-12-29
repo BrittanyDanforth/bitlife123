@@ -348,73 +348,49 @@ local events = {
 		choices = {
 			{
 				index = 1,
-				text = "College - continue your education",
+				text = "University (pay tuition if you can)",
 				effects = { Happiness = 7, Smarts = 5 },
 				setFlags = { plans_for_college = true, higher_education_path = true, in_college = true },
 				feedText = "Enrolled in college!",
-				-- CRITICAL FIX #507: Actually enroll in college - set EducationData properly!
 				onResolve = function(state)
 					local money = state.Money or 0
 					state.Flags = state.Flags or {}
 					local loanNeeded = 0
+					local tuitionPaid = 0
 					local collegeName = "State University"
-					local duration = 4
-					local level = "bachelor"
 					
-					if money >= 10000 then
-						state.Money = money - 10000
-						collegeName = "State University"
-						duration = 4
-						level = "bachelor"
-					elseif money >= 3000 then
-						-- Community college / scholarship route
-						state.Money = money - 3000
-						state.Flags.community_college = true
-						collegeName = "Community College"
-						duration = 2
-						level = "community"
-					elseif money >= 500 then
-						-- Financial aid / full scholarship - still go to university
-						state.Money = money - 500
+					if money >= 5000 then
+						tuitionPaid = 5000
+						state.Money = money - tuitionPaid
+						if state.AddFeed then state:AddFeed("🎓 Paid $5,000 tuition! Starting university!") end
+					elseif money >= 1000 then
+						tuitionPaid = money
+						state.Money = 0
+						loanNeeded = 5000 - tuitionPaid
 						state.Flags.financial_aid = true
 						state.Flags.student_loans = true
-						state.Flags.has_student_loans = true
-						loanNeeded = 9500 -- Rest is loans
-						collegeName = "State University"
-						duration = 4
-						level = "bachelor"
+						if state.AddFeed then state:AddFeed(string.format("🎓 Paid $%d and took $%d in loans for university!", tuitionPaid, loanNeeded)) end
 					else
-						-- Parents helping / work-study - full loans
+						loanNeeded = 5000
 						state.Flags.work_study = true
 						state.Flags.student_loans = true
-						state.Flags.has_student_loans = true
-						loanNeeded = 10000
-						collegeName = "State University"
-						duration = 4
-						level = "bachelor"
+						if state.AddFeed then state:AddFeed("🎓 Full financial aid! Student loans cover tuition.") end
 					end
 					
-					-- CRITICAL FIX #507: Actually set up EducationData for college enrollment!
 					state.EducationData = state.EducationData or {}
 					state.EducationData.Status = "enrolled"
-					state.EducationData.Level = level
+					state.EducationData.Level = "bachelor"
 					state.EducationData.Progress = 0
-					state.EducationData.Duration = duration
+					state.EducationData.Duration = 4
 					state.EducationData.Institution = collegeName
 					state.EducationData.Debt = (state.EducationData.Debt or 0) + loanNeeded
 					state.EducationData.LoanAmount = loanNeeded
 					state.EducationData.enrolledAge = state.Age
 					
-					-- Set proper flags
 					state.Flags.in_college = true
 					state.Flags.college_student = true
 					state.Flags.enrolled_college = true
-					state.Flags.college_bound = true  -- CRITICAL: Needed for college_graduation event
-
-					-- CRITICAL FIX: Do NOT set state.Education to "bachelor" here!
-					-- Education should remain "high_school" until they GRADUATE college.
-					-- EducationData.Level tracks what they're PURSUING, not what they've COMPLETED.
-					-- The college_graduation event sets state.Education = "bachelor" on completion.
+					state.Flags.college_bound = true
 					state.Education = state.Education or "high_school"
 
 					state.PendingFeed = string.format("🎓 You're going to %s! New chapter begins!", collegeName)
@@ -422,36 +398,33 @@ local events = {
 			},
 			{
 				index = 2,
-				text = "Trade school - learn a real skill",
+				text = "Trade school (pay what you can)",
 				effects = { Happiness = 6, Smarts = 4 },
 				setFlags = { trade_school = true, practical_path = true, in_trade_school = true },
 				feedText = "Enrolled in trade school!",
-				-- CRITICAL FIX #508: Actually enroll in trade school properly
 				onResolve = function(state)
 					local money = state.Money or 0
 					state.Flags = state.Flags or {}
 					local loanNeeded = 0
+					local tuitionPaid = 0
 					local schoolName = "Technical Institute"
 					
-					if money >= 5000 then
-						state.Money = money - 5000
-						schoolName = "Technical Institute"
-					elseif money >= 2000 then
-						state.Money = money - 2000
-						state.Flags.apprentice = true
-						schoolName = "Apprenticeship Program"
+					if money >= 2000 then
+						tuitionPaid = 2000
+						state.Money = money - tuitionPaid
+						if state.AddFeed then state:AddFeed("🔧 Paid $2,000 tuition! Starting trade school!") end
 					elseif money >= 500 then
-						state.Money = money - 500
+						tuitionPaid = money
+						state.Money = 0
+						loanNeeded = 2000 - tuitionPaid
 						state.Flags.financial_aid = true
-						loanNeeded = 4500
-						state.Flags.has_student_loans = true
-						schoolName = "Technical Institute"
+						if state.AddFeed then state:AddFeed(string.format("🔧 Paid $%d and took $%d in loans for trade school!", tuitionPaid, loanNeeded)) end
 					else
 						state.Flags.apprentice = true
 						schoolName = "Apprenticeship Program"
+						if state.AddFeed then state:AddFeed("🔧 Starting apprenticeship program! Learn while you earn!") end
 					end
 					
-					-- CRITICAL FIX #508: Set up EducationData for trade school
 					state.EducationData = state.EducationData or {}
 					state.EducationData.Status = "enrolled"
 					state.EducationData.Level = "trade"
@@ -463,14 +436,8 @@ local events = {
 					
 					state.Flags.trade_school_student = true
 					state.Flags.in_trade_school = true
-					state.Flags.trade_school_bound = true  -- Needed for trade school completion event
-
-					-- CRITICAL FIX: Do NOT set state.Education to "trade" here!
-					-- Education should remain "high_school" until they COMPLETE trade school.
-					-- EducationData.Level tracks what they're PURSUING, not COMPLETED.
+					state.Flags.trade_school_bound = true
 					state.Education = state.Education or "high_school"
-
-					state.PendingFeed = string.format("🔧 You're enrolled at %s! Real skills, real jobs!", schoolName)
 				end,
 			},
 		{
@@ -519,37 +486,18 @@ local events = {
 		},
 			{
 				index = 4,
-				text = "Gap year - travel and figure it out",
-				effects = { Happiness = 10, Health = 4 },
+				text = "Gap year road trip ($1,000)",
+				effects = { Happiness = 10, Health = 4, Money = -1000 },
 				setFlags = { gap_year = true, free_spirit = true, wanderlust = true },
-				feedText = "Planning a gap year...",
-				-- CRITICAL FIX: Money validation for $8000 gap year travel
-				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 8000 then
-						state.Money = money - 8000
-						if state.AddFeed then
-							state:AddFeed("🎓 Backpacking through Europe! Hostels, trains, new friends. Best year ever!")
-						end
-					elseif money >= 3000 then
-						state.Money = money - 3000
-						if state.AddFeed then
-							state:AddFeed("🎓 Road trip across the country! Budget adventure but amazing!")
-						end
-					elseif money >= 500 then
-						state.Money = money - 500
-						if state.AddFeed then
-							state:AddFeed("🎓 Staycation gap year - exploring local areas and working odd jobs!")
-						end
-					else
-						-- No money = volunteering gap year
-						state.Flags = state.Flags or {}
-						state.Flags.volunteer_gap_year = true
-						if state.AddFeed then
-							state:AddFeed("🎓 Volunteer gap year! Free room and board while helping others!")
-						end
-					end
-				end,
+				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 for travel" end,
+				feedText = "🎓 Road trip adventure! Finding yourself before adulthood!",
+			},
+			{
+				index = 5,
+				text = "Volunteer gap year (free)",
+				effects = { Happiness = 8, Health = 3, Smarts = 2 },
+				setFlags = { gap_year = true, volunteer_gap_year = true },
+				feedText = "🎓 Volunteer gap year! Free room and board while helping others!",
 			},
 		},
 	},

@@ -535,46 +535,19 @@ local events = {
 			},
 			{
 				index = 2,
-				text = "Start my own security firm",
-				-- CRITICAL FIX: Validate money before starting business
-				effects = {}, -- Money handled in onResolve
+				text = "Start security firm ($50,000)",
+				effects = { Money = -50000, Happiness = 10 },
 				setFlags = { entrepreneur = true, security_founder = true },
-				feedText = "Considering starting your own firm...",
-				onResolve = function(state)
-					local money = state.Money or 0
-					local startupCost = 100000
-					if money >= startupCost then
-						state.Money = money - startupCost
-						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
-						if state.AddFeed then
-							state:AddFeed("🏢 You invested $100K and started your own cybersecurity company!")
-						end
-					elseif money >= 50000 then
-						-- Smaller startup
-						state.Money = money - 50000
-						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
-						if state.AddFeed then
-							state:AddFeed("🏢 Started a smaller security firm with $50K. Bootstrap mode!")
-						end
-					elseif money >= 20000 then
-						-- Consulting
-						state.Money = money - 20000
-						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
-						if state.AddFeed then
-							state:AddFeed("💻 Started as a security consultant with $20K. Building up!")
-						end
-					else
-						-- Can't afford
-						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
-						if state.AddFeed then
-							state:AddFeed("💸 Can't afford to start a business right now...")
-						end
-						-- Remove flags since we couldn't start
-						state.Flags = state.Flags or {}
-						state.Flags.entrepreneur = nil
-						state.Flags.security_founder = nil
-					end
-				end,
+				eligibility = function(state) return (state.Money or 0) >= 50000, "💸 Need $50,000 to start a company" end,
+				feedText = "🏢 Started your own cybersecurity company!",
+			},
+			{
+				index = 3,
+				text = "Start consulting ($20,000)",
+				effects = { Money = -20000, Happiness = 8 },
+				setFlags = { security_consultant = true },
+				eligibility = function(state) return (state.Money or 0) >= 20000, "💸 Need $20,000 to start consulting" end,
+				feedText = "💻 Started as a security consultant. Building up!",
 			},
 		},
 	},
@@ -909,81 +882,24 @@ local events = {
 			},
 			{
 				index = 2,
-				text = "Go into hiding",
-				-- CRITICAL FIX: Validate money before going into hiding
-				effects = {}, -- Money handled in onResolve
+				text = "Go into hiding ($10,000)",
+				effects = { Money = -10000, Happiness = -12 },
 				setFlags = { in_hiding = true },
-				feedText = "Considering going off the grid...",
-				onResolve = function(state)
-					local money = state.Money or 0
-					local hidingCost = 50000
-					if money >= hidingCost then
-						state.Money = money - hidingCost
-						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
-						if state.AddFeed then
-							state:AddFeed("🏃 You disappeared and went off the grid. $50K to set up a new identity.")
-						end
-					elseif money >= 10000 then
-						state.Money = money - 10000
-						if state.ModifyStat then state:ModifyStat("Happiness", -15) end
-						if state.AddFeed then
-							state:AddFeed("🏃 Went into hiding cheaply. $10K. Living rough but safe.")
-						end
-					else
-						-- Can't afford to hide properly
-						if state.ModifyStat then 
-							state:ModifyStat("Happiness", -20)
-							state:ModifyStat("Health", -10)
-						end
-						if state.AddFeed then
-							state:AddFeed("🏃 Can't afford to hide properly. Living in fear...")
-						end
-					end
-				end,
+				eligibility = function(state) return (state.Money or 0) >= 10000, "💸 Need $10,000 to go into hiding" end,
+				feedText = "🏃 Went off the grid. Living rough but safe.",
 			},
 			{
 				index = 3,
-				text = "Pay them off",
-				-- CRITICAL FIX: Validate money before paying off rivals
-				effects = {}, -- Money handled in onResolve
-				feedText = "Trying to buy your way out...",
+				text = "Pay them off ($50,000)",
+				effects = { Money = -50000 },
+				eligibility = function(state) return (state.Money or 0) >= 50000, "💸 Need $50,000 for payoff" end,
+				feedText = "💰 Paid $50K to make them go away.",
 				onResolve = function(state)
-					local money = state.Money or 0
-					local payoffCost = 200000
-					if money >= payoffCost then
-						state.Money = money - payoffCost
-						if state.AddFeed then
-							state:AddFeed("💰 Paid $200K to make them go away. Expensive peace.")
-						end
-					elseif money >= 100000 then
-						-- Partial payoff - risky
-						state.Money = money - 100000
-						local roll = math.random()
-						if roll < 0.6 then
-							if state.AddFeed then
-								state:AddFeed("💰 Paid $100K. They accepted... for now.")
-							end
-						else
-							if state.ModifyStat then state:ModifyStat("Health", -10) end
-							if state.AddFeed then
-								state:AddFeed("💰 $100K wasn't enough. They came after you anyway!")
-							end
-						end
-					elseif money >= 50000 then
-						state.Money = money - 50000
-						-- Very risky
-						local roll = math.random()
-						if roll < 0.3 then
-							if state.AddFeed then
-								state:AddFeed("💰 $50K barely satisfied them. You're on thin ice.")
-							end
-						else
-							if state.ModifyStat then 
-								state:ModifyStat("Health", -15)
-								state:ModifyStat("Happiness", -10)
-							end
-							if state.AddFeed then
-								state:AddFeed("💰 $50K wasn't enough. They attacked you!")
+					if math.random() < 0.7 then
+						if state.AddFeed then state:AddFeed("💰 They accepted the payoff. For now...") end
+					else
+						if state.ModifyStat then state:ModifyStat("Health", -10) end
+						if state.AddFeed then state:AddFeed("💰 Payoff wasn't enough. They came after you!") end
 							end
 						end
 					else

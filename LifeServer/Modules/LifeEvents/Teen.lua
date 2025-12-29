@@ -1405,35 +1405,17 @@ Teen.events = {
 				end,
 			},
 			{ 
-				text = "Ask to go to driving school instead", 
-				-- CRITICAL FIX: Validate money before driving school
-				effects = {}, -- Money handled in onResolve
+				text = "Driving school ($200)", 
+				effects = { Money = -200 },
 				setFlags = { driving_school = true },
-				feedText = "Looking into driving schools...",
-				onResolve = function(state)
-					local money = state.Money or 0
-					local schoolCost = 200
-					if money >= schoolCost then
-						state.Money = money - schoolCost
-						if state.AddFeed then
-							state:AddFeed("🚗 Signed up for professional driving lessons! ($200)")
-						end
-					else
-						-- Parents might pay
-						local roll = math.random()
-						if roll < 0.7 then
-							if state.AddFeed then
-								state:AddFeed("🚗 Your parents paid for driving school! Lucky!")
-							end
-						else
-							if state.AddFeed then
-								state:AddFeed("🚗 Can't afford driving school. Learning from parents instead.")
-							end
-							state.Flags = state.Flags or {}
-							state.Flags.driving_school = nil
-						end
-					end
-				end,
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for driving school" end,
+				feedText = "🚗 Signed up for professional driving lessons!",
+			},
+			{ 
+				text = "Ask parents to pay for driving school", 
+				effects = { Smarts = 3 },
+				setFlags = { driving_school = true },
+				feedText = "🚗 Your parents paid for driving school! Lucky!",
 			},
 		},
 	},
@@ -1656,109 +1638,47 @@ Teen.events = {
 		
 		choices = {
 			{
-				-- CRITICAL FIX: Show price in choice text!
-				text = "Cheap beater - just needs to run ($1,500)",
-				effects = {},
-				feedText = "You found a cheap car...",
-				-- CRITICAL FIX: Add per-choice eligibility check
-				eligibility = function(state)
-					if (state.Money or 0) < 1500 then
-						return false, "Can't afford $1,500 for a car"
-					end
-					return true
-				end,
+				text = "Cheap beater ($1,500)",
+				effects = { Money = -1500, Happiness = 7 },
+				setFlags = { has_car = true, owns_car = true },
+				eligibility = function(state) return (state.Money or 0) >= 1500, "💸 Need $1,500 for a car" end,
+				feedText = "🚗 You bought your first car for $1,500! Freedom!",
 				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 1500 then
-						state.Money = money - 1500
-						local roll = math.random()
-						if roll < 0.50 then
-							state:ModifyStat("Happiness", 10)
-							state.Flags = state.Flags or {}
-							state.Flags.has_car = true
-							state.Flags.owns_car = true
-							-- CRITICAL FIX: Use "Vehicles" category so it shows in AssetScreen!
-							state:AddAsset("Vehicles", {
-								id = "beater_car_" .. tostring(os.time()),
-								type = "sedan",
-								name = "Beater Car",
-								emoji = "🚗",
-								price = 1500,
-								value = 1500,
-								condition = 65,
-								happiness = 3,
-								maintenance = 400,
-								acquiredAge = state.Age,
-								description = "Your first car! It runs... mostly.",
-							})
-							state:AddFeed("🚗 You bought your first car for $1,500! Freedom!")
-						else
-							state:ModifyStat("Happiness", 5)
-							state.Flags = state.Flags or {}
-							state.Flags.has_car = true
-							state.Flags.owns_car = true
-							state.Flags.car_problems = true
-							-- CRITICAL FIX: Use "Vehicles" category so it shows in AssetScreen!
-							state:AddAsset("Vehicles", {
-								id = "beater_car_problem_" .. tostring(os.time()),
-								type = "sedan",
-								name = "Beater Car",
-								emoji = "🚗",
-								price = 1500,
-								value = 800,
-								condition = 40,
-								happiness = 2,
-								maintenance = 700,
-								acquiredAge = state.Age,
-								description = "Your first car. Needs constant repairs.",
-								hasIssues = true,
-							})
-							state:AddFeed("🚗 Your new car already has problems... but it's yours!")
-						end
-					else
-						state:AddFeed("🚗 Don't have enough money saved yet.")
-					end
+					state:AddAsset("Vehicles", {
+						id = "beater_car_" .. tostring(os.time()),
+						type = "sedan",
+						name = "Beater Car",
+						emoji = "🚗",
+						price = 1500,
+						value = 1200,
+						condition = 50,
+						happiness = 3,
+						maintenance = 400,
+						acquiredAge = state.Age,
+						description = "Your first car! It runs... mostly.",
+					})
 				end,
 			},
 			{
-				-- CRITICAL FIX: Show price in choice text!
-				text = "Something reliable but boring ($3,000)",
-				effects = {},
-				feedText = "Looking for reliability...",
-				-- CRITICAL FIX: Add per-choice eligibility check
-				eligibility = function(state)
-					if (state.Money or 0) < 3000 then
-						return false, "Can't afford $3,000 for a car"
-					end
-					return true
-				end,
+				text = "Something reliable ($3,000)",
+				effects = { Money = -3000, Happiness = 8 },
+				setFlags = { has_car = true, owns_car = true },
+				eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Need $3,000 for reliable car" end,
+				feedText = "🚗 You bought a reliable car for $3,000! Smart choice.",
 				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 3000 then
-						state.Money = money - 3000
-						state:ModifyStat("Happiness", 8)
-						state.Flags = state.Flags or {}
-						state.Flags.has_car = true
-						state.Flags.owns_car = true
-						-- CRITICAL FIX: Use "Vehicles" category so it shows in AssetScreen!
-						state:AddAsset("Vehicles", {
-							id = "reliable_car_" .. tostring(os.time()),
-							type = "sedan",
-							name = "Reliable Car",
-							emoji = "🚗",
-							price = 3000,
-							value = 3000,
-							condition = 80,
-							happiness = 4,
-							maintenance = 250,
-							acquiredAge = state.Age,
-							description = "Not flashy, but it works!",
-						})
-						state:AddFeed("🚗 You bought a reliable car for $3,000! Smart choice.")
-					else
-						state:ModifyStat("Happiness", -2)
-						state:AddFeed("🚗 Good reliable cars are out of your budget.")
-					end
+					state:AddAsset("Vehicles", {
+						id = "reliable_car_" .. tostring(os.time()),
+						type = "sedan",
+						name = "Reliable Car",
+						emoji = "🚗",
+						price = 3000,
+						value = 2800,
+						condition = 80,
+						happiness = 4,
+						maintenance = 250,
+						acquiredAge = state.Age,
+						description = "Not flashy, but it works!",
+					})
 				end,
 			},
 			{ text = "Keep saving for something better", effects = { Happiness = -2, Money = 200 }, feedText = "Patience. You want something nice." },

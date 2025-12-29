@@ -1309,27 +1309,23 @@ AdultExpanded.events = {
 			return true
 		end,
 		
-		-- CRITICAL: Random housing outcome
 		choices = {
 			{
-				text = "Try to buy a house",
-				effects = {},
+				text = "Try to buy a house ($5,000 down)",
+				effects = { Money = -5000 },
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 for down payment" end,
 				feedText = "House hunting, mortgage applications...",
 				onResolve = function(state)
-					local money = state.Money or 0
 					local roll = math.random()
-					if roll < 0.50 then
-						state.Money = money - 5000
+					if roll < 0.60 then
 						state:ModifyStat("Happiness", 15)
 						state.Flags = state.Flags or {}
 						state.Flags.homeowner = true
 						state:AddFeed("🏡 YOU OWN A HOME! Mortgage approved! Keys in hand!")
-					elseif roll < 0.80 then
-						state:ModifyStat("Happiness", -4)
-						state:AddFeed("🏡 Outbid or rejected. Housing market is brutal.")
 					else
-						state:ModifyStat("Happiness", -6)
-						state:AddFeed("🏡 Mortgage denied. Credit or income issues. Crushed.")
+						state:ModifyStat("Happiness", -4)
+						state:AddFeed("🏡 Application rejected. Down payment returned, but housing is tough.")
+						state.Money = (state.Money or 0) + 5000 -- Refund
 					end
 				end,
 			},
@@ -1732,62 +1728,51 @@ AdultExpanded.events = {
 		
 		choices = {
 			{
-				text = "Buy a reliable used car ($8,000)",
-				effects = {},
-				feedText = "Shopping for a used car...",
+				text = "Buy used car outright ($8,000)",
+				effects = { Money = -8000, Happiness = 8 },
+				eligibility = function(state) return (state.Money or 0) >= 8000, "💸 Need $8,000 to buy outright" end,
+				feedText = "🚗 Paid cash for a reliable used car! No monthly payments!",
 				onResolve = function(state)
-					local money = state.Money or 0
-					local carPrice = 8000
-					
-					if money >= carPrice then
-						-- Pay cash
-						state.Money = money - carPrice
-						if state.AddAsset then
-							state:AddAsset("Vehicles", {
-								id = "used_car_" .. tostring(state.Age or 0),
-								name = "Reliable Used Car",
-								emoji = "🚗",
-								price = carPrice,
-								value = 7000,
-								condition = 70,
-								isEventAcquired = true,
-							})
-						end
-						state.Flags = state.Flags or {}
-						state.Flags.has_car = true
-						state.Flags.has_vehicle = true
-						state:ModifyStat("Happiness", 8)
-						state:AddFeed("🚗 Paid cash for a reliable used car! No monthly payments!")
-					elseif money >= 2000 then
-						-- Finance the car
-						local downPayment = math.min(money, 2000)
-						local loanAmount = carPrice - downPayment
-						state.Money = money - downPayment
-						state.Flags = state.Flags or {}
-						state.Flags.has_car_loan = true
-						state.Flags.car_loan_balance = loanAmount
-						state.Flags.car_loan_payment = math.floor(loanAmount / 48) -- 4 year loan
-						
-						if state.AddAsset then
-							state:AddAsset("Vehicles", {
-								id = "financed_car_" .. tostring(state.Age or 0),
-								name = "Reliable Used Car",
-								emoji = "🚗",
-								price = carPrice,
-								value = 7000,
-								condition = 70,
-								isEventAcquired = true,
-								financed = true,
-							})
-						end
-						state.Flags.has_car = true
-						state.Flags.has_vehicle = true
-						state:ModifyStat("Happiness", 6)
-						state:AddFeed(string.format("🚗 Financed a used car! $%d down, $%d/month for 4 years.", downPayment, state.Flags.car_loan_payment))
-					else
-						state:ModifyStat("Happiness", -3)
-						state:AddFeed("🚗 Can't afford a car right now. Need more savings or a better job.")
+					if state.AddAsset then
+						state:AddAsset("Vehicles", {
+							id = "used_car_" .. tostring(state.Age or 0),
+							name = "Reliable Used Car",
+							emoji = "🚗",
+							price = 8000,
+							value = 7000,
+							condition = 70,
+							isEventAcquired = true,
+						})
 					end
+					state.Flags = state.Flags or {}
+					state.Flags.has_car = true
+					state.Flags.has_vehicle = true
+				end,
+			},
+			{
+				text = "Finance used car ($2,000 down)",
+				effects = { Money = -2000, Happiness = 6 },
+				setFlags = { has_car_loan = true },
+				eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2,000 for down payment" end,
+				feedText = "🚗 Financed a used car! $2,000 down, $125/month for 4 years.",
+				onResolve = function(state)
+					if state.AddAsset then
+						state:AddAsset("Vehicles", {
+							id = "financed_car_" .. tostring(state.Age or 0),
+							name = "Reliable Used Car",
+							emoji = "🚗",
+							price = 8000,
+							value = 7000,
+							condition = 70,
+							isEventAcquired = true,
+							financed = true,
+						})
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.has_car = true
+					state.Flags.has_vehicle = true
+					state.Flags.car_loan_balance = 6000
+					state.Flags.car_loan_payment = 125
 				end,
 			},
 			{
