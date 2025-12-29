@@ -131,7 +131,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⚡ GOD MODE PREMIUM OPTION
 			{
-				text = "⚡ God Mode Pass: Fix it instantly",
+				text = "⚡ [God Mode] Fix it instantly",
 				effects = { Health = 30, Happiness = 10 },
 				requiresGamepass = "GOD_MODE",
 				gamepassEmoji = "⚡",
@@ -201,7 +201,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- 🔫 MAFIA PREMIUM OPTION
 			{
-				text = "🔫 Mafia Pass: Borrow from the family",
+				text = "🔫 [Mafia] Borrow from the family",
 				effects = { Money = 5000, Happiness = 5 },
 				requiresGamepass = "MAFIA",
 				gamepassEmoji = "🔫",
@@ -214,7 +214,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⚡ GOD MODE PREMIUM OPTION
 			{
-				text = "⚡ God Mode Pass: Manifest wealth",
+				text = "⚡ [God Mode] Manifest wealth",
 				effects = { Money = 10000, Happiness = 15 },
 				requiresGamepass = "GOD_MODE",
 				gamepassEmoji = "⚡",
@@ -275,7 +275,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⭐ CELEBRITY PREMIUM OPTION
 			{
-				text = "⭐ Start your fame career! (Celebrity Pass)",
+				text = "⭐ [Celebrity] Start your fame career!",
 				effects = { Happiness = 20, Fame = 25 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
@@ -333,7 +333,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⭐ CELEBRITY PREMIUM OPTION
 			{
-				text = "⭐ Parlay into stardom! (Celebrity Pass)",
+				text = "⭐ [Celebrity] Turn this into stardom!",
 				effects = { Happiness = 15, Fame = 35, Money = 5000 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
@@ -380,7 +380,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- 🔫 MAFIA PREMIUM OPTION
 			{
-				text = "🔫 Mafia Pass: The 'other' kind of family",
+				text = "🔫 [Mafia] The 'other' kind of family",
 				effects = { Happiness = 5, Money = 2000 },
 				requiresGamepass = "MAFIA",
 				gamepassEmoji = "🔫",
@@ -389,7 +389,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- 👑 ROYALTY PREMIUM OPTION (if married into royalty)
 			{
-				text = "👑 Royalty Pass: Royal connections",
+				text = "👑 [Royalty] Royal connections",
 				effects = { Happiness = 10, Fame = 20, Money = 50000 },
 				requiresGamepass = "ROYALTY",
 				gamepassEmoji = "👑",
@@ -444,7 +444,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- 🔫 MAFIA PREMIUM OPTION
 			{
-				text = "🔫 Mafia Pass: Have the family 'handle' it",
+				text = "🔫 [Mafia] Have the family 'handle' it",
 				effects = { Happiness = 15 },
 				requiresGamepass = "MAFIA",
 				gamepassEmoji = "🔫",
@@ -458,7 +458,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⚡ GOD MODE PREMIUM OPTION
 			{
-				text = "⚡ God Mode Pass: Make them fail spectacularly",
+				text = "⚡ [God Mode] Make them fail spectacularly",
 				effects = { Happiness = 20 },
 				requiresGamepass = "GOD_MODE",
 				gamepassEmoji = "⚡",
@@ -598,7 +598,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- 👑 ROYALTY PREMIUM OPTION
 			{
-				text = "👑 Royalty Pass: Royal wedding extravaganza",
+				text = "👑 [Royalty] Royal wedding extravaganza",
 				effects = { Happiness = 25, Fame = 30 },
 				requiresGamepass = "ROYALTY",
 				gamepassEmoji = "👑",
@@ -627,7 +627,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⭐ CELEBRITY PREMIUM OPTION
 			{
-				text = "⭐ Televised celebrity wedding! (Celebrity Pass)",
+				text = "⭐ [Celebrity] Televised celebrity wedding!",
 				effects = { Happiness = 20, Fame = 25, Money = 50000 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
@@ -698,7 +698,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- 👑 ROYALTY PREMIUM OPTION
 			{
-				text = "👑 Royalty Pass: Issue a royal decree",
+				text = "👑 [Royalty] Issue a royal decree",
 				effects = { Happiness = 15 },
 				requiresGamepass = "ROYALTY",
 				requiresFlags = { is_royalty = true },
@@ -708,7 +708,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⚡ GOD MODE PREMIUM OPTION
 			{
-				text = "⚡ God Mode Pass: Make everyone get along",
+				text = "⚡ [God Mode] Make everyone get along",
 				effects = { Happiness = 20 },
 				requiresGamepass = "GOD_MODE",
 				gamepassEmoji = "⚡",
@@ -778,7 +778,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- 🔫 MAFIA PREMIUM OPTION
 			{
-				text = "🔫 Mafia Pass: Take the underground path",
+				text = "🔫 [Mafia] Take the underground path",
 				effects = { Money = 15000, Happiness = 5 },
 				requiresGamepass = "MAFIA",
 				gamepassEmoji = "🔫",
@@ -787,7 +787,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⭐ CELEBRITY PREMIUM OPTION
 			{
-				text = "⭐ Chase fame and fortune! (Celebrity Pass)",
+				text = "⭐ [Celebrity] Chase fame and fortune!",
 				effects = { Fame = 20, Happiness = 15 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
@@ -798,7 +798,7 @@ PremiumIntegratedEvents.events = {
 		-- CRITICAL FIX: This choice should only be available to players who ARE ALREADY royalty
 		-- Buying the gamepass does NOT make you royalty - you must be born royal or marry into it
 		{
-			text = "👑 Royalty Pass: Embrace your royal duties",
+			text = "👑 [Royalty] Embrace your royal duties",
 			effects = { Fame = 15, Happiness = 10 },
 			requiresGamepass = "ROYALTY",
 			requiresFlags = { is_royalty = true }, -- CRITICAL: Must already BE royalty!
@@ -882,7 +882,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- 👑 ROYALTY PREMIUM OPTION
 			{
-				text = "👑 Royalty Pass: Claim your royal lineage",
+				text = "👑 [Royalty] Claim your royal lineage",
 				effects = { Fame = 40, Money = 500000, Happiness = 25 },
 				requiresGamepass = "ROYALTY",
 				gamepassEmoji = "👑",
@@ -969,7 +969,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- 🔫 MAFIA PREMIUM OPTION
 			{
-				text = "🔫 Mafia Pass: Show them who they messed with",
+				text = "🔫 [Mafia] Show them who they messed with",
 				effects = { Happiness = 20 },
 				requiresGamepass = "MAFIA",
 				requiresFlags = { in_mob = true },
@@ -982,7 +982,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⚡ GOD MODE PREMIUM OPTION
 			{
-				text = "⚡ God Mode Pass: Freeze time and walk away",
+				text = "⚡ [God Mode] Freeze time and walk away",
 				effects = { Happiness = 15, Health = 10 },
 				requiresGamepass = "GOD_MODE",
 				gamepassEmoji = "⚡",
@@ -1067,7 +1067,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- 🔫 MAFIA PREMIUM OPTION
 			{
-				text = "🔫 Mafia Pass: Have witnesses 'persuaded'",
+				text = "🔫 [Mafia] Have witnesses 'persuaded'",
 				effects = { Happiness = 10 },
 				requiresGamepass = "MAFIA",
 				requiresFlags = { in_mob = true },
@@ -1080,7 +1080,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⚡ GOD MODE PREMIUM OPTION
 			{
-				text = "⚡ God Mode Pass: Judge rules in your favor",
+				text = "⚡ [God Mode] Judge rules in your favor",
 				effects = { Happiness = 20, Money = 10000 },
 				requiresGamepass = "GOD_MODE",
 				gamepassEmoji = "⚡",
@@ -1124,7 +1124,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⭐ CELEBRITY PREMIUM OPTION
 			{
-				text = "⭐ Become the star! (Celebrity Pass)",
+				text = "⭐ [Celebrity] Become the star of the party!",
 				effects = { Happiness = 15, Fame = 10 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
@@ -1133,7 +1133,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- 👑 ROYALTY PREMIUM OPTION
 			{
-				text = "👑 Royalty Pass: Arrive fashionably late as royalty",
+				text = "👑 [Royalty] Arrive fashionably late as royalty",
 				effects = { Happiness = 20, Fame = 15 },
 				requiresGamepass = "ROYALTY",
 				requiresFlags = { is_royalty = true },
@@ -1235,7 +1235,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- 🔫 MAFIA PREMIUM OPTION
 			{
-				text = "🔫 Mafia Pass: Make it a 'family' investment",
+				text = "🔫 [Mafia] Make it a 'family' investment",
 				effects = { Money = 10000, Happiness = 10 },
 				requiresGamepass = "MAFIA",
 				requiresFlags = { in_mob = true },
@@ -1248,7 +1248,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⚡ GOD MODE PREMIUM OPTION
 			{
-				text = "⚡ God Mode Pass: Guarantee it succeeds",
+				text = "⚡ [God Mode] Guarantee it succeeds",
 				effects = { Money = 50000, Happiness = 20 },
 				requiresGamepass = "GOD_MODE",
 				gamepassEmoji = "⚡",
@@ -1293,7 +1293,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⭐ CELEBRITY PREMIUM OPTION
 			{
-				text = "⭐ I'm going to be FAMOUS! (Celebrity Pass)",
+				text = "⭐ [Celebrity] I'm going to be FAMOUS!",
 				effects = { Happiness = 10, Fame = 5 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
@@ -1302,7 +1302,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- 👑 ROYALTY PREMIUM OPTION
 			{
-				text = "👑 Royalty Pass: I was born for greatness",
+				text = "👑 [Royalty] I was born for greatness",
 				effects = { Happiness = 8, Fame = 3 },
 				requiresGamepass = "ROYALTY",
 				gamepassEmoji = "👑",
@@ -1375,7 +1375,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- 🔫 MAFIA PREMIUM OPTION
 			{
-				text = "🔫 Mafia Pass: Family connections help",
+				text = "🔫 [Mafia] Family connections help",
 				effects = { Happiness = 15 },
 				requiresGamepass = "MAFIA",
 				gamepassEmoji = "🔫",
@@ -1384,7 +1384,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⚡ GOD MODE PREMIUM OPTION
 			{
-				text = "⚡ God Mode Pass: Make them leave you alone",
+				text = "⚡ [God Mode] Make them leave you alone",
 				effects = { Happiness = 15 },
 				requiresGamepass = "GOD_MODE",
 				gamepassEmoji = "⚡",
@@ -1441,7 +1441,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⚡ GOD MODE PREMIUM OPTION
 			{
-				text = "⚡ God Mode Pass: Win the jackpot",
+				text = "⚡ [God Mode] Win the jackpot",
 				effects = { Money = 500000, Happiness = 50 },
 				requiresGamepass = "GOD_MODE",
 				gamepassEmoji = "⚡",
@@ -1534,7 +1534,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⭐ CELEBRITY PREMIUM OPTION
 			{
-				text = "⭐ Use your fame! (Celebrity Pass)",
+				text = "⭐ [Celebrity] Use your fame to get hired!",
 				effects = { Happiness = 15 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
@@ -1543,7 +1543,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- 🔫 MAFIA PREMIUM OPTION
 			{
-				text = "🔫 Mafia Pass: The family has connections",
+				text = "🔫 [Mafia] The family has connections",
 				effects = { Happiness = 12 },
 				requiresGamepass = "MAFIA",
 				requiresFlags = { in_mob = true },
@@ -1597,7 +1597,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⚡ GOD MODE PREMIUM OPTION
 			{
-				text = "⚡ God Mode Pass: Perfect health guaranteed",
+				text = "⚡ [God Mode] Perfect health guaranteed",
 				effects = { Health = 30, Happiness = 15 },
 				requiresGamepass = "GOD_MODE",
 				gamepassEmoji = "⚡",
@@ -1654,7 +1654,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- 👑 ROYALTY PREMIUM OPTION
 			{
-				text = "👑 Royalty Pass: Royal heirlooms revealed",
+				text = "👑 [Royalty] Royal heirlooms revealed",
 				effects = { Money = 500000, Fame = 20, Happiness = 25 },
 				requiresGamepass = "ROYALTY",
 				gamepassEmoji = "👑",
@@ -1716,7 +1716,7 @@ PremiumIntegratedEvents.events = {
 			-- ⚡ GOD MODE PREMIUM OPTION
 			{
 				-- CRITICAL FIX: Show price!
-				text = "⚡ God Mode Pass: Give generously ($5,000)",
+				text = "⚡ [God Mode] Give generously ($5,000)",
 				effects = { Money = -5000, Happiness = 20 },
 				requiresGamepass = "GOD_MODE",
 				gamepassEmoji = "⚡",
@@ -1766,7 +1766,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⭐ CELEBRITY PREMIUM OPTION
 			{
-				text = "⭐ Deliver legendary speech! (Celebrity Pass)",
+				text = "⭐ [Celebrity] Deliver a legendary speech!",
 				effects = { Happiness = 20, Fame = 15 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
@@ -1775,7 +1775,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- 👑 ROYALTY PREMIUM OPTION
 			{
-				text = "👑 Royalty Pass: Deliver a royal address",
+				text = "👑 [Royalty] Deliver a royal address",
 				effects = { Happiness = 18, Fame = 20 },
 				requiresGamepass = "ROYALTY",
 				requiresFlags = { is_royalty = true },
@@ -1829,7 +1829,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⭐ CELEBRITY PREMIUM OPTION
 			{
-				text = "⭐ Televised romantic gesture! (Celebrity Pass)",
+				text = "⭐ [Celebrity] Televised romantic gesture!",
 				effects = { Happiness = 30, Fame = 20, Money = 10000 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
@@ -1837,7 +1837,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- 👑 ROYALTY PREMIUM OPTION
 			{
-				text = "👑 Royalty Pass: Royal ball in their honor",
+				text = "👑 [Royalty] Royal ball in their honor",
 				effects = { Happiness = 25, Fame = 15 },
 				requiresGamepass = "ROYALTY",
 				requiresFlags = { is_royalty = true },
@@ -1932,7 +1932,7 @@ PremiumIntegratedEvents.events = {
 			-- GAMEPASS OPTIONS
 			-- CRITICAL FIX: Premium choices set primary_wish_type AND dream_big_complete
 			{
-				text = "⭐ Be a famous superstar! (Celebrity Pass)",
+				text = "⭐ [Celebrity] Be a famous superstar!",
 				effects = { Happiness = 15, Fame = 5 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
@@ -1952,7 +1952,7 @@ PremiumIntegratedEvents.events = {
 				end,
 			},
 			{
-				text = "🔫 Mafia Pass: Running the underground...",
+				text = "🔫 [Mafia] Running the underground...",
 				effects = { Happiness = 10 },
 				requiresGamepass = "MAFIA",
 				gamepassEmoji = "🔫",
@@ -1971,7 +1971,7 @@ PremiumIntegratedEvents.events = {
 				end,
 			},
 			{
-				text = "👑 Royalty Pass: Living like a king or queen!",
+				text = "👑 [Royalty] Living like a king or queen!",
 				effects = { Happiness = 10, Looks = 2 },
 				requiresGamepass = "ROYALTY",
 				gamepassEmoji = "👑",
@@ -2090,7 +2090,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- GAMEPASS OPTIONS
 			{
-				text = "⭐ Chase your dreams of fame! (Celebrity Pass)",
+				text = "⭐ [Celebrity] Chase your dreams of fame!",
 				effects = { Fame = 10, Happiness = 15 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
@@ -2103,7 +2103,7 @@ PremiumIntegratedEvents.events = {
 				end,
 			},
 			{
-				text = "🔫 Mafia Pass: Seek out the connected people...",
+				text = "🔫 [Mafia] Seek out the connected people...",
 				effects = { Money = 5000, Happiness = 5 },
 				requiresGamepass = "MAFIA",
 				gamepassEmoji = "🔫",
@@ -2180,7 +2180,7 @@ PremiumIntegratedEvents.events = {
 			-- These set primary_wish_type to ensure no conflicts
 			{
 				-- CRITICAL FIX: Clearer text explaining this is a PREMIUM path
-				text = "⭐ Pursue Fame! (Celebrity Gamepass)",
+				text = "⭐ [Celebrity] Pursue fame and stardom!",
 				effects = { Fame = 25, Happiness = 15 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
@@ -2194,7 +2194,7 @@ PremiumIntegratedEvents.events = {
 				end,
 			},
 			{
-				text = "🔫 Mafia Pass: Join the family business...",
+				text = "🔫 [Mafia] Join the family business...",
 				effects = { Money = 25000, Happiness = 10 },
 				requiresGamepass = "MAFIA",
 				gamepassEmoji = "🔫",
@@ -2215,7 +2215,7 @@ PremiumIntegratedEvents.events = {
 				end,
 			},
 			{
-				text = "👑 Royalty Pass: Discover your royal lineage!",
+				text = "👑 [Royalty] Discover your royal lineage!",
 				effects = { Fame = 20, Happiness = 20 },
 				requiresGamepass = "ROYALTY",
 				gamepassEmoji = "👑",
@@ -2230,7 +2230,7 @@ PremiumIntegratedEvents.events = {
 				end,
 			},
 			{
-				text = "⚡ God Mode Pass: Use your power to seize this moment!",
+				text = "⚡ [God Mode] Use your power to seize this moment!",
 				effects = { Money = 50000, Happiness = 20, Health = 20 },
 				requiresGamepass = "GOD_MODE",
 				gamepassEmoji = "⚡",
@@ -2290,7 +2290,7 @@ PremiumIntegratedEvents.events = {
 			-- PREMIUM TEASERS (Show what's possible with gamepasses!)
 			-- CRITICAL FIX: Premium choices now set primary_wish_type to prevent conflicts
 			{
-				text = "⭐ A famous movie star! (Celebrity Pass)",
+				text = "⭐ [Celebrity] A famous movie star!",
 				effects = { Happiness = 12, Fame = 8, Looks = 2 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
@@ -2309,7 +2309,7 @@ PremiumIntegratedEvents.events = {
 				end,
 			},
 			{
-				text = "🔫 Mafia Pass: A mysterious powerful boss...",
+				text = "🔫 [Mafia] A mysterious powerful boss...",
 				effects = { Happiness = 10, Smarts = 3 },
 				requiresGamepass = "MAFIA",
 				gamepassEmoji = "🔫",
@@ -2327,7 +2327,7 @@ PremiumIntegratedEvents.events = {
 				end,
 			},
 			{
-				text = "👑 Royalty Pass: A real-life king or queen!",
+				text = "👑 [Royalty] A real-life king or queen!",
 				effects = { Happiness = 12, Looks = 3 },
 				requiresGamepass = "ROYALTY",
 				gamepassEmoji = "👑",
@@ -2386,7 +2386,7 @@ PremiumIntegratedEvents.events = {
 			-- PREMIUM OPTIONS
 			-- CRITICAL FIX: Premium wishes now set primary_wish_type to prevent conflicts
 			{
-				text = "⭐ To be famous! (Celebrity Pass)",
+				text = "⭐ [Celebrity] To be famous!",
 				effects = { Fame = 15, Happiness = 12 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
@@ -2404,7 +2404,7 @@ PremiumIntegratedEvents.events = {
 				end,
 			},
 			{
-				text = "🔫 Mafia Pass: For unlimited power!",
+				text = "🔫 [Mafia] For unlimited power!",
 				effects = { Happiness = 10, Smarts = 4 },
 				requiresGamepass = "MAFIA",
 				gamepassEmoji = "🔫",
@@ -2422,7 +2422,7 @@ PremiumIntegratedEvents.events = {
 				end,
 			},
 			{
-				text = "👑 Royalty Pass: To live in a palace!",
+				text = "👑 [Royalty] To live in a palace!",
 				effects = { Happiness = 12, Looks = 4 },
 				requiresGamepass = "ROYALTY",
 				gamepassEmoji = "👑",
@@ -3162,7 +3162,7 @@ PremiumIntegratedEvents.events = {
 				feedText = "🎥 You made a few bucks from sponsors... but the fame faded quickly.",
 			},
 			{
-				text = "⭐ Pursue REAL fame! (Celebrity Gamepass)",
+				text = "⭐ [Celebrity] Pursue REAL fame!",
 				effects = { Happiness = 15 },
 				requiresGamepass = "CELEBRITY",
 				setFlags = { celebrity_gamepass = true, content_creator = true },
