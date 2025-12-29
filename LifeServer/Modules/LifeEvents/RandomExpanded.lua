@@ -847,7 +847,7 @@ RandomExpanded.events = {
 			{ text = "Physical activity", effects = { Happiness = 5, Health = 4 }, setFlags = { active_discovery = true }, feedText = "✨ Sport, exercise, outdoors - body and mind love it!" },
 			{ text = "Learning/intellectual pursuit", effects = { Happiness = 4, Smarts = 5 }, setFlags = { learning_discovery = true }, feedText = "✨ Reading, puzzles, studying - feeding your brain!" },
 			{ text = "Social activity", effects = { Happiness = 6 }, setFlags = { social_discovery = true }, feedText = "✨ New group, club, community - found your people!" },
-			{ text = "Collecting something", effects = { Happiness = 5, Money = -50 }, setFlags = { collecting_discovery = true }, feedText = "✨ New collection started! Obsession begins!" },
+			{ text = "Collecting something", effects = { Happiness = 5 }, setFlags = { collecting_discovery = true }, feedText = "✨ New collection started! Obsession begins!" },
 		},
 	},
 	{

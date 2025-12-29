@@ -130,7 +130,7 @@ SeasonalEvents.events = {
 				end,
 			},
 			{ text = "Shovel and brave it", effects = { Health = 3, Happiness = 4 }, feedText = "❄️ Got outside! Fresh air! Exercise! Winter warrior!" },
-			{ text = "Power outage crisis", effects = { Happiness = -6, Health = -3, Money = -100 }, setFlags = { survived_storm = true }, feedText = "❄️ Lost power. Freezing and dark. Survival mode." },
+			{ text = "Power outage crisis", effects = { Happiness = -6, Health = -3 }, setFlags = { survived_storm = true }, feedText = "❄️ Lost power. Freezing and dark. Survival mode." },
 		},
 	},
 	

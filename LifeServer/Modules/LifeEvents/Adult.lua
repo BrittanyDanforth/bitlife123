@@ -836,8 +836,8 @@ Adult.events = {
 
 		choices = {
 			{ text = "Noisy neighbors keep you up", effects = { Health = -3, Happiness = -4 }, feedText = "Sleep deprivation is real. These walls are paper thin." },
-		{ text = "Pests - roaches or mice!", effects = { Happiness = -6, Health = -2, Money = -100 }, feedText = "You spent money on pest control. Gross." },
-		{ text = "Landlord won't fix anything", effects = { Happiness = -4, Money = -200 }, setFlags = { bad_landlord = true }, feedText = "You had to pay for repairs yourself." },
+		{ text = "Pests - roaches or mice!", effects = { Happiness = -6, Health = -2 }, feedText = "Gross! Had to deal with an infestation." },
+		{ text = "Landlord won't fix anything", effects = { Happiness = -4 }, setFlags = { bad_landlord = true }, feedText = "Frustrating! Nothing ever gets fixed." },
 		{ text = "Minor annoyances", effects = { Happiness = -2 }, feedText = "Small complaints but nothing major." },
 			{ text = "Actually, it's not so bad", effects = { Happiness = 3 }, feedText = "You lucked out with a decent place!" },
 		},
@@ -857,7 +857,7 @@ Adult.events = {
 
 		choices = {
 			{ text = "They never clean", effects = { Happiness = -4, Health = -2 }, feedText = "Living in filth because they won't do dishes." },
-			{ text = "They eat my food", effects = { Happiness = -3, Money = -50 }, feedText = "Your groceries keep disappearing." },
+			{ text = "They eat my food", effects = { Happiness = -3 }, feedText = "Your groceries keep disappearing." },
 			{ text = "They're too loud", effects = { Happiness = -3, Health = -2 }, setFlags = { poor_sleep = true }, feedText = "Parties every night. You're exhausted." },
 			{ text = "We're actually great friends!", effects = { Happiness = 6 }, setFlags = { good_roommates = true }, feedText = "Living together strengthened your friendship!" },
 			{ text = "Time to move out ($300)", effects = { Money = -300, Happiness = 3 }, setFlags = { lives_alone = true }, feedText = "You got your own place. Peace at last.", eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 deposit to move out" end },
@@ -914,10 +914,10 @@ Adult.events = {
 		requiresFlags = { has_degree = true },
 
 		choices = {
-			{ text = "Paying minimum - will take forever", effects = { Money = -200, Happiness = -3 }, feedText = "You'll be paying this for decades." },
-			{ text = "Aggressively paying them down", effects = { Money = -600, Happiness = -2, Smarts = 2 }, setFlags = { debt_focused = true }, feedText = "Living frugally to eliminate the debt faster." },
+			{ text = "Paying minimum - will take forever", effects = { Happiness = -3 }, feedText = "You'll be paying this for decades." },
+			{ text = "Aggressively paying them down", effects = { Happiness = -2, Smarts = 2 }, setFlags = { debt_focused = true }, feedText = "Living frugally to eliminate the debt faster." },
 			{ text = "Looking into loan forgiveness", effects = { Smarts = 2 }, setFlags = { public_service = true }, feedText = "Maybe public service can help." },
-			{ text = "Defaulted... oops", effects = { Money = -1000, Happiness = -8 }, setFlags = { bad_credit = true }, feedText = "Your credit is destroyed. Big mistake." },
+			{ text = "Defaulted... oops", effects = { Happiness = -8 }, setFlags = { bad_credit = true }, feedText = "Your credit is destroyed. Big mistake." },
 		},
 	},
 	{
@@ -1357,7 +1357,7 @@ Adult.events = {
 			{ text = "Take it to HR", effects = { Happiness = -2 }, setFlags = { hr_involved = true }, feedText = "HR is now involved. Things got formal." },
 			{ text = "Confront them directly", effects = { Happiness = -4 }, setFlags = { confrontational = true }, feedText = "The confrontation didn't go well." },
 			{ text = "Just avoid them", effects = { Happiness = -2 }, feedText = "The tension remains but you're coexisting." },
-			{ text = "Quit over it", effects = { Money = -500, Happiness = 3 }, feedText = "Life's too short. You left for a new opportunity." },
+			{ text = "Quit over it", effects = { Happiness = 3 }, feedText = "Life's too short. You left for a new opportunity." },
 		},
 	},
 	{
@@ -1860,7 +1860,7 @@ Adult.events = {
 				end,
 			},
 			{ text = "Proud of the adult they became", effects = { Happiness = 8 }, setFlags = { empty_nester = true, proud_parent = true }, feedText = "You raised them well. They're thriving." },
-			{ text = "Turning their room into something fun", effects = { Happiness = 6, Money = -500 }, setFlags = { empty_nester = true }, feedText = "Home gym? Art studio? The possibilities!" },
+			{ text = "Turning their room into something fun ($500)", effects = { Happiness = 6, Money = -500 }, setFlags = { empty_nester = true }, feedText = "Home gym? Art studio? The possibilities!", eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for renovation" end },
 		},
 	},
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -2104,7 +2104,7 @@ Adult.events = {
 			{ text = "Pay off debts", effects = { Money = 10000, Happiness = 8 }, setFlags = { debt_free = true }, feedText = "Finally debt-free! What a relief." },
 			{ text = "Splurge on something fun", effects = { Money = 5000, Happiness = 12 }, feedText = "You treated yourself. YOLO!" },
 			{ text = "Save it for retirement", effects = { Money = 15000, Happiness = 3 }, setFlags = { retirement_saver = true }, feedText = "Future you will thank present you." },
-			{ text = "Donate to charity", effects = { Money = -5000, Happiness = 15 }, setFlags = { philanthropist = true }, feedText = "Giving back feels amazing." },
+			{ text = "Donate to charity ($5,000)", effects = { Money = -5000, Happiness = 15 }, setFlags = { philanthropist = true }, feedText = "Giving back feels amazing.", eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 to donate" end },
 		},
 	},
 	{
@@ -2158,7 +2158,7 @@ Adult.events = {
 		choices = {
 			{ text = "Over the moon - best day ever", effects = { Happiness = 20 }, setFlags = { grandparent = true }, feedText = "A grandchild! Your heart is bursting with joy." },
 			{ text = "Excited but feel old", effects = { Happiness = 10 }, setFlags = { grandparent = true }, feedText = "Amazing but... grandparent? Already?" },
-			{ text = "Ready to spoil them rotten", effects = { Happiness = 15, Money = -500 }, setFlags = { grandparent = true, spoiling_grandparent = true }, feedText = "This kid is getting EVERYTHING!" },
+			{ text = "Ready to spoil them rotten", effects = { Happiness = 15 }, setFlags = { grandparent = true, spoiling_grandparent = true }, feedText = "This kid is getting EVERYTHING!" },
 			{ text = "Hope they visit often", effects = { Happiness = 12 }, setFlags = { grandparent = true }, feedText = "Can't wait to see them grow up!" },
 		},
 		onResolve = function(state)
@@ -2185,8 +2185,8 @@ Adult.events = {
 		cooldown = 5,
 
 		choices = {
-			{ text = "Move to assisted living", effects = { Health = 5, Happiness = -5, Money = -3000 }, setFlags = { assisted_living = true }, feedText = "You moved to a facility. Safer, but different." },
-			{ text = "Hire in-home care", effects = { Health = 5, Money = -2000 }, setFlags = { has_caregiver = true }, feedText = "Help comes to you. You stay home." },
+			{ text = "Move to assisted living ($3,000)", effects = { Health = 5, Happiness = -5, Money = -3000 }, setFlags = { assisted_living = true }, feedText = "You moved to a facility. Safer, but different.", eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Need $3,000 for assisted living" end },
+			{ text = "Hire in-home care ($2,000)", effects = { Health = 5, Money = -2000 }, setFlags = { has_caregiver = true }, feedText = "Help comes to you. You stay home.", eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2,000 for in-home care" end },
 			{ 
 			text = "Move in with family", 
 			effects = { Happiness = 5 }, 
@@ -2366,7 +2366,7 @@ Adult.events = {
 		choices = {
 			{ text = "Everything split equally among children", effects = { Happiness = 5 }, setFlags = { has_will = true }, feedText = "Fair and simple. Fewer arguments later." },
 			{ text = "Leave more to those who need it", effects = { Happiness = 3 }, setFlags = { has_will = true }, feedText = "You considered each person's situation." },
-			{ text = "Donate much of it to charity", effects = { Happiness = 10, Money = -5000 }, setFlags = { has_will = true, charitable_legacy = true }, feedText = "Your wealth will help many causes." },
+			{ text = "Donate much of it to charity ($5,000)", effects = { Happiness = 10, Money = -5000 }, setFlags = { has_will = true, charitable_legacy = true }, feedText = "Your wealth will help many causes.", eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 to donate" end },
 			{ text = "Leave it all to one person", effects = { Happiness = -2 }, setFlags = { has_will = true, contentious_will = true }, feedText = "This might cause family drama later..." },
 		},
 	},
@@ -2384,7 +2384,7 @@ Adult.events = {
 			{ text = "Take a class to learn", effects = { Smarts = 5, Happiness = 5 }, setFlags = { tech_savvy_senior = true }, feedText = "You're learning! Video calls are great!" },
 			{ text = "Ask grandkids for help", effects = { Happiness = 5 }, feedText = "The young ones are patient teachers." },
 			{ text = "Give up - it's too confusing", effects = { Happiness = -3 }, setFlags = { technology_resistant = true }, feedText = "You'll stick with what you know." },
-			{ text = "Hire someone to set things up", effects = { Money = -200, Happiness = 3 }, feedText = "Everything works now... mostly." },
+			{ text = "Hire someone to set things up ($200)", effects = { Money = -200, Happiness = 3 }, feedText = "Everything works now... mostly.", eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for tech setup" end },
 		},
 	},
 	{
@@ -2429,7 +2429,7 @@ Adult.events = {
 
 		choices = {
 			{ text = "Sell and move to a smaller place", effects = { Money = 20000, Happiness = 3 }, setFlags = { downsized = true }, feedText = "Less space, less maintenance. More freedom!" },
-			{ text = "Stay - too many memories here", effects = { Happiness = 5, Money = -1000 }, feedText = "This house is full of your life's history." },
+			{ text = "Stay - too many memories here", effects = { Happiness = 5 }, feedText = "This house is full of your life's history." },
 			{ text = "Move to a retirement community", effects = { Money = 15000, Happiness = 5 }, setFlags = { retirement_community = true }, feedText = "New friends and activities await!" },
 			{ text = "Have family move in with you", effects = { Happiness = 8 }, setFlags = { multigenerational_home = true }, feedText = "The house is full of life again!" },
 		},
@@ -2550,7 +2550,7 @@ Adult.events = {
 		
 		choices = {
 			{ text = "They're too loud", effects = { Happiness = -4, Health = -2 }, setFlags = { bad_neighbors = true }, feedText = "The noise is driving you crazy." },
-			{ text = "Property line dispute", effects = { Happiness = -3, Money = -500 }, feedText = "Lawyers might get involved..." },
+			{ text = "Property line dispute", effects = { Happiness = -3 }, feedText = "Lawyers might get involved..." },
 			{ text = "Their pets are a nuisance", effects = { Happiness = -3 }, feedText = "Barking at all hours. Pets everywhere." },
 			{ text = "Actually, we resolved it", effects = { Happiness = 4 }, setFlags = { good_neighbors = true }, feedText = "Talked it out like adults. Good neighbors now!" },
 		},
@@ -2757,7 +2757,7 @@ Adult.events = {
 		cooldown = 4,
 		
 		choices = {
-			{ text = "Make effort to reconnect", effects = { Happiness = 8, Money = -100 }, setFlags = { maintains_friendships = true }, feedText = "You organized a reunion. Worth every moment!" },
+			{ text = "Make effort to reconnect", effects = { Happiness = 8 }, setFlags = { maintains_friendships = true }, feedText = "You organized a reunion. Worth every moment!" },
 			{ text = "Accept it's natural", effects = { Happiness = -3 }, feedText = "People grow apart. It's sad but normal." },
 			{ text = "Focus on making new friends", effects = { Happiness = 5 }, setFlags = { social_adult = true }, feedText = "New friendships are forming at this stage of life!" },
 			{ text = "Become more of a loner", effects = { Happiness = -5 }, setFlags = { loner = true }, feedText = "You're okay being alone. Mostly." },
@@ -3103,7 +3103,7 @@ Adult.events = {
 				end,
 			},
 			{ text = "Fix sleep hygiene habits", effects = { Health = 4, Happiness = 3 }, setFlags = { good_sleep_habits = true }, feedText = "No screens before bed. Regular schedule. It's helping!" },
-			{ text = "Try sleep supplements", effects = { Health = 2, Money = -50 }, feedText = "Melatonin and herbal teas. Some improvement." },
+			{ text = "Try sleep supplements", effects = { Health = 2 }, feedText = "Melatonin and herbal teas. Some improvement." },
 			{ text = "Just deal with it", effects = { Health = -5, Happiness = -4 }, setFlags = { sleep_deprived = true }, feedText = "Running on fumes. This isn't sustainable." },
 		},
 	},
@@ -3150,7 +3150,7 @@ Adult.events = {
 		
 		choices = {
 			{ text = "Best work friend ever", effects = { Happiness = 8 }, setFlags = { has_work_friend = true }, feedText = "Work is so much better with a good friend there!" },
-			{ text = "Hang out outside work too", effects = { Happiness = 6, Money = -50 }, setFlags = { work_friend_real_friend = true }, feedText = "The friendship extends beyond the office!" },
+			{ text = "Hang out outside work too", effects = { Happiness = 6 }, setFlags = { work_friend_real_friend = true }, feedText = "The friendship extends beyond the office!" },
 			{ text = "Keep it professional", effects = { Happiness = 3 }, feedText = "Friendly at work, separate lives outside." },
 			{ text = "They left the company", effects = { Happiness = -4 }, feedText = "Lost your work buddy. The office isn't the same." },
 		},
@@ -3169,7 +3169,7 @@ Adult.events = {
 			{ text = "Paid for your coffee", effects = { Happiness = 6, Money = 5 }, feedText = "A stranger ahead of you in line paid for your order!" },
 			{ text = "Helped you when you were stuck", effects = { Happiness = 8 }, feedText = "Someone stopped to help when you needed it most!" },
 			{ text = "Gave you a sincere compliment", effects = { Happiness = 5, Looks = 1 }, feedText = "A stranger's kind words made your day!" },
-			{ text = "Paid it forward", effects = { Happiness = 10, Money = -20 }, setFlags = { pays_it_forward = true }, feedText = "You were inspired to do something kind for someone else!" },
+			{ text = "Paid it forward", effects = { Happiness = 10 }, setFlags = { pays_it_forward = true }, feedText = "You were inspired to do something kind for someone else!" },
 		},
 	},
 	{
@@ -3236,9 +3236,9 @@ Adult.events = {
 		tags = { "career", "decision", "crossroads" },
 		blockedByFlags = { in_prison = true },
 		choices = {
-			{ text = "Take a leap and change careers", effects = { Happiness = 15, Money = -5000 }, setFlags = { career_changer = true }, feedText = "Scary but exciting! New chapter begins." },
+			{ text = "Take a leap and change careers ($5,000)", effects = { Happiness = 15, Money = -5000 }, setFlags = { career_changer = true }, feedText = "Scary but exciting! New chapter begins.", eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 for career change" end },
 			{ text = "Stay but ask for a promotion", effects = { Happiness = 5, Money = 5000 }, feedText = "You made your case. A raise is coming!" },
-			{ text = "Start a side business", effects = { Happiness = 10, Money = -2000, Smarts = 5 }, setFlags = { entrepreneur = true }, feedText = "Nights and weekends building your dream!" },
+			{ text = "Start a side business ($2,000)", effects = { Happiness = 10, Money = -2000, Smarts = 5 }, setFlags = { entrepreneur = true }, feedText = "Nights and weekends building your dream!", eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2,000 for business startup" end },
 			{ text = "Accept that this is your path", effects = { Happiness = -5 }, feedText = "Comfort is nice. Adventure can wait." },
 		},
 	},
@@ -3339,7 +3339,7 @@ Adult.events = {
 		blockedByFlags = { married = true, engaged = true },
 		requiresFlags = { in_relationship = true },
 		choices = {
-			{ text = "Grand romantic gesture", effects = { Happiness = 25, Money = -5000 }, setFlags = { engaged = true, romantic = true }, feedText = "💍 They said YES! What a magical moment!" },
+			{ text = "Grand romantic gesture ($5,000)", effects = { Happiness = 25, Money = -5000 }, setFlags = { engaged = true, romantic = true }, feedText = "💍 They said YES! What a magical moment!", eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 for grand gesture" end },
 			{ text = "Simple and heartfelt", effects = { Happiness = 22 }, setFlags = { engaged = true }, feedText = "💍 They said YES! Sometimes simple is perfect." },
 			{ text = "They propose to you first!", effects = { Happiness = 25 }, setFlags = { engaged = true }, feedText = "💍 They beat you to it! How romantic!" },
 			{ text = "Wait for a better time", effects = { Happiness = -5 }, feedText = "Not yet. The timing will be right someday." },
@@ -3359,7 +3359,7 @@ Adult.events = {
 		maxOccurrences = 1,
 		choices = {
 			{ text = "Proud of what I've built", effects = { Happiness = 15 }, setFlags = { content_with_life = true }, feedText = "Looking back with satisfaction. You've done well!" },
-			{ text = "Time for a big change", effects = { Happiness = 10, Money = -10000 }, setFlags = { midlife_change = true }, feedText = "Bucket list time! New adventures await." },
+			{ text = "Time for a big change ($10,000)", effects = { Happiness = 10, Money = -10000 }, setFlags = { midlife_change = true }, feedText = "Bucket list time! New adventures await.", eligibility = function(state) return (state.Money or 0) >= 10000, "💸 Need $10,000 for big change" end },
 			{ text = "Regret some choices", effects = { Happiness = -10 }, setFlags = { has_regrets = true }, feedText = "Some roads not taken still haunt you." },
 			{ text = "Focus on what's ahead", effects = { Happiness = 8, Smarts = 5 }, setFlags = { forward_looking = true }, feedText = "The best is yet to come!" },
 		},
@@ -3379,7 +3379,7 @@ Adult.events = {
 		choices = {
 			{ text = "A substantial sum of money", effects = { Happiness = 20, Money = 100000 }, feedText = "💰 $100,000! Life-changing money!" },
 			{ text = "A modest amount", effects = { Happiness = 10, Money = 15000 }, feedText = "💵 $15,000 - enough for something nice." },
-			{ text = "A property in need of work", effects = { Happiness = 8, Money = -5000 }, setFlags = { inherited_property = true }, feedText = "🏚️ A fixer-upper. Could be worth it!" },
+			{ text = "A property in need of work ($5,000)", effects = { Happiness = 8, Money = -5000 }, setFlags = { inherited_property = true }, feedText = "🏚️ A fixer-upper. Could be worth it!", eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 for repairs" end },
 			{ text = "Just sentimental items", effects = { Happiness = 5 }, setFlags = { inherited_heirlooms = true }, feedText = "📦 Not valuable, but meaningful." },
 		},
 	},
@@ -3397,9 +3397,9 @@ Adult.events = {
 		maxOccurrences = 2,
 		choices = {
 			{ text = "False alarm - nothing serious", effects = { Happiness = 10, Health = 5 }, feedText = "😮‍💨 What a relief! All clear." },
-			{ text = "Caught early - very treatable", effects = { Happiness = -5, Health = -10, Money = -10000 }, setFlags = { health_survivor = true }, feedText = "Early detection saved you. Treatment successful!" },
+			{ text = "Caught early - very treatable", effects = { Happiness = -5, Health = -10 }, setFlags = { health_survivor = true }, feedText = "Early detection saved you. Treatment successful!" },
 			{ text = "Lifestyle changes needed", effects = { Happiness = -8, Health = 15 }, setFlags = { health_conscious = true }, feedText = "Wake-up call. Time to get serious about health." },
-			{ text = "Long road ahead", effects = { Happiness = -20, Health = -25, Money = -50000 }, setFlags = { chronic_illness = true }, feedText = "This will be a journey. Stay strong." },
+			{ text = "Long road ahead", effects = { Happiness = -20, Health = -25 }, setFlags = { chronic_illness = true }, feedText = "This will be a journey. Stay strong." },
 		},
 	},
 	
@@ -3415,7 +3415,7 @@ Adult.events = {
 		cooldown = 5,
 		maxOccurrences = 3,
 		choices = {
-			{ text = "Help without hesitation", effects = { Happiness = 10, Money = -1000 }, setFlags = { loyal_friend = true }, feedText = "That's what friends are for. They'd do the same for you." },
+			{ text = "Help without hesitation ($1,000)", effects = { Happiness = 10, Money = -1000 }, setFlags = { loyal_friend = true }, feedText = "That's what friends are for. They'd do the same for you.", eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 to help" end },
 			{ text = "Help, but set boundaries", effects = { Happiness = 5, Smarts = 3 }, feedText = "You helped within your limits. Fair balance." },
 			{ text = "Decline - can't afford to right now", effects = { Happiness = -5 }, feedText = "They understand, but there's tension now." },
 			{ text = "Ghost them instead of saying no", effects = { Happiness = -10 }, setFlags = { conflict_avoider = true }, feedText = "Avoiding the conversation made it worse." },
@@ -3437,8 +3437,8 @@ Adult.events = {
 		choices = {
 			{ text = "Rediscover yourself and hobbies", effects = { Happiness = 15 }, setFlags = { empty_nester = true, self_renewed = true }, feedText = "Freedom! Time to focus on YOU again." },
 			{ text = "Struggle with the silence", effects = { Happiness = -15 }, setFlags = { empty_nester = true }, feedText = "It's harder than expected. You miss them." },
-			{ text = "Renovate the house", effects = { Happiness = 10, Money = -20000 }, setFlags = { empty_nester = true }, feedText = "Finally turning that room into your dream space!" },
-			{ text = "Plan more visits and trips to see them", effects = { Happiness = 8, Money = -2000 }, setFlags = { empty_nester = true }, feedText = "Distance doesn't mean disconnection." },
+			{ text = "Renovate the house ($20,000)", effects = { Happiness = 10, Money = -20000 }, setFlags = { empty_nester = true }, feedText = "Finally turning that room into your dream space!", eligibility = function(state) return (state.Money or 0) >= 20000, "💸 Need $20,000 for renovation" end },
+			{ text = "Plan more visits and trips to see them ($2,000)", effects = { Happiness = 8, Money = -2000 }, setFlags = { empty_nester = true }, feedText = "Distance doesn't mean disconnection.", eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2,000 for travel" end },
 		},
 	},
 

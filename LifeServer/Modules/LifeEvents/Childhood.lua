@@ -2849,7 +2849,7 @@ Childhood.events = {
 		tags = { "collecting", "hobby", "organization" },
 		
 		choices = {
-			{ text = "Trading cards", effects = { Happiness = 5, Smarts = 2, Money = -15 }, setFlags = { card_collector = true }, feedText = "Your card collection is growing! Gotta catch em all!" },
+			{ text = "Trading cards", effects = { Happiness = 5, Smarts = 2 }, setFlags = { card_collector = true }, feedText = "Your card collection is growing! Gotta catch em all!" },
 			{ text = "Rocks and minerals", effects = { Happiness = 4, Smarts = 4 }, setFlags = { rock_collector = true }, hintCareer = "science", feedText = "You're becoming a young geologist!" },
 			{ text = "Stuffed animals", effects = { Happiness = 6 }, setFlags = { plushie_collector = true }, feedText = "Your bed is covered in stuffed animals!" },
 			{ text = "Coins", effects = { Happiness = 3, Smarts = 3, Money = 10 }, setFlags = { coin_collector = true }, hintCareer = "finance", feedText = "Some of these old coins might be valuable!" },

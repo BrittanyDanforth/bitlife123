@@ -1454,7 +1454,7 @@ Teen.events = {
 		
 		choices = {
 			{ text = "Quit the job - school comes first", effects = { Smarts = 3, Happiness = 4 }, setFlags = { has_teen_job = false }, feedText = "You quit to focus on what matters. Good choice." },
-			{ text = "Cut back hours", effects = { Happiness = 3, Money = -50 }, feedText = "Finding balance with fewer work hours." },
+			{ text = "Cut back hours", effects = { Happiness = 3 }, feedText = "Finding balance with fewer work hours." },
 			{ text = "Power through - need the money", effects = { Health = -3, Money = 100 }, setFlags = { workaholic = true }, feedText = "You're exhausted but the paycheck is worth it... maybe." },
 			{ text = "Switch to a flexible job", effects = { Happiness = 3, Money = 50 }, feedText = "Found something with better hours!" },
 		},
@@ -1891,7 +1891,7 @@ Teen.events = {
 			{ text = "Call someone you trust", effects = { Happiness = 4 }, setFlags = { reaches_out = true }, feedText = "Talking to someone helped you feel less alone." },
 			{ text = "Hide it and push through", effects = { Happiness = -5, Health = -3 }, setFlags = { hides_struggles = true }, feedText = "You suffered in silence. Not healthy." },
 			{ text = "Leave the situation causing it", effects = { Happiness = 2 }, feedText = "Removing yourself from the trigger helped." },
-			{ text = "Talk to a professional", effects = { Happiness = 5, Health = 4, Money = -50 }, setFlags = { gets_help = true }, feedText = "Getting professional help was the right call." },
+			{ text = "Talk to a professional", effects = { Happiness = 5, Health = 4 }, setFlags = { gets_help = true }, feedText = "Getting professional help was the right call." },
 		},
 	},
 	{

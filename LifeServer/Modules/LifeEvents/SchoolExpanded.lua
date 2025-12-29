@@ -285,7 +285,7 @@ SchoolExpanded.events = {
 			},
 			{ text = "Get lost/separated briefly", effects = { Happiness = -4, Smarts = 2 }, setFlags = { got_lost_field_trip = true }, feedText = "🚌 Scary few minutes but found the group. Adventure!" },
 			{ text = "Get sick on the bus", effects = { Happiness = -6, Health = -2 }, feedText = "🚌 Motion sickness ruined it. Barely remember the trip." },
-			{ text = "Buy the best souvenir", effects = { Happiness = 6, Money = -10 }, feedText = "🚌 Still treasure it years later!" },
+			{ text = "Buy the best souvenir", effects = { Happiness = 6 }, feedText = "🚌 Still treasure it years later!" },
 		},
 	},
 	{

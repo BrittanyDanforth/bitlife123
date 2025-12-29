@@ -208,7 +208,7 @@ LifeChallenges.events = {
 					end
 				end,
 			},
-			{ text = "Talk to mentor/therapist", effects = { Money = -50, Happiness = 6, Smarts = 3 }, feedText = "😰 External perspective helps! You're not a fraud!" },
+			{ text = "Talk to mentor/therapist", effects = { Happiness = 6, Smarts = 3 }, feedText = "😰 External perspective helps! You're not a fraud!" },
 			{ text = "Document your wins", effects = { Happiness = 5, Smarts = 2 }, setFlags = { keeps_success_journal = true }, feedText = "😰 Evidence of accomplishments. Can't argue with facts!" },
 		},
 	},
@@ -344,8 +344,8 @@ LifeChallenges.events = {
 					end
 				end,
 			},
-			{ text = "Try new things", effects = { Money = -100, Happiness = 6, Smarts = 3 }, feedText = "🤔 Experimenting with life. Discovering what resonates." },
-			{ text = "Seek therapy", effects = { Money = -150, Happiness = 5, Smarts = 4 }, setFlags = { in_therapy = true }, feedText = "🤔 Professional guidance. Peeling back layers. Growth." },
+			{ text = "Try new things", effects = { Happiness = 6, Smarts = 3 }, feedText = "🤔 Experimenting with life. Discovering what resonates." },
+			{ text = "Seek therapy ($150)", effects = { Money = -150, Happiness = 5, Smarts = 4 }, setFlags = { in_therapy = true }, feedText = "🤔 Professional guidance. Peeling back layers. Growth.", eligibility = function(state) return (state.Money or 0) >= 150, "💸 Need $150 for therapy" end },
 		},
 	},
 	{
@@ -427,8 +427,8 @@ LifeChallenges.events = {
 					end
 				end,
 			},
-			{ text = "Join community groups", effects = { Money = -20, Happiness = 6 }, feedText = "😔 Structured social opportunities. Finding your people." },
-			{ text = "Get a pet", effects = { Money = -200, Happiness = 8 }, setFlags = { has_dog = true }, feedText = "😔 Unconditional love. Companion. Not alone anymore." },
+			{ text = "Join community groups", effects = { Happiness = 6 }, feedText = "😔 Structured social opportunities. Finding your people." },
+			{ text = "Get a pet ($200)", effects = { Money = -200, Happiness = 8 }, setFlags = { has_dog = true }, feedText = "😔 Unconditional love. Companion. Not alone anymore.", eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for pet" end },
 			{ text = "Accept being alone", effects = { Happiness = 2, Smarts = 3 }, setFlags = { comfortable_alone = true }, feedText = "😔 Learning to enjoy your own company. Self-sufficient." },
 		},
 	},
@@ -467,7 +467,7 @@ LifeChallenges.events = {
 					end
 				end,
 			},
-			{ text = "Try to make amends", effects = { Money = -50 }, feedText = "Reaching out to right wrongs...",
+			{ text = "Try to make amends", effects = {}, feedText = "Reaching out to right wrongs...",
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.50 then
@@ -682,7 +682,7 @@ LifeChallenges.events = {
 					end
 				end,
 			},
-			{ text = "Therapy for trust trauma", effects = { Money = -100, Happiness = 5, Smarts = 3 }, feedText = "🔒 Processing why trust is hard. Healing old wounds." },
+			{ text = "Therapy for trust trauma ($100)", effects = { Money = -100, Happiness = 5, Smarts = 3 }, feedText = "🔒 Processing why trust is hard. Healing old wounds.", eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for therapy" end },
 			{ text = "Stay guarded", effects = { Happiness = -2 }, setFlags = { trust_issues = true }, feedText = "🔒 Walls stay up. Safe but lonely." },
 		},
 	},

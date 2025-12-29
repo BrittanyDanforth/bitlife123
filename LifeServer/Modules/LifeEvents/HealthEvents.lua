@@ -168,7 +168,7 @@ HealthEvents.events = {
 		choices = {
 			{
 				text = "Get your results",
-				effects = { Money = -50 },
+				effects = {},
 				feedText = "Waiting for test results...",
 				-- ═══════════════════════════════════════════════════════════════════════════════
 				-- CRITICAL FIX #529: Set went_to_doctor flag so diagnosis events work correctly!
@@ -1516,13 +1516,14 @@ HealthEvents.events = {
 		choices = {
 			{
 				text = "Review results with doctor",
-				effects = { Money = -50, Happiness = 3, Smarts = 2 },
+				effects = { Happiness = 3, Smarts = 2 },
 				feedText = "📋 Discussed results. Now have a clear health plan.",
 			},
 			{
-				text = "Schedule follow-up tests",
+				text = "Schedule follow-up tests ($100)",
 				effects = { Money = -100, Health = 2 },
 				feedText = "📋 Booked additional tests for thorough assessment.",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for additional tests" end,
 			},
 			{
 				text = "File it away (ignore)",

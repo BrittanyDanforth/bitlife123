@@ -2354,7 +2354,7 @@ Career.events = {
 			end,
 		},
 		{ text = "Stick to regular hours", effects = { Happiness = 3, Money = 200 }, feedText = "You maintained boundaries. Sanity preserved!" },
-		{ text = "Call in sick during peak (lose wages)", effects = { Happiness = 5, Money = -100 }, setFlags = { unreliable_worker = true }, feedText = "You ditched during the rush. Manager is furious." },
+		{ text = "Call in sick during peak (lose wages)", effects = { Happiness = 5 }, setFlags = { unreliable_worker = true }, feedText = "You ditched during the rush. Manager is furious." },
 	},
 },
 {

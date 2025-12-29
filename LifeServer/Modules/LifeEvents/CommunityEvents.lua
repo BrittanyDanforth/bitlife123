@@ -105,7 +105,7 @@ CommunityEvents.events = {
 				end,
 			},
 			{ text = "Parking wars", effects = { Happiness = -4 }, setFlags = { parking_feud = true }, feedText = "😤 Someone took your spot. This means war." },
-			{ text = "Property line disagreement", effects = { Happiness = -3, Money = -100 }, feedText = "😤 Had to get survey done. Expensive peace." },
+			{ text = "Property line disagreement", effects = { Happiness = -3 }, feedText = "😤 Had to deal with boundary disputes. Stressful." },
 			{ text = "Pet issues", effects = { Happiness = -3 }, feedText = "😤 Their pet is causing problems. Awkward confrontation." },
 		},
 	},
@@ -191,8 +191,8 @@ CommunityEvents.events = {
 					end
 				end,
 			},
-			{ text = "Car vandalized", effects = { Happiness = -6, Money = -200 }, feedText = "🚔 Someone keyed your car. Why?!" },
-			{ text = "Package theft", effects = { Happiness = -4, Money = -50 }, setFlags = { package_stolen = true }, feedText = "🚔 Porch pirates took your delivery. Frustrating." },
+			{ text = "Car vandalized", effects = { Happiness = -6 }, feedText = "🚔 Someone keyed your car. Why?!" },
+			{ text = "Package theft", effects = { Happiness = -4 }, setFlags = { package_stolen = true }, feedText = "🚔 Porch pirates took your delivery. Frustrating." },
 			{ text = "Suspicious person reported", effects = { Happiness = -2 }, feedText = "🚔 Neighborhood on alert. Staying vigilant." },
 		},
 	},
@@ -236,7 +236,7 @@ CommunityEvents.events = {
 					end
 				end,
 			},
-			{ text = "Donate money instead", effects = { Happiness = 5, Money = -50 }, feedText = "🤝 Time is money, gave money instead. Still helps!" },
+			{ text = "Donate money instead ($50)", effects = { Happiness = 5, Money = -50 }, feedText = "🤝 Time is money, gave money instead. Still helps!", eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 to donate" end },
 			{ text = "Too busy right now", effects = { Happiness = -1 }, feedText = "🤝 Maybe next time. Life is hectic." },
 		},
 	},
@@ -652,10 +652,10 @@ CommunityEvents.events = {
 		tags = { "event", "public", "entertainment" },
 		
 		choices = {
-			{ text = "Concert in the park", effects = { Happiness = 10, Money = -5 }, feedText = "🎪 Free music! Dancing! Summer vibes!" },
-			{ text = "Local festival", effects = { Happiness = 8, Money = -30 }, feedText = "🎪 Food, games, culture! Community celebration!" },
-			{ text = "Art walk/gallery night", effects = { Happiness = 6, Smarts = 3, Money = -10 }, feedText = "🎪 Culture vulture! Local art appreciation!" },
-			{ text = "Outdoor movie", effects = { Happiness = 7, Money = -5 }, feedText = "🎪 Blankets and popcorn! Movie magic under stars!" },
+			{ text = "Concert in the park", effects = { Happiness = 10 }, feedText = "🎪 Free music! Dancing! Summer vibes!" },
+			{ text = "Local festival", effects = { Happiness = 8 }, feedText = "🎪 Food, games, culture! Community celebration!" },
+			{ text = "Art walk/gallery night", effects = { Happiness = 6, Smarts = 3 }, feedText = "🎪 Culture vulture! Local art appreciation!" },
+			{ text = "Outdoor movie", effects = { Happiness = 7 }, feedText = "🎪 Blankets and popcorn! Movie magic under stars!" },
 			{ text = "Skip it - stay home", effects = { Happiness = 2 }, feedText = "🎪 FOMO is real but couch is comfy." },
 		},
 	},

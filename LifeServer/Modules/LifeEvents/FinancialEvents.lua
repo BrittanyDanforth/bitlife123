@@ -329,7 +329,7 @@ FinancialEvents.events = {
 					end
 				end,
 			},
-			{ text = "DIY repair attempt", effects = { Money = -50, Smarts = 2 }, feedText = "🚗 YouTube mechanic mode. Saved some money, maybe.",
+			{ text = "DIY repair attempt", effects = { Smarts = 2 }, feedText = "🚗 YouTube mechanic mode. Saved some money, maybe.",
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.50 then
@@ -788,7 +788,7 @@ FinancialEvents.events = {
 					end
 				end,
 			},
-			{ text = "Set up payment plan", effects = { Money = -100, Happiness = 2 }, feedText = "📞 Structured payments. Manageable now." },
+			{ text = "Set up payment plan", effects = { Happiness = 2 }, feedText = "📞 Structured payments. Manageable now." },
 			{ text = "Ignore the calls", effects = { Happiness = -5 }, setFlags = { avoiding_collectors = true }, feedText = "📞 Not answering. This won't end well." },
 		},
 	},
@@ -1131,7 +1131,7 @@ FinancialEvents.events = {
 					end
 				end,
 			},
-			{ text = "File late/extension", effects = { Happiness = -2, Money = -25 }, feedText = "📋 Procrastinated. Extension fees. Get it together." },
+			{ text = "File late/extension", effects = { Happiness = -2 }, feedText = "📋 Procrastinated. Extension filed. Get it together." },
 		},
 	},
 	{

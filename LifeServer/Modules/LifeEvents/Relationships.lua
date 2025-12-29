@@ -722,7 +722,7 @@ Relationships.events = {
 		choices = {
 			{ text = "Patient understanding", effects = { Happiness = 5, Smarts = 2 }, feedText = "Patience paid off." },
 			{ text = "Strict discipline", effects = { Happiness = -2 }, feedText = "You laid down the law." },
-			{ text = "Get professional advice", effects = { Happiness = 3, Money = -200 }, feedText = "Expert advice helped." },
+			{ text = "Get professional advice ($200)", effects = { Happiness = 3, Money = -200 }, feedText = "Expert advice helped.", eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for counseling" end },
 			{ text = "Just hope they grow out of it", effects = { Happiness = 2 }, feedText = "Time heals many things." },
 		},
 	},
@@ -812,7 +812,7 @@ Relationships.events = {
 			{ text = "Lean on others for support", effects = { Happiness = -5, Health = -2 }, feedText = "Grief is heavy, but you're not alone." },
 			{ text = "Celebrate their life", effects = { Happiness = -3, Smarts = 2 }, feedText = "You chose to remember the good times." },
 			{ text = "Struggle in silence", effects = { Happiness = -10, Health = -5 }, setFlags = { grief = true }, feedText = "You're struggling but hiding it." },
-			{ text = "Seek professional help", effects = { Happiness = -3, Money = -200 }, feedText = "A therapist helped you process." },
+			{ text = "Seek professional help ($200)", effects = { Happiness = -3, Money = -200 }, feedText = "A therapist helped you process.", eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for therapy" end },
 		},
 	},
 	{
@@ -1298,7 +1298,7 @@ Relationships.events = {
 		requiresPartner = true,
 
 		choices = {
-			{ text = "Hidden debt", effects = { Happiness = -10, Money = -3000 }, setFlags = { partner_debt = true }, feedText = "They've been hiding serious financial problems." },
+			{ text = "Hidden debt", effects = { Happiness = -10 }, setFlags = { partner_debt = true }, feedText = "They've been hiding serious financial problems." },
 			{ text = "Secret family you didn't know about", effects = { Happiness = -15 }, setFlags = { partner_secret_family = true }, feedText = "They have a whole other life you didn't know about." },
 			{ text = "A harmless surprise for you", effects = { Happiness = 10 }, feedText = "They were planning a surprise for you! Phew!" },
 			{ text = "Past they're ashamed of", effects = { Happiness = -5, Smarts = 2 }, feedText = "Their past is complicated but you understand." },
@@ -1454,7 +1454,7 @@ Relationships.events = {
 
 		choices = {
 			{ text = "Shared your secrets", effects = { Happiness = -12 }, setFlags = { betrayed_by_friend = true }, feedText = "They told everyone your private business." },
-			{ text = "Stole from you", effects = { Happiness = -15, Money = -500 }, setFlags = { betrayed_by_friend = true }, feedText = "They stole money from you. Unforgivable." },
+			{ text = "Stole from you", effects = { Happiness = -15 }, setFlags = { betrayed_by_friend = true }, feedText = "They stole money from you. Unforgivable." },
 			{ text = "Dated your ex", effects = { Happiness = -10 }, setFlags = { betrayed_by_friend = true }, feedText = "They broke the friend code." },
 			{ text = "Talked behind your back", effects = { Happiness = -8 }, feedText = "You heard what they really think of you." },
 		},

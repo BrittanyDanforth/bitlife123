@@ -398,7 +398,7 @@ PetEvents.events = {
 					end
 				end,
 			},
-			{ text = "Playdate arranged", effects = { Happiness = 6, Money = -10 }, feedText = "🐕‍🦺 Pet playdate! They have a best friend now!" },
+			{ text = "Playdate arranged", effects = { Happiness = 6 }, feedText = "🐕‍🦺 Pet playdate! They have a best friend now!" },
 			{ text = "Pet is antisocial", effects = { Happiness = 2 }, feedText = "🐕‍🦺 Prefers just you. That's okay. Introverted pet." },
 		},
 	},

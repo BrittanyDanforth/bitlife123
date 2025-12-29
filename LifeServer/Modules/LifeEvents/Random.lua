@@ -531,7 +531,7 @@ Random.events = {
 			{ text = "Rest up properly", effects = { Health = 3, Happiness = -2 }, feedText = "You took care of yourself." },
 			{ text = "Push through it", effects = { Health = -3, Happiness = -3 }, feedText = "You kept going. Probably not wise." },
 			{ text = "Home remedies", effects = { Health = 2 }, feedText = "Soup and tea worked wonders." },
-			{ text = "See a doctor", effects = { Health = 5, Money = -100 }, feedText = "The doctor helped you recover faster." },
+			{ text = "See a doctor ($100)", effects = { Health = 5, Money = -100 }, feedText = "The doctor helped you recover faster.", eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for doctor visit" end },
 		},
 	},
 	{
@@ -544,7 +544,7 @@ Random.events = {
 		baseChance = 0.55,
 		cooldown = 3,
 		choices = {
-			{ text = "Start going to the gym", effects = { Health = 8, Happiness = 5, Money = -50 }, setFlags = { gym_member = true }, feedText = "You signed up for a gym membership! Time to get fit and feel great." },
+			{ text = "Start going to the gym ($50)", effects = { Health = 8, Happiness = 5, Money = -50 }, setFlags = { gym_member = true }, feedText = "You signed up for a gym membership! Time to get fit and feel great.", eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 for gym membership" end },
 			{ text = "Take up running", effects = { Health = 7, Happiness = 3 }, setFlags = { runner = true }, feedText = "You started running regularly!" },
 			{ text = "Try a new sport", effects = { Health = 5, Happiness = 7 }, feedText = "You picked up a new sport!" },
 			{ text = "Eh, motivation faded", effects = { Happiness = -2 }, feedText = "The motivation was short-lived." },
@@ -1990,7 +1990,7 @@ Random.events = {
 		choices = {
 			{ text = "Making great progress!", effects = { Health = 15, Happiness = 10 }, feedText = "Recovery is going well! Almost back to normal." },
 			{ text = "Slower than expected", effects = { Health = 5, Happiness = -5 }, feedText = "Recovery is taking longer than hoped." },
-			{ text = "Complications arose", effects = { Health = -10, Happiness = -10, Money = -1000 }, feedText = "Setback in recovery. More treatment needed." },
+			{ text = "Complications arose", effects = { Health = -10, Happiness = -10 }, feedText = "Setback in recovery. More treatment needed." },
 			{ text = "Fully recovered!", effects = { Health = 20, Happiness = 15 }, setFlags = { fully_recovered = true }, feedText = "You're back to full health! What a journey.", onResolve = function(state)
 				state.Flags = state.Flags or {}
 				state.Flags.hospitalized = nil
@@ -2151,7 +2151,7 @@ Random.events = {
 		choices = {
 			{ text = "Devastated - they were family", effects = { Happiness = -20, Health = -5 }, feedText = "Losing your pet is heartbreaking." },
 			{ text = "Grateful for the time together", effects = { Happiness = -10 }, feedText = "You cherish the memories you shared." },
-			{ text = "Adopt another pet soon", effects = { Happiness = -8, Money = -300 }, setFlags = { has_pet = true }, feedText = "You opened your heart to another pet." },
+			{ text = "Adopt another pet soon ($300)", effects = { Happiness = -8, Money = -300 }, setFlags = { has_pet = true }, feedText = "You opened your heart to another pet.", eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for pet adoption" end },
 			{ text = "Not getting another pet", effects = { Happiness = -12 }, feedText = "Too painful. You can't go through this again.", onResolve = function(state)
 				state.Flags = state.Flags or {}
 				state.Flags.has_pet = nil

@@ -1051,8 +1051,8 @@ RelationshipsExpanded.events = {
 					end
 				end,
 			},
-			{ text = "Join support group", effects = { Happiness = 5, Smarts = 2, Money = -50 }, setFlags = { support_group = true }, feedText = "😔 Others feel it too. You're not alone in being alone." },
-			{ text = "Get a pet", effects = { Happiness = 7, Money = -200 }, setFlags = { has_pet = true }, feedText = "😔 Unconditional love. A furry friend helped!" },
+			{ text = "Join support group", effects = { Happiness = 5, Smarts = 2 }, setFlags = { support_group = true }, feedText = "😔 Others feel it too. You're not alone in being alone." },
+			{ text = "Get a pet ($200)", effects = { Happiness = 7, Money = -200 }, setFlags = { has_pet = true }, feedText = "😔 Unconditional love. A furry friend helped!", eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for pet" end },
 			{ text = "Isolate further", effects = { Happiness = -8, Health = -3 }, setFlags = { chronic_loneliness = true }, feedText = "😔 Withdrew more. Spiraling. Need help." },
 		},
 	},

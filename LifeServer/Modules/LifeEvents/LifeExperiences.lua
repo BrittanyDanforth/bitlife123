@@ -297,10 +297,10 @@ LifeExperiences.events = {
 		tags = { "kindness", "giving", "good_deed" },
 		
 		choices = {
-			{ text = "Paid for their coffee/food", effects = { Happiness = 8, Money = -15 }, setFlags = { kind_person = true }, feedText = "💖 Their reaction made your day! Pay it forward!" },
+			{ text = "Paid for their coffee/food", effects = { Happiness = 8 }, setFlags = { kind_person = true }, feedText = "💖 Their reaction made your day! Pay it forward!" },
 			{ text = "Helped with something heavy/difficult", effects = { Happiness = 6, Health = -1 }, feedText = "💖 Jumped in to help. They were so grateful!" },
 			{ text = "Gave genuine compliment", effects = { Happiness = 5 }, feedText = "💖 Simple words that clearly meant a lot to them." },
-			{ text = "Donated money to someone in need", effects = { Happiness = 7, Money = -50 }, feedText = "💖 Direct help. Made a real difference." },
+			{ text = "Donated money to someone in need", effects = { Happiness = 7 }, feedText = "💖 Direct help. Made a real difference." },
 		},
 	},
 	{
@@ -566,7 +566,7 @@ LifeExperiences.events = {
 			{ text = "Unexpected gift", effects = { Happiness = 8, Money = 50 }, feedText = "🎁 Someone thought of you! So touching!" },
 			{ text = "Good news you didn't expect", effects = { Happiness = 10 }, feedText = "🎁 Life-changing good news! Celebration!" },
 			{ text = "Reunited with lost item", effects = { Happiness = 7 }, feedText = "🎁 Found something you thought was gone forever!" },
-			{ text = "Spontaneous adventure opportunity", effects = { Happiness = 8, Money = -50 }, feedText = "🎁 Said yes to something random. Best decision!" },
+			{ text = "Spontaneous adventure opportunity", effects = { Happiness = 8 }, feedText = "🎁 Said yes to something random. Best decision!" },
 		},
 	},
 	{

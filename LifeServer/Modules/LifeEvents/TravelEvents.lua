@@ -532,7 +532,7 @@ TravelEvents.events = {
 					end
 				end,
 			},
-			{ text = "Lost luggage situation", effects = { Happiness = -6, Money = -150 }, setFlags = { lost_luggage = true }, feedText = "✈️ Bags didn't make it. Living in airport clothes." },
+			{ text = "Lost luggage situation", effects = { Happiness = -6 }, setFlags = { lost_luggage = true }, feedText = "✈️ Bags didn't make it. Living in airport clothes." },
 		},
 	},
 	{
@@ -772,8 +772,8 @@ TravelEvents.events = {
 					end
 				end,
 			},
-			{ text = "Language immersion program", effects = { Money = -800, Smarts = 8, Happiness = 10 }, setFlags = { language_learner = true }, feedText = "🌍 Fluent now! Mind expanded! New world opened!" },
-			{ text = "Volunteer abroad", effects = { Money = -600, Happiness = 12, Smarts = 4 }, setFlags = { volunteer_abroad = true }, feedText = "🌍 Made a difference AND learned so much! Win-win!" },
+			{ text = "Language immersion program ($800)", effects = { Money = -800, Smarts = 8, Happiness = 10 }, setFlags = { language_learner = true }, feedText = "🌍 Fluent now! Mind expanded! New world opened!", eligibility = function(state) return (state.Money or 0) >= 800, "💸 Need $800 for immersion program" end },
+			{ text = "Volunteer abroad ($600)", effects = { Money = -600, Happiness = 12, Smarts = 4 }, setFlags = { volunteer_abroad = true }, feedText = "🌍 Made a difference AND learned so much! Win-win!", eligibility = function(state) return (state.Money or 0) >= 600, "💸 Need $600 for travel" end },
 		},
 	},
 	{

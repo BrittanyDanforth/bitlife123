@@ -213,7 +213,7 @@ FamilyEvents.events = {
 		choices = {
 			{ text = "First steps!", effects = { Happiness = 12 }, setFlags = { saw_first_steps = true }, feedText = "🌟 Walking! Your baby is walking! Video everything!" },
 			{ text = "First words!", effects = { Happiness = 12 }, setFlags = { heard_first_words = true }, feedText = "🌟 They said 'mama/dada'! Heart melting!" },
-			{ text = "Graduated to new grade", effects = { Happiness = 8, Money = -50 }, feedText = "🌟 Growing up so fast! Pride and tears!" },
+			{ text = "Graduated to new grade", effects = { Happiness = 8 }, feedText = "🌟 Growing up so fast! Pride and tears!" },
 			{ text = "Won award/achievement", effects = { Happiness = 10, Smarts = 2 }, feedText = "🌟 Your kid is amazing! Proud parent moment!" },
 		},
 	},
@@ -422,7 +422,7 @@ FamilyEvents.events = {
 					end
 				end,
 			},
-			{ text = "Help in-laws with something", effects = { Money = -100, Happiness = 4 }, feedText = "👵 Earned some brownie points. Good will building." },
+			{ text = "Help in-laws with something", effects = { Happiness = 4 }, feedText = "👵 Earned some brownie points. Good will building." },
 			{ text = "Boundary issues", effects = { Happiness = -4 }, feedText = "👵 They're overstepping. Need to have a talk." },
 		},
 	},
@@ -461,7 +461,7 @@ FamilyEvents.events = {
 				end,
 			},
 			{ text = "Sibling rivalry flare-up", effects = { Happiness = -5 }, setFlags = { sibling_rivalry = true }, feedText = "👫 Old competition resurfaces. Some things never change." },
-			{ text = "Support sibling through tough time", effects = { Happiness = 4, Money = -100 }, feedText = "👫 They needed you. Glad to be there for them." },
+			{ text = "Support sibling through tough time", effects = { Happiness = 4 }, feedText = "👫 They needed you. Glad to be there for them." },
 		},
 	},
 	{
@@ -631,8 +631,8 @@ FamilyEvents.events = {
 		tags = { "tradition", "holiday", "family" },
 		
 		choices = {
-			{ text = "Embrace the tradition fully", effects = { Happiness = 10, Money = -100 }, setFlags = { family_traditions = true }, feedText = "🎄 Love these moments! Creating memories together!" },
-			{ text = "Go through the motions", effects = { Happiness = 3, Money = -50 }, feedText = "🎄 Participating. Not as magical but family time." },
+			{ text = "Embrace the tradition fully", effects = { Happiness = 10 }, setFlags = { family_traditions = true }, feedText = "🎄 Love these moments! Creating memories together!" },
+			{ text = "Go through the motions", effects = { Happiness = 3 }, feedText = "🎄 Participating. Not as magical but family time." },
 			{ text = "Start a new tradition", effects = { Happiness = 8, Smarts = 2 }, feedText = "🎄 Out with old, in with new! Family evolution!" },
 			{ text = "Skip this year", effects = { Happiness = -2 }, feedText = "🎄 Couldn't make it. Guilt about missing it." },
 		},
@@ -661,7 +661,7 @@ FamilyEvents.events = {
 		end,
 		
 		choices = {
-			{ text = "Spoil them rotten", effects = { Happiness = 12, Money = -50 }, setFlags = { doting_grandparent = true }, feedText = "👴👶 Ice cream for breakfast! Grandparent privilege!" },
+			{ text = "Spoil them rotten", effects = { Happiness = 12 }, setFlags = { doting_grandparent = true }, feedText = "👴👶 Ice cream for breakfast! Grandparent privilege!" },
 			{ text = "Share family stories", effects = { Happiness = 10, Smarts = 2 }, feedText = "👴👶 Passing down history and wisdom! Legacy continues!" },
 			{ text = "Teach them a skill", effects = { Happiness = 8, Smarts = 3 }, feedText = "👴👶 Learning together! Bridging generations!" },
 			{ text = "Just enjoy their company", effects = { Happiness = 10, Health = 2 }, feedText = "👴👶 Pure joy. Kids keep you young at heart!" },
