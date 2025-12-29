@@ -4244,6 +4244,12 @@ Random.events = {
 					end
 				end,
 			},
+			{
+				index = 4,
+				text = "Skip it - take the bus today",
+				effects = { Happiness = -1 },
+				feedText = "⛽ Left the car parked. Public transit it is!",
+			},
 		},
 	},
 }
