@@ -348,73 +348,49 @@ local events = {
 		choices = {
 			{
 				index = 1,
-				text = "College - continue your education",
+				text = "University (pay tuition if you can)",
 				effects = { Happiness = 7, Smarts = 5 },
 				setFlags = { plans_for_college = true, higher_education_path = true, in_college = true },
 				feedText = "Enrolled in college!",
-				-- CRITICAL FIX #507: Actually enroll in college - set EducationData properly!
 				onResolve = function(state)
 					local money = state.Money or 0
 					state.Flags = state.Flags or {}
 					local loanNeeded = 0
+					local tuitionPaid = 0
 					local collegeName = "State University"
-					local duration = 4
-					local level = "bachelor"
 					
-					if money >= 10000 then
-						state.Money = money - 10000
-						collegeName = "State University"
-						duration = 4
-						level = "bachelor"
-					elseif money >= 3000 then
-						-- Community college / scholarship route
-						state.Money = money - 3000
-						state.Flags.community_college = true
-						collegeName = "Community College"
-						duration = 2
-						level = "community"
-					elseif money >= 500 then
-						-- Financial aid / full scholarship - still go to university
-						state.Money = money - 500
+					if money >= 5000 then
+						tuitionPaid = 5000
+						state.Money = money - tuitionPaid
+						if state.AddFeed then state:AddFeed("🎓 Paid $5,000 tuition! Starting university!") end
+					elseif money >= 1000 then
+						tuitionPaid = money
+						state.Money = 0
+						loanNeeded = 5000 - tuitionPaid
 						state.Flags.financial_aid = true
 						state.Flags.student_loans = true
-						state.Flags.has_student_loans = true
-						loanNeeded = 9500 -- Rest is loans
-						collegeName = "State University"
-						duration = 4
-						level = "bachelor"
+						if state.AddFeed then state:AddFeed(string.format("🎓 Paid $%d and took $%d in loans for university!", tuitionPaid, loanNeeded)) end
 					else
-						-- Parents helping / work-study - full loans
+						loanNeeded = 5000
 						state.Flags.work_study = true
 						state.Flags.student_loans = true
-						state.Flags.has_student_loans = true
-						loanNeeded = 10000
-						collegeName = "State University"
-						duration = 4
-						level = "bachelor"
+						if state.AddFeed then state:AddFeed("🎓 Full financial aid! Student loans cover tuition.") end
 					end
 					
-					-- CRITICAL FIX #507: Actually set up EducationData for college enrollment!
 					state.EducationData = state.EducationData or {}
 					state.EducationData.Status = "enrolled"
-					state.EducationData.Level = level
+					state.EducationData.Level = "bachelor"
 					state.EducationData.Progress = 0
-					state.EducationData.Duration = duration
+					state.EducationData.Duration = 4
 					state.EducationData.Institution = collegeName
 					state.EducationData.Debt = (state.EducationData.Debt or 0) + loanNeeded
 					state.EducationData.LoanAmount = loanNeeded
 					state.EducationData.enrolledAge = state.Age
 					
-					-- Set proper flags
 					state.Flags.in_college = true
 					state.Flags.college_student = true
 					state.Flags.enrolled_college = true
-					state.Flags.college_bound = true  -- CRITICAL: Needed for college_graduation event
-
-					-- CRITICAL FIX: Do NOT set state.Education to "bachelor" here!
-					-- Education should remain "high_school" until they GRADUATE college.
-					-- EducationData.Level tracks what they're PURSUING, not what they've COMPLETED.
-					-- The college_graduation event sets state.Education = "bachelor" on completion.
+					state.Flags.college_bound = true
 					state.Education = state.Education or "high_school"
 
 					state.PendingFeed = string.format("🎓 You're going to %s! New chapter begins!", collegeName)
@@ -422,36 +398,33 @@ local events = {
 			},
 			{
 				index = 2,
-				text = "Trade school - learn a real skill",
+				text = "Trade school (pay what you can)",
 				effects = { Happiness = 6, Smarts = 4 },
 				setFlags = { trade_school = true, practical_path = true, in_trade_school = true },
 				feedText = "Enrolled in trade school!",
-				-- CRITICAL FIX #508: Actually enroll in trade school properly
 				onResolve = function(state)
 					local money = state.Money or 0
 					state.Flags = state.Flags or {}
 					local loanNeeded = 0
+					local tuitionPaid = 0
 					local schoolName = "Technical Institute"
 					
-					if money >= 5000 then
-						state.Money = money - 5000
-						schoolName = "Technical Institute"
-					elseif money >= 2000 then
-						state.Money = money - 2000
-						state.Flags.apprentice = true
-						schoolName = "Apprenticeship Program"
+					if money >= 2000 then
+						tuitionPaid = 2000
+						state.Money = money - tuitionPaid
+						if state.AddFeed then state:AddFeed("🔧 Paid $2,000 tuition! Starting trade school!") end
 					elseif money >= 500 then
-						state.Money = money - 500
+						tuitionPaid = money
+						state.Money = 0
+						loanNeeded = 2000 - tuitionPaid
 						state.Flags.financial_aid = true
-						loanNeeded = 4500
-						state.Flags.has_student_loans = true
-						schoolName = "Technical Institute"
+						if state.AddFeed then state:AddFeed(string.format("🔧 Paid $%d and took $%d in loans for trade school!", tuitionPaid, loanNeeded)) end
 					else
 						state.Flags.apprentice = true
 						schoolName = "Apprenticeship Program"
+						if state.AddFeed then state:AddFeed("🔧 Starting apprenticeship program! Learn while you earn!") end
 					end
 					
-					-- CRITICAL FIX #508: Set up EducationData for trade school
 					state.EducationData = state.EducationData or {}
 					state.EducationData.Status = "enrolled"
 					state.EducationData.Level = "trade"
@@ -463,14 +436,8 @@ local events = {
 					
 					state.Flags.trade_school_student = true
 					state.Flags.in_trade_school = true
-					state.Flags.trade_school_bound = true  -- Needed for trade school completion event
-
-					-- CRITICAL FIX: Do NOT set state.Education to "trade" here!
-					-- Education should remain "high_school" until they COMPLETE trade school.
-					-- EducationData.Level tracks what they're PURSUING, not COMPLETED.
+					state.Flags.trade_school_bound = true
 					state.Education = state.Education or "high_school"
-
-					state.PendingFeed = string.format("🔧 You're enrolled at %s! Real skills, real jobs!", schoolName)
 				end,
 			},
 		{
@@ -519,37 +486,18 @@ local events = {
 		},
 			{
 				index = 4,
-				text = "Gap year - travel and figure it out",
-				effects = { Happiness = 10, Health = 4 },
+				text = "Gap year road trip ($1,000)",
+				effects = { Happiness = 10, Health = 4, Money = -1000 },
 				setFlags = { gap_year = true, free_spirit = true, wanderlust = true },
-				feedText = "Planning a gap year...",
-				-- CRITICAL FIX: Money validation for $8000 gap year travel
-				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 8000 then
-						state.Money = money - 8000
-						if state.AddFeed then
-							state:AddFeed("🎓 Backpacking through Europe! Hostels, trains, new friends. Best year ever!")
-						end
-					elseif money >= 3000 then
-						state.Money = money - 3000
-						if state.AddFeed then
-							state:AddFeed("🎓 Road trip across the country! Budget adventure but amazing!")
-						end
-					elseif money >= 500 then
-						state.Money = money - 500
-						if state.AddFeed then
-							state:AddFeed("🎓 Staycation gap year - exploring local areas and working odd jobs!")
-						end
-					else
-						-- No money = volunteering gap year
-						state.Flags = state.Flags or {}
-						state.Flags.volunteer_gap_year = true
-						if state.AddFeed then
-							state:AddFeed("🎓 Volunteer gap year! Free room and board while helping others!")
-						end
-					end
-				end,
+				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 for travel" end,
+				feedText = "🎓 Road trip adventure! Finding yourself before adulthood!",
+			},
+			{
+				index = 5,
+				text = "Volunteer gap year (free)",
+				effects = { Happiness = 8, Health = 3, Smarts = 2 },
+				setFlags = { gap_year = true, volunteer_gap_year = true },
+				feedText = "🎓 Volunteer gap year! Free room and board while helping others!",
 			},
 		},
 	},
@@ -592,130 +540,61 @@ local events = {
 		choices = {
 			{
 				index = 1,
-				-- CRITICAL FIX: Show cost in choice text!
-				text = "Get your own apartment (Need $1,000+)",
-				effects = { Happiness = 10, Health = 2 },
-				setFlags = { living_independently = true, lives_alone = true, adulting = true },
-				-- CRITICAL FIX #952: Add eligibility check - need at least $1000 to move out!
+				-- CRITICAL FIX: Show EXACT cost - $1,500 for deposit + first month
+				text = "Get your own apartment ($1,500)",
+				effects = { Happiness = 10, Health = 2, Money = -1500 },
+				setFlags = { living_independently = true, lives_alone = true, adulting = true, moved_out = true, has_own_place = true, has_apartment = true, renting = true },
+				-- CRITICAL FIX: Check exact amount needed
 				eligibility = function(state)
 					local money = state.Money or 0
-					if money < 1000 then
-						return false, "💸 You need at least $1,000 to move out! Save up first."
+					if money < 1500 then
+						return false, "💸 You need $1,500 for deposit + first month rent!"
 					end
 					return true
 				end,
-				feedText = "Looking for your own apartment...",
-				-- CRITICAL FIX: Money validation for $15000 apartment costs
-				-- CRITICAL FIX #2: Also set proper housing flags and HousingState!
+				feedText = "📦 Got your own apartment! Rent is $900/month. Freedom!",
+				-- CRITICAL FIX: Only set up housing - DON'T take more money (already in effects)
 				onResolve = function(state)
-					local money = state.Money or 0
 					state.Flags = state.Flags or {}
 					state.HousingState = state.HousingState or {}
 					
-					-- CRITICAL: Set all housing flags for proper tracking
-					state.Flags.moved_out = true
-					state.Flags.has_own_place = true
-					state.Flags.has_apartment = true
-					state.Flags.renting = true
+					-- Set housing state
 					state.Flags.living_with_parents = nil
 					state.HousingState.status = "renter"
 					state.HousingState.type = "apartment"
+					state.HousingState.rent = 900
 					state.HousingState.yearsWithoutPayingRent = 0
 					state.HousingState.missedRentYears = 0
 					state.HousingState.moveInYear = state.Year or 2025
-					
-					if money >= 15000 then
-						state.Money = money - 15000
-						state.HousingState.rent = 1200 -- Nice apartment
-						if state.AddFeed then
-							state:AddFeed("📦 Nice apartment in a good area! Rent is $1,200/month.")
-						end
-					elseif money >= 8000 then
-						state.Money = money - 8000
-						state.HousingState.rent = 900 -- Studio
-						if state.AddFeed then
-							state:AddFeed("📦 Studio apartment! Rent is $900/month. Small but yours!")
-						end
-					elseif money >= 3000 then
-						state.Money = money - 3000
-						state.HousingState.rent = 600 -- Cheap basement
-						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
-						if state.AddFeed then
-							state:AddFeed("📦 Cheap basement apartment. Rent is $600/month. Not ideal but FREEDOM!")
-						end
-					elseif money >= 1000 then
-						state.Money = money - 1000
-						state.HousingState.rent = 400 -- Shared with roommates
-						state.HousingState.type = "shared_apartment"
-						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
-						state.Flags.lives_alone = nil
-						state.Flags.has_roommates = true
-						if state.AddFeed then
-							state:AddFeed("📦 Found a roommate situation. Your share is $400/month!")
-						end
-					end
 				end,
 			},
 			{
 				index = 2,
-				-- CRITICAL FIX: Show cost in choice text!
-				text = "Find roommates (Need $500+)",
-				effects = { Happiness = 7 },
-				setFlags = { living_independently = true, has_roommates = true },
-				-- CRITICAL FIX #952: Need at least $500 for roommate deposit
+				-- CRITICAL FIX: Show EXACT cost - $700 for deposit + first month share
+				text = "Find roommates ($700)",
+				effects = { Happiness = 7, Money = -700 },
+				setFlags = { living_independently = true, has_roommates = true, moved_out = true, has_own_place = true, has_apartment = true, renting = true },
+				-- CRITICAL FIX: Check exact amount
 				eligibility = function(state)
 					local money = state.Money or 0
-					if money < 500 then
-						return false, "💸 You need at least $500 for a deposit! Keep saving."
+					if money < 700 then
+						return false, "💸 You need $700 for deposit + first month share!"
 					end
 					return true
 				end,
-				feedText = "Finding roommates...",
-				-- CRITICAL FIX: Set proper housing flags and HousingState!
+				feedText = "📦 Moved in with roommates! Your share is $450/month!",
+				-- CRITICAL FIX: Only set up housing - DON'T take more money (already in effects)
 				onResolve = function(state)
-					local money = state.Money or 0
 					state.Flags = state.Flags or {}
 					state.HousingState = state.HousingState or {}
 					
-					-- Set housing flags for roommate situation
-					state.Flags.moved_out = true
-					state.Flags.has_own_place = true
-					state.Flags.has_apartment = true
-					state.Flags.renting = true
 					state.Flags.living_with_parents = nil
 					state.HousingState.status = "renter"
 					state.HousingState.type = "shared_apartment"
+					state.HousingState.rent = 450
 					state.HousingState.yearsWithoutPayingRent = 0
 					state.HousingState.missedRentYears = 0
 					state.HousingState.moveInYear = state.Year or 2025
-					
-					if money >= 8000 then
-						state.Money = money - 8000
-						state.HousingState.rent = 500 -- Nice roommate situation
-						if state.AddFeed then
-							state:AddFeed("📦 Nice place with roommates! Your share is $500/month!")
-						end
-					elseif money >= 3000 then
-						state.Money = money - 3000
-						state.HousingState.rent = 400 -- Budget place
-						if state.AddFeed then
-							state:AddFeed("📦 Budget place with roommates. Rent is $400/month.")
-						end
-					elseif money >= 1000 then
-						state.Money = money - 1000
-						state.HousingState.rent = 300 -- Cramped
-						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
-						if state.AddFeed then
-							state:AddFeed("📦 Cramped apartment with 3 roommates. $300/month. Privacy? What's that?")
-						end
-					elseif money >= 500 then
-						state.Money = money - 500
-						state.HousingState.rent = 250 -- Very cramped
-						if state.ModifyStat then state:ModifyStat("Happiness", -4) end
-						if state.AddFeed then
-							state:AddFeed("📦 Tiny room in a crowded house. $250/month. Minimal but yours!")
-						end
-					end
 				end,
 			},
 			{

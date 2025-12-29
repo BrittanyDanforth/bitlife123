@@ -606,9 +606,11 @@ TravelEvents.events = {
 				end,
 			},
 			{
-				text = "Bungee jumping",
+				-- CRITICAL FIX: Show price!
+				text = "Bungee jumping ($150)",
 				effects = { Money = -150 },
 				feedText = "Taking the leap...",
+				eligibility = function(state) return (state.Money or 0) >= 150, "💸 Need $150 for bungee" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.75 then
@@ -627,9 +629,11 @@ TravelEvents.events = {
 				end,
 			},
 			{
-				text = "Zip-lining",
+				-- CRITICAL FIX: Show price!
+				text = "Zip-lining ($80)",
 				effects = { Money = -80, Health = 2, Happiness = 10 },
 				feedText = "🎢 Soaring through the treetops! Amazing views! Fun!",
+				eligibility = function(state) return (state.Money or 0) >= 80, "💸 Need $80 for zip-line" end,
 			},
 			{ text = "Not into extreme stuff", effects = { Happiness = 2 }, feedText = "🎢 Living isn't dying. Ground is good." },
 		},
@@ -755,9 +759,11 @@ TravelEvents.events = {
 		
 		choices = {
 			{
-				text = "Homestay with local family",
+				-- CRITICAL FIX: Show price!
+				text = "Homestay with local family ($500)",
 				effects = { Money = -500 },
 				feedText = "Living with locals...",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for homestay" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.65 then

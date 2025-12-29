@@ -253,55 +253,24 @@ Relationships.events = {
 		end,
 		choices = {
 			{ 
-				text = "Yes - plan the perfect proposal", 
-				effects = { Happiness = 15 }, 
+				text = "Grand proposal with ring ($500)", 
+				effects = { Happiness = 15, Money = -500 }, 
 				setFlags = { engaged = true }, 
-				feedText = "Planning the perfect proposal...",
-				-- CRITICAL FIX: Money validation for $2000 proposal
-				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 2000 then
-						state.Money = money - 2000
-						if state.AddFeed then
-							state:AddFeed("💍 Perfect proposal with a beautiful ring! They said YES!")
-						end
-					elseif money >= 500 then
-						state.Money = money - 500
-						if state.AddFeed then
-							state:AddFeed("💍 You proposed with a modest but lovely ring. They said YES!")
-						end
-					else
-						state.Money = math.max(0, money - 100)
-						if state.AddFeed then
-							state:AddFeed("💍 You proposed with a simple ring. The love matters, not the price! They said YES!")
-						end
-					end
-				end,
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for ring" end,
+				feedText = "💍 Perfect proposal with a beautiful ring! They said YES!",
 			},
 			{ 
-				text = "Simple and intimate", 
-				effects = { Happiness = 12 }, 
+				text = "Simple heartfelt proposal ($100)", 
+				effects = { Happiness = 12, Money = -100 }, 
 				setFlags = { engaged = true }, 
-				feedText = "A quiet, perfect moment...",
-				-- CRITICAL FIX: Money validation for $500 proposal
-				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 500 then
-						state.Money = money - 500
-						if state.AddFeed then
-							state:AddFeed("💍 Simple, intimate, perfect. They said YES! You're engaged!")
-						end
-					elseif money >= 100 then
-						state.Money = money - 100
-						if state.AddFeed then
-							state:AddFeed("💍 A heartfelt proposal. The ring was humble but the moment was priceless. They said YES!")
-						end
-					else
-						if state.AddFeed then
-							state:AddFeed("💍 You proposed without a ring - just pure love. They said YES!")
-						end
-					end
-				end,
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for ring" end,
+				feedText = "💍 Simple, intimate, perfect. They said YES!",
+			},
+			{ 
+				text = "Propose from the heart (free)", 
+				effects = { Happiness = 10 }, 
+				setFlags = { engaged = true }, 
+				feedText = "💍 You proposed with pure love - no ring needed. They said YES!",
 			},
 			{ text = "Not yet", effects = { Happiness = 2 }, feedText = "The timing isn't right." },
 		},
@@ -331,69 +300,48 @@ Relationships.events = {
 		end,
 		choices = {
 			{ 
-				text = "Grand celebration", 
-				effects = { Happiness = 20 }, 
+				text = "Grand celebration ($5,000)", 
+				effects = { Happiness = 20, Money = -5000 }, 
 				setFlags = { married = true }, 
-				feedText = "Planning a grand wedding...",
-				-- CRITICAL FIX: Money validation for $10000 wedding
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 for grand wedding" end,
+				feedText = "💒 An unforgettable grand wedding! You're married!",
 				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 10000 then
-						state.Money = money - 10000
-						if state.AddFeed then
-							state:AddFeed("💒 An unforgettable grand wedding! You're married!")
-						end
-					elseif money >= 5000 then
-						state.Money = money - 5000
-						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
-						if state.AddFeed then
-							state:AddFeed("💒 A beautiful wedding, though scaled back a bit. You're married!")
-						end
-					else
-						state.Money = math.max(0, money - 2000)
-						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
-						if state.AddFeed then
-							state:AddFeed("💒 Budget wedding - but the love is what matters! You're married!")
-						end
+					if state.Relationships and state.Relationships.partner then
+						local partner = state.Relationships.partner
+						partner.role = partner.gender == "male" and "Husband" or "Wife"
+						partner.type = "spouse"
+						partner.marriedYear = state.Year
 					end
-				-- CRITICAL FIX #34: Update partner to spouse AND ensure married flag is set
-				if state.Relationships and state.Relationships.partner then
-					local partner = state.Relationships.partner
-					partner.role = partner.gender == "male" and "Husband" or "Wife"
-					partner.type = "spouse" -- Update relationship type
-					partner.marriedYear = state.Year
-				end
-				state.Flags = state.Flags or {}
-				state.Flags.engaged = nil
-				state.Flags.married = true -- Ensure flag is set even if setFlags fails
-				state.Flags.dating = nil -- No longer just dating
-			end,
-		},
+					state.Flags = state.Flags or {}
+					state.Flags.engaged = nil
+					state.Flags.dating = nil
+				end,
+			},
+			{ 
+				text = "Intimate ceremony ($1,000)", 
+				effects = { Happiness = 15, Money = -1000 }, 
+				setFlags = { married = true }, 
+				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 for intimate ceremony" end,
+				feedText = "💒 A beautiful, small wedding. You're married!",
+				onResolve = function(state)
+					if state.Relationships and state.Relationships.partner then
+						local partner = state.Relationships.partner
+						partner.role = partner.gender == "male" and "Husband" or "Wife"
+						partner.type = "spouse"
+						partner.marriedYear = state.Year
+					end
+					state.Flags = state.Flags or {}
+					state.Flags.engaged = nil
+					state.Flags.dating = nil
+				end,
+			},
 		{ 
-			text = "Intimate ceremony", 
-			effects = { Happiness = 15 }, 
+			text = "Courthouse wedding ($100)", 
+			effects = { Happiness = 10, Money = -100 }, 
 			setFlags = { married = true }, 
-			feedText = "Planning an intimate ceremony...",
-			-- CRITICAL FIX: Money validation for $2000 wedding
+			eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for courthouse" end,
+			feedText = "💒 Quick and official. You're married!",
 			onResolve = function(state)
-				local money = state.Money or 0
-				if money >= 2000 then
-					state.Money = money - 2000
-					if state.AddFeed then
-						state:AddFeed("💒 A beautiful, small wedding. You're married!")
-					end
-				elseif money >= 500 then
-					state.Money = money - 500
-					if state.AddFeed then
-						state:AddFeed("💒 A modest but lovely ceremony. You're married!")
-					end
-				else
-					state.Money = math.max(0, money - 200)
-					if state.AddFeed then
-						state:AddFeed("💒 Simple ceremony with close family. You're married!")
-					end
-				end
-				-- CRITICAL FIX #34: Update partner to spouse AND ensure married flag is set
 				if state.Relationships and state.Relationships.partner then
 					local partner = state.Relationships.partner
 					partner.role = partner.gender == "male" and "Husband" or "Wife"
@@ -402,67 +350,16 @@ Relationships.events = {
 				end
 				state.Flags = state.Flags or {}
 				state.Flags.engaged = nil
-				state.Flags.married = true
 				state.Flags.dating = nil
 			end,
 		},
 		{ 
-			text = "Courthouse wedding", 
-			effects = { Happiness = 10 }, 
-			setFlags = { married = true }, 
-			feedText = "Courthouse wedding...",
-			-- CRITICAL FIX: Money validation for $200 wedding
-			onResolve = function(state)
-				local money = state.Money or 0
-				if money >= 200 then
-					state.Money = money - 200
-					if state.AddFeed then
-						state:AddFeed("💒 Quick and official. You're married!")
-					end
-				else
-					state.Money = math.max(0, money - 50)
-					if state.AddFeed then
-						state:AddFeed("💒 Just the filing fee. Officially married!")
-					end
-				end
-				-- CRITICAL FIX #34: Update partner to spouse AND ensure married flag is set
-				if state.Relationships and state.Relationships.partner then
-					local partner = state.Relationships.partner
-					partner.role = partner.gender == "male" and "Husband" or "Wife"
-					partner.type = "spouse"
-					partner.marriedYear = state.Year
-				end
-				state.Flags = state.Flags or {}
-				state.Flags.engaged = nil
-				state.Flags.married = true
-				state.Flags.dating = nil
-			end,
-		},
-		{ 
-			text = "Elope!", 
-			effects = { Happiness = 12 }, 
+			text = "Elope! ($300)", 
+			effects = { Happiness = 12, Money = -300 }, 
 			setFlags = { married = true, eloped = true }, 
-			feedText = "Eloping...",
-			-- CRITICAL FIX: Money validation for $1000 elopement
+			eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 to elope" end,
+			feedText = "💒 You eloped! Romantic and spontaneous!",
 			onResolve = function(state)
-				local money = state.Money or 0
-				if money >= 1000 then
-					state.Money = money - 1000
-					if state.AddFeed then
-						state:AddFeed("💒 You eloped! Romantic and spontaneous!")
-					end
-				elseif money >= 300 then
-					state.Money = money - 300
-					if state.AddFeed then
-						state:AddFeed("💒 Budget elopement - just as romantic!")
-					end
-				else
-					state.Money = math.max(0, money - 100)
-					if state.AddFeed then
-						state:AddFeed("💒 Spontaneous elopement with almost nothing - true love!")
-					end
-				end
-				-- CRITICAL FIX #34: Update partner to spouse AND ensure married flag is set
 				if state.Relationships and state.Relationships.partner then
 					local partner = state.Relationships.partner
 					partner.role = partner.gender == "male" and "Husband" or "Wife"
@@ -597,33 +494,43 @@ Relationships.events = {
 		end,
 		choices = {
 			{ 
-				text = "Let's have a baby!", 
-				effects = { Happiness = 15 }, 
-				-- CRITICAL FIX: Set both has_child and has_children for consistency
+				text = "Have a baby - prepare nursery ($1,500)", 
+				effects = { Happiness = 15, Money = -1500 }, 
 				setFlags = { has_child = true, has_children = true, parent = true }, 
-				feedText = "Starting a family...",
-				-- CRITICAL FIX: Money validation for $3000 baby costs
+				eligibility = function(state) return (state.Money or 0) >= 1500, "💸 Need $1,500 for baby supplies" end,
+				feedText = "👶 Prepared the nursery! Ready for baby!",
 				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 3000 then
-						state.Money = money - 3000
-						if state.AddFeed then
-							state:AddFeed("👶 Prepared the nursery! Ready for baby!")
-						end
-					elseif money >= 1500 then
-						state.Money = money - 1500
-						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
-						if state.AddFeed then
-							state:AddFeed("👶 Budget baby prep! Hand-me-downs and thrift stores!")
-						end
-					else
-						state.Money = math.max(0, money - 1000)
-						if state.ModifyStat then state:ModifyStat("Happiness", -4) end
-						if state.AddFeed then
-							state:AddFeed("👶 Bare minimum baby prep. Tight budget but lots of love!")
-						end
+					state.Relationships = state.Relationships or {}
+					local childCount = (state.ChildCount or 0) + 1
+					state.ChildCount = childCount
+					local isBoy = math.random() > 0.5
+					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Aiden"} 
+						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia", "Amelia", "Harper"}
+					local childName = names[math.random(1, #names)]
+					local childId = "child_" .. tostring(childCount)
+					state.Relationships[childId] = {
+						id = childId,
+						name = childName,
+						type = "family",
+						role = isBoy and "Son" or "Daughter",
+						relationship = 100,
+						age = 0,
+						gender = isBoy and "male" or "female",
+						alive = true,
+						isFamily = true,
+						isChild = true,
+					}
+					if state.AddFeed then
+						state:AddFeed(string.format("👶 Welcome to the world, %s!", childName))
 					end
-					-- Actually create the child
+				end,
+			},
+			{ 
+				text = "Have a baby - hand-me-downs (free)", 
+				effects = { Happiness = 12 }, 
+				setFlags = { has_child = true, has_children = true, parent = true }, 
+				feedText = "👶 Budget baby prep! Hand-me-downs and love!",
+				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
 					local childCount = (state.ChildCount or 0) + 1
 					state.ChildCount = childCount
@@ -1245,6 +1152,23 @@ Relationships.events = {
 					state.Flags.lives_with_partner = nil
 					if state.Relationships then
 						state.Relationships.partner = nil
+					end
+				end,
+			},
+			-- ⚡ GOD MODE PREMIUM OPTION
+			{
+				text = "⚡ [God Mode] Make them loyal forever",
+				effects = { Happiness = 10 },
+				setFlags = { partner_devoted = true },
+				requiresGamepass = "GOD_MODE",
+				gamepassEmoji = "⚡",
+				feedText = "⚡ GOD MODE! Your partner suddenly realizes their mistake and becomes eternally devoted!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.partner_will_never_cheat = true
+					state.Flags.relationship_strengthened = true
+					if state.Relationships and state.Relationships.partner then
+						state.Relationships.partner.relationship = 100
 					end
 				end,
 			},

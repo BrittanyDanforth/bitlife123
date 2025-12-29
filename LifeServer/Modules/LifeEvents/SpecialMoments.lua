@@ -192,6 +192,42 @@ SpecialMoments.events = {
 				text = "Stay with family for now",
 				effects = { Happiness = -3 },
 				feedText = "🏠 Not ready yet. Saving up makes more sense.",
+				-- CRITICAL FIX: Can't stay with family if parents are dead!
+				eligibility = function(state)
+					local flags = state.Flags or {}
+					if flags.orphan or flags.lost_both_parents then
+						return false, "Your parents have passed away"
+					end
+					if state.Relationships then
+						local hasLivingParent = false
+						for id, rel in pairs(state.Relationships) do
+							if rel and (rel.role == "Mother" or rel.role == "Father" or rel.type == "parent") then
+								if rel.alive ~= false and rel.deceased ~= true then
+									hasLivingParent = true
+									break
+								end
+							end
+						end
+						if not hasLivingParent then
+							return false, "Your parents have passed away"
+						end
+					end
+					return true
+				end,
+			},
+			{
+				-- CRITICAL FIX: Add cheaper roommate option to prevent hard lock!
+				text = "Find a cheap room with roommates ($500)",
+				effects = { Money = -500, Happiness = 5 },
+				feedText = "🏠 Split rent with others. Not ideal but affordable!",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for first month" end,
+				setFlags = { first_apartment = true, has_roommates = true },
+			},
+			{
+				-- CRITICAL FIX: Always-available free option to prevent hard lock!
+				text = "Keep looking for cheaper options",
+				effects = { Happiness = -2 },
+				feedText = "🏠 Housing market is rough. Still searching...",
 			},
 		},
 	},

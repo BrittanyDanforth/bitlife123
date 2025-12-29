@@ -324,7 +324,8 @@ DailyLifeEvents.events = {
 			{ text = "Buy lunch ($15)", effects = { Happiness = 4, Money = -15, Health = -1 }, feedText = "🥪 Treating yourself! Restaurant/takeout life!" },
 			{ text = "Skip lunch (busy)", effects = { Health = -3, Happiness = -2, Smarts = 1 }, feedText = "🥪 No time! Working through. Hangry later." },
 			{ 
-			text = "Social lunch with coworkers", 
+			-- CRITICAL FIX: Show price!
+			text = "Social lunch with coworkers ($15)", 
 			effects = { Happiness = 6, Money = -15 }, 
 			feedText = "🥪 Great conversation! Work friendships building!",
 			-- CRITICAL FIX: Can only have lunch with coworkers if you HAVE coworkers (a job)

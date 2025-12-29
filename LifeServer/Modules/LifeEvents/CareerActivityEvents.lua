@@ -167,6 +167,19 @@ CareerEvents.JobInterview = {
 				},
 				effects = { Happiness = -8 },
 			},
+			-- ⚡ GOD MODE PREMIUM OPTION
+			{
+				text = "⚡ [God Mode] Ace it perfectly!",
+				feedback = {
+					"⚡ You perform FLAWLESSLY!",
+					"⚡ Every answer is PERFECT!",
+					"⚡ They're ready to hire you on the spot!",
+				},
+				effects = { Happiness = 30, Smarts = 10 },
+				requiresGamepass = "GOD_MODE",
+				gamepassEmoji = "⚡",
+				setFlags = { interview_aced = true, job_offer_pending = true },
+			},
 		},
 	},
 	-- Event 2: Tough question

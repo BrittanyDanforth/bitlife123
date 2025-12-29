@@ -274,147 +274,91 @@ Random.events = {
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		choices = {
 			{
-				text = "Pay for repairs",
-				-- CRITICAL FIX: Validate money before deducting
-				effects = {}, -- Money handled in onResolve
-				feedText = "Time to see what the damage is...",
+				text = "Pay for repairs ($500)",
+				effects = { Money = -500, Happiness = -3 },
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for repairs" end,
+				feedText = "🔧 Paid $500 for repairs. Expensive, but car is fixed!",
+			},
+			{
+				text = "Basic repairs ($200)",
+				effects = { Money = -200, Happiness = -5 },
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for basic repairs" end,
+				feedText = "🔧 $200 for basic repairs. Hopefully it holds...",
+			},
+			{
+				text = "Try to fix it yourself ($100 parts)",
+				effects = { Money = -100, Smarts = 3, Health = -2 },
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for parts" end,
+				feedText = "🔧 Bought parts and fixed it yourself! Learned something!",
+			},
+			{
+				text = "Try to fix it with what I have",
+				effects = { Smarts = 1 },
+				feedText = "🔧 Trying to fix it without buying parts...",
 				onResolve = function(state)
-					local money = state.Money or 0
-					local repairCost = 500
-					if money >= repairCost then
-						state.Money = money - repairCost
-						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
-						if state.AddFeed then
-							state:AddFeed("🔧 Paid $500 for repairs. Expensive, but car is fixed!")
-						end
-					elseif money >= 200 then
-						-- Partial repair - cheaper option
-						state.Money = money - 200
-						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
-						if state.AddFeed then
-							state:AddFeed("🔧 Could only afford $200 for basic repairs. Hopefully it holds...")
-						end
+					local roll = math.random()
+					if roll < 0.3 then
+						if state.AddFeed then state:AddFeed("🔧 Fixed it! Lucky!") end
 					else
-						-- Can't afford any repairs
-						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
-						if state.AddFeed then
-							state:AddFeed("💸 Can't afford repairs! Your car is broken down...")
-						end
-						-- Mark car as broken
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
 						state.Flags = state.Flags or {}
 						state.Flags.car_broken = true
+						if state.AddFeed then state:AddFeed("🔧 Couldn't fix it without proper parts...") end
 					end
 				end,
 			},
 			{
-				text = "Try to fix it yourself",
-				-- CRITICAL FIX: Validate money for DIY parts
-				effects = {}, -- Money handled in onResolve
-				feedText = "Time to get your hands dirty...",
+				text = "Buy a new car ($5,000)",
+				effects = { Money = -5000, Happiness = 5 },
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 for new car" end,
+				feedText = "🚗 Bought a new car for $5000! Fresh start!",
 				onResolve = function(state)
-					local money = state.Money or 0
-					local partsCost = 100
-					if money >= partsCost then
-						state.Money = money - partsCost
-						if state.ModifyStat then 
-							state:ModifyStat("Smarts", 3)
-							state:ModifyStat("Health", -2)
-						end
-						if state.AddFeed then
-							state:AddFeed("🔧 Bought $100 in parts and fixed it yourself! Learned something too.")
-						end
-					else
-						-- Try without parts
-						local roll = math.random()
-						if roll < 0.3 then
-							-- Lucky fix
-							if state.ModifyStat then state:ModifyStat("Smarts", 2) end
-							if state.AddFeed then
-								state:AddFeed("🔧 Fixed it with what you had! Lucky!")
-							end
-						else
-							-- Couldn't fix it
-							if state.ModifyStat then 
-								state:ModifyStat("Happiness", -5)
-								state:ModifyStat("Health", -3)
-							end
-							if state.AddFeed then
-								state:AddFeed("🔧 Couldn't fix it without proper parts...")
-							end
-							state.Flags = state.Flags or {}
-							state.Flags.car_broken = true
-						end
+					local vehicles = state.Assets and state.Assets.Vehicles
+					if vehicles and #vehicles > 0 then table.remove(vehicles, 1) end
+					if state.AddAsset then
+						state:AddAsset("Vehicles", {
+							id = "replacement_car_" .. tostring(state.Age or 0),
+							name = "New Reliable Car",
+							emoji = "🚗",
+							price = 5000,
+							value = 4500,
+							condition = 85,
+							isEventAcquired = true,
+						})
 					end
 				end,
 			},
 			{
-				text = "Junk it and buy a new car",
-				-- CRITICAL FIX: Validate money for new car purchase
-				effects = {}, -- Money handled in onResolve
-				feedText = "Considering a new vehicle...",
+				text = "Buy a used car ($2,000)",
+				effects = { Money = -2000, Happiness = 2 },
+				eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2,000 for used car" end,
+				feedText = "🚗 Got a $2000 used car. Better than nothing!",
 				onResolve = function(state)
-					local money = state.Money or 0
-					local newCarCost = 5000
-					if money >= newCarCost then
-						state.Money = money - newCarCost
-						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
-						-- Remove old car (first one found)
-						local vehicles = state.Assets and state.Assets.Vehicles
-						if vehicles and #vehicles > 0 then
-							table.remove(vehicles, 1)
-						end
-						-- Add new car
-						if state.AddAsset then
-							state:AddAsset("Vehicles", {
-								id = "replacement_car_" .. tostring(state.Age or 0),
-								name = "New Reliable Car",
-								emoji = "🚗",
-								price = 5000,
-								value = 4500,
-								condition = 85,
-								isEventAcquired = true,
-							})
-						end
-						if state.AddFeed then
-							state:AddFeed("🚗 Bought a new car for $5000! Fresh start!")
-						end
-					elseif money >= 2000 then
-						-- Can only afford used car
-						state.Money = money - 2000
-						if state.ModifyStat then state:ModifyStat("Happiness", 2) end
-						local vehicles = state.Assets and state.Assets.Vehicles
-						if vehicles and #vehicles > 0 then
-							table.remove(vehicles, 1)
-						end
-						if state.AddAsset then
-							state:AddAsset("Vehicles", {
-								id = "used_car_" .. tostring(state.Age or 0),
-								name = "Used Car",
-								emoji = "🚗",
-								price = 2000,
-								value = 1500,
-								condition = 60,
-								isEventAcquired = true,
-							})
-						end
-						if state.AddFeed then
-							state:AddFeed("🚗 Could only afford a $2000 used car. Better than nothing!")
-						end
-					else
-						-- Can't afford new car
-						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
-						if state.AddFeed then
-							state:AddFeed("💸 Can't afford a new car! Stuck without wheels...")
-						end
-						-- Remove broken car
-						local vehicles = state.Assets and state.Assets.Vehicles
-						if vehicles and #vehicles > 0 then
-							table.remove(vehicles, 1)
-						end
-						state.Flags = state.Flags or {}
-						state.Flags.has_car = nil
-						state.Flags.has_vehicle = nil
+					local vehicles = state.Assets and state.Assets.Vehicles
+					if vehicles and #vehicles > 0 then table.remove(vehicles, 1) end
+					if state.AddAsset then
+						state:AddAsset("Vehicles", {
+							id = "used_car_" .. tostring(state.Age or 0),
+							name = "Used Car",
+							emoji = "🚗",
+							price = 2000,
+							value = 1500,
+							condition = 60,
+							isEventAcquired = true,
+						})
 					end
+				end,
+			},
+			{
+				text = "Go without a car",
+				effects = { Happiness = -8 },
+				feedText = "💸 Can't afford a replacement. Using public transit...",
+				onResolve = function(state)
+					local vehicles = state.Assets and state.Assets.Vehicles
+					if vehicles and #vehicles > 0 then table.remove(vehicles, 1) end
+					state.Flags = state.Flags or {}
+					state.Flags.has_car = nil
+					state.Flags.has_vehicle = nil
 				end,
 			},
 			{
@@ -705,8 +649,9 @@ Random.events = {
 				end,
 			},
 			{
+				-- CRITICAL FIX: This is a consequence - remove money cost or make it clear
 				text = "Give up - it's probably gone",
-				effects = { Happiness = -4, Money = -50 },
+				effects = { Happiness = -4 },
 				feedText = "You gave up and accepted the loss.",
 			},
 		},
@@ -918,11 +863,12 @@ Random.events = {
 		category = "injury",
 		-- CRITICAL FIX: Random injury type and severity
 		choices = {
-			{
-				text = "Get medical attention immediately",
-				effects = { Money = -300 },
-				feedText = "You got checked out right away...",
-				onResolve = function(state)
+		{
+			text = "Get medical attention immediately ($300)",
+			effects = { Money = -300 },
+			feedText = "You got checked out right away...",
+			eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for medical care" end,
+			onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.15 then -- Ankle
 						state:ModifyStat("Health", -8)
@@ -1021,11 +967,12 @@ Random.events = {
 		blockedByFlags = { in_prison = true },
 		-- CRITICAL FIX: Random accident severity - player doesn't choose how hurt they are
 		choices = {
-			{
-				text = "Accept emergency care",
-				effects = { Money = -1000 },
-				feedText = "Paramedics rushed you to the hospital...",
-				onResolve = function(state)
+		{
+			text = "Accept emergency care ($1,000)",
+			effects = { Money = -1000 },
+			feedText = "Paramedics rushed you to the hospital...",
+			eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 for emergency care" end,
+			onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.05 then -- 5% severe trauma
 						state:ModifyStat("Health", -32)
@@ -1652,11 +1599,12 @@ Random.events = {
 					end
 				end,
 			},
-			{ 
-				text = "See a doctor immediately", 
-				effects = { Money = -100 },
-				feedText = "You went to the doctor...",
-				onResolve = function(state)
+		{ 
+			text = "See a doctor immediately ($100)", 
+			effects = { Money = -100 },
+			feedText = "You went to the doctor...",
+			eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for doctor" end,
+			onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.70 then
 						state:ModifyStat("Health", -3)
@@ -1731,11 +1679,12 @@ Random.events = {
 					end
 				end,
 			},
-			{ 
-				text = "Go to urgent care", 
-				effects = { Money = -150 },
-				feedText = "You went to get checked out...",
-				onResolve = function(state)
+		{ 
+			text = "Go to urgent care ($150)", 
+			effects = { Money = -150 },
+			feedText = "You went to get checked out...",
+			eligibility = function(state) return (state.Money or 0) >= 150, "💸 Need $150 for urgent care" end,
+			onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.80 then
 						state:ModifyStat("Health", -4)
@@ -1764,9 +1713,11 @@ Random.events = {
 
 		choices = {
 			{ 
-				text = "Seek professional help", 
+				-- CRITICAL FIX: Show price!
+				text = "Seek professional help ($300)", 
 				effects = { Money = -300 },
 				feedText = "You reached out for help...",
+				eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for therapy" end,
 				onResolve = function(state)
 					local roll = math.random()
 					local conditions = {
@@ -1865,9 +1816,11 @@ Random.events = {
 				end,
 			},
 			{
-				text = "Seek a second opinion",
+				-- CRITICAL FIX: Show price!
+				text = "Get a second opinion ($500)",
 				effects = { Smarts = 3, Money = -500 },
 				feedText = "You went to another doctor...",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for specialist" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.2 then
@@ -1924,9 +1877,11 @@ Random.events = {
 		-- CRITICAL FIX: Random cancer outcome - player can't choose diagnosis
 		choices = {
 			{
-				text = "Get tested immediately",
+				-- CRITICAL FIX: Show price!
+				text = "Get tested immediately ($1,000)",
 				effects = { Money = -1000, Happiness = -10 },
 				feedText = "The waiting for results is agonizing...",
+				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 for testing" end,
 				onResolve = function(state)
 					local roll = math.random()
 					local age = state.Age or 40
@@ -2292,9 +2247,11 @@ Random.events = {
 		-- CRITICAL FIX: Random lawsuit outcome - player doesn't choose to win
 		choices = {
 			{
-				text = "Hire an expensive lawyer",
+				-- CRITICAL FIX: Show price!
+				text = "Hire an expensive lawyer ($5,000)",
 				effects = { Money = -5000 },
 				feedText = "You hired the best attorney you could afford...",
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 for lawyer" end,
 				onResolve = function(state)
 					local roll = math.random()
 					local smarts = state.Stats and state.Stats.Smarts or 50
@@ -2317,9 +2274,11 @@ Random.events = {
 				end,
 			},
 			{
-				text = "Use a public defender",
+				-- CRITICAL FIX: Show price!
+				text = "Use a public defender ($500)",
 				effects = { Money = -500 },
 				feedText = "You went with an affordable option...",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for legal fees" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.35 then
@@ -2378,9 +2337,11 @@ Random.events = {
 		-- CRITICAL FIX: Random disaster damage - player doesn't choose outcome
 		choices = {
 			{
-				text = "Evacuate immediately",
+				-- CRITICAL FIX: Show price!
+				text = "Evacuate immediately ($500)",
 				effects = { Money = -500 },
 				feedText = "You fled to safety...",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for emergency expenses" end,
 				onResolve = function(state)
 					local roll = math.random()
 					state.Flags = state.Flags or {}
@@ -3480,10 +3441,11 @@ Random.events = {
 			},
 			{
 				index = 2,
-				text = "Treat yourself to something nice",
+				-- CRITICAL FIX: Show price!
+				text = "Treat yourself ($100)",
 				effects = { Happiness = 12, Money = -100 },
-				-- MINOR FIX: More descriptive feedText
 				feedText = "You treated yourself to something special. You definitely deserve it!",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for treats" end,
 			},
 			{
 				index = 3,

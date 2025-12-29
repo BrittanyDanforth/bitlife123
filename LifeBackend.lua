@@ -323,6 +323,41 @@ function LifeBackend:promptGamepassPurchase(player, gamepassKey, forceBypassCool
 end
 
 -- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Show Time Machine offer popup BEFORE prompting purchase
+-- User complaint: "It just prompts the gamepass, no UI explaining what it does!"
+-- This shows a nice popup explaining the Time Machine before the purchase prompt
+-- ════════════════════════════════════════════════════════════════════════════
+function LifeBackend:showTimeMachineOffer(player, context)
+	if not player or not self.remotes or not self.remotes.ShowResult then
+		return
+	end
+	
+	local emoji, title, body
+	
+	if context == "jail" then
+		emoji = "⏰"
+		title = "Time Machine Can Help!"
+		body = "🚔 Going to jail?\n\n⏰ The TIME MACHINE lets you go back in time and UNDO this!\n\n✨ Rewind your life before you got caught!\n✨ Make different choices!\n✨ Avoid jail completely!\n\n🎮 Get unlimited rewinds with the Time Machine gamepass!"
+	elseif context == "death" then
+		emoji = "⏰"
+		title = "Don't Want To Die?"
+		body = "💀 Your life is ending...\n\n⏰ The TIME MACHINE can save you!\n\n✨ Go back 5, 10, or 20 years!\n✨ Make different choices!\n✨ Live a longer, better life!\n\n🎮 Get unlimited rewinds with the Time Machine gamepass!"
+	else
+		emoji = "⏰"
+		title = "Time Machine"
+		body = "⏰ Go back in time and change your past!\n\n✨ Undo mistakes!\n✨ Try different life paths!\n✨ Unlimited rewinds!\n\n🎮 Get the Time Machine gamepass!"
+	end
+	
+	-- Show the popup
+	self.remotes.ShowResult:FireClient(player, {
+		emoji = emoji,
+		title = title,
+		body = body,
+		isPositive = true,
+	})
+end
+
+-- ════════════════════════════════════════════════════════════════════════════
 -- CRITICAL FIX: Clear conflicting premium states to prevent "Mobster Prince" bug
 -- When a player enters one premium path, clear flags from other paths
 -- Also clears conflicting housing when becoming royalty
@@ -8917,6 +8952,7 @@ function LifeBackend:setupRemotes()
 	self.remotes.SetEngagementBonus = self:createRemote("SetEngagementBonus", "RemoteEvent") -- For group/like bonus
 	self.remotes.MinigameResult = self:createRemote("MinigameResult", "RemoteEvent")
 	self.remotes.MinigameStart = self:createRemote("MinigameStart", "RemoteEvent")
+	self.remotes.ShowResult = self:createRemote("ShowResult", "RemoteEvent") -- For showing popup messages
 
 	self.remotes.DoActivity = self:createRemote("DoActivity", "RemoteFunction")
 	self.remotes.CommitCrime = self:createRemote("CommitCrime", "RemoteFunction")
@@ -15313,8 +15349,16 @@ function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
 		
 		-- CRITICAL FIX #913: Prompt Time Machine purchase for non-owners on death!
 		-- This is THE HIGHEST CONVERSION moment - player just died and wants to save their character!
+		-- CRITICAL FIX: Show helpful popup FIRST explaining what Time Machine does!
 		if not hasTimeMachineGamepass and self.gamepassSystem then
-			task.delay(2, function()
+			-- Show helpful popup explaining Time Machine FIRST
+			task.delay(1, function()
+				if player and player.Parent then
+					self:showTimeMachineOffer(player, "death")
+				end
+			end)
+			-- Then prompt purchase after player sees the explanation
+			task.delay(4, function()
 				if player and player.Parent then
 					self.gamepassSystem:promptGamepass(player, "TIME_MACHINE")
 				end
@@ -15735,11 +15779,20 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 		-- STRATEGIC GAMEPASS PROMPT: When player gets arrested, offer Time Machine!
 		-- This is the PERFECT conversion moment - they want to undo the arrest
 		-- Only prompt if they don't already own Time Machine
+		-- CRITICAL FIX: Show a helpful popup FIRST explaining what Time Machine does!
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		if not self:checkGamepassOwnership(player, "TIME_MACHINE") then
-			-- Slight delay so they see the "Busted" message first
+			-- Show helpful popup explaining Time Machine FIRST
 			task.delay(0.5, function()
-				self:promptGamepassPurchase(player, "TIME_MACHINE")
+				if player and player.Parent then
+					self:showTimeMachineOffer(player, "jail")
+				end
+			end)
+			-- Then prompt purchase after player sees the explanation
+			task.delay(3, function()
+				if player and player.Parent then
+					self:promptGamepassPurchase(player, "TIME_MACHINE")
+				end
 			end)
 		end
 	end

@@ -97,10 +97,12 @@ PremiumIntegratedEvents.events = {
 		
 		choices = {
 			{
-				text = "Follow the treatment plan religiously",
+				-- CRITICAL FIX: Show price!
+				text = "Follow treatment plan ($500)",
 				effects = { Health = 15, Happiness = 5, Money = -500 },
 				setFlags = { health_conscious = true },
 				feedText = "You committed to the treatment. Slow but steady recovery!",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for treatment" end,
 			},
 			{
 				text = "Try alternative medicine",
@@ -273,7 +275,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⭐ CELEBRITY PREMIUM OPTION
 			{
-				text = "⭐ [Celebrity] Launch your career NOW",
+				text = "⭐ [Celebrity] Start your fame career!",
 				effects = { Happiness = 20, Fame = 25 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
@@ -331,7 +333,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⭐ CELEBRITY PREMIUM OPTION
 			{
-				text = "⭐ [Celebrity] Parlay into stardom",
+				text = "⭐ [Celebrity] Turn this into stardom!",
 				effects = { Happiness = 15, Fame = 35, Money = 5000 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
@@ -505,10 +507,12 @@ PremiumIntegratedEvents.events = {
 		
 		choices = {
 			{
-				text = "Simple courthouse wedding",
+				-- CRITICAL FIX: Show price!
+				text = "Simple courthouse wedding ($200)",
 				effects = { Happiness = 8, Money = -200 },
 				setFlags = { married = true, has_partner = true, engaged = false },
 				feedText = "Simple but meaningful. You're married!",
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for wedding" end,
 				-- CRITICAL FIX: Ensure spouse relationship exists
 				onResolve = function(state)
 					-- Convert partner to spouse
@@ -568,26 +572,12 @@ PremiumIntegratedEvents.events = {
 				end,
 			},
 			{
-				text = "Big expensive wedding",
-				effects = {},
-				setFlags = { married = true, has_partner = true, engaged = false },
-				feedText = "Going all out...",
+				text = "Big expensive wedding ($10,000)",
+				effects = { Money = -10000, Happiness = 18 },
+				setFlags = { married = true, has_partner = true, engaged = false, lavish_wedding = true },
+				eligibility = function(state) return (state.Money or 0) >= 10000, "💸 Need $10,000 for big wedding" end,
+				feedText = "💒 SPECTACULAR wedding! Everyone will remember it!",
 				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 20000 then
-						state.Money = money - 20000
-						state:ModifyStat("Happiness", 18)
-						state:AddFeed("💒 SPECTACULAR wedding! Everyone will remember it!")
-						state.Flags = state.Flags or {}
-						state.Flags.lavish_wedding = true
-					else
-						state.Money = math.max(0, money - 15000)
-						state:ModifyStat("Happiness", 10)
-						state:AddFeed("💒 Great wedding but went over budget. Worth it?")
-						state.Flags = state.Flags or {}
-						state.Flags.wedding_debt = true
-					end
-					-- CRITICAL FIX: Convert partner to spouse
 					if state.Relationships and state.Relationships.partner then
 						state.Relationships.spouse = state.Relationships.partner
 						state.Relationships.spouse.type = "spouse"
@@ -637,7 +627,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⭐ CELEBRITY PREMIUM OPTION
 			{
-				text = "⭐ [Celebrity] Televised celebrity wedding",
+				text = "⭐ [Celebrity] Televised celebrity wedding!",
 				effects = { Happiness = 20, Fame = 25, Money = 50000 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
@@ -779,10 +769,12 @@ PremiumIntegratedEvents.events = {
 				end,
 			},
 			{
-				text = "Follow your passion",
+				-- CRITICAL FIX: Show price!
+				text = "Follow your passion (-$500 income)",
 				effects = { Happiness = 12, Money = -500 },
 				setFlags = { passion_follower = true },
 				feedText = "Money isn't everything. Doing what you love!",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need savings to take pay cut" end,
 			},
 			-- 🔫 MAFIA PREMIUM OPTION
 			{
@@ -795,7 +787,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⭐ CELEBRITY PREMIUM OPTION
 			{
-				text = "⭐ [Celebrity] Chase fame and fortune",
+				text = "⭐ [Celebrity] Chase fame and fortune!",
 				effects = { Fame = 20, Happiness = 15 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
@@ -1013,24 +1005,33 @@ PremiumIntegratedEvents.events = {
 		
 		choices = {
 			{
-				text = "Hire an expensive lawyer",
-				effects = {},
+				text = "Hire an expensive lawyer ($5,000)",
+				effects = { Money = -5000 },
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 for lawyer" end,
 				feedText = "Getting professional representation...",
 				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 5000 then
-						state.Money = money - 5000
-						local roll = math.random()
-						if roll < 0.70 then
-							state:ModifyStat("Happiness", 15)
-							state:AddFeed("⚖️ WON the case! Expensive lawyer was worth it!")
-						else
-							state:ModifyStat("Happiness", -5)
-							state:AddFeed("⚖️ Lost despite the expensive lawyer. System is broken.")
-						end
+					local roll = math.random()
+					if roll < 0.70 then
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("⚖️ WON the case! Expensive lawyer was worth it!")
 					else
 						state:ModifyStat("Happiness", -5)
-						state:AddFeed("⚖️ Couldn't afford the good lawyer. Had to go with public defender.")
+						state:AddFeed("⚖️ Lost despite the expensive lawyer. System is broken.")
+					end
+				end,
+			},
+			{
+				text = "Use public defender (free)",
+				effects = {},
+				feedText = "Getting public defender...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("⚖️ Won with public defender! Lucky!")
+					else
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("⚖️ Lost the case. Should've gotten a better lawyer.")
 					end
 				end,
 			},
@@ -1123,7 +1124,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⭐ CELEBRITY PREMIUM OPTION
 			{
-				text = "⭐ [Celebrity] Become the star of the party",
+				text = "⭐ [Celebrity] Become the star of the party!",
 				effects = { Happiness = 15, Fame = 10 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
@@ -1533,7 +1534,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⭐ CELEBRITY PREMIUM OPTION
 			{
-				text = "⭐ [Celebrity] Use your fame to get hired",
+				text = "⭐ [Celebrity] Use your fame to get hired!",
 				effects = { Happiness = 15 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
@@ -1685,48 +1686,43 @@ PremiumIntegratedEvents.events = {
 		
 		choices = {
 			{
-				text = "Give them the money",
-				effects = {},
-				feedText = "Helping a friend in need...",
+				text = "Loan them $5,000",
+				effects = { Money = -5000 },
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 to lend" end,
+				feedText = "🤝 Helping a friend in need...",
 				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 5000 then
-						state.Money = money - 5000
-						local roll = math.random()
-						if roll < 0.60 then
-							state:ModifyStat("Happiness", 15)
-							state:AddFeed("🤝 They paid you back! True friend!")
-							state.Money = (state.Money or 0) + 5000
-						else
-							state:ModifyStat("Happiness", -5)
-							state:AddFeed("🤝 Never saw that money again. Lesson learned.")
-						end
+					local roll = math.random()
+					if roll < 0.60 then
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("🤝 They paid you back! True friend!")
+						state.Money = (state.Money or 0) + 5000
 					else
-						state:ModifyStat("Happiness", 5)
-						local gift = math.floor(money * 0.5)
-						state.Money = money - gift
-						state:AddFeed(string.format("🤝 Gave what you could: $%d. They appreciated it.", gift))
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🤝 Never saw that money again. Lesson learned.")
 					end
 				end,
 			},
 			{
-				text = "Say no",
-				effects = { Happiness = -5 },
-				feedText = "You can't afford to help. They understood... sort of.",
+				text = "Give them $1,000",
+				effects = { Money = -1000, Happiness = 3 },
+				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 to give" end,
+				feedText = "🤝 You gave $1,000. They appreciated it.",
 			},
 			{
-				text = "Offer less",
-				effects = { Money = -1000, Happiness = 3 },
-				feedText = "You gave $1,000. It's something.",
+				text = "Say no",
+				effects = { Happiness = -5 },
+				feedText = "You can't help right now. They understood... sort of.",
 			},
 			-- ⚡ GOD MODE PREMIUM OPTION
 			{
-				text = "⚡ [God Mode] Give generously and they prosper",
+				-- CRITICAL FIX: Show price!
+				text = "⚡ [God Mode] Give generously ($5,000)",
 				effects = { Money = -5000, Happiness = 20 },
 				requiresGamepass = "GOD_MODE",
 				gamepassEmoji = "⚡",
 				feedText = "⚡ God Mode! Your generosity changed their life! They'll always remember.",
 				setFlags = { generous_friend = true },
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 to give" end,
 			},
 		},
 	},
@@ -1770,7 +1766,7 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⭐ CELEBRITY PREMIUM OPTION
 			{
-				text = "⭐ [Celebrity] Deliver a legendary speech",
+				text = "⭐ [Celebrity] Deliver a legendary speech!",
 				effects = { Happiness = 20, Fame = 15 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
@@ -1807,9 +1803,11 @@ PremiumIntegratedEvents.events = {
 		
 		choices = {
 			{
-				text = "Plan a surprise dinner",
+				-- CRITICAL FIX: Show price!
+				text = "Plan a surprise dinner ($200)",
 				effects = { Money = -200, Happiness = 10 },
 				feedText = "The surprise dinner was perfect! Your partner loved it.",
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for dinner" end,
 			},
 			{
 				text = "Write a heartfelt letter",
@@ -1817,24 +1815,21 @@ PremiumIntegratedEvents.events = {
 				feedText = "Words from the heart. Your partner was moved to tears.",
 			},
 			{
-				text = "Plan an expensive trip",
-				effects = {},
-				feedText = "Planning a getaway...",
-				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 3000 then
-						state.Money = money - 3000
-						state:ModifyStat("Happiness", 20)
-						state:AddFeed("💕 The trip was AMAZING! Memories for a lifetime!")
-					else
-						state:ModifyStat("Happiness", 8)
-						state:AddFeed("💕 Stayed local but made it special. It's the thought that counts.")
-					end
-				end,
+				-- CRITICAL FIX: Show price and add eligibility check!
+				text = "Plan a romantic trip ($3,000)",
+				effects = { Money = -3000, Happiness = 20 },
+				feedText = "💕 The trip was AMAZING! Memories for a lifetime!",
+				eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Need $3,000 for the trip" end,
+			},
+			{
+				-- CRITICAL FIX: Add a FREE alternative so players aren't stuck!
+				text = "Plan a special local date",
+				effects = { Happiness = 10 },
+				feedText = "💕 Stayed local but made it special. It's the thought that counts.",
 			},
 			-- ⭐ CELEBRITY PREMIUM OPTION
 			{
-				text = "⭐ [Celebrity] Televised proposal/vow renewal",
+				text = "⭐ [Celebrity] Televised romantic gesture!",
 				effects = { Happiness = 30, Fame = 20, Money = 10000 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
@@ -1937,7 +1932,7 @@ PremiumIntegratedEvents.events = {
 			-- GAMEPASS OPTIONS
 			-- CRITICAL FIX: Premium choices set primary_wish_type AND dream_big_complete
 			{
-				text = "⭐ [Celebrity] Being a famous superstar!",
+				text = "⭐ [Celebrity] Be a famous superstar!",
 				effects = { Happiness = 15, Fame = 5 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
@@ -2130,10 +2125,10 @@ PremiumIntegratedEvents.events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "premium_special_opportunity",
-		title = "Special Opportunity",
+		title = "Life-Changing Opportunity",
 		emoji = "🌟",
-		text = "An unusual opportunity has presented itself. This could change everything!",
-		question = "Do you take the special path?",
+		text = "Something unusual is happening! You've caught the attention of some important people, and there's an opportunity to change your life's direction completely.",
+		question = "What do you do with this opportunity?",
 		minAge = 20, maxAge = 28,
 		baseChance = 0.25, -- CRITICAL FIX: Further reduced to prevent spam
 		cooldown = 30, -- CRITICAL FIX: Further increased
@@ -2184,7 +2179,8 @@ PremiumIntegratedEvents.events = {
 			-- PREMIUM OPTIONS - Only for players who DIDN'T make a childhood wish
 			-- These set primary_wish_type to ensure no conflicts
 			{
-				text = "⭐ [Celebrity] The entertainment industry beckons!",
+				-- CRITICAL FIX: Clearer text explaining this is a PREMIUM path
+				text = "⭐ [Celebrity] Pursue fame and stardom!",
 				effects = { Fame = 25, Happiness = 15 },
 				requiresGamepass = "CELEBRITY",
 				gamepassEmoji = "⭐",
@@ -3166,7 +3162,7 @@ PremiumIntegratedEvents.events = {
 				feedText = "🎥 You made a few bucks from sponsors... but the fame faded quickly.",
 			},
 			{
-				text = "⭐ Pursue REAL fame! (Celebrity Gamepass)",
+				text = "⭐ [Celebrity] Pursue REAL fame!",
 				effects = { Happiness = 15 },
 				requiresGamepass = "CELEBRITY",
 				setFlags = { celebrity_gamepass = true, content_creator = true },

@@ -808,9 +808,11 @@ VehicleEvents.events = {
                 end,
             },
             {
-                text = "Accept responsibility",
+                -- CRITICAL FIX: Show price!
+                text = "Accept responsibility ($250 ticket)",
                 effects = { Happiness = -3, Money = -250 },
                 feedText = "🚨 You owned up to it. $250 ticket. At least you were honest.",
+                eligibility = function(state) return (state.Money or 0) >= 250, "💸 Need $250 to pay ticket" end,
             },
         },
     },

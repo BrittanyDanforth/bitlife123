@@ -155,14 +155,13 @@ HobbyEvents.events = {
 		blockedByFlags = { pursuing_yoga = true, yoga_practitioner = true, in_prison = true },
 		
 		choices = {
-			{
-				text = "Yes! Sign me up! ($50)",
-				effects = { Happiness = 5, Health = 2, Money = -50 },
-				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Can't afford yoga class ($50 needed)" end,
-				setFlags = { pursuing_yoga = true, wellness_focused = true },
-				feedText = "🧘 First class was challenging but peaceful!",
-				eligibility = function(state) return (state.Money or 0) >= 50, "Can't afford yoga class" end,
-			},
+		{
+			text = "Yes! Sign me up! ($50)",
+			effects = { Happiness = 5, Health = 2, Money = -50 },
+			eligibility = function(state) return (state.Money or 0) >= 50, "💸 Can't afford yoga class ($50 needed)" end,
+			setFlags = { pursuing_yoga = true, wellness_focused = true },
+			feedText = "🧘 First class was challenging but peaceful!",
+		},
 			{
 				text = "I'll try it at home with videos",
 				effects = { Happiness = 3, Health = 1 },

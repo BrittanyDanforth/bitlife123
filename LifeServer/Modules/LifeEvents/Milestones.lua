@@ -265,133 +265,81 @@ Milestones.events = {
 
 		choices = {
 			{
-				text = "A beat-up used car",
-				effects = { Happiness = 7 },
+				text = "A beat-up used car ($500)",
+				effects = { Happiness = 7, Money = -500 },
 				setFlags = { has_car = true, has_vehicle = true },
-				feedText = "Looking for a beater...",
-				-- CRITICAL FIX: Money validation for $500 beater
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for a car" end,
+				feedText = "🚙 It's not pretty, but it's yours!",
 				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 500 then
-						state.Money = money - 500
-						if state.AddAsset then
-							state:AddAsset("Vehicles", {
-								id = "beater_car_" .. tostring(state.Age or 0),
-								name = "Beat-up Used Car",
-								emoji = "🚙",
-								price = 500,
-								value = 400,
-								condition = 35,
-								isEventAcquired = true,
-							})
-						end
-						if state.AddFeed then
-							state:AddFeed("🚙 It's not pretty, but it's yours!")
-						end
-					elseif money >= 200 then
-						state.Money = money - 200
-						if state.AddAsset then
-							state:AddAsset("Vehicles", {
-								id = "junker_car_" .. tostring(state.Age or 0),
-								name = "Barely Running Junker",
-								emoji = "🚙",
-								price = 200,
-								value = 100,
-								condition = 15,
-								isEventAcquired = true,
-							})
-						end
-						if state.AddFeed then
-							state:AddFeed("🚙 It barely runs, but wheels are wheels!")
-						end
-					else
-						-- Can't afford, parents help with loan
-						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
-						state.Flags = state.Flags or {}
-						state.Flags.owes_parents = true
-						if state.AddAsset then
-							state:AddAsset("Vehicles", {
-								id = "loaner_car_" .. tostring(state.Age or 0),
-								name = "Parents' Loaner Car",
-								emoji = "🚙",
-								price = 0,
-								value = 800,
-								condition = 40,
-								isEventAcquired = true,
-							})
-						end
-						if state.AddFeed then
-							state:AddFeed("🚙 Parents loaned you the old family car. You owe them!")
-						end
+					if state.AddAsset then
+						state:AddAsset("Vehicles", {
+							id = "beater_car_" .. tostring(state.Age or 0),
+							name = "Beat-up Used Car",
+							emoji = "🚙",
+							price = 500,
+							value = 400,
+							condition = 35,
+							isEventAcquired = true,
+						})
 					end
 				end,
 			},
 			{
-				text = "A decent reliable car",
-				effects = { Happiness = 8 },
+				text = "A cheap junker ($200)",
+				effects = { Happiness = 5, Money = -200 },
 				setFlags = { has_car = true, has_vehicle = true },
-				feedText = "Looking for something reliable...",
-				-- CRITICAL FIX: Money validation for $3000 car
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for a car" end,
+				feedText = "🚙 It barely runs, but wheels are wheels!",
 				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 3000 then
-						state.Money = money - 3000
-						if state.AddAsset then
-							state:AddAsset("Vehicles", {
-								id = "reliable_car_" .. tostring(state.Age or 0),
-								name = "Reliable Used Car",
-								emoji = "🚗",
-								price = 3000,
-								value = 2500,
-								condition = 65,
-								isEventAcquired = true,
-							})
-						end
-						if state.AddFeed then
-							state:AddFeed("🚗 A solid first car!")
-						end
-					elseif money >= 1500 then
-						state.Money = money - 1500
-						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
-						if state.AddAsset then
-							state:AddAsset("Vehicles", {
-								id = "older_car_" .. tostring(state.Age or 0),
-								name = "Older Used Car",
-								emoji = "🚗",
-								price = 1500,
-								value = 1200,
-								condition = 50,
-								isEventAcquired = true,
-							})
-						end
-						if state.AddFeed then
-							state:AddFeed("🚗 Older than hoped but still decent!")
-						end
-					elseif money >= 500 then
-						state.Money = money - 500
-						if state.ModifyStat then state:ModifyStat("Happiness", -4) end
-						if state.AddAsset then
-							state:AddAsset("Vehicles", {
-								id = "beater_compromise_" .. tostring(state.Age or 0),
-								name = "Beat-up Used Car",
-								emoji = "🚙",
-								price = 500,
-								value = 400,
-								condition = 35,
-								isEventAcquired = true,
-							})
-						end
-						if state.AddFeed then
-							state:AddFeed("🚙 Can't afford reliable - settling for a beater.")
-						end
-					else
-						if state.ModifyStat then state:ModifyStat("Happiness", -6) end
-						if state.AddFeed then
-							state:AddFeed("💸 Can't afford a car right now...")
-						end
-						state.Flags = state.Flags or {}
-						state.Flags.has_car = nil
-						state.Flags.has_vehicle = nil
+					if state.AddAsset then
+						state:AddAsset("Vehicles", {
+							id = "junker_car_" .. tostring(state.Age or 0),
+							name = "Barely Running Junker",
+							emoji = "🚙",
+							price = 200,
+							value = 100,
+							condition = 15,
+							isEventAcquired = true,
+						})
+					end
+				end,
+			},
+			{
+				text = "Borrow parents' old car (free)",
+				effects = { Happiness = 3 },
+				setFlags = { has_car = true, has_vehicle = true, owes_parents = true },
+				feedText = "🚙 Parents loaned you the old family car. You owe them!",
+				onResolve = function(state)
+					if state.AddAsset then
+						state:AddAsset("Vehicles", {
+							id = "loaner_car_" .. tostring(state.Age or 0),
+							name = "Parents' Loaner Car",
+							emoji = "🚙",
+							price = 0,
+							value = 800,
+							condition = 40,
+							isEventAcquired = true,
+						})
+					end
+				end,
+			},
+			{
+				text = "A decent reliable car ($3,000)",
+				effects = { Happiness = 8, Money = -3000 },
+				setFlags = { has_car = true, has_vehicle = true },
+				eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Need $3,000 for reliable car" end,
+				feedText = "🚗 A solid first car!",
+				onResolve = function(state)
+					if state.AddAsset then
+						state:AddAsset("Vehicles", {
+							id = "reliable_car_" .. tostring(state.Age or 0),
+							name = "Reliable Used Car",
+							emoji = "🚗",
+							price = 3000,
+							value = 2500,
+							condition = 65,
+							isEventAcquired = true,
+						})
 					end
 				end,
 			},
@@ -504,6 +452,25 @@ Milestones.events = {
 				setFlags = { college_grad = true, bachelor_degree = true, grad_school = true, pursuing_graduate = true },
 				feedText = "Investing in your education!",
 				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5K for grad school" end,
+			},
+			{
+				-- CRITICAL FIX: Add student loan option so players aren't locked out!
+				text = "Get student loans for grad school",
+				effects = { Smarts = 6 },
+				setFlags = { college_grad = true, bachelor_degree = true, grad_school = true, pursuing_graduate = true, has_student_loans = true, student_loans = true },
+				feedText = "Taking on debt for education. Hope it pays off!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.student_loan_amount = (state.Flags.student_loan_amount or 0) + 15000
+					state:AddFeed("📚 Took $15K in student loans for grad school. Monthly payments start after graduation.")
+				end,
+			},
+			{
+				-- CRITICAL FIX: Add free option - enter workforce instead
+				text = "Enter workforce with bachelor's",
+				effects = { Happiness = 5 },
+				setFlags = { college_grad = true, bachelor_degree = true },
+				feedText = "Ready to start earning! No more school for now.",
 			},
 		},
 	},
@@ -1630,8 +1597,10 @@ Milestones.events = {
 				end,
 			},
 			{ 
-				text = "Get roommates to save money", 
+				-- CRITICAL FIX: Show deposit cost!
+				text = "Get roommates ($250 deposit)", 
 				effects = { Happiness = 10, Money = -250 }, 
+				eligibility = function(state) return (state.Money or 0) >= 250, "💸 Need $250 deposit" end,
 				setFlags = { 
 					moved_out = true, 
 					has_roommates = true,
@@ -1660,6 +1629,28 @@ Milestones.events = {
 					saving_for_apartment = true,
 				}, 
 				feedText = "🏠 Staying with family a bit longer. Smart financial move. No rush!",
+				-- CRITICAL FIX: Can't stay with parents if they're dead!
+				eligibility = function(state)
+					local flags = state.Flags or {}
+					if flags.orphan or flags.lost_both_parents then
+						return false, "Your parents have passed away"
+					end
+					if state.Relationships then
+						local hasLivingParent = false
+						for id, rel in pairs(state.Relationships) do
+							if rel and (rel.role == "Mother" or rel.role == "Father" or rel.type == "parent") then
+								if rel.alive ~= false and rel.deceased ~= true then
+									hasLivingParent = true
+									break
+								end
+							end
+						end
+						if not hasLivingParent then
+							return false, "Your parents have passed away"
+						end
+					end
+					return true
+				end,
 			},
 		},
 	},

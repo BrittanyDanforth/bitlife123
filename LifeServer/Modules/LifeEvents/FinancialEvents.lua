@@ -267,13 +267,17 @@ FinancialEvents.events = {
 				state.Money = math.max(0, (state.Money or 0) - math.floor(200 + (roll * 1000)))
 			end,
 			},
-			-- CRITICAL FIX: Pet emergency requires owning a pet!
+			-- CRITICAL FIX: Pet emergency requires owning a pet and show price!
 			{ 
-				text = "Pet emergency", 
+				text = "Pet emergency ($500)", 
 				effects = { Happiness = -6, Money = -500 }, 
 				setFlags = { pet_medical_bills = true }, 
 				feedText = "💸 Vet bills are brutal but you love your pet.",
 				eligibility = function(state)
+					-- Must have money AND a pet
+					if (state.Money or 0) < 500 then
+						return false, "💸 Need $500 for vet bills"
+					end
 					local flags = state.Flags or {}
 					return flags.has_pet or flags.has_dog or flags.has_cat or flags.has_small_pet
 				end,
@@ -749,6 +753,23 @@ FinancialEvents.events = {
 		{ text = "Medical debt ($300)", effects = { Happiness = -5, Money = -300 }, setFlags = { medical_debt = true }, feedText = "💳 Got sick AND went broke. American healthcare.", eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for payment" end },
 		{ text = "Consolidate and strategize ($100)", effects = { Happiness = 3, Smarts = 3, Money = -100 }, feedText = "💳 Working with financial advisor. Plan in place.", eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for advisor" end },
 		{ text = "Ignore and hope it goes away", effects = { Happiness = -2 }, setFlags = { ignoring_debt = true }, feedText = "💳 Head in the sand. This won't end well." },
+			-- ⚡ GOD MODE PREMIUM OPTION
+			{
+				text = "⚡ [God Mode] Clear all debt",
+				effects = { Happiness = 30 },
+				requiresGamepass = "GOD_MODE",
+				gamepassEmoji = "⚡",
+				feedText = "⚡ GOD MODE! All debt wiped clean! Fresh financial start!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.credit_card_debt = nil
+					state.Flags.in_debt = nil
+					state.Flags.bad_credit = nil
+					state.Flags.has_student_loans = nil
+					state.Flags.medical_debt = nil
+					state.Flags.ignoring_debt = nil
+				end,
+			},
 		},
 	},
 	{
@@ -913,9 +934,11 @@ FinancialEvents.events = {
 		-- CRITICAL: High variance gambling outcomes
 		choices = {
 			{
-				text = "Play it safe, small bets",
+				-- CRITICAL FIX: Show price and add eligibility!
+				text = "Play it safe, small bets ($50)",
 				effects = { Money = -50 },
 				feedText = "Playing conservatively...",
+				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 to gamble" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.20 then
@@ -933,9 +956,11 @@ FinancialEvents.events = {
 				end,
 			},
 			{
-				text = "Go big or go home",
+				-- CRITICAL FIX: Show price and add eligibility!
+				text = "Go big or go home ($300)",
 				effects = { Money = -300 },
 				feedText = "High stakes...",
+				eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 to bet big" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.10 then
@@ -960,6 +985,15 @@ FinancialEvents.events = {
 				end,
 			},
 			{ text = "Just watch others gamble", effects = { Happiness = 3 }, feedText = "🎰 Free drinks, people watching. Entertainment without risk." },
+			-- ⚡ GOD MODE PREMIUM OPTION
+			{
+				text = "⚡ [God Mode] Guaranteed jackpot!",
+				effects = { Money = 10000, Happiness = 30 },
+				requiresGamepass = "GOD_MODE",
+				gamepassEmoji = "⚡",
+				feedText = "⚡ GOD MODE! You hit the MEGA JACKPOT! $10,000 WIN!",
+				setFlags = { casino_winner = true, big_winner = true },
+			},
 		},
 	},
 	{
@@ -1019,6 +1053,15 @@ FinancialEvents.events = {
 				end,
 			},
 			{ text = "Just watch the game", effects = { Happiness = 3 }, feedText = "🏈 Enjoyed the game without financial stress." },
+			-- ⚡ GOD MODE PREMIUM OPTION
+			{
+				text = "⚡ [God Mode] Know the winner ($500)",
+				effects = { Money = 2500, Happiness = 20 },
+				requiresGamepass = "GOD_MODE",
+				gamepassEmoji = "⚡",
+				feedText = "⚡ GOD MODE! You knew exactly who would win! $3000 payout!",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for big bet" end,
+			},
 		},
 	},
 	{
@@ -1046,9 +1089,11 @@ FinancialEvents.events = {
 		-- CRITICAL: Mostly bad outcomes - it's a scam
 		choices = {
 			{
-				text = "Invest your savings",
+				-- CRITICAL FIX: Show price and add eligibility!
+				text = "Invest your savings ($500)",
 				effects = { Money = -500 },
 				feedText = "Handing over your money...",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 to invest" end,
 				onResolve = function(state)
 					local smarts = (state.Stats and state.Stats.Smarts) or 50
 					local roll = math.random()
@@ -1119,7 +1164,12 @@ FinancialEvents.events = {
 					end
 				end,
 			},
-			{ text = "Hire an accountant", effects = { Money = -100, Smarts = 1 }, feedText = "📋 Professional handled it. Peace of mind worth $100.",
+			{ 
+				-- CRITICAL FIX: Show price in text!
+				text = "Hire an accountant ($100)", 
+				effects = { Money = -100, Smarts = 1 }, 
+				feedText = "📋 Professional handled it. Peace of mind worth $100.",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for accountant" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.60 then
@@ -1277,38 +1327,21 @@ FinancialEvents.events = {
 		
 		choices = {
 			{
-				text = "Look for an apartment to rent",
-				effects = {},
-				feedText = "Searching for apartments...",
+				text = "Get an apartment ($2,000 deposit)",
+				effects = { Money = -2000 },
+				eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2,000 for deposit" end,
+				feedText = "🏠 Found an apartment! $1000/month rent. Your own place at last!",
 				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 3000 then
-						state.Money = money - 2000 -- Deposit + first month
-						state.Flags = state.Flags or {}
-						state.Flags.has_apartment = true
-						state.Flags.renting = true
-						state.Flags.has_own_place = true
-						state.Flags.living_with_parents = nil
-						state.HousingState = state.HousingState or {}
-						state.HousingState.status = "renter"
-						state.HousingState.type = "apartment"
-						state.HousingState.rent = 1000
-						state.HousingState.moveInYear = state.Year or 2025
-						if state.AddFeed then
-							state:AddFeed("🏠 Found an apartment! $1000/month rent. Your own place at last!")
-						end
-					else
-						if state.AddFeed then
-							state:AddFeed("🏠 Couldn't afford the deposit. Need to save more.")
-						end
-					end
-				end,
-				eligibility = function(state)
-					local money = state.Money or 0
-					if money < 2000 then
-						return false, "💸 You need at least $2,000 for a deposit!"
-					end
-					return true
+					state.Flags = state.Flags or {}
+					state.Flags.has_apartment = true
+					state.Flags.renting = true
+					state.Flags.has_own_place = true
+					state.Flags.living_with_parents = nil
+					state.HousingState = state.HousingState or {}
+					state.HousingState.status = "renter"
+					state.HousingState.type = "apartment"
+					state.HousingState.rent = 1000
+					state.HousingState.moveInYear = state.Year or 2025
 				end,
 			},
 			{
@@ -1371,33 +1404,54 @@ FinancialEvents.events = {
 			return true
 		end,
 		
+		getDynamicChoices = function(state)
+			local rent = 1000
+			if state.HousingState and state.HousingState.rent then
+				rent = state.HousingState.rent
+			end
+			return {
+				{
+					text = string.format("Pay rent in full ($%d)", rent),
+					effects = { Happiness = 2, Money = -rent },
+					eligibility = function(s) return (s.Money or 0) >= rent, string.format("💸 Need $%d for rent", rent) end,
+					feedText = string.format("💸 Rent paid! -$%d. Roof over your head secured.", rent),
+					onResolve = function(s)
+						s.HousingState = s.HousingState or {}
+						s.HousingState.missedRentYears = 0
+					end,
+				},
+				{
+					text = "Ask for an extension",
+					effects = { Happiness = -3 },
+					feedText = "Requesting more time...",
+					onResolve = function(s)
+						if math.random() < 0.5 then
+							if s.AddFeed then s:AddFeed("💸 Landlord gave you until end of month.") end
+						else
+							s.HousingState = s.HousingState or {}
+							s.HousingState.missedRentYears = (s.HousingState.missedRentYears or 0) + 1
+							if s.AddFeed then s:AddFeed("💸 No extension. Late fees added.") end
+						end
+					end,
+				},
+				{
+					text = "Skip this month",
+					effects = { Happiness = -5 },
+					feedText = "💸 Skipped rent. This will catch up to you.",
+					onResolve = function(s)
+						s.HousingState = s.HousingState or {}
+						s.HousingState.missedRentYears = (s.HousingState.missedRentYears or 0) + 1
+						s.Flags = s.Flags or {}
+						s.Flags.rent_delinquent = true
+						if s.HousingState.missedRentYears >= 2 then
+							s.Flags.eviction_warning = true
+							if s.AddFeed then s:AddFeed("⚠️ EVICTION WARNING!") end
+						end
+					end,
+				},
+			}
+		end,
 		choices = {
-			{
-				text = "Pay in full - on time",
-				effects = { Happiness = 2 },
-				feedText = "Paying rent...",
-				onResolve = function(state)
-					local rent = 1000
-					if state.HousingState and state.HousingState.rent then
-						rent = state.HousingState.rent
-					end
-					local money = state.Money or 0
-					if money >= rent then
-						state.Money = money - rent
-						state.HousingState = state.HousingState or {}
-						state.HousingState.missedRentYears = 0
-						if state.AddFeed then
-							state:AddFeed(string.format("💸 Rent paid! -$%d. Roof over your head secured.", rent))
-						end
-					else
-						state.HousingState = state.HousingState or {}
-						state.HousingState.missedRentYears = (state.HousingState.missedRentYears or 0) + 1
-						if state.AddFeed then
-							state:AddFeed("💸 Couldn't afford full rent. Landlord is not happy.")
-						end
-					end
-				end,
-			},
 			{
 				text = "Ask for an extension",
 				effects = { Happiness = -3 },

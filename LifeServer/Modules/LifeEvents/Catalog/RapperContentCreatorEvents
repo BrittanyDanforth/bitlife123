@@ -786,10 +786,12 @@ RapperContentCreatorEvents.events = {
 				end,
 			},
 			{
-				text = "Bring a lawyer to negotiate",
+				-- CRITICAL FIX: Show price and add eligibility!
+				text = "Bring a lawyer to negotiate ($500)",
 				effects = { Happiness = 10, Smarts = 8, Money = -500 },
 				setFlags = { smart_about_business = true },
 				feedText = "🏢 Lawyer reviewed their offer. Found red flags! Avoided a bad deal. Knowledge is power!",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for lawyer" end,
 			},
 			{
 				text = "Stay independent - labels are vultures",
@@ -1962,9 +1964,11 @@ RapperContentCreatorEvents.events = {
 				end,
 			},
 			{
-				text = "Re-record with original beat",
+				-- CRITICAL FIX: Show price and add eligibility!
+				text = "Re-record with original beat ($200)",
 				effects = { Happiness = 8, Money = -200 },
 				feedText = "⚠️ Had a producer remake something similar. Not the same but it's YOURS now!",
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for recording" end,
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					state.FameState.tracksReleased = (state.FameState.tracksReleased or 0) + 1
@@ -2054,10 +2058,12 @@ RapperContentCreatorEvents.events = {
 		
 		choices = {
 			{
-				text = "Throw a listening party",
+				-- CRITICAL FIX: Show price and add eligibility!
+				text = "Throw a listening party ($500)",
 				effects = { Happiness = 25, Money = -500 },
 				setFlags = { local_rapper = true },
 				feedText = "🎉 10K CELEBRATION! Your real fans showed up! Community built!",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for party" end,
 				onResolve = function(state)
 					state.Fame = (state.Fame or 0) + 10
 					state.CurrentJob = state.CurrentJob or {}
@@ -2263,10 +2269,12 @@ RapperContentCreatorEvents.events = {
 				end,
 			},
 			{
-				text = "Hire an editor/team",
+				-- CRITICAL FIX: Show price and add eligibility!
+				text = "Hire an editor/team ($2,000)",
 				effects = { Happiness = 10, Money = -2000 },
 				setFlags = { has_team = true },
 				feedText = "😓 Hired help! Delegation is key. Quality up, stress down. Smart move!",
+				eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2,000 to hire team" end,
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					state.FameState.subscribers = (state.FameState.subscribers or 0) + math.random(2000, 5000)

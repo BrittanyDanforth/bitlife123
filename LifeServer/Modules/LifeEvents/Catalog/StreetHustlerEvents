@@ -452,37 +452,18 @@ local events = {
 			},
 			{
 				index = 3,
-				text = "Move to a new city",
-				-- CRITICAL FIX: Validate money before relocating
-				effects = {}, -- Money handled in onResolve
+				text = "Move to a new city ($500)",
+				effects = { Money = -500, Happiness = -4 },
 				setFlags = { relocated = true },
-				feedText = "Considering relocating...",
-				onResolve = function(state)
-					local money = state.Money or 0
-					local moveCost = 2000
-					if money >= moveCost then
-						state.Money = money - moveCost
-						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
-						if state.AddFeed then
-							state:AddFeed("🏃 Spent $2000 and relocated to a new city. Fresh start!")
-						end
-					elseif money >= 500 then
-						-- Budget move
-						state.Money = money - 500
-						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
-						if state.AddFeed then
-							state:AddFeed("🏃 Moved cheap with just $500. Rough start but safe.")
-						end
-					else
-						-- Can't afford to move
-						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
-						state.Flags = state.Flags or {}
-						state.Flags.laying_low = true
-						if state.AddFeed then
-							state:AddFeed("💸 Can't afford to relocate. Laying low instead...")
-						end
-					end
-				end,
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 to relocate" end,
+				feedText = "🏃 Relocated to a new city. Fresh start!",
+			},
+			{
+				index = 4,
+				text = "Lay low here",
+				effects = { Happiness = -6 },
+				setFlags = { laying_low = true },
+				feedText = "🏃 Can't afford to move. Laying low instead...",
 			},
 			{
 				index = 4,
@@ -1172,25 +1153,17 @@ local events = {
 			},
 			{
 				index = 2,
-				text = "Use savings to go legit",
-				effects = {},
-				feedText = "You tried to exit the game...",
+				text = "Invest savings to go legit ($5,000)",
+				effects = { Money = -5000, Happiness = 12 },
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 to start legit business" end,
+				feedText = "⏰ Invested your savings in a legit business. You made it out!",
 				onResolve = function(state)
-					local money = state.Money or 0
-					if money >= 5000 then
-						state.Money = money - 5000
-						state.Flags = state.Flags or {}
-						state.Flags.street_hustler = nil
-						state.Flags.dealer = nil
-						state.Flags.supplier = nil
-						state.Flags.former_hustler = true
-						state.Flags.went_legit = true
-						state:ModifyStat("Happiness", 12)
-						state:AddFeed("⏰ Invested your savings in a legit business. You made it out!")
-					else
-						state:ModifyStat("Happiness", -5)
-						state:AddFeed("⏰ Not enough saved to go legit. Trapped in the game.")
-					end
+					state.Flags = state.Flags or {}
+					state.Flags.street_hustler = nil
+					state.Flags.dealer = nil
+					state.Flags.supplier = nil
+					state.Flags.former_hustler = true
+					state.Flags.went_legit = true
 				end,
 			},
 			{
@@ -1348,21 +1321,13 @@ local events = {
 			},
 			{
 				index = 2,
-				text = "Pay them off",
-				effects = {},
-				feedText = "Money talks...",
+				text = "Pay them off ($3,000)",
+				effects = { Money = -3000 },
+				eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Need $3,000 for payoff" end,
+				feedText = "⚠️ Paid $3,000 to squash the beef. Peace bought, not earned.",
 				onResolve = function(state)
-					local money = state.Money or 0
-					local payoff = RANDOM:NextInteger(2000, 8000)
-					if money >= payoff then
-						state.Money = money - payoff
-						state.Flags = state.Flags or {}
-						state.Flags.marked_by_rivals = nil
-						state:AddFeed(string.format("⚠️ Paid $%d to squash the beef. Peace bought, not earned.", payoff))
-					else
-						state:ModifyStat("Happiness", -10)
-						state:AddFeed("⚠️ Can't afford the payoff. Still looking over your shoulder.")
-					end
+					state.Flags = state.Flags or {}
+					state.Flags.marked_by_rivals = nil
 				end,
 			},
 			{

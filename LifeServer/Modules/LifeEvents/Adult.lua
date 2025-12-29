@@ -125,6 +125,33 @@ Adult.events = {
 					-- CRITICAL: Do NOT set moved_out, has_apartment, etc.
 				},
 				feedText = "You're staying home. Smart financially, but maybe a bit cramped.",
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				-- CRITICAL FIX: Can't stay with parents if they're dead!
+				-- User complaint: "IT SAYS LIVING WITH PARENTS BUT MY PARENTS ARE DEAD"
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				eligibility = function(state)
+					local flags = state.Flags or {}
+					-- Check if both parents are dead
+					if flags.orphan or flags.lost_both_parents then
+						return false, "Your parents have passed away"
+					end
+					-- Check Relationships for living parents
+					if state.Relationships then
+						local hasLivingParent = false
+						for id, rel in pairs(state.Relationships) do
+							if rel and (rel.role == "Mother" or rel.role == "Father" or rel.type == "parent") then
+								if rel.alive ~= false and rel.deceased ~= true then
+									hasLivingParent = true
+									break
+								end
+							end
+						end
+						if not hasLivingParent then
+							return false, "Your parents have passed away"
+						end
+					end
+					return true
+				end,
 				onResolve = function(state)
 					state.HousingState = state.HousingState or {}
 					state.HousingState.status = "with_parents"
@@ -473,11 +500,12 @@ Adult.events = {
 		end,
 
 		choices = {
-			{
-				text = "Complete lifestyle overhaul",
-				effects = { Health = 15, Happiness = 5, Money = -500 },
-				setFlags = { health_conscious = true, midlife_health_done = true },
-				feedText = "You transformed your lifestyle. Feeling great!",
+		{
+			text = "Complete lifestyle overhaul ($500)",
+			effects = { Health = 15, Happiness = 5, Money = -500 },
+			setFlags = { health_conscious = true, midlife_health_done = true },
+			feedText = "You transformed your lifestyle. Feeling great!",
+			eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for lifestyle changes" end,
 				onResolve = function(state)
 					local health = (state.Stats and state.Stats.Health) or state.Health or 50
 					if health < 40 then
@@ -498,12 +526,13 @@ Adult.events = {
 				setFlags = { midlife_health_done = true, ignores_health = true },
 				feedText = "You ignored the warning signs..."
 			},
-			{
-				text = "Become obsessive about health",
-				effects = { Health = 10, Happiness = -5, Money = -1000 },
-				setFlags = { health_obsessed = true, midlife_health_done = true },
-				feedText = "Health became your entire focus. Maybe too much."
-			},
+		{
+			text = "Become obsessive about health ($1,000)",
+			effects = { Health = 10, Happiness = -5, Money = -1000 },
+			setFlags = { health_obsessed = true, midlife_health_done = true },
+			feedText = "Health became your entire focus. Maybe too much.",
+			eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 for health obsession" end,
+		},
 		},
 	},
 
@@ -524,11 +553,12 @@ Adult.events = {
 		tags = { "retirement", "money_long_term" },
 		-- CRITICAL FIX: Retirement readiness based on life choices, not direct selection
 		choices = {
-			{
-				text = "Get a full retirement assessment",
-				effects = { Money = -200 },
-				feedText = "The advisor runs the numbers...",
-				onResolve = function(state)
+		{
+			text = "Get a full retirement assessment ($200)",
+			effects = { Money = -200 },
+			feedText = "The advisor runs the numbers...",
+			eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for assessment" end,
+			onResolve = function(state)
 					-- Base readiness on accumulated wealth and smart decisions
 					local money = state.Money or 0
 					local smarts = (state.Stats and state.Stats.Smarts) or 50
@@ -650,13 +680,14 @@ Adult.events = {
 					end
 				end,
 			},
-			{
-				text = "Focus on hobbies and travel",
-				effects = { Happiness = 12, Money = -1000 },
-				setFlags = { retired = true },
-				feedText = "Time to enjoy life to the fullest! Your pension awaits.",
-				-- Retire and travel
-				onResolve = function(state)
+		{
+			text = "Focus on hobbies and travel ($1,000)",
+			effects = { Happiness = 12, Money = -1000 },
+			setFlags = { retired = true },
+			feedText = "Time to enjoy life to the fullest! Your pension awaits.",
+			eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 for travel" end,
+			-- Retire and travel
+			onResolve = function(state)
 					local pensionBase = 0
 					if state.CurrentJob and state.CurrentJob.salary then
 						pensionBase = math.floor(state.CurrentJob.salary * 0.4)
@@ -794,12 +825,13 @@ Adult.events = {
 		category = "health",
 		tags = { "aging", "doctor", "health_risk" },
 
-		choices = {
-			{
-				text = "Follow doctor's orders carefully",
-				effects = { Health = 5, Money = -500 },
-				feedText = "You're taking good care of yourself."
-			},
+	choices = {
+		{
+			text = "Follow doctor's orders carefully ($500)",
+			effects = { Health = 5, Money = -500 },
+			feedText = "You're taking good care of yourself.",
+			eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for medical care" end,
+		},
 			{
 				text = "Stay as active as possible",
 				effects = { Health = 8, Happiness = 5 },
@@ -999,18 +1031,13 @@ Adult.events = {
 
 		choices = {
 			{ 
-				text = "Big traditional wedding", 
-				-- CRITICAL FIX: Validate money before expensive wedding
-				effects = {}, -- Money handled in onResolve
+				text = "Big traditional wedding ($15,000)", 
+				effects = { Money = -15000, Happiness = 12 },
 				setFlags = { married = true, big_wedding = true }, 
-				feedText = "Planning the wedding of your dreams...",
+				eligibility = function(state) return (state.Money or 0) >= 15000, "💸 Need $15,000 for big wedding" end,
+				feedText = "💒 A beautiful wedding! Your wallet hurts but it was worth it!",
 				onResolve = function(state)
-					local money = state.Money or 0
-					local weddingCost = 15000
-					if money >= weddingCost then
-						state.Money = money - weddingCost
-						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
-				-- Update partner to spouse
+					-- Update partner to spouse
 					if state.Relationships and state.Relationships.partner then
 						local partnerGender = state.Relationships.partner.gender or "female"
 						state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
@@ -1018,123 +1045,53 @@ Adult.events = {
 						state.Relationships.partner.married = true
 						state.Relationships.partner.type = "spouse"
 					end
-						if state.AddFeed then
-							state:AddFeed("💒 A beautiful $15,000 wedding! Your wallet hurts but it was worth it!")
-						end
-					elseif money >= 8000 then
-						state.Money = money - 8000
-						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
-				if state.Relationships and state.Relationships.partner then
-					local partnerGender = state.Relationships.partner.gender or "female"
-					state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
-					state.Relationships.partner.isSpouse = true
-					state.Relationships.partner.married = true
-					state.Relationships.partner.type = "spouse"
-				end
-				if state.AddFeed then
-					state:AddFeed("💒 Nice wedding for $8,000! Cut some corners but still beautiful!")
-				end
-					else
-						-- Default to small wedding
-						state.Money = math.max(0, money - 3000)
-						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
-				if state.Relationships and state.Relationships.partner then
-					local partnerGender = state.Relationships.partner.gender or "female"
-					state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
-					state.Relationships.partner.isSpouse = true
-					state.Relationships.partner.married = true
-					state.Relationships.partner.type = "spouse"
-				end
-				if state.AddFeed then
-					state:AddFeed("💒 Had a smaller wedding you could afford. Still special!")
-				end
-					end
 					state.Flags = state.Flags or {}
 					state.Flags.engaged = nil
 				end,
 			},
 			{ 
-				text = "Small intimate ceremony", 
-				-- CRITICAL FIX: Validate money
-				effects = {}, -- Money handled in onResolve
+				text = "Small intimate ceremony ($3,000)", 
+				effects = { Money = -3000, Happiness = 10 },
 				setFlags = { married = true }, 
-				feedText = "Planning an intimate ceremony...",
+				eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Need $3,000 for intimate ceremony" end,
+				feedText = "💒 Just close friends and family. Perfect!",
 				onResolve = function(state)
-					local money = state.Money or 0
-					local weddingCost = 3000
-					if money >= weddingCost then
-						state.Money = money - weddingCost
-						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
-					else
-						state.Money = math.max(0, money - 500)
-						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+					if state.Relationships and state.Relationships.partner then
+						local partnerGender = state.Relationships.partner.gender or "female"
+						state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
+						state.Relationships.partner.isSpouse = true
+						state.Relationships.partner.married = true
+						state.Relationships.partner.type = "spouse"
 					end
-				if state.Relationships and state.Relationships.partner then
-					local partnerGender = state.Relationships.partner.gender or "female"
-					state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
-					state.Relationships.partner.isSpouse = true
-					state.Relationships.partner.married = true
-					state.Relationships.partner.type = "spouse"
-				end
-				if state.AddFeed then
-					state:AddFeed("💒 Just close friends and family. Perfect!")
-				end
 					state.Flags = state.Flags or {}
 					state.Flags.engaged = nil
 				end,
 			},
 			{ 
-				text = "Destination wedding", 
-				-- CRITICAL FIX: Validate money
-				effects = {}, -- Money handled in onResolve
+				text = "Destination wedding ($10,000)", 
+				effects = { Money = -10000, Happiness = 14, Health = 3 },
 				setFlags = { married = true, destination_wedding = true }, 
-				feedText = "Planning a destination wedding...",
+				eligibility = function(state) return (state.Money or 0) >= 10000, "💸 Need $10,000 for destination wedding" end,
+				feedText = "🏝️ Getting married on a beach was magical!",
 				onResolve = function(state)
-					local money = state.Money or 0
-					local weddingCost = 10000
-					if money >= weddingCost then
-						state.Money = money - weddingCost
-						if state.ModifyStat then 
-							state:ModifyStat("Happiness", 14)
-							state:ModifyStat("Health", 3)
-						end
-						if state.AddFeed then
-							state:AddFeed("🏝️ Getting married on a beach was magical!")
-						end
-					elseif money >= 5000 then
-						state.Money = money - 5000
-						if state.ModifyStat then 
-							state:ModifyStat("Happiness", 10)
-							state:ModifyStat("Health", 2)
-						end
-						if state.AddFeed then
-							state:AddFeed("🏝️ Budget destination wedding! Still beautiful!")
-						end
-					else
-						-- Can't afford destination
-						state.Money = math.max(0, money - 2000)
-						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
-						if state.AddFeed then
-							state:AddFeed("💒 Destination too expensive. Had a local wedding instead.")
-						end
+					if state.Relationships and state.Relationships.partner then
+						local partnerGender = state.Relationships.partner.gender or "female"
+						state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
+						state.Relationships.partner.isSpouse = true
+						state.Relationships.partner.married = true
+						state.Relationships.partner.type = "spouse"
 					end
-				if state.Relationships and state.Relationships.partner then
-					local partnerGender = state.Relationships.partner.gender or "female"
-					state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
-					state.Relationships.partner.isSpouse = true
-					state.Relationships.partner.married = true
-					state.Relationships.partner.type = "spouse"
-				end
-				state.Flags = state.Flags or {}
-				state.Flags.engaged = nil
-			end,
-		},
-		{ 
-			text = "Courthouse and save the money",
-				effects = { Happiness = 5, Money = -100 }, 
-				setFlags = { married = true, practical_wedding = true }, 
-				feedText = "Quick and easy. More money for the honeymoon!",
-			onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.engaged = nil
+				end,
+			},
+	{ 
+		text = "Courthouse and save the money ($100)",
+			effects = { Happiness = 5, Money = -100 }, 
+			setFlags = { married = true, practical_wedding = true }, 
+			feedText = "Quick and easy. More money for the honeymoon!",
+			eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for courthouse fee" end,
+		onResolve = function(state)
 				if state.Relationships and state.Relationships.partner then
 					local partnerGender = state.Relationships.partner.gender or "female"
 					state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
@@ -1723,103 +1680,44 @@ Adult.events = {
 
 		choices = {
 			{ 
-				text = "Buy something expensive and impractical", 
-				-- CRITICAL FIX: Validate money before sports car purchase
-				effects = {}, -- Money handled in onResolve
-				setFlags = { midlife_crisis = true }, 
-				feedText = "Looking at that sports car...", 
+				text = "Buy a sports car ($10,000)", 
+				effects = { Money = -10000, Happiness = 8 },
+				setFlags = { midlife_crisis = true, has_car = true }, 
+				eligibility = function(state) return (state.Money or 0) >= 10000, "💸 Need $10,000 for sports car" end,
+				feedText = "🏎️ Bought a sports car! Feeling alive!",
 				onResolve = function(state)
-					local money = state.Money or 0
-					local carCost = 10000
-					if money >= carCost then
-						state.Money = money - carCost
-						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
-						if state.AddAsset then
-							state:AddAsset("Vehicles", {
-								id = "midlife_car_" .. tostring(state.Age or 0),
-								name = "Midlife Crisis Sports Car",
-								emoji = "🏎️",
-								price = 45000,
-								value = 40000,
-								condition = 95,
-								isEventAcquired = true,
-							})
-						end
-						state.Flags = state.Flags or {}
-						state.Flags.has_car = true
-						if state.AddFeed then
-							state:AddFeed("🏎️ Bought a $10K sports car! Feeling alive!")
-						end
-					elseif money >= 3000 then
-						-- Buy something smaller but still impractical
-						state.Money = money - 3000
-						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
-						if state.AddFeed then
-							state:AddFeed("🛍️ Bought something expensive ($3K). Retail therapy!")
-						end
-					else
-						-- Can't afford anything
-						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
-						if state.AddFeed then
-							state:AddFeed("💸 Can't even afford a midlife crisis car...")
-						end
+					if state.AddAsset then
+						state:AddAsset("Vehicles", {
+							id = "midlife_car_" .. tostring(state.Age or 0),
+							name = "Midlife Crisis Sports Car",
+							emoji = "🏎️",
+							price = 45000,
+							value = 40000,
+							condition = 95,
+							isEventAcquired = true,
+						})
 					end
 				end 
+			},
+			{ 
+				text = "Treat yourself to something nice ($3,000)", 
+				effects = { Money = -3000, Happiness = 5 },
+				setFlags = { midlife_crisis = true }, 
+				eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Need $3,000" end,
+				feedText = "🛍️ Bought something expensive. Retail therapy!",
 			},
 			{ text = "Have an affair", effects = { Happiness = 5 }, setFlags = { cheater = true, affair = true }, feedText = "You made a terrible decision..." },
 			{ 
 				text = "Make a dramatic career change", 
-				-- CRITICAL FIX: Validate money before career change
-				effects = {}, -- Money handled in onResolve
+				effects = { Happiness = 10 },
 				setFlags = { career_reinvented = true }, 
-				feedText = "Considering a career change...",
-				onResolve = function(state)
-					local money = state.Money or 0
-					local changeCost = 2000
-					if money >= changeCost then
-						state.Money = money - changeCost
-						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
-						if state.AddFeed then
-							state:AddFeed("🔄 You quit to pursue your dream!")
-						end
-					else
-						-- Can't afford transition
-						if state.ModifyStat then state:ModifyStat("Happiness", 3) end
-						if state.AddFeed then
-							state:AddFeed("🔄 Started planning a career change. Saving up for the transition.")
-						end
-					end
-				end,
+				feedText = "🔄 You quit to pursue your dream! Time for a fresh start!",
 			},
 			{ 
 				text = "Go to therapy", 
-				-- CRITICAL FIX: Validate money before therapy
-				effects = {}, -- Money handled in onResolve
+				effects = { Happiness = 8, Smarts = 3 },
 				setFlags = { in_therapy = true }, 
-				feedText = "Considering therapy...",
-				onResolve = function(state)
-					local money = state.Money or 0
-					local therapyCost = 500
-					if money >= therapyCost then
-						state.Money = money - therapyCost
-						if state.ModifyStat then 
-							state:ModifyStat("Happiness", 8)
-							state:ModifyStat("Smarts", 3)
-						end
-						if state.AddFeed then
-							state:AddFeed("🧠 Therapy is helping you find clarity!")
-						end
-					else
-						-- Free resources
-						if state.ModifyStat then 
-							state:ModifyStat("Happiness", 5)
-							state:ModifyStat("Smarts", 1)
-						end
-						if state.AddFeed then
-							state:AddFeed("🧠 Using free self-help resources. Some clarity found.")
-						end
-					end
-				end,
+				feedText = "🧠 Therapy is helping you find clarity and peace!",
 			},
 			{ text = "Embrace the change gracefully", effects = { Happiness = 10, Smarts = 2 }, setFlags = { wisdom = true }, feedText = "Growth is part of life. You accept it." },
 		},
@@ -2049,75 +1947,31 @@ Adult.events = {
 		end,
 		choices = {
 			{ 
-				text = "Dream vacation trip", 
-				-- CRITICAL FIX: Validate money before $5000 trip
-				effects = {}, -- Money handled in onResolve
+				text = "Dream vacation trip ($2,000)", 
+				effects = { Happiness = 12, Health = 3, Money = -2000 },
 				setFlags = { traveled_world = true }, 
-				feedText = "Planning the trip of a lifetime...",
-				onResolve = function(state)
-					local money = state.Money or 0
-					local tripCost = 5000
-					if money >= tripCost then
-						state.Money = money - tripCost
-						if state.ModifyStat then 
-							state:ModifyStat("Happiness", 15)
-							state:ModifyStat("Health", 3)
-						end
-						if state.AddFeed then
-							state:AddFeed("✈️ Dream vacation! Worth every penny!")
-						end
-					elseif money >= 2000 then
-						state.Money = money - 2000
-						if state.ModifyStat then 
-							state:ModifyStat("Happiness", 10)
-							state:ModifyStat("Health", 2)
-						end
-						if state.AddFeed then
-							state:AddFeed("✈️ Budget dream trip! Still amazing!")
-						end
-					elseif money >= 500 then
-						state.Money = money - 500
-						if state.ModifyStat then state:ModifyStat("Happiness", 6) end
-						if state.AddFeed then
-							state:AddFeed("✈️ Took a local adventure. Dreams don't have to be expensive!")
-						end
-					else
-						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
-						if state.AddFeed then
-							state:AddFeed("💸 Can't afford the trip right now...")
-						end
-					end
-				end,
+				eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2,000 for trip" end,
+				feedText = "✈️ Dream vacation! Worth every penny!",
 			},
 			{ 
-				text = "Learn a new skill", 
-				-- CRITICAL FIX: Validate money for classes
-				effects = {}, -- Money handled in onResolve
+				text = "Local adventure ($500)", 
+				effects = { Happiness = 8, Money = -500 },
+				setFlags = { traveled_world = true }, 
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for trip" end,
+				feedText = "✈️ Local adventure! Dreams don't have to be expensive!",
+			},
+			{ 
+				text = "Learn a new skill ($200 class)", 
+				effects = { Happiness = 8, Smarts = 5, Money = -200 },
 				setFlags = { lifelong_learner = true }, 
-				feedText = "Starting to learn something new...",
-				onResolve = function(state)
-					local money = state.Money or 0
-					local classCost = 500
-					if money >= classCost then
-						state.Money = money - classCost
-						if state.ModifyStat then 
-							state:ModifyStat("Happiness", 8)
-							state:ModifyStat("Smarts", 5)
-						end
-						if state.AddFeed then
-							state:AddFeed("📚 You're never too old to learn something new!")
-						end
-					else
-						-- Free online learning
-						if state.ModifyStat then 
-							state:ModifyStat("Happiness", 5)
-							state:ModifyStat("Smarts", 3)
-						end
-						if state.AddFeed then
-							state:AddFeed("📚 Learning through free online resources!")
-						end
-					end
-				end,
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for class" end,
+				feedText = "📚 You're never too old to learn something new!",
+			},
+			{ 
+				text = "Learn online (free)", 
+				effects = { Happiness = 5, Smarts = 3 },
+				setFlags = { lifelong_learner = true }, 
+				feedText = "📚 Free online courses! Self-taught and proud!",
 			},
 			{ text = "Reconnect with old friends", effects = { Happiness = 10 }, feedText = "Those reunions filled your heart." },
 			{ text = "Write your memoirs", effects = { Happiness = 5, Smarts = 3 }, setFlags = { wrote_memoir = true }, feedText = "Your life story is now on paper." },
@@ -2397,10 +2251,30 @@ Adult.events = {
 		minAge = 60, maxAge = 95,
 		oneTime = true,
 
+		-- CRITICAL FIX: Dynamic charity donation based on player's actual wealth!
 		choices = {
 			{ text = "Everything split equally among children", effects = { Happiness = 5 }, setFlags = { has_will = true }, feedText = "Fair and simple. Fewer arguments later." },
 			{ text = "Leave more to those who need it", effects = { Happiness = 3 }, setFlags = { has_will = true }, feedText = "You considered each person's situation." },
-			{ text = "Donate much of it to charity ($5,000)", effects = { Happiness = 10, Money = -5000 }, setFlags = { has_will = true, charitable_legacy = true }, feedText = "Your wealth will help many causes.", eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 to donate" end },
+			{ 
+				text = "Donate most of it to charity", 
+				effects = { Happiness = 10 }, 
+				setFlags = { has_will = true, charitable_legacy = true }, 
+				feedText = "Your wealth will help many causes.",
+				eligibility = function(state) 
+					local money = state.Money or 0
+					if money < 1000 then
+						return false, "💸 Need at least $1,000 to donate"
+					end
+					return true 
+				end,
+				onResolve = function(state)
+					-- CRITICAL FIX: Donate 60% of player's money, not a hardcoded $5000!
+					local money = state.Money or 0
+					local donation = math.floor(money * 0.6)
+					state.Money = money - donation
+					state:AddFeed(string.format("📜 You donated $%s to charity. Your legacy will help many!", tostring(donation)))
+				end,
+			},
 			{ text = "Leave it all to one person", effects = { Happiness = -2 }, setFlags = { has_will = true, contentious_will = true }, feedText = "This might cause family drama later..." },
 		},
 	},
@@ -2565,9 +2439,17 @@ Adult.events = {
 				end,
 			},
 			{
-				text = "Use public transit/rideshare instead",
+				-- CRITICAL FIX: Show the cost!
+				text = "Use public transit/rideshare ($100)",
 				effects = { Money = -100, Happiness = -2 },
 				feedText = "Getting by without the car for now...",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for transit/rideshare" end,
+			},
+			{
+				-- CRITICAL FIX: Add a FREE option so players aren't hard-locked!
+				text = "Walk or bike everywhere",
+				effects = { Health = 3, Happiness = -3 },
+				feedText = "Getting fit but transportation is tough!",
 			},
 		},
 	},
@@ -3095,16 +2977,18 @@ Adult.events = {
 					end
 				end,
 			},
-			{
-				text = "Staycation at home",
-				effects = { Happiness = 6, Health = 3, Money = -100 },
-				feedText = "Sometimes home is the best vacation. Relaxed and recharged!",
-			},
-			{
-				text = "Visit family",
-				effects = { Happiness = 8, Money = -300 },
-				feedText = "Quality time with family. Worth the trip!",
-			},
+		{
+			text = "Staycation at home ($100)",
+			effects = { Happiness = 6, Health = 3, Money = -100 },
+			feedText = "Sometimes home is the best vacation. Relaxed and recharged!",
+			eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for staycation" end,
+		},
+		{
+			text = "Visit family ($300)",
+			effects = { Happiness = 8, Money = -300 },
+			feedText = "Quality time with family. Worth the trip!",
+			eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for travel" end,
+		},
 		},
 	},
 	{
@@ -3560,11 +3444,14 @@ Adult.events = {
 		},
 	},
 	{
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Made inheritance a TRUE SURPRISE - player doesn't choose!
+		-- User complaint: "SUPRISE INHERITANCE ISNT A SUPRISE CUZ ITS LEGIT LETTING ME CHOOSE"
+		-- Now the inheritance amount is determined randomly and shown directly in text!
+		-- ═══════════════════════════════════════════════════════════════════════════════
 		id = "unexpected_inheritance",
-		title = "💌 A Letter From The Past",
+		title = "💌 Surprise Inheritance!",
 		emoji = "📜",
-		text = "A lawyer contacts you. A distant relative you barely knew has passed away, and they left something for you in their will...",
-		question = "What did they leave you?",
 		minAge = 25, maxAge = 70,
 		baseChance = 0.12,
 		cooldown = 25,
@@ -3572,36 +3459,74 @@ Adult.events = {
 		category = "money",
 		tags = { "inheritance", "surprise", "family", "money" },
 		blockedByFlags = { in_prison = true, got_inheritance = true },
+		
+		-- Dynamic text showing the actual inheritance amount!
+		preProcess = function(state, eventDef)
+			local roll = math.random()
+			local amount = 0
+			local itemDesc = ""
+			local reaction = ""
+			
+			if roll < 0.15 then
+				amount = 500000
+				itemDesc = "their entire estate - $500,000!"
+				reaction = "You're RICH! Life-changing money!"
+			elseif roll < 0.35 then
+				amount = 75000
+				itemDesc = "a nice sum - $75,000!"
+				reaction = "What a generous surprise!"
+			elseif roll < 0.55 then
+				amount = 15000
+				itemDesc = "$15,000 in savings!"
+				reaction = "Better than nothing!"
+			elseif roll < 0.75 then
+				amount = 5000
+				itemDesc = "an old antique worth about $5,000!"
+				reaction = "It might be worth something!"
+			else
+				amount = 500
+				itemDesc = "a box of old photographs and $500 for 'safekeeping'."
+				reaction = "Mostly sentimental value..."
+			end
+			
+			-- Store the amount for onComplete
+			state._inheritanceAmount = amount
+			
+			eventDef.text = string.format("A lawyer contacts you with unexpected news! A distant relative you barely knew has passed away, and they left you %s", itemDesc)
+			eventDef.question = string.format("%s How do you feel?", reaction)
+			return true
+		end,
+		
 		choices = {
 			{
-				text = "Open the will anxiously",
-				effects = {},
+				text = "Wow! Thank you, Great Uncle!",
+				effects = { Happiness = 15 },
 				setFlags = { got_inheritance = true },
-				feedText = "Reading the will...",
+				feedText = "What an unexpected blessing!",
 				onResolve = function(state)
-					local roll = math.random()
+					local amount = state._inheritanceAmount or 15000
+					state.Money = (state.Money or 0) + amount
+					state._inheritanceAmount = nil
 					state.Flags = state.Flags or {}
-					if roll < 0.2 then
-						state.Money = (state.Money or 0) + 500000
-						state:ModifyStat("Happiness", 35)
+					state.Flags.got_inheritance = true
+					if amount >= 100000 then
 						state.Flags.wealthy_inheritance = true
-						state:AddFeed("💰 WHAT?! They left you $500,000! You're rich!")
-					elseif roll < 0.4 then
-						state.Money = (state.Money or 0) + 75000
-						state:ModifyStat("Happiness", 20)
-						state:AddFeed("💰 A nice surprise! They left you $75,000!")
-					elseif roll < 0.6 then
-						state.Money = (state.Money or 0) + 15000
-						state:ModifyStat("Happiness", 10)
-						state:AddFeed("💰 They left you $15,000. Better than nothing!")
-					elseif roll < 0.8 then
-						state:ModifyStat("Happiness", 5)
-						state.Flags.inherited_antique = true
-						state:AddFeed("🏺 They left you an antique! Might be worth something...")
-					else
-						state:ModifyStat("Happiness", -3)
-						state:AddFeed("📦 They left you... a box of old photographs. Sentimental value only.")
 					end
+					state:AddFeed(string.format("💰 Inherited $%s from a distant relative!", tostring(amount)))
+				end,
+			},
+			{
+				text = "I wish I'd known them better...",
+				effects = { Happiness = 5 },
+				setFlags = { got_inheritance = true },
+				feedText = "Bittersweet feelings about the loss.",
+				onResolve = function(state)
+					local amount = state._inheritanceAmount or 15000
+					state.Money = (state.Money or 0) + amount
+					state._inheritanceAmount = nil
+					state.Flags = state.Flags or {}
+					state.Flags.got_inheritance = true
+					state:AddFeed(string.format("💰 Inherited $%s. You regret not knowing them better.", tostring(amount)))
 				end,
 			},
 		},
@@ -3719,10 +3644,12 @@ Adult.events = {
 		blockedByFlags = { in_prison = true },
 		choices = {
 			{
-				text = "Help them generously",
+				-- CRITICAL FIX: Show price in button text and add eligibility check!
+				text = "Help them generously ($50)",
 				effects = { Happiness = 10, Money = -50 },
 				setFlags = { kind_soul = true },
 				feedText = "You helped and it felt amazing.",
+				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 to help generously" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.3 then
@@ -3853,10 +3780,11 @@ Adult.events = {
 				end,
 			},
 			{
-				text = "Safari in Africa!",
+				-- CRITICAL FIX: Show price in text!
+				text = "Safari in Africa ($3,000)!",
 				effects = { Money = -3000, Happiness = 25 },
 				setFlags = { adventurer = true, safari_done = true },
-				feedText = "The wild calls!",
+				feedText = "The wild calls! Lions and elephants!",
 				eligibility = function(state)
 					if (state.Money or 0) < 3000 then
 						return false, "Can't afford the $3,000 safari trip"

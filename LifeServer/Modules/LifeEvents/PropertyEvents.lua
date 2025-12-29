@@ -479,9 +479,11 @@ PropertyEvents.events = {
         
         choices = {
             {
-                text = "Welcome them with baked goods!",
+                -- CRITICAL FIX: Show price!
+                text = "Welcome them with baked goods ($15)",
                 effects = { Money = -15 },
                 feedText = "Heading next door...",
+                eligibility = function(state) return (state.Money or 0) >= 15, "💸 Need $15 for ingredients" end,
                 onResolve = function(state)
                     local roll = math.random()
                     if roll < 0.70 then

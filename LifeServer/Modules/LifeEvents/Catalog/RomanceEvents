@@ -489,45 +489,33 @@ local events = {
 		choices = {
 			{
 				index = 1,
-				text = "Propose",
-				-- CRITICAL FIX: Validate money before deducting for ring
-				effects = {}, -- Money handled in onResolve
+				text = "Propose with a beautiful ring ($500)",
+				effects = { Happiness = 15, Money = -500 },
 				setFlags = { engaged = true },
-				feedText = "Getting ready to propose...",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for a ring" end,
+				feedText = "💍 They said YES! Beautiful ring!",
 				onResolve = function(state)
-					local money = state.Money or 0
-					local ringCost = 3000
-					
 					if state.Relationships and state.Relationships.partner then
 						local partnerGender = state.Relationships.partner.gender or "female"
 						state.Relationships.partner.role = (partnerGender == "female") and "Fiancée" or "Fiancé"
-						local partnerName = state.Relationships.partner.name or state.Relationships.partner.Name or "Your partner"
-						
-						if money >= ringCost then
-							state.Money = money - ringCost
-							if state.ModifyStat then state:ModifyStat("Happiness", 15) end
-							if state.AddFeed then
-								state:AddFeed("💍 " .. partnerName .. " said YES! Beautiful ring!")
-							end
-						elseif money >= 500 then
-							-- Budget ring
-							state.Money = money - 500
-							if state.ModifyStat then state:ModifyStat("Happiness", 12) end
-							if state.AddFeed then
-								state:AddFeed("💍 " .. partnerName .. " said YES! Modest ring, but full of love!")
-							end
-						else
-							-- No ring proposal
-							if state.ModifyStat then state:ModifyStat("Happiness", 10) end
-							if state.AddFeed then
-								state:AddFeed("💍 " .. partnerName .. " said YES! No ring yet, but love is all you need!")
-							end
-						end
 					end
 				end,
 			},
 			{
 				index = 2,
+				text = "Propose from the heart (no ring)",
+				effects = { Happiness = 10 },
+				setFlags = { engaged = true },
+				feedText = "💍 They said YES! No ring yet, but love is all you need!",
+				onResolve = function(state)
+					if state.Relationships and state.Relationships.partner then
+						local partnerGender = state.Relationships.partner.gender or "female"
+						state.Relationships.partner.role = (partnerGender == "female") and "Fiancée" or "Fiancé"
+					end
+				end,
+			},
+			{
+				index = 3,
 				text = "Not yet",
 				effects = { Happiness = -3 },
 				feedText = "You decided to wait a bit longer.",
@@ -555,61 +543,26 @@ local events = {
 		choices = {
 			{
 				index = 1,
-				text = "Book a tropical paradise",
-				-- CRITICAL FIX: Validate money before deducting
-				effects = {}, -- Money handled in onResolve
-				feedText = "Planning the trip...",
-				onResolve = function(state)
-					local money = state.Money or 0
-					local tripCost = 3000
-					if money >= tripCost then
-						state.Money = money - tripCost
-						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
-						if state.AddFeed then
-							state:AddFeed("🏝️ Best vacation ever! Your relationship is stronger than ever.")
-						end
-					elseif money >= 1500 then
-						-- Budget version
-						state.Money = money - 1500
-						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
-						if state.AddFeed then
-							state:AddFeed("🏝️ Went on a budget trip. Still had a great time!")
-						end
-					else
-						-- Can't afford it
-						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
-						if state.AddFeed then
-							state:AddFeed("😔 Can't afford that trip right now... had to cancel.")
-						end
-					end
-				end,
+				text = "Book a tropical paradise ($1,500)",
+				effects = { Happiness = 12, Money = -1500 },
+				eligibility = function(state) return (state.Money or 0) >= 1500, "💸 Need $1,500 for vacation" end,
+				feedText = "🏝️ Best vacation ever! Your relationship is stronger than ever.",
 			},
 			{
 				index = 2,
-				text = "Staycation together",
-				-- CRITICAL FIX: Validate money before deducting
-				effects = {}, -- Money handled in onResolve
-				feedText = "Planning a cozy staycation...",
-				onResolve = function(state)
-					local money = state.Money or 0
-					local stayCost = 200
-					if money >= stayCost then
-						state.Money = money - stayCost
-						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
-						if state.AddFeed then
-							state:AddFeed("🏠 Cozy staycation together. Perfect!")
-						end
-					else
-						-- Free staycation
-						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
-						if state.AddFeed then
-							state:AddFeed("🏠 No-budget staycation. Quality time together!")
-						end
-					end
-				end,
+				text = "Staycation together ($200)",
+				effects = { Happiness = 8, Money = -200 },
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for staycation" end,
+				feedText = "🏠 Cozy staycation together. Perfect!",
 			},
 			{
 				index = 3,
+				text = "Stay home and relax together (free)",
+				effects = { Happiness = 5 },
+				feedText = "🏠 Quality time at home. Nothing beats being together!",
+			},
+			{
+				index = 4,
 				text = "Too busy for vacation",
 				effects = { Happiness = -5 },
 				feedText = "Your partner was disappointed.",
@@ -630,40 +583,23 @@ local events = {
 		choices = {
 			{
 				index = 1,
-				text = "Plan something special",
-				-- CRITICAL FIX: Validate money before deducting
-				effects = {}, -- Money handled in onResolve
-				feedText = "Planning a celebration...",
-				onResolve = function(state)
-					local money = state.Money or 0
-					local celebCost = 500
-					if money >= celebCost then
-						state.Money = money - celebCost
-						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
-						if state.AddFeed then
-							state:AddFeed("🎂 A beautiful celebration of your love!")
-						end
-					elseif money >= 100 then
-						-- Budget celebration
-						state.Money = money - 100
-						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
-						if state.AddFeed then
-							state:AddFeed("🎂 Small but thoughtful anniversary celebration!")
-						end
-					else
-						-- Free celebration
-						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
-						if state.AddFeed then
-							state:AddFeed("🎂 Celebrated with what you had. Love doesn't need money!")
-						end
-					end
-				end,
+				text = "Plan something special ($200)",
+				effects = { Happiness = 12, Money = -200 },
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for celebration" end,
+				feedText = "🎂 A beautiful celebration of your love!",
 			},
 			{
 				index = 2,
-				text = "Simple dinner at home",
+				text = "Small thoughtful celebration ($50)",
+				effects = { Happiness = 8, Money = -50 },
+				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50" end,
+				feedText = "🎂 Small but thoughtful anniversary celebration!",
+			},
+			{
+				index = 3,
+				text = "Simple dinner at home (free)",
 				effects = { Happiness = 8 },
-				feedText = "Intimate and meaningful.",
+				feedText = "🎂 Intimate and meaningful. Love doesn't need money!",
 			},
 			{
 				index = 3,

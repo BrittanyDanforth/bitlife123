@@ -744,9 +744,11 @@ LifeChallenges.events = {
 		-- CRITICAL: Random escape outcome
 		choices = {
 			{
-				text = "Make an exit plan",
+				-- CRITICAL FIX: Show price!
+				text = "Make an exit plan ($200)",
 				effects = { Money = -200 },
 				feedText = "Carefully planning escape...",
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for escape" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.60 then

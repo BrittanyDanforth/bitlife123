@@ -278,9 +278,11 @@ RandomExpanded.events = {
 		-- CRITICAL: Random lottery outcome - mostly losing
 		choices = {
 			{
-				text = "Scratch it off",
+				-- CRITICAL FIX: Show price!
+				text = "Scratch it off ($5)",
 				effects = { Money = -5 },
 				feedText = "Scratching...",
+				eligibility = function(state) return (state.Money or 0) >= 5, "💸 Need $5 for ticket" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.50 then
@@ -1319,9 +1321,19 @@ RandomExpanded.events = {
 			feedText = "😤 Wasted time going nowhere. The commute rage is real.",
 		},
 		{
+			-- CRITICAL FIX: This is a consequence - make money cost dynamic
 			text = "Spilled something on yourself",
-			effects = { Happiness = -3, Money = -20 },
-			feedText = "😤 Coffee/food on your clothes. Embarrassing. Had to buy new shirt.",
+			effects = { Happiness = -3 },
+			feedText = "😤 Coffee/food on your clothes. Embarrassing!",
+			onResolve = function(state)
+				-- Only charge if they can afford replacement
+				if (state.Money or 0) >= 20 then
+					state.Money = state.Money - 20
+					state:AddFeed("😤 Had to buy a new shirt for $20!")
+				else
+					state:AddFeed("😤 Can't afford a new shirt. Looking messy today.")
+				end
+			end,
 		},
 		{
 			text = "Forgot something important at home",
