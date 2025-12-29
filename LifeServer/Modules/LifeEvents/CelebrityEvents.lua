@@ -1264,7 +1264,7 @@ CelebrityEvents.GeneralFameEvents = {
 		oneTime = true,
 		choices = {
 			{
-				text = "Launch a fashion line",
+				text = "Launch a fashion line ($500K)",
 				effects = { Happiness = 15, Money = -500000 },
 				successChance = 60,
 				successFame = 15,
@@ -1272,14 +1272,32 @@ CelebrityEvents.GeneralFameEvents = {
 				failFame = -5,
 				failFeed = "Your fashion line flopped.",
 				setFlags = { entrepreneur = true },
+				eligibility = function(state) return (state.Money or 0) >= 500000, "💸 Need $500K to launch fashion line" end,
 			},
 			{
-				text = "Launch a beauty brand",
+				text = "Launch a beauty brand ($300K)",
 				effects = { Happiness = 12, Money = -300000 },
 				successChance = 70,
 				successFame = 12,
 				successFeed = "Your beauty brand is selling out!",
 				setFlags = { entrepreneur = true },
+				eligibility = function(state) return (state.Money or 0) >= 300000, "💸 Need $300K to launch beauty brand" end,
+			},
+			-- CRITICAL FIX: FREE option to prevent hard lock!
+			{
+				text = "Partner with existing brand (licensing)",
+				effects = { Happiness = 10 },
+				successChance = 75,
+				successFame = 8,
+				successFeed = "👔 Your name on their products! Getting royalty checks without the risk!",
+				failFame = -2,
+				failFeed = "Deal fell through. Business is tough.",
+				setFlags = { brand_partner = true },
+			},
+			{
+				text = "Wait for the right opportunity",
+				effects = { Happiness = -2, Smarts = 3 },
+				feed = "👔 Not ready yet. Building more fame and capital first. Smart.",
 			},
 		},
 	},

@@ -1206,9 +1206,10 @@ Adult.events = {
 		choices = {
 			{ 
 				text = "It's exhausting but amazing", 
-				effects = { Happiness = 10, Health = -5, Money = -1000 }, 
+				effects = { Happiness = 10, Health = -5 }, 
 				setFlags = { has_child = true, parent = true }, 
 				feedText = "Sleep is a distant memory but you're in love.",
+				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 for baby supplies" end,
 				-- CRITICAL FIX: Create actual child in Relationships table
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
@@ -1235,9 +1236,10 @@ Adult.events = {
 			},
 			{ 
 				text = "Struggling with the transition", 
-				effects = { Happiness = 2, Health = -8, Money = -1000 }, 
+				effects = { Happiness = 2, Health = -8 }, 
 				setFlags = { has_child = true, parent = true, overwhelmed_parent = true }, 
 				feedText = "This is harder than you imagined.",
+				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 for baby supplies" end,
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
 					local childCount = (state.ChildCount or 0) + 1
@@ -1263,9 +1265,10 @@ Adult.events = {
 			},
 			{ 
 				text = "Natural parent - taking to it well", 
-				effects = { Happiness = 15, Health = -3, Money = -1000 }, 
+				effects = { Happiness = 15, Health = -3 }, 
 				setFlags = { has_child = true, parent = true, natural_parent = true }, 
 				feedText = "You were born for this!",
+				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 for baby supplies" end,
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
 					local childCount = (state.ChildCount or 0) + 1
@@ -1291,10 +1294,12 @@ Adult.events = {
 			},
 			{ 
 				text = "Partner is doing most of the work", 
-				effects = { Happiness = 5, Money = -1000 }, 
+				effects = { Happiness = 5 }, 
 				setFlags = { has_child = true, parent = true }, 
 				feedText = "You're not pulling your weight...",
+				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 for baby supplies" end,
 				onResolve = function(state)
+					state.Money = math.max(0, (state.Money or 0) - 1000)
 					state.Relationships = state.Relationships or {}
 					local childCount = (state.ChildCount or 0) + 1
 					state.ChildCount = childCount
@@ -1309,6 +1314,35 @@ Adult.events = {
 						type = "family",
 						role = isBoy and "Son" or "Daughter",
 						relationship = 90,
+						age = 0,
+						gender = isBoy and "male" or "female",
+						alive = true,
+						isFamily = true,
+						isChild = true,
+					}
+				end,
+			},
+			-- CRITICAL FIX: FREE option for broke players!
+			{ 
+				text = "Family helped with everything!", 
+				effects = { Happiness = 12, Health = -4 }, 
+				setFlags = { has_child = true, parent = true, family_support = true }, 
+				feedText = "👶 Baby shower gifts, hand-me-downs, and grandparents pitching in! Community stepped up BIG!",
+				onResolve = function(state)
+					state.Relationships = state.Relationships or {}
+					local childCount = (state.ChildCount or 0) + 1
+					state.ChildCount = childCount
+					local isBoy = math.random() > 0.5
+					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason"} 
+						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia"}
+					local childName = names[math.random(1, #names)]
+					local childId = "child_" .. tostring(childCount)
+					state.Relationships[childId] = {
+						id = childId,
+						name = childName,
+						type = "family",
+						role = isBoy and "Son" or "Daughter",
+						relationship = 95,
 						age = 0,
 						gender = isBoy and "male" or "female",
 						alive = true,

@@ -1892,12 +1892,14 @@ Relationships.events = {
 			},
 			{ 
 				text = "Terrified - how will we manage?", 
-				effects = { Happiness = -5, Money = -5000, Health = -5 }, 
+				effects = { Happiness = -5, Health = -5 }, 
 				setFlags = { has_child = true, parent = true, has_multiples = true, overwhelmed_parent = true }, 
 				feedText = "Two/three at once? Deep breaths...",
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5K for extra baby supplies" end,
 				onResolve = function(state)
+					state.Money = math.max(0, (state.Money or 0) - 5000)
 					state.Relationships = state.Relationships or {}
-					local numBabies = 2 -- Twins
+					local numBabies = 2
 					local boyNames = {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Aiden"}
 					local girlNames = {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia", "Amelia", "Harper"}
 					local usedNames = {}
@@ -1918,6 +1920,45 @@ Relationships.events = {
 							type = "family",
 							role = isBoy and "Son" or "Daughter",
 							relationship = 70,
+							age = 0,
+							gender = isBoy and "male" or "female",
+							alive = true,
+							isFamily = true,
+							isChild = true,
+							isMultiple = true,
+						}
+					end
+				end,
+			},
+			-- CRITICAL FIX: FREE option to prevent hard lock!
+			{ 
+				text = "Rely on family and community help", 
+				effects = { Happiness = 8, Health = -3 }, 
+				setFlags = { has_child = true, parent = true, has_multiples = true, community_support = true }, 
+				feedText = "👶👶 Family stepped up BIG time! Hand-me-downs, babysitting, meals - it takes a village!",
+				onResolve = function(state)
+					state.Relationships = state.Relationships or {}
+					local numBabies = 2
+					local boyNames = {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Aiden"}
+					local girlNames = {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia", "Amelia", "Harper"}
+					local usedNames = {}
+					for i = 1, numBabies do
+						local childCount = (state.ChildCount or 0) + 1
+						state.ChildCount = childCount
+						local isBoy = math.random() > 0.5
+						local names = isBoy and boyNames or girlNames
+						local childName
+						repeat
+							childName = names[math.random(1, #names)]
+						until not usedNames[childName]
+						usedNames[childName] = true
+						local childId = "child_" .. tostring(childCount)
+						state.Relationships[childId] = {
+							id = childId,
+							name = childName,
+							type = "family",
+							role = isBoy and "Son" or "Daughter",
+							relationship = 90,
 							age = 0,
 							gender = isBoy and "male" or "female",
 							alive = true,

@@ -650,8 +650,8 @@ TravelEvents.events = {
 		
 		eligibility = function(state)
 			local money = state.Money or 0
-			if money < 500 then
-				return false, "Need money for solo trip"
+			if money < 800 then
+				return false, "Need $800 for solo trip"
 			end
 			return true
 		end,
@@ -659,9 +659,10 @@ TravelEvents.events = {
 		-- CRITICAL: Random solo travel outcome
 		choices = {
 			{
-				text = "Take the solo journey",
+				text = "Take the solo journey ($800)",
 				effects = { Money = -800 },
 				feedText = "Traveling alone...",
+				eligibility = function(state) return (state.Money or 0) >= 800, "💸 Need $800 for trip" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.55 then

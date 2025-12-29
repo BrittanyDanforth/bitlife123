@@ -2338,9 +2338,11 @@ RoyaltyEvents.LifeEvents = {
 		oneTime = true,
 		conditions = { blockedFlags = { married = true } },
 		choices = {
-		{ text = "Traditional grand ceremony ($5M)", effects = { Happiness = 25, Money = -5000000 }, royaltyEffect = { popularity = 30 }, setFlags = { married = true }, feed = "A fairy tale wedding!", eligibility = function(state) return (state.Money or 0) >= 5000000, "💸 Need $5M for grand ceremony" end },
-		{ text = "Modern celebration ($2M)", effects = { Happiness = 22, Money = -2000000 }, royaltyEffect = { popularity = 20 }, setFlags = { married = true }, feed = "A modern royal wedding!", eligibility = function(state) return (state.Money or 0) >= 2000000, "💸 Need $2M for modern wedding" end },
-		{ text = "Private ceremony ($500K)", effects = { Happiness = 20, Money = -500000 }, royaltyEffect = { popularity = 10 }, setFlags = { married = true }, feed = "Beautifully intimate.", eligibility = function(state) return (state.Money or 0) >= 500000, "💸 Need $500K for private ceremony" end },
+			{ text = "Traditional grand ceremony ($5M)", effects = { Happiness = 25, Money = -5000000 }, royaltyEffect = { popularity = 30 }, setFlags = { married = true }, feed = "A fairy tale wedding!", eligibility = function(state) return (state.Money or 0) >= 5000000, "💸 Need $5M for grand ceremony" end },
+			{ text = "Modern celebration ($2M)", effects = { Happiness = 22, Money = -2000000 }, royaltyEffect = { popularity = 20 }, setFlags = { married = true }, feed = "A modern royal wedding!", eligibility = function(state) return (state.Money or 0) >= 2000000, "💸 Need $2M for modern wedding" end },
+			{ text = "Private ceremony ($500K)", effects = { Happiness = 20, Money = -500000 }, royaltyEffect = { popularity = 10 }, setFlags = { married = true }, feed = "Beautifully intimate.", eligibility = function(state) return (state.Money or 0) >= 500000, "💸 Need $500K for private ceremony" end },
+			-- CRITICAL FIX: FREE option to prevent hard lock!
+			{ text = "Simple state-funded ceremony", effects = { Happiness = 18 }, royaltyEffect = { popularity = 5 }, setFlags = { married = true }, feed = "💒 A modest royal wedding. Some call it refreshingly modern, others disappointed." },
 		},
 	},
 	{
@@ -2384,9 +2386,12 @@ RoyaltyEvents.LifeEvents = {
 		isRoyalOnly = true,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
-		{ text = "Mental health ($2M)", effects = { Happiness = 15, Money = -2000000 }, royaltyEffect = { popularity = 20 }, feed = "Your campaign saved lives!", eligibility = function(state) return (state.Money or 0) >= 2000000, "💸 Need $2M for mental health initiative" end },
-		{ text = "Environment ($3M)", effects = { Happiness = 12, Money = -3000000 }, royaltyEffect = { popularity = 18 }, feed = "You're protecting the planet!", eligibility = function(state) return (state.Money or 0) >= 3000000, "💸 Need $3M for environment initiative" end },
-		{ text = "Youth empowerment ($1.5M)", effects = { Happiness = 15, Money = -1500000 }, royaltyEffect = { popularity = 22 }, feed = "Inspiring young leaders!", eligibility = function(state) return (state.Money or 0) >= 1500000, "💸 Need $1.5M for youth initiative" end },
+			{ text = "Mental health ($2M)", effects = { Happiness = 15, Money = -2000000 }, royaltyEffect = { popularity = 20 }, feed = "Your campaign saved lives!", eligibility = function(state) return (state.Money or 0) >= 2000000, "💸 Need $2M for mental health initiative" end },
+			{ text = "Environment ($3M)", effects = { Happiness = 12, Money = -3000000 }, royaltyEffect = { popularity = 18 }, feed = "You're protecting the planet!", eligibility = function(state) return (state.Money or 0) >= 3000000, "💸 Need $3M for environment initiative" end },
+			{ text = "Youth empowerment ($1.5M)", effects = { Happiness = 15, Money = -1500000 }, royaltyEffect = { popularity = 22 }, feed = "Inspiring young leaders!", eligibility = function(state) return (state.Money or 0) >= 1500000, "💸 Need $1.5M for youth initiative" end },
+			-- CRITICAL FIX: FREE options to prevent hard lock!
+			{ text = "Raise awareness through speeches", effects = { Happiness = 10, Smarts = 5 }, royaltyEffect = { popularity = 12 }, feed = "❤️ Your passionate advocacy is inspiring change! Words matter!" },
+			{ text = "Volunteer your time personally", effects = { Happiness = 12, Health = -2 }, royaltyEffect = { popularity = 15 }, feed = "❤️ Rolling up your sleeves! The public loves seeing you in the trenches!" },
 		},
 	},
 	

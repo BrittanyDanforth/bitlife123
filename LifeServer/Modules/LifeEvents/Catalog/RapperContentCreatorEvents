@@ -995,18 +995,18 @@ RapperContentCreatorEvents.events = {
 		end,
 		
 		choices = {
-		{
-			text = "Go all out - $50K production budget",
-			effects = { Happiness = 30, Money = -50000 },
-			setFlags = { debut_album = true },
-			feedText = "💿 ALBUM DROPPED! World-class production! Critics calling it 'impressive debut!' Career ELEVATED!",
-			eligibility = function(state) return (state.Money or 0) >= 50000, "💸 Need $50K for album production" end,
-			onResolve = function(state)
+			{
+				text = "Go all out - $50K production budget",
+				effects = { Happiness = 30, Money = -50000 },
+				setFlags = { debut_album = true },
+				feedText = "💿 ALBUM DROPPED! World-class production! Critics calling it 'impressive debut!' Career ELEVATED!",
+				eligibility = function(state) return (state.Money or 0) >= 50000, "💸 Need $50K for album production" end,
+				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(100000, 300000)
 					state.FameState.albumsReleased = (state.FameState.albumsReleased or 0) + 1
 					state.Fame = (state.Fame or 0) + 30
-					state.Money = (state.Money or 0) + math.random(50000, 150000) -- Album sales/streams
+					state.Money = (state.Money or 0) + math.random(50000, 150000)
 				end,
 			},
 			{
@@ -1014,12 +1014,41 @@ RapperContentCreatorEvents.events = {
 				effects = { Happiness = 20, Money = -5000 },
 				setFlags = { debut_album = true, diy_artist = true },
 				feedText = "💿 ALBUM DROPPED! Raw, authentic sound! Underground heads LOVE IT! Mainstream confused but cult following growing!",
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5K for DIY album" end,
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(50000, 120000)
 					state.FameState.albumsReleased = (state.FameState.albumsReleased or 0) + 1
 					state.Fame = (state.Fame or 0) + 20
 				end,
+			},
+			-- CRITICAL FIX: FREE option to prevent hard lock!
+			{
+				text = "Drop it FREE on SoundCloud/Bandcamp",
+				effects = { Happiness = 15 },
+				setFlags = { debut_album = true, free_album = true, underground_artist = true },
+				feedText = "💿 FREE ALBUM! No budget but pure passion! True hip-hop heads respect the grind! Cult classic potential!",
+				onResolve = function(state)
+					state.FameState = state.FameState or {}
+					local roll = math.random()
+					if roll < 0.30 then
+						-- Viral success!
+						state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(80000, 200000)
+						state.Fame = (state.Fame or 0) + 25
+						state:ModifyStat("Happiness", 20)
+						state:AddFeed("💿 FREE ALBUM WENT VIRAL! Internet discovered you! Pure talent shining through!")
+					else
+						state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(10000, 50000)
+						state.Fame = (state.Fame or 0) + 10
+						state:AddFeed("💿 Album's out there! Slow burn but building real fans who respect the hustle!")
+					end
+					state.FameState.albumsReleased = (state.FameState.albumsReleased or 0) + 1
+				end,
+			},
+			{
+				text = "Not ready yet - keep grinding",
+				effects = { Happiness = -3, Smarts = 2 },
+				feedText = "💿 Album can wait. Perfecting the craft first. Patience is key.",
 			},
 		},
 	},
@@ -2491,6 +2520,7 @@ RapperContentCreatorEvents.events = {
 				effects = { Happiness = 15, Money = -2000 },
 				setFlags = { has_merch = true },
 				feedText = "👕 Merch dropped! SOLD OUT IN 3 HOURS! $5,000 profit! Your fans LOVE you!",
+				eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2K for merch order" end,
 				onResolve = function(state)
 					state.Money = (state.Money or 0) + 5000
 					state.FameState = state.FameState or {}
@@ -2498,14 +2528,40 @@ RapperContentCreatorEvents.events = {
 				end,
 			},
 			{
-				text = "Full collection - ($10,000)",
+				text = "Full collection ($10,000)",
 				effects = { Happiness = 20, Money = -10000 },
 				setFlags = { has_merch = true, merch_brand = true },
 				feedText = "👕 Full collection launched! Hoodies, tees, hats! $25,000 in sales! BRAND BUILT!",
+				eligibility = function(state) return (state.Money or 0) >= 10000, "💸 Need $10K for full collection" end,
 				onResolve = function(state)
 					state.Money = (state.Money or 0) + 25000
 					state.Fame = (state.Fame or 0) + 10
 				end,
+			},
+			-- CRITICAL FIX: FREE option to prevent hard lock!
+			{
+				text = "Print-on-demand - no upfront cost!",
+				effects = { Happiness = 10 },
+				setFlags = { has_merch = true, pod_merch = true },
+				feedText = "👕 Print-on-demand merch live! Lower margins but zero risk! Fans can finally rep you!",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state.Money = (state.Money or 0) + math.random(500, 2000)
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("👕 Steady sales coming in! Not rich but building the brand!")
+					else
+						state.Money = (state.Money or 0) + math.random(100, 500)
+						state:AddFeed("👕 Few sales trickling in. Building slow but steady!")
+					end
+					state.FameState = state.FameState or {}
+					state.FameState.merchSales = (state.FameState.merchSales or 0) + 1
+				end,
+			},
+			{
+				text = "Not ready for merch yet",
+				effects = { Happiness = -2 },
+				feedText = "👕 Merch can wait. Focus on content first. Smart move maybe?",
 			},
 		},
 	},

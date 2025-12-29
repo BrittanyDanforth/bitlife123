@@ -1651,6 +1651,16 @@ Milestones.events = {
 					state.Flags.living_with_parents = nil
 				end,
 			},
+			-- CRITICAL FIX: FREE option to stay home longer
+			{ 
+				text = "Stay home to save more first", 
+				effects = { Happiness = 2, Money = 200 }, 
+				setFlags = { 
+					living_with_parents = true,
+					saving_for_apartment = true,
+				}, 
+				feedText = "🏠 Staying with family a bit longer. Smart financial move. No rush!",
+			},
 		},
 	},
 }
