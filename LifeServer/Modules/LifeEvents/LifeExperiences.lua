@@ -777,20 +777,21 @@ LifeExperiences.events = {
 				end,
 			},
 			{
-				text = "Deny everything",
-				effects = {},
-				feedText = "Playing innocent...",
-				onResolve = function(state)
-					local roll = math.random()
-					if roll < 0.3 then
-						state:AddFeed("😤 They couldn't prove it. You got away... for now.")
-					else
-						state:ModifyStat("Happiness", -8)
-						state.Money = (state.Money or 0) - math.random(500, 2000)
-						state:AddFeed("😤 Your reputation took a hit! They told everyone what you did.")
-					end
-				end,
-			},
+			text = "Deny everything",
+			effects = {},
+			feedText = "Playing innocent...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.3 then
+					state:AddFeed("😤 They couldn't prove it. You got away... for now.")
+				else
+					state:ModifyStat("Happiness", -8)
+					-- CRITICAL FIX: Prevent negative money
+					state.Money = math.max(0, (state.Money or 0) - math.random(500, 2000))
+					state:AddFeed("😤 Your reputation took a hit! They told everyone what you did.")
+				end
+			end,
+		},
 			{
 				text = "Make it right financially",
 				effects = { Money = -1000 },
@@ -881,22 +882,24 @@ LifeExperiences.events = {
 				text = "It's a former victim",
 				effects = {},
 				feedText = "Face to face with the past...",
-				onResolve = function(state)
-					local roll = math.random()
-					if roll < 0.3 then
-						state:ModifyStat("Happiness", -10)
-						state:ModifyStat("Health", -5)
-						state:AddFeed("👮 They attacked you! The confrontation was ugly. You deserved it.")
-					elseif roll < 0.6 then
-						state:ModifyStat("Happiness", -8)
-						state:AddFeed("👮 They called the cops. Old charges reopened. Lawyer fees incoming.")
-						state.Money = (state.Money or 0) - math.random(2000, 5000)
-					else
-						state:ModifyStat("Happiness", 5)
-						state:AddFeed("👮 They've forgiven you. A weight lifted from your conscience.")
-						state.Flags.redeemed = true
-					end
-				end,
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.3 then
+					state:ModifyStat("Happiness", -10)
+					state:ModifyStat("Health", -5)
+					state:AddFeed("👮 They attacked you! The confrontation was ugly. You deserved it.")
+				elseif roll < 0.6 then
+					state:ModifyStat("Happiness", -8)
+					state:AddFeed("👮 They called the cops. Old charges reopened. Lawyer fees incoming.")
+					-- CRITICAL FIX: Prevent negative money
+					state.Money = math.max(0, (state.Money or 0) - math.random(2000, 5000))
+				else
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("👮 They've forgiven you. A weight lifted from your conscience.")
+					state.Flags = state.Flags or {}
+					state.Flags.redeemed = true
+				end
+			end,
 			},
 			{
 				text = "A detective is digging into cold cases",
@@ -1259,15 +1262,16 @@ LifeExperiences.events = {
 				effects = { Happiness = -10 },
 				feedText = "⚡ Something embarrassing happened in front of everyone. People are talking.",
 			},
-			{
-				text = "Lost something valuable",
-				effects = { Happiness = -8 },
-				feedText = "⚡ Something important to you is just... gone. Can't find it anywhere.",
-				onResolve = function(state)
-					state.Money = (state.Money or 0) - math.random(200, 1000)
-					state:AddFeed("⚡ Had to replace it. Expensive and frustrating.")
-				end,
-			},
+		{
+			text = "Lost something valuable",
+			effects = { Happiness = -8 },
+			feedText = "⚡ Something important to you is just... gone. Can't find it anywhere.",
+			onResolve = function(state)
+				-- CRITICAL FIX: Prevent negative money
+				state.Money = math.max(0, (state.Money or 0) - math.random(200, 1000))
+				state:AddFeed("⚡ Had to replace it. Expensive and frustrating.")
+			end,
+		},
 		},
 	},
 	

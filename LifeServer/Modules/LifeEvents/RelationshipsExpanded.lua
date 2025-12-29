@@ -1420,8 +1420,11 @@ RelationshipsExpanded.events = {
 				if flags.good_friend or flags.helped_friend or flags.supportive then
 					if roll < 0.5 then
 						state:ModifyStat("Happiness", 5)
-						state.Money = (state.Money or 0) - math.random(100, 500)
+						-- CRITICAL FIX: Prevent negative money
+						local loanAmount = math.random(100, 500)
+						state.Money = math.max(0, (state.Money or 0) - loanAmount)
 						state:AddFeed("📱 They needed a small loan. You helped out. Good karma!")
+						state.Flags = state.Flags or {}
 						state.Flags.helped_friend = true
 					else
 						state:ModifyStat("Happiness", 8)
@@ -1430,7 +1433,9 @@ RelationshipsExpanded.events = {
 				else
 					-- Neutral friend asks for more
 					if roll < 0.3 then
-						state.Money = (state.Money or 0) - math.random(500, 2000)
+						-- CRITICAL FIX: Prevent negative money
+						local loanAmount = math.random(500, 2000)
+						state.Money = math.max(0, (state.Money or 0) - loanAmount)
 						state:ModifyStat("Happiness", -3)
 						state:AddFeed("📱 They needed a big loan. Felt pressured to help. Hope they pay back...")
 					else

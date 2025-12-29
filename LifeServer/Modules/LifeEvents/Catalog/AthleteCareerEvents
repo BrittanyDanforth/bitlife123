@@ -1141,32 +1141,35 @@ AthleteCareerEvents.events = {
 		end,
 		blockedByFlags = { in_prison = true },
 		
-		choices = {
-			{
-				text = "Invest big ($100,000)",
-				effects = {},
-				feedText = "High risk, high reward!",
-				onResolve = function(state)
-					state.Money = (state.Money or 0) - 100000
-					local roll = math.random(1, 100)
-					if roll <= 30 then
-						local returns = math.random(500000, 2000000)
-						state.Money = (state.Money or 0) + returns
-						state:ModifyStat("Happiness", 25)
-						state.Flags = state.Flags or {}
-						state.Flags.smart_investor = true
-						state:AddFeed(string.format("💼 JACKPOT! Investment returned $%d! Business genius!", returns))
-					elseif roll <= 60 then
-						local returns = math.random(80000, 150000)
-						state.Money = (state.Money or 0) + returns
-						state:ModifyStat("Happiness", 5)
-						state:AddFeed(string.format("💼 Decent returns. Got $%d back. Not bad!", returns))
-					else
-						state:ModifyStat("Happiness", -20)
-						state:AddFeed("💼 SCAM! Lost everything! Expensive lesson about business...")
-					end
-				end,
-			},
+	choices = {
+		{
+			text = "Invest big ($100,000)",
+			effects = {},
+			feedText = "High risk, high reward!",
+			-- CRITICAL FIX: Add per-choice eligibility check
+			eligibility = function(state) return (state.Money or 0) >= 100000, "💸 Need $100,000 to invest" end,
+			onResolve = function(state)
+				-- CRITICAL FIX: Prevent negative money
+				state.Money = math.max(0, (state.Money or 0) - 100000)
+				local roll = math.random(1, 100)
+				if roll <= 30 then
+					local returns = math.random(500000, 2000000)
+					state.Money = (state.Money or 0) + returns
+					state:ModifyStat("Happiness", 25)
+					state.Flags = state.Flags or {}
+					state.Flags.smart_investor = true
+					state:AddFeed(string.format("💼 JACKPOT! Investment returned $%d! Business genius!", returns))
+				elseif roll <= 60 then
+					local returns = math.random(80000, 150000)
+					state.Money = (state.Money or 0) + returns
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed(string.format("💼 Decent returns. Got $%d back. Not bad!", returns))
+				else
+					state:ModifyStat("Happiness", -20)
+					state:AddFeed("💼 SCAM! Lost everything! Expensive lesson about business...")
+				end
+			end,
+		},
 			{
 				text = "Pass - stick to what you know",
 				effects = { Smarts = 2 },

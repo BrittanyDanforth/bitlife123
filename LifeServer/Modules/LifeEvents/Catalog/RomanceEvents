@@ -1137,18 +1137,20 @@ local events = {
 					end
 				end,
 			},
-			{
-				index = 2,
-				text = "Budget-friendly road trip",
-				effects = { Happiness = 12 },
-				feedText = "🏝️ Road trip adventure! It's not about the destination, it's about the journey!",
-				onResolve = function(state)
-					state.Money = (state.Money or 0) - 500
-					if state.Relationships and state.Relationships.partner then
-						state.Relationships.partner.relationship = (state.Relationships.partner.relationship or 50) + 8
-					end
-				end,
-			},
+		{
+			index = 2,
+			text = "Budget-friendly road trip ($500)",
+			effects = { Happiness = 12 },
+			feedText = "🏝️ Road trip adventure! It's not about the destination, it's about the journey!",
+			-- CRITICAL FIX: Add eligibility check and prevent negative money
+			eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for road trip" end,
+			onResolve = function(state)
+				state.Money = math.max(0, (state.Money or 0) - 500)
+				if state.Relationships and state.Relationships.partner then
+					state.Relationships.partner.relationship = (state.Relationships.partner.relationship or 50) + 8
+				end
+			end,
+		},
 			{
 				index = 3,
 				text = "Staycation at home",
@@ -1415,38 +1417,42 @@ local events = {
 					end
 				end,
 			},
-			{
-				index = 2,
-				text = "Courthouse wedding - save the money",
-				effects = { Happiness = 10 },
-				feedText = "💒 Quick, simple, legal! You're married! Money saved for the future!",
-				onResolve = function(state)
-					state.Money = (state.Money or 0) - 500
-					state.Flags = state.Flags or {}
-					state.Flags.married = true
-					state.Flags.engaged = nil
-					if state.Relationships and state.Relationships.partner then
-						local partnerGender = state.Relationships.partner.gender or ""
-						state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
-					end
-				end,
-			},
-			{
-				index = 3,
-				text = "Elope - just us two",
-				effects = { Happiness = 15 },
-				feedText = "💒 Eloped to Vegas! Romantic and spontaneous! Families are... shocked.",
-				setFlags = { married = true },
-				onResolve = function(state)
-					state.Money = (state.Money or 0) - 2000
-					state.Flags = state.Flags or {}
-					state.Flags.engaged = nil
-					if state.Relationships and state.Relationships.partner then
-						local partnerGender = state.Relationships.partner.gender or ""
-						state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
-					end
-				end,
-			},
+		{
+			index = 2,
+			text = "Courthouse wedding - save the money ($500)",
+			effects = { Happiness = 10 },
+			feedText = "💒 Quick, simple, legal! You're married! Money saved for the future!",
+			-- CRITICAL FIX: Add eligibility check and prevent negative money
+			eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for courthouse wedding" end,
+			onResolve = function(state)
+				state.Money = math.max(0, (state.Money or 0) - 500)
+				state.Flags = state.Flags or {}
+				state.Flags.married = true
+				state.Flags.engaged = nil
+				if state.Relationships and state.Relationships.partner then
+					local partnerGender = state.Relationships.partner.gender or ""
+					state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
+				end
+			end,
+		},
+		{
+			index = 3,
+			text = "Elope - just us two ($2,000)",
+			effects = { Happiness = 15 },
+			feedText = "💒 Eloped to Vegas! Romantic and spontaneous! Families are... shocked.",
+			setFlags = { married = true },
+			-- CRITICAL FIX: Add eligibility check and prevent negative money
+			eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2,000 for Vegas elopement" end,
+			onResolve = function(state)
+				state.Money = math.max(0, (state.Money or 0) - 2000)
+				state.Flags = state.Flags or {}
+				state.Flags.engaged = nil
+				if state.Relationships and state.Relationships.partner then
+					local partnerGender = state.Relationships.partner.gender or ""
+					state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
+				end
+			end,
+		},
 		},
 	},
 	
