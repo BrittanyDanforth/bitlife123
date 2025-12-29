@@ -485,8 +485,8 @@ TravelEvents.events = {
 				end,
 			},
 		{ text = "Glamping (fancy camping) ($300)", effects = { Money = -300, Happiness = 10, Health = 2 }, feedText = "⛺ Nature with amenities! Best of both worlds!", eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for glamping" end },
-		{ text = "Not outdoorsy (free)", effects = { Happiness = 1 }, feedText = "⛺ Hotels exist for a reason. Pass." },
-		{ text = "Backyard camping (free)", effects = { Happiness = 4, Health = 1 }, feedText = "⛺ Set up a tent in the backyard. Stars and fresh air!" },
+		{ text = "Not outdoorsy", effects = { Happiness = 1 }, feedText = "⛺ Hotels exist for a reason. Pass." },
+		{ text = "Backyard camping", effects = { Happiness = 4, Health = 1 }, feedText = "⛺ Set up a tent in the backyard. Stars and fresh air!" },
 		},
 	},
 	
@@ -551,9 +551,9 @@ TravelEvents.events = {
 		
 		choices = {
 		{ text = "Try a new restaurant ($40)", effects = { Money = -40, Happiness = 6 }, feedText = "🗺️ Hidden gem! Best meal in months!", eligibility = function(state) return (state.Money or 0) >= 40, "💸 Need $40" end },
-		{ text = "Explore a park you've never visited (free)", effects = { Health = 3, Happiness = 5 }, feedText = "🗺️ Can't believe you never came here! Beautiful!" },
+		{ text = "Explore a park you've never visited", effects = { Health = 3, Happiness = 5 }, feedText = "🗺️ Can't believe you never came here! Beautiful!" },
 		{ text = "Check out a local attraction ($20)", effects = { Money = -20, Smarts = 2, Happiness = 4 }, feedText = "🗺️ Tourist in your own town! Actually really cool!", eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20" end },
-			{ text = "Take a different route home (free)", effects = { Happiness = 3, Smarts = 1 }, feedText = "🗺️ Found a great shortcut/view/shop you never knew!" },
+			{ text = "Take a different route home", effects = { Happiness = 3, Smarts = 1 }, feedText = "🗺️ Found a great shortcut/view/shop you never knew!" },
 		},
 	},
 	{

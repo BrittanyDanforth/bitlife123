@@ -52,7 +52,7 @@ SeasonalEvents.events = {
 		{ text = "Quiet cozy celebration ($50)", effects = { Money = -50, Happiness = 10, Health = 2 }, feedText = "🎄 Peaceful holiday. No drama. Just warmth and comfort.", eligibility = function(state) return (state.Money or 0) >= 50, "Can't afford this" end },
 		{ text = "Volunteer/give back ($30)", effects = { Happiness = 12, Money = -30 }, setFlags = { holiday_volunteer = true }, feedText = "🎄 Helping others made it meaningful! True spirit!", eligibility = function(state) return (state.Money or 0) >= 30, "Can't afford donation" end },
 			{ text = "Working through the holidays", effects = { Happiness = -4, Money = 100 }, feedText = "🎄 Missed celebrations. Holiday pay but empty feeling.", eligibility = function(state) return state.CurrentJob ~= nil, "You don't have a job" end },
-			{ text = "Simple celebration at home (free)", effects = { Happiness = 6 }, feedText = "🎄 Low-key but nice. Watched movies and relaxed." },
+			{ text = "Simple celebration at home", effects = { Happiness = 6 }, feedText = "🎄 Low-key but nice. Watched movies and relaxed." },
 		},
 	},
 	{
@@ -94,8 +94,8 @@ SeasonalEvents.events = {
 				end,
 			},
 			{ text = "Intimate gathering ($20)", effects = { Happiness = 8, Money = -20 }, feedText = "🎆 Small circle, big laughs. Perfect way to end the year.", eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20" end },
-			{ text = "Reflect and set intentions (free)", effects = { Happiness = 6, Smarts = 3 }, setFlags = { has_resolutions = true }, feedText = "🎆 Mindful new year. Goals set. Feeling hopeful!" },
-			{ text = "Asleep before midnight (free)", effects = { Happiness = 4, Health = 3 }, feedText = "🎆 Slept through it. New year started with good rest!" },
+			{ text = "Reflect and set intentions", effects = { Happiness = 6, Smarts = 3 }, setFlags = { has_resolutions = true }, feedText = "🎆 Mindful new year. Goals set. Feeling hopeful!" },
+			{ text = "Asleep before midnight", effects = { Happiness = 4, Health = 3 }, feedText = "🎆 Slept through it. New year started with good rest!" },
 		},
 	},
 	{
@@ -234,7 +234,7 @@ SeasonalEvents.events = {
 			},
 			{ text = "Stay indoors", effects = { Happiness = 1, Health = 1 }, feedText = "🤧 Missing the nice weather but at least not sneezing." },
 			{ text = "Natural remedies ($30)", effects = { Happiness = 4, Health = 2, Money = -30 }, feedText = "🤧 Local honey, neti pot, supplements. Actually helping!", eligibility = function(state) return (state.Money or 0) >= 30, "💸 Need $30" end },
-		{ text = "Suffer through it (free)", effects = { Happiness = -2, Health = -1 }, feedText = "🤧 Sneezing and miserable but saving money." },
+		{ text = "Suffer through it", effects = { Happiness = -2, Health = -1 }, feedText = "🤧 Sneezing and miserable but saving money." },
 		},
 	},
 	
@@ -283,7 +283,7 @@ SeasonalEvents.events = {
 				end,
 			},
 			{ text = "Staycation ($50)", effects = { Happiness = 8, Money = -50, Health = 2 }, feedText = "☀️ Local exploration! Saved money, still relaxed!", eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50" end },
-		{ text = "Enjoy local parks (free)", effects = { Happiness = 6, Health = 2 }, feedText = "☀️ Free fun in the sun! Parks and picnics!" },
+		{ text = "Enjoy local parks", effects = { Happiness = 6, Health = 2 }, feedText = "☀️ Free fun in the sun! Parks and picnics!" },
 			{ 
 				-- CRITICAL FIX: Show price and add eligibility check
 				text = "Summer camp/program ($300)", 
@@ -413,8 +413,8 @@ SeasonalEvents.events = {
 				end,
 			},
 			{ text = "Hand out candy ($30)", effects = { Money = -30, Happiness = 6 }, feedText = "🎃 Cute trick-or-treaters! Spreading joy!", eligibility = function(state) return (state.Money or 0) >= 30, "💸 Need $30 for candy" end },
-			{ text = "Haunted house/scary movies (free)", effects = { Happiness = 8 }, feedText = "🎃 Terrified and loving it! Adrenaline rush!" },
-			{ text = "Skip Halloween (free)", effects = { Happiness = 2 }, feedText = "🎃 Not into it this year. Quiet night in." },
+			{ text = "Haunted house/scary movies", effects = { Happiness = 8 }, feedText = "🎃 Terrified and loving it! Adrenaline rush!" },
+			{ text = "Skip Halloween", effects = { Happiness = 2 }, feedText = "🎃 Not into it this year. Quiet night in." },
 		},
 	},
 	{
@@ -454,7 +454,7 @@ SeasonalEvents.events = {
 			},
 			{ text = "Be a guest ($20)", effects = { Happiness = 8, Money = -20 }, feedText = "🦃 Just showed up with pie! No cooking stress! Smart!", eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20 for pie" end },
 			{ text = "Friendsgiving ($40)", effects = { Happiness = 10, Money = -40 }, setFlags = { friendsgiving = true }, feedText = "🦃 Chosen family! No drama! Best Thanksgiving!", eligibility = function(state) return (state.Money or 0) >= 40, "💸 Need $40" end },
-			{ text = "Volunteering (free)", effects = { Happiness = 10 }, setFlags = { thanksgiving_volunteer = true }, feedText = "🦃 Serving others! True gratitude in action!" },
+			{ text = "Volunteering", effects = { Happiness = 10 }, setFlags = { thanksgiving_volunteer = true }, feedText = "🦃 Serving others! True gratitude in action!" },
 		},
 	},
 	{
@@ -522,7 +522,7 @@ SeasonalEvents.events = {
 			},
 			{ text = "Treat yourself day ($75)", effects = { Money = -75, Happiness = 10, Health = 2 }, feedText = "🎂 Self-care birthday! Spoiled yourself! Perfect day!", eligibility = function(state) return (state.Money or 0) >= 75, "💸 Need $75" end },
 			{ text = "Quiet celebration ($20)", effects = { Happiness = 6, Money = -20 }, feedText = "🎂 Low key but nice. Cake and close ones.", eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20" end },
-			{ text = "Just enjoy your day (free)", effects = { Happiness = 4 }, feedText = "🎂 Simple but nice. Birthday vibes." },
+			{ text = "Just enjoy your day", effects = { Happiness = 4 }, feedText = "🎂 Simple but nice. Birthday vibes." },
 			{ text = "Work through it", effects = { Happiness = -4, Money = 50 }, feedText = "🎂 Forgot own birthday. Just another day. Sad." },
 		},
 	},
@@ -637,7 +637,7 @@ SeasonalEvents.events = {
 			},
 			{ text = "Forgot the anniversary", effects = { Happiness = -8 }, setFlags = { forgot_anniversary = true }, feedText = "💕 OH NO! Completely forgot! In the doghouse now!" },
 			{ text = "Simple but meaningful ($30)", effects = { Happiness = 8, Money = -30 }, feedText = "💕 Thoughtful gift and quality time. Love isn't expensive.", eligibility = function(state) return (state.Money or 0) >= 30, "💸 Need $30" end },
-			{ text = "Homemade celebration (free)", effects = { Happiness = 6 }, feedText = "💕 Cooked dinner together! Quality time over expense!" },
+			{ text = "Homemade celebration", effects = { Happiness = 6 }, feedText = "💕 Cooked dinner together! Quality time over expense!" },
 		},
 	},
 	{
@@ -681,7 +681,7 @@ SeasonalEvents.events = {
 			},
 			{ text = "Galentine's/Palentine's ($20)", effects = { Money = -20, Happiness = 8 }, feedText = "💝 Celebrated with friends! Who needs romance? Fun!", eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20" end },
 			{ text = "Self-love day ($30)", effects = { Money = -30, Happiness = 6, Health = 2 }, feedText = "💝 Treated yourself! Self-care is important!", eligibility = function(state) return (state.Money or 0) >= 30, "💸 Need $30" end },
-			{ text = "Ignore it completely (free)", effects = { Happiness = 2 }, feedText = "💝 Hallmark holiday. Didn't participate. Saved money." },
+			{ text = "Ignore it completely", effects = { Happiness = 2 }, feedText = "💝 Hallmark holiday. Didn't participate. Saved money." },
 		},
 	},
 }

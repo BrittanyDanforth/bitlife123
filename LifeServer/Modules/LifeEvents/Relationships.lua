@@ -533,7 +533,7 @@ Relationships.events = {
 			{ text = "Throw a celebration ($200)", effects = { Happiness = 10, Money = -200 }, feedText = "You celebrated together!",
 				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Can't afford a celebration ($200 needed)" end,
 			},
-			{ text = "Heartfelt congratulations (Free)", effects = { Happiness = 8 }, feedText = "Your sincere joy meant everything to them." },
+			{ text = "Heartfelt congratulations", effects = { Happiness = 8 }, feedText = "Your sincere joy meant everything to them." },
 			{ text = "Feel a bit jealous", effects = { Happiness = -3 }, setFlags = { competitive_with_partner = true }, feedText = "You struggled with mixed feelings." },
 		},
 	},

@@ -483,13 +483,13 @@ Milestones.events = {
 				feedText = "Finally done with school!",
 			},
 			{
-				text = "Already missing it (free)",
+				text = "Already missing it",
 				effects = { Happiness = 8, Smarts = 5 },
 				setFlags = { college_grad = true, bachelor_degree = true },
 				feedText = "The college years were special.",
 			},
 			{
-				text = "Grad school with scholarship! (free)",
+				text = "Grad school with scholarship!",
 				effects = { Smarts = 8, Happiness = 5 },
 				setFlags = { college_grad = true, bachelor_degree = true, grad_school = true, pursuing_graduate = true, has_scholarship = true },
 				feedText = "Your grades earned you a full scholarship!",
@@ -1426,9 +1426,9 @@ Milestones.events = {
 
 		choices = {
 			{ text = "HUGE birthday party! ($100)", effects = { Happiness = 15, Money = -100 }, setFlags = { party_person = true }, feedText = "The party of the decade! Everyone came!", eligibility = function(state) return (state.Money or 0) >= 100, "💸 Family needs $100 for the party" end },
-			{ text = "Special trip with family! (free)", effects = { Happiness = 12, Health = 2 }, setFlags = { family_oriented = true }, feedText = "Made amazing memories with the family!" },
-			{ text = "Get a pet as a gift! (free)", effects = { Happiness = 18 }, setFlags = { has_pet = true, animal_lover = true }, feedText = "THE BEST BIRTHDAY GIFT EVER!" },
-			{ text = "New gaming console! (free)", effects = { Happiness = 14, Smarts = 1 }, setFlags = { gamer = true }, feedText = "Hours of gaming ahead! Best gift!" },
+			{ text = "Special trip with family!", effects = { Happiness = 12, Health = 2 }, setFlags = { family_oriented = true }, feedText = "Made amazing memories with the family!" },
+			{ text = "Get a pet as a gift!", effects = { Happiness = 18 }, setFlags = { has_pet = true, animal_lover = true }, feedText = "THE BEST BIRTHDAY GIFT EVER!" },
+			{ text = "New gaming console!", effects = { Happiness = 14, Smarts = 1 }, setFlags = { gamer = true }, feedText = "Hours of gaming ahead! Best gift!" },
 		},
 	},
 	{

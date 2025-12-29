@@ -371,8 +371,8 @@ FinancialEvents.events = {
 		choices = {
 		{ text = "Start automatic savings ($100)", effects = { Money = -100, Happiness = 4, Smarts = 3 }, setFlags = { has_emergency_fund = true }, feedText = "🏦 $100 to start. Future you will thank present you!", eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100" end },
 		{ text = "Save aggressively ($500)", effects = { Money = -500, Happiness = 2, Smarts = 4 }, setFlags = { has_emergency_fund = true }, feedText = "🏦 Big initial deposit. Financial responsibility!", eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500" end },
-		{ text = "Can't afford to save right now (free)", effects = { Happiness = -2 }, feedText = "🏦 Living paycheck to paycheck. Tough situation." },
-		{ text = "Track spending instead (free)", effects = { Smarts = 2 }, feedText = "🏦 Started budgeting. Small steps matter!" },
+		{ text = "Can't afford to save right now", effects = { Happiness = -2 }, feedText = "🏦 Living paycheck to paycheck. Tough situation." },
+		{ text = "Track spending instead", effects = { Smarts = 2 }, feedText = "🏦 Started budgeting. Small steps matter!" },
 		},
 	},
 	
@@ -672,8 +672,8 @@ FinancialEvents.events = {
 		choices = {
 		{ text = "Max out 401k contribution ($300)", effects = { Money = -300, Happiness = 3, Smarts = 4 }, setFlags = { retirement_saver = true }, feedText = "🏖️ Future you will live well! Compound interest magic!", eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300" end },
 		{ text = "Open an IRA ($100)", effects = { Money = -100, Happiness = 2, Smarts = 3 }, setFlags = { has_ira = true }, feedText = "🏖️ Tax advantages! Smart money move!", eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100" end },
-		{ text = "Put it off for now (free)", effects = { Happiness = 2 }, feedText = "🏖️ Future problem. Present you wants fun." },
-		{ text = "Can't afford retirement savings (free)", effects = { Happiness = -2 }, feedText = "🏖️ Barely making it now. Retirement seems impossible." },
+		{ text = "Put it off for now", effects = { Happiness = 2 }, feedText = "🏖️ Future problem. Present you wants fun." },
+		{ text = "Can't afford retirement savings", effects = { Happiness = -2 }, feedText = "🏖️ Barely making it now. Retirement seems impossible." },
 		},
 	},
 	
@@ -748,7 +748,7 @@ FinancialEvents.events = {
 		{ text = "Student loans calling ($200)", effects = { Happiness = -4, Money = -200 }, setFlags = { has_student_loans = true }, feedText = "💳 Monthly payment due. Education costs never end.", eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for payment" end },
 		{ text = "Medical debt ($300)", effects = { Happiness = -5, Money = -300 }, setFlags = { medical_debt = true }, feedText = "💳 Got sick AND went broke. American healthcare.", eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for payment" end },
 		{ text = "Consolidate and strategize ($100)", effects = { Happiness = 3, Smarts = 3, Money = -100 }, feedText = "💳 Working with financial advisor. Plan in place.", eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for advisor" end },
-		{ text = "Ignore and hope it goes away (free)", effects = { Happiness = -2 }, setFlags = { ignoring_debt = true }, feedText = "💳 Head in the sand. This won't end well." },
+		{ text = "Ignore and hope it goes away", effects = { Happiness = -2 }, setFlags = { ignoring_debt = true }, feedText = "💳 Head in the sand. This won't end well." },
 		},
 	},
 	{

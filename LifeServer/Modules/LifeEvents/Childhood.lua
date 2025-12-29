@@ -1902,7 +1902,7 @@ Childhood.events = {
 		
 		choices = {
 		{ text = "Big party with all my friends (parents pay)", effects = { Happiness = 10 }, setFlags = { party_person = true }, feedText = "Best birthday ever! So many friends and presents!" },
-		{ text = "Small family celebration (free)", effects = { Happiness = 7 }, setFlags = { family_oriented = true }, feedText = "Cozy and special with the people who matter most." },
+		{ text = "Small family celebration", effects = { Happiness = 7 }, setFlags = { family_oriented = true }, feedText = "Cozy and special with the people who matter most." },
 		{ text = "Special outing instead (parents pay)", effects = { Happiness = 8 }, feedText = "An adventure for your birthday! So memorable." },
 		{ text = "Themed costume party (parents pay)", effects = { Happiness = 9, Looks = 2 }, setFlags = { loves_costumes = true }, feedText = "Everyone dressed up! It was magical." },
 		},

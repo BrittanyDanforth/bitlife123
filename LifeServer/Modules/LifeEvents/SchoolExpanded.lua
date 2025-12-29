@@ -645,7 +645,7 @@ SchoolExpanded.events = {
 		
 		choices = {
 			{
-				text = "Roommate issues (free)",
+				text = "Roommate issues",
 				effects = {},
 				feedText = "Dealing with roommate problems...",
 				onResolve = function(state)
@@ -666,7 +666,7 @@ SchoolExpanded.events = {
 					end
 				end,
 			},
-			{ text = "Dorm floor bonding (free)", effects = { Happiness = 7 }, setFlags = { floor_family = true }, feedText = "🛏️ Whole floor is like family. Late night hangs!" },
+			{ text = "Dorm floor bonding", effects = { Happiness = 7 }, setFlags = { floor_family = true }, feedText = "🛏️ Whole floor is like family. Late night hangs!" },
 			{ 
 				text = "Need a single room ($500)", 
 				effects = { Happiness = 4, Money = -500 }, 
@@ -692,9 +692,9 @@ SchoolExpanded.events = {
 		requiresFlags = { college_bound = true },
 		
 		choices = {
-			{ text = "Follow your passion (free)", effects = { Happiness = 8, Smarts = 4 }, setFlags = { passion_major = true }, feedText = "📚 Studying what you love! Classes are exciting!" },
-			{ text = "Practical/high-paying field (free)", effects = { Happiness = 2, Smarts = 4, Money = 50 }, setFlags = { practical_major = true }, feedText = "📚 Engineering/Business/Medicine - future financial security." },
-			{ text = "Undeclared - need more time (free)", effects = { Happiness = 4, Smarts = 2 }, feedText = "📚 Exploring options. No need to rush this decision." },
+			{ text = "Follow your passion", effects = { Happiness = 8, Smarts = 4 }, setFlags = { passion_major = true }, feedText = "📚 Studying what you love! Classes are exciting!" },
+			{ text = "Practical/high-paying field", effects = { Happiness = 2, Smarts = 4, Money = 50 }, setFlags = { practical_major = true }, feedText = "📚 Engineering/Business/Medicine - future financial security." },
+			{ text = "Undeclared - need more time", effects = { Happiness = 4, Smarts = 2 }, feedText = "📚 Exploring options. No need to rush this decision." },
 			{ 
 				text = "Change major three times ($200)", 
 				effects = { Happiness = 2, Money = -200 }, 

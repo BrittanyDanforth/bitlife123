@@ -2132,7 +2132,7 @@ Random.events = {
 			{ text = "Adopt a dog ($500)", effects = { Happiness = 15, Money = -500, Health = 3 }, setFlags = { has_pet = true, has_dog = true }, feedText = "You adopted a dog! Best friend for life.", eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for dog adoption" end },
 			{ text = "Adopt a cat ($300)", effects = { Happiness = 12, Money = -300 }, setFlags = { has_pet = true, has_cat = true }, feedText = "You got a cat! Independent but loving.", eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for cat adoption" end },
 			{ text = "Get a small pet ($100)", effects = { Happiness = 8, Money = -100 }, setFlags = { has_pet = true }, feedText = "You got a small pet! Easy to care for.", eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for small pet" end },
-			{ text = "Not ready for a pet yet (free)", effects = { Happiness = -2 }, feedText = "Maybe someday. Pets are a big responsibility." },
+			{ text = "Not ready for a pet yet", effects = { Happiness = -2 }, feedText = "Maybe someday. Pets are a big responsibility." },
 		},
 	},
 	{

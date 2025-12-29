@@ -173,7 +173,7 @@ AdultExpanded.events = {
 				feedText = "Quit job, dyed hair, bought something stupid. Felt good briefly.",
 				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Can't afford impulsive spending" end,
 			},
-			{ text = "Trust the process - keep going (free)", effects = { Happiness = 3, Smarts = 2 }, setFlags = { patient_growth = true }, feedText = "Everyone goes through this. Stay the course." },
+			{ text = "Trust the process - keep going", effects = { Happiness = 3, Smarts = 2 }, setFlags = { patient_growth = true }, feedText = "Everyone goes through this. Stay the course." },
 			{ 
 				text = "Completely change direction ($300)", 
 				effects = { Happiness = 5, Money = -300 }, 
@@ -188,7 +188,7 @@ AdultExpanded.events = {
 				feedText = "Working through it with professional help.",
 				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Can't afford therapy right now" end,
 			},
-			{ text = "Distract yourself from thinking about it (free)", effects = { Happiness = -2 }, feedText = "Video games, partying, anything but thinking." },
+			{ text = "Distract yourself from thinking about it", effects = { Happiness = -2 }, feedText = "Video games, partying, anything but thinking." },
 		},
 	},
 	{
@@ -227,7 +227,7 @@ AdultExpanded.events = {
 				eligibility = function(state) return (state.Money or 0) >= 75, "💸 Can't afford income-based payments ($75)" end,
 			},
 			{ 
-				text = "Defer payments for now (free)", 
+				text = "Defer payments for now", 
 				effects = { Happiness = -3 }, 
 				setFlags = { deferred_loans = true }, 
 				feedText = "Deferred for now. Interest keeps growing though.",
@@ -532,11 +532,11 @@ AdultExpanded.events = {
 		tags = { "career", "setback", "challenge" },
 		
 		choices = {
-			{ text = "Passed over for promotion (free)", effects = { Happiness = -6 }, setFlags = { passed_over = true }, feedText = "Less qualified person got it. Politics." },
-			{ text = "Project failed publicly (free)", effects = { Happiness = -7, Smarts = 2 }, setFlags = { public_failure = true }, feedText = "Big failure everyone saw. Reputation hurt." },
-			{ text = "Company restructuring - demoted (free)", effects = { Happiness = -8 }, setFlags = { demoted = true }, feedText = "Through no fault of yours. Still humiliating." },
-			{ text = "Burnout affecting performance (free)", effects = { Happiness = -5, Health = -4 }, setFlags = { burnout = true }, feedText = "Can't perform at your best. Exhausted." },
-			{ text = "Industry changing - skills outdated (free)", effects = { Happiness = -4, Smarts = -2 }, setFlags = { outdated_skills = true }, feedText = "World moved on. Need to upskill or die." },
+			{ text = "Passed over for promotion", effects = { Happiness = -6 }, setFlags = { passed_over = true }, feedText = "Less qualified person got it. Politics." },
+			{ text = "Project failed publicly", effects = { Happiness = -7, Smarts = 2 }, setFlags = { public_failure = true }, feedText = "Big failure everyone saw. Reputation hurt." },
+			{ text = "Company restructuring - demoted", effects = { Happiness = -8 }, setFlags = { demoted = true }, feedText = "Through no fault of yours. Still humiliating." },
+			{ text = "Burnout affecting performance", effects = { Happiness = -5, Health = -4 }, setFlags = { burnout = true }, feedText = "Can't perform at your best. Exhausted." },
+			{ text = "Industry changing - skills outdated", effects = { Happiness = -4, Smarts = -2 }, setFlags = { outdated_skills = true }, feedText = "World moved on. Need to upskill or die." },
 		},
 	},
 	{
@@ -958,7 +958,7 @@ AdultExpanded.events = {
 		-- CRITICAL: Random fitness outcome
 		choices = {
 			{
-				text = "Commit to a strict routine (free)",
+				text = "Commit to a strict routine",
 				effects = {},
 				feedText = "Weeks of dedication...",
 				onResolve = function(state)
@@ -978,7 +978,7 @@ AdultExpanded.events = {
 				end,
 			},
 			{
-				text = "Try but keep falling off (free)",
+				text = "Try but keep falling off",
 				effects = { Health = 1, Happiness = -2 },
 				setFlags = { inconsistent_fitness = true },
 				feedText = "Start-stop cycle. Frustrating.",
@@ -1250,7 +1250,7 @@ AdultExpanded.events = {
 				feedText = "This is wedding #5 this year. Your wallet is crying.",
 				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Can't afford another wedding gift ($100)" end,
 			},
-			{ text = "Skip it - can't afford another (free)", effects = { Happiness = -2 }, feedText = "RSVP: No. Bank account thanks you." },
+			{ text = "Skip it - can't afford another", effects = { Happiness = -2 }, feedText = "RSVP: No. Bank account thanks you." },
 		},
 	},
 	{
@@ -1375,9 +1375,9 @@ AdultExpanded.events = {
 				feedText = "Quit job, moved cities, started over. Bold move.",
 				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Can't afford major change ($500)" end,
 			},
-			{ text = "Have an affair (free)", effects = { Happiness = 3 }, setFlags = { affair = true }, feedText = "Made a terrible choice. Exciting but destructive." },
-			{ text = "Channel it productively (free)", effects = { Happiness = 6, Health = 4, Smarts = 2 }, setFlags = { productive_midlife = true }, feedText = "New fitness routine, new hobby, better version of you." },
-			{ text = "Accept and appreciate what you have (free)", effects = { Happiness = 8, Smarts = 3 }, setFlags = { grateful_midlife = true }, feedText = "Gratitude over regret. Peace with the journey." },
+			{ text = "Have an affair", effects = { Happiness = 3 }, setFlags = { affair = true }, feedText = "Made a terrible choice. Exciting but destructive." },
+			{ text = "Channel it productively", effects = { Happiness = 6, Health = 4, Smarts = 2 }, setFlags = { productive_midlife = true }, feedText = "New fitness routine, new hobby, better version of you." },
+			{ text = "Accept and appreciate what you have", effects = { Happiness = 8, Smarts = 3 }, setFlags = { grateful_midlife = true }, feedText = "Gratitude over regret. Peace with the journey." },
 		},
 	},
 	{
@@ -1402,10 +1402,10 @@ AdultExpanded.events = {
 				feedText = "Helping them more. It's exhausting but important.",
 				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Can't afford caregiver expenses ($200)" end,
 			},
-			{ text = "Worried about their health (free)", effects = { Happiness = -5 }, setFlags = { worried_about_parents = true }, feedText = "Every phone call makes your heart drop." },
-			{ text = "Having difficult conversations (free)", effects = { Happiness = -3, Smarts = 2 }, feedText = "End of life planning, living situations. Hard talks." },
-			{ text = "Distant - not involved (free)", effects = { Happiness = -2 }, setFlags = { distant_from_parents = true }, feedText = "Guilty but not close enough to help." },
-			{ text = "They're healthy and independent (free)", effects = { Happiness = 5 }, setFlags = { healthy_parents = true }, feedText = "Lucky. They're doing great for their age." },
+			{ text = "Worried about their health", effects = { Happiness = -5 }, setFlags = { worried_about_parents = true }, feedText = "Every phone call makes your heart drop." },
+			{ text = "Having difficult conversations", effects = { Happiness = -3, Smarts = 2 }, feedText = "End of life planning, living situations. Hard talks." },
+			{ text = "Distant - not involved", effects = { Happiness = -2 }, setFlags = { distant_from_parents = true }, feedText = "Guilty but not close enough to help." },
+			{ text = "They're healthy and independent", effects = { Happiness = 5 }, setFlags = { healthy_parents = true }, feedText = "Lucky. They're doing great for their age." },
 		},
 	},
 	{
@@ -1506,7 +1506,7 @@ AdultExpanded.events = {
 				end,
 			},
 			{
-				text = "Just relax at home (free)",
+				text = "Just relax at home",
 				effects = { Happiness = 4, Health = 2 },
 				feedText = "✈️ Sometimes the best vacation is no vacation. Rest and recharge at home!",
 			},
@@ -1616,7 +1616,7 @@ AdultExpanded.events = {
 				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Can't afford cat adoption ($200)" end,
 			},
 			{
-				text = "Not ready for that commitment (free)",
+				text = "Not ready for that commitment",
 				effects = { Happiness = 1 },
 				feedText = "Pets are a lot of responsibility. Not now.",
 			},

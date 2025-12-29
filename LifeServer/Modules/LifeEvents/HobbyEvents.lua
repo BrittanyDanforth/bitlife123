@@ -204,7 +204,7 @@ HobbyEvents.events = {
 				end,
 			},
 			{
-				text = "Maybe just this one item (Free)",
+				text = "Maybe just this one item",
 				effects = { Happiness = 2 },
 				feedText = "🏆 Nice find, but collecting's not your thing.",
 			},
@@ -238,17 +238,15 @@ HobbyEvents.events = {
 		choices = {
 			{
 				text = "Yes! I want to learn an instrument!",
-				effects = { Happiness = 5, Money = -100 },
+				effects = { Happiness = 5 },
 				setFlags = { pursuing_music = true, started_music_hobby = true },
-				feedText = "🎵 You bought a beginner instrument! Time to learn!",
-				eligibility = function(state) return (state.Money or 0) >= 100, "Can't afford an instrument" end,
+				feedText = "🎵 You found a cheap used instrument online! Time to learn!",
 			},
 			{
-				text = "Maybe some singing lessons",
-				effects = { Happiness = 5, Money = -50 },
+				text = "Try singing",
+				effects = { Happiness = 5 },
 				setFlags = { pursuing_music = true, pursuing_singing = true },
-				feedText = "🎵 You signed up for voice lessons! La la la!",
-				eligibility = function(state) return (state.Money or 0) >= 50, "Can't afford lessons" end,
+				feedText = "🎵 YouTube tutorials and practice! La la la!",
 			},
 			{
 				text = "Just enjoy listening for now",
@@ -1041,7 +1039,7 @@ HobbyEvents.events = {
 			},
 			{ text = "Small craft project ($20)", effects = { Money = -20, Happiness = 6, Smarts = 2 }, feedText = "🔨 Handmade creation! Cute and personal!", eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20 for supplies" end },
 			{ text = "Furniture restoration ($40)", effects = { Money = -40, Happiness = 8 }, feedText = "🔨 Old made new! Upcycling success! Sustainable!", eligibility = function(state) return (state.Money or 0) >= 40, "💸 Need $40 for supplies" end },
-			{ text = "Watch DIY tutorials (free)", effects = { Smarts = 3, Happiness = 2 }, feedText = "🔨 Learning skills online! Free education!" },
+			{ text = "Watch DIY tutorials", effects = { Smarts = 3, Happiness = 2 }, feedText = "🔨 Learning skills online! Free education!" },
 		},
 	},
 	{

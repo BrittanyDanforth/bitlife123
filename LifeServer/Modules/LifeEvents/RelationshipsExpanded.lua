@@ -247,9 +247,9 @@ RelationshipsExpanded.events = {
 		choices = {
 		{ text = "Grand romantic gesture ($500)", effects = { Money = -500, Happiness = 12 }, setFlags = { romantic = true }, feedText = "💑 Surprised them with something amazing! They cried happy tears!", eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for grand gesture" end },
 		{ text = "Simple but meaningful ($50)", effects = { Money = -50, Happiness = 8 }, feedText = "💑 Quality time together. That's all that matters.", eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50" end },
-		{ text = "Completely forget (free)", effects = { Happiness = -10 }, setFlags = { forgot_anniversary = true }, feedText = "💑 Oh no. They remember. You didn't. TROUBLE." },
+		{ text = "Completely forget", effects = { Happiness = -10 }, setFlags = { forgot_anniversary = true }, feedText = "💑 Oh no. They remember. You didn't. TROUBLE." },
 		{ text = "Re-create your first date ($100)", effects = { Money = -100, Happiness = 10 }, feedText = "💑 Nostalgic and romantic! They loved it!", eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100" end },
-		{ text = "Homemade card and cuddles (free)", effects = { Happiness = 6 }, feedText = "💑 It's the thought that counts! Sweet and heartfelt." },
+		{ text = "Homemade card and cuddles", effects = { Happiness = 6 }, feedText = "💑 It's the thought that counts! Sweet and heartfelt." },
 		},
 	},
 	{
@@ -491,7 +491,7 @@ RelationshipsExpanded.events = {
 		{ text = "Stay calm and delegate ($500)", effects = { Happiness = 2, Money = -500 }, feedText = "📋 Wedding planner, family help. Manageable.", eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500" end },
 		{ text = "Elope instead ($200)", effects = { Happiness = 8, Money = -200 }, setFlags = { eloped = true, married = true }, feedText = "📋 Forget all this! Just the two of you! MARRIED!", eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200" end },
 		{ text = "Push through together ($700)", effects = { Happiness = 4, Money = -700 }, feedText = "📋 Stressful but you're doing it as a team. That matters.", eligibility = function(state) return (state.Money or 0) >= 700, "💸 Need $700" end },
-		{ text = "Courthouse wedding (free)", effects = { Happiness = 5 }, setFlags = { courthouse_wedding = true, married = true }, feedText = "📋 Just you, a judge, and your love. Simple and beautiful." },
+		{ text = "Courthouse wedding", effects = { Happiness = 5 }, setFlags = { courthouse_wedding = true, married = true }, feedText = "📋 Just you, a judge, and your love. Simple and beautiful." },
 		},
 	},
 	

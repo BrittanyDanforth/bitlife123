@@ -2268,7 +2268,7 @@ RoyaltyEvents.LifeEvents = {
 		cooldown = 4,
 		choices = {
 		{ text = "Grand public celebration ($500K)", effects = { Happiness = 15, Money = -500000 }, royaltyEffect = { popularity = 15 }, feed = "The nation celebrated!", eligibility = function(state) return (state.Money or 0) >= 500000, "💸 Need $500K for celebration" end },
-		{ text = "Intimate family gathering (free)", effects = { Happiness = 20 }, royaltyEffect = { popularity = 5 }, feed = "A private celebration." },
+		{ text = "Intimate family gathering", effects = { Happiness = 20 }, royaltyEffect = { popularity = 5 }, feed = "A private celebration." },
 		{ text = "Charitable donation instead ($1M)", effects = { Happiness = 15, Money = -1000000 }, royaltyEffect = { popularity = 20 }, feed = "You asked for charity donations!", eligibility = function(state) return (state.Money or 0) >= 1000000, "💸 Need $1M for charitable donation" end },
 		},
 	},
@@ -2297,7 +2297,7 @@ RoyaltyEvents.LifeEvents = {
 		isRoyalOnly = true,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
-		{ text = "Issue dignified denial (free)", effects = { Happiness = -10 }, royaltyEffect = { popularity = -5, scandals = 1 }, feed = "Your denial was measured." },
+		{ text = "Issue dignified denial", effects = { Happiness = -10 }, royaltyEffect = { popularity = -5, scandals = 1 }, feed = "Your denial was measured." },
 		{ text = "Sue for defamation ($500K)", effects = { Happiness = -15, Money = -500000 }, royaltyEffect = { popularity = -3, scandals = 1 }, feed = "You took legal action.", eligibility = function(state) return (state.Money or 0) >= 500000, "💸 Need $500K for legal fees" end },
 			{ text = "Ignore it", effects = { Happiness = -5 }, royaltyEffect = { popularity = -10, scandals = 1 }, feed = "Your silence spoke volumes." },
 			{ text = "Address with humor", effects = { Happiness = 5 }, royaltyEffect = { popularity = 10 }, feed = "Your wit won the day!" },
@@ -2497,7 +2497,7 @@ RoyaltyEvents.LifeEvents = {
 		choices = {
 		{ text = "The pet stays - hire more staff ($50K)", effects = { Happiness = 10, Money = -50000 }, feed = "Your loyalty to your pet is admirable!", eligibility = function(state) return (state.Money or 0) >= 50000, "💸 Need $50K for staff" end },
 		{ text = "Get professional training ($20K)", effects = { Happiness = 5, Money = -20000 }, feed = "Your pet is now palace-worthy.", eligibility = function(state) return (state.Money or 0) >= 20000, "💸 Need $20K for training" end },
-		{ text = "Find a loving new home (free)", effects = { Happiness = -15 }, royaltyEffect = { popularity = -5 }, feed = "A hard decision but necessary." },
+		{ text = "Find a loving new home", effects = { Happiness = -15 }, royaltyEffect = { popularity = -5 }, feed = "A hard decision but necessary." },
 		{ text = "Add MORE pets! ($100K)", effects = { Happiness = 15, Money = -100000 }, royaltyEffect = { popularity = 8 }, feed = "The palace is now a zoo! The public loves it.", eligibility = function(state) return (state.Money or 0) >= 100000, "💸 Need $100K for more pets" end },
 		},
 	},
@@ -2980,7 +2980,7 @@ RoyaltyEvents.LifeEvents = {
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		choices = {
-		{ text = "Feature them in official photos (free)", effects = { Happiness = 15 }, royaltyEffect = { popularity = 12 }, setFlags = { pet_parent = true }, feed = "The nation has a new favorite royal pet!" },
+		{ text = "Feature them in official photos", effects = { Happiness = 15 }, royaltyEffect = { popularity = 12 }, setFlags = { pet_parent = true }, feed = "The nation has a new favorite royal pet!" },
 		{ text = "Start a pet charity in their name ($50K)", effects = { Happiness = 12, Money = -50000 }, royaltyEffect = { popularity = 20 }, setFlags = { animal_advocate = true }, feed = "Your charity helps animals nationwide.", eligibility = function(state) return (state.Money or 0) >= 50000, "💸 Need $50K for charity" end },
 			{ text = "Keep your pet life private", effects = { Happiness = 8 }, royaltyEffect = { popularity = 3 }, feed = "Some things are just for you." },
 		},

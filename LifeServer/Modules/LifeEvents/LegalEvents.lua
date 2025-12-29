@@ -172,7 +172,7 @@ LegalEvents.events = {
 				end,
 			},
 			{
-				text = "Drop the case (free)",
+				text = "Drop the case",
 				effects = { Happiness = -3 },
 				feedText = "⚖️ Not worth the hassle. Letting it go.",
 			},
@@ -244,7 +244,7 @@ LegalEvents.events = {
 				end,
 			},
 			{
-				text = "Try to work things out (free)",
+				text = "Try to work things out",
 				effects = { Happiness = 3 },
 				feedText = "💔 Decided to give it another chance. Marriage counseling maybe.",
 			},
@@ -330,7 +330,7 @@ LegalEvents.events = {
 		choices = {
 			{ text = "Create a comprehensive will ($300)", effects = { Money = -300, Happiness = 4, Smarts = 3 }, setFlags = { has_will = true }, feedText = "📋 Proper legal will created. Peace of mind.", eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for lawyer" end },
 			{ text = "DIY will kit ($30)", effects = { Money = -30, Happiness = 2, Smarts = 2 }, setFlags = { has_will = true }, feedText = "📋 Basic will done. Better than nothing.", eligibility = function(state) return (state.Money or 0) >= 30, "💸 Need $30 for will kit" end },
-			{ text = "Put it off - morbid topic (free)", effects = { Happiness = 1 }, feedText = "📋 Don't want to think about it. Later." },
+			{ text = "Put it off - morbid topic", effects = { Happiness = 1 }, feedText = "📋 Don't want to think about it. Later." },
 		},
 	},
 	{
