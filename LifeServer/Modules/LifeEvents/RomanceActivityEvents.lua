@@ -74,6 +74,19 @@ RomanceEvents.FirstDate = {
 				},
 				effects = { Happiness = 3, Relationship = -5 },
 			},
+			-- ⚡ GOD MODE PREMIUM OPTION
+			{
+				text = "⚡ [God Mode] Perfect soulmate connection!",
+				feedback = {
+					"⚡ {partner} falls completely in love with you!",
+					"⚡ It's like you've known each other forever!",
+					"⚡ This is the beginning of something magical!",
+				},
+				effects = { Happiness = 30, Relationship = 50 },
+				requiresGamepass = "GOD_MODE",
+				gamepassEmoji = "⚡",
+				setFlags = { soulmate_found = true, perfect_relationship = true },
+			},
 		},
 	},
 	-- Event 2: Dinner date
@@ -368,6 +381,19 @@ RomanceEvents.Proposal = {
 					"{partner} laughs and says yes!",
 				},
 				effects = { Happiness = 35, Relationship = 38 },
+			},
+			-- ⚡ GOD MODE PREMIUM OPTION
+			{
+				text = "⚡ [God Mode] Guaranteed YES!",
+				feedback = {
+					"⚡ {partner} IMMEDIATELY says YES!",
+					"⚡ It's the most romantic moment ever!",
+					"⚡ They've never been more certain of anything!",
+				},
+				effects = { Happiness = 60, Relationship = 60 },
+				requiresGamepass = "GOD_MODE",
+				gamepassEmoji = "⚡",
+				setFlags = { engaged = true, perfect_proposal = true },
 			},
 		},
 	},

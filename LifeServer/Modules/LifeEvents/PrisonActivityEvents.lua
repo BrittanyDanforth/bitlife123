@@ -518,6 +518,18 @@ PrisonEvents.Riot = {
 				},
 				effects = { Happiness = -3 },
 			},
+			-- ⚡ GOD MODE PREMIUM OPTION
+			{
+				text = "⚡ [God Mode] Stay safe through chaos",
+				feedback = {
+					"⚡ The chaos swirls around you, but you remain untouched.",
+					"⚡ God Mode shields you from all harm!",
+					"⚡ When the dust settles, you're perfectly fine.",
+				},
+				effects = { Happiness = 20, Health = 10 },
+				requiresGamepass = "GOD_MODE",
+				gamepassEmoji = "⚡",
+			},
 		},
 	},
 	-- Event 2: Riot opportunity
@@ -940,6 +952,33 @@ PrisonEvents.Appeal = {
 					"A risky strategy that could backfire.",
 				},
 				effects = { Happiness = 5, Smarts = 3 },
+			},
+			-- ⚡ GOD MODE PREMIUM OPTION
+			{
+				text = "⚡ [God Mode] Guarantee approval",
+				feedback = {
+					"⚡ With God Mode, the board has no choice but to approve!",
+					"⚡ Your appeal is miraculously granted!",
+					"⚡ Freedom is yours!",
+				},
+				effects = { Happiness = 50 },
+				requiresGamepass = "GOD_MODE",
+				gamepassEmoji = "⚡",
+				grantsEarlyRelease = true,
+			},
+			-- 🔫 MAFIA PREMIUM OPTION
+			{
+				text = "🔫 [Mafia] Have the family intervene",
+				feedback = {
+					"🔫 Your connections reach the right people...",
+					"🔫 The board suddenly becomes very sympathetic.",
+					"🔫 Your mafia connections come through!",
+				},
+				effects = { Happiness = 40 },
+				requiresGamepass = "MAFIA",
+				requiresFlags = { in_mob = true },
+				gamepassEmoji = "🔫",
+				grantsEarlyRelease = true,
 			},
 		},
 	},

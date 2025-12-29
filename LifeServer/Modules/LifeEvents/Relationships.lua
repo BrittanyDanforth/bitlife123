@@ -1155,6 +1155,23 @@ Relationships.events = {
 					end
 				end,
 			},
+			-- ⚡ GOD MODE PREMIUM OPTION
+			{
+				text = "⚡ [God Mode] Make them loyal forever",
+				effects = { Happiness = 10 },
+				setFlags = { partner_devoted = true },
+				requiresGamepass = "GOD_MODE",
+				gamepassEmoji = "⚡",
+				feedText = "⚡ GOD MODE! Your partner suddenly realizes their mistake and becomes eternally devoted!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.partner_will_never_cheat = true
+					state.Flags.relationship_strengthened = true
+					if state.Relationships and state.Relationships.partner then
+						state.Relationships.partner.relationship = 100
+					end
+				end,
+			},
 		},
 	},
 	{

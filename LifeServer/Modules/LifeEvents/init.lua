@@ -4367,6 +4367,22 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 		end
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Handle grantsEarlyRelease for premium prison options
+	-- When player selects God Mode/Mafia appeal option, they get released early
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if choice.grantsEarlyRelease then
+		state.InJail = nil
+		state.JailYearsLeft = nil
+		state.Flags.in_prison = nil
+		state.Flags.incarcerated = nil
+		state.Flags.in_jail = nil
+		state.Flags.early_released = true
+		state.Flags.served_time = true
+		outcome.releasedFromPrison = true
+		outcome.feedText = (outcome.feedText or "") .. " You've been released from prison!"
+	end
+	
 	-- Career hints
 	if choice.hintCareer then
 		state.CareerHints = state.CareerHints or {}
@@ -4871,6 +4887,114 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 			end
 		end
 	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL MONETIZATION FIX: Smart Product Suggestions
+	-- Suggest relevant products based on what just happened in the event
+	-- These suggestions are returned to the client for non-intrusive prompts
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	outcome.suggestedProducts = {}
+	
+	-- 1. JAIL PRODUCT: Player just went to jail
+	if state.InJail or flags.in_prison or flags.incarcerated then
+		if state.JailYearsLeft and state.JailYearsLeft > 0 then
+			table.insert(outcome.suggestedProducts, {
+				key = "GET_OUT_OF_JAIL",
+				reason = "escape_prison",
+				message = "🔓 Get out of jail instantly!",
+				priority = 10, -- High priority
+			})
+		end
+	end
+	
+	-- 2. STAT BOOST: Player has critically low stats
+	local health = (state.Stats and state.Stats.Health) or 50
+	local happiness = (state.Stats and state.Stats.Happiness) or 50
+	local lowestStat = math.min(health, happiness)
+	if lowestStat < 25 then
+		table.insert(outcome.suggestedProducts, {
+			key = "STAT_BOOST",
+			reason = "low_stats",
+			message = "📈 Boost your stats now!",
+			priority = 7,
+		})
+	end
+	
+	-- 3. EXTRA LIFE: Player is near death (very low health)
+	if health < 15 then
+		table.insert(outcome.suggestedProducts, {
+			key = "EXTRA_LIFE",
+			reason = "near_death",
+			message = "💖 Second chance at life!",
+			priority = 9,
+		})
+	end
+	
+	-- 4. TIME MACHINE: Player made a bad choice with major negative effects
+	local totalNegative = 0
+	for stat, change in pairs(outcome.statChanges or {}) do
+		if change < 0 then totalNegative = totalNegative + math.abs(change) end
+	end
+	if totalNegative >= 20 then
+		table.insert(outcome.suggestedProducts, {
+			key = "TIME_5_YEARS",
+			reason = "bad_outcome",
+			message = "⏰ Go back and change this!",
+			priority = 5,
+		})
+	end
+	
+	-- 5. MONEY BOOST: Player is broke and missed opportunity
+	if (state.Money or 0) < 100 and outcome.moneyChange < 0 then
+		table.insert(outcome.suggestedProducts, {
+			key = "MONEY_SMALL",
+			reason = "broke",
+			message = "💵 Get $10,000 inheritance!",
+			priority = 6,
+		})
+	end
+	
+	-- 6. GOD MODE: Player failed a success chance event
+	if outcome.wasSuccessful == false and not (state.GamepassOwnership or {}).godMode then
+		table.insert(outcome.suggestedProducts, {
+			key = "GOD_MODE",
+			reason = "failed_event",
+			message = "⚡ Never fail again with God Mode!",
+			priority = 4,
+			isGamepass = true,
+		})
+	end
+	
+	-- 7. MAFIA: Player is in financial trouble and not in mob
+	if (state.Money or 0) < 500 and not flags.in_mob and not (state.GamepassOwnership or {}).mafia then
+		-- Only suggest if player is adult
+		if (state.Age or 0) >= 18 then
+			table.insert(outcome.suggestedProducts, {
+				key = "MAFIA",
+				reason = "financial_trouble",
+				message = "🔫 Join the Mafia for quick cash!",
+				priority = 3,
+				isGamepass = true,
+			})
+		end
+	end
+	
+	-- 8. CELEBRITY: Player has high looks but no fame career
+	local looks = (state.Stats and state.Stats.Looks) or 50
+	if looks >= 70 and not flags.fame_career and not (state.GamepassOwnership or {}).celebrity then
+		if (state.Age or 0) >= 16 and (state.Age or 0) <= 40 then
+			table.insert(outcome.suggestedProducts, {
+				key = "CELEBRITY",
+				reason = "high_looks",
+				message = "⭐ Become famous with your looks!",
+				priority = 2,
+				isGamepass = true,
+			})
+		end
+	end
+	
+	-- Sort by priority (highest first)
+	table.sort(outcome.suggestedProducts, function(a, b) return a.priority > b.priority end)
 	
 	return outcome
 end

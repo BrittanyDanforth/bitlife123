@@ -993,6 +993,15 @@ HealthEvents.events = {
 				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Can't afford surgery ($5,000 needed)" end,
 			},
 			{ text = "Try lifestyle changes only (free but risky)", effects = { Happiness = -5, Health = -20 }, setFlags = { heart_disease = true, untreated_heart_condition = true }, feedText = "❤️‍🩹 No treatment. Trying diet and exercise only. Very risky choice." },
+			-- ⚡ GOD MODE PREMIUM OPTION
+			{
+				text = "⚡ [God Mode] Cure heart disease",
+				effects = { Happiness = 25, Health = 30 },
+				setFlags = { heart_disease_cured = true },
+				requiresGamepass = "GOD_MODE",
+				gamepassEmoji = "⚡",
+				feedText = "⚡ GOD MODE ACTIVATED! Your heart is now perfectly healthy! Miracle!",
+			},
 		},
 	},
 	{
@@ -1096,6 +1105,15 @@ HealthEvents.events = {
 				effects = { Happiness = -30, Health = -40 },
 				setFlags = { has_cancer = true, terminal_illness = true, refusing_treatment = true },
 				feedText = "🎗️ Choosing to live remaining time without treatment.",
+			},
+			-- ⚡ GOD MODE PREMIUM OPTION
+			{
+				text = "⚡ [God Mode] Cure it instantly",
+				effects = { Happiness = 30, Health = 20 },
+				setFlags = { cancer_survivor = true, miraculous_recovery = true },
+				requiresGamepass = "GOD_MODE",
+				gamepassEmoji = "⚡",
+				feedText = "⚡ GOD MODE ACTIVATED! The cancer has completely vanished! Miraculous recovery!",
 			},
 		},
 	},

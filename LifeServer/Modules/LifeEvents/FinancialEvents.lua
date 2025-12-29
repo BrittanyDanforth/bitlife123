@@ -753,6 +753,23 @@ FinancialEvents.events = {
 		{ text = "Medical debt ($300)", effects = { Happiness = -5, Money = -300 }, setFlags = { medical_debt = true }, feedText = "💳 Got sick AND went broke. American healthcare.", eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for payment" end },
 		{ text = "Consolidate and strategize ($100)", effects = { Happiness = 3, Smarts = 3, Money = -100 }, feedText = "💳 Working with financial advisor. Plan in place.", eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for advisor" end },
 		{ text = "Ignore and hope it goes away", effects = { Happiness = -2 }, setFlags = { ignoring_debt = true }, feedText = "💳 Head in the sand. This won't end well." },
+			-- ⚡ GOD MODE PREMIUM OPTION
+			{
+				text = "⚡ [God Mode] Clear all debt",
+				effects = { Happiness = 30 },
+				requiresGamepass = "GOD_MODE",
+				gamepassEmoji = "⚡",
+				feedText = "⚡ GOD MODE! All debt wiped clean! Fresh financial start!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.credit_card_debt = nil
+					state.Flags.in_debt = nil
+					state.Flags.bad_credit = nil
+					state.Flags.has_student_loans = nil
+					state.Flags.medical_debt = nil
+					state.Flags.ignoring_debt = nil
+				end,
+			},
 		},
 	},
 	{
@@ -968,6 +985,15 @@ FinancialEvents.events = {
 				end,
 			},
 			{ text = "Just watch others gamble", effects = { Happiness = 3 }, feedText = "🎰 Free drinks, people watching. Entertainment without risk." },
+			-- ⚡ GOD MODE PREMIUM OPTION
+			{
+				text = "⚡ [God Mode] Guaranteed jackpot!",
+				effects = { Money = 10000, Happiness = 30 },
+				requiresGamepass = "GOD_MODE",
+				gamepassEmoji = "⚡",
+				feedText = "⚡ GOD MODE! You hit the MEGA JACKPOT! $10,000 WIN!",
+				setFlags = { casino_winner = true, big_winner = true },
+			},
 		},
 	},
 	{
@@ -1027,6 +1053,15 @@ FinancialEvents.events = {
 				end,
 			},
 			{ text = "Just watch the game", effects = { Happiness = 3 }, feedText = "🏈 Enjoyed the game without financial stress." },
+			-- ⚡ GOD MODE PREMIUM OPTION
+			{
+				text = "⚡ [God Mode] Know the winner ($500)",
+				effects = { Money = 2500, Happiness = 20 },
+				requiresGamepass = "GOD_MODE",
+				gamepassEmoji = "⚡",
+				feedText = "⚡ GOD MODE! You knew exactly who would win! $3000 payout!",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for big bet" end,
+			},
 		},
 	},
 	{
