@@ -666,9 +666,11 @@ FriendshipDecayEvents.events = {
 		
 		choices = {
 			{
-				text = "Send a belated gift and apologize",
+				-- CRITICAL FIX: Show price!
+				text = "Send a belated gift ($50)",
 				effects = { Money = -50, Happiness = -2 },
 				feedText = "Damage control...",
+				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 for gift" end,
 				onResolve = function(state, choice, event)
 					local friendId = event._dynamicData and event._dynamicData.friendId
 					local friendName = event._dynamicData and event._dynamicData.friendName or "Your friend"
@@ -1096,9 +1098,11 @@ FriendshipDecayEvents.events = {
 		
 		choices = {
 			{
-				text = "Organize a team reunion",
+				-- CRITICAL FIX: Show price!
+				text = "Organize a team reunion ($100)",
 				effects = { Happiness = 15, Money = -100 },
 				feedText = "🏆 The whole gang together again! Laughing about old times. Priceless.",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for reunion" end,
 				onResolve = function(state)
 					state.Flags = state.Flags or {}
 					state.Flags.had_team_reunion = true
@@ -1297,9 +1301,11 @@ FriendshipDecayEvents.events = {
 		
 		choices = {
 			{
-				text = "Rescue and adopt them!",
+				-- CRITICAL FIX: Show price!
+				text = "Rescue and adopt them ($200)!",
 				effects = { Happiness = 20, Money = -200 },
 				feedText = "🐕 Your childhood love of animals led to this moment. New best friend!",
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for adoption" end,
 				onResolve = function(state)
 					state.Flags = state.Flags or {}
 					state.Flags.rescued_animal = true

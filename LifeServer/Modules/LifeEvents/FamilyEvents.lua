@@ -521,9 +521,11 @@ FamilyEvents.events = {
 		-- CRITICAL: Random aging parent situation
 		choices = {
 			{
-				text = "Help with their care",
+				-- CRITICAL FIX: Show price!
+				text = "Help with their care ($200)",
 				effects = { Money = -200 },
 				feedText = "Taking care of parents...",
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for care expenses" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.50 then
@@ -718,9 +720,11 @@ FamilyEvents.events = {
 				end,
 			},
 			{
-				text = "See a therapist",
+				-- CRITICAL FIX: Show price!
+				text = "See a therapist ($500)",
 				effects = { Money = -500, Happiness = 6, Health = 3 },
 				feedText = "🕯️ Professional help. Processing grief properly.",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for therapy" end,
 				onResolve = function(state)
 					state.Flags.grieving = nil
 					state.Flags.in_therapy = true

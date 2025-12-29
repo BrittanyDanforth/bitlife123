@@ -1076,11 +1076,12 @@ AdultExpanded.events = {
 				feedText = "It's not that bad. You can stop anytime. (You can't.)",
 			},
 			{
-			text = "Hit rock bottom first",
+			-- CRITICAL FIX: Make consequence clear
+			text = "Hit rock bottom first (lose $500)",
 			effects = { Happiness = -12, Health = -10, Money = -500 },
 			setFlags = { rock_bottom = true },
 			feedText = "Lost so much. Maybe now you'll change.",
-			-- No eligibility - this is a consequence, not a purchase
+			-- This is a consequence - addiction costs money
 			},
 		},
 	},

@@ -1158,10 +1158,12 @@ Senior.events = {
                 feedText = "80 years of memories... quite a journey." 
             },
             { 
-                text = "Do something wild off the bucket list", 
+                -- CRITICAL FIX: Show price!
+                text = "Do something wild off the bucket list ($1,000)", 
                 effects = { Happiness = 20, Health = -3, Money = -1000 }, 
                 setFlags = { celebrated_80 = true, did_something_wild = true }, 
-                feedText = "80 and still adventurous! Incredible!" 
+                feedText = "80 and still adventurous! Incredible!",
+                eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 for adventure" end,
             },
         },
     },
@@ -1320,22 +1322,28 @@ Senior.events = {
         
         choices = {
             { 
-                text = "Get a cat - low maintenance", 
+                -- CRITICAL FIX: Show price!
+                text = "Get a cat ($200)", 
                 effects = { Happiness = 10, Money = -200 }, 
                 setFlags = { has_cat = true, has_pet_senior = true }, 
-                feedText = "Your new cat is wonderful company!" 
+                feedText = "Your new cat is wonderful company!",
+                eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for cat" end,
             },
             { 
-                text = "Get a small dog", 
+                -- CRITICAL FIX: Show price!
+                text = "Get a small dog ($300)", 
                 effects = { Happiness = 12, Health = 5, Money = -300 }, 
                 setFlags = { has_dog = true, has_pet_senior = true }, 
-                feedText = "Daily walks with your pup keep you active!" 
+                feedText = "Daily walks with your pup keep you active!",
+                eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for dog" end,
             },
             { 
-                text = "Get a bird", 
+                -- CRITICAL FIX: Show price!
+                text = "Get a bird ($100)", 
                 effects = { Happiness = 8, Money = -100 }, 
                 setFlags = { has_bird = true, has_pet_senior = true }, 
-                feedText = "Your bird's singing brightens every day!" 
+                feedText = "Your bird's singing brightens every day!",
+                eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for bird" end,
             },
             { 
                 text = "Too much responsibility", 
@@ -1422,9 +1430,11 @@ Senior.events = {
                 feedText = "Activities, amenities, and neighbors your age!" 
             },
             { 
-                text = "Stay - too many memories here", 
+                -- CRITICAL FIX: Show maintenance cost!
+                text = "Stay - home maintenance ($1,000)", 
                 effects = { Happiness = 5, Money = -1000 }, 
-                feedText = "This is home. You're not leaving." 
+                feedText = "This is home. You're not leaving.",
+                eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 for home upkeep" end,
             },
             { 
                 text = "Have family move in with you", 
@@ -1492,10 +1502,12 @@ Senior.events = {
         
         choices = {
             { 
-                text = "Get hearing aids", 
+                -- CRITICAL FIX: Show price!
+                text = "Get hearing aids ($3,000)", 
                 effects = { Happiness = 8, Money = -3000 }, 
                 setFlags = { wears_hearing_aids = true }, 
-                feedText = "Wow! You can hear again! Should have done this sooner!" 
+                feedText = "Wow! You can hear again! Should have done this sooner!",
+                eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Need $3,000 for hearing aids" end,
             },
             { 
                 text = "Keep asking people to repeat", 
@@ -1535,10 +1547,12 @@ Senior.events = {
         
         choices = {
             { 
-                text = "New glasses and regular checkups", 
+                -- CRITICAL FIX: Show price!
+                text = "New glasses and checkups ($500)", 
                 effects = { Happiness = 5, Money = -500 }, 
                 setFlags = { vision_corrected = true }, 
-                feedText = "Stronger prescription helps a lot!" 
+                feedText = "Stronger prescription helps a lot!",
+                eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for glasses" end,
             },
             { 
                 text = "Large print books and audiobooks", 
@@ -1547,10 +1561,12 @@ Senior.events = {
                 feedText = "Adapting to read in new ways!" 
             },
             { 
-                text = "Cataract surgery", 
+                -- CRITICAL FIX: Show price!
+                text = "Cataract surgery ($2,000)", 
                 effects = { Happiness = 10, Health = 5, Money = -2000 }, 
                 setFlags = { had_cataract_surgery = true }, 
-                feedText = "The surgery was a miracle! Crystal clear vision!" 
+                feedText = "The surgery was a miracle! Crystal clear vision!",
+                eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2,000 for surgery" end,
             },
             { 
                 text = "Just squint harder", 
@@ -1578,10 +1594,12 @@ Senior.events = {
         
         choices = {
             { 
-                text = "Talk to doctor about sleep aids", 
+                -- CRITICAL FIX: Show price!
+                text = "Talk to doctor about sleep aids ($100)", 
                 effects = { Health = 3, Happiness = 3, Money = -100 }, 
                 setFlags = { takes_sleep_medication = true }, 
-                feedText = "Medication helps you sleep through the night." 
+                feedText = "Medication helps you sleep through the night.",
+                eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for doctor visit" end,
             },
             { 
                 text = "Accept the new sleep schedule", 
@@ -1619,22 +1637,28 @@ Senior.events = {
         
         choices = {
             { 
-                text = "Hire an attorney for proper estate plan", 
+                -- CRITICAL FIX: Show price!
+                text = "Hire an attorney ($2,000)", 
                 effects = { Happiness = 8, Money = -2000, Smarts = 2 }, 
                 setFlags = { estate_planned = true, has_will = true }, 
-                feedText = "Will, trust, power of attorney - all set up properly!" 
+                feedText = "Will, trust, power of attorney - all set up properly!",
+                eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2,000 for attorney" end,
             },
             { 
-                text = "DIY will from an online service", 
+                -- CRITICAL FIX: Show price!
+                text = "DIY online will ($100)", 
                 effects = { Happiness = 3, Money = -100 }, 
                 setFlags = { has_will = true }, 
-                feedText = "Basic will in place. Better than nothing!" 
+                feedText = "Basic will in place. Better than nothing!",
+                eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for online service" end,
             },
             { 
-                text = "Give away assets while still alive", 
+                -- CRITICAL FIX: Show price!
+                text = "Give away assets early ($5,000)", 
                 effects = { Happiness = 10, Money = -5000 }, 
                 setFlags = { giving_inheritance_early = true }, 
-                feedText = "Why wait? You get to see them enjoy it!" 
+                feedText = "Why wait? You get to see them enjoy it!",
+                eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 to give away" end,
             },
             { 
                 text = "Let the family figure it out", 
@@ -1678,9 +1702,11 @@ Senior.events = {
                 feedText = "The old phone worked fine!" 
             },
             { 
-                text = "Throw the phone across the room", 
+                -- CRITICAL FIX: This is a consequence, make cost clear
+                text = "Throw the phone (need new one - $200)", 
                 effects = { Happiness = -2, Money = -200 }, 
-                feedText = "That didn't help... and now you need a new phone." 
+                feedText = "That didn't help... and now you need a new phone.",
+                eligibility = function(state) return (state.Money or 0) >= 200, "💸 Would need $200 for new phone" end,
             },
         },
     },
@@ -1696,7 +1722,7 @@ Senior.events = {
         cooldown = 3,
         blockedByFlags = { serious_health_issue = true, assisted_living = true },
         eligibility = function(state)
-            return (state.Money or 0) >= 500
+            return (state.Money or 0) >= 200, "💸 Need some savings for bucket list adventures"
         end,
         
         stage = STAGE,
@@ -1706,22 +1732,28 @@ Senior.events = {
         
         choices = {
             { 
-                text = "See the Northern Lights", 
+                -- CRITICAL FIX: Show price!
+                text = "See the Northern Lights ($3,000)", 
                 effects = { Happiness = 15, Money = -3000 }, 
                 setFlags = { saw_aurora = true, bucket_list_done = true }, 
-                feedText = "Breathtaking! A sight you'll never forget!" 
+                feedText = "Breathtaking! A sight you'll never forget!",
+                eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Need $3,000 for trip" end,
             },
             { 
-                text = "Learn to paint", 
+                -- CRITICAL FIX: Show price!
+                text = "Learn to paint ($200)", 
                 effects = { Happiness = 10, Smarts = 3, Money = -200 }, 
                 setFlags = { learned_painting = true, bucket_list_done = true }, 
-                feedText = "You created your first painting! Not bad!" 
+                feedText = "You created your first painting! Not bad!",
+                eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for art supplies" end,
             },
             { 
-                text = "Reconnect with lost family", 
+                -- CRITICAL FIX: Show price!
+                text = "Reconnect with lost family ($500)", 
                 effects = { Happiness = 12, Money = -500 }, 
                 setFlags = { family_reconnected = true, bucket_list_done = true }, 
-                feedText = "The reunion was emotional and wonderful." 
+                feedText = "The reunion was emotional and wonderful.",
+                eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for travel" end,
             },
             { 
                 text = "Write your life story", 

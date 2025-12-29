@@ -1597,8 +1597,10 @@ Milestones.events = {
 				end,
 			},
 			{ 
-				text = "Get roommates to save money", 
+				-- CRITICAL FIX: Show deposit cost!
+				text = "Get roommates ($250 deposit)", 
 				effects = { Happiness = 10, Money = -250 }, 
+				eligibility = function(state) return (state.Money or 0) >= 250, "💸 Need $250 deposit" end,
 				setFlags = { 
 					moved_out = true, 
 					has_roommates = true,

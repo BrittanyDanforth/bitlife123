@@ -649,8 +649,9 @@ Random.events = {
 				end,
 			},
 			{
+				-- CRITICAL FIX: This is a consequence - remove money cost or make it clear
 				text = "Give up - it's probably gone",
-				effects = { Happiness = -4, Money = -50 },
+				effects = { Happiness = -4 },
 				feedText = "You gave up and accepted the loss.",
 			},
 		},
@@ -1712,9 +1713,11 @@ Random.events = {
 
 		choices = {
 			{ 
-				text = "Seek professional help", 
+				-- CRITICAL FIX: Show price!
+				text = "Seek professional help ($300)", 
 				effects = { Money = -300 },
 				feedText = "You reached out for help...",
+				eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for therapy" end,
 				onResolve = function(state)
 					local roll = math.random()
 					local conditions = {
@@ -1813,9 +1816,11 @@ Random.events = {
 				end,
 			},
 			{
-				text = "Seek a second opinion",
+				-- CRITICAL FIX: Show price!
+				text = "Get a second opinion ($500)",
 				effects = { Smarts = 3, Money = -500 },
 				feedText = "You went to another doctor...",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for specialist" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.2 then
@@ -1872,9 +1877,11 @@ Random.events = {
 		-- CRITICAL FIX: Random cancer outcome - player can't choose diagnosis
 		choices = {
 			{
-				text = "Get tested immediately",
+				-- CRITICAL FIX: Show price!
+				text = "Get tested immediately ($1,000)",
 				effects = { Money = -1000, Happiness = -10 },
 				feedText = "The waiting for results is agonizing...",
+				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 for testing" end,
 				onResolve = function(state)
 					local roll = math.random()
 					local age = state.Age or 40
@@ -2240,9 +2247,11 @@ Random.events = {
 		-- CRITICAL FIX: Random lawsuit outcome - player doesn't choose to win
 		choices = {
 			{
-				text = "Hire an expensive lawyer",
+				-- CRITICAL FIX: Show price!
+				text = "Hire an expensive lawyer ($5,000)",
 				effects = { Money = -5000 },
 				feedText = "You hired the best attorney you could afford...",
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 for lawyer" end,
 				onResolve = function(state)
 					local roll = math.random()
 					local smarts = state.Stats and state.Stats.Smarts or 50
@@ -2265,9 +2274,11 @@ Random.events = {
 				end,
 			},
 			{
-				text = "Use a public defender",
+				-- CRITICAL FIX: Show price!
+				text = "Use a public defender ($500)",
 				effects = { Money = -500 },
 				feedText = "You went with an affordable option...",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for legal fees" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.35 then
@@ -2326,9 +2337,11 @@ Random.events = {
 		-- CRITICAL FIX: Random disaster damage - player doesn't choose outcome
 		choices = {
 			{
-				text = "Evacuate immediately",
+				-- CRITICAL FIX: Show price!
+				text = "Evacuate immediately ($500)",
 				effects = { Money = -500 },
 				feedText = "You fled to safety...",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for emergency expenses" end,
 				onResolve = function(state)
 					local roll = math.random()
 					state.Flags = state.Flags or {}
@@ -3428,10 +3441,11 @@ Random.events = {
 			},
 			{
 				index = 2,
-				text = "Treat yourself to something nice",
+				-- CRITICAL FIX: Show price!
+				text = "Treat yourself ($100)",
 				effects = { Happiness = 12, Money = -100 },
-				-- MINOR FIX: More descriptive feedText
 				feedText = "You treated yourself to something special. You definitely deserve it!",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for treats" end,
 			},
 			{
 				index = 3,

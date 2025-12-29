@@ -1015,7 +1015,8 @@ CelebrityEvents.GeneralFameEvents = {
 				feed = "Your denial got more attention than the story.",
 			},
 			{
-				text = "Sue for defamation",
+				-- CRITICAL FIX: Show price!
+				text = "Sue for defamation ($50K)",
 				effects = { Happiness = -8, Money = -50000 },
 				successChance = 60,
 				successEffects = { Happiness = 15, Money = 500000 },
@@ -1024,6 +1025,7 @@ CelebrityEvents.GeneralFameEvents = {
 				failEffects = { Happiness = -10, Money = -200000 },
 				failFame = -5,
 				failFeed = "You lost the case.",
+				eligibility = function(state) return (state.Money or 0) >= 50000, "💸 Need $50K for legal fees" end,
 			},
 		},
 	},
@@ -1136,11 +1138,13 @@ CelebrityEvents.GeneralFameEvents = {
 		minFame = 55,
 		choices = {
 			{
-				text = "Accept and commit fully",
+				-- CRITICAL FIX: Show donation cost!
+				text = "Accept and commit ($100K donation)",
 				effects = { Happiness = 15, Money = -100000 },
 				fameEffect = 15,
 				setFlags = { charity_ambassador = true },
 				feed = "You became a voice for an important cause!",
+				eligibility = function(state) return (state.Money or 0) >= 100000, "💸 Need $100K for charity donation" end,
 			},
 			{
 				text = "Accept but minimal involvement",
@@ -1363,12 +1367,14 @@ CelebrityEvents.GeneralFameEvents = {
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{
-				text = "Campaign hard to win",
+				-- CRITICAL FIX: Show price!
+				text = "Campaign hard to win ($100K)",
 				effects = { Happiness = 10, Money = -100000 },
 				successChance = 40,
 				successFame = 25,
 				successFeed = "YOU WON!",
 				setFlags = { award_winner = true },
+				eligibility = function(state) return (state.Money or 0) >= 100000, "💸 Need $100K for campaign" end,
 				failFame = 5,
 				failFeed = "You didn't win, but the nomination was an honor.",
 			},
@@ -1446,11 +1452,13 @@ CelebrityEvents.GeneralFameEvents = {
 		oneTime = true,
 		choices = {
 			{
-				text = "Start a foundation",
+				-- CRITICAL FIX: Show price!
+				text = "Start a foundation ($500K)",
 				effects = { Happiness = 25, Money = -500000 },
 				fameEffect = 20,
 				setFlags = { has_foundation = true },
 				feed = "Your foundation will help millions.",
+				eligibility = function(state) return (state.Money or 0) >= 500000, "💸 Need $500K for foundation" end,
 			},
 			{
 				text = "Create a masterwork",
@@ -1546,25 +1554,31 @@ CelebrityEvents.GeneralFameEvents = {
 		maxOccurrences = 2,
 		choices = {
 			{
-				text = "Get a restraining order",
+				-- CRITICAL FIX: Show price!
+				text = "Get a restraining order ($20K)",
 				effects = { Happiness = -10, Money = -20000 },
 				fameEffect = 0,
 				setFlags = { has_restraining_order = true },
 				feed = "The courts are handling it now.",
+				eligibility = function(state) return (state.Money or 0) >= 20000, "💸 Need $20K for legal fees" end,
 			},
 			{
-				text = "Upgrade security significantly",
+				-- CRITICAL FIX: Show price!
+				text = "Upgrade security ($100K)",
 				effects = { Happiness = 5, Money = -100000 },
 				fameEffect = 0,
 				setFlags = { heavy_security = true },
 				feed = "You now travel with bodyguards everywhere.",
+				eligibility = function(state) return (state.Money or 0) >= 100000, "💸 Need $100K for security" end,
 			},
 			{
-				text = "Move to a new location",
+				-- CRITICAL FIX: Show price!
+				text = "Move to a new location ($500K)",
 				effects = { Happiness = -5, Money = -500000 },
 				fameEffect = 0,
 				setFlags = { changed_residence = true },
 				feed = "Fresh start, new address, new peace.",
+				eligibility = function(state) return (state.Money or 0) >= 500000, "💸 Need $500K for new residence" end,
 			},
 			{
 				text = "Try to meet them and de-escalate",
@@ -1596,11 +1610,13 @@ CelebrityEvents.GeneralFameEvents = {
 				feed = "Your words moved the room to tears and donations!",
 			},
 			{
-				text = "Donate a huge amount yourself",
+				-- CRITICAL FIX: Show price!
+				text = "Donate $1M yourself",
 				effects = { Happiness = 20, Money = -1000000 },
 				fameEffect = 15,
 				setFlags = { generous_celebrity = true },
 				feed = "Your generosity made headlines!",
+				eligibility = function(state) return (state.Money or 0) >= 1000000, "💸 Need $1M to donate" end,
 			},
 			{
 				text = "Network with other celebrities",
@@ -1665,11 +1681,13 @@ CelebrityEvents.GeneralFameEvents = {
 		maxOccurrences = 5,
 		choices = {
 			{
-				text = "Go all out with production",
+				-- CRITICAL FIX: Show price!
+				text = "Go all out with production ($200K)",
 				effects = { Happiness = 20, Money = -200000 },
 				fameEffect = 18,
 				setFlags = { show_stopper = true },
 				feed = "Everyone's talking about your performance!",
+				eligibility = function(state) return (state.Money or 0) >= 200000, "💸 Need $200K for production" end,
 			},
 			{
 				text = "Keep it simple and raw",
@@ -1882,11 +1900,13 @@ CelebrityEvents.GeneralFameEvents = {
 				feed = "Fans love the return to form!",
 			},
 			{
-				text = "Low-key indie project",
+				-- CRITICAL FIX: Show price!
+				text = "Low-key indie project ($50K)",
 				effects = { Happiness = 18, Money = -50000 },
 				fameEffect = 10,
 				setFlags = { artsy_comeback = true },
 				feed = "Critics praised your artistic growth.",
+				eligibility = function(state) return (state.Money or 0) >= 50000, "💸 Need $50K for production" end,
 			},
 		},
 	},
@@ -1924,11 +1944,13 @@ CelebrityEvents.GeneralFameEvents = {
 		end,
 		choices = {
 			{
-				text = "Pull out all the stops",
+				-- CRITICAL FIX: Show price!
+				text = "Pull out all the stops ($1M)",
 				effects = { Happiness = 30, Money = -1000000 },
 				fameEffect = 20,
 				setFlags = { did_superbowl = true, legendary_performance = true },
 				feed = "The most-watched performance of the decade!",
+				eligibility = function(state) return (state.Money or 0) >= 1000000, "💸 Need $1M for epic production" end,
 			},
 			{
 				text = "Bring out surprise guests",
@@ -1958,7 +1980,8 @@ CelebrityEvents.GeneralFameEvents = {
 		maxOccurrences = 5,
 		choices = {
 			{
-				text = "Sue for defamation",
+				-- CRITICAL FIX: Show price!
+				text = "Sue for defamation ($500K)",
 				effects = { Happiness = -10, Money = -500000 },
 				successChance = 60,
 				successFame = 10,
@@ -1966,6 +1989,7 @@ CelebrityEvents.GeneralFameEvents = {
 				successFeed = "You won the lawsuit!",
 				failFame = -5,
 				failFeed = "The case was dismissed.",
+				eligibility = function(state) return (state.Money or 0) >= 500000, "💸 Need $500K for lawsuit" end,
 			},
 			{
 				text = "Address it publicly on social media",
@@ -2013,10 +2037,12 @@ CelebrityEvents.GeneralFameEvents = {
 				feed = "They appreciated the acknowledgment.",
 			},
 			{
-				text = "Send them merchandise",
+				-- CRITICAL FIX: Show price!
+				text = "Send them merchandise ($10K)",
 				effects = { Happiness = 8, Money = -10000 },
 				fameEffect = 5,
 				feed = "Free swag is always welcome.",
+				eligibility = function(state) return (state.Money or 0) >= 10000, "💸 Need $10K for merchandise" end,
 			},
 			{
 				text = "Ignore it",
@@ -2105,11 +2131,13 @@ CelebrityEvents.GeneralFameEvents = {
 		maxOccurrences = 8,
 		choices = {
 			{
-				text = "Wear a show-stopping outfit",
+				-- CRITICAL FIX: Show price!
+				text = "Wear a show-stopping outfit ($50K)",
 				effects = { Happiness = 18, Money = -50000 },
 				fameEffect = 15,
 				setFlags = { fashion_risk_taker = true },
 				feed = "Your outfit dominated headlines!",
+				eligibility = function(state) return (state.Money or 0) >= 50000, "💸 Need $50K for designer outfit" end,
 			},
 			{
 				text = "Focus on thanking the cast and crew",
@@ -2149,11 +2177,13 @@ CelebrityEvents.GeneralFameEvents = {
 		maxOccurrences = 2,
 		choices = {
 			{
-				text = "Drop them immediately and publicly",
+				-- CRITICAL FIX: Show price (contract termination)!
+				text = "Drop them publicly ($200K penalty)",
 				effects = { Happiness = 10, Money = -200000 },
 				fameEffect = 15,
 				setFlags = { ethical_celebrity = true },
 				feed = "Your quick action was praised!",
+				eligibility = function(state) return (state.Money or 0) >= 200000, "💸 Need $200K to break contract" end,
 			},
 			{
 				text = "Stay quiet and let the contract expire",
@@ -2162,11 +2192,13 @@ CelebrityEvents.GeneralFameEvents = {
 				feed = "Your silence was noticed. And criticized.",
 			},
 			{
-				text = "Donate your earnings to charity",
+				-- CRITICAL FIX: Show price!
+				text = "Donate earnings to charity ($300K)",
 				effects = { Happiness = 15, Money = -300000 },
 				fameEffect = 20,
 				setFlags = { charitable_celebrity = true },
 				feed = "You turned a scandal into something positive!",
+				eligibility = function(state) return (state.Money or 0) >= 300000, "💸 Need $300K to donate" end,
 			},
 		},
 	},
@@ -2182,11 +2214,13 @@ CelebrityEvents.GeneralFameEvents = {
 		maxOccurrences = 2,
 		choices = {
 			{
-				text = "Remove your music from all platforms",
+				-- CRITICAL FIX: Show price!
+				text = "Remove music from platforms ($500K loss)",
 				effects = { Happiness = 5, Money = -500000 },
 				fameEffect = 20,
 				setFlags = { streaming_boycott = true },
 				feed = "A bold move that sparked industry debate!",
+				eligibility = function(state) return (state.Money or 0) >= 500000, "💸 Need $500K to cover revenue loss" end,
 			},
 			{
 				text = "Release a statement but stay on platforms",
@@ -2195,11 +2229,13 @@ CelebrityEvents.GeneralFameEvents = {
 				feed = "Words without action. Some were disappointed.",
 			},
 			{
-				text = "Start your own platform",
+				-- CRITICAL FIX: Show price!
+				text = "Start your own platform ($2M)",
 				effects = { Happiness = 15, Money = -2000000, Smarts = 8 },
 				fameEffect = 25,
 				setFlags = { tech_entrepreneur = true },
 				feed = "You're now a tech mogul too!",
+				eligibility = function(state) return (state.Money or 0) >= 2000000, "💸 Need $2M to start platform" end,
 			},
 		},
 	},
@@ -2250,11 +2286,13 @@ CelebrityEvents.GeneralFameEvents = {
 		maxOccurrences = 2,
 		choices = {
 			{
-				text = "Take legal action aggressively",
+				-- CRITICAL FIX: Show price!
+				text = "Take legal action ($500K)",
 				effects = { Happiness = -10, Money = -500000 },
 				fameEffect = 10,
 				setFlags = { privacy_fighter = true },
 				feed = "You're fighting back through the courts.",
+				eligibility = function(state) return (state.Money or 0) >= 500000, "💸 Need $500K for legal battle" end,
 			},
 			{
 				text = "Address it and move on",
@@ -2333,11 +2371,13 @@ CelebrityEvents.GeneralFameEvents = {
 				feed = "A genuine private moment.",
 			},
 			{
-				text = "Grand public gesture of thanks",
+				-- CRITICAL FIX: Show price!
+				text = "Grand public gesture ($50K)",
 				effects = { Happiness = 18, Money = -50000 },
 				fameEffect = 20,
 				setFlags = { generous_celebrity = true },
 				feed = "You changed their life forever!",
+				eligibility = function(state) return (state.Money or 0) >= 50000, "💸 Need $50K for gift" end,
 			},
 			{
 				text = "Feature them in your next project",
@@ -2498,11 +2538,13 @@ CelebrityEvents.GeneralFameEvents = {
 		maxOccurrences = 1,
 		choices = {
 			{
-				text = "Throw a massive celebration",
+				-- CRITICAL FIX: Show price!
+				text = "Throw a massive celebration ($100K)",
 				effects = { Happiness = 25, Money = -100000 },
 				fameEffect = 15,
 				setFlags = { billion_club = true },
 				feed = "The party of the year!",
+				eligibility = function(state) return (state.Money or 0) >= 100000, "💸 Need $100K for party" end,
 			},
 			{
 				text = "Thank fans with a surprise drop",
@@ -2546,11 +2588,13 @@ CelebrityEvents.GeneralFameEvents = {
 				feed = "Scarcity made it legendary.",
 			},
 			{
-				text = "Cancel scalped tickets, release at face value",
+				-- CRITICAL FIX: Show price!
+				text = "Cancel scalped tickets ($500K loss)",
 				effects = { Happiness = 20, Money = -500000 },
 				fameEffect = 20,
 				setFlags = { fan_advocate = true },
 				feed = "Fans LOVE you for fighting scalpers!",
+				eligibility = function(state) return (state.Money or 0) >= 500000, "💸 Need $500K to cover losses" end,
 			},
 		},
 	},
@@ -2601,12 +2645,14 @@ CelebrityEvents.GeneralFameEvents = {
 		maxOccurrences = 10,
 		choices = {
 			{
-				text = "Campaign hard for the win",
+				-- CRITICAL FIX: Show price!
+				text = "Campaign hard for the win ($200K)",
 				effects = { Happiness = 10, Money = -200000 },
 				successChance = 50,
 				successFame = 25,
 				successFeed = "YOU WON! Standing ovation!",
 				failFame = 8,
+				eligibility = function(state) return (state.Money or 0) >= 200000, "💸 Need $200K for campaign" end,
 				failFeed = "You lost, but the nomination was an honor.",
 				setFlags = { award_campaigner = true },
 			},
@@ -4054,11 +4100,13 @@ CelebrityEvents.CareerProgressionEvents = {
 				feed = "Your autobiography becomes a bestseller!",
 			},
 			{
-				text = "Start a foundation in your name",
+				-- CRITICAL FIX: Show price!
+				text = "Start a foundation ($5M)",
 				effects = { Happiness = 15, Money = -5000000 },
 				fameGain = 15,
 				setFlags = { achieved_legend = true, philanthropist = true },
 				feed = "Your foundation will help others for generations!",
+				eligibility = function(state) return (state.Money or 0) >= 5000000, "💸 Need $5M for foundation" end,
 			},
 		},
 	},
@@ -4418,10 +4466,12 @@ local FamePathEvents = {
 		blockedByFlags = { hit_1k_followers = true },
 		choices = {
 			{
-				text = "Celebrate with a giveaway! 🎁",
+				-- CRITICAL FIX: Show price!
+				text = "Celebrate with a giveaway ($100)! 🎁",
 				effects = { Happiness = 15, Money = -100 },
 				setFlags = { hit_1k_followers = true, generous_creator = true },
 				feedText = "The giveaway brought in even more followers!",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for giveaway" end,
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					local gain = math.random(200, 500)
@@ -4670,10 +4720,12 @@ local ExclusivePremiumCelebrityEvents = {
 		},
 		choices = {
 			{
-				text = "Slay the red carpet look! 👗✨",
+				-- CRITICAL FIX: Show price!
+				text = "Slay the red carpet ($50K outfit)! 👗✨",
 				effects = { Looks = 5, Happiness = 20, Money = -50000 },
 				fameGain = 15,
 				feedText = "Your outfit is going viral! Best dressed of the night!",
+				eligibility = function(state) return (state.Money or 0) >= 50000, "💸 Need $50K for designer outfit" end,
 			},
 			{
 				text = "Make a controversial statement! 🎤",
@@ -4835,11 +4887,13 @@ local ExclusivePremiumCelebrityEvents = {
 				feedText = "You escaped! That was intense!",
 			},
 			{
-				text = "Throw hands at a camera! 👊 (Bad idea!)",
+				-- CRITICAL FIX: Show lawsuit cost!
+				text = "Throw hands at camera ($100K lawsuit)! 👊",
 				effects = { Happiness = -10, Money = -100000 },
 				fameGain = 15,
 				setFlags = { paparazzi_incident = true },
 				feedText = "You're getting sued BUT you're trending #1!",
+				eligibility = function(state) return (state.Money or 0) >= 100000, "💸 Would cost $100K in lawsuits" end,
 			},
 			{
 				text = "Sign autographs for fans in the crowd 📝",

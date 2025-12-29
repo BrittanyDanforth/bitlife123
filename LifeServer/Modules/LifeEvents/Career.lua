@@ -544,9 +544,11 @@ Career.events = {
 		-- CRITICAL FIX: Random investment outcome - can't choose if scam/legit
 		choices = {
 			{
-				text = "Invest a significant amount",
+				-- CRITICAL FIX: Show price!
+				text = "Invest significantly ($3,000)",
 				effects = { Money = -3000 },
 				feedText = "You put your money on the line...",
+				eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Need $3,000 to invest" end,
 				onResolve = function(state)
 					local roll = math.random()
 					local smarts = (state.Stats and state.Stats.Smarts) or 50
@@ -2427,9 +2429,11 @@ Career.events = {
 	-- CRITICAL FIX: Random equity outcome - can't choose if startup succeeds!
 	choices = {
 		{
-			text = "Take the equity - bet on the future",
+			-- CRITICAL FIX: Show price (lower salary)!
+			text = "Take equity (lower salary -$500)",
 			effects = { Money = -500 }, -- Lower immediate salary
 			feedText = "You bet on the startup...",
+			eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need savings to take lower salary" end,
 			onResolve = function(state)
 				local roll = math.random()
 				if roll < 0.15 then

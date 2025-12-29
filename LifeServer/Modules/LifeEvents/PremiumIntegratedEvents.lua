@@ -97,10 +97,12 @@ PremiumIntegratedEvents.events = {
 		
 		choices = {
 			{
-				text = "Follow the treatment plan religiously",
+				-- CRITICAL FIX: Show price!
+				text = "Follow treatment plan ($500)",
 				effects = { Health = 15, Happiness = 5, Money = -500 },
 				setFlags = { health_conscious = true },
 				feedText = "You committed to the treatment. Slow but steady recovery!",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for treatment" end,
 			},
 			{
 				text = "Try alternative medicine",
@@ -505,10 +507,12 @@ PremiumIntegratedEvents.events = {
 		
 		choices = {
 			{
-				text = "Simple courthouse wedding",
+				-- CRITICAL FIX: Show price!
+				text = "Simple courthouse wedding ($200)",
 				effects = { Happiness = 8, Money = -200 },
 				setFlags = { married = true, has_partner = true, engaged = false },
 				feedText = "Simple but meaningful. You're married!",
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for wedding" end,
 				-- CRITICAL FIX: Ensure spouse relationship exists
 				onResolve = function(state)
 					-- Convert partner to spouse
@@ -765,10 +769,12 @@ PremiumIntegratedEvents.events = {
 				end,
 			},
 			{
-				text = "Follow your passion",
+				-- CRITICAL FIX: Show price!
+				text = "Follow your passion (-$500 income)",
 				effects = { Happiness = 12, Money = -500 },
 				setFlags = { passion_follower = true },
 				feedText = "Money isn't everything. Doing what you love!",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need savings to take pay cut" end,
 			},
 			-- 🔫 MAFIA PREMIUM OPTION
 			{
@@ -1709,12 +1715,14 @@ PremiumIntegratedEvents.events = {
 			},
 			-- ⚡ GOD MODE PREMIUM OPTION
 			{
-				text = "⚡ [God Mode] Give generously and they prosper",
+				-- CRITICAL FIX: Show price!
+				text = "⚡ [God Mode] Give generously ($5,000)",
 				effects = { Money = -5000, Happiness = 20 },
 				requiresGamepass = "GOD_MODE",
 				gamepassEmoji = "⚡",
 				feedText = "⚡ God Mode! Your generosity changed their life! They'll always remember.",
 				setFlags = { generous_friend = true },
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 to give" end,
 			},
 		},
 	},
@@ -1795,9 +1803,11 @@ PremiumIntegratedEvents.events = {
 		
 		choices = {
 			{
-				text = "Plan a surprise dinner",
+				-- CRITICAL FIX: Show price!
+				text = "Plan a surprise dinner ($200)",
 				effects = { Money = -200, Happiness = 10 },
 				feedText = "The surprise dinner was perfect! Your partner loved it.",
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for dinner" end,
 			},
 			{
 				text = "Write a heartfelt letter",

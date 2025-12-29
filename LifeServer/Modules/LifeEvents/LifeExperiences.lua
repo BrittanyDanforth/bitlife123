@@ -1501,7 +1501,8 @@ LifeExperiences.events = {
 		
 		choices = {
 			{
-				text = "Major accident (your fault)",
+				-- CRITICAL FIX: Show consequence cost!
+				text = "Major accident - hospital bills $5K",
 				effects = { Health = -20, Happiness = -15, Money = -5000 },
 				setFlags = { caused_accident = true, learned_lesson_driving = true },
 				feedText = "🚗 You caused a serious accident. Hospital bills and guilt forever.",
