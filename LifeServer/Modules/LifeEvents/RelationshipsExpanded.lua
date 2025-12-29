@@ -373,12 +373,8 @@ RelationshipsExpanded.events = {
 		tags = { "proposal", "engagement", "romance" },
 		
 		eligibility = function(state)
-			local money = state.Money or 0
-			-- CRITICAL FIX: Check for MOST EXPENSIVE choice ($2000), not $500
-			if money < 2000 then
-				return false, "Can't afford an engagement ring"
-			end
-			-- CRITICAL FIX: Can't propose from prison!
+			-- CRITICAL FIX: Lowered to $0 - free proposal option now exists!
+			-- Can't propose from prison!
 			if state.Flags and (state.Flags.in_prison or state.Flags.incarcerated) then
 				return false, "Can't propose from prison"
 			end
@@ -389,9 +385,10 @@ RelationshipsExpanded.events = {
 		-- CRITICAL: Random proposal outcome
 		choices = {
 			{
-				text = "Grand public proposal",
+				text = "Grand public proposal ($2,000)",
 				effects = { Money = -2000 },
 				feedText = "Getting down on one knee in front of everyone...",
+				eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2,000 for grand proposal" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.75 then
@@ -413,9 +410,10 @@ RelationshipsExpanded.events = {
 				end,
 			},
 			{
-				text = "Intimate private proposal",
+				text = "Intimate private proposal ($1,000)",
 				effects = { Money = -1000 },
 				feedText = "Just the two of you, somewhere special...",
+				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 for ring and setup" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.85 then
@@ -430,19 +428,43 @@ RelationshipsExpanded.events = {
 				end,
 			},
 			{
-				text = "Spontaneous - just ask",
-				effects = { Money = -500 },
-				feedText = "No plan, just the moment felt right...",
+				text = "Simple heartfelt proposal ($100)",
+				effects = { Money = -100 },
+				feedText = "No fancy ring needed - just your words...",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for a simple ring" end,
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.80 then
+						state:ModifyStat("Happiness", 16)
+						state.Flags = state.Flags or {}
+						state.Flags.engaged = true
+						state:AddFeed("💍 They said YES! The ring doesn't matter - love does!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("💍 They said they need time to think...")
+					end
+				end,
+			},
+			-- CRITICAL FIX: FREE OPTION to prevent hard lock!
+			{
+				text = "Just words, no ring (free)",
+				effects = {},
+				feedText = "Proposing with just your heart...",
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.70 then
-						state:ModifyStat("Happiness", 15)
+						state:ModifyStat("Happiness", 14)
 						state.Flags = state.Flags or {}
 						state.Flags.engaged = true
-						state:AddFeed("💍 YES! Spontaneous and perfect! Engaged!")
+						state:AddFeed("💍 They said YES! 'I don't need a ring - I need YOU!'")
+					elseif roll < 0.85 then
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.engaged = true
+						state:AddFeed("💍 Yes! But they'd like a ring when you can afford one.")
 					else
-						state:ModifyStat("Happiness", -12)
-						state:AddFeed("💍 Wrong timing. They want to talk later. Awkward.")
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("💍 They were hurt you didn't even get a ring. Things are awkward.")
 					end
 				end,
 			},

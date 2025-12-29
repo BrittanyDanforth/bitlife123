@@ -1101,35 +1101,67 @@ ProgressiveLifeEvents.events = {
 					end
 				end,
 			},
-			{
-				text = "💼 Trade School / Certification (1 year, $10,000)",
-				effects = { Smarts = 4 },
-				feedText = "You enrolled in a vocational program!",
-				eligibility = function(state)
-					if (state.Money or 0) < 2000 then
-						return false, "You need at least $2,000 to start"
-					end
-					return true
-				end,
-				onResolve = function(state)
-					state.EducationData = state.EducationData or {}
-					state.EducationData.Status = "enrolled"
-					state.EducationData.Level = "trade"
-					state.EducationData.Institution = "Vocational School"
-					state.EducationData.Progress = 0
-					state.EducationData.Duration = 1
-					state.EducationData.Year = 1
-					state.EducationData.TotalYears = 1
-					state.EducationData.Debt = (state.EducationData.Debt or 0) + 10000
-					state.Flags = state.Flags or {}
-					state.Flags.trade_school_student = true
-					state.Flags.just_quit_for_school = nil
-					if state.AddFeed then
-						state:AddFeed("💼 You enrolled in trade school! Practical skills for the real world.")
-					end
-				end,
-			},
+		{
+			text = "💼 Trade School / Certification (1 year, $10,000)",
+			effects = { Smarts = 4 },
+			feedText = "You enrolled in a vocational program!",
+			eligibility = function(state)
+				if (state.Money or 0) < 2000 then
+					return false, "You need at least $2,000 to start"
+				end
+				return true
+			end,
+			onResolve = function(state)
+				state.EducationData = state.EducationData or {}
+				state.EducationData.Status = "enrolled"
+				state.EducationData.Level = "trade"
+				state.EducationData.Institution = "Vocational School"
+				state.EducationData.Progress = 0
+				state.EducationData.Duration = 1
+				state.EducationData.Year = 1
+				state.EducationData.TotalYears = 1
+				state.EducationData.Debt = (state.EducationData.Debt or 0) + 10000
+				state.Flags = state.Flags or {}
+				state.Flags.trade_school_student = true
+				state.Flags.just_quit_for_school = nil
+				if state.AddFeed then
+					state:AddFeed("💼 You enrolled in trade school! Practical skills for the real world.")
+				end
+			end,
 		},
+		-- CRITICAL FIX: FREE OPTION to prevent hard lock for broke players
+		{
+			text = "📖 Self-study with library/free courses",
+			effects = { Smarts = 2 },
+			feedText = "Education doesn't have to cost a fortune!",
+			onResolve = function(state)
+				state.EducationData = state.EducationData or {}
+				state.EducationData.Status = "self_study"
+				state.EducationData.Level = "self_taught"
+				state.EducationData.Institution = "Self-Study"
+				state.Flags = state.Flags or {}
+				state.Flags.self_learner = true
+				state.Flags.just_quit_for_school = nil
+				if state.AddFeed then
+					state:AddFeed("📖 You're learning on your own! Libraries, free online courses, and determination.")
+				end
+			end,
+		},
+		-- CRITICAL FIX: Option to go back to work if you changed your mind
+		{
+			text = "🔙 Actually, I'll go back to work instead",
+			effects = {},
+			feedText = "Changed your mind about school.",
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags.just_quit_for_school = nil
+				state.Flags.looking_for_work = true
+				if state.AddFeed then
+					state:AddFeed("🔙 On second thought, you'll look for a new job instead.")
+				end
+			end,
+		},
+	},
 	},
 	{
 		id = "young_adult_fitness_resolution",
