@@ -810,10 +810,9 @@ Career.events = {
 		choices = {
 			{ 
 				text = "Quit immediately - mental health first", 
-				effects = { Happiness = 8, Health = 5, Money = -1000 }, 
+				effects = { Happiness = 8, Health = 5 }, 
 				setFlags = { between_jobs = true }, 
 				feedText = "You walked out. Best decision for your health.",
-				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1K savings to quit safely" end,
 				onResolve = function(state)
 					if state.ClearCareer then
 						state:ClearCareer()
@@ -1594,7 +1593,7 @@ Career.events = {
 			{ text = "Report it to HR", effects = { Happiness = -5, Smarts = 2 }, setFlags = { reported_harassment = true }, feedText = "You made an official report." },
 			{ text = "Confront the harasser directly", effects = { Happiness = -3 }, setFlags = { confronted_harasser = true }, feedText = "You stood up for yourself." },
 			{ text = "Document and get legal advice ($500)", effects = { Smarts = 3, Money = -500 }, setFlags = { building_case = true }, feedText = "You're building a case.", eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for legal consultation" end },
-			{ text = "Leave the job entirely", effects = { Happiness = 3, Health = 5, Money = -1000 }, setFlags = { between_jobs = true }, feedText = "Your wellbeing mattered more than the job.", eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1K savings to quit safely" end },
+			{ text = "Leave the job entirely", effects = { Happiness = 3, Health = 5 }, setFlags = { between_jobs = true }, feedText = "Your wellbeing mattered more than the job." },
 		},
 	},
 	{
