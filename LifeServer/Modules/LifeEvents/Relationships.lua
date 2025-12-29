@@ -533,7 +533,7 @@ Relationships.events = {
 			{ text = "Throw a celebration ($200)", effects = { Happiness = 10, Money = -200 }, feedText = "You celebrated together!",
 				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Can't afford a celebration ($200 needed)" end,
 			},
-			{ text = "Heartfelt congratulations (Free)", effects = { Happiness = 8 }, feedText = "Your sincere joy meant everything to them." },
+			{ text = "Heartfelt congratulations", effects = { Happiness = 8 }, feedText = "Your sincere joy meant everything to them." },
 			{ text = "Feel a bit jealous", effects = { Happiness = -3 }, setFlags = { competitive_with_partner = true }, feedText = "You struggled with mixed feelings." },
 		},
 	},
@@ -722,7 +722,7 @@ Relationships.events = {
 		choices = {
 			{ text = "Patient understanding", effects = { Happiness = 5, Smarts = 2 }, feedText = "Patience paid off." },
 			{ text = "Strict discipline", effects = { Happiness = -2 }, feedText = "You laid down the law." },
-			{ text = "Get professional advice", effects = { Happiness = 3, Money = -200 }, feedText = "Expert advice helped." },
+			{ text = "Get professional advice ($200)", effects = { Happiness = 3, Money = -200 }, feedText = "Expert advice helped.", eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for counseling" end },
 			{ text = "Just hope they grow out of it", effects = { Happiness = 2 }, feedText = "Time heals many things." },
 		},
 	},
@@ -812,7 +812,7 @@ Relationships.events = {
 			{ text = "Lean on others for support", effects = { Happiness = -5, Health = -2 }, feedText = "Grief is heavy, but you're not alone." },
 			{ text = "Celebrate their life", effects = { Happiness = -3, Smarts = 2 }, feedText = "You chose to remember the good times." },
 			{ text = "Struggle in silence", effects = { Happiness = -10, Health = -5 }, setFlags = { grief = true }, feedText = "You're struggling but hiding it." },
-			{ text = "Seek professional help", effects = { Happiness = -3, Money = -200 }, feedText = "A therapist helped you process." },
+			{ text = "Seek professional help ($200)", effects = { Happiness = -3, Money = -200 }, feedText = "A therapist helped you process.", eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for therapy" end },
 		},
 	},
 	{
@@ -1298,7 +1298,7 @@ Relationships.events = {
 		requiresPartner = true,
 
 		choices = {
-			{ text = "Hidden debt", effects = { Happiness = -10, Money = -3000 }, setFlags = { partner_debt = true }, feedText = "They've been hiding serious financial problems." },
+			{ text = "Hidden debt", effects = { Happiness = -10 }, setFlags = { partner_debt = true }, feedText = "They've been hiding serious financial problems." },
 			{ text = "Secret family you didn't know about", effects = { Happiness = -15 }, setFlags = { partner_secret_family = true }, feedText = "They have a whole other life you didn't know about." },
 			{ text = "A harmless surprise for you", effects = { Happiness = 10 }, feedText = "They were planning a surprise for you! Phew!" },
 			{ text = "Past they're ashamed of", effects = { Happiness = -5, Smarts = 2 }, feedText = "Their past is complicated but you understand." },
@@ -1454,7 +1454,7 @@ Relationships.events = {
 
 		choices = {
 			{ text = "Shared your secrets", effects = { Happiness = -12 }, setFlags = { betrayed_by_friend = true }, feedText = "They told everyone your private business." },
-			{ text = "Stole from you", effects = { Happiness = -15, Money = -500 }, setFlags = { betrayed_by_friend = true }, feedText = "They stole money from you. Unforgivable." },
+			{ text = "Stole from you", effects = { Happiness = -15 }, setFlags = { betrayed_by_friend = true }, feedText = "They stole money from you. Unforgivable." },
 			{ text = "Dated your ex", effects = { Happiness = -10 }, setFlags = { betrayed_by_friend = true }, feedText = "They broke the friend code." },
 			{ text = "Talked behind your back", effects = { Happiness = -8 }, feedText = "You heard what they really think of you." },
 		},
@@ -1892,12 +1892,14 @@ Relationships.events = {
 			},
 			{ 
 				text = "Terrified - how will we manage?", 
-				effects = { Happiness = -5, Money = -5000, Health = -5 }, 
+				effects = { Happiness = -5, Health = -5 }, 
 				setFlags = { has_child = true, parent = true, has_multiples = true, overwhelmed_parent = true }, 
 				feedText = "Two/three at once? Deep breaths...",
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5K for extra baby supplies" end,
 				onResolve = function(state)
+					state.Money = math.max(0, (state.Money or 0) - 5000)
 					state.Relationships = state.Relationships or {}
-					local numBabies = 2 -- Twins
+					local numBabies = 2
 					local boyNames = {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Aiden"}
 					local girlNames = {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia", "Amelia", "Harper"}
 					local usedNames = {}
@@ -1918,6 +1920,45 @@ Relationships.events = {
 							type = "family",
 							role = isBoy and "Son" or "Daughter",
 							relationship = 70,
+							age = 0,
+							gender = isBoy and "male" or "female",
+							alive = true,
+							isFamily = true,
+							isChild = true,
+							isMultiple = true,
+						}
+					end
+				end,
+			},
+			-- CRITICAL FIX: FREE option to prevent hard lock!
+			{ 
+				text = "Rely on family and community help", 
+				effects = { Happiness = 8, Health = -3 }, 
+				setFlags = { has_child = true, parent = true, has_multiples = true, community_support = true }, 
+				feedText = "👶👶 Family stepped up BIG time! Hand-me-downs, babysitting, meals - it takes a village!",
+				onResolve = function(state)
+					state.Relationships = state.Relationships or {}
+					local numBabies = 2
+					local boyNames = {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Aiden"}
+					local girlNames = {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia", "Amelia", "Harper"}
+					local usedNames = {}
+					for i = 1, numBabies do
+						local childCount = (state.ChildCount or 0) + 1
+						state.ChildCount = childCount
+						local isBoy = math.random() > 0.5
+						local names = isBoy and boyNames or girlNames
+						local childName
+						repeat
+							childName = names[math.random(1, #names)]
+						until not usedNames[childName]
+						usedNames[childName] = true
+						local childId = "child_" .. tostring(childCount)
+						state.Relationships[childId] = {
+							id = childId,
+							name = childName,
+							type = "family",
+							role = isBoy and "Son" or "Daughter",
+							relationship = 90,
 							age = 0,
 							gender = isBoy and "male" or "female",
 							alive = true,

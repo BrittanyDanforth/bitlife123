@@ -1592,6 +1592,36 @@ JobSpecificEvents.events = {
 					end
 				end,
 			},
+			-- CRITICAL FIX: Add more choice options so players aren't locked in
+			{
+				text = "Request stateside assignment",
+				effects = { Happiness = 2 },
+				feedText = "You requested to stay stateside...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.40 then
+						state.Money = (state.Money or 0) + 500
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("🎖️ Request approved! Support role at home base.")
+					else
+						state.Money = (state.Money or 0) + 1000
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🎖️ Request denied. You deployed anyway. Orders are orders.")
+						state.Flags = state.Flags or {}
+						state.Flags.served_deployed = true
+					end
+				end,
+			},
+			{
+				text = "Accept it - part of the job",
+				effects = { Happiness = 1, Smarts = 1 },
+				feedText = "🎖️ You packed your bags and said your goodbyes. Duty calls.",
+				onResolve = function(state)
+					state.Money = (state.Money or 0) + 1000
+					state.Flags = state.Flags or {}
+					state.Flags.served_deployed = true
+				end,
+			},
 		},
 	},
 	{

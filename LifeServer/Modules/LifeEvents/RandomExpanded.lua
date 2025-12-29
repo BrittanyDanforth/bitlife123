@@ -847,7 +847,7 @@ RandomExpanded.events = {
 			{ text = "Physical activity", effects = { Happiness = 5, Health = 4 }, setFlags = { active_discovery = true }, feedText = "✨ Sport, exercise, outdoors - body and mind love it!" },
 			{ text = "Learning/intellectual pursuit", effects = { Happiness = 4, Smarts = 5 }, setFlags = { learning_discovery = true }, feedText = "✨ Reading, puzzles, studying - feeding your brain!" },
 			{ text = "Social activity", effects = { Happiness = 6 }, setFlags = { social_discovery = true }, feedText = "✨ New group, club, community - found your people!" },
-			{ text = "Collecting something", effects = { Happiness = 5, Money = -50 }, setFlags = { collecting_discovery = true }, feedText = "✨ New collection started! Obsession begins!" },
+			{ text = "Collecting something", effects = { Happiness = 5 }, setFlags = { collecting_discovery = true }, feedText = "✨ New collection started! Obsession begins!" },
 		},
 	},
 	{
@@ -1172,26 +1172,27 @@ RandomExpanded.events = {
 				end
 			end,
 		},
-		{
-			text = "They want money",
-			effects = {},
-			feedText = "Being asked for money...",
-			onResolve = function(state)
-				local roll = math.random()
-				if roll < 0.3 then
-					state.Money = (state.Money or 0) - 10
-					state:ModifyStat("Happiness", 5)
-					state:AddFeed("👤 Gave them some change. Hopefully it helps.")
-					state.Flags = state.Flags or {}
-					state.Flags.charitable = true
-				elseif roll < 0.7 then
-					state:ModifyStat("Happiness", -2)
-					state:AddFeed("👤 Said you had no cash. Did you feel guilty?")
-				else
-					state:ModifyStat("Happiness", -5)
-					state:AddFeed("👤 They got aggressive when you said no. Unpleasant encounter.")
-				end
-			end,
+	{
+		text = "They want money",
+		effects = {},
+		feedText = "Being asked for money...",
+		onResolve = function(state)
+			local roll = math.random()
+			if roll < 0.3 then
+				-- CRITICAL FIX: Prevent negative money
+				state.Money = math.max(0, (state.Money or 0) - 10)
+				state:ModifyStat("Happiness", 5)
+				state:AddFeed("👤 Gave them some change. Hopefully it helps.")
+				state.Flags = state.Flags or {}
+				state.Flags.charitable = true
+			elseif roll < 0.7 then
+				state:ModifyStat("Happiness", -2)
+				state:AddFeed("👤 Said you had no cash. Did you feel guilty?")
+			else
+				state:ModifyStat("Happiness", -5)
+				state:AddFeed("👤 They got aggressive when you said no. Unpleasant encounter.")
+			end
+		end,
 		},
 	},
 },

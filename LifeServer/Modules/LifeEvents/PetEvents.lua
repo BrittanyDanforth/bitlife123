@@ -192,30 +192,54 @@ PetEvents.events = {
 		
 		-- CRITICAL: Random vet outcome
 		choices = {
-		{
-			text = "Get the checkup ($100)",
-			effects = { Money = -100 },
-			feedText = "At the vet...",
-			eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for vet checkup" end,
-			onResolve = function(state)
+			{
+				text = "Get the checkup ($100)",
+				effects = { Money = -100 },
+				feedText = "At the vet...",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for vet checkup" end,
+				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.55 then
 						if state.ModifyStat then state:ModifyStat("Happiness", 6) end
 						if state.AddFeed then state:AddFeed("🏥 Clean bill of health! Healthy pet! Good owner!") end
 					elseif roll < 0.80 then
 						if state.ModifyStat then state:ModifyStat("Happiness", 2) end
-						-- CRITICAL FIX: Prevent negative money
 						state.Money = math.max(0, (state.Money or 0) - 100)
 						if state.AddFeed then state:AddFeed("🏥 Minor issues. Meds prescribed. Extra cost but manageable.") end
 					else
 						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
-						-- CRITICAL FIX: Prevent negative money
 						state.Money = math.max(0, (state.Money or 0) - 500)
 						state.Flags = state.Flags or {}
 						state.Flags.sick_pet = true
 						if state.AddFeed then state:AddFeed("🏥 Serious health issue found. Treatment needed. Expensive.") end
 					end
 				end,
+			},
+			-- CRITICAL FIX: FREE option to prevent hard lock!
+			{
+				text = "Check symptoms at home first",
+				effects = {},
+				feedText = "Observing your pet...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.60 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 4) end
+						if state.AddFeed then state:AddFeed("🏥 Pet seems fine! Just a quirky moment. False alarm!") end
+					elseif roll < 0.85 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 1) end
+						if state.AddFeed then state:AddFeed("🏥 Keeping an eye on them. Seems okay for now.") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						state.Flags = state.Flags or {}
+						state.Flags.pet_needs_vet = true
+						if state.AddFeed then state:AddFeed("🏥 Something's off. Should probably see a vet soon...") end
+					end
+				end,
+			},
+			{
+				text = "Use pet first aid kit",
+				effects = { Happiness = 2 },
+				feedText = "🏥 Basic care at home. Monitoring closely. Hopefully just minor.",
 			},
 		},
 	},
@@ -398,7 +422,7 @@ PetEvents.events = {
 					end
 				end,
 			},
-			{ text = "Playdate arranged", effects = { Happiness = 6, Money = -10 }, feedText = "🐕‍🦺 Pet playdate! They have a best friend now!" },
+			{ text = "Playdate arranged", effects = { Happiness = 6 }, feedText = "🐕‍🦺 Pet playdate! They have a best friend now!" },
 			{ text = "Pet is antisocial", effects = { Happiness = 2 }, feedText = "🐕‍🦺 Prefers just you. That's okay. Introverted pet." },
 		},
 	},
@@ -427,7 +451,6 @@ PetEvents.events = {
 		-- CRITICAL: Random health scare outcome
 		choices = {
 			{
-				-- CRITICAL FIX: Show price and add per-choice eligibility check
 				text = "Rush to emergency vet ($300)",
 				effects = { Money = -300 },
 				feedText = "Emergency vet visit...",
@@ -444,18 +467,59 @@ PetEvents.events = {
 						if state.AddFeed then state:AddFeed("😰 False alarm! They're okay! Expensive relief!") end
 					elseif roll < 0.80 then
 						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
-						-- CRITICAL FIX: Prevent negative money
 						state.Money = math.max(0, (state.Money or 0) - 300)
 						if state.AddFeed then state:AddFeed("😰 Treatable condition. More treatment needed. Scary but hopeful.") end
 					else
 						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
-						-- CRITICAL FIX: Prevent negative money
 						state.Money = math.max(0, (state.Money or 0) - 800)
 						state.Flags = state.Flags or {}
 						state.Flags.critically_ill_pet = true
 						if state.AddFeed then state:AddFeed("😰 Serious diagnosis. Major surgery needed. Devastated.") end
 					end
 				end,
+			},
+			-- CRITICAL FIX: FREE options to prevent hard lock!
+			{
+				text = "Monitor closely at home",
+				effects = {},
+				feedText = "Watching your pet carefully...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.45 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 6) end
+						if state.AddFeed then state:AddFeed("😰 They bounced back! Just a temporary thing. Relief!") end
+					elseif roll < 0.75 then
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						state.Flags = state.Flags or {}
+						state.Flags.pet_needs_vet = true
+						if state.AddFeed then state:AddFeed("😰 Still not right. Will need to see a vet eventually.") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						if state.AddFeed then state:AddFeed("😰 Waited too long... They got much worse. Guilt.") end
+					end
+				end,
+			},
+			{
+				text = "Call vet for phone advice",
+				effects = { Happiness = 2 },
+				feedText = "Getting professional guidance...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.60 then
+						if state.ModifyStat then state:ModifyStat("Happiness", 4) end
+						if state.AddFeed then state:AddFeed("😰 Vet says it's probably nothing serious. Keep watching.") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -1) end
+						state.Flags = state.Flags or {}
+						state.Flags.pet_needs_vet = true
+						if state.AddFeed then state:AddFeed("😰 Vet recommends bringing them in when you can.") end
+					end
+				end,
+			},
+			{
+				text = "Ask pet owner community online",
+				effects = {},
+				feedText = "😰 Crowdsourcing advice. Got some helpful tips and reassurance.",
 			},
 		},
 	},

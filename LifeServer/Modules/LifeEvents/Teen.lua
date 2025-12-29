@@ -1454,7 +1454,7 @@ Teen.events = {
 		
 		choices = {
 			{ text = "Quit the job - school comes first", effects = { Smarts = 3, Happiness = 4 }, setFlags = { has_teen_job = false }, feedText = "You quit to focus on what matters. Good choice." },
-			{ text = "Cut back hours", effects = { Happiness = 3, Money = -50 }, feedText = "Finding balance with fewer work hours." },
+			{ text = "Cut back hours", effects = { Happiness = 3 }, feedText = "Finding balance with fewer work hours." },
 			{ text = "Power through - need the money", effects = { Health = -3, Money = 100 }, setFlags = { workaholic = true }, feedText = "You're exhausted but the paycheck is worth it... maybe." },
 			{ text = "Switch to a flexible job", effects = { Happiness = 3, Money = 50 }, feedText = "Found something with better hours!" },
 		},
@@ -1891,7 +1891,7 @@ Teen.events = {
 			{ text = "Call someone you trust", effects = { Happiness = 4 }, setFlags = { reaches_out = true }, feedText = "Talking to someone helped you feel less alone." },
 			{ text = "Hide it and push through", effects = { Happiness = -5, Health = -3 }, setFlags = { hides_struggles = true }, feedText = "You suffered in silence. Not healthy." },
 			{ text = "Leave the situation causing it", effects = { Happiness = 2 }, feedText = "Removing yourself from the trigger helped." },
-			{ text = "Talk to a professional", effects = { Happiness = 5, Health = 4, Money = -50 }, setFlags = { gets_help = true }, feedText = "Getting professional help was the right call." },
+			{ text = "Talk to a professional", effects = { Happiness = 5, Health = 4 }, setFlags = { gets_help = true }, feedText = "Getting professional help was the right call." },
 		},
 	},
 	{
@@ -1926,7 +1926,7 @@ Teen.events = {
 			{ text = "Try over-the-counter products ($20)", effects = { Money = -20, Looks = 2 }, feedText = "Some improvement with drugstore products.",
 				eligibility = function(state) return (state.Money or 0) >= 20, "💸 Can't afford skincare products ($20 needed)" end,
 			},
-			{ text = "Accept it as part of being a teen (Free)", effects = { Happiness = 3 }, setFlags = { self_accepting = true }, feedText = "It's temporary. You're still you." },
+			{ text = "Accept it as part of being a teen", effects = { Happiness = 3 }, setFlags = { self_accepting = true }, feedText = "It's temporary. You're still you." },
 			{ text = "Cover it with makeup ($30)", effects = { Looks = 3, Money = -30 }, feedText = "Learned some concealing techniques!",
 				eligibility = function(state) return (state.Money or 0) >= 30, "💸 Can't afford makeup ($30 needed)" end,
 			},
@@ -2239,10 +2239,10 @@ Teen.events = {
 			{ text = "Trendy and fashion-forward ($100)", effects = { Looks = 5, Money = -100 }, setFlags = { fashionista = true }, feedText = "Always on top of the latest trends!",
 				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Trendy clothes cost $100!" end,
 			},
-			{ text = "Athletic and casual (Free)", effects = { Looks = 2, Health = 2 }, setFlags = { sporty_style = true }, feedText = "Comfort and function first." },
-			{ text = "Alternative and unique (Free)", effects = { Looks = 3, Happiness = 4 }, setFlags = { alternative_style = true }, feedText = "You march to your own beat." },
-			{ text = "Classic and understated (Free)", effects = { Looks = 3, Smarts = 2 }, setFlags = { classic_style = true }, feedText = "Timeless and sophisticated." },
-			{ text = "Whatever's clean (Free)", effects = { Happiness = 2 }, feedText = "Fashion? More like comfortable." },
+			{ text = "Athletic and casual", effects = { Looks = 2, Health = 2 }, setFlags = { sporty_style = true }, feedText = "Comfort and function first." },
+			{ text = "Alternative and unique", effects = { Looks = 3, Happiness = 4 }, setFlags = { alternative_style = true }, feedText = "You march to your own beat." },
+			{ text = "Classic and understated", effects = { Looks = 3, Smarts = 2 }, setFlags = { classic_style = true }, feedText = "Timeless and sophisticated." },
+			{ text = "Whatever's clean", effects = { Happiness = 2 }, feedText = "Fashion? More like comfortable." },
 		},
 	},
 	{

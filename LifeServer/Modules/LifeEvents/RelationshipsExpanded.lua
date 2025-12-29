@@ -247,9 +247,9 @@ RelationshipsExpanded.events = {
 		choices = {
 		{ text = "Grand romantic gesture ($500)", effects = { Money = -500, Happiness = 12 }, setFlags = { romantic = true }, feedText = "💑 Surprised them with something amazing! They cried happy tears!", eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for grand gesture" end },
 		{ text = "Simple but meaningful ($50)", effects = { Money = -50, Happiness = 8 }, feedText = "💑 Quality time together. That's all that matters.", eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50" end },
-		{ text = "Completely forget (free)", effects = { Happiness = -10 }, setFlags = { forgot_anniversary = true }, feedText = "💑 Oh no. They remember. You didn't. TROUBLE." },
+		{ text = "Completely forget", effects = { Happiness = -10 }, setFlags = { forgot_anniversary = true }, feedText = "💑 Oh no. They remember. You didn't. TROUBLE." },
 		{ text = "Re-create your first date ($100)", effects = { Money = -100, Happiness = 10 }, feedText = "💑 Nostalgic and romantic! They loved it!", eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100" end },
-		{ text = "Homemade card and cuddles (free)", effects = { Happiness = 6 }, feedText = "💑 It's the thought that counts! Sweet and heartfelt." },
+		{ text = "Homemade card and cuddles", effects = { Happiness = 6 }, feedText = "💑 It's the thought that counts! Sweet and heartfelt." },
 		},
 	},
 	{
@@ -373,12 +373,8 @@ RelationshipsExpanded.events = {
 		tags = { "proposal", "engagement", "romance" },
 		
 		eligibility = function(state)
-			local money = state.Money or 0
-			-- CRITICAL FIX: Check for MOST EXPENSIVE choice ($2000), not $500
-			if money < 2000 then
-				return false, "Can't afford an engagement ring"
-			end
-			-- CRITICAL FIX: Can't propose from prison!
+			-- CRITICAL FIX: Lowered to $0 - free proposal option now exists!
+			-- Can't propose from prison!
 			if state.Flags and (state.Flags.in_prison or state.Flags.incarcerated) then
 				return false, "Can't propose from prison"
 			end
@@ -389,9 +385,10 @@ RelationshipsExpanded.events = {
 		-- CRITICAL: Random proposal outcome
 		choices = {
 			{
-				text = "Grand public proposal",
+				text = "Grand public proposal ($2,000)",
 				effects = { Money = -2000 },
 				feedText = "Getting down on one knee in front of everyone...",
+				eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2,000 for grand proposal" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.75 then
@@ -413,9 +410,10 @@ RelationshipsExpanded.events = {
 				end,
 			},
 			{
-				text = "Intimate private proposal",
+				text = "Intimate private proposal ($1,000)",
 				effects = { Money = -1000 },
 				feedText = "Just the two of you, somewhere special...",
+				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 for ring and setup" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.85 then
@@ -430,19 +428,43 @@ RelationshipsExpanded.events = {
 				end,
 			},
 			{
-				text = "Spontaneous - just ask",
-				effects = { Money = -500 },
-				feedText = "No plan, just the moment felt right...",
+				text = "Simple heartfelt proposal ($100)",
+				effects = { Money = -100 },
+				feedText = "No fancy ring needed - just your words...",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for a simple ring" end,
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.80 then
+						state:ModifyStat("Happiness", 16)
+						state.Flags = state.Flags or {}
+						state.Flags.engaged = true
+						state:AddFeed("💍 They said YES! The ring doesn't matter - love does!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("💍 They said they need time to think...")
+					end
+				end,
+			},
+			-- CRITICAL FIX: FREE OPTION to prevent hard lock!
+			{
+				text = "Just speak from the heart",
+				effects = {},
+				feedText = "Proposing with just your heart...",
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.70 then
-						state:ModifyStat("Happiness", 15)
+						state:ModifyStat("Happiness", 14)
 						state.Flags = state.Flags or {}
 						state.Flags.engaged = true
-						state:AddFeed("💍 YES! Spontaneous and perfect! Engaged!")
+						state:AddFeed("💍 They said YES! 'I don't need a ring - I need YOU!'")
+					elseif roll < 0.85 then
+						state:ModifyStat("Happiness", 8)
+						state.Flags = state.Flags or {}
+						state.Flags.engaged = true
+						state:AddFeed("💍 Yes! But they'd like a ring when you can afford one.")
 					else
-						state:ModifyStat("Happiness", -12)
-						state:AddFeed("💍 Wrong timing. They want to talk later. Awkward.")
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("💍 They were hurt you didn't even get a ring. Things are awkward.")
 					end
 				end,
 			},
@@ -469,7 +491,7 @@ RelationshipsExpanded.events = {
 		{ text = "Stay calm and delegate ($500)", effects = { Happiness = 2, Money = -500 }, feedText = "📋 Wedding planner, family help. Manageable.", eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500" end },
 		{ text = "Elope instead ($200)", effects = { Happiness = 8, Money = -200 }, setFlags = { eloped = true, married = true }, feedText = "📋 Forget all this! Just the two of you! MARRIED!", eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200" end },
 		{ text = "Push through together ($700)", effects = { Happiness = 4, Money = -700 }, feedText = "📋 Stressful but you're doing it as a team. That matters.", eligibility = function(state) return (state.Money or 0) >= 700, "💸 Need $700" end },
-		{ text = "Courthouse wedding (free)", effects = { Happiness = 5 }, setFlags = { courthouse_wedding = true, married = true }, feedText = "📋 Just you, a judge, and your love. Simple and beautiful." },
+		{ text = "Courthouse wedding", effects = { Happiness = 5 }, setFlags = { courthouse_wedding = true, married = true }, feedText = "📋 Just you, a judge, and your love. Simple and beautiful." },
 		},
 	},
 	
@@ -1029,8 +1051,8 @@ RelationshipsExpanded.events = {
 					end
 				end,
 			},
-			{ text = "Join support group", effects = { Happiness = 5, Smarts = 2, Money = -50 }, setFlags = { support_group = true }, feedText = "😔 Others feel it too. You're not alone in being alone." },
-			{ text = "Get a pet", effects = { Happiness = 7, Money = -200 }, setFlags = { has_pet = true }, feedText = "😔 Unconditional love. A furry friend helped!" },
+			{ text = "Join support group", effects = { Happiness = 5, Smarts = 2 }, setFlags = { support_group = true }, feedText = "😔 Others feel it too. You're not alone in being alone." },
+			{ text = "Get a pet ($200)", effects = { Happiness = 7, Money = -200 }, setFlags = { has_pet = true }, feedText = "😔 Unconditional love. A furry friend helped!", eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for pet" end },
 			{ text = "Isolate further", effects = { Happiness = -8, Health = -3 }, setFlags = { chronic_loneliness = true }, feedText = "😔 Withdrew more. Spiraling. Need help." },
 		},
 	},
@@ -1420,8 +1442,11 @@ RelationshipsExpanded.events = {
 				if flags.good_friend or flags.helped_friend or flags.supportive then
 					if roll < 0.5 then
 						state:ModifyStat("Happiness", 5)
-						state.Money = (state.Money or 0) - math.random(100, 500)
+						-- CRITICAL FIX: Prevent negative money
+						local loanAmount = math.random(100, 500)
+						state.Money = math.max(0, (state.Money or 0) - loanAmount)
 						state:AddFeed("📱 They needed a small loan. You helped out. Good karma!")
+						state.Flags = state.Flags or {}
 						state.Flags.helped_friend = true
 					else
 						state:ModifyStat("Happiness", 8)
@@ -1430,7 +1455,9 @@ RelationshipsExpanded.events = {
 				else
 					-- Neutral friend asks for more
 					if roll < 0.3 then
-						state.Money = (state.Money or 0) - math.random(500, 2000)
+						-- CRITICAL FIX: Prevent negative money
+						local loanAmount = math.random(500, 2000)
+						state.Money = math.max(0, (state.Money or 0) - loanAmount)
 						state:ModifyStat("Happiness", -3)
 						state:AddFeed("📱 They needed a big loan. Felt pressured to help. Hope they pay back...")
 					else

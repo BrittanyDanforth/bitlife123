@@ -323,7 +323,7 @@ ActivityEvents.Meditation = {
 		},
 		effects = { Happiness = {5, 10} },
 		choices = {
-			{ text = "📲 Download it (free)", feed = "The guided sessions are helpful!" },
+			{ text = "📲 Download it", feed = "The guided sessions are helpful!" },
 			{ text = "💎 Get premium ($10)", feed = "The premium features are worth it!", cost = 10, effects = { Happiness = 8 } },
 		},
 	},

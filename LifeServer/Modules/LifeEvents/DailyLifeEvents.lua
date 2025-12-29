@@ -74,7 +74,7 @@ DailyLifeEvents.events = {
 		choices = {
 			{ text = "Healthy breakfast ($5)", effects = { Health = 3, Happiness = 3, Money = -5 }, feedText = "🍳 Eggs, fruit, good stuff! Fueled for the day!" },
 			{ text = "Quick cereal/toast ($2)", effects = { Happiness = 2, Money = -2 }, feedText = "🍳 Basic breakfast. Does the job." },
-			{ text = "Skip breakfast (free)", effects = { Health = -2, Happiness = -1 }, feedText = "🍳 No time! Running on empty. Coffee will do." },
+			{ text = "Skip breakfast", effects = { Health = -2, Happiness = -1 }, feedText = "🍳 No time! Running on empty. Coffee will do." },
 			{ text = "Fancy brunch ($25)", effects = { Happiness = 8, Money = -25, Health = 1 }, feedText = "🍳 Treating yourself! Avocado toast energy!" },
 		},
 	},
@@ -386,7 +386,7 @@ DailyLifeEvents.events = {
 		
 		choices = {
 			{ text = "Exercise/gym ($5)", effects = { Health = 5, Happiness = 4, Money = -5 }, setFlags = { regular_exerciser = true }, feedText = "🏠 Post-work workout! Stress relief! Endorphins!" },
-			{ text = "TV/streaming binge (free)", effects = { Happiness = 5, Health = -1 }, feedText = "🏠 Decompressing with shows! Couch comfort!" },
+			{ text = "TV/streaming binge", effects = { Happiness = 5, Health = -1 }, feedText = "🏠 Decompressing with shows! Couch comfort!" },
 			{ text = "Social plans ($30)", effects = { Happiness = 7, Money = -30, Health = -1 }, feedText = "🏠 Seeing friends! Good times! Social battery charging!" },
 			{ text = "Productive hobbies", effects = { Happiness = 6, Smarts = 2 }, feedText = "🏠 Working on projects! Creative outlet! Fulfilling!" },
 			{ text = "Chores and responsibilities", effects = { Happiness = 2, Smarts = 1 }, feedText = "🏠 Adulting. Laundry, dishes, bills. Boring but necessary." },
@@ -673,7 +673,7 @@ DailyLifeEvents.events = {
 			{ text = "Shop hungry ($80)", effects = { Happiness = 2, Money = -80 }, feedText = "🛒 Mistake. Bought so much junk. Why did you shop hungry?",
 				eligibility = function(state) return (state.Money or 0) >= 80, "💸 Not enough for hungry shopping ($80 needed)" end,
 			},
-			{ text = "Skip it - eat what's at home (free)", effects = { Happiness = -2, Health = -1 }, feedText = "🛒 Making do with what's in the pantry. Creative meals ahead." },
+			{ text = "Skip it - eat what's at home", effects = { Happiness = -2, Health = -1 }, feedText = "🛒 Making do with what's in the pantry. Creative meals ahead." },
 		},
 	},
 	{

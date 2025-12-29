@@ -2539,15 +2539,18 @@ local events = {
 			return (state.Money or 0) >= 50000
 		end,
 		
-		choices = {
-			{
-				index = 1,
-				text = "Invest big ($50,000)",
-				effects = { Happiness = 5 },
-				feedText = "You bought the artwork...",
-				onResolve = function(state)
-					state.Money = (state.Money or 0) - 50000
-					local roll = RANDOM:NextNumber()
+	choices = {
+		{
+			index = 1,
+			text = "Invest big ($50,000)",
+			effects = { Happiness = 5 },
+			feedText = "You bought the artwork...",
+			-- CRITICAL FIX: Add per-choice eligibility check
+			eligibility = function(state) return (state.Money or 0) >= 50000, "💸 Need $50,000 to invest in art" end,
+			onResolve = function(state)
+				-- CRITICAL FIX: Prevent negative money
+				state.Money = math.max(0, (state.Money or 0) - 50000)
+				local roll = RANDOM:NextNumber()
 					if roll < 0.25 then
 						local profit = RANDOM:NextInteger(100000, 250000)
 						state.Money = (state.Money or 0) + profit

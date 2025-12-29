@@ -204,7 +204,7 @@ PropertyEvents.events = {
 				end,
 			},
 			{
-				text = "Just be more vigilant (free)",
+				text = "Just be more vigilant",
 				effects = { Happiness = -3 },
 				feedText = "🏚️ Can't afford a security system but you'll be more careful. Triple-check the locks!",
 			},
@@ -284,7 +284,7 @@ PropertyEvents.events = {
                 end,
             },
             {
-                text = "DIY it over time (free)",
+                text = "DIY it over time",
                 effects = { Happiness = 3 },
                 feedText = "🔨 You'll do it yourself! YouTube tutorials here we come!",
             },

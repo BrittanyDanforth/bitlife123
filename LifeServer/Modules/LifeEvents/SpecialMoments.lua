@@ -131,7 +131,7 @@ SpecialMoments.events = {
 				end,
 			},
 			{
-				text = "Not ready for a car yet (free)",
+				text = "Not ready for a car yet",
 				effects = { Happiness = -2 },
 				feedText = "🚗 Maybe someday. Public transit works for now.",
 			},
@@ -189,7 +189,7 @@ SpecialMoments.events = {
 				end,
 			},
 			{
-				text = "Stay with family for now (free)",
+				text = "Stay with family for now",
 				effects = { Happiness = -3 },
 				feedText = "🏠 Not ready yet. Saving up makes more sense.",
 			},

@@ -485,8 +485,8 @@ TravelEvents.events = {
 				end,
 			},
 		{ text = "Glamping (fancy camping) ($300)", effects = { Money = -300, Happiness = 10, Health = 2 }, feedText = "⛺ Nature with amenities! Best of both worlds!", eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for glamping" end },
-		{ text = "Not outdoorsy (free)", effects = { Happiness = 1 }, feedText = "⛺ Hotels exist for a reason. Pass." },
-		{ text = "Backyard camping (free)", effects = { Happiness = 4, Health = 1 }, feedText = "⛺ Set up a tent in the backyard. Stars and fresh air!" },
+		{ text = "Not outdoorsy", effects = { Happiness = 1 }, feedText = "⛺ Hotels exist for a reason. Pass." },
+		{ text = "Backyard camping", effects = { Happiness = 4, Health = 1 }, feedText = "⛺ Set up a tent in the backyard. Stars and fresh air!" },
 		},
 	},
 	
@@ -532,7 +532,7 @@ TravelEvents.events = {
 					end
 				end,
 			},
-			{ text = "Lost luggage situation", effects = { Happiness = -6, Money = -150 }, setFlags = { lost_luggage = true }, feedText = "✈️ Bags didn't make it. Living in airport clothes." },
+			{ text = "Lost luggage situation", effects = { Happiness = -6 }, setFlags = { lost_luggage = true }, feedText = "✈️ Bags didn't make it. Living in airport clothes." },
 		},
 	},
 	{
@@ -551,9 +551,9 @@ TravelEvents.events = {
 		
 		choices = {
 		{ text = "Try a new restaurant ($40)", effects = { Money = -40, Happiness = 6 }, feedText = "🗺️ Hidden gem! Best meal in months!", eligibility = function(state) return (state.Money or 0) >= 40, "💸 Need $40" end },
-		{ text = "Explore a park you've never visited (free)", effects = { Health = 3, Happiness = 5 }, feedText = "🗺️ Can't believe you never came here! Beautiful!" },
+		{ text = "Explore a park you've never visited", effects = { Health = 3, Happiness = 5 }, feedText = "🗺️ Can't believe you never came here! Beautiful!" },
 		{ text = "Check out a local attraction ($20)", effects = { Money = -20, Smarts = 2, Happiness = 4 }, feedText = "🗺️ Tourist in your own town! Actually really cool!", eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20" end },
-			{ text = "Take a different route home (free)", effects = { Happiness = 3, Smarts = 1 }, feedText = "🗺️ Found a great shortcut/view/shop you never knew!" },
+			{ text = "Take a different route home", effects = { Happiness = 3, Smarts = 1 }, feedText = "🗺️ Found a great shortcut/view/shop you never knew!" },
 		},
 	},
 	{
@@ -650,8 +650,8 @@ TravelEvents.events = {
 		
 		eligibility = function(state)
 			local money = state.Money or 0
-			if money < 500 then
-				return false, "Need money for solo trip"
+			if money < 800 then
+				return false, "Need $800 for solo trip"
 			end
 			return true
 		end,
@@ -659,9 +659,10 @@ TravelEvents.events = {
 		-- CRITICAL: Random solo travel outcome
 		choices = {
 			{
-				text = "Take the solo journey",
+				text = "Take the solo journey ($800)",
 				effects = { Money = -800 },
 				feedText = "Traveling alone...",
+				eligibility = function(state) return (state.Money or 0) >= 800, "💸 Need $800 for trip" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.55 then
@@ -772,8 +773,8 @@ TravelEvents.events = {
 					end
 				end,
 			},
-			{ text = "Language immersion program", effects = { Money = -800, Smarts = 8, Happiness = 10 }, setFlags = { language_learner = true }, feedText = "🌍 Fluent now! Mind expanded! New world opened!" },
-			{ text = "Volunteer abroad", effects = { Money = -600, Happiness = 12, Smarts = 4 }, setFlags = { volunteer_abroad = true }, feedText = "🌍 Made a difference AND learned so much! Win-win!" },
+			{ text = "Language immersion program ($800)", effects = { Money = -800, Smarts = 8, Happiness = 10 }, setFlags = { language_learner = true }, feedText = "🌍 Fluent now! Mind expanded! New world opened!", eligibility = function(state) return (state.Money or 0) >= 800, "💸 Need $800 for immersion program" end },
+			{ text = "Volunteer abroad ($600)", effects = { Money = -600, Happiness = 12, Smarts = 4 }, setFlags = { volunteer_abroad = true }, feedText = "🌍 Made a difference AND learned so much! Win-win!", eligibility = function(state) return (state.Money or 0) >= 600, "💸 Need $600 for travel" end },
 		},
 	},
 	{

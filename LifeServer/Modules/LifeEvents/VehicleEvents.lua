@@ -500,6 +500,7 @@ VehicleEvents.events = {
                 text = "Call roadside assistance ($50)",
                 effects = { Money = -50, Happiness = 2 },
                 feedText = "🛞 Roadside assistance handled it. Easy!",
+                eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 for roadside assistance" end,
             },
             {
                 text = "Flag down help",

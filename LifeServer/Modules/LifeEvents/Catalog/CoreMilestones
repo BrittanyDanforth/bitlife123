@@ -721,7 +721,7 @@ local events = {
 			{
 				index = 3,
 				-- CRITICAL FIX: This option is ALWAYS available (free!)
-				text = "Stay with parents - save money (FREE)",
+				text = "Stay with parents - save money",
 				effects = { Money = 8000, Happiness = -4 },
 				setFlags = { lives_with_parents = true, saving_money = true, late_bloomer = true },
 				feedText = "You stayed home. Your friends judge you. But your savings account is GROWING. You'll move out when you're READY. Smart, not sorry.",

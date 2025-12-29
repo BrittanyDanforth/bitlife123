@@ -489,10 +489,21 @@ Milestones.events = {
 				feedText = "The college years were special.",
 			},
 			{
-				text = "Time for grad school",
+				text = "Grad school with scholarship!",
+				effects = { Smarts = 8, Happiness = 5 },
+				setFlags = { college_grad = true, bachelor_degree = true, grad_school = true, pursuing_graduate = true, has_scholarship = true },
+				feedText = "Your grades earned you a full scholarship!",
+				eligibility = function(state) 
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					return smarts >= 70, "Need 70+ Smarts for scholarship"
+				end,
+			},
+			{
+				text = "Pay for grad school ($5K)",
 				effects = { Smarts = 7, Money = -5000 },
 				setFlags = { college_grad = true, bachelor_degree = true, grad_school = true, pursuing_graduate = true },
-				feedText = "You're continuing your education!",
+				feedText = "Investing in your education!",
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5K for grad school" end,
 			},
 		},
 	},
@@ -1382,10 +1393,11 @@ Milestones.events = {
 				feedText = "So much candy! Your teeth might regret this!" 
 			},
 			{ 
-				text = "Buy a toy I've been wanting! 🎮", 
+				text = "Buy a toy I've been wanting! 🎮 ($20)", 
 				effects = { Happiness = 10, Money = -20 }, 
 				setFlags = { goal_saver = true }, 
-				feedText = "You saved up and bought something special!" 
+				feedText = "You saved up and bought something special!",
+				eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20 for the toy" end,
 			},
 			{ 
 				text = "Share with my friends! 💝", 
@@ -1414,9 +1426,9 @@ Milestones.events = {
 
 		choices = {
 			{ text = "HUGE birthday party! ($100)", effects = { Happiness = 15, Money = -100 }, setFlags = { party_person = true }, feedText = "The party of the decade! Everyone came!", eligibility = function(state) return (state.Money or 0) >= 100, "💸 Family needs $100 for the party" end },
-			{ text = "Special trip with family! (free)", effects = { Happiness = 12, Health = 2 }, setFlags = { family_oriented = true }, feedText = "Made amazing memories with the family!" },
-			{ text = "Get a pet as a gift! (free)", effects = { Happiness = 18 }, setFlags = { has_pet = true, animal_lover = true }, feedText = "THE BEST BIRTHDAY GIFT EVER!" },
-			{ text = "New gaming console! (free)", effects = { Happiness = 14, Smarts = 1 }, setFlags = { gamer = true }, feedText = "Hours of gaming ahead! Best gift!" },
+			{ text = "Special trip with family!", effects = { Happiness = 12, Health = 2 }, setFlags = { family_oriented = true }, feedText = "Made amazing memories with the family!" },
+			{ text = "Get a pet as a gift!", effects = { Happiness = 18 }, setFlags = { has_pet = true, animal_lover = true }, feedText = "THE BEST BIRTHDAY GIFT EVER!" },
+			{ text = "New gaming console!", effects = { Happiness = 14, Smarts = 1 }, setFlags = { gamer = true }, feedText = "Hours of gaming ahead! Best gift!" },
 		},
 	},
 	{
@@ -1501,10 +1513,11 @@ Milestones.events = {
 				feedText = "Your family appreciates your contribution!" 
 			},
 			{ 
-				text = "Blow it all on a weekend!", 
+				text = "Blow it all on a weekend! ($150)", 
 				effects = { Happiness = 12, Money = -150 }, 
 				setFlags = { yolo_spender = true }, 
-				feedText = "That was FUN! ...now you're broke again." 
+				feedText = "That was FUN! ...now you're broke again.",
+				eligibility = function(state) return (state.Money or 0) >= 150, "💸 Need $150 to splurge" end,
 			},
 		},
 	},
@@ -1637,6 +1650,16 @@ Milestones.events = {
 					state.HousingState.moveInYear = state.Year or 2025
 					state.Flags.living_with_parents = nil
 				end,
+			},
+			-- CRITICAL FIX: FREE option to stay home longer
+			{ 
+				text = "Stay home to save more first", 
+				effects = { Happiness = 2, Money = 200 }, 
+				setFlags = { 
+					living_with_parents = true,
+					saving_for_apartment = true,
+				}, 
+				feedText = "🏠 Staying with family a bit longer. Smart financial move. No rush!",
 			},
 		},
 	},

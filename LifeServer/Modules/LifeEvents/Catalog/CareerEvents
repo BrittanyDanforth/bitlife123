@@ -201,10 +201,9 @@ local events = {
 			{
 				index = 4,
 				text = "Quit - find a better work environment",
-				effects = { Happiness = 8, Money = -5000 },
-				setFlags = { quit_toxic_job = true, prioritizes_mental_health = true },
-				feedText = "You gave 2 weeks notice. Your mental health matters MORE. You found a new job with better culture. Jessica won the battle. You won the WAR by leaving.",
-				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need savings to quit" end,
+				effects = { Happiness = 8 },
+				setFlags = { quit_toxic_job = true, prioritizes_mental_health = true, between_jobs = true },
+				feedText = "You gave 2 weeks notice. Your mental health matters MORE. Time to find something better!",
 			},
 		},
 	},
@@ -305,10 +304,9 @@ local events = {
 			{
 				index = 4,
 				text = "Just quit - find a company that values you",
-				effects = { Happiness = 9, Money = -3000 },
-				setFlags = { quit_for_self_worth = true, career_mover = true },
-				feedText = "You resigned. 'I know my worth.' Found a new job at $74K with better culture. Your old boss was shocked. You moved UP by moving OUT! Winning!",
-				eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Need savings to quit" end,
+				effects = { Happiness = 9 },
+				setFlags = { quit_for_self_worth = true, career_mover = true, between_jobs = true },
+				feedText = "You resigned. 'I know my worth.' Time to find somewhere better!",
 			},
 		},
 	},
@@ -348,10 +346,9 @@ local events = {
 			{
 				index = 3,
 				text = "Quit without another job lined up - prioritize mental health",
-				effects = { Happiness = 10, Money = -10000, Health = 8 },
-				setFlags = { quit_toxic_job = true, mental_health_priority = true },
+				effects = { Happiness = 10, Health = 8 },
+				setFlags = { quit_toxic_job = true, mental_health_priority = true, between_jobs = true },
 				feedText = "You quit. No plan. Just OUT. Your friends thought you were crazy. But you can BREATHE again. You'll figure it out. Sanity > Paycheck. Worth it.",
-				eligibility = function(state) return (state.Money or 0) >= 10000, "💸 Need savings to quit without a plan" end,
 			},
 			{
 				index = 4,
@@ -791,9 +788,10 @@ local events = {
 		choices = {
 			{
 				index = 1,
-				text = "Study hard and take the exam",
+				text = "Study hard and take the exam ($500)",
 				effects = { Happiness = 5, Money = -500 },
 				feedText = "You prepared for the certification exam...",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for exam fees and materials" end,
 				onResolve = function(state)
 					local smarts = (state.Stats and state.Stats.Smarts) or 50
 					local passChance = 0.5 + (smarts / 200)
@@ -1196,7 +1194,7 @@ local events = {
 			{
 				index = 1,
 				text = "Take mental health days",
-				effects = { Health = 8, Happiness = 5, Money = -200 },
+				effects = { Health = 8, Happiness = 5 },
 				feedText = "Rest is productivity. You feel better.",
 			},
 			{

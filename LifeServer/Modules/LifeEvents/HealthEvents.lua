@@ -168,7 +168,7 @@ HealthEvents.events = {
 		choices = {
 			{
 				text = "Get your results",
-				effects = { Money = -50 },
+				effects = {},
 				feedText = "Waiting for test results...",
 				-- ═══════════════════════════════════════════════════════════════════════════════
 				-- CRITICAL FIX #529: Set went_to_doctor flag so diagnosis events work correctly!
@@ -596,7 +596,7 @@ HealthEvents.events = {
 				end,
 			},
 			{ text = "Skip this week - can't afford it", effects = { Happiness = -2 }, feedText = "🛋️ Missed a session. Financial stress affecting mental health." },
-			{ text = "Try self-help techniques instead (free)", effects = { Happiness = 3, Smarts = 1 }, feedText = "🛋️ Journaling, deep breathing, applying what you've learned." },
+			{ text = "Try self-help techniques instead", effects = { Happiness = 3, Smarts = 1 }, feedText = "🛋️ Journaling, deep breathing, applying what you've learned." },
 		},
 	},
 	{
@@ -1516,13 +1516,14 @@ HealthEvents.events = {
 		choices = {
 			{
 				text = "Review results with doctor",
-				effects = { Money = -50, Happiness = 3, Smarts = 2 },
+				effects = { Happiness = 3, Smarts = 2 },
 				feedText = "📋 Discussed results. Now have a clear health plan.",
 			},
 			{
-				text = "Schedule follow-up tests",
+				text = "Schedule follow-up tests ($100)",
 				effects = { Money = -100, Health = 2 },
 				feedText = "📋 Booked additional tests for thorough assessment.",
+				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for additional tests" end,
 			},
 			{
 				text = "File it away (ignore)",
@@ -1884,9 +1885,40 @@ HealthEvents.events[#HealthEvents.events + 1] = {
 	
 	choices = {
 		{
-			text = "Follow treatment plan strictly",
+			text = "Regular checkup",
+			effects = { Happiness = 2 },
+			feedText = "Checking in with the doctor...",
+			onResolve = function(state)
+				local roll = math.random(1, 100)
+				local health = (state.Stats and state.Stats.Health) or 50
+				
+				if roll <= 25 then
+					-- CONDITION IMPROVED!
+					state.Stats = state.Stats or {}
+					state.Stats.Health = math.min(100, health + 5)
+					state.Flags = state.Flags or {}
+					state.Flags.condition_improving = true
+					if state.AddFeed then
+						state:AddFeed("🏥 Good news! Your condition seems stable. Keep taking care of yourself!")
+					end
+				elseif roll <= 70 then
+					-- Stable
+					if state.AddFeed then
+						state:AddFeed("🏥 Condition stable. Doctor says to keep doing what you're doing.")
+					end
+				else
+					-- Need to adjust
+					if state.AddFeed then
+						state:AddFeed("🏥 Doctor recommends some lifestyle changes to help manage your condition.")
+					end
+				end
+			end,
+		},
+		{
+			text = "Follow treatment plan strictly ($200)",
 			effects = { Money = -200, Happiness = 3 },
 			feedText = "Following doctor's orders...",
+			eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for prescriptions" end,
 			onResolve = function(state)
 				local roll = math.random(1, 100)
 				local health = (state.Stats and state.Stats.Health) or 50
@@ -1916,19 +1948,12 @@ HealthEvents.events[#HealthEvents.events + 1] = {
 			end,
 		},
 		{
-			text = "Ask about new treatments",
+			text = "Ask about new treatments ($500)",
 			effects = { Money = -500, Smarts = 3 },
 			feedText = "Exploring options...",
+			eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for specialist consultation" end,
 			onResolve = function(state)
 				local roll = math.random(1, 100)
-				local money = state.Money or 0
-				
-				if money < 500 then
-					if state.AddFeed then
-						state:AddFeed("🏥 Can't afford the consultation fee for new treatments.")
-					end
-					return
-				end
 				
 				if roll <= 25 then
 					-- NEW TREATMENT WORKS - CONDITION REMISSION!
@@ -1964,9 +1989,10 @@ HealthEvents.events[#HealthEvents.events + 1] = {
 			end,
 		},
 		{
-			text = "Try alternative medicine",
+			text = "Try alternative medicine ($300)",
 			effects = { Money = -300, Happiness = 2 },
 			feedText = "Exploring alternatives...",
+			eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for alternative treatments" end,
 			onResolve = function(state)
 				local roll = math.random(1, 100)
 				if roll <= 15 then

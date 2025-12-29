@@ -29,8 +29,9 @@ SeniorExpanded.events = {
 		eligibility = function(state)
 			local money = state.Money or 0
 			local health = (state.Stats and state.Stats.Health) or 50
-			-- CRITICAL FIX: Check for MOST EXPENSIVE choice ($3000), not $1000
-			if money < 3000 then
+			-- CRITICAL FIX: Check for CHEAPEST choice ($200 staycation), not most expensive
+			-- So more players can see the event and have options
+			if money < 200 then
 				return false, "Can't afford to travel"
 			end
 			if health < 30 then
@@ -115,6 +116,18 @@ SeniorExpanded.events = {
 				text = "Save money - stay local",
 				effects = { Happiness = 3, Money = 100 },
 				feedText = "Plenty to see close to home. Being responsible.",
+			},
+			-- CRITICAL FIX: Add cheap staycation option for players with limited funds
+			{
+				text = "Budget staycation ($200)",
+				effects = { Money = -200, Happiness = 6, Health = 2 },
+				feedText = "✈️ Relaxed at home, explored local attractions. Refreshing!",
+				eligibility = function(state)
+					if (state.Money or 0) < 200 then
+						return false, "Can't afford $200 staycation"
+					end
+					return true
+				end,
 			},
 		},
 	},

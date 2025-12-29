@@ -542,7 +542,7 @@ Career.events = {
 		careerTags = { "sports" },
 
 		choices = {
-			{ text = "Proper rehab, take time to heal", effects = { Health = 5, Money = -500, Happiness = -3 }, setFlags = { recovered_athlete = true }, feedText = "You took recovery seriously." },
+			{ text = "Proper rehab, take time to heal ($500)", effects = { Health = 5, Money = -500, Happiness = -3 }, setFlags = { recovered_athlete = true }, feedText = "You took recovery seriously.", eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for rehab" end },
 			{ text = "Rush back too soon", effects = { Health = -10, Happiness = -5 }, setFlags = { chronic_injury = true }, feedText = "Coming back too fast made it worse..." },
 			{ text = "Use it as motivation", effects = { Health = 3, Smarts = 2, Happiness = 5 }, setFlags = { comeback_story = true }, feedText = "You turned the setback into fuel!" },
 		},
@@ -810,7 +810,7 @@ Career.events = {
 		choices = {
 			{ 
 				text = "Quit immediately - mental health first", 
-				effects = { Happiness = 8, Health = 5, Money = -1000 }, 
+				effects = { Happiness = 8, Health = 5 }, 
 				setFlags = { between_jobs = true }, 
 				feedText = "You walked out. Best decision for your health.",
 				onResolve = function(state)
@@ -1592,8 +1592,8 @@ Career.events = {
 		choices = {
 			{ text = "Report it to HR", effects = { Happiness = -5, Smarts = 2 }, setFlags = { reported_harassment = true }, feedText = "You made an official report." },
 			{ text = "Confront the harasser directly", effects = { Happiness = -3 }, setFlags = { confronted_harasser = true }, feedText = "You stood up for yourself." },
-			{ text = "Document and get legal advice", effects = { Smarts = 3, Money = -500 }, setFlags = { building_case = true }, feedText = "You're building a case." },
-			{ text = "Leave the job entirely", effects = { Happiness = 3, Health = 5, Money = -1000 }, setFlags = { between_jobs = true }, feedText = "Your wellbeing mattered more than the job." },
+			{ text = "Document and get legal advice ($500)", effects = { Smarts = 3, Money = -500 }, setFlags = { building_case = true }, feedText = "You're building a case.", eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for legal consultation" end },
+			{ text = "Leave the job entirely", effects = { Happiness = 3, Health = 5 }, setFlags = { between_jobs = true }, feedText = "Your wellbeing mattered more than the job." },
 		},
 	},
 	{
@@ -1619,7 +1619,7 @@ Career.events = {
 			{ text = "Met incredible people", effects = { Happiness = 8, Smarts = 3 }, setFlags = { strong_network = true }, feedText = "The connections you made were invaluable!" },
 			{ text = "Got inspired by speakers", effects = { Happiness = 6, Smarts = 4 }, feedText = "You left full of new ideas." },
 			{ text = "Landed a job lead", effects = { Happiness = 10, Money = 500 }, setFlags = { job_opportunity = true }, feedText = "A conversation led to an amazing opportunity!" },
-			{ text = "Honestly it was boring", effects = { Happiness = -2, Money = -300 }, feedText = "Waste of time and money." },
+			{ text = "Honestly it was boring ($300 wasted)", effects = { Happiness = -2, Money = -300 }, feedText = "Waste of time and money.", eligibility = function(state) return (state.Money or 0) >= 300, "💸 The conference fee was $300" end },
 		},
 	},
 	{
@@ -1772,7 +1772,7 @@ Career.events = {
 		{ text = "Set firm boundaries", effects = { Happiness = 5, Health = 3, Smarts = 2 }, setFlags = { boundary_setter = true }, feedText = "You stopped answering emails after 6pm. Revolutionary." },
 		{ text = "Confront the issues head-on", effects = { Happiness = -3, Smarts = 4 }, setFlags = { confrontational = true }, feedText = "You called out the toxicity in a meeting. Brave but risky." },
 		{ text = "Document everything and report to HR", effects = { Happiness = -2, Smarts = 3 }, setFlags = { documented_issues = true }, feedText = "You're building a paper trail. Just in case." },
-		{ text = "Start therapy to cope", effects = { Happiness = 8, Health = 5, Money = -500 }, setFlags = { in_therapy = true }, feedText = "Professional help is making a real difference." },
+		{ text = "Start therapy to cope ($500)", effects = { Happiness = 8, Health = 5, Money = -500 }, setFlags = { in_therapy = true }, feedText = "Professional help is making a real difference.", eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for therapy sessions" end },
 	},
 },
 {
@@ -1818,10 +1818,11 @@ Career.events = {
 	
 	choices = {
 		{ 
-			text = "Yes - start over in a new field", 
+			text = "Yes - start over in a new field ($2K)", 
 			effects = { Happiness = 10, Money = -2000, Smarts = 5 }, 
 			setFlags = { career_pivoter = true },
 			feedText = "You quit and started over. Scary but exciting!",
+			eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2K savings for retraining" end,
 			onResolve = function(state)
 				if state.ClearCareer then
 					state:ClearCareer()
@@ -2352,7 +2353,7 @@ Career.events = {
 			end,
 		},
 		{ text = "Stick to regular hours", effects = { Happiness = 3, Money = 200 }, feedText = "You maintained boundaries. Sanity preserved!" },
-		{ text = "Call in sick during peak", effects = { Happiness = 5, Money = -100 }, setFlags = { unreliable_worker = true }, feedText = "You ditched during the rush. Manager is furious." },
+		{ text = "Call in sick during peak (lose wages)", effects = { Happiness = 5 }, setFlags = { unreliable_worker = true }, feedText = "You ditched during the rush. Manager is furious." },
 	},
 },
 {
@@ -3080,7 +3081,7 @@ Career.events = {
 		},
 		{ text = "Take a break and recharge", effects = { Happiness = 4, Health = 3 }, feedText = "Sometimes you need to step away to come back stronger." },
 		{ text = "Seek inspiration from others", effects = { Smarts = 2, Happiness = 3 }, feedText = "Consumed art, music, nature. Fresh ideas emerging!" },
-		{ text = "Change your environment", effects = { Happiness = 3, Money = -100 }, feedText = "New coffee shop, new ideas. Change of scenery helped!" },
+		{ text = "Change your environment ($100)", effects = { Happiness = 3, Money = -100 }, feedText = "New coffee shop, new ideas. Change of scenery helped!", eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for coffee shop supplies" end },
 	},
 },
 

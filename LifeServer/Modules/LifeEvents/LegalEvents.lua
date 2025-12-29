@@ -172,7 +172,7 @@ LegalEvents.events = {
 				end,
 			},
 			{
-				text = "Drop the case (free)",
+				text = "Drop the case",
 				effects = { Happiness = -3 },
 				feedText = "⚖️ Not worth the hassle. Letting it go.",
 			},
@@ -244,7 +244,7 @@ LegalEvents.events = {
 				end,
 			},
 			{
-				text = "Try to work things out (free)",
+				text = "Try to work things out",
 				effects = { Happiness = 3 },
 				feedText = "💔 Decided to give it another chance. Marriage counseling maybe.",
 			},
@@ -310,7 +310,7 @@ LegalEvents.events = {
 				end,
 			},
 			{ text = "Repair/maintenance dispute", effects = { Happiness = -3 }, feedText = "🏠 Landlord won't fix things. Escalating issue." },
-			{ text = "Eviction situation", effects = { Happiness = -8, Money = -500 }, setFlags = { eviction_on_record = true }, feedText = "🏠 Facing eviction. Stressful housing crisis." },
+			{ text = "Eviction situation (costs $500)", effects = { Happiness = -8, Money = -500 }, setFlags = { eviction_on_record = true }, feedText = "🏠 Facing eviction. Stressful housing crisis.", eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for moving expenses" end },
 		},
 	},
 	{
@@ -330,7 +330,7 @@ LegalEvents.events = {
 		choices = {
 			{ text = "Create a comprehensive will ($300)", effects = { Money = -300, Happiness = 4, Smarts = 3 }, setFlags = { has_will = true }, feedText = "📋 Proper legal will created. Peace of mind.", eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for lawyer" end },
 			{ text = "DIY will kit ($30)", effects = { Money = -30, Happiness = 2, Smarts = 2 }, setFlags = { has_will = true }, feedText = "📋 Basic will done. Better than nothing.", eligibility = function(state) return (state.Money or 0) >= 30, "💸 Need $30 for will kit" end },
-			{ text = "Put it off - morbid topic (free)", effects = { Happiness = 1 }, feedText = "📋 Don't want to think about it. Later." },
+			{ text = "Put it off - morbid topic", effects = { Happiness = 1 }, feedText = "📋 Don't want to think about it. Later." },
 		},
 	},
 	{
@@ -450,7 +450,7 @@ LegalEvents.events = {
 				end,
 			},
 			{ text = "Nuisance complaint", effects = { Happiness = -3 }, feedText = "🏘️ Filed complaint about noise/eyesore. Relations strained." },
-			{ text = "Mediation", effects = { Money = -100, Happiness = 3 }, feedText = "🏘️ Third party helped resolve. Better outcome." },
+			{ text = "Mediation ($100)", effects = { Money = -100, Happiness = 3 }, feedText = "🏘️ Third party helped resolve. Better outcome.", eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for mediator" end },
 		},
 	},
 	{
@@ -473,7 +473,6 @@ LegalEvents.events = {
 				text = "Hire defense lawyer ($1,000)",
 				effects = { Money = -1000 },
 				feedText = "Fighting the lawsuit...",
-				-- BUG FIX #16: Add eligibility check for legal fees
 				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Can't afford lawyer ($1,000 needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
@@ -482,12 +481,10 @@ LegalEvents.events = {
 						state:AddFeed("⚠️ Case dismissed! Lawyer proved their claims false!")
 					elseif roll < 0.70 then
 						state:ModifyStat("Happiness", -2)
-						-- CRITICAL FIX: Prevent negative money
 						state.Money = math.max(0, (state.Money or 0) - 500)
 						state:AddFeed("⚠️ Settled for less than sued for. Could've been worse.")
 					else
 						state:ModifyStat("Happiness", -10)
-						-- CRITICAL FIX: Prevent negative money
 						state.Money = math.max(0, (state.Money or 0) - 3000)
 						state.Flags = state.Flags or {}
 						state.Flags.lost_lawsuit = true
@@ -495,7 +492,8 @@ LegalEvents.events = {
 					end
 				end,
 			},
-			{ text = "Counter-sue", effects = { Money = -500 }, feedText = "Fighting back...",
+			{ text = "Counter-sue ($500)", effects = { Money = -500 }, feedText = "Fighting back...",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 to file counter-suit" end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.30 then
@@ -506,6 +504,41 @@ LegalEvents.events = {
 						state:ModifyStat("Happiness", -5)
 						state:AddFeed("⚠️ Counter-suit failed. Made things worse.")
 					end
+				end,
+			},
+			-- CRITICAL FIX: FREE OPTION to prevent hard lock!
+			{
+				text = "Represent yourself in court",
+				effects = { Happiness = -5, Smarts = 3 },
+				feedText = "Defending yourself pro se...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random()
+					local winChance = 0.15 + (smarts / 300)
+					
+					if roll < winChance then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("⚠️ You actually WON! The judge dismissed the case! Amazing!")
+					elseif roll < (winChance * 2.5) then
+						state:ModifyStat("Happiness", 2)
+						state.Money = math.max(0, (state.Money or 0) - 500)
+						state:AddFeed("⚠️ Settled for a smaller amount than they asked for.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state.Money = math.max(0, (state.Money or 0) - 1500)
+						state:AddFeed("⚠️ Lost the case. At least you didn't pay lawyer fees.")
+					end
+				end,
+			},
+			{
+				text = "Ignore the lawsuit completely",
+				effects = { Happiness = -10 },
+				feedText = "You didn't show up to court...",
+				onResolve = function(state)
+					state.Money = math.max(0, (state.Money or 0) - 2000)
+					state.Flags = state.Flags or {}
+					state.Flags.default_judgment = true
+					state:AddFeed("⚠️ Default judgment against you! They won automatically. Bad move.")
 				end,
 			},
 		},
@@ -564,8 +597,8 @@ LegalEvents.events = {
 					end
 				end,
 			},
-			{ text = "Pay the fine", effects = { Money = -150, Happiness = -2 }, feedText = "🚦 Paid it. Easier than fighting. Points on license." },
-			{ text = "Traffic school", effects = { Money = -75, Smarts = 2, Happiness = -1 }, feedText = "🚦 Boring class but keeps points off license." },
+			{ text = "Pay the fine ($150)", effects = { Money = -150, Happiness = -2 }, feedText = "🚦 Paid it. Easier than fighting. Points on license.", eligibility = function(state) return (state.Money or 0) >= 150, "💸 Need $150 for fine" end },
+			{ text = "Traffic school ($75)", effects = { Money = -75, Smarts = 2, Happiness = -1 }, feedText = "🚦 Boring class but keeps points off license.", eligibility = function(state) return (state.Money or 0) >= 75, "💸 Need $75 for traffic school" end },
 		},
 	},
 }

@@ -619,9 +619,10 @@ local events = {
 			},
 			{
 				index = 3,
-				text = "Handle it through connections",
+				text = "Handle it through connections ($200)",
 				effects = { Money = -200 },
 				feedText = "You had someone else handle it...",
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 to pay off connections" end,
 				onResolve = function(state)
 					state.CareerInfo = state.CareerInfo or {}
 					state.CareerInfo.hustlerRep = (state.CareerInfo.hustlerRep or 0) + 5

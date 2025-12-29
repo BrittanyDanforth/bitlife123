@@ -1902,7 +1902,7 @@ Childhood.events = {
 		
 		choices = {
 		{ text = "Big party with all my friends (parents pay)", effects = { Happiness = 10 }, setFlags = { party_person = true }, feedText = "Best birthday ever! So many friends and presents!" },
-		{ text = "Small family celebration (free)", effects = { Happiness = 7 }, setFlags = { family_oriented = true }, feedText = "Cozy and special with the people who matter most." },
+		{ text = "Small family celebration", effects = { Happiness = 7 }, setFlags = { family_oriented = true }, feedText = "Cozy and special with the people who matter most." },
 		{ text = "Special outing instead (parents pay)", effects = { Happiness = 8 }, feedText = "An adventure for your birthday! So memorable." },
 		{ text = "Themed costume party (parents pay)", effects = { Happiness = 9, Looks = 2 }, setFlags = { loves_costumes = true }, feedText = "Everyone dressed up! It was magical." },
 		},
@@ -2849,7 +2849,7 @@ Childhood.events = {
 		tags = { "collecting", "hobby", "organization" },
 		
 		choices = {
-			{ text = "Trading cards", effects = { Happiness = 5, Smarts = 2, Money = -15 }, setFlags = { card_collector = true }, feedText = "Your card collection is growing! Gotta catch em all!" },
+			{ text = "Trading cards", effects = { Happiness = 5, Smarts = 2 }, setFlags = { card_collector = true }, feedText = "Your card collection is growing! Gotta catch em all!" },
 			{ text = "Rocks and minerals", effects = { Happiness = 4, Smarts = 4 }, setFlags = { rock_collector = true }, hintCareer = "science", feedText = "You're becoming a young geologist!" },
 			{ text = "Stuffed animals", effects = { Happiness = 6 }, setFlags = { plushie_collector = true }, feedText = "Your bed is covered in stuffed animals!" },
 			{ text = "Coins", effects = { Happiness = 3, Smarts = 3, Money = 10 }, setFlags = { coin_collector = true }, hintCareer = "finance", feedText = "Some of these old coins might be valuable!" },
