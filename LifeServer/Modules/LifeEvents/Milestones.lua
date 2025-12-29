@@ -341,19 +341,6 @@ Milestones.events = {
 							isEventAcquired = true,
 						})
 					end
-						end
-						if state.AddFeed then
-							state:AddFeed("🚙 Can't afford reliable - settling for a beater.")
-						end
-					else
-						if state.ModifyStat then state:ModifyStat("Happiness", -6) end
-						if state.AddFeed then
-							state:AddFeed("💸 Can't afford a car right now...")
-						end
-						state.Flags = state.Flags or {}
-						state.Flags.has_car = nil
-						state.Flags.has_vehicle = nil
-					end
 				end,
 			},
 			{

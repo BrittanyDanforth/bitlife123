@@ -1945,15 +1945,6 @@ Adult.events = {
 				effects = { Happiness = 5, Smarts = 3 },
 				setFlags = { lifelong_learner = true }, 
 				feedText = "📚 Free online courses! Self-taught and proud!",
-				onResolve = function(state)
-					if state.ModifyStat then
-							state:ModifyStat("Smarts", 3)
-						end
-						if state.AddFeed then
-							state:AddFeed("📚 Learning through free online resources!")
-						end
-					end
-				end,
 			},
 			{ text = "Reconnect with old friends", effects = { Happiness = 10 }, feedText = "Those reunions filled your heart." },
 			{ text = "Write your memoirs", effects = { Happiness = 5, Smarts = 3 }, setFlags = { wrote_memoir = true }, feedText = "Your life story is now on paper." },

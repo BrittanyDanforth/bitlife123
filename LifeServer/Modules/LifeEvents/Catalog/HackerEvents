@@ -900,17 +900,6 @@ local events = {
 					else
 						if state.ModifyStat then state:ModifyStat("Health", -10) end
 						if state.AddFeed then state:AddFeed("💰 Payoff wasn't enough. They came after you!") end
-							end
-						end
-					else
-						-- Can't afford
-						if state.ModifyStat then 
-							state:ModifyStat("Happiness", -15)
-							state:ModifyStat("Health", -20)
-						end
-						if state.AddFeed then
-							state:AddFeed("💸 Can't afford to pay them off. They destroyed you!")
-						end
 					end
 				end,
 			},
