@@ -387,16 +387,27 @@ local function applyChoiceEffects(state, choice, isSuccess)
 	if effectsToApply then
 		for stat, delta in pairs(effectsToApply) do
 			if stat ~= "Money" then -- Handle money separately
+				-- CRITICAL FIX: Handle range-based effects like { Health = {5, 12} }
+				local actualDelta = delta
+				if type(delta) == "table" and delta[1] and delta[2] then
+					actualDelta = math.random(delta[1], delta[2])
+				end
+				
 				if state.ModifyStat then
-					state:ModifyStat(stat, delta)
+					state:ModifyStat(stat, actualDelta)
 				elseif state.Stats and state.Stats[stat] then
-					state.Stats[stat] = math.clamp(state.Stats[stat] + delta, 0, 100)
+					state.Stats[stat] = math.clamp(state.Stats[stat] + actualDelta, 0, 100)
 				end
 			end
 		end
 		-- Check for Money in effects
 		if effectsToApply.Money then
-			moneyToApply = (moneyToApply or 0) + effectsToApply.Money
+			-- CRITICAL FIX: Handle range-based money effects
+			local moneyDelta = effectsToApply.Money
+			if type(moneyDelta) == "table" and moneyDelta[1] and moneyDelta[2] then
+				moneyDelta = math.random(moneyDelta[1], moneyDelta[2])
+			end
+			moneyToApply = (moneyToApply or 0) + moneyDelta
 		end
 	end
 

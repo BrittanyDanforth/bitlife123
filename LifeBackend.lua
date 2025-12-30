@@ -9918,19 +9918,29 @@ function LifeBackend:applyStatChanges(state, deltas)
 	end
 	state.Stats = state.Stats or {}
 	for stat, delta in pairs(deltas) do
+		-- CRITICAL FIX: Handle range-based effects like { Health = {5, 12} }
+		local actualDelta = delta
+		if type(delta) == "table" and delta[1] and delta[2] then
+			actualDelta = math.random(delta[1], delta[2])
+		elseif type(delta) == "table" then
+			-- Table but not a range - skip it to avoid crash
+			warn("[LifeBackend] Invalid effect format for stat " .. tostring(stat) .. ": " .. tostring(delta))
+			actualDelta = 0
+		end
+		
 		if stat == "Money" or stat == "money" then
-			state.Money = math.max(0, (state.Money or 0) + delta)
+			state.Money = math.max(0, (state.Money or 0) + actualDelta)
 		elseif stat == "Health" or stat == "H" then
-			state.Stats.Health = clamp((state.Stats.Health or 0) + delta)
+			state.Stats.Health = clamp((state.Stats.Health or 0) + actualDelta)
 			state.Health = state.Stats.Health
 		elseif stat == "Happiness" or stat == "Happy" then
-			state.Stats.Happiness = clamp((state.Stats.Happiness or 0) + delta)
+			state.Stats.Happiness = clamp((state.Stats.Happiness or 0) + actualDelta)
 			state.Happiness = state.Stats.Happiness
 		elseif stat == "Smarts" then
-			state.Stats.Smarts = clamp((state.Stats.Smarts or 0) + delta)
+			state.Stats.Smarts = clamp((state.Stats.Smarts or 0) + actualDelta)
 			state.Smarts = state.Stats.Smarts
 		elseif stat == "Looks" then
-			state.Stats.Looks = clamp((state.Stats.Looks or 0) + delta)
+			state.Stats.Looks = clamp((state.Stats.Looks or 0) + actualDelta)
 			state.Looks = state.Stats.Looks
 		end
 	end
@@ -12576,8 +12586,10 @@ function LifeBackend:applyChildSupport(state)
 	end
 	
 	-- Recalculate based on current number of minor children
-	local perChildAmount = (state.Flags.child_support_children or 1) > 0 and 
-		childSupportAmount / state.Flags.child_support_children or childSupportAmount
+	-- CRITICAL FIX: Properly guard against division by zero/nil
+	local numSupportChildren = state.Flags.child_support_children or 1
+	if numSupportChildren <= 0 then numSupportChildren = 1 end
+	local perChildAmount = childSupportAmount / numSupportChildren
 	local currentPayment = math.floor(perChildAmount * minorChildCount)
 	
 	-- Deduct child support
@@ -13367,9 +13379,10 @@ function LifeBackend:replaceTextVariables(text, state)
 	
 	local result = text
 	
-	-- Partner name replacement
+	-- Partner name replacement - CRITICAL: Define at function scope so it's available for {partner} replacement later
+	local partnerName = "your partner"
 	if state.Relationships and state.Relationships.partner then
-		local partnerName = state.Relationships.partner.name or "your partner"
+		partnerName = state.Relationships.partner.name or "your partner"
 		result = result:gsub("{{PARTNER_NAME}}", partnerName)
 		result = result:gsub("{{PARTNER}}", partnerName)
 		result = result:gsub("your partner", partnerName) -- Also replace generic "your partner" with actual name
@@ -15843,7 +15856,11 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 		end
 
 		if choice.crime then
-			local reward = RANDOM:NextInteger(choice.crime.reward[1], choice.crime.reward[2])
+			-- CRITICAL FIX: Guard against nil reward to prevent crash
+			local reward = 0
+			if choice.crime.reward then
+				reward = RANDOM:NextInteger(choice.crime.reward[1] or 0, choice.crime.reward[2] or 100)
+			end
 			self:addMoney(state, reward)
 			effectsSummary = effectsSummary or {}
 			effectsSummary.Money = (effectsSummary.Money or 0) + reward
@@ -16415,7 +16432,8 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 		end
 		if mafEffect.money then
 			-- mafiaEffect.money is a {min, max} table
-			local moneyEarned = RANDOM:NextInteger(mafEffect.money[1], mafEffect.money[2])
+			-- CRITICAL FIX: Add fallbacks for malformed money ranges
+			local moneyEarned = RANDOM:NextInteger(mafEffect.money[1] or 0, mafEffect.money[2] or 100)
 			self:addMoney(state, moneyEarned)
 			state.MobState.earnings = (state.MobState.earnings or 0) + moneyEarned
 			resultMessage = resultMessage .. " Earned $" .. moneyEarned .. "."
@@ -17188,7 +17206,11 @@ function LifeBackend:handleCrime(player, crimeId, minigameBonus)
 		self:pushState(player, message)
 		return { success = false, caught = true, message = message }
 	else
-		local payout = RANDOM:NextInteger(crime.reward[1], crime.reward[2])
+		-- CRITICAL FIX: Guard against nil reward to prevent crash
+		local payout = 0
+		if crime.reward then
+			payout = RANDOM:NextInteger(crime.reward[1] or 0, crime.reward[2] or 100)
+		end
 		self:addMoney(state, payout)
 		self:applyStatChanges(state, { Happiness = 4 })
 		
@@ -21282,7 +21304,8 @@ function LifeBackend:performPathAction(player, pathId, actionId)
 	local stages = path.stages
 
 	if action.reward then
-		local payout = RANDOM:NextInteger(action.reward[1], action.reward[2])
+		-- CRITICAL FIX: Add fallbacks for malformed reward ranges
+		local payout = RANDOM:NextInteger(action.reward[1] or 0, action.reward[2] or 100)
 		self:addMoney(state, payout)
 	end
 
