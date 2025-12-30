@@ -4667,7 +4667,9 @@ local ExclusivePremiumCelebrityEvents = {
 				fameGain = 20,
 				feedText = "You struck while the iron was hot! Brand deals pouring in!",
 				onResolve = function(state)
-					state.Fame = math.min(100, (state.Fame or 0) + 20)
+					-- CRITICAL FIX: Ensure numbers for math.min
+					local currentFame = tonumber(state.Fame) or 0
+					state.Fame = math.min(100, currentFame + 20)
 					state.Flags = state.Flags or {}
 					state.Flags.viral_celebrity = true
 					if state.AddFeed then
@@ -4690,7 +4692,9 @@ local ExclusivePremiumCelebrityEvents = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.6 then
-						state.Fame = math.min(100, (state.Fame or 0) + 25)
+						-- CRITICAL FIX: Ensure numbers for math.min
+						local currentFame = tonumber(state.Fame) or 0
+						state.Fame = math.min(100, currentFame + 25)
 						state.Money = (state.Money or 0) + 1000000
 						if state.AddFeed then
 							state:AddFeed("🔥 LEGENDARY! You turned viral into a cultural moment! Sponsors FIGHTING for you!")
@@ -4741,7 +4745,9 @@ local ExclusivePremiumCelebrityEvents = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.5 then
-						state.Fame = math.min(100, (state.Fame or 0) + 20)
+						-- CRITICAL FIX: Ensure numbers for math.min
+						local currentFame = tonumber(state.Fame) or 0
+						state.Fame = math.min(100, currentFame + 20)
 						if state.AddFeed then
 							state:AddFeed("🎤 Your statement resonated! You're being called a voice of a generation!")
 						end
@@ -4797,7 +4803,9 @@ local ExclusivePremiumCelebrityEvents = {
 					local roll = math.random()
 					if roll < 0.4 then
 						state.Money = (state.Money or 0) + 15000000
-						state.Fame = math.min(100, (state.Fame or 0) + 15)
+						-- CRITICAL FIX: Ensure numbers for math.min
+						local currentFame = tonumber(state.Fame) or 0
+						state.Fame = math.min(100, currentFame + 15)
 						state.Flags = state.Flags or {}
 						state.Flags.brand_ambassador = true
 						state.Flags.mega_deal = true
@@ -4936,7 +4944,9 @@ local ExclusivePremiumCelebrityEvents = {
 				setFlags = { collab_with_legend = true },
 				feedText = "You collaborated with a LEGEND! Your career has peaked!",
 				onResolve = function(state)
-					state.Fame = math.min(100, (state.Fame or 0) + 25)
+					-- CRITICAL FIX: Ensure numbers for math.min
+					local currentFame = tonumber(state.Fame) or 0
+					state.Fame = math.min(100, currentFame + 25)
 					if state.AddFeed then
 						state:AddFeed("👑 The collab dropped and BROKE THE INTERNET! You're now legendary too!")
 					end
@@ -4998,7 +5008,9 @@ local ExclusivePremiumCelebrityEvents = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.4 then
-						state.Fame = math.min(100, (state.Fame or 0) + 5)
+						-- CRITICAL FIX: Ensure numbers for math.min
+						local currentFame = tonumber(state.Fame) or 0
+						state.Fame = math.min(100, currentFame + 5)
 						if state.AddFeed then
 							state:AddFeed("😌 The story died down. Crisis averted... for now.")
 						end
@@ -5018,7 +5030,9 @@ local ExclusivePremiumCelebrityEvents = {
 				fameGain = 10,
 				feedText = "You leaned into the controversy!",
 				onResolve = function(state)
-					state.Fame = math.min(100, (state.Fame or 0) + 10)
+					-- CRITICAL FIX: Ensure numbers for math.min
+					local currentFame = tonumber(state.Fame) or 0
+					state.Fame = math.min(100, currentFame + 10)
 					state.Flags = state.Flags or {}
 					state.Flags.controversial_celebrity = true
 					if state.AddFeed then

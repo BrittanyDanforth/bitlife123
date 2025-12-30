@@ -236,9 +236,10 @@ CommunityEvents.events = {
 					local roll = math.random()
 					if roll < 0.20 then
 						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
-						-- CRITICAL FIX: Don't go negative
-						local loss = math.min(500, state.Money or 0)
-						state.Money = math.max(0, (state.Money or 0) - loss)
+						-- CRITICAL FIX: Don't go negative - ensure numbers for math.min
+						local currentMoney = tonumber(state.Money) or 0
+						local loss = math.min(500, currentMoney)
+						state.Money = math.max(0, currentMoney - loss)
 						state.Flags = state.Flags or {}
 						state.Flags.home_burglarized = true
 						if state.AddFeed then 

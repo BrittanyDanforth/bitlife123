@@ -807,16 +807,7 @@ function LifeState:SetCareer(jobData)
 	return self
 end
 
-function LifeState:ClearCareer()
-	self.CurrentJob = nil
-	self.CareerInfo.performance = 0
-	self.CareerInfo.promotionProgress = 0
-	self.CareerInfo.yearsAtJob = 0
-	self.Career.track = nil
-	self.Flags.employed = nil
-	self.Flags.has_job = nil
-	return self
-end
+-- NOTE: ClearCareer is defined later with full career history tracking (line 3266+)
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- EDUCATION (for event handlers)
@@ -993,14 +984,7 @@ function LifeState:HasRelationship(roleOrName)
 	return false
 end
 
-function LifeState:GetPartner()
-	return self.Relationships and self.Relationships.partner
-end
-
-function LifeState:HasPartner()
-	local partner = self:GetPartner()
-	return partner and partner.alive ~= false
-end
+-- NOTE: GetPartner and HasPartner are defined later with full partner lookup (line 3116+)
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- CRITICAL FIX #281-290: EDUCATION DEBT TRACKING
@@ -1019,8 +1003,10 @@ function LifeState:PayEducationDebt(amount)
 		return false, "No debt to pay"
 	end
 	
-	local debtBefore = self.EducationData.Debt
-	local payment = math.min(amount, debtBefore)
+	-- CRITICAL FIX: Ensure values are numbers for math.min
+	local debtBefore = tonumber(self.EducationData.Debt) or 0
+	local amountNum = tonumber(amount) or 0
+	local payment = math.min(amountNum, debtBefore)
 	
 	self.EducationData.Debt = debtBefore - payment
 	self.Money = math.max(0, (self.Money or 0) - payment)
@@ -1084,7 +1070,9 @@ function LifeState:ApplyPromotion(newTitle, salaryIncrease)
 	self.CareerInfo = self.CareerInfo or {}
 	self.CareerInfo.promotions = (self.CareerInfo.promotions or 0) + 1
 	self.CareerInfo.promotionProgress = 0 -- Reset progress
-	self.CareerInfo.performance = math.min(100, (self.CareerInfo.performance or 50) + 10)
+	-- CRITICAL FIX: Ensure values are numbers for math.min
+	local currentPerformance = tonumber(self.CareerInfo.performance) or 50
+	self.CareerInfo.performance = math.min(100, currentPerformance + 10)
 	
 	-- Set flags
 	self.Flags.promoted = true
@@ -1477,7 +1465,9 @@ function LifeState:BecomeMonarch()
 	self.Flags.ascended_throne = true
 	
 	-- Boost fame and popularity
-	self.Fame = math.min(100, (self.Fame or 0) + 30)
+	-- CRITICAL FIX: Ensure values are numbers for math.min
+	local currentFame = tonumber(self.Fame) or 0
+	self.Fame = math.min(100, currentFame + 30)
 	self:ModifyRoyalPopularity(20)
 	
 	return true, "You are now the " .. self.RoyalState.title .. "!"
@@ -2699,7 +2689,8 @@ function LifeState:TickAssets()
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
 	-- Apply happiness bonus from assets (capped at +25 for billionaire-tier assets)
-	local happinessEffect = math.min(25, totalHappinessBonus)
+	-- CRITICAL FIX: Ensure values are numbers for math.min
+	local happinessEffect = math.min(25, tonumber(totalHappinessBonus) or 0)
 	if happinessEffect > 0 and self.ModifyStat then
 		-- Happiness boost from nice assets (applied each year, scaled by tier)
 		local yearlyBoost = math.ceil(happinessEffect / 3)
@@ -2751,8 +2742,11 @@ function LifeState:TickAssets()
 	
 	-- Apply fame bonus (capped annual increase)
 	if totalFameBonus > 0 then
-		local yearlyFameGain = math.min(5, math.ceil(totalFameBonus / 5))
-		self.Fame = math.min(100, (self.Fame or 0) + yearlyFameGain)
+		-- CRITICAL FIX: Ensure values are numbers for math operations
+		local totalFameBonusNum = tonumber(totalFameBonus) or 0
+		local yearlyFameGain = math.min(5, math.ceil(totalFameBonusNum / 5))
+		local currentFame = tonumber(self.Fame) or 0
+		self.Fame = math.min(100, currentFame + yearlyFameGain)
 	end
 	
 	-- Apply status to looks (high status improves perceived looks)
@@ -2765,7 +2759,9 @@ function LifeState:TickAssets()
 	-- Legacy fame boost from luxury assets
 	if hasLuxuryVehicle or hasLuxuryProperty then
 		if totalAssetValue > 1000000 then
-			self.Fame = math.min(100, (self.Fame or 0) + 1)
+			-- CRITICAL FIX: Ensure values are numbers for math.min
+			local currentFame = tonumber(self.Fame) or 0
+			self.Fame = math.min(100, currentFame + 1)
 		end
 	end
 	
@@ -2840,7 +2836,8 @@ function LifeState:CalculateRetirementPension()
 	end
 	
 	-- Cap at 40 years of work
-	yearsWorked = math.min(40, yearsWorked)
+	-- CRITICAL FIX: Ensure values are numbers for math.min
+	yearsWorked = math.min(40, tonumber(yearsWorked) or 0)
 	
 	-- More years = higher pension
 	local workBonus = yearsWorked * 500
@@ -2956,7 +2953,7 @@ function LifeState:GetCriminalRecordEffects()
 	
 	-- Time reduces effects
 	if self.Flags.years_since_conviction then
-		local years = self.Flags.years_since_conviction
+		local years = tonumber(self.Flags.years_since_conviction) or 0
 		local reduction = math.min(0.5, years * 0.05) -- 5% per year, max 50%
 		
 		effects.jobPenalty = effects.jobPenalty * (1 - reduction)
@@ -3019,7 +3016,8 @@ function LifeState:PayMedicalBill(baseCost)
 	
 	if deductibleMet < deductible then
 		local deductibleRemaining = deductible - deductibleMet
-		local deductiblePayment = math.min(deductibleRemaining, baseCost)
+		-- CRITICAL FIX: Ensure values are numbers for math.min
+		local deductiblePayment = math.min(tonumber(deductibleRemaining) or 0, tonumber(baseCost) or 0)
 		actualCost = deductiblePayment + (baseCost - deductiblePayment) * multiplier
 		
 		if self.HealthInsurance then
@@ -3104,8 +3102,10 @@ function LifeState:SafeSubtractMoney(amount, description)
 end
 
 function LifeState:GetAffordableAmount(desiredAmount)
-	local currentMoney = self.Money or 0
-	return math.min(desiredAmount, currentMoney)
+	-- CRITICAL FIX: Ensure values are numbers for math.min
+	local currentMoney = tonumber(self.Money) or 0
+	local desired = tonumber(desiredAmount) or 0
+	return math.min(desired, currentMoney)
 end
 
 -- ════════════════════════════════════════════════════════════════════════════

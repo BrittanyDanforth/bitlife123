@@ -2182,7 +2182,9 @@ HealthEvents.events[#HealthEvents.events + 1] = {
 				if roll <= 25 then
 					-- NEW TREATMENT WORKS - CONDITION REMISSION!
 					state.Stats = state.Stats or {}
-					state.Stats.Health = math.min(100, (state.Stats.Health or 50) + 20)
+					-- CRITICAL FIX: Ensure numbers for math.min
+					local currentHealth = tonumber(state.Stats.Health) or 50
+					state.Stats.Health = math.min(100, currentHealth + 20)
 					state.Flags = state.Flags or {}
 					state.Flags.condition_in_remission = true
 					-- Chance to clear the chronic flag
@@ -2200,7 +2202,9 @@ HealthEvents.events[#HealthEvents.events + 1] = {
 				elseif roll <= 60 then
 					-- Some improvement
 					state.Stats = state.Stats or {}
-					state.Stats.Health = math.min(100, (state.Stats.Health or 50) + 5)
+					-- CRITICAL FIX: Ensure numbers for math.min
+					local currentHealth = tonumber(state.Stats.Health) or 50
+					state.Stats.Health = math.min(100, currentHealth + 5)
 					if state.AddFeed then
 						state:AddFeed("🏥 New medication helping a bit. Slow progress but hopeful.")
 					end
@@ -2222,14 +2226,18 @@ HealthEvents.events[#HealthEvents.events + 1] = {
 				if roll <= 15 then
 					-- Actually worked (rare)
 					state.Stats = state.Stats or {}
-					state.Stats.Health = math.min(100, (state.Stats.Health or 50) + 8)
+					-- CRITICAL FIX: Ensure numbers for math.min
+					local currentHealth = tonumber(state.Stats.Health) or 50
+					state.Stats.Health = math.min(100, currentHealth + 8)
 					if state.AddFeed then
 						state:AddFeed("🌿 Surprisingly, the alternative approach helped! You feel better!")
 					end
 				elseif roll <= 50 then
 					-- Placebo effect
 					state.Stats = state.Stats or {}
-					state.Stats.Happiness = math.min(100, (state.Stats.Happiness or 50) + 5)
+					-- CRITICAL FIX: Ensure numbers for math.min
+					local currentHappiness = tonumber(state.Stats.Happiness) or 50
+					state.Stats.Happiness = math.min(100, currentHappiness + 5)
 					if state.AddFeed then
 						state:AddFeed("🌿 Hard to say if it worked, but you feel more positive.")
 					end
@@ -2309,7 +2317,9 @@ HealthEvents.events[#HealthEvents.events + 1] = {
 				if roll <= 20 then
 					-- REMISSION possible with Type 2
 					state.Stats = state.Stats or {}
-					state.Stats.Health = math.min(100, (state.Stats.Health or 50) + 15)
+					-- CRITICAL FIX: Ensure numbers for math.min
+					local currentHealth = tonumber(state.Stats.Health) or 50
+					state.Stats.Health = math.min(100, currentHealth + 15)
 					state.Flags = state.Flags or {}
 					state.Flags.diabetes_remission = true
 					if state.AddFeed then
@@ -2317,7 +2327,9 @@ HealthEvents.events[#HealthEvents.events + 1] = {
 					end
 				elseif roll <= 60 then
 					state.Stats = state.Stats or {}
-					state.Stats.Health = math.min(100, (state.Stats.Health or 50) + 5)
+					-- CRITICAL FIX: Ensure numbers for math.min
+					local currentHealth = tonumber(state.Stats.Health) or 50
+					state.Stats.Health = math.min(100, currentHealth + 5)
 					if state.AddFeed then
 						state:AddFeed("💉 New medication helping. Fewer spikes in blood sugar.")
 					end

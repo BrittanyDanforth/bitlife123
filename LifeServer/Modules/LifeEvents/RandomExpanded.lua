@@ -884,9 +884,10 @@ RandomExpanded.events = {
 						if state.AddFeed then state:AddFeed("🔐 False alarm! Just a weird charge. All good.") end
 					elseif roll < 0.70 then
 						if state.ModifyStat then state:ModifyStat("Happiness", -4) end
-						-- CRITICAL FIX: Can't lose more money than you have
-						local loss = math.min(100, state.Money or 0)
-						state.Money = math.max(0, (state.Money or 0) - loss)
+						-- CRITICAL FIX: Can't lose more money than you have - ensure numbers
+						local currentMoney = tonumber(state.Money) or 0
+						local loss = math.min(100, currentMoney)
+						state.Money = math.max(0, currentMoney - loss)
 						if state.AddFeed then 
 							if loss > 0 then
 								state:AddFeed(string.format("🔐 Small fraud. Bank fixed it. Lost $%d and time.", loss))
@@ -896,9 +897,10 @@ RandomExpanded.events = {
 						end
 					elseif roll < 0.90 then
 						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
-						-- CRITICAL FIX: Can't lose more money than you have
-						local loss = math.min(500, state.Money or 0)
-						state.Money = math.max(0, (state.Money or 0) - loss)
+						-- CRITICAL FIX: Can't lose more money than you have - ensure numbers
+						local currentMoney = tonumber(state.Money) or 0
+						local loss = math.min(500, currentMoney)
+						state.Money = math.max(0, currentMoney - loss)
 						state.Flags = state.Flags or {}
 						state.Flags.identity_theft = true
 						if state.AddFeed then 
@@ -910,9 +912,10 @@ RandomExpanded.events = {
 						end
 					else
 						if state.ModifyStat then state:ModifyStat("Happiness", -12) end
-						-- CRITICAL FIX: Can't lose more money than you have
-						local loss = math.min(2000, state.Money or 0)
-						state.Money = math.max(0, (state.Money or 0) - loss)
+						-- CRITICAL FIX: Can't lose more money than you have - ensure numbers
+						local currentMoney = tonumber(state.Money) or 0
+						local loss = math.min(2000, currentMoney)
+						state.Money = math.max(0, currentMoney - loss)
 						state.Flags = state.Flags or {}
 						state.Flags.major_identity_theft = true
 						if state.AddFeed then 
