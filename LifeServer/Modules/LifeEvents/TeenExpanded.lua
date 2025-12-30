@@ -250,7 +250,8 @@ TeenExpanded.events = {
 		},
 	},
 	{
-		id = "teen_viral_moment",
+		-- CRITICAL FIX: Renamed from "teen_viral_moment" to avoid duplicate ID with Teen.lua
+		id = "teen_viral_post",
 		title = "Going Viral",
 		emoji = "🔥",
 		text = "Something you posted went viral!",
@@ -651,7 +652,8 @@ TeenExpanded.events = {
 	-- RISKY BEHAVIOR & CHOICES (Ages 14-17)
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "teen_party_invitation",
+		-- CRITICAL FIX: Renamed from "teen_party_invitation" to avoid duplicate ID with Teen.lua
+		id = "teen_risky_party_invite",
 		title = "Party Invite",
 		emoji = "🎉",
 		text = "You're invited to a party where there might be... things.",

@@ -993,6 +993,13 @@ HealthEvents.events = {
 				effects = { Happiness = -5, Health = -10 },
 				setFlags = { diabetes = true, chronic_illness = true, on_medication = true },
 				feedText = "💉 Diabetes diagnosis. Started insulin and lifestyle changes.",
+				-- CRITICAL FIX: Clear doctor visit flags after diagnosis so player needs new visit for next diagnosis
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.went_to_doctor = nil
+					state.Flags.doctor_checkup = nil
+					state.Flags.recent_checkup = nil
+				end,
 			},
 			{
 				text = "Get second opinion ($200)",
@@ -1003,6 +1010,10 @@ HealthEvents.events = {
 					state.Flags = state.Flags or {}
 					state.Flags.diabetes = true
 					state.Flags.chronic_illness = true
+					-- CRITICAL FIX: Clear doctor visit flags
+					state.Flags.went_to_doctor = nil
+					state.Flags.doctor_checkup = nil
+					state.Flags.recent_checkup = nil
 				end,
 			},
 			{
@@ -1010,6 +1021,13 @@ HealthEvents.events = {
 				effects = { Health = -15 },
 				setFlags = { diabetes = true, untreated_condition = true },
 				feedText = "💉 Ignoring diabetes is dangerous. Condition will worsen.",
+				-- CRITICAL FIX: Clear doctor visit flags after diagnosis
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.went_to_doctor = nil
+					state.Flags.doctor_checkup = nil
+					state.Flags.recent_checkup = nil
+				end,
 			},
 		},
 	},
@@ -1060,6 +1078,13 @@ HealthEvents.events = {
 				setFlags = { heart_disease = true, chronic_illness = true, on_heart_medication = true },
 				feedText = "❤️‍🩹 Heart disease diagnosed. On medication and strict diet now.",
 				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Can't afford treatment ($500 needed)" end,
+				-- CRITICAL FIX: Clear doctor visit flags after diagnosis
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.went_to_doctor = nil
+					state.Flags.doctor_checkup = nil
+					state.Flags.recent_checkup = nil
+				end,
 			},
 			{
 				text = "Get bypass surgery if needed ($5,000)",
@@ -1067,8 +1092,27 @@ HealthEvents.events = {
 				setFlags = { heart_disease = true, had_heart_surgery = true },
 				feedText = "❤️‍🩹 Underwent heart surgery. Long recovery ahead.",
 				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Can't afford surgery ($5,000 needed)" end,
+				-- CRITICAL FIX: Clear doctor visit flags after diagnosis
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.went_to_doctor = nil
+					state.Flags.doctor_checkup = nil
+					state.Flags.recent_checkup = nil
+				end,
 			},
-			{ text = "Try lifestyle changes only (free but risky)", effects = { Happiness = -5, Health = -20 }, setFlags = { heart_disease = true, untreated_heart_condition = true }, feedText = "❤️‍🩹 No treatment. Trying diet and exercise only. Very risky choice." },
+			{ 
+				text = "Try lifestyle changes only (free but risky)", 
+				effects = { Happiness = -5, Health = -20 }, 
+				setFlags = { heart_disease = true, untreated_heart_condition = true }, 
+				feedText = "❤️‍🩹 No treatment. Trying diet and exercise only. Very risky choice.",
+				-- CRITICAL FIX: Clear doctor visit flags after diagnosis
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.went_to_doctor = nil
+					state.Flags.doctor_checkup = nil
+					state.Flags.recent_checkup = nil
+				end,
+			},
 			-- ⚡ GOD MODE PREMIUM OPTION
 			{
 				text = "⚡ [God Mode] Cure heart disease",
@@ -1077,6 +1121,13 @@ HealthEvents.events = {
 				requiresGamepass = "GOD_MODE",
 				gamepassEmoji = "⚡",
 				feedText = "⚡ GOD MODE ACTIVATED! Your heart is now perfectly healthy! Miracle!",
+				-- CRITICAL FIX: Clear doctor visit flags
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.went_to_doctor = nil
+					state.Flags.doctor_checkup = nil
+					state.Flags.recent_checkup = nil
+				end,
 			},
 		},
 	},
@@ -1133,6 +1184,10 @@ HealthEvents.events = {
 					-- Patient can try again at doctor later
 					local roll = math.random()
 					state.Flags = state.Flags or {}
+					-- CRITICAL FIX: Clear doctor visit flags after diagnosis
+					state.Flags.went_to_doctor = nil
+					state.Flags.doctor_checkup = nil
+					state.Flags.recent_checkup = nil
 					if roll < 0.40 then
 						-- Treatment showing early promise
 						state.Flags.treatment_responding = true
@@ -1159,6 +1214,10 @@ HealthEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					state.Flags = state.Flags or {}
+					-- CRITICAL FIX: Clear doctor visit flags after diagnosis
+					state.Flags.went_to_doctor = nil
+					state.Flags.doctor_checkup = nil
+					state.Flags.recent_checkup = nil
 					state.Flags.has_cancer = true
 					state.Flags.cancer = true
 					if roll < 0.15 then
@@ -1183,6 +1242,13 @@ HealthEvents.events = {
 				effects = { Happiness = -30, Health = -40 },
 				setFlags = { has_cancer = true, terminal_illness = true, refusing_treatment = true },
 				feedText = "🎗️ Choosing to live remaining time without treatment.",
+				-- CRITICAL FIX: Clear doctor visit flags after diagnosis
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.went_to_doctor = nil
+					state.Flags.doctor_checkup = nil
+					state.Flags.recent_checkup = nil
+				end,
 			},
 			-- ⚡ GOD MODE PREMIUM OPTION
 			{
@@ -1192,6 +1258,13 @@ HealthEvents.events = {
 				requiresGamepass = "GOD_MODE",
 				gamepassEmoji = "⚡",
 				feedText = "⚡ GOD MODE ACTIVATED! The cancer has completely vanished! Miraculous recovery!",
+				-- CRITICAL FIX: Clear doctor visit flags
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.went_to_doctor = nil
+					state.Flags.doctor_checkup = nil
+					state.Flags.recent_checkup = nil
+				end,
 			},
 		},
 	},

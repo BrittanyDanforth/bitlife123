@@ -308,7 +308,8 @@ events[#events + 1] = {
 }
 
 events[#events + 1] = {
-	id = "show_and_tell",
+	-- CRITICAL FIX: Renamed from "show_and_tell" to avoid duplicate ID with Childhood.lua
+	id = "preschool_show_and_tell",
 	title = "Show and Tell",
 	emoji = "🎤",
 	textVariants = {

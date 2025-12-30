@@ -2422,7 +2422,8 @@ Teen.events = {
 		},
 	},
 	{
-		id = "viral_moment",
+		-- CRITICAL FIX: Renamed from "viral_moment" to avoid duplicate ID with Adult.lua/CelebrityEvents.lua
+		id = "teen_filmed_viral",
 		title = "Your Video Went VIRAL!",
 		emoji = "📱",
 		text = "Someone filmed you doing something and posted it online. It's blowing up!",
@@ -3519,7 +3520,8 @@ Teen.events = {
 		},
 	},
 	{
-		id = "teen_social_media_drama",
+		-- CRITICAL FIX: Renamed from "teen_social_media_drama" to avoid duplicate ID
+		id = "teen_social_media_explosion",
 		title = "Social Media Explosion!",
 		emoji = "📱",
 		text = "Someone posted something about you online. It's going VIRAL in your school. Your phone is blowing up with notifications.",

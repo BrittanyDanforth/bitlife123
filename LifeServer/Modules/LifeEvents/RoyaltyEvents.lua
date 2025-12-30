@@ -403,7 +403,8 @@ RoyaltyEvents.RoyalDuties = {
 		frequency = "quarterly",
 	},
 	{
-		id = "disaster_relief",
+		-- CRITICAL FIX: Renamed from "disaster_relief" to avoid duplicate ID
+		id = "royal_disaster_relief_visit",
 		name = "Disaster Relief Visit",
 		emoji = "🆘",
 		category = "emergency",
@@ -4875,7 +4876,8 @@ RoyaltyEvents.ExpandedRoyalEvents = {
 	
 	-- AGE 14: Royal boarding school option
 	{
-		id = "royal_boarding_school",
+		-- CRITICAL FIX: Renamed from "royal_boarding_school" to avoid duplicate ID
+		id = "royal_elite_education_choice",
 		title = "🏫 Elite Education",
 		emoji = "🏫",
 		text = "Your parents discuss your education future. Will you attend an elite boarding school or continue private palace tutoring?",
@@ -4980,7 +4982,8 @@ RoyaltyEvents.ExpandedRoyalEvents = {
 	
 	-- AGE 17: Gap year decision
 	{
-		id = "royal_gap_year_decision",
+		-- CRITICAL FIX: Renamed from "royal_gap_year_decision" to avoid duplicate ID
+		id = "royal_gap_year_adventure",
 		title = "🌍 Gap Year Adventure?",
 		emoji = "🌍",
 		text = "Before university, many royals take a gap year. What will you do with this time?",
@@ -5087,7 +5090,8 @@ RoyaltyEvents.ExpandedRoyalEvents = {
 	
 	-- ROYAL TEEN EXPERIENCES
 	{
-		id = "royal_first_solo_engagement",
+		-- CRITICAL FIX: Renamed from "royal_first_solo_engagement" to avoid duplicate ID
+		id = "royal_solo_hospital_visit",
 		title = "👑 First Solo Engagement",
 		emoji = "👑",
 		text = "At last! Your first official royal engagement without your parents. A hospital visit to meet young patients.",
@@ -5200,7 +5204,8 @@ RoyaltyEvents.ExpandedRoyalEvents = {
 	},
 	
 	{
-		id = "royal_world_tour",
+		-- CRITICAL FIX: Renamed from "royal_world_tour" to avoid duplicate ID
+		id = "royal_official_tour",
 		title = "🌍 Royal World Tour",
 		emoji = "🌍",
 		text = "You're embarking on an official royal tour! Multiple countries, weeks of engagements, and global media attention.",

@@ -3356,7 +3356,8 @@ Adult.events = {
 	-- These events make adult life more interesting and keep players hooked
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "viral_moment",
+		-- CRITICAL FIX: Renamed from "viral_moment" to avoid duplicate ID
+		id = "adult_viral_fame",
 		title = "🌟 Viral Fame!",
 		emoji = "📱",
 		text = "Something you posted online has gone VIRAL! Your phone is blowing up with notifications. Millions of people are watching, sharing, commenting...",

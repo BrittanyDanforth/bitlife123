@@ -2071,7 +2071,8 @@ JobSpecificEvents.events = {
 	-- OFFICE / CORPORATE JOBS (admin, HR, management)
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "office_meeting_marathon",
+		-- CRITICAL FIX: Renamed from "office_meeting_marathon" to avoid duplicate ID
+		id = "office_calendar_nightmare",
 		title = "Meeting Marathon",
 		emoji = "📅",
 		text = "Your calendar is completely packed with back-to-back meetings today.",

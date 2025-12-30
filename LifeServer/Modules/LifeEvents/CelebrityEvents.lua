@@ -1235,7 +1235,8 @@ CelebrityEvents.GeneralFameEvents = {
 	
 	-- VIRAL MOMENT
 	{
-		id = "viral_moment",
+		-- CRITICAL FIX: Renamed to avoid duplicate ID
+		id = "celebrity_viral_clip",
 		title = "📱 Going Viral!",
 		emoji = "📱",
 		text = "Something you did went incredibly viral! Millions of people have seen it.",
@@ -1505,7 +1506,8 @@ CelebrityEvents.GeneralFameEvents = {
 	
 	-- VIRAL MOMENT
 	{
-		id = "viral_moment",
+		-- CRITICAL FIX: Renamed to avoid duplicate ID
+		id = "celebrity_viral_moment",
 		title = "📱 Viral Moment",
 		emoji = "📱",
 		text = "Something you did just went viral! Millions are watching, sharing, and talking about you.",
@@ -3495,7 +3497,8 @@ CelebrityEvents.StreamerCareer = {
 			},
 		},
 		{
-			id = "sponsorship_deal",
+			-- CRITICAL FIX: Renamed from "sponsorship_deal" to avoid duplicate ID with RacingEvents
+			id = "celebrity_sponsorship_offer",
 			title = "💰 Major Sponsorship!",
 			text = "A gaming chair company / energy drink brand wants you as their face!",
 			minStage = 3,
@@ -4644,7 +4647,8 @@ end
 local ExclusivePremiumCelebrityEvents = {
 	-- VIRAL MOMENT
 	{
-		id = "celebrity_viral_moment",
+		-- CRITICAL FIX: Renamed from "celebrity_viral_moment" to avoid duplicate ID
+		id = "celebrity_premium_viral",
 		title = "🔥 YOU WENT VIRAL!",
 		emoji = "🔥",
 		text = "OMG! Something you did just blew up on social media! Everyone is talking about you!",

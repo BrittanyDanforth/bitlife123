@@ -445,7 +445,8 @@ EarlyLifeEvents.events = {
 		},
 	},
 	{
-		id = "learning_to_read",
+		-- CRITICAL FIX: Renamed from "learning_to_read" to avoid duplicate ID with Childhood.lua
+		id = "early_reading_progress",
 		title = "Learning to Read",
 		emoji = "📖",
 		text = "You're learning to read! Letters are starting to make sense!",
@@ -765,7 +766,8 @@ EarlyLifeEvents.events = {
 	-- MIDDLE CHILDHOOD (8-10) - Growing independence
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "sleepover_first",
+		-- CRITICAL FIX: Renamed from "sleepover_first" to avoid duplicate ID with Childhood.lua
+		id = "early_sleepover",
 		title = "First Sleepover",
 		emoji = "🛏️",
 		text = "You've been invited to sleep over at a friend's house!",
@@ -814,7 +816,8 @@ EarlyLifeEvents.events = {
 		},
 	},
 	{
-		id = "sports_tryouts",
+		-- CRITICAL FIX: Renamed from "sports_tryouts" to avoid duplicate ID with SchoolActivityEvents.lua
+		id = "youth_sports_tryout",
 		title = "Sports Tryouts",
 		emoji = "⚽",
 		text = "There are tryouts for the school sports team! Do you try out?",
@@ -868,7 +871,8 @@ EarlyLifeEvents.events = {
 		},
 	},
 	{
-		id = "talent_show",
+		-- CRITICAL FIX: Renamed from "talent_show" to avoid duplicate ID with Childhood.lua
+		id = "school_talent_performance",
 		title = "School Talent Show",
 		emoji = "🎤",
 		text = "The school is having a talent show! Will you participate?",
@@ -933,7 +937,8 @@ EarlyLifeEvents.events = {
 		},
 	},
 	{
-		id = "science_fair",
+		-- CRITICAL FIX: Renamed from "science_fair" to avoid duplicate ID with Childhood.lua
+		id = "school_science_fair",
 		title = "Science Fair Project",
 		emoji = "🔬",
 		text = "The school science fair is coming up! You need a project!",
@@ -1365,7 +1370,8 @@ EarlyLifeEvents.events = {
 		},
 	},
 	{
-		id = "teen_house_party",
+		-- CRITICAL FIX: Renamed from "teen_house_party" to avoid duplicate ID with Teen.lua
+		id = "youth_house_party",
 		title = "House Party",
 		emoji = "🎉",
 		text = "There's a house party this weekend. Parents are out of town...",
@@ -2360,7 +2366,8 @@ EarlyLifeEvents.events = {
 		},
 	},
 	{
-		id = "teen_music_taste",
+		-- CRITICAL FIX: Renamed from "teen_music_taste" to avoid duplicate ID with Teen.lua
+		id = "music_taste_discovery",
 		title = "Music Discovery",
 		emoji = "🎵",
 		text = "You're developing your own music taste!",

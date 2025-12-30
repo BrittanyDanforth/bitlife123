@@ -1214,7 +1214,8 @@ MafiaEvents.LifeEvents = {
 		},
 	},
 	{
-		id = "police_investigation",
+		-- CRITICAL FIX: Renamed from "police_investigation" to avoid duplicate ID with StreetHustlerEvents
+		id = "mafia_feds_investigation",
 		title = "🚔 Under Investigation",
 		emoji = "🚔",
 		text = "The Feds are building a case against the family. Your name came up. An FBI agent wants to talk.",

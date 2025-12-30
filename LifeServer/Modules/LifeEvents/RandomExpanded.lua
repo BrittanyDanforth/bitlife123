@@ -126,7 +126,8 @@ RandomExpanded.events = {
 		},
 	},
 	{
-		id = "random_flat_tire",
+		-- CRITICAL FIX: Renamed from "random_flat_tire" to avoid duplicate ID
+		id = "random_tire_blowout",
 		title = "Flat Tire!",
 		emoji = "🚗",
 		text = "You've got a flat tire!",
@@ -463,7 +464,8 @@ RandomExpanded.events = {
 		},
 	},
 	{
-		id = "random_surprise_visit",
+		-- CRITICAL FIX: Renamed from "random_surprise_visit" to avoid duplicate ID
+		id = "random_doorbell_visitor",
 		title = "Surprise Visit",
 		emoji = "🚪",
 		text = "Someone's at your door unexpectedly!",
@@ -702,7 +704,8 @@ RandomExpanded.events = {
 		},
 	},
 	{
-		id = "random_food_poisoning",
+		-- CRITICAL FIX: Renamed from "random_food_poisoning" to avoid duplicate ID
+		id = "random_bad_meal",
 		title = "Food Poisoning",
 		emoji = "🤢",
 		text = "Something you ate didn't agree with you!",

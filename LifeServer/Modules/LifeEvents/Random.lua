@@ -3331,7 +3331,8 @@ Random.events = {
 	},
 	
 	{
-		id = "viral_moment",
+		-- CRITICAL FIX: Renamed from "viral_moment" to avoid duplicate ID
+		id = "random_viral_post",
 		emoji = "📱",
 		title = "You Went Viral!",
 		text = "Something you posted online went completely viral! Thousands of views!",

@@ -616,7 +616,8 @@ ActivityEvents.Study = {
 		},
 	},
 	{
-		id = "study_tutor",
+		-- CRITICAL FIX: Renamed from "study_tutor" to avoid duplicate ID with SchoolActivityEvents
+		id = "activity_get_tutor",
 		title = "👨‍🏫 Need a Tutor",
 		emoji = "👨‍🏫",
 		weight = 10,
@@ -648,7 +649,8 @@ ActivityEvents.Study = {
 		},
 	},
 	{
-		id = "study_library",
+		-- CRITICAL FIX: Renamed from "study_library" to avoid duplicate ID with SchoolActivityEvents
+		id = "activity_library_study",
 		title = "📚 Library Session",
 		emoji = "📚",
 		weight = 12,
