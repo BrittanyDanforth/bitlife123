@@ -1136,7 +1136,9 @@ RelationshipsExpanded.events = {
 						local royalNames_male = {"Alexander", "William", "Henrik", "Frederik", "Carl", "Philippe"}
 						local royalNames_female = {"Victoria", "Madeleine", "Mary", "Maxima", "Elisabeth", "Charlotte"}
 						
-						local partnerGender = state.Gender == "Female" and "male" or "female"
+						-- CRITICAL FIX: Normalize gender to lowercase for case-insensitive comparison
+						local playerGender = (state.Gender or "male"):lower()
+						local partnerGender = (playerGender == "female") and "male" or "female"
 						local title = partnerGender == "male" and "Prince" or "Princess"
 						local names = partnerGender == "male" and royalNames_male or royalNames_female
 						local country = royalCountries[math.random(1, #royalCountries)]
@@ -1226,7 +1228,9 @@ RelationshipsExpanded.events = {
 						partner.role = "Royal Spouse"
 						state.RoyalState.country = partner.royalCountry or "Monaco"
 						state.RoyalState.countryName = partner.royalCountry or "Monaco"
-						state.RoyalState.title = state.Gender == "Male" and "Prince Consort" or "Princess"
+						-- CRITICAL FIX: Normalize gender to lowercase for case-insensitive comparison
+						local playerGender = (state.Gender or "male"):lower()
+						state.RoyalState.title = (playerGender == "male") and "Prince Consort" or "Princess Consort"
 					end
 					
 					state.Fame = math.min(100, (state.Fame or 0) + 50)

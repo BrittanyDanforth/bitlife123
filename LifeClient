@@ -3070,18 +3070,20 @@ local function buildEventModal()
 	
 	if Device.IS_TINY_PHONE then
 		-- ULTRA COMPACT: Tiny phones (iPhone 6: 667x375, iPhone SE: 568x320)
+		-- CRITICAL FIX: Increased max height to prevent button cutoff
 		eventWidth = math.min(screenWidth - 12, 280)
-		maxEventHeight = math.min(safeHeight, 480)
+		maxEventHeight = math.min(safeHeight, 550) -- Increased from 480
 	elseif Device.IS_SMALL_PHONE then
 		-- Small phones (under 750px height)
+		-- CRITICAL FIX: Increased max height to prevent button cutoff
 		eventWidth = math.min(screenWidth - 16, 310)
-		maxEventHeight = math.min(safeHeight, 520)
+		maxEventHeight = math.min(safeHeight, 600) -- Increased from 520
 	elseif Device.IS_MOBILE then
 		eventWidth = modalWidth(330)
-		maxEventHeight = math.min(safeHeight, 580)
+		maxEventHeight = math.min(safeHeight, 680) -- Increased from 580
 	else
 		eventWidth = modalWidth(360)
-		maxEventHeight = math.min(safeHeight, 650)
+		maxEventHeight = math.min(safeHeight, 750) -- Increased from 650
 	end
 	
 	-- Calculate responsive corner radii and margins (slightly larger for cleaner look)
@@ -3343,17 +3345,35 @@ local function buildEventModal()
 	EventUI.question.ZIndex = 65
 	EventUI.question.Parent = bodySection
 
-	-- CRITICAL FIX: BitLife-style - NO SCROLLING on event cards!
-	-- The card expands to show ALL buttons without scrolling
-	-- Changed from ScrollingFrame to regular Frame with AutomaticSize
-	EventUI.choicesSection = Instance.new("Frame")
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Use ScrollingFrame for choices to handle many options
+	-- User bug: "OK button was barely showing and bottom half was cut off"
+	-- ScrollingFrame allows all buttons to be accessible even on small screens
+	-- AutomaticSize.Y makes it expand up to max height, then scroll kicks in
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local maxChoicesHeight = Device.IS_TINY_PHONE and 200 or (Device.IS_SMALL_PHONE and 280 or 350)
+	
+	EventUI.choicesSection = Instance.new("ScrollingFrame")
 	EventUI.choicesSection.Name = "ChoicesContainer"
+	-- Use AutomaticSize so it only takes up as much space as needed
 	EventUI.choicesSection.Size = UDim2.new(1, 0, 0, 0)
-	EventUI.choicesSection.AutomaticSize = Enum.AutomaticSize.Y  -- Expand to fit all buttons!
+	EventUI.choicesSection.AutomaticSize = Enum.AutomaticSize.Y
+	EventUI.choicesSection.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	EventUI.choicesSection.CanvasSize = UDim2.new(1, 0, 0, 0)
 	EventUI.choicesSection.BackgroundTransparency = 1
+	EventUI.choicesSection.BorderSizePixel = 0
+	EventUI.choicesSection.ScrollBarThickness = Device.IS_TINY_PHONE and 3 or 5
+	EventUI.choicesSection.ScrollBarImageColor3 = Color3.fromRGB(150, 150, 150)
+	EventUI.choicesSection.ScrollingDirection = Enum.ScrollingDirection.Y
 	EventUI.choicesSection.LayoutOrder = 4
 	EventUI.choicesSection.ZIndex = 64
 	EventUI.choicesSection.Parent = EventUI.card
+	
+	-- Add a size constraint to limit how tall the choices section can get
+	-- This triggers scrolling for events with many choices
+	local choicesSizeConstraint = Instance.new("UISizeConstraint")
+	choicesSizeConstraint.MaxSize = Vector2.new(math.huge, maxChoicesHeight)
+	choicesSizeConstraint.Parent = EventUI.choicesSection
 
 	-- MOBILE FIX: VERY tight choice section padding on tiny phones
 	local choicePadSide = Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 8 or padSize(18))

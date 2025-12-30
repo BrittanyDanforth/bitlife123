@@ -71,10 +71,18 @@ local function getFont(fontKey)
 	return DEFAULT_FONT
 end
 
--- Apply safe fonts to F table (ensures all access is safe)
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Store original F with fonts BEFORE creating SafeF wrapper
+-- Bug was: SafeF.__index used rawget(F, key) but F was already replaced with SafeF!
+-- This caused nil fonts because we were looking in empty SafeF, not original F
+-- ═══════════════════════════════════════════════════════════════════════════════
+local OriginalF = F  -- Save reference to the original F table with actual fonts
+
+-- Apply safe fonts wrapper (ensures all access is safe)
 local SafeF = setmetatable({}, {
 	__index = function(_, key)
-		local font = rawget(F, key)
+		-- Look in the ORIGINAL F table that has the fonts
+		local font = rawget(OriginalF, key)
 		if font and type(font) == "userdata" then
 			return font
 		end

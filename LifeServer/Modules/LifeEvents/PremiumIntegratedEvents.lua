@@ -2556,7 +2556,9 @@ PremiumIntegratedEvents.events = {
 						state.Money = (state.Money or 0) + 100000 -- Royal gifts!
 
 						-- Create royal partner
-						local partnerGender = state.Gender == "Female" and "male" or "female"
+						-- CRITICAL FIX: Normalize gender to lowercase for case-insensitive comparison
+						local playerGender = (state.Gender or "male"):lower()
+						local partnerGender = (playerGender == "female") and "male" or "female"
 						local title = partnerGender == "male" and "Prince" or "Princess"
 						local royalNames_male = {"Alexander", "William", "Henrik", "Frederik", "Carl", "Philippe", "Guillaume"}
 						local royalNames_female = {"Victoria", "Madeleine", "Mary", "Maxima", "Elisabeth", "Charlotte", "Leonor"}
@@ -2630,7 +2632,9 @@ PremiumIntegratedEvents.events = {
 						state.Money = (state.Money or 0) + 75000
 						
 						-- Also create a partner relationship for this path
-						local partnerGender = state.Gender == "Female" and "male" or "female"
+						-- CRITICAL FIX: Normalize gender to lowercase for case-insensitive comparison
+						local playerGender = (state.Gender or "male"):lower()
+						local partnerGender = (playerGender == "female") and "male" or "female"
 						local title = partnerGender == "male" and "Prince" or "Princess"
 						local royalNames_male = {"Alexander", "William", "Henrik", "Frederik", "Carl", "Philippe"}
 						local royalNames_female = {"Victoria", "Madeleine", "Mary", "Maxima", "Elisabeth", "Charlotte"}
@@ -2732,7 +2736,9 @@ PremiumIntegratedEvents.events = {
 					-- Initialize royal state
 					state.RoyalState = state.RoyalState or {}
 					state.RoyalState.isRoyal = true
-					state.RoyalState.title = state.Gender == "Female" and "Princess Consort" or "Prince Consort"
+					-- CRITICAL FIX: Normalize gender to lowercase for case-insensitive comparison
+					local playerGender = (state.Gender or "male"):lower()
+					state.RoyalState.title = (playerGender == "female") and "Princess Consort" or "Prince Consort"
 					state.RoyalState.popularity = 75
 					state.RoyalState.royalDuties = 0
 					state.RoyalState.scandals = 0
