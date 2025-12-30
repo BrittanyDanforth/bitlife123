@@ -2099,6 +2099,54 @@ local function canEventTrigger(event, state)
 		end
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #HARDLOCK-1: ENSURE AT LEAST ONE AFFORDABLE CHOICE EXISTS!
+	-- User complaint: "HARD LOCKS WHERE I CANNOT PROCEED CUZ ALL OPTIONS COST MONEY"
+	-- Before allowing an event to trigger, verify that the player can afford at least 
+	-- ONE choice. This prevents events from appearing where player is stuck.
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if event.choices and type(event.choices) == "table" and #event.choices > 0 then
+		local playerMoney = state.Money or 0
+		local hasAffordableChoice = false
+		
+		for _, choice in ipairs(event.choices) do
+			-- Check if this choice is affordable
+			local choiceCost = 0
+			
+			-- Method 1: effects.Money (negative = cost)
+			if choice.effects and choice.effects.Money and choice.effects.Money < 0 then
+				choiceCost = math.abs(choice.effects.Money)
+			end
+			
+			-- Method 2: explicit cost field
+			if choice.cost and choice.cost > 0 then
+				choiceCost = choice.cost
+			end
+			
+			-- Method 3: Check eligibility function return value
+			if choice.eligibility and type(choice.eligibility) == "function" then
+				local eligSuccess, eligResult = pcall(choice.eligibility, state)
+				if eligSuccess and eligResult == false then
+					-- This choice is explicitly blocked by eligibility
+					-- Skip to next choice
+				elseif choiceCost == 0 or playerMoney >= choiceCost then
+					hasAffordableChoice = true
+					break
+				end
+			elseif choiceCost == 0 or playerMoney >= choiceCost then
+				-- Free choice or player can afford it
+				hasAffordableChoice = true
+				break
+			end
+		end
+		
+		if not hasAffordableChoice then
+			-- CRITICAL: Player cannot afford ANY choice - don't show this event!
+			-- This prevents the hardlock where all options are paid
+			return false
+		end
+	end
+	
 	return true
 end
 
