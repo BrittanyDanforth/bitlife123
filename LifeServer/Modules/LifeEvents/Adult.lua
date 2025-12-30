@@ -1103,12 +1103,29 @@ Adult.events = {
 				state.Flags.engaged = nil
 			end,
 		},
-		{ 
-			text = "Called off the wedding",
-				-- CRITICAL FIX: Validate money for deposits lost
-				effects = {}, -- Money handled in onResolve
-				setFlags = { wedding_canceled = true }, 
-				feedText = "Having second thoughts...",
+	{ 
+		text = "Super simple - just sign the papers",
+			effects = { Happiness = 3 }, 
+			setFlags = { married = true, simple_wedding = true }, 
+			feedText = "💍 Just the two of you. A signature, a kiss, and you're married! No frills needed.",
+		onResolve = function(state)
+				if state.Relationships and state.Relationships.partner then
+					local partnerGender = state.Relationships.partner.gender or "female"
+					state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
+					state.Relationships.partner.isSpouse = true
+					state.Relationships.partner.married = true
+					state.Relationships.partner.type = "spouse"
+				end
+				state.Flags = state.Flags or {}
+				state.Flags.engaged = nil
+			end,
+		},
+	{ 
+		text = "Called off the wedding",
+			-- CRITICAL FIX: Validate money for deposits lost
+			effects = {}, -- Money handled in onResolve
+			setFlags = { wedding_canceled = true }, 
+			feedText = "Having second thoughts...",
 				onResolve = function(state)
 					local money = state.Money or 0
 					-- Lost deposits based on what you could afford

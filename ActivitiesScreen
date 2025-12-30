@@ -5525,9 +5525,45 @@ function ActivitiesScreen:doActivity(item, bonus)
 	if result then
 		log("Success:", result.success, "Message:", result.message)
 		
-		-- CRITICAL FIX: Log stat changes for debugging
-		if result.statChanges then
-			log("Stat changes received:", result.statChanges)
+		-- CRITICAL FIX: Apply stat changes from server to local state immediately!
+		-- User bug: "stats don't change after I complete activities"
+		-- The server applies stats but they weren't syncing to client until age up!
+		if result.statChanges and result.success then
+			log("Applying stat changes to local state:", result.statChanges)
+			local state = self.playerState or self.state
+			if state then
+				state.Stats = state.Stats or {}
+				for stat, delta in pairs(result.statChanges) do
+					if stat == "Money" or stat == "money" then
+						state.Money = math.max(0, (state.Money or 0) + delta)
+					elseif stat == "Health" or stat == "H" then
+						local newVal = math.min(100, math.max(0, (state.Stats.Health or 50) + delta))
+						state.Stats.Health = newVal
+						state.Health = newVal
+					elseif stat == "Happiness" or stat == "Happy" then
+						local newVal = math.min(100, math.max(0, (state.Stats.Happiness or 50) + delta))
+						state.Stats.Happiness = newVal
+						state.Happiness = newVal
+					elseif stat == "Smarts" then
+						local newVal = math.min(100, math.max(0, (state.Stats.Smarts or 50) + delta))
+						state.Stats.Smarts = newVal
+						state.Smarts = newVal
+					elseif stat == "Looks" then
+						local newVal = math.min(100, math.max(0, (state.Stats.Looks or 50) + delta))
+						state.Stats.Looks = newVal
+						state.Looks = newVal
+					end
+				end
+				-- Also update money from cost
+				if result.cost and result.cost > 0 then
+					state.Money = math.max(0, (state.Money or 0)) -- Already deducted on server
+				end
+				
+				-- Update UI to reflect the new stats
+				if self.updateInfoBar then
+					self:updateInfoBar()
+				end
+			end
 		end
 		
 		-- CRITICAL FIX: Use full BitLife-style event cards for supported activities

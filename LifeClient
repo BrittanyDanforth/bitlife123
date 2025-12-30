@@ -4076,7 +4076,27 @@ showDeathOverlay = function(causeText, age, canContinueAsKid, continueAsKidData)
 	local smarts = stats.Smarts or currentState.Smarts or 50
 	local looks = stats.Looks or currentState.Looks or 50
 	local education = currentState.Education or "None"
-	local career = currentState.CurrentJob and currentState.CurrentJob.Title or "Unemployed"
+	
+	-- CRITICAL FIX: Use career history if no current job (e.g., retired, fired, etc.)
+	-- This fixes the bug where death screen shows "Unemployed" even when player had jobs
+	local career = "Unemployed"
+	if currentState.CurrentJob and currentState.CurrentJob.Title then
+		career = currentState.CurrentJob.Title
+	elseif currentState.CurrentJob and currentState.CurrentJob.name then
+		career = currentState.CurrentJob.name
+	elseif currentState.CareerInfo and currentState.CareerInfo.lastJob and currentState.CareerInfo.lastJob.title then
+		career = currentState.CareerInfo.lastJob.title .. " (Retired)"
+	elseif currentState.CareerInfo and currentState.CareerInfo.lastJob and currentState.CareerInfo.lastJob.name then
+		career = currentState.CareerInfo.lastJob.name .. " (Retired)"
+	elseif currentState.CareerInfo and currentState.CareerInfo.careerHistory and #currentState.CareerInfo.careerHistory > 0 then
+		local lastCareer = currentState.CareerInfo.careerHistory[#currentState.CareerInfo.careerHistory]
+		if lastCareer and lastCareer.title then
+			career = lastCareer.title .. " (Former)"
+		end
+	elseif currentState.Flags and currentState.Flags.previous_career then
+		career = currentState.Flags.previous_career .. " (Former)"
+	end
+	
 	local flags = currentState.Flags or {}
 	local assets = currentState.Assets or {}
 	
@@ -4096,22 +4116,43 @@ showDeathOverlay = function(causeText, age, canContinueAsKid, continueAsKidData)
 		if rel.Type == "Spouse" then marriageCount = marriageCount + 1 end
 	end
 	
-	-- Create stat rows
+	-- CRITICAL FIX: Calculate actual Net Worth (cash + assets)
+	-- User confusion: "I had 300 mil but couldn't buy 1k item"
+	-- This was because Net Worth ≠ Cash! Assets can't be spent directly.
+	local netWorth = money -- Start with cash
+	if assets.Properties then
+		for _, prop in ipairs(assets.Properties) do
+			netWorth = netWorth + (prop.value or prop.price or 0)
+		end
+	end
+	if assets.Vehicles then
+		for _, vehicle in ipairs(assets.Vehicles) do
+			netWorth = netWorth + (vehicle.value or vehicle.price or 0)
+		end
+	end
+	if assets.Items then
+		for _, item in ipairs(assets.Items) do
+			netWorth = netWorth + (item.value or item.price or 0)
+		end
+	end
+	
+	-- Create stat rows - FIXED: Show Cash AND Net Worth separately!
 	local statList = {
 		{ icon = "🎂", label = "Years Lived", value = finalAge .. " years", color = C.White, order = 1 },
-		{ icon = "💰", label = "Net Worth", value = formatMoney(money), color = money >= 1000000 and C.Gold or (money >= 100000 and C.Green or C.White), order = 2 },
-		{ icon = "😀", label = "Final Happiness", value = happiness .. "%", color = happiness >= 70 and C.Green or (happiness >= 40 and C.Amber or C.Red), order = 3 },
-		{ icon = "❤️", label = "Final Health", value = health .. "%", color = C.Red, order = 4 },
-		{ icon = "🧠", label = "Intelligence", value = smarts .. "%", color = C.Blue, order = 5 },
-		{ icon = "✨", label = "Looks", value = looks .. "%", color = C.Purple, order = 6 },
-		{ icon = "🎓", label = "Education", value = education == "none" and (finalAge < 18 and "In School" or "None") or education:gsub("^%l", string.upper):gsub("_", " "), color = C.Teal, order = 7 },
-		{ icon = "💼", label = "Last Career", value = career, color = C.Amber, order = 8 },
-		{ icon = "🏠", label = "Properties", value = propertyCount, color = C.White, order = 9 },
-		{ icon = "🚗", label = "Vehicles", value = vehicleCount, color = C.White, order = 10 },
-		{ icon = "📦", label = "Items", value = itemCount, color = C.White, order = 11 },
-		{ icon = "👥", label = "Relationships", value = relationshipCount, color = C.Pink or C.Purple, order = 12 },
-		{ icon = "👶", label = "Children", value = childCount, color = C.White, order = 13 },
-		{ icon = "💍", label = "Marriages", value = marriageCount, color = C.White, order = 14 },
+		{ icon = "💵", label = "Cash", value = formatMoney(money), color = money >= 100000 and C.Green or C.White, order = 2 },
+		{ icon = "💰", label = "Net Worth", value = formatMoney(netWorth), color = netWorth >= 1000000 and C.Gold or (netWorth >= 100000 and C.Green or C.White), order = 3 },
+		{ icon = "😀", label = "Final Happiness", value = happiness .. "%", color = happiness >= 70 and C.Green or (happiness >= 40 and C.Amber or C.Red), order = 4 },
+		{ icon = "❤️", label = "Final Health", value = health .. "%", color = C.Red, order = 5 },
+		{ icon = "🧠", label = "Intelligence", value = smarts .. "%", color = C.Blue, order = 6 },
+		{ icon = "✨", label = "Looks", value = looks .. "%", color = C.Purple, order = 7 },
+		{ icon = "🎓", label = "Education", value = education == "none" and (finalAge < 18 and "In School" or "None") or education:gsub("^%l", string.upper):gsub("_", " "), color = C.Teal, order = 8 },
+		{ icon = "💼", label = "Last Career", value = career, color = C.Amber, order = 9 },
+		{ icon = "🏠", label = "Properties", value = propertyCount, color = C.White, order = 10 },
+		{ icon = "🚗", label = "Vehicles", value = vehicleCount, color = C.White, order = 11 },
+		{ icon = "📦", label = "Items", value = itemCount, color = C.White, order = 12 },
+		{ icon = "👥", label = "Relationships", value = relationshipCount, color = C.Pink or C.Purple, order = 13 },
+		{ icon = "👶", label = "Children", value = childCount, color = C.White, order = 14 },
+		{ icon = "💍", label = "Marriages", value = marriageCount, color = C.White, order = 15 },
 	}
 	
 	for _, s in ipairs(statList) do
@@ -4231,15 +4272,26 @@ showDeathOverlay = function(causeText, age, canContinueAsKid, continueAsKidData)
 		table.insert(achievements, { icon = "🥷", text = "Ghost - Never caught" })
 	end
 	
-	-- Career achievements
-	if career and career ~= "Unemployed" and career ~= "" then
+	-- Career achievements - CRITICAL FIX: Check career history, not just current job
+	local hadCareer = career and career ~= "Unemployed" and career ~= ""
+	local hasCareerHistory = currentState.CareerInfo and currentState.CareerInfo.careerHistory and #currentState.CareerInfo.careerHistory > 0
+	local workedYears = currentState.CareerInfo and currentState.CareerInfo.totalYearsWorked or 0
+	
+	if hadCareer or hasCareerHistory or workedYears > 0 then
 		if flags.ceo or flags.executive then
 			table.insert(achievements, { icon = "👔", text = "Executive - Reached the top" })
 		elseif flags.retired then
 			table.insert(achievements, { icon = "🎉", text = "Retired - Earned retirement" })
+		elseif workedYears >= 20 then
+			table.insert(achievements, { icon = "💼", text = "Career Professional - Worked 20+ years" })
+		elseif workedYears >= 10 then
+			table.insert(achievements, { icon = "📊", text = "Experienced Worker - 10+ years in workforce" })
 		end
 	else
-		table.insert(achievements, { icon = "😴", text = "Unemployed - Never held a job" })
+		-- Only show "Never held a job" if they TRULY never worked
+		if finalAge >= 22 and not flags.employed and not flags.has_job and not flags.had_job then
+			table.insert(achievements, { icon = "😴", text = "Unemployed - Never held a job" })
+		end
 	end
 	
 	-- Special achievements from flags
