@@ -1406,12 +1406,14 @@ ProgressiveLifeEvents.events = {
 				setFlags = { side_hustle = true },
 				feedText = "Your hobby is now making you money!",
 			},
-			{
-				text = "Invest in better equipment",
-				effects = { Happiness = 4, Money = -200 },
-				setFlags = { hobby_investor = true },
-				feedText = "Quality gear makes all the difference!",
-			},
+		{
+			-- CRITICAL FIX #23: Add eligibility check for equipment cost!
+			text = "Invest in better equipment ($200)",
+			effects = { Happiness = 4, Money = -200 },
+			setFlags = { hobby_investor = true },
+			feedText = "Quality gear makes all the difference!",
+			eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for equipment" end,
+		},
 			{
 				text = "Join a community",
 				effects = { Happiness = 5 },

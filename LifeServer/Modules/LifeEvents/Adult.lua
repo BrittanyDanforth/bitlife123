@@ -1020,12 +1020,8 @@ Adult.events = {
 		oneTime = true,
 		requiresFlags = { engaged = true },
 		blockedByFlags = { in_prison = true, incarcerated = true },
-		-- CRITICAL FIX: Need at least courthouse money
+		-- CRITICAL FIX: Removed money check - event has "Super simple" free option
 		eligibility = function(state)
-			local money = state.Money or 0
-			if money < 100 then
-				return false, "Can't even afford a courthouse wedding"
-			end
 			return true
 		end,
 
@@ -1103,12 +1099,29 @@ Adult.events = {
 				state.Flags.engaged = nil
 			end,
 		},
-		{ 
-			text = "Called off the wedding",
-				-- CRITICAL FIX: Validate money for deposits lost
-				effects = {}, -- Money handled in onResolve
-				setFlags = { wedding_canceled = true }, 
-				feedText = "Having second thoughts...",
+	{ 
+		text = "Super simple - just sign the papers",
+			effects = { Happiness = 3 }, 
+			setFlags = { married = true, simple_wedding = true }, 
+			feedText = "💍 Just the two of you. A signature, a kiss, and you're married! No frills needed.",
+		onResolve = function(state)
+				if state.Relationships and state.Relationships.partner then
+					local partnerGender = state.Relationships.partner.gender or "female"
+					state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
+					state.Relationships.partner.isSpouse = true
+					state.Relationships.partner.married = true
+					state.Relationships.partner.type = "spouse"
+				end
+				state.Flags = state.Flags or {}
+				state.Flags.engaged = nil
+			end,
+		},
+	{ 
+		text = "Called off the wedding",
+			-- CRITICAL FIX: Validate money for deposits lost
+			effects = {}, -- Money handled in onResolve
+			setFlags = { wedding_canceled = true }, 
+			feedText = "Having second thoughts...",
 				onResolve = function(state)
 					local money = state.Money or 0
 					-- Lost deposits based on what you could afford
@@ -1937,14 +1950,7 @@ Adult.events = {
 		cooldown = 3,
 		-- CRITICAL FIX: Can't do bucket list activities from prison or if homeless
 		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
-		-- CRITICAL FIX: Need at least some money for activities
-		eligibility = function(state)
-			local money = state.Money or 0
-			if money < 100 then
-				return false, "Can't afford bucket list activities"
-			end
-			return true
-		end,
+		-- CRITICAL FIX: Removed money check - event has free options
 		choices = {
 			{ 
 				text = "Dream vacation trip ($2,000)", 
@@ -2928,12 +2934,8 @@ Adult.events = {
 		baseChance = 0.5,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		blockedByFlags = { in_prison = true, homeless = true },
-		-- CRITICAL FIX: Need at least some money for vacation
+		-- CRITICAL FIX: Removed money check - event has free "Just relax at home" option
 		eligibility = function(state)
-			local money = state.Money or 0
-			if money < 100 then
-				return false, "Can't afford any vacation"
-			end
 			return true
 		end,
 		
@@ -2989,6 +2991,8 @@ Adult.events = {
 			feedText = "Quality time with family. Worth the trip!",
 			eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for travel" end,
 		},
+		-- CRITICAL FIX: FREE option to prevent hardlock
+		{ text = "Just relax at home", effects = { Happiness = 4, Health = 2 }, feedText = "🏖️ No vacation this year, but you found time to recharge at home. Sometimes that's enough." },
 		},
 	},
 	{

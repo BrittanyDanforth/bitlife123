@@ -427,9 +427,11 @@ local events = {
 			},
 			{
 				index = 3,
-				text = "Just pay for repairs myself and move on",
+				text = "Just pay for repairs myself ($2,000)",
 				effects = { Happiness = -8, Money = -2000 },
 				feedText = "You paid out of pocket. Life goes on.",
+				-- CRITICAL FIX #8: Add eligibility check!
+				eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2,000 for repairs" end,
 			},
 		},
 	},
@@ -539,9 +541,11 @@ local events = {
 		choices = {
 			{
 				index = 1,
-				text = "Small gathering - close friends only",
+				text = "Small gathering - close friends only ($200)",
 				effects = { Happiness = 12, Money = -200 },
 				feedText = "You hosted an intimate get-together.",
+				-- CRITICAL FIX #5: Add eligibility check!
+				eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for party" end,
 				onResolve = function(state)
 					if state.AddFeed then
 						state:AddFeed("🥂 Great party! Good times with good friends.")
@@ -550,9 +554,11 @@ local events = {
 			},
 			{
 				index = 2,
-				text = "RAGER! Invite everyone!",
+				text = "RAGER! Invite everyone! ($1,000)",
 				effects = { Happiness = 20, Money = -1000 },
 				feedText = "You threw a MASSIVE party...",
+				-- CRITICAL FIX #6: Add eligibility check!
+				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 for epic party" end,
 				onResolve = function(state)
 					local outcome = RANDOM:NextNumber()
 					if outcome < 0.2 then
@@ -732,7 +738,7 @@ local events = {
 			},
 			{
 				index = 3,
-				text = "Help others - share your fortune",
+				text = "Help others - share your fortune ($5,000)",
 				effects = { Happiness = 15, Money = -5000 },
 				setFlags = { generous = true, philanthropist = true },
 				feedText = "You helped someone in need. That's real wealth.",
@@ -998,15 +1004,19 @@ local events = {
 		choices = {
 			{
 				index = 1,
-				text = "Fix it properly - hire professionals",
+				text = "Fix it properly - hire professionals ($8,000)",
 				effects = { Happiness = -3, Money = -8000 },
 				feedText = "You had it properly repaired. Good as new.",
+				-- CRITICAL FIX #9: Add eligibility check!
+				eligibility = function(state) return (state.Money or 0) >= 8000, "💸 Need $8,000 for professional repairs" end,
 			},
 			{
 				index = 2,
-				text = "Cheap fix - patch it up",
+				text = "Cheap fix - patch it up ($2,000)",
 				effects = { Happiness = -5, Money = -2000 },
 				feedText = "You did a temporary fix. Might need more work later.",
+				-- CRITICAL FIX #10: Add eligibility check!
+				eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2,000 for basic repairs" end,
 				onResolve = function(state)
 					state.Flags = state.Flags or {}
 					state.Flags.property_needs_repair = true
@@ -1204,9 +1214,11 @@ local events = {
 			},
 			{
 				index = 3,
-				text = "Invest in soundproofing",
+				text = "Invest in soundproofing ($2,000)",
 				effects = { Money = -2000, Happiness = 5 },
 				feedText = "You soundproofed your place. Problem solved with money.",
+				-- CRITICAL FIX #11: Add eligibility check!
+				eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2,000 for soundproofing" end,
 			},
 		},
 	},
@@ -2406,9 +2418,11 @@ local events = {
 			},
 			{
 				index = 2,
-				text = "Sue them!",
+				text = "Sue them! ($5,000 lawyer fees)",
 				effects = { Happiness = -8, Money = -5000 },
 				feedText = "You're taking legal action...",
+				-- CRITICAL FIX #12: Add eligibility check!
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 for lawyer fees" end,
 				onResolve = function(state)
 					local roll = RANDOM:NextNumber()
 					if roll < 0.5 then

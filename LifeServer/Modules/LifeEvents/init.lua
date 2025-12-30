@@ -76,7 +76,9 @@ local StageCategories = {
 	baby        = { "childhood", "milestones", "royalty", "family", "health", "pets", "random", "early_life", "special_moments", "dream", "wish" },
 	toddler     = { "childhood", "milestones", "royalty", "family", "health", "pets", "random", "early_life", "special_moments", "social", "dream", "wish" },
 	-- CRITICAL FIX #984: Added "assets" to child so gaming PCs, phones, etc. trigger events!
-	child       = { "childhood", "milestones", "random", "career_racing", "royalty", "family", "health", "pets", "hobbies", "social", "seasonal", "early_life", "special_moments", "dream", "wish", "assets" },
+	-- CRITICAL FIX: Added "school", "conflict", "academics" categories so school events trigger!
+	-- User complaint: "age 5-18 is basically always the same, no classmate hits you or cheating"
+	child       = { "childhood", "milestones", "random", "career_racing", "royalty", "family", "health", "pets", "hobbies", "social", "seasonal", "early_life", "special_moments", "dream", "wish", "assets", "school", "conflict", "academics" },
 	-- CRITICAL FIX #510: Added career_music for rapper/content creator events!
 	-- Also added career_entertainment for general entertainment careers
 	-- CRITICAL FIX #631: Added career_creative for teen content creators!
@@ -87,7 +89,8 @@ local StageCategories = {
 	-- User complaint: "game so boring and shallow, what you do has no impact"
 	-- CRITICAL FIX #983: Added "assets" to teen so sneakers/phones/gaming PCs trigger events!
 	-- CRITICAL FIX #1040: Added "karma", "nostalgia" categories for consequence events!
-	teen        = { "teen", "milestones", "milestone", "relationships", "random", "consequence", "karma", "nostalgia", "crime", "crime_path", "career_racing", "career_hacker", "career_service", "career_street", "career", "career_music", "career_creative", "career_entertainment", "career_influencer", "career_streaming", "career_gaming", "royalty", "celebrity", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance", "dream", "vehicle", "property", "assets" },
+	-- CRITICAL FIX: Added "school", "conflict", "academics" for teen school events!
+	teen        = { "teen", "milestones", "milestone", "relationships", "random", "consequence", "karma", "nostalgia", "crime", "crime_path", "career_racing", "career_hacker", "career_service", "career_street", "career", "career_music", "career_creative", "career_entertainment", "career_influencer", "career_streaming", "career_gaming", "royalty", "celebrity", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance", "dream", "vehicle", "property", "assets", "school", "conflict", "academics" },
 	young_adult = { "adult", "teen", "milestones", "milestone", "relationships", "random", "consequence", "karma", "nostalgia", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance", "vehicle", "property" },
 	adult       = { "adult", "milestones", "milestone", "relationships", "random", "consequence", "karma", "nostalgia", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_service", "career_street", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance", "vehicle", "property" },
 	middle_age  = { "adult", "senior", "milestones", "milestone", "relationships", "random", "consequence", "karma", "nostalgia", "crime", "crime_path", "homeless", "career_racing", "career_hacker", "career_police", "career", "career_tech", "career_medical", "career_finance", "career_office", "career_creative", "career_trades", "career_education", "career_military", "career_science", "career_music", "career_entertainment", "career_influencer", "career_streaming", "career_esports", "career_gaming", "career_acting", "career_sports", "career_intelligence", "career_mafia", "assets", "royalty", "celebrity", "mafia", "finance", "health", "family", "legal", "pets", "hobbies", "social", "seasonal", "romance", "vehicle", "property" },
@@ -2096,6 +2099,16 @@ local function canEventTrigger(event, state)
 		end
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #HARDLOCK-1: SHOW ALL CHOICES BUT MARK UNAFFORDABLE ONES
+	-- User feedback: "thats nice but now hides the choices and shuld just grey them out"
+	-- Instead of hiding the event, we let it trigger and mark unaffordable choices
+	-- The UI will gray them out with "(Can't Afford)" text
+	-- This is better UX - players SEE the options and know what they're missing!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- NOTE: Affordability is now checked at the UI level and choice selection level
+	-- Events ALWAYS show so players see what's possible in the game
+	
 	return true
 end
 
@@ -3541,7 +3554,9 @@ function LifeEvents.replaceTemplateVariables(text, state)
 	
 	-- Job/Career info
 	local job = state.CurrentJob or {}
-	result = result:gsub("{{JOB_TITLE}}", tostring(job.title or job.Title or "your job"))
+	local jobName = tostring(job.name or job.Name or job.title or job.Title or "your job")
+	result = result:gsub("{{JOB_TITLE}}", jobName)
+	result = result:gsub("{{JOB_NAME}}", jobName)  -- CRITICAL FIX: Support both JOB_TITLE and JOB_NAME
 	result = result:gsub("{{COMPANY}}", tostring(job.company or job.Company or "the company"))
 	result = result:gsub("{{SALARY}}", tostring(job.salary or job.Salary or "your salary"))
 	result = result:gsub("{{YEARS_AT_JOB}}", tostring(job.yearsWorked or job.YearsWorked or 1))
@@ -3587,6 +3602,32 @@ function LifeEvents.replaceTemplateVariables(text, state)
 	result = result:gsub("{{FRIEND_NAME}}", friendName)
 	result = result:gsub("{{SIBLING_NAME}}", siblingName)
 	result = result:gsub("{{CHILD_NAME}}", childName)
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Add PARENT_NAME and PARENT_ROLE templates!
+	-- User bug: "it says YOUR {PARENT.ROLE} instead of my parent's name"
+	-- Pick a random parent (mom or dad) for generic parent references
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local parentName = (math.random() > 0.5) and motherName or fatherName
+	local parentRole = (parentName == motherName) and "Mom" or "Dad"
+	result = result:gsub("{{PARENT_NAME}}", parentName)
+	result = result:gsub("{{PARENT_ROLE}}", parentRole)
+	-- Also handle lowercase/alternative formats that might slip through
+	result = result:gsub("{parent%.role}", parentRole)
+	result = result:gsub("{parent%.name}", parentName)
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Support LOWERCASE template formats!
+	-- Found 99 instances of {partner}, {friend}, etc. in RomanceActivityEvents.lua
+	-- These need to be replaced with actual names too!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	result = result:gsub("{partner}", partnerName)
+	result = result:gsub("{friend}", friendName)
+	result = result:gsub("{sibling}", siblingName)
+	result = result:gsub("{child}", childName)
+	result = result:gsub("{father}", fatherName)
+	result = result:gsub("{mother}", motherName)
+	result = result:gsub("{parent}", parentName)
 	
 	-- Family status
 	local familyStatus = ""
@@ -5056,6 +5097,20 @@ function LifeEvents.getWeightModifier(event, state)
 	-- Event-specific modifiers
 	if event.weightMultiplier then
 		modifier = modifier * event.weightMultiplier
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Use event's getWeight function if provided!
+	-- User bug: "health events aren't linked to health stat"
+	-- This allows events to dynamically adjust their weight based on player state
+	-- e.g., illness events more likely when health is low
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if event.getWeight and type(event.getWeight) == "function" then
+		local success, eventWeight = pcall(event.getWeight, state)
+		if success and type(eventWeight) == "number" then
+			-- Event weight is returned as percentage (100 = normal, 150 = 50% more likely)
+			modifier = modifier * (eventWeight / 100)
+		end
 	end
 	
 	return modifier

@@ -1014,7 +1014,7 @@ Relationships.events = {
 		-- CRITICAL FIX: Random blind date outcome
 		choices = {
 			{
-				text = "A nice restaurant",
+				text = "A nice restaurant ($50)",
 				effects = { Money = -50 },
 				feedText = "You waited at the restaurant...",
 				onResolve = function(state)
@@ -1041,7 +1041,7 @@ Relationships.events = {
 				end,
 			},
 			{
-				text = "A casual coffee shop",
+				text = "A casual coffee shop ($10)",
 				effects = { Money = -10 },
 				feedText = "You met for coffee...",
 				onResolve = function(state)
@@ -1609,7 +1609,7 @@ Relationships.events = {
 
 		choices = {
 			{ 
-				text = "Unexpected but excited!", 
+				text = "Unexpected but excited! (Baby prep $2,000)", 
 				effects = { Happiness = 10, Money = -2000 }, 
 				setFlags = { has_child = true, parent = true, unplanned_pregnancy = true }, 
 				feedText = "Surprise! You're having a baby!",
@@ -1638,7 +1638,7 @@ Relationships.events = {
 				end,
 			},
 			{ 
-				text = "Terrified but accepting", 
+				text = "Terrified but accepting (Baby prep $2,000)", 
 				effects = { Happiness = -5, Money = -2000 }, 
 				setFlags = { has_child = true, parent = true, unplanned_pregnancy = true }, 
 				feedText = "Ready or not, here comes baby.",
@@ -1738,7 +1738,7 @@ Relationships.events = {
 
 		choices = {
 			{ 
-				text = "Double/triple the joy!", 
+				text = "Double/triple the joy! (Baby prep $5,000)", 
 				effects = { Happiness = 15, Money = -5000, Health = -5 }, 
 				setFlags = { has_child = true, parent = true, has_multiples = true }, 
 				feedText = "Multiples! Exhausting but amazing!",
@@ -1777,7 +1777,7 @@ Relationships.events = {
 				end,
 			},
 			{ 
-				text = "Overwhelmed but hopeful", 
+				text = "Overwhelmed but hopeful (Baby prep $5,000)", 
 				effects = { Happiness = 5, Money = -5000, Health = -8 }, 
 				setFlags = { has_child = true, parent = true, has_multiples = true }, 
 				feedText = "You're going to need a lot of help...",

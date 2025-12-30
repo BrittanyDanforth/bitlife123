@@ -3211,6 +3211,52 @@ local function chooseRandom(list)
 	return list[RANDOM:NextInteger(1, #list)]
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: WEIGHTED RANDOM SELECTION for events!
+-- User bug: "health events aren't linked to health stat"
+-- This function picks from a list using weights, so events with higher weights
+-- are more likely to be selected. Events can use getWeight() function to
+-- dynamically adjust their probability based on player state.
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function chooseWeightedRandom(list, state, getWeightFunc)
+	if #list == 0 then
+		return nil
+	end
+	if #list == 1 then
+		return list[1]
+	end
+	
+	-- Calculate total weight
+	local totalWeight = 0
+	local weights = {}
+	
+	for i, item in ipairs(list) do
+		local weight = 100 -- Default weight
+		if getWeightFunc then
+			local success, result = pcall(getWeightFunc, item, state)
+			if success and type(result) == "number" then
+				weight = math.max(1, result * 100) -- Ensure minimum weight of 1
+			end
+		end
+		weights[i] = weight
+		totalWeight = totalWeight + weight
+	end
+	
+	-- Pick a random point in the total weight range
+	local pick = RANDOM:NextNumber() * totalWeight
+	local cumulativeWeight = 0
+	
+	for i, weight in ipairs(weights) do
+		cumulativeWeight = cumulativeWeight + weight
+		if pick <= cumulativeWeight then
+			return list[i]
+		end
+	end
+	
+	-- Fallback to last item (shouldn't happen but safety)
+	return list[#list]
+end
+
 local function formatMoney(amount)
 	-- CRITICAL FIX: Handle nil and invalid values
 	if not amount or type(amount) ~= "number" then
@@ -5657,11 +5703,31 @@ local ActivityCatalog = {
 	read = { stats = { Smarts = 5, Happiness = 2 }, feed = "read a novel", cost = 0 },
 	study = { stats = { Smarts = 6 }, feed = "studied hard", cost = 0 },
 	meditate = { stats = { Happiness = 5, Health = 2 }, feed = "meditated", cost = 0 },
-	gym = { stats = { Health = 6, Looks = 2 }, feed = "hit the gym", cost = 0, unlockFlag = "gym_rat" },
-	run = { stats = { Health = 4, Happiness = 1 }, feed = "went on a run", cost = 0 },
-	yoga = { stats = { Health = 3, Happiness = 3 }, feed = "did yoga", cost = 0 },
-	spa = { stats = { Happiness = 6, Looks = 3 }, feed = "enjoyed a spa day", cost = 200 },
-	salon = { stats = { Looks = 4, Happiness = 2 }, feed = "visited the salon", cost = 80 },
+	gym = { stats = { Health = 8, Looks = 3 }, feed = "hit the gym", cost = 0, unlockFlag = "gym_rat" },
+	run = { stats = { Health = 7, Happiness = 3 }, feed = "went on a run", cost = 0 },
+	yoga = { stats = { Health = 6, Happiness = 4 }, feed = "did yoga", cost = 0 },
+	spa = { stats = { Happiness = 8, Looks = 4, Health = 2 }, feed = "enjoyed a spa day", cost = 200 },
+	salon = { stats = { Looks = 5, Happiness = 3 }, feed = "visited the salon", cost = 80 },
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Missing activities that were on client but not server!
+	-- User bug: "GOING TO GYM AND EVERYTHING ETC STILL DOESN'T GIVE STATS"
+	-- These activities exist in ActivitiesScreen but had no server definition!
+	-- ═══════════════════════════════════════════════════════════════════════════
+	martial_arts = { stats = { Health = 6, Looks = 3, Happiness = 2 }, feed = "practiced martial arts", cost = 100, setFlags = { martial_arts_training = true } },
+	swimming = { stats = { Health = 7, Happiness = 4 }, feed = "went swimming", cost = 0, setFlags = { can_swim = true } },
+	cycling = { stats = { Health = 7, Happiness = 3 }, feed = "went cycling", cost = 0 },
+	walk = { stats = { Health = 4, Happiness = 3 }, feed = "went for a walk", cost = 0 },
+	arcade = { stats = { Happiness = 5, Smarts = 2 }, feed = "played arcade games", cost = 30 },
+	karaoke = { stats = { Happiness = 6, Looks = 1 }, feed = "sang karaoke", cost = 20 },
+	doctor = { stats = { Health = 8 }, feed = "visited the doctor", cost = 100, usesInsurance = true },
+	dentist = { stats = { Health = 3, Looks = 2 }, feed = "visited the dentist", cost = 150, usesInsurance = true },
+	therapist = { stats = { Happiness = 8, Health = 2 }, feed = "saw a therapist", cost = 200, usesInsurance = true },
+	chiropractor = { stats = { Health = 5, Happiness = 2 }, feed = "saw the chiropractor", cost = 100, usesInsurance = true },
+	acupuncture = { stats = { Health = 4, Happiness = 3 }, feed = "tried acupuncture", cost = 100 },
+	diet = { stats = { Health = 5, Looks = 3 }, feed = "went on a diet", cost = 0 },
+	quit_smoking = { stats = { Health = 10, Happiness = -5 }, feed = "quit smoking!", cost = 0, setFlags = { smoker = nil, quit_smoking = true } },
+	quit_drinking = { stats = { Health = 8, Happiness = -3 }, feed = "quit drinking!", cost = 0, setFlags = { drinker = nil, quit_drinking = true } },
 	-- CRITICAL FIX: Driver's license activity - sets all license flags
 	drivers_license = { 
 		stats = { Happiness = 5, Smarts = 2 }, 
@@ -5979,10 +6045,7 @@ local ActivityCatalog = {
 		setFlags = { private_school = true },
 	},
 	
-	-- CRITICAL FIX: Missing activities from client (caused "Unknown activity" error)
-	martial_arts = { stats = { Health = 5, Looks = 2 }, feed = "practiced martial arts", cost = 100 },
-	karaoke = { stats = { Happiness = 4 }, feed = "sang karaoke", cost = 20 },
-	arcade = { stats = { Happiness = 4, Smarts = 1 }, feed = "played games at the arcade", cost = 30 },
+	-- NOTE: martial_arts, karaoke, arcade moved up to main activities section with better stats
 	
 	-- ═══════════════════════════════════════════════════════════════════════════
 	-- AAA FIX: FRIEND INTERACTION ACTIVITIES
@@ -8706,7 +8769,33 @@ function LifeBackend:buildCareerEvent(state)
 		return nil
 	end
 	
-	local template = chooseRandom(eligibleEvents)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Use WEIGHTED RANDOM selection!
+	-- User bug: "health events aren't linked to health stat"
+	-- Events with getWeight() functions can now dynamically adjust their probability
+	-- based on player state (health, age, flags, etc.)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local function getEventWeight(event, playerState)
+		local weight = (event.baseChance or 0.5) -- Start with base chance
+		
+		-- Use event's getWeight function if available
+		if event.getWeight and type(event.getWeight) == "function" then
+			local success, customWeight = pcall(event.getWeight, playerState)
+			if success and type(customWeight) == "number" then
+				-- Custom weight is returned as percentage (100 = normal, 150 = 50% more likely)
+				weight = weight * (customWeight / 100)
+			end
+		end
+		
+		-- Apply weight multiplier if present
+		if event.weightMultiplier then
+			weight = weight * event.weightMultiplier
+		end
+		
+		return math.max(0.01, weight) -- Ensure minimum positive weight
+	end
+	
+	local template = chooseWeightedRandom(eligibleEvents, state, getEventWeight)
 	if not template then
 		return nil
 	end
@@ -11229,7 +11318,13 @@ function LifeBackend:applyLivingExpenses(state)
 	end
 	
 	local age = state.Age or 18
-	local hasJob = state.Job and state.Job.title and state.Job.title ~= "" and state.Job.title ~= "Unemployed"
+	-- CRITICAL FIX: Check CurrentJob NOT Job.title (wrong field was being used!)
+	-- User bug: "death screen says unemployed even when I had a job"
+	local hasJob = state.CurrentJob and state.CurrentJob.name and state.CurrentJob.name ~= "" and state.CurrentJob.name ~= "Unemployed"
+	-- Also check the Flags as fallback
+	if not hasJob and state.Flags and (state.Flags.employed or state.Flags.has_job) then
+		hasJob = true
+	end
 	local inCollege = state.Education and (state.Education.inCollege or state.Education.enrolled)
 	local hasProperty = state.Assets and state.Assets.Properties and #state.Assets.Properties > 0
 	
@@ -11559,6 +11654,42 @@ function LifeBackend:applyHabitEffects(state)
 	-- Fitness enthusiast: positive health
 	if state.Flags.fitness_enthusiast then
 		healthChange = healthChange + RANDOM:NextInteger(1, 2)
+	end
+	
+	-- CRITICAL FIX: More ways to gain health naturally!
+	-- User feedback: "health can be hard to manage and few things gives positive health"
+	-- Added more positive health modifiers
+	
+	-- Regular exerciser gets health boost
+	if state.Flags.exercises_regularly or state.Flags.works_out or state.Flags.gym_rat then
+		healthChange = healthChange + RANDOM:NextInteger(1, 3)
+	end
+	
+	-- Healthy eater gets health boost  
+	if state.Flags.healthy_eater or state.Flags.vegetarian or state.Flags.vegan then
+		healthChange = healthChange + RANDOM:NextInteger(0, 2)
+	end
+	
+	-- Good sleep habits
+	if state.Flags.good_sleep or state.Flags.early_riser then
+		healthChange = healthChange + RANDOM:NextInteger(0, 1)
+	end
+	
+	-- Meditation/mindfulness helps health
+	if state.Flags.meditates or state.Flags.zen_master then
+		healthChange = healthChange + RANDOM:NextInteger(0, 2)
+	end
+	
+	-- Young people naturally regenerate health slightly (under 40)
+	if (state.Age or 0) < 40 and healthChange == 0 then
+		-- If no other effects, young people gain 1-2 health naturally
+		healthChange = healthChange + RANDOM:NextInteger(1, 2)
+	end
+	
+	-- Middle age (40-60) maintains health
+	-- Elderly (60+) may lose health naturally if not active
+	if (state.Age or 0) >= 60 and not (state.Flags.fitness_enthusiast or state.Flags.exercises_regularly) then
+		healthChange = healthChange - RANDOM:NextInteger(0, 2) -- Slight natural decline
 	end
 	
 	-- Apply changes
@@ -13343,6 +13474,24 @@ function LifeBackend:replaceTextVariables(text, state)
 	result = result:gsub("{{FRIEND_NAME}}", "your friend")
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Support LOWERCASE template formats!
+	-- User bug: "it says YOUR {PARENT.ROLE} instead of my parent's name"
+	-- Found {partner}, {parent}, {friend}, etc. in event files - need to replace these!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	result = result:gsub("{partner}", partnerName)
+	result = result:gsub("{friend}", "your friend")
+	result = result:gsub("{father}", fatherName)
+	result = result:gsub("{mother}", motherName)
+	-- Parent randomly picks mom or dad
+	local randomParent = (math.random() > 0.5) and motherName or fatherName
+	result = result:gsub("{parent}", randomParent)
+	result = result:gsub("{parent%.role}", (randomParent == motherName) and "Mom" or "Dad")
+	result = result:gsub("{parent%.name}", randomParent)
+	-- Also handle {{PARENT_NAME}} and {{PARENT_ROLE}}
+	result = result:gsub("{{PARENT_NAME}}", randomParent)
+	result = result:gsub("{{PARENT_ROLE}}", (randomParent == motherName) and "Mom" or "Dad")
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Add more dynamic placeholders for realistic events
 	-- These prevent hardcoded text like "You're 38 with 2 kids"
 	-- ═══════════════════════════════════════════════════════════════════════════════
@@ -13486,6 +13635,31 @@ function LifeBackend:presentEvent(player, eventDef, feedText)
 			text = self:replaceTextVariables(choice.text or ("Choice " .. index), state),
 			minigame = choice.minigame,
 		}
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Send cost/effects data to client for affordability checking!
+		-- User feedback: "should just grey them out saying (cant afford)"
+		-- The client needs to know the cost to gray out unaffordable choices!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		if choice.effects then
+			choiceData.effects = {}
+			-- Only send Money effect (for affordability) - don't send stat effects
+			if choice.effects.Money then
+				choiceData.effects.Money = choice.effects.Money
+			end
+		end
+		if choice.cost then
+			choiceData.cost = choice.cost
+		end
+		
+		-- Also check eligibility function and mark as unavailable if can't afford
+		if choice.eligibility and type(choice.eligibility) == "function" then
+			local success, result, reason = pcall(choice.eligibility, state)
+			if success and result == false then
+				choiceData.unavailable = true
+				choiceData.unavailableReason = reason or "Not eligible"
+			end
+		end
 		
 		-- Add premium choice info if this choice requires a gamepass
 		if choice.requiresGamepass then
@@ -16656,6 +16830,25 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	
 	-- Also include cost in the response if paid
 	local moneyCost = shouldChargeCost and actualCost or 0
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: PUSH STATE TO CLIENT AFTER ACTIVITY!
+	-- User bug: "GOING TO GYM AND EVERYTHING ETC STILL DOESN'T GIVE STATS"
+	-- The stats ARE applied on server but client UI wasn't being updated!
+	-- The LifeClient main stat bars only update on SyncState events.
+	-- We must fire SyncState after activity completion so bars reflect changes!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if player and self.remotes and self.remotes.SyncState then
+		-- Small delay to ensure server state is fully updated before sync
+		task.defer(function()
+			local success, err = pcall(function()
+				self:pushState(player)
+			end)
+			if not success then
+				warn("[LifeBackend] Failed to push state after activity:", err)
+			end
+		end)
+	end
 	
 	return { 
 		success = true, 

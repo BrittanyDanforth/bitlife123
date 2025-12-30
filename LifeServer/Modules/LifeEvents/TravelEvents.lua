@@ -27,11 +27,7 @@ TravelEvents.events = {
 		tags = { "vacation", "beach", "relaxation" },
 		
 		eligibility = function(state)
-			local money = state.Money or 0
-			-- CRITICAL FIX: Check for choice cost ($800), not $300
-			if money < 800 then
-				return false, "Can't afford a beach vacation"
-			end
+			-- CRITICAL FIX: Removed money check - event has free "Skip" option
 			-- CRITICAL FIX: Can't travel from prison!
 			if state.Flags and (state.Flags.in_prison or state.Flags.incarcerated) then
 				return false, "Can't travel from prison"
@@ -107,11 +103,7 @@ TravelEvents.events = {
 		tags = { "vacation", "mountains", "adventure" },
 		
 		eligibility = function(state)
-			local money = state.Money or 0
-			-- CRITICAL FIX: Check for MOST EXPENSIVE choice ($600 skiing), not $400
-			if money < 600 then
-				return false, "Can't afford mountain trip"
-			end
+			-- CRITICAL FIX: Removed money check - event needs free option added
 			-- CRITICAL FIX: Can't travel from prison!
 			if state.Flags and (state.Flags.in_prison or state.Flags.incarcerated) then
 				return false, "Can't travel from prison"
@@ -199,6 +191,8 @@ TravelEvents.events = {
 				return true
 			end,
 		},
+		-- CRITICAL FIX: FREE option to prevent hardlock
+		{ text = "Enjoy the view from home", effects = { Happiness = 2 }, feedText = "🏔️ Mountains are beautiful in photos too. Save money for next time." },
 		},
 	},
 	{
@@ -216,11 +210,9 @@ TravelEvents.events = {
 		tags = { "international", "adventure", "culture" },
 		
 		eligibility = function(state)
-			local money = state.Money or 0
-			-- CRITICAL FIX: Check for MOST EXPENSIVE choice ($3000), not $1500
-			if money < 3000 then
-				return false, "Can't afford international travel"
-			end
+			-- CRITICAL FIX: Remove money check at event level - let choice eligibility handle it
+			-- The event will show but unaffordable choices will be grayed out
+			-- This allows players to see "Skip - save money" option
 			-- CRITICAL FIX: Can't travel from prison!
 			if state.Flags and (state.Flags.in_prison or state.Flags.incarcerated) then
 				return false, "Can't travel from prison"
@@ -310,6 +302,8 @@ TravelEvents.events = {
 					end
 				end,
 			},
+			-- CRITICAL FIX: FREE option to prevent hardlock for broke players
+			{ text = "Dream about it for now", effects = { Happiness = 2 }, setFlags = { travel_dreams = true }, feedText = "✈️ Someday you'll travel the world. For now, save up and plan!" },
 		},
 	},
 	{
@@ -388,9 +382,9 @@ TravelEvents.events = {
 		tags = { "cruise", "vacation", "ocean" },
 		
 		eligibility = function(state)
-			local money = state.Money or 0
-			if money < 1000 then
-				return false, "Can't afford a cruise"
+			-- CRITICAL FIX: Removed money check - event has "skip" option
+			if state.Flags and (state.Flags.in_prison or state.Flags.incarcerated) then
+				return false, "Can't travel from prison"
 			end
 			return true
 		end,

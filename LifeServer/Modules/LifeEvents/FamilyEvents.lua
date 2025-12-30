@@ -53,10 +53,12 @@ FamilyEvents.events = {
 				end,
 			},
 			{ 
-			text = "Unexpected pregnancy", 
+			text = "Unexpected pregnancy (prenatal care $200)", 
 			effects = { Happiness = -2, Money = -200 }, 
 			setFlags = { unexpected_pregnancy = true, expecting = true }, 
 			feedText = "🤰 Not planned but happening. Adjusting expectations.",
+			-- CRITICAL FIX #1: Add eligibility check for prenatal care cost!
+			eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for prenatal care" end,
 			-- CRITICAL FIX: Track child count for unexpected pregnancy too
 			onResolve = function(state)
 				state.ChildCount = (state.ChildCount or 0) + 1

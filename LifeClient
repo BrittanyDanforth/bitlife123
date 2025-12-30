@@ -1327,31 +1327,89 @@ local function showResultPopup(data, callback)
 		bodyText = isPositive and "Things worked out in your favor!" or "That didn't go as planned..."
 	end
 	
-	-- CRITICAL FIX: Dynamic text sizing for long result text - keep readable!
-	local textLen = #bodyText
-	local baseResultTextSize = Device.IS_TINY_PHONE and 16 or textSize(20)
-	local adjustedResultTextSize = baseResultTextSize
-	local adjustedResultLineHeight = Device.IS_TINY_PHONE and 1.25 or 1.35
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: GUARANTEED OK BUTTON VISIBILITY!
+	-- User bug: "I can't see the OK button" for driving test result
+	-- Problem: Long text + stats pushed OK button off screen
+	-- Solution: Calculate available space, reserve space for button, scale content
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local screenHeight = screenGui.AbsoluteSize.Y
+	local topReserved = 60  -- Top of screen reserved
+	local bottomReserved = 40  -- Bottom reserved
+	local maxAvailableHeight = screenHeight - topReserved - bottomReserved
 	
-	-- Gently reduce text size - never go too small!
-	if textLen > 350 then
-		adjustedResultTextSize = Device.IS_TINY_PHONE and 13 or 15
+	-- Reserve space for fixed elements (emoji, title, button, padding, margins)
+	local emojiHeight = Device.IS_TINY_PHONE and 28 or 52
+	local titleHeight = Device.IS_TINY_PHONE and 22 or 32
+	local okBtnHeight = Device.IS_TINY_PHONE and 32 or 40
+	local paddingAndMargins = Device.IS_TINY_PHONE and 60 or 100  -- All padding, margins, layout gaps
+	local reservedHeight = emojiHeight + titleHeight + okBtnHeight + paddingAndMargins
+	
+	-- Calculate max space for body text + stats
+	local maxContentHeight = maxAvailableHeight - reservedHeight
+	
+	-- Count stats to estimate their height
+	local statCount = 0
+	if data.happiness and data.happiness ~= 0 then statCount = statCount + 1 end
+	if data.health and data.health ~= 0 then statCount = statCount + 1 end
+	if data.smarts and data.smarts ~= 0 then statCount = statCount + 1 end
+	if data.looks and data.looks ~= 0 then statCount = statCount + 1 end
+	if data.money and data.money ~= 0 then statCount = statCount + 1 end
+	
+	local statsHeight = statCount * (Device.IS_TINY_PHONE and 20 or 24)
+	local maxBodyHeight = maxContentHeight - statsHeight - 20  -- 20 for stats padding
+	
+	-- Dynamic text sizing for long result text
+	local textLen = #bodyText
+	local baseResultTextSize = Device.IS_TINY_PHONE and 14 or textSize(18)
+	local adjustedResultTextSize = baseResultTextSize
+	local adjustedResultLineHeight = Device.IS_TINY_PHONE and 1.2 or 1.3
+	
+	-- Estimate lines of text and adjust sizing
+	local charsPerLine = Device.IS_TINY_PHONE and 35 or 45
+	local estimatedLines = math.ceil(textLen / charsPerLine)
+	local lineHeight = adjustedResultTextSize * adjustedResultLineHeight
+	local estimatedTextHeight = estimatedLines * lineHeight
+	
+	-- If text would overflow, progressively shrink
+	if estimatedTextHeight > maxBodyHeight then
+		-- Calculate scale factor needed
+		local scaleFactor = maxBodyHeight / estimatedTextHeight
+		scaleFactor = math.max(0.6, scaleFactor)  -- Don't go below 60%
+		
+		adjustedResultTextSize = math.max(10, math.floor(baseResultTextSize * scaleFactor))
+		adjustedResultLineHeight = math.max(1.05, adjustedResultLineHeight * 0.9)
+		
+		-- If still too long after scaling, truncate the text
+		local newEstimatedLines = maxBodyHeight / (adjustedResultTextSize * adjustedResultLineHeight)
+		local maxChars = math.floor(newEstimatedLines * charsPerLine)
+		
+		if textLen > maxChars + 20 then
+			-- Truncate with ellipsis
+			bodyText = string.sub(bodyText, 1, maxChars) .. "..."
+		end
+	elseif textLen > 200 then
+		-- Moderate length - slightly smaller
+		adjustedResultTextSize = Device.IS_TINY_PHONE and 13 or 16
 		adjustedResultLineHeight = 1.15
-	elseif textLen > 250 then
-		adjustedResultTextSize = Device.IS_TINY_PHONE and 14 or 16
-		adjustedResultLineHeight = 1.18
-	elseif textLen > 180 then
-		adjustedResultTextSize = Device.IS_TINY_PHONE and 15 or 18
-		adjustedResultLineHeight = 1.22
 	elseif textLen > 120 then
-		adjustedResultTextSize = Device.IS_TINY_PHONE and 15 or 19
-		adjustedResultLineHeight = 1.25
+		-- Slightly smaller for medium text
+		adjustedResultTextSize = Device.IS_TINY_PHONE and 14 or 17
+		adjustedResultLineHeight = 1.2
 	end
 	
 	-- CRITICAL FIX: Use safe text size setter to prevent UITextSizeConstraint errors
 	safeSetTextSize(ResultUI.body, adjustedResultTextSize)
 	ResultUI.body.LineHeight = adjustedResultLineHeight
 	ResultUI.body.Text = bodyText
+	
+	-- CRITICAL: Add max height constraint to body to GUARANTEE button visibility
+	local bodySizeConstraint = ResultUI.body:FindFirstChildOfClass("UISizeConstraint")
+	if not bodySizeConstraint then
+		bodySizeConstraint = Instance.new("UISizeConstraint")
+		bodySizeConstraint.Parent = ResultUI.body
+	end
+	bodySizeConstraint.MaxSize = Vector2.new(math.huge, math.max(50, maxBodyHeight))
 
 	-- Clear old stat previews
 	for _, child in ipairs(ResultUI.statsPreview:GetChildren()) do
@@ -1359,6 +1417,10 @@ local function showResultPopup(data, callback)
 	end
 
 	-- Add stat changes (compact style)
+	-- CRITICAL FIX: Smaller stat rows on mobile to ensure button visibility
+	local statRowHeight = Device.IS_TINY_PHONE and 18 or (Device.IS_SMALL_PHONE and 20 or 24)
+	local statTextSize = Device.IS_TINY_PHONE and 11 or (Device.IS_SMALL_PHONE and 12 or 14)
+	
 	local statChanges = {
 		{ key = "Happiness", icon = "😀", delta = data.happiness },
 		{ key = "Health", icon = "❤️", delta = data.health },
@@ -1369,7 +1431,7 @@ local function showResultPopup(data, callback)
 	for _, stat in ipairs(statChanges) do
 		if stat.delta and stat.delta ~= 0 then
 			local row = Instance.new("Frame")
-			row.Size = UDim2.new(1, 0, 0, 24)
+			row.Size = UDim2.new(1, 0, 0, statRowHeight)
 			row.BackgroundTransparency = 1
 			row.ZIndex = 85
 			row.Parent = ResultUI.statsPreview
@@ -1378,7 +1440,7 @@ local function showResultPopup(data, callback)
 			lbl.Size = UDim2.new(0.5, 0, 1, 0)
 			lbl.BackgroundTransparency = 1
 			lbl.Font = F.Medium
-			lbl.TextSize = 14
+			lbl.TextSize = statTextSize
 			lbl.TextColor3 = C.Gray600
 			lbl.TextXAlignment = Enum.TextXAlignment.Left
 			lbl.Text = stat.icon .. " " .. stat.key
@@ -1390,7 +1452,7 @@ local function showResultPopup(data, callback)
 			val.Position = UDim2.new(0.5, 0, 0, 0)
 			val.BackgroundTransparency = 1
 			val.Font = F.Title
-			val.TextSize = 14
+			val.TextSize = statTextSize
 			val.TextColor3 = stat.delta > 0 and C.Green or C.Red
 			val.TextXAlignment = Enum.TextXAlignment.Right
 			val.Text = (stat.delta > 0 and "+" or "") .. stat.delta
@@ -1399,10 +1461,10 @@ local function showResultPopup(data, callback)
 		end
 	end
 
-	-- Money change
+	-- Money change (uses same compact sizing as stat rows)
 	if data.money and data.money ~= 0 then
 		local row = Instance.new("Frame")
-		row.Size = UDim2.new(1, 0, 0, 24)
+		row.Size = UDim2.new(1, 0, 0, statRowHeight)
 		row.BackgroundTransparency = 1
 		row.ZIndex = 85
 		row.Parent = ResultUI.statsPreview
@@ -1411,7 +1473,7 @@ local function showResultPopup(data, callback)
 		lbl.Size = UDim2.new(0.5, 0, 1, 0)
 		lbl.BackgroundTransparency = 1
 		lbl.Font = F.Medium
-		lbl.TextSize = 14
+		lbl.TextSize = statTextSize
 		lbl.TextColor3 = C.Gray600
 		lbl.TextXAlignment = Enum.TextXAlignment.Left
 		lbl.Text = "💵 Money"
@@ -1423,7 +1485,7 @@ local function showResultPopup(data, callback)
 		val.Position = UDim2.new(0.5, 0, 0, 0)
 		val.BackgroundTransparency = 1
 		val.Font = F.Title
-		val.TextSize = 14
+		val.TextSize = statTextSize
 		val.TextColor3 = data.money > 0 and C.Green or C.Red
 		val.TextXAlignment = Enum.TextXAlignment.Right
 		val.Text = (data.money > 0 and "+" or "") .. formatMoney(data.money)
@@ -3070,18 +3132,20 @@ local function buildEventModal()
 	
 	if Device.IS_TINY_PHONE then
 		-- ULTRA COMPACT: Tiny phones (iPhone 6: 667x375, iPhone SE: 568x320)
+		-- CRITICAL FIX: Increased max height to prevent button cutoff
 		eventWidth = math.min(screenWidth - 12, 280)
-		maxEventHeight = math.min(safeHeight, 480)
+		maxEventHeight = math.min(safeHeight, 550) -- Increased from 480
 	elseif Device.IS_SMALL_PHONE then
 		-- Small phones (under 750px height)
+		-- CRITICAL FIX: Increased max height to prevent button cutoff
 		eventWidth = math.min(screenWidth - 16, 310)
-		maxEventHeight = math.min(safeHeight, 520)
+		maxEventHeight = math.min(safeHeight, 600) -- Increased from 520
 	elseif Device.IS_MOBILE then
 		eventWidth = modalWidth(330)
-		maxEventHeight = math.min(safeHeight, 580)
+		maxEventHeight = math.min(safeHeight, 680) -- Increased from 580
 	else
 		eventWidth = modalWidth(360)
-		maxEventHeight = math.min(safeHeight, 650)
+		maxEventHeight = math.min(safeHeight, 750) -- Increased from 650
 	end
 	
 	-- Calculate responsive corner radii and margins (slightly larger for cleaner look)
@@ -3343,16 +3407,19 @@ local function buildEventModal()
 	EventUI.question.ZIndex = 65
 	EventUI.question.Parent = bodySection
 
-	-- CRITICAL FIX: BitLife-style - NO SCROLLING on event cards!
-	-- The card expands to show ALL buttons without scrolling
-	-- Changed from ScrollingFrame to regular Frame with AutomaticSize
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: NO SCROLLING - Card scales dynamically to fit screen!
+	-- User feedback: "scroll is bad, should scale nicely depending on size"
+	-- The showEvent function will dynamically adjust text/button sizes based on content
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	EventUI.choicesSection = Instance.new("Frame")
 	EventUI.choicesSection.Name = "ChoicesContainer"
 	EventUI.choicesSection.Size = UDim2.new(1, 0, 0, 0)
-	EventUI.choicesSection.AutomaticSize = Enum.AutomaticSize.Y  -- Expand to fit all buttons!
+	EventUI.choicesSection.AutomaticSize = Enum.AutomaticSize.Y
 	EventUI.choicesSection.BackgroundTransparency = 1
 	EventUI.choicesSection.LayoutOrder = 4
 	EventUI.choicesSection.ZIndex = 64
+	EventUI.choicesSection.ClipsDescendants = false  -- Don't clip - let parent handle it
 	EventUI.choicesSection.Parent = EventUI.card
 
 	-- MOBILE FIX: VERY tight choice section padding on tiny phones
@@ -3365,7 +3432,6 @@ local function buildEventModal()
 	choicesLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	choicesLayout.SortOrder = Enum.SortOrder.LayoutOrder  -- CRITICAL: Force correct order
 	-- MOBILE FIX: Very tight spacing between buttons on tiny phones
-	-- BUG FIX: Even tighter spacing to fit all buttons
 	choicesLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 4 or padSize(8)))
 	choicesLayout.Parent = EventUI.choicesSection
 end
@@ -4076,7 +4142,66 @@ showDeathOverlay = function(causeText, age, canContinueAsKid, continueAsKidData)
 	local smarts = stats.Smarts or currentState.Smarts or 50
 	local looks = stats.Looks or currentState.Looks or 50
 	local education = currentState.Education or "None"
-	local career = currentState.CurrentJob and currentState.CurrentJob.Title or "Unemployed"
+	
+	-- CRITICAL FIX: Use career history if no current job (e.g., retired, fired, etc.)
+	-- This fixes the bug where death screen shows "Unemployed" even when player had jobs
+	-- BUG FIX: Check ALL possible field names (Title/title, name/Name, Job/CurrentJob)
+	local career = "Unemployed"
+	
+	-- Check CurrentJob with all possible field name variations
+	local currentJob = currentState.CurrentJob or currentState.Job
+	if currentJob then
+		local jobTitle = currentJob.Title or currentJob.title or currentJob.name or currentJob.Name or currentJob.jobTitle
+		if jobTitle and jobTitle ~= "" and jobTitle ~= "Unemployed" then
+			career = jobTitle
+		end
+	end
+	
+	-- If still unemployed, check career history
+	if career == "Unemployed" then
+		if currentState.CareerInfo then
+			-- Check lastJob
+			local lastJob = currentState.CareerInfo.lastJob or currentState.CareerInfo.LastJob
+			if lastJob then
+				local jobTitle = lastJob.title or lastJob.Title or lastJob.name or lastJob.Name
+				if jobTitle and jobTitle ~= "" then
+					career = jobTitle .. " (Retired)"
+				end
+			end
+			
+			-- Check careerHistory array
+			if career == "Unemployed" then
+				local history = currentState.CareerInfo.careerHistory or currentState.CareerInfo.CareerHistory or {}
+				if #history > 0 then
+					local lastCareer = history[#history]
+					if lastCareer then
+						local jobTitle = lastCareer.title or lastCareer.Title or lastCareer.name or lastCareer.Name
+						if jobTitle and jobTitle ~= "" then
+							career = jobTitle .. " (Former)"
+						end
+					end
+				end
+			end
+		end
+		
+		-- Check flags for previous career
+		if career == "Unemployed" and currentState.Flags then
+			local prevCareer = currentState.Flags.previous_career or currentState.Flags.previousCareer or currentState.Flags.last_job
+			if prevCareer and prevCareer ~= "" then
+				career = prevCareer .. " (Former)"
+			end
+		end
+		
+		-- Check ExtendedState if available
+		if career == "Unemployed" and currentState.ExtendedState then
+			local ext = currentState.ExtendedState
+			local jobTitle = ext.CurrentJobTitle or ext.LastJobTitle or ext.JobTitle
+			if jobTitle and jobTitle ~= "" and jobTitle ~= "Unemployed" then
+				career = jobTitle
+			end
+		end
+	end
+	
 	local flags = currentState.Flags or {}
 	local assets = currentState.Assets or {}
 	
@@ -4096,22 +4221,43 @@ showDeathOverlay = function(causeText, age, canContinueAsKid, continueAsKidData)
 		if rel.Type == "Spouse" then marriageCount = marriageCount + 1 end
 	end
 	
-	-- Create stat rows
+	-- CRITICAL FIX: Calculate actual Net Worth (cash + assets)
+	-- User confusion: "I had 300 mil but couldn't buy 1k item"
+	-- This was because Net Worth ≠ Cash! Assets can't be spent directly.
+	local netWorth = money -- Start with cash
+	if assets.Properties then
+		for _, prop in ipairs(assets.Properties) do
+			netWorth = netWorth + (prop.value or prop.price or 0)
+		end
+	end
+	if assets.Vehicles then
+		for _, vehicle in ipairs(assets.Vehicles) do
+			netWorth = netWorth + (vehicle.value or vehicle.price or 0)
+		end
+	end
+	if assets.Items then
+		for _, item in ipairs(assets.Items) do
+			netWorth = netWorth + (item.value or item.price or 0)
+		end
+	end
+	
+	-- Create stat rows - FIXED: Show Cash AND Net Worth separately!
 	local statList = {
 		{ icon = "🎂", label = "Years Lived", value = finalAge .. " years", color = C.White, order = 1 },
-		{ icon = "💰", label = "Net Worth", value = formatMoney(money), color = money >= 1000000 and C.Gold or (money >= 100000 and C.Green or C.White), order = 2 },
-		{ icon = "😀", label = "Final Happiness", value = happiness .. "%", color = happiness >= 70 and C.Green or (happiness >= 40 and C.Amber or C.Red), order = 3 },
-		{ icon = "❤️", label = "Final Health", value = health .. "%", color = C.Red, order = 4 },
-		{ icon = "🧠", label = "Intelligence", value = smarts .. "%", color = C.Blue, order = 5 },
-		{ icon = "✨", label = "Looks", value = looks .. "%", color = C.Purple, order = 6 },
-		{ icon = "🎓", label = "Education", value = education == "none" and (finalAge < 18 and "In School" or "None") or education:gsub("^%l", string.upper):gsub("_", " "), color = C.Teal, order = 7 },
-		{ icon = "💼", label = "Last Career", value = career, color = C.Amber, order = 8 },
-		{ icon = "🏠", label = "Properties", value = propertyCount, color = C.White, order = 9 },
-		{ icon = "🚗", label = "Vehicles", value = vehicleCount, color = C.White, order = 10 },
-		{ icon = "📦", label = "Items", value = itemCount, color = C.White, order = 11 },
-		{ icon = "👥", label = "Relationships", value = relationshipCount, color = C.Pink or C.Purple, order = 12 },
-		{ icon = "👶", label = "Children", value = childCount, color = C.White, order = 13 },
-		{ icon = "💍", label = "Marriages", value = marriageCount, color = C.White, order = 14 },
+		{ icon = "💵", label = "Cash", value = formatMoney(money), color = money >= 100000 and C.Green or C.White, order = 2 },
+		{ icon = "💰", label = "Net Worth", value = formatMoney(netWorth), color = netWorth >= 1000000 and C.Gold or (netWorth >= 100000 and C.Green or C.White), order = 3 },
+		{ icon = "😀", label = "Final Happiness", value = happiness .. "%", color = happiness >= 70 and C.Green or (happiness >= 40 and C.Amber or C.Red), order = 4 },
+		{ icon = "❤️", label = "Final Health", value = health .. "%", color = C.Red, order = 5 },
+		{ icon = "🧠", label = "Intelligence", value = smarts .. "%", color = C.Blue, order = 6 },
+		{ icon = "✨", label = "Looks", value = looks .. "%", color = C.Purple, order = 7 },
+		{ icon = "🎓", label = "Education", value = education == "none" and (finalAge < 18 and "In School" or "None") or education:gsub("^%l", string.upper):gsub("_", " "), color = C.Teal, order = 8 },
+		{ icon = "💼", label = "Last Career", value = career, color = C.Amber, order = 9 },
+		{ icon = "🏠", label = "Properties", value = propertyCount, color = C.White, order = 10 },
+		{ icon = "🚗", label = "Vehicles", value = vehicleCount, color = C.White, order = 11 },
+		{ icon = "📦", label = "Items", value = itemCount, color = C.White, order = 12 },
+		{ icon = "👥", label = "Relationships", value = relationshipCount, color = C.Pink or C.Purple, order = 13 },
+		{ icon = "👶", label = "Children", value = childCount, color = C.White, order = 14 },
+		{ icon = "💍", label = "Marriages", value = marriageCount, color = C.White, order = 15 },
 	}
 	
 	for _, s in ipairs(statList) do
@@ -4231,15 +4377,26 @@ showDeathOverlay = function(causeText, age, canContinueAsKid, continueAsKidData)
 		table.insert(achievements, { icon = "🥷", text = "Ghost - Never caught" })
 	end
 	
-	-- Career achievements
-	if career and career ~= "Unemployed" and career ~= "" then
+	-- Career achievements - CRITICAL FIX: Check career history, not just current job
+	local hadCareer = career and career ~= "Unemployed" and career ~= ""
+	local hasCareerHistory = currentState.CareerInfo and currentState.CareerInfo.careerHistory and #currentState.CareerInfo.careerHistory > 0
+	local workedYears = currentState.CareerInfo and currentState.CareerInfo.totalYearsWorked or 0
+	
+	if hadCareer or hasCareerHistory or workedYears > 0 then
 		if flags.ceo or flags.executive then
 			table.insert(achievements, { icon = "👔", text = "Executive - Reached the top" })
 		elseif flags.retired then
 			table.insert(achievements, { icon = "🎉", text = "Retired - Earned retirement" })
+		elseif workedYears >= 20 then
+			table.insert(achievements, { icon = "💼", text = "Career Professional - Worked 20+ years" })
+		elseif workedYears >= 10 then
+			table.insert(achievements, { icon = "📊", text = "Experienced Worker - 10+ years in workforce" })
 		end
 	else
-		table.insert(achievements, { icon = "😴", text = "Unemployed - Never held a job" })
+		-- Only show "Never held a job" if they TRULY never worked
+		if finalAge >= 22 and not flags.employed and not flags.has_job and not flags.had_job then
+			table.insert(achievements, { icon = "😴", text = "Unemployed - Never held a job" })
+		end
 	end
 	
 	-- Special achievements from flags
@@ -4580,15 +4737,183 @@ showEvent = function(payload)
 
 		local choiceHandlers = {}
 
-		-- MOBILE FIX: Self-sizing choice buttons with minimum tap height
-		-- CRITICAL FIX: SMALLER buttons on tiny phones (iPhone 6)
-		-- BUG FIX: Even smaller buttons to guarantee they fit on screen
-		-- User report: "NO OPTIONS MY GOD ON SMALL MOBILE PHONE"
-		local baseMinHeight = Device.IS_TINY_PHONE and 28 or (Device.IS_SMALL_PHONE and 32 or 44)
-		local choiceBtnTextSize = Device.IS_TINY_PHONE and 10 or (Device.IS_SMALL_PHONE and 12 or 15)
-		local choiceBtnCorner = Device.IS_TINY_PHONE and 5 or (Device.IS_SMALL_PHONE and 7 or 10)
-		local choiceBtnPadH = Device.IS_TINY_PHONE and 3 or (Device.IS_SMALL_PHONE and 5 or 8)
-		local choiceBtnPadV = Device.IS_TINY_PHONE and 1 or (Device.IS_SMALL_PHONE and 2 or 4)
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: DYNAMIC SCALING based on number of choices!
+		-- User feedback: "should scale nicely depending on size, no scrolling"
+		-- More choices = smaller buttons/text so everything fits on screen perfectly
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local numChoices = #(payload.choices or {})
+		local hasSurpriseBtn = numChoices >= 2  -- Surprise btn only shows for 2+ choices
+		local totalButtons = numChoices + (hasSurpriseBtn and 1 or 0)
+		
+		-- Get screen dimensions for smart scaling
+		local screenHeight = screenGui.AbsoluteSize.Y
+		local screenWidth = screenGui.AbsoluteSize.X
+		local safeHeight = screenHeight - 80  -- Account for header/notch
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: PC vs MOBILE scaling!
+		-- User bug: "PC THE BUTTONS GET TINY EVEN THO THERES MORE SCREEN SIZE"
+		-- On PC with large screens, buttons should be BIGGER, not smaller!
+		-- Only apply aggressive scaling on mobile devices where space is limited.
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local isPC = not Device.IS_MOBILE
+		local isLargeScreen = screenHeight >= 800 and screenWidth >= 1000
+		
+		-- PC gets larger card and no aggressive scaling
+		local maxCardHeight
+		if isPC or isLargeScreen then
+			maxCardHeight = math.min(750, safeHeight)  -- PC can have taller cards
+		else
+			maxCardHeight = Device.IS_TINY_PHONE and 500 or (Device.IS_SMALL_PHONE and 560 or 650)
+			maxCardHeight = math.min(maxCardHeight, safeHeight)
+		end
+		
+		-- Base button sizing - PC gets appropriate values (not too big, not too small)
+		local baseButtonHeight, baseSpacing, baseTextSize, baseCorner
+		if isPC or isLargeScreen then
+			-- CRITICAL FIX: Reduced by 20% - user said buttons were too big
+			baseButtonHeight = 48  -- Was 56, now more reasonable
+			baseSpacing = 8
+			baseTextSize = 15  -- Was 18, now more readable
+			baseCorner = 10
+		elseif Device.IS_TINY_PHONE then
+			baseButtonHeight = 32
+			baseSpacing = 3
+			baseTextSize = 10
+			baseCorner = 5
+		elseif Device.IS_SMALL_PHONE then
+			baseButtonHeight = 38
+			baseSpacing = 5
+			baseTextSize = 12
+			baseCorner = 7
+		else
+			baseButtonHeight = 48
+			baseSpacing = 8
+			baseTextSize = 15
+			baseCorner = 10
+		end
+		
+		-- Estimate content height to determine if we need to scale
+		local estimatedBodyHeight = math.min(200, textLen * 0.5)
+		local fixedContentHeight = 60 + 50 + 30 + 40
+		local estimatedButtonsHeight = (baseButtonHeight + baseSpacing) * totalButtons
+		local estimatedTotalHeight = fixedContentHeight + estimatedBodyHeight + estimatedButtonsHeight
+		
+		-- Calculate scale factor based on how much we need to shrink
+		local scaleFactor = 1.0
+		if estimatedTotalHeight > maxCardHeight then
+			scaleFactor = maxCardHeight / estimatedTotalHeight
+			-- PC has a higher minimum scale (don't shrink as much)
+			local minScale = (isPC or isLargeScreen) and 0.75 or 0.55
+			scaleFactor = math.max(minScale, scaleFactor)
+		end
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: COMPREHENSIVE MOBILE SCALING FOR MANY CHOICES!
+		-- User bug: "8 CHOICES GOES OFF SCREEN ON MOBILE - TOP AND BOTTOM CUT OFF"
+		-- When there are 5+ choices on mobile, we need to scale EVERYTHING:
+		-- - Button height and text
+		-- - Body text size
+		-- - Emoji size
+		-- - Title size
+		-- - Padding/spacing
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local isManyChoices = totalButtons >= 5
+		local isVeryManyChoices = totalButtons >= 7
+		local isExtremeChoices = totalButtons >= 9
+		
+		-- Additional scaling for many choices - LESS AGGRESSIVE ON PC
+		if isPC or isLargeScreen then
+			-- PC: Only scale down for 8+ choices, and not as much
+			if totalButtons >= 8 then
+				scaleFactor = math.min(scaleFactor, 0.80)
+			elseif totalButtons >= 7 then
+				scaleFactor = math.min(scaleFactor, 0.85)
+			end
+			-- 6 or fewer choices on PC = NO additional scaling needed
+		else
+			-- Mobile: Scale AGGRESSIVELY for screen fit
+			-- User bug: "8 choices goes off screen"
+			if isExtremeChoices then
+				scaleFactor = math.min(scaleFactor, 0.48)  -- 9+ choices: 48% scale
+			elseif totalButtons >= 8 then
+				scaleFactor = math.min(scaleFactor, 0.52)  -- 8 choices: 52% scale
+			elseif totalButtons >= 7 then
+				scaleFactor = math.min(scaleFactor, 0.58)  -- 7 choices: 58% scale
+			elseif totalButtons >= 6 then
+				scaleFactor = math.min(scaleFactor, 0.68)  -- 6 choices: 68% scale
+			elseif totalButtons >= 5 then
+				scaleFactor = math.min(scaleFactor, 0.78)  -- 5 choices: 78% scale
+			end
+		end
+		
+		-- Apply scale factor to button sizing with device-appropriate minimums
+		local minHeight = (isPC or isLargeScreen) and 40 or 18  -- Lower min for mobile with many choices
+		local minTextSize = (isPC or isLargeScreen) and 14 or 7  -- Lower min text for mobile
+		local minCorner = (isPC or isLargeScreen) and 8 or 2
+		
+		local baseMinHeight = math.max(minHeight, math.floor(baseButtonHeight * scaleFactor))
+		local choiceBtnTextSize = math.max(minTextSize, math.floor(baseTextSize * scaleFactor))
+		local choiceBtnCorner = math.max(minCorner, math.floor(baseCorner * scaleFactor))
+		local choiceBtnPadH = (isPC or isLargeScreen) and 12 or (Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 3 or 6))
+		local choiceBtnPadV = (isPC or isLargeScreen) and 6 or (Device.IS_TINY_PHONE and 1 or (Device.IS_SMALL_PHONE and 1 or 3))
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Scale EVERYTHING on mobile for many choices, not just buttons!
+		-- User bug: "top of card and bottom cut off on mobile with 8 choices"
+		-- We need to scale body text, emoji, title, etc. to fit everything
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		if not isPC and isManyChoices then
+			-- Scale body text more aggressively
+			local bodyScaleFactor = scaleFactor
+			if isExtremeChoices then
+				bodyScaleFactor = math.min(bodyScaleFactor, 0.55)
+			elseif isVeryManyChoices then
+				bodyScaleFactor = math.min(bodyScaleFactor, 0.65)
+			end
+			adjustedBodyTextSize = math.max(8, math.floor(adjustedBodyTextSize * bodyScaleFactor))
+			adjustedLineHeight = math.max(0.95, 1.0)  -- Tighter line height
+			safeSetTextSize(EventUI.body, adjustedBodyTextSize)
+			EventUI.body.LineHeight = adjustedLineHeight
+			
+			-- Scale emoji size for many choices
+			if EventUI.emoji then
+				local emojiScale = isExtremeChoices and 0.5 or (isVeryManyChoices and 0.6 or 0.75)
+				local baseEmojiSize = 48
+				EventUI.emoji.TextSize = math.floor(baseEmojiSize * emojiScale)
+			end
+			
+			-- Scale title for many choices
+			if EventUI.title then
+				local titleScale = isExtremeChoices and 0.65 or (isVeryManyChoices and 0.75 or 0.85)
+				local baseTitleSize = 20
+				safeSetTextSize(EventUI.title, math.max(12, math.floor(baseTitleSize * titleScale)))
+			end
+			
+			-- Scale question text for many choices
+			if EventUI.question then
+				local questionScale = isExtremeChoices and 0.65 or (isVeryManyChoices and 0.75 or 0.85)
+				local baseQuestionSize = 14
+				safeSetTextSize(EventUI.question, math.max(10, math.floor(baseQuestionSize * questionScale)))
+			end
+		elseif scaleFactor < 0.85 and not isPC then
+			-- Standard scaling for fewer choices but still need some reduction
+			adjustedBodyTextSize = math.max(9, math.floor(adjustedBodyTextSize * scaleFactor))
+			adjustedLineHeight = math.max(1.0, adjustedLineHeight * 0.9)
+			safeSetTextSize(EventUI.body, adjustedBodyTextSize)
+			EventUI.body.LineHeight = adjustedLineHeight
+		end
+		
+		-- Tighten spacing based on scale factor (but keep generous on PC)
+		local baseSpacingForDevice = (isPC or isLargeScreen) and 6 or (isManyChoices and 1 or 2)
+		local choiceSpacing = math.max(baseSpacingForDevice, math.floor(baseSpacing * scaleFactor))
+		
+		-- Update the layout padding dynamically
+		local choicesLayout = EventUI.choicesSection:FindFirstChildOfClass("UIListLayout")
+		if choicesLayout then
+			choicesLayout.Padding = UDim.new(0, choiceSpacing)
+		end
 		
 		for i, choice in ipairs(payload.choices or {}) do
 			local btn = Instance.new("TextButton")
@@ -4597,10 +4922,47 @@ showEvent = function(payload)
 			btn.AutomaticSize = Enum.AutomaticSize.Y
 			
 			-- ═══════════════════════════════════════════════════════════════════════════════
-			-- CRITICAL FIX: Handle UNAVAILABLE choices (from retry after can't afford)
-			-- Gray out choices that player already tried and couldn't afford
+			-- CRITICAL FIX: Handle UNAVAILABLE choices (server already checked eligibility)
+			-- Server sends unavailable=true for choices the player can't use
+			-- This includes eligibility function checks (e.g., "need a job", "need partner")
 			-- ═══════════════════════════════════════════════════════════════════════════════
 			local isUnavailable = choice.unavailable == true
+			local unavailableReason = choice.unavailableReason or "Not available"
+			
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX #AFFORD-1: Check if player can AFFORD this choice!
+			-- User feedback: "should just grey them out saying (cant afford)"
+			-- Instead of hiding events, show ALL choices but gray out unaffordable ones
+			-- This is better UX - players SEE options and know what they're missing!
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			local cannotAfford = false
+			local choiceCost = 0
+			
+			-- Check effects.Money (negative = cost)
+			if choice.effects and choice.effects.Money and choice.effects.Money < 0 then
+				choiceCost = math.abs(choice.effects.Money)
+			end
+			
+			-- Check explicit cost field
+			if choice.cost and choice.cost > 0 then
+				choiceCost = choice.cost
+			end
+			
+			-- Compare with player's money
+			if choiceCost > 0 then
+				local playerMoney = currentState and currentState.Money or 0
+				if playerMoney < choiceCost then
+					cannotAfford = true
+				end
+			end
+			
+			-- If server marked as unavailable due to eligibility, treat as unavailable
+			-- (This catches non-money eligibility like "need a job", "need partner", etc.)
+			if isUnavailable and not cannotAfford then
+				-- Server already determined this is unavailable for some reason
+				-- The unavailableReason might say "You don't have a job" etc.
+				cannotAfford = false  -- Keep isUnavailable handling for non-money reasons
+			end
 			
 			-- ═══════════════════════════════════════════════════════════════════════════════
 			-- CRITICAL FIX: Premium choices have distinct GOLD/PURPLE colors!
@@ -4611,11 +4973,11 @@ showEvent = function(payload)
 			local btnDarkColor = C.BlueDark
 			local strokeColor = C.BlueLight
 			
-			-- Override colors for unavailable choices
-			if isUnavailable then
-				btnColor = Color3.fromRGB(120, 120, 120)  -- Gray
-				btnDarkColor = Color3.fromRGB(100, 100, 100)
-				strokeColor = Color3.fromRGB(150, 150, 150)
+			-- Override colors for unavailable OR unaffordable choices
+			if isUnavailable or cannotAfford then
+				btnColor = Color3.fromRGB(100, 100, 100)  -- Gray
+				btnDarkColor = Color3.fromRGB(80, 80, 80)
+				strokeColor = Color3.fromRGB(130, 130, 130)
 			end
 			
 			if isPremiumChoice then
@@ -4648,7 +5010,28 @@ showEvent = function(payload)
 			btn.Font = F.Button
 			btn.TextSize = choiceBtnTextSize
 			btn.TextColor3 = C.White
-			btn.Text = choice.text
+			
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX #AFFORD-2: Show "(Can't Afford)" or reason for unavailable choices
+			-- User feedback: "should just grey them out saying (cant afford)"
+			-- Players can SEE all options but know which ones they can't pick!
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			local displayText = choice.text
+			if cannotAfford then
+				displayText = "💰 " .. displayText .. " (Can't Afford)"
+				btn.TextColor3 = Color3.fromRGB(180, 180, 180)  -- Dimmed text
+			elseif isUnavailable then
+				-- Server marked this unavailable for non-money reasons (e.g., "need a job")
+				-- Shorten long reasons for mobile display
+				local shortReason = unavailableReason
+				if #shortReason > 30 then
+					shortReason = string.sub(shortReason, 1, 27) .. "..."
+				end
+				displayText = "🚫 " .. displayText .. " (" .. shortReason .. ")"
+				btn.TextColor3 = Color3.fromRGB(180, 180, 180)  -- Dimmed text
+			end
+			btn.Text = displayText
+			
 			btn.AutoButtonColor = false
 			btn.LayoutOrder = i
 			btn.ZIndex = 65
@@ -4668,7 +5051,7 @@ showEvent = function(payload)
 			sizeConstraint.Parent = btn
 
 			if choice.minigame then
-				btn.Text = "🎮 " .. choice.text
+				btn.Text = "🎮 " .. (cannotAfford and displayText or choice.text)
 			end
 			
 			-- CRITICAL FIX: Add "🔒" indicator if player doesn't own required gamepass
@@ -4713,6 +5096,25 @@ showEvent = function(payload)
 					-- Show feedback that this choice isn't available
 					flashScreen(Color3.fromRGB(255, 100, 100), 0.5, 0.2)
 					-- Don't process - they need to pick a different choice
+					return
+				end
+				
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				-- CRITICAL FIX #AFFORD-3: Block clicking UNAFFORDABLE or UNAVAILABLE choices
+				-- User feedback: "grey them out saying (cant afford)"
+				-- Players can see but not select choices they can't afford or aren't eligible for!
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				if cannotAfford then
+					-- Show feedback that player can't afford this
+					flashScreen(Color3.fromRGB(255, 180, 100), 0.5, 0.2)  -- Orange flash
+					-- Don't process - they need to pick an affordable choice
+					return
+				end
+				
+				if isUnavailable then
+					-- Show feedback that player can't use this option
+					flashScreen(Color3.fromRGB(200, 150, 100), 0.5, 0.2)  -- Brown flash for unavailable
+					-- Don't process - they need to pick an available choice
 					return
 				end
 
@@ -4802,6 +5204,13 @@ showEvent = function(payload)
 
 		-- Only show Surprise Me when there are 2+ choices
 		surpriseBtn.Visible = (payload.choices and #payload.choices >= 2) or false
+		
+		-- CRITICAL FIX: Scale surprise button to match choice buttons!
+		-- User bug: "Surprise me cuts off at bottom"
+		local surpriseBtnHeight = math.floor((Device.IS_TINY_PHONE and 28 or (Device.IS_SMALL_PHONE and 32 or 36)) * scaleFactor)
+		local surpriseBtnTextSize = math.floor((Device.IS_TINY_PHONE and 10 or (Device.IS_SMALL_PHONE and 12 or 14)) * scaleFactor)
+		surpriseBtn.Size = UDim2.new(1, 0, 0, surpriseBtnHeight)
+		surpriseBtn.TextSize = math.max(8, surpriseBtnTextSize)
 
 		EventUI.surpriseConnection = surpriseBtn.MouseButton1Click:Connect(function()
 			if EventUI.currentEventId and #choiceHandlers > 0 then
@@ -7120,8 +7529,16 @@ function updateFromState()
 	end
 
 	for key, card in pairs(statCards) do
-		local val = currentState[key] or (currentState.Stats and currentState.Stats[key]) or 50
-		card.percentLabel.Text = val .. "%"
+		-- CRITICAL FIX: Check BOTH locations for stat values
+		-- Server sends state.Health, activities update state.Stats.Health - check both!
+		local val = currentState[key]
+		if val == nil and currentState.Stats then
+			val = currentState.Stats[key]
+		end
+		if val == nil then
+			val = 50  -- Default fallback
+		end
+		card.percentLabel.Text = math.floor(val) .. "%"
 		tween(card.barFill, TweenInfo.new(0.3), {
 			Size = UDim2.new(math.clamp(val/100, 0, 1), 0, 1, 0),
 		})
@@ -7762,7 +8179,14 @@ local function onActivityShowEventCard(eventCard, onChoiceCallback)
 		})
 	end
 end
-ScreenInstances.activities   = safeNew(ActivitiesScreen,    "ActivitiesScreen",    screenGui, blurOverlay, showBlur, hideBlur, currentState, onActivityShowEventCard)
+-- CRITICAL FIX: Callback to refresh main UI stats after activities change stats locally
+-- User bug: "stats don't change after I complete activities"
+-- This is called by ActivitiesScreen after applying stat changes to currentState
+local function onActivityStatsChanged()
+	updateFromState()
+end
+
+ScreenInstances.activities   = safeNew(ActivitiesScreen,    "ActivitiesScreen",    screenGui, blurOverlay, showBlur, hideBlur, currentState, onActivityShowEventCard, onActivityStatsChanged)
 
 -- CRITICAL FIX #443: Create MafiaScreen with onShowEventCard callback
 -- This allows mafia operations to close the MafiaScreen and show an event card in main UI

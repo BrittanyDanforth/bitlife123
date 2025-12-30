@@ -1213,8 +1213,11 @@ RoyaltyEvents.LifeEvents = {
 				-- CRITICAL FIX: Create partner relationship
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
-					local isMale = state.Gender == "Female"
-					local nobleNames = isMale 
+					-- CRITICAL FIX: Partner should be OPPOSITE gender by default!
+					-- BUG FIX: Normalize gender to lowercase for case-insensitive comparison
+					local playerGender = (state.Gender or "male"):lower()
+					local partnerIsMale = (playerGender == "female")  -- If player is female, partner is male
+					local nobleNames = partnerIsMale 
 						and {"Lord Sebastian", "Duke Edward", "Earl William", "Viscount James", "Baron Frederick"}
 						or {"Lady Victoria", "Duchess Amelia", "Countess Elizabeth", "Baroness Catherine", "Lady Margaret"}
 					local partnerName = nobleNames[math.random(1, #nobleNames)]
@@ -1222,9 +1225,11 @@ RoyaltyEvents.LifeEvents = {
 						id = "partner_noble",
 						name = partnerName,
 						type = "romantic",
-						role = isMale and "Suitor" or "Suitor",
+						role = partnerIsMale and "Boyfriend" or "Girlfriend",
 						relationship = 70,
 						age = (state.Age or 25) + math.random(-3, 3),
+						gender = partnerIsMale and "male" or "female",
+						alive = true,
 					}
 				end,
 			},
@@ -1238,8 +1243,11 @@ RoyaltyEvents.LifeEvents = {
 				-- CRITICAL FIX: Create partner relationship
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
-					local isMale = state.Gender == "Female"
-					local commonerNames = isMale 
+					-- CRITICAL FIX: Partner should be OPPOSITE gender by default!
+					-- BUG FIX: Normalize gender to lowercase for case-insensitive comparison
+					local playerGender = (state.Gender or "male"):lower()
+					local partnerIsMale = (playerGender == "female")  -- If player is female, partner is male
+					local commonerNames = partnerIsMale 
 						and {"Marcus", "Oliver", "Thomas", "Benjamin", "Christopher"}
 						or {"Emma", "Sophie", "Kate", "Jessica", "Rachel"}
 					local partnerName = commonerNames[math.random(1, #commonerNames)]
@@ -1247,9 +1255,11 @@ RoyaltyEvents.LifeEvents = {
 						id = "partner_commoner",
 						name = partnerName,
 						type = "romantic",
-						role = isMale and "Boyfriend" or "Girlfriend",
+						role = partnerIsMale and "Boyfriend" or "Girlfriend",
 						relationship = 80,
 						age = (state.Age or 25) + math.random(-5, 5),
+						gender = partnerIsMale and "male" or "female",
+						alive = true,
 					}
 				end,
 			},
@@ -1263,8 +1273,11 @@ RoyaltyEvents.LifeEvents = {
 				-- CRITICAL FIX: Create partner relationship
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
-					local isMale = state.Gender == "Female"
-					local royalNames = isMale 
+					-- CRITICAL FIX: Partner should be OPPOSITE gender by default!
+					-- BUG FIX: Normalize gender to lowercase for case-insensitive comparison
+					local playerGender = (state.Gender or "male"):lower()
+					local partnerIsMale = (playerGender == "female")  -- If player is female, partner is male
+					local royalNames = partnerIsMale 
 						and {"Prince Albert", "Prince Henrik", "Prince Guillaume", "Prince Frederik", "Prince Carl"}
 						or {"Princess Madeleine", "Princess Elisabeth", "Princess Mary", "Princess Maxima", "Princess Victoria"}
 					local partnerName = royalNames[math.random(1, #royalNames)]
@@ -1272,9 +1285,11 @@ RoyaltyEvents.LifeEvents = {
 						id = "partner_royal",
 						name = partnerName,
 						type = "romantic",
-						role = isMale and "Prince Consort" or "Princess Consort",
+						role = partnerIsMale and "Prince Consort" or "Princess Consort",
 						relationship = 65,
 						age = (state.Age or 25) + math.random(-3, 3),
+						gender = partnerIsMale and "male" or "female",
+						alive = true,
 					}
 				end,
 			},
@@ -1287,10 +1302,13 @@ RoyaltyEvents.LifeEvents = {
 				-- CRITICAL FIX: Create secret partner relationship
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
-					local isMale = state.Gender == "Female"
-					local secretNames = isMale 
+					-- CRITICAL FIX: Partner should be OPPOSITE gender by default!
+					-- BUG FIX: Normalize gender to lowercase for case-insensitive comparison
+					local playerGender = (state.Gender or "male"):lower()
+					local partnerIsMale = (playerGender == "female")  -- If player is female, partner is male
+					local secretNames = partnerIsMale 
 						and {"Alex", "Jordan", "Morgan", "Taylor", "Casey"}
-						or {"Alex", "Jordan", "Morgan", "Taylor", "Casey"}
+						or {"Sam", "Jordan", "Morgan", "Taylor", "Casey"}  -- Different names for female partners
 					local partnerName = secretNames[math.random(1, #secretNames)]
 					state.Relationships.partner = {
 						id = "partner_secret",
@@ -1299,6 +1317,8 @@ RoyaltyEvents.LifeEvents = {
 						role = "Secret Lover",
 						relationship = 75,
 						age = (state.Age or 25) + math.random(-5, 5),
+						gender = partnerIsMale and "male" or "female",
+						alive = true,
 					}
 				end,
 			},
