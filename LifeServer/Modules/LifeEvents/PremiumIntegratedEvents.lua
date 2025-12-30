@@ -1869,7 +1869,7 @@ PremiumIntegratedEvents.events = {
 			"Your teacher asks everyone to write about their dreams. You start to really think about it...",
 			"A career day at school has you thinking about all the possibilities in life.",
 			"You just watched a movie that made you imagine an exciting future. What path calls to you?",
-			"Your {parent.role} asks what you want to be when you grow up. It's a good question...",
+			"{{PARENT_NAME}} asks what you want to be when you grow up. It's a good question...",
 			"While playing with friends, you all talk about your dreams for the future.",
 			"A famous person came to your school! It got you thinking about what you could achieve.",
 		},

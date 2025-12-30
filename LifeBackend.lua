@@ -13474,6 +13474,24 @@ function LifeBackend:replaceTextVariables(text, state)
 	result = result:gsub("{{FRIEND_NAME}}", "your friend")
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Support LOWERCASE template formats!
+	-- User bug: "it says YOUR {PARENT.ROLE} instead of my parent's name"
+	-- Found {partner}, {parent}, {friend}, etc. in event files - need to replace these!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	result = result:gsub("{partner}", partnerName)
+	result = result:gsub("{friend}", "your friend")
+	result = result:gsub("{father}", fatherName)
+	result = result:gsub("{mother}", motherName)
+	-- Parent randomly picks mom or dad
+	local randomParent = (math.random() > 0.5) and motherName or fatherName
+	result = result:gsub("{parent}", randomParent)
+	result = result:gsub("{parent%.role}", (randomParent == motherName) and "Mom" or "Dad")
+	result = result:gsub("{parent%.name}", randomParent)
+	-- Also handle {{PARENT_NAME}} and {{PARENT_ROLE}}
+	result = result:gsub("{{PARENT_NAME}}", randomParent)
+	result = result:gsub("{{PARENT_ROLE}}", (randomParent == motherName) and "Mom" or "Dad")
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Add more dynamic placeholders for realistic events
 	-- These prevent hardcoded text like "You're 38 with 2 kids"
 	-- ═══════════════════════════════════════════════════════════════════════════════

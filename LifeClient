@@ -4809,6 +4809,20 @@ showEvent = function(payload)
 			scaleFactor = math.max(minScale, scaleFactor)
 		end
 		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: COMPREHENSIVE MOBILE SCALING FOR MANY CHOICES!
+		-- User bug: "8 CHOICES GOES OFF SCREEN ON MOBILE - TOP AND BOTTOM CUT OFF"
+		-- When there are 5+ choices on mobile, we need to scale EVERYTHING:
+		-- - Button height and text
+		-- - Body text size
+		-- - Emoji size
+		-- - Title size
+		-- - Padding/spacing
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local isManyChoices = totalButtons >= 5
+		local isVeryManyChoices = totalButtons >= 7
+		local isExtremeChoices = totalButtons >= 9
+		
 		-- Additional scaling for many choices - LESS AGGRESSIVE ON PC
 		if isPC or isLargeScreen then
 			-- PC: Only scale down for 8+ choices, and not as much
@@ -4819,31 +4833,72 @@ showEvent = function(payload)
 			end
 			-- 6 or fewer choices on PC = NO additional scaling needed
 		else
-			-- Mobile: Scale more aggressively for screen fit
-			if totalButtons >= 8 then
-				scaleFactor = math.min(scaleFactor, 0.60)
+			-- Mobile: Scale AGGRESSIVELY for screen fit
+			-- User bug: "8 choices goes off screen"
+			if isExtremeChoices then
+				scaleFactor = math.min(scaleFactor, 0.48)  -- 9+ choices: 48% scale
+			elseif totalButtons >= 8 then
+				scaleFactor = math.min(scaleFactor, 0.52)  -- 8 choices: 52% scale
 			elseif totalButtons >= 7 then
-				scaleFactor = math.min(scaleFactor, 0.68)
+				scaleFactor = math.min(scaleFactor, 0.58)  -- 7 choices: 58% scale
 			elseif totalButtons >= 6 then
-				scaleFactor = math.min(scaleFactor, 0.75)
+				scaleFactor = math.min(scaleFactor, 0.68)  -- 6 choices: 68% scale
 			elseif totalButtons >= 5 then
-				scaleFactor = math.min(scaleFactor, 0.85)
+				scaleFactor = math.min(scaleFactor, 0.78)  -- 5 choices: 78% scale
 			end
 		end
 		
 		-- Apply scale factor to button sizing with device-appropriate minimums
-		local minHeight = (isPC or isLargeScreen) and 40 or 20
-		local minTextSize = (isPC or isLargeScreen) and 14 or 8
-		local minCorner = (isPC or isLargeScreen) and 8 or 3
+		local minHeight = (isPC or isLargeScreen) and 40 or 18  -- Lower min for mobile with many choices
+		local minTextSize = (isPC or isLargeScreen) and 14 or 7  -- Lower min text for mobile
+		local minCorner = (isPC or isLargeScreen) and 8 or 2
 		
 		local baseMinHeight = math.max(minHeight, math.floor(baseButtonHeight * scaleFactor))
 		local choiceBtnTextSize = math.max(minTextSize, math.floor(baseTextSize * scaleFactor))
 		local choiceBtnCorner = math.max(minCorner, math.floor(baseCorner * scaleFactor))
-		local choiceBtnPadH = (isPC or isLargeScreen) and 12 or (Device.IS_TINY_PHONE and 3 or (Device.IS_SMALL_PHONE and 5 or 8))
-		local choiceBtnPadV = (isPC or isLargeScreen) and 6 or (Device.IS_TINY_PHONE and 1 or (Device.IS_SMALL_PHONE and 2 or 4))
+		local choiceBtnPadH = (isPC or isLargeScreen) and 12 or (Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 3 or 6))
+		local choiceBtnPadV = (isPC or isLargeScreen) and 6 or (Device.IS_TINY_PHONE and 1 or (Device.IS_SMALL_PHONE and 1 or 3))
 		
-		-- Only scale body text on mobile when really needed
-		if scaleFactor < 0.85 and not isPC then
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Scale EVERYTHING on mobile for many choices, not just buttons!
+		-- User bug: "top of card and bottom cut off on mobile with 8 choices"
+		-- We need to scale body text, emoji, title, etc. to fit everything
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		if not isPC and isManyChoices then
+			-- Scale body text more aggressively
+			local bodyScaleFactor = scaleFactor
+			if isExtremeChoices then
+				bodyScaleFactor = math.min(bodyScaleFactor, 0.55)
+			elseif isVeryManyChoices then
+				bodyScaleFactor = math.min(bodyScaleFactor, 0.65)
+			end
+			adjustedBodyTextSize = math.max(8, math.floor(adjustedBodyTextSize * bodyScaleFactor))
+			adjustedLineHeight = math.max(0.95, 1.0)  -- Tighter line height
+			safeSetTextSize(EventUI.body, adjustedBodyTextSize)
+			EventUI.body.LineHeight = adjustedLineHeight
+			
+			-- Scale emoji size for many choices
+			if EventUI.emoji then
+				local emojiScale = isExtremeChoices and 0.5 or (isVeryManyChoices and 0.6 or 0.75)
+				local baseEmojiSize = 48
+				EventUI.emoji.TextSize = math.floor(baseEmojiSize * emojiScale)
+			end
+			
+			-- Scale title for many choices
+			if EventUI.title then
+				local titleScale = isExtremeChoices and 0.65 or (isVeryManyChoices and 0.75 or 0.85)
+				local baseTitleSize = 20
+				safeSetTextSize(EventUI.title, math.max(12, math.floor(baseTitleSize * titleScale)))
+			end
+			
+			-- Scale question text for many choices
+			if EventUI.question then
+				local questionScale = isExtremeChoices and 0.65 or (isVeryManyChoices and 0.75 or 0.85)
+				local baseQuestionSize = 14
+				safeSetTextSize(EventUI.question, math.max(10, math.floor(baseQuestionSize * questionScale)))
+			end
+		elseif scaleFactor < 0.85 and not isPC then
+			-- Standard scaling for fewer choices but still need some reduction
 			adjustedBodyTextSize = math.max(9, math.floor(adjustedBodyTextSize * scaleFactor))
 			adjustedLineHeight = math.max(1.0, adjustedLineHeight * 0.9)
 			safeSetTextSize(EventUI.body, adjustedBodyTextSize)
@@ -4851,7 +4906,8 @@ showEvent = function(payload)
 		end
 		
 		-- Tighten spacing based on scale factor (but keep generous on PC)
-		local choiceSpacing = math.max((isPC or isLargeScreen) and 6 or 1, math.floor(baseSpacing * scaleFactor))
+		local baseSpacingForDevice = (isPC or isLargeScreen) and 6 or (isManyChoices and 1 or 2)
+		local choiceSpacing = math.max(baseSpacingForDevice, math.floor(baseSpacing * scaleFactor))
 		
 		-- Update the layout padding dynamically
 		local choicesLayout = EventUI.choicesSection:FindFirstChildOfClass("UIListLayout")

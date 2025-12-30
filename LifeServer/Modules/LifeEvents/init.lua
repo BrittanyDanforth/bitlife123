@@ -3554,7 +3554,9 @@ function LifeEvents.replaceTemplateVariables(text, state)
 	
 	-- Job/Career info
 	local job = state.CurrentJob or {}
-	result = result:gsub("{{JOB_TITLE}}", tostring(job.title or job.Title or "your job"))
+	local jobName = tostring(job.name or job.Name or job.title or job.Title or "your job")
+	result = result:gsub("{{JOB_TITLE}}", jobName)
+	result = result:gsub("{{JOB_NAME}}", jobName)  -- CRITICAL FIX: Support both JOB_TITLE and JOB_NAME
 	result = result:gsub("{{COMPANY}}", tostring(job.company or job.Company or "the company"))
 	result = result:gsub("{{SALARY}}", tostring(job.salary or job.Salary or "your salary"))
 	result = result:gsub("{{YEARS_AT_JOB}}", tostring(job.yearsWorked or job.YearsWorked or 1))
@@ -3600,6 +3602,32 @@ function LifeEvents.replaceTemplateVariables(text, state)
 	result = result:gsub("{{FRIEND_NAME}}", friendName)
 	result = result:gsub("{{SIBLING_NAME}}", siblingName)
 	result = result:gsub("{{CHILD_NAME}}", childName)
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Add PARENT_NAME and PARENT_ROLE templates!
+	-- User bug: "it says YOUR {PARENT.ROLE} instead of my parent's name"
+	-- Pick a random parent (mom or dad) for generic parent references
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local parentName = (math.random() > 0.5) and motherName or fatherName
+	local parentRole = (parentName == motherName) and "Mom" or "Dad"
+	result = result:gsub("{{PARENT_NAME}}", parentName)
+	result = result:gsub("{{PARENT_ROLE}}", parentRole)
+	-- Also handle lowercase/alternative formats that might slip through
+	result = result:gsub("{parent%.role}", parentRole)
+	result = result:gsub("{parent%.name}", parentName)
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Support LOWERCASE template formats!
+	-- Found 99 instances of {partner}, {friend}, etc. in RomanceActivityEvents.lua
+	-- These need to be replaced with actual names too!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	result = result:gsub("{partner}", partnerName)
+	result = result:gsub("{friend}", friendName)
+	result = result:gsub("{sibling}", siblingName)
+	result = result:gsub("{child}", childName)
+	result = result:gsub("{father}", fatherName)
+	result = result:gsub("{mother}", motherName)
+	result = result:gsub("{parent}", parentName)
 	
 	-- Family status
 	local familyStatus = ""
