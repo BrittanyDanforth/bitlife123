@@ -24,6 +24,11 @@ local RANDOM = Random.new()
 -- Check if player has a fast food/service industry job
 local function hasServiceJob(state)
     if not state.CurrentJob then return false end
+    
+    -- CRITICAL FIX: Can't work if in prison!
+    local flags = state.Flags or {}
+    if flags.in_prison or flags.incarcerated then return false end
+    
     local jobId = state.CurrentJob.id or state.CurrentJob.Id or ""
     local category = state.CurrentJob.category or ""
     local serviceJobs = {

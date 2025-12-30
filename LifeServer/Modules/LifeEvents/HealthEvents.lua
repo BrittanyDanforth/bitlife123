@@ -959,8 +959,8 @@ HealthEvents.events = {
 		text = "After testing, the doctor has diagnosed you with diabetes.",
 		question = "Your diagnosis: TYPE 2 DIABETES\n\n🩸 Blood Sugar: Elevated\n⚠️ Severity: Chronic Condition\n💊 Treatment: Lifestyle changes + medication\n\nThis is a lifelong condition that requires management.",
 		minAge = 25, maxAge = 100,
-		baseChance = 0.25,
-		cooldown = 40, -- Only diagnose once
+		baseChance = 0.15, -- CRITICAL FIX: Reduced from 0.25 - diagnosis shouldn't be common
+		cooldown = 50, -- CRITICAL FIX: Increased from 40
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",
@@ -969,21 +969,22 @@ HealthEvents.events = {
 		diagnosisType = "diabetes",
 		oneTime = true,
 		maxOccurrences = 1,
-		-- CRITICAL FIX: Only show if player visited doctor or has symptoms
+		-- CRITICAL FIX: STRICT requirement - MUST visit doctor, no random popups!
+		-- User complained: "RANDOM DIAGNOSIS POPPING UP BUT I DIDNT GO TO DOCTOR"
 		eligibility = function(state)
 			local health = (state.Stats and state.Stats.Health) or 50
 			local flags = state.Flags or {}
 			-- Already have diabetes? Don't show again
 			if flags.diabetes then return false end
-			-- CRITICAL FIX: Must have visited doctor OR have symptoms
+			-- CRITICAL FIX: MUST have visited doctor - removed health < 40 as a bypass!
+			-- Diagnoses should ONLY come from doctor visits, not random popups!
 			local visitedDoctor = flags.went_to_doctor or flags.doctor_checkup or flags.recent_checkup
-			local hasSymptoms = flags.feeling_sick or flags.frequent_urination or flags.excessive_thirst
-				or flags.unexplained_weight_loss or flags.fatigue or health < 40
-			-- Only show if visited doctor with low health OR has specific symptoms
-			if not visitedDoctor and not hasSymptoms then
-				return false
+				or flags.annual_checkup or flags.health_screening
+			if not visitedDoctor then
+				return false -- NO diagnosis without doctor visit!
 			end
-			return health < 60
+			-- Only diagnose if health is concerning during checkup
+			return health < 55
 		end,
 		
 		choices = {
@@ -1032,7 +1033,7 @@ HealthEvents.events = {
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		-- CRITICAL FIX #530: Heart disease diagnosis REQUIRES doctor visit!
 		-- User complaint: "DIAGNOSIS SHOWING UP BUT I DIDNT GO TO DOCTOR"
-		-- Must have: went_to_doctor OR doctor_checkup OR recent_checkup flag
+		-- STRICTER: MUST visit doctor - no health-based bypass!
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		eligibility = function(state)
 			local health = (state.Stats and state.Stats.Health) or 50
@@ -1040,12 +1041,14 @@ HealthEvents.events = {
 			local flags = state.Flags or {}
 			-- Already have heart disease? Don't show again
 			if flags.heart_disease then return false end
-			-- CRITICAL FIX: Must have visited doctor OR have severe symptoms
+			-- CRITICAL FIX: MUST have visited doctor OR been hospitalized
+			-- Removed health < 30 bypass - no random diagnoses!
 			local visitedDoctor = flags.went_to_doctor or flags.doctor_checkup or flags.recent_checkup
-			local hasSymptoms = flags.chest_pain or flags.shortness_of_breath or flags.heart_palpitations 
-				or flags.feeling_faint or flags.hospitalized or health < 30
-			if not visitedDoctor and not hasSymptoms then
-				return false
+				or flags.annual_checkup or flags.health_screening or flags.hospitalized
+			-- Only allow severe physical symptoms that would REQUIRE medical attention
+			local severeSymptoms = flags.chest_pain or flags.heart_attack_scare or flags.collapsed
+			if not visitedDoctor and not severeSymptoms then
+				return false -- NO diagnosis without medical visit!
 			end
 			return (age > 45 and health < 55)
 		end,
@@ -1095,22 +1098,24 @@ HealthEvents.events = {
 		oneTime = true,
 		maxOccurrences = 1,
 		-- ═══════════════════════════════════════════════════════════════════════════════
-		-- CRITICAL FIX #531: Cancer diagnosis REQUIRES doctor visit or screening!
+		-- CRITICAL FIX #531: Cancer diagnosis ABSOLUTELY REQUIRES medical visit!
 		-- User complaint: "DIAGNOSIS SHOWING UP BUT I DIDNT GO TO DOCTOR"
 		-- This is a MAJOR diagnosis - should NEVER pop up randomly!
+		-- STRICTEST CHECK: Doctor/screening REQUIRED, symptoms alone not enough!
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		eligibility = function(state)
 			local flags = state.Flags or {}
 			-- Already have cancer or survived? Don't show again
 			if flags.has_cancer or flags.cancer_survivor then return false end
-			-- CRITICAL FIX: Must have visited doctor OR had screening
-			local visitedDoctor = flags.went_to_doctor or flags.doctor_checkup or flags.recent_checkup
-			local hadScreening = flags.cancer_screening or flags.biopsy or flags.mammogram 
-				or flags.colonoscopy or flags.blood_work
-			local hasSevereSymptoms = flags.unexplained_weight_loss or flags.persistent_cough 
-				or flags.found_lump or flags.unusual_bleeding or flags.severe_fatigue
-			if not visitedDoctor and not hadScreening and not hasSevereSymptoms then
-				return false
+			-- CRITICAL FIX: MUST have visited doctor OR had specific screening
+			-- Symptoms alone should NOT trigger diagnosis - need medical confirmation!
+			local hadMedicalVisit = flags.went_to_doctor or flags.doctor_checkup or flags.recent_checkup
+				or flags.annual_checkup or flags.health_screening or flags.hospitalized
+			local hadCancerScreening = flags.cancer_screening or flags.biopsy or flags.mammogram 
+				or flags.colonoscopy or flags.blood_work or flags.MRI or flags.CT_scan
+			-- ONLY medical visits/screenings can trigger - NO symptom bypasses!
+			if not hadMedicalVisit and not hadCancerScreening then
+				return false -- Absolutely NO random cancer diagnoses!
 			end
 			return true
 		end,
@@ -1319,22 +1324,26 @@ HealthEvents.events = {
 		oneTime = true,
 		maxOccurrences = 1,
 		-- ═══════════════════════════════════════════════════════════════════════════════
-		-- CRITICAL FIX #532: Depression diagnosis requires VERY low happiness or doctor visit
-		-- Changed the text to say "After evaluation" so it makes sense narratively
+		-- CRITICAL FIX #532: Depression diagnosis REQUIRES professional evaluation!
+		-- The text says "After evaluation" - MUST have seen a doctor/therapist!
+		-- REMOVED happiness < 25 bypass - no random diagnoses!
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		eligibility = function(state)
 			local happiness = (state.Stats and state.Stats.Happiness) or 50
 			local flags = state.Flags or {}
 			-- Already have depression? Don't show again
 			if flags.depression then return false end
-			-- Need either: doctor visit OR VERY severe symptoms (happiness below 25)
+			-- CRITICAL FIX: MUST have seen a professional - text says "After evaluation"!
+			-- Removed happiness bypass - that was causing random popups!
 			local visitedDoctor = flags.went_to_doctor or flags.doctor_checkup or flags.recent_checkup
+				or flags.annual_checkup or flags.hospitalized
 			local visitedTherapist = flags.therapy_session or flags.saw_therapist or flags.mental_health_eval
-			local severeSymptoms = happiness < 25 or flags.suicidal_thoughts or flags.cant_get_out_of_bed
-			if not visitedDoctor and not visitedTherapist and not severeSymptoms then
-				return false
+				or flags.counseling or flags.psychiatrist
+			if not visitedDoctor and not visitedTherapist then
+				return false -- NO random diagnoses - must see professional!
 			end
-			return happiness < 35
+			-- Also need to actually be struggling
+			return happiness < 40
 		end,
 		
 		choices = {
@@ -1380,20 +1389,25 @@ HealthEvents.events = {
 		oneTime = true,
 		maxOccurrences = 1,
 		-- ═══════════════════════════════════════════════════════════════════════════════
-		-- CRITICAL FIX #533: Anxiety diagnosis requires doctor/therapist or severe symptoms
+		-- CRITICAL FIX #533: Anxiety diagnosis REQUIRES professional evaluation!
+		-- The text says "evaluated by a mental health professional" - MUST have seen one!
+		-- REMOVED symptom bypasses - no random diagnoses!
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		eligibility = function(state)
 			local flags = state.Flags or {}
 			-- Already have anxiety? Don't show again
 			if flags.anxiety then return false end
-			-- Need either: doctor/therapist visit OR explicit panic attacks
+			-- CRITICAL FIX: MUST have seen a professional - text says "evaluated"!
+			-- Removed panic_attacks bypass - need professional diagnosis!
 			local visitedDoctor = flags.went_to_doctor or flags.doctor_checkup or flags.recent_checkup
+				or flags.annual_checkup or flags.hospitalized
 			local visitedTherapist = flags.therapy_session or flags.saw_therapist or flags.mental_health_eval
-			local hasSymptoms = flags.panic_attacks or flags.severe_anxiety or flags.anxiety_attack
-			if not visitedDoctor and not visitedTherapist and not hasSymptoms then
-				return false
+				or flags.counseling or flags.psychiatrist
+			if not visitedDoctor and not visitedTherapist then
+				return false -- NO random diagnoses - must see professional!
 			end
-			return flags.stressed or flags.panic_attacks or flags.nervous
+			-- Also should show some anxiety indicators
+			return flags.stressed or flags.panic_attacks or flags.nervous or flags.anxious
 		end,
 		
 		choices = {
@@ -1432,19 +1446,21 @@ HealthEvents.events = {
 		isDiagnosisCard = true,
 		diagnosisType = "infection",
 		-- ═══════════════════════════════════════════════════════════════════════════════
-		-- CRITICAL FIX #534: Infection diagnosis requires being sick or doctor visit
+		-- CRITICAL FIX #534: Infection diagnosis requires doctor visit or being explicitly sick
 		-- User complaint: "DIAGNOSIS SHOWING UP BUT I DIDNT GO TO DOCTOR"
+		-- FIXED: Removed lowHealth bypass - need actual symptoms or doctor visit!
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		eligibility = function(state)
 			local flags = state.Flags or {}
-			local health = (state.Stats and state.Stats.Health) or 50
 			-- Currently recovering? Don't show again
 			if flags.recovering_from_infection then return false end
-			-- Must have: visited doctor, OR been sick, OR have low health
+			-- CRITICAL FIX: Must have visited doctor OR have explicit illness symptoms
+			-- Removed health < 40 bypass - that was causing random popups!
 			local visitedDoctor = flags.went_to_doctor or flags.doctor_checkup or flags.recent_checkup
-			local beenSick = flags.feeling_sick or flags.has_cold or flags.prolonged_illness or flags.fever
-			local lowHealth = health < 40
-			return visitedDoctor or beenSick or lowHealth
+				or flags.hospitalized
+			local hasExplicitSymptoms = flags.feeling_sick or flags.has_cold or flags.prolonged_illness 
+				or flags.fever or flags.flu
+			return visitedDoctor or hasExplicitSymptoms
 		end,
 		
 		choices = {

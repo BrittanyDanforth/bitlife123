@@ -54,6 +54,10 @@ local function hasOfficeJob(state)
 	-- CRITICAL FIX: Entertainment careers should NOT get office events!
 	if isEntertainmentCareer(state) then return false end
 	
+	-- CRITICAL FIX: Can't work in office if in prison!
+	local flags = state.Flags or {}
+	if flags.in_prison or flags.incarcerated then return false end
+	
 	local jobCat = (state.CurrentJob.category or ""):lower()
 	local jobId = (state.CurrentJob.id or ""):lower()
 	

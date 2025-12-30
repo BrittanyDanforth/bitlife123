@@ -308,12 +308,24 @@ SeniorExpanded.events = {
 		text = "The doctor has news about your health.",
 		question = "What's the diagnosis?",
 		minAge = 60, maxAge = 100,
-		baseChance = 0.55,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.45, -- CRITICAL FIX: Reduced from 0.55 - diagnosis events shouldn't be too common
+		cooldown = 5, -- CRITICAL FIX: Increased from 4 to reduce spam
 		stage = STAGE,
 		ageBand = "senior",
 		category = "health",
 		tags = { "health", "diagnosis", "medical" },
+		-- CRITICAL FIX: Diagnosis requires prior doctor visit or checkup!
+		-- User complained about random diagnoses without visiting doctor
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Need some indication player visited a doctor
+			local visitedDoctor = flags.went_to_doctor or flags.doctor_checkup or flags.recent_checkup
+				or flags.annual_checkup or flags.health_screening or flags.regular_checkups
+			if not visitedDoctor then
+				return false -- No random diagnoses!
+			end
+			return true
+		end,
 		
 		-- CRITICAL: Random diagnosis - player doesn't choose what health issue
 		choices = {

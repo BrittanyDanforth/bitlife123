@@ -895,7 +895,8 @@ MilitaryCareerEvents.events = {
 	},
 	
 	{
-		id = "mil_promotion_board",
+		-- CRITICAL FIX: Renamed from "mil_promotion_board" to avoid duplicate ID
+		id = "mil_promotion_review",
 		title = "Promotion Board",
 		emoji = "⭐",
 		text = "You're up for promotion! The board will review your record and interview you. Big day.",

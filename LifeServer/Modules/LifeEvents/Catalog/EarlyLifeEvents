@@ -3451,7 +3451,8 @@ EarlyLifeEvents.events = {
 		},
 	},
 	{
-		id = "toddler_playground_adventure",
+		-- CRITICAL FIX: Renamed from "toddler_playground_adventure" to avoid duplicate ID
+		id = "toddler_playground_day",
 		title = "🎢 Playground Adventure!",
 		emoji = "🎢",
 		text = "Your parents took you to the playground! So many things to explore!",
@@ -4280,7 +4281,8 @@ EarlyLifeEvents.events = {
 		},
 	},
 	{
-		id = "toddler_imaginary_friend",
+		-- CRITICAL FIX: Renamed from "toddler_imaginary_friend" to avoid duplicate ID
+		id = "toddler_magical_friend",
 		title = "🧚 Imaginary Friend!",
 		emoji = "🧚",
 		text = "You've made a VERY SPECIAL friend that only you can see!",

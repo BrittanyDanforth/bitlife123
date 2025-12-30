@@ -145,7 +145,8 @@ ProgressiveLifeEvents.events = {
 	-- TODDLER EVENTS (Ages 2-4) - Building personality
 	-- ════════════════════════════════════════════════════════════════════════════
 	{
-		id = "toddler_potty_training",
+		-- CRITICAL FIX: Renamed from "toddler_potty_training" to avoid duplicate ID with EarlyLifeEvents
+		id = "toddler_potty_adventure",
 		title = "🚽 Potty Training Adventure",
 		emoji = "🚽",
 		text = "It's time to learn to use the potty!",
@@ -749,7 +750,8 @@ ProgressiveLifeEvents.events = {
 		},
 	},
 	{
-		id = "teen_friend_drama",
+		-- CRITICAL FIX: Renamed from "teen_friend_drama" to avoid duplicate ID with EarlyLifeEvents
+		id = "teen_friend_drama_progressive",
 		title = "😤 Friend Group Drama",
 		emoji = "😤",
 		text = "There's drama brewing in your friend group. What do you do?",
