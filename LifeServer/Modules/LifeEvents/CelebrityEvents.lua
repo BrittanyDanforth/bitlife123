@@ -964,8 +964,20 @@ CelebrityEvents.GeneralFameEvents = {
 		id = "endorsement_deal",
 		title = "💰 Endorsement Opportunity!",
 		emoji = "💰",
+		-- CRITICAL FIX: Added text variants for variety!
+		textVariants = {
+			"A major brand wants you to endorse their product!",
+			"A sports drink company reached out - they want YOU as their face!",
+			"A luxury watch brand is offering a massive deal for you to be their ambassador!",
+			"A clothing line wants you in their next campaign. Big bucks on the table!",
+			"A tech company thinks you'd be perfect for their new product launch!",
+			"A makeup/skincare brand is offering millions for your endorsement!",
+			"A car manufacturer wants you to be their celebrity spokesperson!",
+		},
 		text = "A major brand wants you to endorse their product!",
 		minFame = 40,
+		cooldown = 3, -- CRITICAL FIX: Prevent spam
+		maxOccurrences = 6, -- CRITICAL FIX: Limit endorsements per life
 		choices = {
 			{
 				text = "Accept the deal",
@@ -999,8 +1011,20 @@ CelebrityEvents.GeneralFameEvents = {
 		id = "tabloid_story",
 		title = "📰 Tabloid Story!",
 		emoji = "📰",
+		-- CRITICAL FIX: Added text variants for variety!
+		textVariants = {
+			"A tabloid is running a story about you. It's completely made up!",
+			"BREAKING: You're on the cover of a gossip magazine with a FAKE scandal!",
+			"Paparazzi caught you at the worst angle. Now there's a story about 'your secret struggles'!",
+			"An 'anonymous source' told a tabloid complete lies about your personal life!",
+			"A gossip site is claiming you had a public meltdown. You were just having lunch!",
+			"Rumors are swirling that you're feuding with another celebrity. News to you!",
+			"A magazine claims you're secretly broke. Your accountant begs to differ.",
+		},
 		text = "A tabloid is running a story about you. It's completely made up!",
 		minFame = 35,
+		cooldown = 3, -- CRITICAL FIX: Prevent spam
+		maxOccurrences = 5, -- CRITICAL FIX: Limit tabloid stories
 		choices = {
 			{
 				text = "Ignore it completely",
@@ -1035,8 +1059,19 @@ CelebrityEvents.GeneralFameEvents = {
 		id = "award_show_invite",
 		title = "🏆 Award Show Invitation!",
 		emoji = "🏆",
+		-- CRITICAL FIX: Added text variants for variety!
+		textVariants = {
+			"You've been invited to present at a major award show!",
+			"The Grammy/Emmy/Oscar producers want you to present an award! Red carpet time!",
+			"You've been nominated for a major industry award! Will you win?",
+			"The People's Choice Awards wants you to accept the Favorite Star award!",
+			"A prestigious ceremony invited you as a presenter AND a nominee!",
+			"You've been asked to host a segment at this year's biggest award show!",
+		},
 		text = "You've been invited to present at a major award show!",
 		minFame = 45,
+		cooldown = 3, -- CRITICAL FIX: Prevent spam
+		maxOccurrences = 6, -- CRITICAL FIX: Limit award invites
 		choices = {
 			{
 				text = "Attend and present",
@@ -1070,6 +1105,8 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "✨",
 		text = "You're walking the red carpet at a major premiere!",
 		minFame = 40,
+		cooldown = 2, -- CRITICAL FIX: Prevent spam
+		maxOccurrences = 10, -- CRITICAL FIX: Limit red carpet events
 		choices = {
 			{
 				text = "Wear designer outfit ($50K)",
@@ -1103,6 +1140,8 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🎤",
 		text = "A famous talk show host wants to interview you!",
 		minFame = 50,
+		cooldown = 3, -- CRITICAL FIX: Prevent spam
+		maxOccurrences = 8, -- CRITICAL FIX: Limit interviews
 		choices = {
 			{
 				text = "Give a great interview",
@@ -1136,6 +1175,8 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "💝",
 		text = "A major charity wants you as their global ambassador!",
 		minFame = 55,
+		cooldown = 5, -- CRITICAL FIX: Prevent spam
+		maxOccurrences = 3, -- CRITICAL FIX: Limit charity offers
 		choices = {
 			{
 				-- CRITICAL FIX: Show donation cost!
@@ -1168,6 +1209,8 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "⚠️",
 		text = "Someone is threatening to release damaging information about you!",
 		minFame = 45,
+		cooldown = 5, -- CRITICAL FIX: Prevent spam
+		maxOccurrences = 3, -- CRITICAL FIX: Limit scandals
 		choices = {
 			{
 				text = "Pay them off ($500K)",

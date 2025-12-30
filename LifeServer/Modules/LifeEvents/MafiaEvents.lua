@@ -262,6 +262,14 @@ MafiaEvents.LifeEvents = {
 		id = "protection_collection",
 		title = "💰 Collection Day",
 		emoji = "💰",
+		-- CRITICAL FIX: Added text variants for variety!
+		textVariants = {
+			"It's time to collect protection money from the businesses on your route. Most pay without trouble, but one shop owner is being difficult.",
+			"Collection day. Most store owners know the drill. But there's always one who thinks they can say no...",
+			"The envelope's light. This restaurant owner claims business is bad. But you saw the full tables last night.",
+			"New guy on your route thinks he doesn't have to pay. Time to educate him on how things work around here.",
+			"Everyone paid up except one. The dry cleaner. Says he'll go to the cops. You've heard that threat before.",
+		},
 		text = "It's time to collect protection money from the businesses on your route. Most pay without trouble, but one shop owner is being difficult.",
 		question = "How do you handle the problem?",
 		minAge = 18,
@@ -311,6 +319,14 @@ MafiaEvents.LifeEvents = {
 		id = "heist_planning",
 		title = "🏦 The Big Score",
 		emoji = "🏦",
+		-- CRITICAL FIX: Added text variants for variety!
+		textVariants = {
+			"The boss has greenlit a major heist. You've been chosen to help plan and execute it. This could make your career.",
+			"A tip came in about a big opportunity. The boss wants you involved in planning the biggest score of the year.",
+			"Word is the family needs cash. The boss called you in - 'Time for a big job. You're in.' Your moment has arrived.",
+			"Late night meeting. Maps on the table. The boss trusts you enough for this major operation. Don't mess it up.",
+			"After months of planning, the green light came. The heist is ON. Everyone's looking to you now.",
+		},
 		text = "The boss has greenlit a major heist. You've been chosen to help plan and execute it. This could make your career.",
 		question = "What role do you take?",
 		minAge = 18,
@@ -373,6 +389,14 @@ MafiaEvents.LifeEvents = {
 		id = "contraband_shipment",
 		title = "📦 The Shipment",
 		emoji = "📦",
+		-- CRITICAL FIX: Added text variants for variety!
+		textVariants = {
+			"A major shipment is coming in. You've been trusted to oversee the operation. Everything needs to go smoothly.",
+			"3 AM. The docks. A boat's arriving with valuable cargo. You're in charge tonight. Don't screw this up.",
+			"The shipment is worth millions. The boss chose YOU to handle it. Your reputation rides on this one.",
+			"Trucks are rolling in at midnight. You've got the manifest. Make sure everything gets where it needs to go.",
+			"Big shipment, big responsibility. The family is counting on you. Feds might be watching. Stay sharp.",
+		},
 		text = "A major shipment is coming in. You've been trusted to oversee the operation. Everything needs to go smoothly.",
 		question = "How do you handle it?",
 		minAge = 18,
@@ -423,6 +447,14 @@ MafiaEvents.LifeEvents = {
 		id = "loyalty_test",
 		title = "🤫 Loyalty Test",
 		emoji = "🤫",
+		-- CRITICAL FIX: Added text variants for variety!
+		textVariants = {
+			"The boss suspects there's a rat in the organization. He's watching everyone closely. Then he calls you into his office alone.",
+			"Someone's been talking. The boss doesn't know who, but he's testing everyone. Your turn just came up.",
+			"Paranoia is running high. Money went missing and someone leaked info. The boss wants to talk to you. Privately.",
+			"'I need to know I can trust you,' the boss says, closing the door. 'What would you do if you found a rat?'",
+			"A sit-down. Just you and the boss. He pours two drinks and asks point blank: 'You with us, or against us?'",
+		},
 		text = "The boss suspects there's a rat in the organization. He's watching everyone closely. Then he calls you into his office alone.",
 		question = "What happens in the meeting?",
 		minAge = 18,

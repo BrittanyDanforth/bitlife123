@@ -1648,14 +1648,548 @@ LifeExperiences.events = {
 					state.Money = (state.Money or 0) + 5000
 				end,
 			},
-			{
-				text = "Teaching workshops",
-				effects = { Happiness = 10, Money = 1000 },
-				setFlags = { art_teacher = true },
-				feedText = "🎨 People want to learn from YOU! Teaching workshops on the side!",
-			},
+		{
+			text = "Teaching workshops",
+			effects = { Happiness = 10, Money = 1000 },
+			setFlags = { art_teacher = true },
+			feedText = "🎨 People want to learn from YOU! Teaching workshops on the side!",
 		},
 	},
+},
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: NEW CHILDHOOD CONSEQUENCE EVENTS
+-- These connect childhood flags to adult experiences for more variety!
+-- ═══════════════════════════════════════════════════════════════════════════════
+{
+	id = "conseq_popular_kid_reunion",
+	title = "The Popular Kid Return",
+	emoji = "👑",
+	text = "Remember being the popular kid in school? Someone from back then reached out!",
+	question = "What do they want?",
+	minAge = 25, maxAge = 50,
+	baseChance = 0.3,
+	cooldown = 15,
+	oneTime = true,
+	category = "consequence",
+	tags = { "consequence", "childhood", "popularity" },
+	requiresAnyFlags = { popular_kid = true, socially_confident = true, makes_friends_easily = true, popular_teen = true, social_butterfly_college = true },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "They want to reconnect genuinely",
+			effects = { Happiness = 10 },
+			setFlags = { old_friend_reconnected = true },
+			feedText = "👑 They missed you! Your high school friendships meant something real.",
+		},
+		{
+			text = "They need help with something",
+			effects = {},
+			feedText = "The networking begins...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.5 then
+					state:ModifyStat("Happiness", 8)
+					state.Money = (state.Money or 0) + 2000
+					state:AddFeed("👑 You helped them, they helped you back. Win-win! +$2,000 from the deal!")
+				else
+					state:ModifyStat("Happiness", -3)
+					state:AddFeed("👑 They just wanted to use your connections. Some people never change.")
+				end
+			end,
+		},
+		{
+			text = "Planning a reunion",
+			effects = { Happiness = 6 },
+			setFlags = { reunion_planned = true },
+			feedText = "👑 Class reunion incoming! Time to see how everyone turned out.",
+		},
+	},
+},
+{
+	id = "conseq_kind_kid_payoff",
+	title = "Kindness Remembered",
+	emoji = "💝",
+	text = "Someone you were kind to as a child tracked you down to say thank you!",
+	question = "What did your kindness mean to them?",
+	minAge = 22, maxAge = 60,
+	baseChance = 0.25,
+	cooldown = 20,
+	oneTime = true,
+	category = "consequence",
+	tags = { "consequence", "childhood", "kindness" },
+	requiresAnyFlags = { kind_kid = true, good_sharer = true, generous_kid = true, helper = true, generous = true, helped_friend = true, selfless = true },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "You saved them from bullying",
+			effects = { Happiness = 15 },
+			setFlags = { remembered_hero = true },
+			feedText = "💝 You stood up for them when no one else did. They never forgot. You're their hero!",
+		},
+		{
+			text = "You shared when they had nothing",
+			effects = { Happiness = 12 },
+			feedText = "💝 A simple act of sharing changed their life. They're now paying it forward.",
+		},
+		{
+			text = "Your friendship got them through hard times",
+			effects = { Happiness = 10 },
+			feedText = "💝 Home was rough, but you were their escape. Thank you for being you!",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.3 then
+					state.Money = (state.Money or 0) + 5000
+					state:AddFeed("💝 They insisted on helping you back. They're successful now and gave you $5,000!")
+				end
+			end,
+		},
+	},
+},
+{
+	id = "conseq_troublemaker_reputation",
+	title = "The Troublemaker's Past",
+	emoji = "😈",
+	text = "Your troublemaking childhood has caught up with you...",
+	question = "What happened?",
+	minAge = 20, maxAge = 45,
+	baseChance = 0.35,
+	cooldown = 10,
+	oneTime = true,
+	category = "consequence",
+	tags = { "consequence", "childhood", "trouble" },
+	requiresAnyFlags = { troublemaker = true, rebellious_streak = true, sneaky_kid = true, class_clown = true, prankster = true, detention_regular = true },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "Old teacher recognizes you",
+			effects = {},
+			feedText = "That look of recognition...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.4 then
+					state:ModifyStat("Happiness", 8)
+					state:AddFeed("😈 'I always knew you'd turn out fine!' They're proud of you now!")
+				else
+					state:ModifyStat("Happiness", -5)
+					state:AddFeed("😈 'Still causing trouble?' They still judge you. Some things never change.")
+				end
+			end,
+		},
+		{
+			text = "Pranks resurface online",
+			effects = {},
+			feedText = "The internet found the evidence...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.5 then
+					state:ModifyStat("Happiness", 6)
+					state:AddFeed("😈 People think your childhood pranks are hilarious! Mini viral moment!")
+				else
+					state:ModifyStat("Happiness", -8)
+					state:AddFeed("😈 Not everyone found it funny... some awkward explanations needed.")
+				end
+			end,
+		},
+		{
+			text = "Job interview asks about it",
+			effects = {},
+			feedText = "They did their research...",
+			onResolve = function(state)
+				local smarts = (state.Stats and state.Stats.Smarts) or 50
+				local roll = math.random()
+				if roll < 0.3 + (smarts / 200) then
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("😈 You spun it as 'creative problem solving' - they loved it!")
+				else
+					state:ModifyStat("Happiness", -6)
+					state:AddFeed("😈 That record from school... they weren't impressed.")
+				end
+			end,
+		},
+	},
+},
+{
+	id = "conseq_quick_learner_opportunity",
+	title = "The Natural Talent",
+	emoji = "🧠",
+	text = "Your ability to learn things quickly is opening doors!",
+	question = "What opportunity appeared?",
+	minAge = 18, maxAge = 55,
+	baseChance = 0.35,
+	cooldown = 8,
+	maxOccurrences = 2,
+	category = "consequence",
+	tags = { "consequence", "childhood", "intelligence" },
+	requiresAnyFlags = { quick_learner = true, math_whiz = true, academic_talent = true, smart_kid = true, honors_student = true, valedictorian = true, bookworm = true },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "Scholarship opportunity",
+			effects = { Happiness = 15, Smarts = 5 },
+			setFlags = { scholarship_offered = true },
+			feedText = "🧠 Your academic gifts caught attention - a scholarship is yours!",
+		},
+		{
+			text = "Mentor takes interest in you",
+			effects = { Happiness = 10, Smarts = 3 },
+			setFlags = { has_mentor = true },
+			feedText = "🧠 A successful professional sees your potential and wants to guide you!",
+		},
+		{
+			text = "Fast-tracked at work",
+			effects = { Happiness = 8 },
+			feedText = "🧠 Management noticed you pick things up instantly - promotion discussions!",
+			onResolve = function(state)
+				state.Money = (state.Money or 0) + math.random(1000, 5000)
+				state:AddFeed("🧠 Your quick learning = faster raises!")
+			end,
+		},
+	},
+},
+{
+	id = "conseq_animal_lover_calling",
+	title = "The Animal Whisperer",
+	emoji = "🐾",
+	text = "Your lifelong love of animals is leading somewhere special!",
+	question = "What's happening?",
+	minAge = 16, maxAge = 60,
+	baseChance = 0.3,
+	cooldown = 10,
+	oneTime = true,
+	category = "consequence",
+	tags = { "consequence", "childhood", "animals" },
+	requiresAnyFlags = { animal_lover = true, animal_talent = true, animal_whisperer = true, had_imaginary_friend_pet = true, has_pet = true, has_dog = true, has_cat = true },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "Rescue opportunity",
+			effects = { Happiness = 12 },
+			setFlags = { animal_rescuer = true },
+			feedText = "🐾 You rescued an animal in need - they're now your loyal companion!",
+		},
+		{
+			text = "Career with animals possible",
+			effects = { Happiness = 10, Smarts = 2 },
+			setFlags = { animal_career_interest = true },
+			feedText = "🐾 People say you should work with animals professionally - maybe they're right!",
+		},
+		{
+			text = "Unexpected animal connection",
+			effects = { Happiness = 8 },
+			feedText = "🐾 A wild animal approached you without fear. You truly have a gift!",
+		},
+	},
+},
+{
+	id = "conseq_brave_moment",
+	title = "When Courage Counted",
+	emoji = "🦁",
+	text = "That bravery you showed as a kid? It's needed again now.",
+	question = "What situation are you facing?",
+	minAge = 18, maxAge = 70,
+	baseChance = 0.3,
+	cooldown = 8,
+	maxOccurrences = 3,
+	category = "consequence",
+	tags = { "consequence", "childhood", "bravery" },
+	requiresAnyFlags = { brave = true, stood_up_to_bully = true, defender = true, stands_up_for_self = true, brave_child = true, brave_about_pain = true, dealt_with_bully = true },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "Someone needs defending",
+			effects = {},
+			feedText = "Standing up again...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.6 then
+					state:ModifyStat("Happiness", 12)
+					state.Flags = state.Flags or {}
+					state.Flags.modern_hero = true
+					state:AddFeed("🦁 You stepped in when everyone else walked by. They'll never forget you!")
+				else
+					state:ModifyStat("Health", -5)
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("🦁 Got hurt defending someone, but you'd do it again. That's who you are.")
+				end
+			end,
+		},
+		{
+			text = "Speaking up against injustice",
+			effects = { Happiness = 8, Smarts = 2 },
+			setFlags = { activist_spirit = true },
+			feedText = "🦁 You called out something wrong that others ignored. It made a difference!",
+		},
+		{
+			text = "Taking a risk on yourself",
+			effects = {},
+			feedText = "Betting on yourself...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.5 then
+					state:ModifyStat("Happiness", 15)
+					state.Money = (state.Money or 0) + math.random(2000, 10000)
+					state:AddFeed("🦁 The brave choice paid off! Your courage was rewarded!")
+				else
+					state:ModifyStat("Happiness", -5)
+					state:AddFeed("🦁 Didn't work out this time, but you're proud you tried.")
+				end
+			end,
+		},
+	},
+},
+{
+	id = "conseq_shy_kid_growth",
+	title = "The Quiet One Speaks",
+	emoji = "🦋",
+	text = "You were always the quiet one... but that's changing.",
+	question = "What's happening?",
+	minAge = 16, maxAge = 40,
+	baseChance = 0.3,
+	cooldown = 10,
+	oneTime = true,
+	category = "consequence",
+	tags = { "consequence", "childhood", "growth" },
+	requiresAnyFlags = { shy_kid = true, introverted = true, socially_anxious = true, quiet_child = true, loner_teen = true, lonely_college = true },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "Finally coming out of my shell",
+			effects = { Happiness = 12, Smarts = 2 },
+			setFlags = { confidence_growing = true },
+			feedText = "🦋 All those years of observing taught you to read people. Now you're ready!",
+		},
+		{
+			text = "Found my voice in writing",
+			effects = { Happiness = 10 },
+			setFlags = { writer_talent = true },
+			feedText = "🦋 Turns out all that time inside your head made you an incredible writer!",
+		},
+		{
+			text = "Still prefer being alone - and that's okay",
+			effects = { Happiness = 8 },
+			setFlags = { self_aware = true },
+			feedText = "🦋 You've made peace with who you are. Introverts rule (quietly)!",
+		},
+	},
+},
+{
+	id = "conseq_athletic_growth",
+	title = "The Athletic Kid Grown Up",
+	emoji = "🏃",
+	text = "Your athletic childhood has shaped who you are today!",
+	question = "How has it impacted you?",
+	minAge = 20, maxAge = 50,
+	baseChance = 0.35,
+	cooldown = 12,
+	oneTime = true,
+	category = "consequence",
+	tags = { "consequence", "childhood", "sports" },
+	requiresAnyFlags = { athletic = true, sporty_kid = true, playground_champion = true, physical_talent = true, athlete = true, jock_group = true, athletic_talent = true, athletic_kid = true, athletic_focus = true },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "Still crushing it physically",
+			effects = { Health = 10, Happiness = 8 },
+			setFlags = { lifelong_athlete = true },
+			feedText = "🏃 Those early years built habits that last a lifetime. Still going strong!",
+		},
+		{
+			text = "Coaching the next generation",
+			effects = { Happiness = 12 },
+			setFlags = { youth_coach = true },
+			feedText = "🏃 You're giving back what was given to you. The kids look up to you!",
+		},
+		{
+			text = "Old injuries catching up",
+			effects = { Health = -5, Happiness = -3 },
+			setFlags = { sports_injury = true },
+			feedText = "🏃 All those hard plays are taking their toll. Worth it though.",
+		},
+	},
+},
+{
+	id = "conseq_creative_kid_career",
+	title = "The Creative Soul",
+	emoji = "🎨",
+	text = "Your childhood creativity is paying off in unexpected ways!",
+	question = "What's happening?",
+	minAge = 18, maxAge = 55,
+	baseChance = 0.3,
+	cooldown = 10,
+	maxOccurrences = 2,
+	category = "consequence",
+	tags = { "consequence", "childhood", "creativity" },
+	requiresAnyFlags = { creative_kid = true, artistic_kid = true, imaginative = true, creative_expression = true, artistic = true, artistic_talent = true, artistic_interest = true, creative = true, arts_track = true },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "Side hustle from creativity",
+			effects = { Happiness = 10 },
+			feedText = "🎨 People will pay for your creative work!",
+			onResolve = function(state)
+				state.Money = (state.Money or 0) + math.random(500, 3000)
+				state:AddFeed("🎨 Your creative side is earning real money now!")
+			end,
+		},
+		{
+			text = "Problem solving others can't",
+			effects = { Happiness = 8, Smarts = 3 },
+			setFlags = { creative_problem_solver = true },
+			feedText = "🎨 Your ability to think differently solves problems others can't crack!",
+		},
+		{
+			text = "Finding joy in the process",
+			effects = { Happiness = 15 },
+			feedText = "🎨 Creating makes you happy. That's the real gift.",
+		},
+	},
+},
+{
+	id = "conseq_spoiled_kid_reality",
+	title = "Reality Check",
+	emoji = "💸",
+	text = "Growing up spoiled... the real world has thoughts about that.",
+	question = "What's your wake-up call?",
+	minAge = 18, maxAge = 35,
+	baseChance = 0.4,
+	cooldown = 10,
+	oneTime = true,
+	category = "consequence",
+	tags = { "consequence", "childhood", "growth" },
+	requiresAnyFlags = { spoiled_kid = true, entitled = true, pampered_child = true },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "First time being told no",
+			effects = {},
+			feedText = "Learning the hard way...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.5 then
+					state:ModifyStat("Happiness", -8)
+					state:AddFeed("💸 The world doesn't care who your parents are. Tough lesson.")
+				else
+					state:ModifyStat("Happiness", 5)
+					state:ModifyStat("Smarts", 3)
+					state.Flags = state.Flags or {}
+					state.Flags.growth_mindset = true
+					state:AddFeed("💸 Getting rejected taught you resilience. Best thing that could happen!")
+				end
+			end,
+		},
+		{
+			text = "Managing money is hard",
+			effects = {},
+			feedText = "Numbers don't lie...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.4 then
+					state.Money = math.max(0, (state.Money or 0) - math.random(1000, 5000))
+					state:ModifyStat("Happiness", -10)
+					state:AddFeed("💸 Spent too much, saved too little. This is rough.")
+				else
+					state:ModifyStat("Smarts", 4)
+					state.Flags = state.Flags or {}
+					state.Flags.learned_budgeting = true
+					state:AddFeed("💸 Finally learned to budget. Better late than never!")
+				end
+			end,
+		},
+		{
+			text = "People only liked me for my stuff",
+			effects = { Happiness = -5 },
+			setFlags = { learned_about_true_friends = true },
+			feedText = "💸 Real friends are rare. At least now you know who they are.",
+		},
+	},
+},
+{
+	id = "conseq_music_talent_bloom",
+	title = "Musical Journey",
+	emoji = "🎵",
+	text = "That musical talent from childhood is still with you!",
+	question = "Where has it taken you?",
+	minAge = 16, maxAge = 60,
+	baseChance = 0.3,
+	cooldown = 10,
+	maxOccurrences = 2,
+	category = "consequence",
+	tags = { "consequence", "childhood", "music" },
+	requiresAnyFlags = { musical_talent = true, loves_music = true, instrument_player = true, music_kid = true, learned_instrument = true, plays_piano = true, plays_guitar = true, music_passion = true },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "Performing at local venues",
+			effects = { Happiness = 12 },
+			setFlags = { local_performer = true },
+			feedText = "🎵 Open mics, coffee shops, small bars - your music reaches people!",
+			onResolve = function(state)
+				state.Money = (state.Money or 0) + math.random(100, 500)
+			end,
+		},
+		{
+			text = "Music is my therapy",
+			effects = { Happiness = 15, Health = 3 },
+			setFlags = { music_therapy = true },
+			feedText = "🎵 Playing music keeps you sane. Best therapist ever!",
+		},
+		{
+			text = "Teaching others to play",
+			effects = { Happiness = 10 },
+			setFlags = { music_teacher = true },
+			feedText = "🎵 Seeing students learn is incredibly rewarding!",
+			onResolve = function(state)
+				state.Money = (state.Money or 0) + math.random(300, 1000)
+			end,
+		},
+	},
+},
+{
+	id = "conseq_outdoors_kid",
+	title = "Nature's Child",
+	emoji = "🌲",
+	text = "Your love of the outdoors from childhood shapes your life!",
+	question = "How are you connecting with nature?",
+	minAge = 18, maxAge = 70,
+	baseChance = 0.25,
+	cooldown = 8,
+	maxOccurrences = 3,
+	category = "consequence",
+	tags = { "consequence", "childhood", "nature" },
+	requiresAnyFlags = { nature_lover = true, outdoors_kid = true, camping_enthusiast = true, adventurous_spirit = true },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "Weekend adventures",
+			effects = { Happiness = 12, Health = 5 },
+			feedText = "🌲 Mountains, forests, beaches - you're out there every chance you get!",
+		},
+		{
+			text = "Environmental awareness",
+			effects = { Happiness = 8, Smarts = 2 },
+			setFlags = { environmentalist = true },
+			feedText = "🌲 Your connection to nature makes you want to protect it!",
+		},
+		{
+			text = "Finding peace in solitude",
+			effects = { Happiness = 15 },
+			feedText = "🌲 The woods remember you. This is where you belong.",
+		},
+	},
+},
 }
 
 return LifeExperiences
