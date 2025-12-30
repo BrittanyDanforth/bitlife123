@@ -525,38 +525,45 @@ function Minigames:createDebateGame()
 				{ text = "Pressure? What's that?", correct = false },
 			}},
 		},
-		-- CONFRONTATIONS / INTIMIDATION
-		confrontation = {
-			{ q = "They get in your face: What's your problem?!", answers = {
-				{ text = "Let's talk about this like adults", correct = true },
-				{ text = "YOU'RE my problem!", correct = false },
-				{ text = "Back off before I make you!", correct = false },
-				{ text = "I-I don't have a problem...", correct = false },
-			}},
-			{ q = "They threaten: You're gonna regret this!", answers = {
-				{ text = "I don't want trouble, let's resolve this peacefully", correct = true },
-				{ text = "Try me!", correct = false },
-				{ text = "You're the one who'll regret it!", correct = false },
-				{ text = "Please don't hurt me!", correct = false },
-			}},
-			{ q = "They mock: You think you're tough?", answers = {
-				{ text = "I'm not looking for a fight", correct = true },
-				{ text = "Tougher than you!", correct = false },
-				{ text = "Yeah, what about it?!", correct = false },
-				{ text = "N-no, not really...", correct = false },
-			}},
-			{ q = "They demand: Give me what I want or else!", answers = {
-				{ text = "Let's find a solution that works for both of us", correct = true },
-				{ text = "Or else what?!", correct = false },
-				{ text = "You'll get nothing!", correct = false },
-				{ text = "O-okay, here, take it...", correct = false },
-			}},
-			{ q = "They sneer: You don't belong here!", answers = {
-				{ text = "I have every right to be here", correct = true },
-				{ text = "Make me leave!", correct = false },
-				{ text = "YOU don't belong here!", correct = false },
-				{ text = "Sorry, I'll go...", correct = false },
-			}},
+	-- CONFRONTATIONS / INTIMIDATION
+	-- CRITICAL FIX: Both diplomatic AND assertive responses are valid in confrontations!
+	-- User complaint: "I said MAKE ME LEAVE thats a good reply and it said its a bad reply"
+	confrontation = {
+		{ q = "They get in your face: What's your problem?!", answers = {
+			{ text = "Let's talk about this like adults", correct = true },
+			{ text = "YOU'RE my problem!", correct = false },
+			-- CRITICAL FIX: Assertive response is valid in confrontation!
+			{ text = "Back off before I make you!", correct = true },
+			{ text = "I-I don't have a problem...", correct = false },
+		}},
+		{ q = "They threaten: You're gonna regret this!", answers = {
+			{ text = "I don't want trouble, let's resolve this peacefully", correct = true },
+			-- CRITICAL FIX: Standing your ground is also valid in confrontations!
+			{ text = "Try me!", correct = true },
+			{ text = "You're the one who'll regret it!", correct = false },
+			{ text = "Please don't hurt me!", correct = false },
+		}},
+		{ q = "They mock: You think you're tough?", answers = {
+			{ text = "I'm not looking for a fight", correct = true },
+			-- CRITICAL FIX: Confident response is valid!
+			{ text = "Tougher than you!", correct = true },
+			{ text = "Yeah, what about it?!", correct = false },
+			{ text = "N-no, not really...", correct = false },
+		}},
+		{ q = "They demand: Give me what I want or else!", answers = {
+			{ text = "Let's find a solution that works for both of us", correct = true },
+			-- CRITICAL FIX: Standing firm is valid!
+			{ text = "Or else what?!", correct = true },
+			{ text = "You'll get nothing!", correct = false },
+			{ text = "O-okay, here, take it...", correct = false },
+		}},
+		{ q = "They sneer: You don't belong here!", answers = {
+			{ text = "I have every right to be here", correct = true },
+			-- CRITICAL FIX: "Make me leave!" is a valid tough response in confrontations!
+			{ text = "Make me leave!", correct = true },
+			{ text = "YOU don't belong here!", correct = false },
+			{ text = "Sorry, I'll go...", correct = false },
+		}},
 		},
 		-- FAMILY DRAMA
 		family = {
@@ -1276,7 +1283,8 @@ function Minigames:createHeistGame()
 	self.heistInstructions.TextSize = 14
 	self.heistInstructions.TextColor3 = C.Gray300
 	self.heistInstructions.TextWrapped = true
-	self.heistInstructions.Text = "Find the 4-digit code! Green = correct digit & position. Yellow = correct digit, wrong position."
+	-- CRITICAL FIX: Updated instructions to mention the hint
+	self.heistInstructions.Text = "Find the 4-digit code! One digit is revealed as a hint. Green = correct. Yellow = right digit, wrong spot."
 	self.heistInstructions.ZIndex = 202
 	self.heistInstructions.Parent = self.heistCard
 
@@ -1398,14 +1406,27 @@ function Minigames:startHeist(callback)
 	end
 
 	self.heistCurrentInput = ""
-	self.heistAttemptsLeft = 6
+	-- CRITICAL FIX: Increased attempts from 6 to 8 - game was too hard for casual players
+	-- User complaint: "THE CRACK THE SAFE MINIGAME IS ABSOLUTELY INSANELY HARD TOO HARD"
+	self.heistAttemptsLeft = 8
 	self.heistGuesses = {}
+	
+	-- CRITICAL FIX: Give a starting hint - reveal one random digit position
+	-- This makes the game more accessible for casual players
+	self.heistRevealedPosition = math.random(1, 4)
+	self.heistRevealedDigit = string.sub(self.heistSecretCode, self.heistRevealedPosition, self.heistRevealedPosition)
 
 	self.heistAttempts.Text = "Attempts: " .. self.heistAttemptsLeft .. " remaining"
 
-	for _, data in ipairs(self.heistDigitLabels) do
-		data.label.Text = "_"
-		data.frame.BackgroundColor3 = C.Gray700
+	for i, data in ipairs(self.heistDigitLabels) do
+		-- CRITICAL FIX: Show the revealed hint digit
+		if i == self.heistRevealedPosition then
+			data.label.Text = self.heistRevealedDigit
+			data.frame.BackgroundColor3 = Color3.fromRGB(34, 197, 94) -- Green for hint
+		else
+			data.label.Text = "_"
+			data.frame.BackgroundColor3 = C.Gray700
+		end
 	end
 
 	for _, child in ipairs(self.heistHistory:GetChildren()) do

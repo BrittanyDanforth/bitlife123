@@ -5806,6 +5806,58 @@ function ActivitiesScreen:doPrisonActivity(item)
 		self:showEscapeMinigame()
 		return
 	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Prison Workout and other mash minigame activities
+	-- User complaint: "IN JAIL I CANT DO EXCERSISE IT SAYS JAILED"
+	-- Prison workout should have a tap/mash minigame!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if item.id == "prison_workout" and item.hasMinigame then
+		log("Starting prison workout mash minigame...")
+		
+		-- Get minigames module
+		local ReplicatedStorage = game:GetService("ReplicatedStorage")
+		local MinigamesModule = ReplicatedStorage:FindFirstChild("Minigames")
+		if MinigamesModule then
+			local Minigames = require(MinigamesModule)
+			local minigameInstance = Minigames.new(self.screenGui)
+			
+			-- Start mash minigame for workout
+			minigameInstance:play("mash", function(won, stats)
+				log("Prison workout result - Won:", won)
+				
+				-- Call server with result
+				local serverSuccess, serverResult = pcall(function()
+					return DoPrisonAction:InvokeServer(item.id, {
+						minigameCompleted = true,
+						minigameWon = won,
+					})
+				end)
+				
+				-- Show result
+				if won then
+					self:showActivityResult(true, "💪 Great workout! You're getting buff in the yard!", item, "💪")
+				else
+					self:showActivityResult(false, "You gave up on your workout... try harder next time!", item, "😅")
+				end
+			end, {
+				title = "💪 Prison Yard Workout",
+				instruction = "Tap fast to pump iron!",
+				targetTaps = 30, -- Reasonable target
+				timeLimit = 8,
+			})
+		else
+			-- Fallback: just call server directly if minigames not available
+			log("Minigames not available, calling server directly for workout")
+			local success, result = pcall(function()
+				return DoPrisonAction:InvokeServer(item.id)
+			end)
+			if result then
+				self:showActivityResult(result.success, result.message or "You worked out in the yard!", item, "💪")
+			end
+		end
+		return
+	end
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- PRISON COMBAT ACTIVITIES: Join crew, riot, fight - use combat minigame!
