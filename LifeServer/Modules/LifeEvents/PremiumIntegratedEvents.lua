@@ -769,12 +769,13 @@ PremiumIntegratedEvents.events = {
 				end,
 			},
 			{
-				-- CRITICAL FIX: Show price!
-				text = "Follow your passion (-$500 income)",
-				effects = { Happiness = 12, Money = -500 },
-				setFlags = { passion_follower = true },
-				feedText = "Money isn't everything. Doing what you love!",
-				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need savings to take pay cut" end,
+				-- CRITICAL FIX: Following passion is about lower income going forward, NOT an upfront cost!
+				-- This represents taking a career that pays less but makes you happier
+				text = "Follow your passion (lower income)",
+				effects = { Happiness = 15 },
+				setFlags = { passion_follower = true, chose_passion_over_money = true },
+				feedText = "Money isn't everything. Doing what you love! Less pay but more purpose.",
+				-- No eligibility - anyone can choose passion over money
 			},
 			-- 🔫 MAFIA PREMIUM OPTION
 			{

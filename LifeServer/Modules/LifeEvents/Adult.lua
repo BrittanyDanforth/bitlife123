@@ -980,7 +980,7 @@ Adult.events = {
 					local names = partnerIsMale 
 						and {"Mike", "Chris", "Jason", "Brian", "Matt", "Steve", "Dave", "Tom", "Nick", "Ben"}
 						or {"Jessica", "Ashley", "Sarah", "Emily", "Lauren", "Amanda", "Megan", "Nicole", "Brittany", "Rachel"}
-					local partnerName = names[math.random(1, #names)]
+					local partnerName = names[math.random(1, #names)] or "Someone"
 					state.Relationships.partner = {
 						id = "partner",
 						name = partnerName,
@@ -993,7 +993,7 @@ Adult.events = {
 						metThrough = "dating_app",
 					}
 					if state.AddFeed then
-						state:AddFeed(string.format("📱 Swipe right on %s turned into real love!", partnerName))
+						state:AddFeed(string.format("📱 Swipe right on %s turned into real love!", tostring(partnerName)))
 					end
 				end,
 			},
@@ -1188,7 +1188,7 @@ Adult.events = {
 					local isBoy = math.random() > 0.5
 					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason", "Lucas"} 
 						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia", "Amelia"}
-					local childName = names[math.random(1, #names)]
+					local childName = names[math.random(1, #names)] or "Baby"
 					local childId = "child_" .. tostring(childCount)
 					state.Relationships[childId] = {
 						id = childId,
@@ -1217,7 +1217,7 @@ Adult.events = {
 					local isBoy = math.random() > 0.5
 					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason"} 
 						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia"}
-					local childName = names[math.random(1, #names)]
+					local childName = names[math.random(1, #names)] or "Baby"
 					local childId = "child_" .. tostring(childCount)
 					state.Relationships[childId] = {
 						id = childId,
@@ -1246,7 +1246,7 @@ Adult.events = {
 					local isBoy = math.random() > 0.5
 					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason"} 
 						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia"}
-					local childName = names[math.random(1, #names)]
+					local childName = names[math.random(1, #names)] or "Baby"
 					local childId = "child_" .. tostring(childCount)
 					state.Relationships[childId] = {
 						id = childId,
@@ -1276,7 +1276,7 @@ Adult.events = {
 					local isBoy = math.random() > 0.5
 					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason"} 
 						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia"}
-					local childName = names[math.random(1, #names)]
+					local childName = names[math.random(1, #names)] or "Baby"
 					local childId = "child_" .. tostring(childCount)
 					state.Relationships[childId] = {
 						id = childId,
@@ -1305,7 +1305,7 @@ Adult.events = {
 					local isBoy = math.random() > 0.5
 					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason"} 
 						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia"}
-					local childName = names[math.random(1, #names)]
+					local childName = names[math.random(1, #names)] or "Baby"
 					local childId = "child_" .. tostring(childCount)
 					state.Relationships[childId] = {
 						id = childId,
@@ -1392,7 +1392,7 @@ Adult.events = {
 						state.CareerInfo.promotions = (state.CareerInfo.promotions or 0) + 1
 						state.CareerInfo.raises = (state.CareerInfo.raises or 0) + 1
 						if state.AddFeed then
-							state:AddFeed(string.format("📈 PROMOTED! Salary now $%d (+25%%)!", state.CurrentJob.salary))
+							state:AddFeed(string.format("📈 PROMOTED! Salary now $%d (+25%%)!", state.CurrentJob.salary or 0))
 						end
 					end
 				end,
@@ -1410,7 +1410,7 @@ Adult.events = {
 						state.CareerInfo = state.CareerInfo or {}
 						state.CareerInfo.promotions = (state.CareerInfo.promotions or 0) + 1
 						if state.AddFeed then
-							state:AddFeed(string.format("📈 Relocated for the promotion! New salary: $%d", state.CurrentJob.salary))
+							state:AddFeed(string.format("📈 Relocated for the promotion! New salary: $%d", state.CurrentJob.salary or 0))
 						end
 					end
 				end,
@@ -1428,7 +1428,7 @@ Adult.events = {
 						state.CareerInfo = state.CareerInfo or {}
 						state.CareerInfo.promotions = (state.CareerInfo.promotions or 0) + 1
 						if state.AddFeed then
-							state:AddFeed(string.format("📈 Manager now! Salary: $%d. Time to lead.", state.CurrentJob.salary))
+							state:AddFeed(string.format("📈 Manager now! Salary: $%d. Time to lead.", state.CurrentJob.salary or 0))
 						end
 					end
 				end,

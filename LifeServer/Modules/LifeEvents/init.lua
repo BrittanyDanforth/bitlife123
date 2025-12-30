@@ -772,10 +772,12 @@ local function canEventTrigger(event, state)
 		-- CRITICAL FIX #61/#63: Check if this is an "approach" event vs "member" event
 		-- Approach events (mafia_approach) should trigger for gamepass owners who AREN'T in mob yet
 		-- All OTHER mafia events require actually being in the mob
-		local isApproachEvent = event.id and (
-			string.find(event.id, "approach") or 
-			string.find(event.id, "recruit") or
-			string.find(event.id, "offer_to_join")
+		-- CRITICAL FIX: Nil-safe string.find - ensure event.id is a string
+		local eventId = (event.id and type(event.id) == "string") and event.id or ""
+		local isApproachEvent = eventId ~= "" and (
+			string.find(eventId, "approach") or 
+			string.find(eventId, "recruit") or
+			string.find(eventId, "offer_to_join")
 		)
 		
 		if not isApproachEvent then
@@ -829,10 +831,12 @@ local function canEventTrigger(event, state)
 		elseif not hasActiveFameCareer and not hasFame then
 			-- Check if this is a "discovery" event (entering celebrity path)
 			-- These should be blocked if player chose a different premium wish
-			local isDiscoveryEvent = event.id and (
-				string.find(event.id, "discover") or 
-				string.find(event.id, "talent") or
-				string.find(event.id, "famous")
+			-- CRITICAL FIX: Nil-safe string.find
+			local eventIdStr = (event.id and type(event.id) == "string") and event.id or ""
+			local isDiscoveryEvent = eventIdStr ~= "" and (
+				string.find(eventIdStr, "discover") or 
+				string.find(eventIdStr, "talent") or
+				string.find(eventIdStr, "famous")
 			)
 			
 			if isDiscoveryEvent then
@@ -1248,13 +1252,15 @@ local function canEventTrigger(event, state)
 	
 	if state.InJail then
 		local eventCategory = event._category or event.category or ""
+		-- CRITICAL FIX: Nil-safe string.find
+		local eventIdStr = (event.id and type(event.id) == "string") and event.id or ""
 		local allowedInPrison = event.allowedInPrison 
 			or eventCategory == "prison" 
 			or eventCategory == "crime"
-			or (event.id and (
-				string.find(event.id, "prison") 
-				or string.find(event.id, "jail")
-				or string.find(event.id, "inmate")
+			or (eventIdStr ~= "" and (
+				string.find(eventIdStr, "prison") 
+				or string.find(eventIdStr, "jail")
+				or string.find(eventIdStr, "inmate")
 			))
 		
 		if not allowedInPrison then
@@ -5344,13 +5350,24 @@ function LifeEvents.processYearlyProgression(state)
 		messages = {},
 	}
 	
+	-- CRITICAL FIX: Clear "this year" flags at the start of each year
+	-- These flags prevent conflicting events from firing in the same year
+	if state.Flags then
+		state.Flags.housing_changed_this_year = nil
+		state.Flags.major_life_event_this_year = nil
+	end
+	
 	-- Check for life stage transition
 	local prevAge = (state.Age or 1) - 1
 	local transition = LifeEvents.checkLifeStageTransition(state, prevAge, state.Age)
-	if transition.transitioned then
-		table.insert(results.messages, string.format("Life Stage: %s → %s", 
-			transition.fromStage:gsub("_", " "):gsub("^%l", string.upper),
-			transition.toStage:gsub("_", " "):gsub("^%l", string.upper)))
+	-- CRITICAL FIX: Nil-safe stage name formatting
+	if transition and transition.transitioned then
+		local fromStage = transition.fromStage or "unknown"
+		local toStage = transition.toStage or "unknown"
+		-- Ensure they're strings before calling gsub
+		fromStage = tostring(fromStage):gsub("_", " "):gsub("^%l", string.upper)
+		toStage = tostring(toStage):gsub("_", " "):gsub("^%l", string.upper)
+		table.insert(results.messages, string.format("Life Stage: %s → %s", fromStage, toStage))
 	end
 	
 	-- Fame career progression
