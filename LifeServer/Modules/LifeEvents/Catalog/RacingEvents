@@ -300,7 +300,8 @@ local events = {
 						state.Flags.amateur_racing = true
 						state.Flags.racing_experience = true
 						state.Stats = state.Stats or {}
-						state.Stats.Happiness = (state.Stats.Happiness or 50) + 15
+						-- CRITICAL FIX: Clamp stats to valid range (0-100)
+						state.Stats.Happiness = math.min(100, (state.Stats.Happiness or 50) + 15)
 						state.Money = (state.Money or 0) + 25000
 						if state.CurrentJob and state.CurrentJob.id == "go_kart_racer" then
 							if state.SetCareer then
@@ -318,7 +319,8 @@ local events = {
 						end
 					else
 						state.Stats = state.Stats or {}
-						state.Stats.Happiness = (state.Stats.Happiness or 50) - 5
+						-- CRITICAL FIX: Clamp stats to valid range (0-100)
+						state.Stats.Happiness = math.max(0, (state.Stats.Happiness or 50) - 5)
 						if state.AddFeed then
 							state:AddFeed("You lost the championship. There's always next year.")
 						end
@@ -473,7 +475,12 @@ local events = {
 						state.Flags.world_champion = true
 						state.Flags.championships_won = (state.Flags.championships_won or 0) + 1
 						state.Stats = state.Stats or {}
-						state.Stats.Happiness = 100
+						-- CRITICAL FIX: Use ModifyStat for proper clamping, or clamp manually
+						if state.ModifyStat then
+							state:ModifyStat("Happiness", 50) -- Big boost
+						else
+							state.Stats.Happiness = math.min(100, (state.Stats.Happiness or 50) + 50)
+						end
 						state.Money = (state.Money or 0) + 5000000
 						-- Become a legend after multiple championships
 						if state.Flags.championships_won >= 3 then
@@ -497,7 +504,8 @@ local events = {
 						end
 					else
 						state.Stats = state.Stats or {}
-						state.Stats.Happiness = (state.Stats.Happiness or 50) - 15
+						-- CRITICAL FIX: Clamp stats to valid range
+						state.Stats.Happiness = math.max(0, math.min(100, (state.Stats.Happiness or 50) - 15))
 						if state.AddFeed then
 							state:AddFeed("The championship slipped away. Heartbreaking loss.")
 						end
@@ -538,7 +546,8 @@ local events = {
 				onResolve = function(state, minigameResult)
 					if minigameResult and minigameResult.success then
 						state.Stats = state.Stats or {}
-						state.Stats.Happiness = (state.Stats.Happiness or 50) + 5
+						-- CRITICAL FIX: Clamp stats to valid range (0-100)
+						state.Stats.Happiness = math.min(100, (state.Stats.Happiness or 50) + 5)
 						state.Flags = state.Flags or {}
 						state.Flags.survived_crash = true
 						if state.AddFeed then
@@ -548,7 +557,8 @@ local events = {
 						-- CRITICAL: Crash causes injury!
 						state.Stats = state.Stats or {}
 						state.Stats.Health = math.max(10, (state.Stats.Health or 50) - 30)
-						state.Stats.Happiness = (state.Stats.Happiness or 50) - 20
+						-- CRITICAL FIX: Clamp stats to valid range (0-100)
+						state.Stats.Happiness = math.max(0, (state.Stats.Happiness or 50) - 20)
 						state.Flags = state.Flags or {}
 						state.Flags.injured = true
 						state.Flags.hospitalized = true
@@ -591,7 +601,8 @@ local events = {
 						state.Flags = state.Flags or {}
 						state.Flags.miracle_escape = true
 						state.Stats = state.Stats or {}
-						state.Stats.Health = (state.Stats.Health or 50) - 10
+						-- CRITICAL FIX: Clamp stats to valid range (0-100)
+						state.Stats.Health = math.max(0, (state.Stats.Health or 50) - 10)
 						if state.AddFeed then
 							state:AddFeed("Miracle escape! You walked away from a terrifying crash!")
 						end
@@ -660,14 +671,16 @@ local events = {
 						state.Flags = state.Flags or {}
 						state.Flags.defeated_rival = true
 						state.Stats = state.Stats or {}
-						state.Stats.Happiness = (state.Stats.Happiness or 50) + 15
+						-- CRITICAL FIX: Clamp stats to valid range (0-100)
+						state.Stats.Happiness = math.min(100, (state.Stats.Happiness or 50) + 15)
 						state.Money = (state.Money or 0) + 10000
 						if state.AddFeed then
 							state:AddFeed("🏆 You humiliated your rival on the track! Sweet victory!")
 						end
 					else
 						state.Stats = state.Stats or {}
-						state.Stats.Happiness = (state.Stats.Happiness or 50) - 10
+						-- CRITICAL FIX: Clamp stats to valid range (0-100)
+						state.Stats.Happiness = math.max(0, (state.Stats.Happiness or 50) - 10)
 						if state.AddFeed then
 							state:AddFeed("Your rival beat you. The trash talk continues...")
 						end
@@ -874,7 +887,8 @@ local events = {
 						state.Flags.cheated_death = true
 						state.Stats = state.Stats or {}
 						state.Stats.Health = math.max(20, (state.Stats.Health or 50) - 20)
-						state.Stats.Happiness = (state.Stats.Happiness or 50) - 10
+						-- CRITICAL FIX: Clamp stats to valid range (0-100)
+						state.Stats.Happiness = math.max(0, (state.Stats.Happiness or 50) - 10)
 						if state.AddFeed then
 							state:AddFeed("💀 You walked away from what should have been fatal! Racing gods were watching!")
 						end

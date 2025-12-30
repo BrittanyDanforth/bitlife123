@@ -96,7 +96,8 @@ local events = {
 						state.Flags.successful_hacker = true
 						state.Flags.criminal_record_risk = true
 						state.Stats = state.Stats or {}
-						state.Stats.Smarts = (state.Stats.Smarts or 50) + 5
+						-- CRITICAL FIX: Clamp stats to valid range
+						state.Stats.Smarts = math.min(100, (state.Stats.Smarts or 50) + 5)
 						if state.AddFeed then
 							state:AddFeed("🔓 You hacked the school! Grades changed. You're a real hacker now.")
 						end
@@ -104,7 +105,8 @@ local events = {
 						-- Got caught!
 						state.Flags.caught_hacking = true
 						state.Stats = state.Stats or {}
-						state.Stats.Happiness = (state.Stats.Happiness or 50) - 15
+						-- CRITICAL FIX: Clamp stats to valid range
+						state.Stats.Happiness = math.max(0, math.min(100, (state.Stats.Happiness or 50) - 15))
 						if state.AddFeed then
 							state:AddFeed("🚨 CAUGHT! School traced it back to you. Suspended!")
 						end
@@ -435,8 +437,9 @@ local events = {
 					if minigameResult and minigameResult.success then
 						state.Money = (state.Money or 0) + 25000
 						state.Stats = state.Stats or {}
-						state.Stats.Smarts = (state.Stats.Smarts or 50) + 3
-						state.Stats.Happiness = (state.Stats.Happiness or 50) + 10
+						-- CRITICAL FIX: Clamp stats to valid range (0-100)
+						state.Stats.Smarts = math.min(100, (state.Stats.Smarts or 50) + 3)
+						state.Stats.Happiness = math.min(100, (state.Stats.Happiness or 50) + 10)
 						state.Flags = state.Flags or {}
 						state.Flags.successful_pentests = (state.Flags.successful_pentests or 0) + 1
 						if state.AddFeed then
@@ -444,7 +447,8 @@ local events = {
 						end
 					else
 						state.Stats = state.Stats or {}
-						state.Stats.Happiness = (state.Stats.Happiness or 50) - 5
+						-- CRITICAL FIX: Clamp stats to valid range (0-100)
+						state.Stats.Happiness = math.max(0, (state.Stats.Happiness or 50) - 5)
 						if state.AddFeed then
 							state:AddFeed("You couldn't crack their systems. Embarrassing.")
 						end
@@ -579,7 +583,8 @@ local events = {
 						local payout = math.random(100000, 500000)
 						state.Money = (state.Money or 0) + payout
 						state.Stats = state.Stats or {}
-						state.Stats.Happiness = (state.Stats.Happiness or 50) + 15
+						-- CRITICAL FIX: Clamp stats to valid range (0-100)
+						state.Stats.Happiness = math.min(100, (state.Stats.Happiness or 50) + 15)
 						state.Flags = state.Flags or {}
 						state.Flags.bank_hacker = true
 						state.Flags.heat_level = (state.Flags.heat_level or 0) + 2
@@ -592,7 +597,8 @@ local events = {
 						state.Flags.fbi_watch = true
 						state.Flags.heat_level = (state.Flags.heat_level or 0) + 3
 						state.Stats = state.Stats or {}
-						state.Stats.Happiness = (state.Stats.Happiness or 50) - 10
+						-- CRITICAL FIX: Clamp stats to valid range (0-100)
+						state.Stats.Happiness = math.max(0, (state.Stats.Happiness or 50) - 10)
 						if state.AddFeed then
 							state:AddFeed("🚨 The hack failed! FBI has started investigating!")
 						end
@@ -633,7 +639,8 @@ local events = {
 						local payout = math.random(500000, 2000000)
 						state.Money = (state.Money or 0) + payout
 						state.Stats = state.Stats or {}
-						state.Stats.Happiness = (state.Stats.Happiness or 50) - 10 -- Guilt
+						-- CRITICAL FIX: Clamp stats to valid range (0-100)
+						state.Stats.Happiness = math.max(0, (state.Stats.Happiness or 50) - 10) -- Guilt
 						state.Flags = state.Flags or {}
 						state.Flags.ransomware_criminal = true
 						state.Flags.heat_level = (state.Flags.heat_level or 0) + 5
@@ -643,7 +650,8 @@ local events = {
 						end
 					else
 						state.Stats = state.Stats or {}
-						state.Stats.Health = (state.Stats.Health or 50) - 10
+						-- CRITICAL FIX: Clamp stats to valid range (0-100)
+						state.Stats.Health = math.max(0, (state.Stats.Health or 50) - 10)
 						if state.AddFeed then
 							state:AddFeed("The ransomware failed. Your reputation takes a hit.")
 						end
@@ -799,7 +807,8 @@ local events = {
 						state.Flags = state.Flags or {}
 						state.Flags.escaped_fbi = true
 						state.Stats = state.Stats or {}
-						state.Stats.Happiness = (state.Stats.Happiness or 50) + 10
+						-- CRITICAL FIX: Clamp stats to valid range (0-100)
+						state.Stats.Happiness = math.min(100, (state.Stats.Happiness or 50) + 10)
 						if state.AddFeed then
 							state:AddFeed("You wiped everything and escaped! Time to disappear...")
 						end
@@ -873,7 +882,8 @@ local events = {
 						end
 					else
 						state.Stats = state.Stats or {}
-						state.Stats.Health = (state.Stats.Health or 50) - 15
+						-- CRITICAL FIX: Clamp stats to valid range (0-100)
+						state.Stats.Health = math.max(0, (state.Stats.Health or 50) - 15)
 						if state.AddFeed then
 							state:AddFeed("Your hack failed. They got your personal info and doxed you!")
 						end

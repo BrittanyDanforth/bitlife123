@@ -1171,7 +1171,8 @@ local events = {
 						-- Wounded but survived
 						state.Stats = state.Stats or {}
 						state.Stats.Health = math.max(10, (state.Stats.Health or 50) - 40)
-						state.Stats.Happiness = (state.Stats.Happiness or 50) - 15
+						-- CRITICAL FIX: Clamp stats to valid range (0-100)
+						state.Stats.Happiness = math.max(0, (state.Stats.Happiness or 50) - 15)
 						state.Flags = state.Flags or {}
 						state.Flags.wounded_in_action = true
 						state.Flags.hospitalized = true
@@ -1201,7 +1202,8 @@ local events = {
 					if roll < 0.3 then
 						-- Shooter escaped or more victims
 						state.Stats = state.Stats or {}
-						state.Stats.Happiness = (state.Stats.Happiness or 50) - 25
+						-- CRITICAL FIX: Clamp stats to valid range (0-100)
+						state.Stats.Happiness = math.max(0, (state.Stats.Happiness or 50) - 25)
 						state.Flags = state.Flags or {}
 						state.Flags.guilt = true
 						if state.AddFeed then
@@ -1215,7 +1217,8 @@ local events = {
 					else
 						-- You helped tactically
 						state.Stats = state.Stats or {}
-						state.Stats.Smarts = (state.Stats.Smarts or 50) + 3
+						-- CRITICAL FIX: Clamp stats to valid range (0-100)
+						state.Stats.Smarts = math.min(100, (state.Stats.Smarts or 50) + 3)
 						if state.AddFeed then
 							state:AddFeed("✅ Your tactical setup helped SWAT resolve it safely. Good police work.")
 						end
@@ -1349,7 +1352,8 @@ local events = {
 					elseif roll < successChance + 0.3 then
 						-- Got away
 						state.Stats = state.Stats or {}
-						state.Stats.Happiness = (state.Stats.Happiness or 50) - 5
+						-- CRITICAL FIX: Clamp stats to valid range (0-100)
+						state.Stats.Happiness = math.max(0, (state.Stats.Happiness or 50) - 5)
 						if state.AddFeed then
 							state:AddFeed("🏃 Lost them in the maze of alleys. Suspect escaped.")
 						end
