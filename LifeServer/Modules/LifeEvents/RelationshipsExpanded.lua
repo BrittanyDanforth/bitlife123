@@ -1347,7 +1347,7 @@ RelationshipsExpanded.events = {
 		
 		choices = {
 			{
-				text = "💃 Attend and try to mingle with royalty",
+				text = "💃 Attend and try to mingle with royalty ($5,000 gala ticket)",
 				effects = { Money = -5000 }, -- Gala ticket and outfit
 				feedText = "Heading to the gala...",
 				onResolve = function(state)
@@ -1396,7 +1396,7 @@ RelationshipsExpanded.events = {
 				end,
 			},
 			{
-				text = "🍾 Just enjoy the party",
+				text = "🍾 Just enjoy the party ($5,000 gala ticket)",
 				effects = { Money = -5000, Happiness = 8 },
 				feedText = "🎉 Amazing night! Great food, music, and people!",
 			},

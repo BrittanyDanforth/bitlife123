@@ -53,7 +53,7 @@ FamilyEvents.events = {
 				end,
 			},
 			{ 
-			text = "Unexpected pregnancy", 
+			text = "Unexpected pregnancy (prenatal care $200)", 
 			effects = { Happiness = -2, Money = -200 }, 
 			setFlags = { unexpected_pregnancy = true, expecting = true }, 
 			feedText = "🤰 Not planned but happening. Adjusting expectations.",

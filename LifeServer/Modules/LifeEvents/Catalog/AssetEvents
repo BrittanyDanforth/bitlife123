@@ -427,7 +427,7 @@ local events = {
 			},
 			{
 				index = 3,
-				text = "Just pay for repairs myself and move on",
+				text = "Just pay for repairs myself ($2,000)",
 				effects = { Happiness = -8, Money = -2000 },
 				feedText = "You paid out of pocket. Life goes on.",
 			},
@@ -539,7 +539,7 @@ local events = {
 		choices = {
 			{
 				index = 1,
-				text = "Small gathering - close friends only",
+				text = "Small gathering - close friends only ($200)",
 				effects = { Happiness = 12, Money = -200 },
 				feedText = "You hosted an intimate get-together.",
 				onResolve = function(state)
@@ -550,7 +550,7 @@ local events = {
 			},
 			{
 				index = 2,
-				text = "RAGER! Invite everyone!",
+				text = "RAGER! Invite everyone! ($1,000)",
 				effects = { Happiness = 20, Money = -1000 },
 				feedText = "You threw a MASSIVE party...",
 				onResolve = function(state)
@@ -732,7 +732,7 @@ local events = {
 			},
 			{
 				index = 3,
-				text = "Help others - share your fortune",
+				text = "Help others - share your fortune ($5,000)",
 				effects = { Happiness = 15, Money = -5000 },
 				setFlags = { generous = true, philanthropist = true },
 				feedText = "You helped someone in need. That's real wealth.",
@@ -998,13 +998,13 @@ local events = {
 		choices = {
 			{
 				index = 1,
-				text = "Fix it properly - hire professionals",
+				text = "Fix it properly - hire professionals ($8,000)",
 				effects = { Happiness = -3, Money = -8000 },
 				feedText = "You had it properly repaired. Good as new.",
 			},
 			{
 				index = 2,
-				text = "Cheap fix - patch it up",
+				text = "Cheap fix - patch it up ($2,000)",
 				effects = { Happiness = -5, Money = -2000 },
 				feedText = "You did a temporary fix. Might need more work later.",
 				onResolve = function(state)
@@ -1204,7 +1204,7 @@ local events = {
 			},
 			{
 				index = 3,
-				text = "Invest in soundproofing",
+				text = "Invest in soundproofing ($2,000)",
 				effects = { Money = -2000, Happiness = 5 },
 				feedText = "You soundproofed your place. Problem solved with money.",
 			},
@@ -2406,7 +2406,7 @@ local events = {
 			},
 			{
 				index = 2,
-				text = "Sue them!",
+				text = "Sue them! ($5,000 lawyer fees)",
 				effects = { Happiness = -8, Money = -5000 },
 				feedText = "You're taking legal action...",
 				onResolve = function(state)

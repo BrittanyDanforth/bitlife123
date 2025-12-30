@@ -4655,6 +4655,33 @@ showEvent = function(payload)
 			local isUnavailable = choice.unavailable == true
 			
 			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX #AFFORD-1: Check if player can AFFORD this choice!
+			-- User feedback: "should just grey them out saying (cant afford)"
+			-- Instead of hiding events, show ALL choices but gray out unaffordable ones
+			-- This is better UX - players SEE options and know what they're missing!
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			local cannotAfford = false
+			local choiceCost = 0
+			
+			-- Check effects.Money (negative = cost)
+			if choice.effects and choice.effects.Money and choice.effects.Money < 0 then
+				choiceCost = math.abs(choice.effects.Money)
+			end
+			
+			-- Check explicit cost field
+			if choice.cost and choice.cost > 0 then
+				choiceCost = choice.cost
+			end
+			
+			-- Compare with player's money
+			if choiceCost > 0 then
+				local playerMoney = currentState and currentState.Money or 0
+				if playerMoney < choiceCost then
+					cannotAfford = true
+				end
+			end
+			
+			-- ═══════════════════════════════════════════════════════════════════════════════
 			-- CRITICAL FIX: Premium choices have distinct GOLD/PURPLE colors!
 			-- This makes it clear which choices require gamepasses
 			-- ═══════════════════════════════════════════════════════════════════════════════
@@ -4663,11 +4690,11 @@ showEvent = function(payload)
 			local btnDarkColor = C.BlueDark
 			local strokeColor = C.BlueLight
 			
-			-- Override colors for unavailable choices
-			if isUnavailable then
-				btnColor = Color3.fromRGB(120, 120, 120)  -- Gray
-				btnDarkColor = Color3.fromRGB(100, 100, 100)
-				strokeColor = Color3.fromRGB(150, 150, 150)
+			-- Override colors for unavailable OR unaffordable choices
+			if isUnavailable or cannotAfford then
+				btnColor = Color3.fromRGB(100, 100, 100)  -- Gray
+				btnDarkColor = Color3.fromRGB(80, 80, 80)
+				strokeColor = Color3.fromRGB(130, 130, 130)
 			end
 			
 			if isPremiumChoice then
@@ -4700,7 +4727,19 @@ showEvent = function(payload)
 			btn.Font = F.Button
 			btn.TextSize = choiceBtnTextSize
 			btn.TextColor3 = C.White
-			btn.Text = choice.text
+			
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX #AFFORD-2: Show "(Can't Afford)" for unaffordable choices
+			-- User feedback: "should just grey them out saying (cant afford)"
+			-- Players can SEE all options but know which ones they can't afford!
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			local displayText = choice.text
+			if cannotAfford then
+				displayText = "💰 " .. displayText .. " (Can't Afford)"
+				btn.TextColor3 = Color3.fromRGB(180, 180, 180)  -- Dimmed text
+			end
+			btn.Text = displayText
+			
 			btn.AutoButtonColor = false
 			btn.LayoutOrder = i
 			btn.ZIndex = 65
@@ -4720,7 +4759,7 @@ showEvent = function(payload)
 			sizeConstraint.Parent = btn
 
 			if choice.minigame then
-				btn.Text = "🎮 " .. choice.text
+				btn.Text = "🎮 " .. (cannotAfford and displayText or choice.text)
 			end
 			
 			-- CRITICAL FIX: Add "🔒" indicator if player doesn't own required gamepass
@@ -4765,6 +4804,18 @@ showEvent = function(payload)
 					-- Show feedback that this choice isn't available
 					flashScreen(Color3.fromRGB(255, 100, 100), 0.5, 0.2)
 					-- Don't process - they need to pick a different choice
+					return
+				end
+				
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				-- CRITICAL FIX #AFFORD-3: Block clicking UNAFFORDABLE choices
+				-- User feedback: "grey them out saying (cant afford)"
+				-- Players can see but not select choices they can't afford!
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				if cannotAfford then
+					-- Show feedback that player can't afford this
+					flashScreen(Color3.fromRGB(255, 180, 100), 0.5, 0.2)  -- Orange flash
+					-- Don't process - they need to pick an affordable choice
 					return
 				end
 

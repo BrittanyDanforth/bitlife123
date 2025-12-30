@@ -740,7 +740,7 @@ AthleteCareerEvents.events = {
 				end,
 			},
 			{
-				text = "See a sports psychologist",
+				text = "See a sports psychologist ($3,000)",
 				effects = { Money = -3000, Smarts = 3 },
 				feedText = "It's mental...",
 				onResolve = function(state)

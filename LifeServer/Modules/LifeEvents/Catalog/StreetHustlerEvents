@@ -992,7 +992,7 @@ local events = {
 		choices = {
 			{
 				index = 1,
-				text = "Disappear completely for a while",
+				text = "Disappear completely for a while ($500)",
 				effects = { Happiness = -5, Money = -500 },
 				setFlags = { laying_low = true },
 				feedText = "You vanished...",
