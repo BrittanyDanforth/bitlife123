@@ -231,6 +231,24 @@ local MindBody = {
 	{ id = "drivers_license", name = "Get Driver's License", emoji = "🚗", effect = "License!", minAge = 16, cost = 50, hasMinigame = true, minigameType = "qte" },
 	-- NEW: Martial arts with fight minigame
 	{ id = "martial_arts", name = "Martial Arts Class", emoji = "🥋", effect = "+Health +Looks", minAge = 8, cost = 100, hasMinigame = true, minigameType = "combat" },
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Added medical activities for health management!
+	-- User bug: "health can be hard to manage and few things gives positive health"
+	-- ═══════════════════════════════════════════════════════════════════════════
+	{ id = "doctor", name = "Doctor Visit", emoji = "🩺", effect = "+8 Health", minAge = 0, cost = 100 },
+	{ id = "dentist", name = "Dentist", emoji = "🦷", effect = "+3 Health +2 Looks", minAge = 3, cost = 150 },
+	{ id = "therapist", name = "Therapist", emoji = "🧠", effect = "+8 Happiness +2 Health", minAge = 10, cost = 200 },
+	{ id = "doctor_visit", name = "Full Checkup", emoji = "🏥", effect = "+8 Health", minAge = 0, cost = 500 },
+	{ id = "hospital_treatment", name = "Hospital Treatment", emoji = "🏨", effect = "+25 Health!", minAge = 0, cost = 5000 },
+	{ id = "get_surgery", name = "Surgery", emoji = "🔪", effect = "+40 Health!", minAge = 0, cost = 20000 },
+	{ id = "chiropractor", name = "Chiropractor", emoji = "🦴", effect = "+5 Health +3 Happiness", minAge = 16, cost = 100 },
+	{ id = "diet", name = "Go on a Diet", emoji = "🥗", effect = "+5 Health +3 Looks", minAge = 14, cost = 0 },
+	{ id = "swimming", name = "Go Swimming", emoji = "🏊", effect = "+7 Health +4 Happiness", minAge = 6, cost = 0 },
+	{ id = "cycling", name = "Go Cycling", emoji = "🚴", effect = "+7 Health +3 Happiness", minAge = 8, cost = 0 },
+	{ id = "walk", name = "Take a Walk", emoji = "🚶", effect = "+4 Health +3 Happiness", minAge = 3, cost = 0 },
+	{ id = "quit_smoking", name = "Quit Smoking", emoji = "🚭", effect = "+10 Health", minAge = 14, cost = 0 },
+	{ id = "quit_drinking", name = "Quit Drinking", emoji = "🍺❌", effect = "+8 Health", minAge = 18, cost = 0 },
 }
 
 -- ═══════════════════════════════════════════════════════════════════════════

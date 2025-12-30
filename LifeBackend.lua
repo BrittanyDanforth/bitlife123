@@ -5657,11 +5657,31 @@ local ActivityCatalog = {
 	read = { stats = { Smarts = 5, Happiness = 2 }, feed = "read a novel", cost = 0 },
 	study = { stats = { Smarts = 6 }, feed = "studied hard", cost = 0 },
 	meditate = { stats = { Happiness = 5, Health = 2 }, feed = "meditated", cost = 0 },
-	gym = { stats = { Health = 6, Looks = 2 }, feed = "hit the gym", cost = 0, unlockFlag = "gym_rat" },
-	run = { stats = { Health = 4, Happiness = 1 }, feed = "went on a run", cost = 0 },
-	yoga = { stats = { Health = 3, Happiness = 3 }, feed = "did yoga", cost = 0 },
-	spa = { stats = { Happiness = 6, Looks = 3 }, feed = "enjoyed a spa day", cost = 200 },
-	salon = { stats = { Looks = 4, Happiness = 2 }, feed = "visited the salon", cost = 80 },
+	gym = { stats = { Health = 8, Looks = 3 }, feed = "hit the gym", cost = 0, unlockFlag = "gym_rat" },
+	run = { stats = { Health = 7, Happiness = 3 }, feed = "went on a run", cost = 0 },
+	yoga = { stats = { Health = 6, Happiness = 4 }, feed = "did yoga", cost = 0 },
+	spa = { stats = { Happiness = 8, Looks = 4, Health = 2 }, feed = "enjoyed a spa day", cost = 200 },
+	salon = { stats = { Looks = 5, Happiness = 3 }, feed = "visited the salon", cost = 80 },
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Missing activities that were on client but not server!
+	-- User bug: "GOING TO GYM AND EVERYTHING ETC STILL DOESN'T GIVE STATS"
+	-- These activities exist in ActivitiesScreen but had no server definition!
+	-- ═══════════════════════════════════════════════════════════════════════════
+	martial_arts = { stats = { Health = 6, Looks = 3, Happiness = 2 }, feed = "practiced martial arts", cost = 100, setFlags = { martial_arts_training = true } },
+	swimming = { stats = { Health = 7, Happiness = 4 }, feed = "went swimming", cost = 0, setFlags = { can_swim = true } },
+	cycling = { stats = { Health = 7, Happiness = 3 }, feed = "went cycling", cost = 0 },
+	walk = { stats = { Health = 4, Happiness = 3 }, feed = "went for a walk", cost = 0 },
+	arcade = { stats = { Happiness = 5, Smarts = 2 }, feed = "played arcade games", cost = 30 },
+	karaoke = { stats = { Happiness = 6, Looks = 1 }, feed = "sang karaoke", cost = 20 },
+	doctor = { stats = { Health = 8 }, feed = "visited the doctor", cost = 100, usesInsurance = true },
+	dentist = { stats = { Health = 3, Looks = 2 }, feed = "visited the dentist", cost = 150, usesInsurance = true },
+	therapist = { stats = { Happiness = 8, Health = 2 }, feed = "saw a therapist", cost = 200, usesInsurance = true },
+	chiropractor = { stats = { Health = 5, Happiness = 2 }, feed = "saw the chiropractor", cost = 100, usesInsurance = true },
+	acupuncture = { stats = { Health = 4, Happiness = 3 }, feed = "tried acupuncture", cost = 100 },
+	diet = { stats = { Health = 5, Looks = 3 }, feed = "went on a diet", cost = 0 },
+	quit_smoking = { stats = { Health = 10, Happiness = -5 }, feed = "quit smoking!", cost = 0, setFlags = { smoker = nil, quit_smoking = true } },
+	quit_drinking = { stats = { Health = 8, Happiness = -3 }, feed = "quit drinking!", cost = 0, setFlags = { drinker = nil, quit_drinking = true } },
 	-- CRITICAL FIX: Driver's license activity - sets all license flags
 	drivers_license = { 
 		stats = { Happiness = 5, Smarts = 2 }, 
@@ -5979,10 +5999,7 @@ local ActivityCatalog = {
 		setFlags = { private_school = true },
 	},
 	
-	-- CRITICAL FIX: Missing activities from client (caused "Unknown activity" error)
-	martial_arts = { stats = { Health = 5, Looks = 2 }, feed = "practiced martial arts", cost = 100 },
-	karaoke = { stats = { Happiness = 4 }, feed = "sang karaoke", cost = 20 },
-	arcade = { stats = { Happiness = 4, Smarts = 1 }, feed = "played games at the arcade", cost = 30 },
+	-- NOTE: martial_arts, karaoke, arcade moved up to main activities section with better stats
 	
 	-- ═══════════════════════════════════════════════════════════════════════════
 	-- AAA FIX: FRIEND INTERACTION ACTIVITIES
@@ -11229,7 +11246,13 @@ function LifeBackend:applyLivingExpenses(state)
 	end
 	
 	local age = state.Age or 18
-	local hasJob = state.Job and state.Job.title and state.Job.title ~= "" and state.Job.title ~= "Unemployed"
+	-- CRITICAL FIX: Check CurrentJob NOT Job.title (wrong field was being used!)
+	-- User bug: "death screen says unemployed even when I had a job"
+	local hasJob = state.CurrentJob and state.CurrentJob.name and state.CurrentJob.name ~= "" and state.CurrentJob.name ~= "Unemployed"
+	-- Also check the Flags as fallback
+	if not hasJob and state.Flags and (state.Flags.employed or state.Flags.has_job) then
+		hasJob = true
+	end
 	local inCollege = state.Education and (state.Education.inCollege or state.Education.enrolled)
 	local hasProperty = state.Assets and state.Assets.Properties and #state.Assets.Properties > 0
 	
@@ -16717,6 +16740,25 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	
 	-- Also include cost in the response if paid
 	local moneyCost = shouldChargeCost and actualCost or 0
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: PUSH STATE TO CLIENT AFTER ACTIVITY!
+	-- User bug: "GOING TO GYM AND EVERYTHING ETC STILL DOESN'T GIVE STATS"
+	-- The stats ARE applied on server but client UI wasn't being updated!
+	-- The LifeClient main stat bars only update on SyncState events.
+	-- We must fire SyncState after activity completion so bars reflect changes!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if player and self.remotes and self.remotes.SyncState then
+		-- Small delay to ensure server state is fully updated before sync
+		task.defer(function()
+			local success, err = pcall(function()
+				self:pushState(player)
+			end)
+			if not success then
+				warn("[LifeBackend] Failed to push state after activity:", err)
+			end
+		end)
+	end
 	
 	return { 
 		success = true, 
