@@ -2545,10 +2545,22 @@ function ActivitiesScreen:doMobOperation(opId, opName)
 			local Minigames = require(MinigamesModule)
 			local minigameInstance = Minigames.new(self.screenGui)
 			
-			-- Determine minigame type
+			-- Determine minigame type and options
 			local minigameType = (opId == "heist") and "heist" or "combat"
 			
-			log("[ActivitiesScreen] Starting minigame for operation:", opId, "type:", minigameType)
+			-- ═══════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX: Pass proper options to minigame!
+			-- User bug: "plan heist causes fail even when minigame succeeds"
+			-- The heist minigame needs risk info to use proper difficulty.
+			-- Heist operations have 60% risk - this is a high-risk crime!
+			-- ═══════════════════════════════════════════════════════════════════════════
+			local minigameOptions = {
+				risk = (opId == "heist") and 60 or 50,  -- Heist is high risk
+				difficulty = (opId == "heist") and "hard" or "medium",
+				context = opId,
+			}
+			
+			log("[ActivitiesScreen] Starting minigame for operation:", opId, "type:", minigameType, "options:", minigameOptions)
 			minigameInstance:play(minigameType, function(won, minigameResult)
 				log("[ActivitiesScreen] Minigame result - Won:", won)
 				
@@ -2616,7 +2628,7 @@ function ActivitiesScreen:doMobOperation(opId, opName)
 			else
 				self:switchTab("crime")
 			end
-			end)
+			end, minigameOptions)  -- CRITICAL FIX: Pass options so heist uses proper difficulty!
 			return -- Wait for minigame callback
 		end
 	end

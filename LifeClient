@@ -4769,13 +4769,14 @@ showEvent = function(payload)
 			maxCardHeight = math.min(maxCardHeight, safeHeight)
 		end
 		
-		-- Base button sizing - PC gets LARGER base values!
+		-- Base button sizing - PC gets appropriate values (not too big, not too small)
 		local baseButtonHeight, baseSpacing, baseTextSize, baseCorner
 		if isPC or isLargeScreen then
-			baseButtonHeight = 56  -- Larger buttons on PC
-			baseSpacing = 10
-			baseTextSize = 18  -- Larger text on PC
-			baseCorner = 12
+			-- CRITICAL FIX: Reduced by 20% - user said buttons were too big
+			baseButtonHeight = 48  -- Was 56, now more reasonable
+			baseSpacing = 8
+			baseTextSize = 15  -- Was 18, now more readable
+			baseCorner = 10
 		elseif Device.IS_TINY_PHONE then
 			baseButtonHeight = 32
 			baseSpacing = 3
