@@ -437,7 +437,7 @@ local function logAction(actionType, actionId, actionName, details)
 	))
 end
 
-function ActivitiesScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, playerState, onShowEventCard)
+function ActivitiesScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, playerState, onShowEventCard, onStatsChanged)
 	log("=== CREATING ActivitiesScreen ===")
 	local self = setmetatable({}, ActivitiesScreen)
 	self.screenGui = screenGui
@@ -448,6 +448,9 @@ function ActivitiesScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc
 	self.currentTab = "mindbody"
 	-- CRITICAL FIX: Store callback for showing BitLife-style event cards
 	self.onShowEventCard = onShowEventCard
+	-- CRITICAL FIX: Store callback to refresh main UI stats after activities
+	-- User bug: "stats don't change after I complete activities"
+	self.onStatsChanged = onStatsChanged
 	log("Initial state - Age:", self:getAge(), "Money:", self:getMoney(), "InJail:", self:isInJail())
 	self:createUI()
 	
@@ -5554,14 +5557,21 @@ function ActivitiesScreen:doActivity(item, bonus)
 						state.Looks = newVal
 					end
 				end
-				-- Also update money from cost
+				-- CRITICAL FIX: Update money from cost on client too!
+				-- The server deducted it but we need to reflect it locally immediately
 				if result.cost and result.cost > 0 then
-					state.Money = math.max(0, (state.Money or 0)) -- Already deducted on server
+					state.Money = math.max(0, (state.Money or 0) - result.cost)
 				end
 				
 				-- Update UI to reflect the new stats
 				if self.updateInfoBar then
 					self:updateInfoBar()
+				end
+				
+				-- CRITICAL FIX: Notify LifeClient to refresh main stat bars!
+				-- User bug: "stats don't change after I complete activities"
+				if self.onStatsChanged then
+					self.onStatsChanged()
 				end
 			end
 		end

@@ -7865,7 +7865,14 @@ local function onActivityShowEventCard(eventCard, onChoiceCallback)
 		})
 	end
 end
-ScreenInstances.activities   = safeNew(ActivitiesScreen,    "ActivitiesScreen",    screenGui, blurOverlay, showBlur, hideBlur, currentState, onActivityShowEventCard)
+-- CRITICAL FIX: Callback to refresh main UI stats after activities change stats locally
+-- User bug: "stats don't change after I complete activities"
+-- This is called by ActivitiesScreen after applying stat changes to currentState
+local function onActivityStatsChanged()
+	updateFromState()
+end
+
+ScreenInstances.activities   = safeNew(ActivitiesScreen,    "ActivitiesScreen",    screenGui, blurOverlay, showBlur, hideBlur, currentState, onActivityShowEventCard, onActivityStatsChanged)
 
 -- CRITICAL FIX #443: Create MafiaScreen with onShowEventCard callback
 -- This allows mafia operations to close the MafiaScreen and show an event card in main UI
