@@ -1209,10 +1209,23 @@ HealthEvents.events = {
 		ageBand = "any",
 		category = "health",
 		tags = { "cancer", "treatment", "followup" },
-		-- Only show for people actively fighting cancer
+		-- CRITICAL FIX: STRICT eligibility - MUST have cancer diagnosis AND be in treatment!
+		-- User complained: "FOR CANCER TREATMENT IT POPPED UP AND I DONT HAVE CANCER THO MY GOD I NEVER GOT DIAGNOSED"
+		-- This MUST require both has_cancer AND in_treatment flags!
+		requiresFlags = { has_cancer = true, in_treatment = true },
+		blockedByFlags = { cancer_survivor = true, terminal_illness = true },
 		eligibility = function(state)
 			local flags = state.Flags or {}
-			return flags.has_cancer and flags.in_treatment and not flags.cancer_survivor and not flags.terminal_illness
+			-- TRIPLE CHECK: Must have ALL of these conditions:
+			-- 1. has_cancer flag (from diagnosis event)
+			-- 2. in_treatment flag (from choosing treatment)
+			-- 3. NOT already a survivor
+			-- 4. NOT terminal
+			if not flags.has_cancer then return false end
+			if not flags.in_treatment then return false end
+			if flags.cancer_survivor then return false end
+			if flags.terminal_illness then return false end
+			return true
 		end,
 		
 		choices = {

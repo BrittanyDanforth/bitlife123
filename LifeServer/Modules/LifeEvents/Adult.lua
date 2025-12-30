@@ -3287,24 +3287,11 @@ Adult.events = {
 		},
 	},
 	
-	-- UNEXPECTED INHERITANCE
-	{
-		id = "unexpected_inheritance",
-		title = "Surprise Inheritance",
-		emoji = "💰",
-		text = "A distant relative you barely knew passed away and left you in their will!",
-		question = "What did you inherit?",
-		minAge = 25, maxAge = 70,
-		baseChance = 0.15,
-		oneTime = true,
-		maxOccurrences = 1,
-		choices = {
-			{ text = "A substantial sum of money", effects = { Happiness = 20, Money = 100000 }, feedText = "💰 $100,000! Life-changing money!" },
-			{ text = "A modest amount", effects = { Happiness = 10, Money = 15000 }, feedText = "💵 $15,000 - enough for something nice." },
-			{ text = "A property in need of work ($5,000)", effects = { Happiness = 8, Money = -5000 }, setFlags = { inherited_property = true }, feedText = "🏚️ A fixer-upper. Could be worth it!", eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 for repairs" end },
-			{ text = "Just sentimental items", effects = { Happiness = 5 }, setFlags = { inherited_heirlooms = true }, feedText = "📦 Not valuable, but meaningful." },
-		},
-	},
+	-- REMOVED: OLD Inheritance event that let player CHOOSE what they inherit
+	-- This was BAD design - inheritance should be a SURPRISE, not a choice!
+	-- The fixed version is below at id "unexpected_inheritance_surprise"
+	-- User complained: "FIX THE SURPRISE INHERITANCE TO BE AN ACTUAL SURPRISE NOT LET ME CHOOSE"
+	-- Also: "A HOUSE THAT NEEDS WORKING ON AND I LOSE 5K?? THATS DUMB"
 	
 	-- HEALTH SCARE
 	{

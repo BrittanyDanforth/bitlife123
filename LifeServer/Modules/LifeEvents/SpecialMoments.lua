@@ -237,13 +237,47 @@ SpecialMoments.events = {
 		emoji = "⭐",
 		text = "You achieved something you've always dreamed of!",
 		question = "What dream did you achieve?",
-		minAge = 15, maxAge = 100,
-		baseChance = 0.32,
-		cooldown = 4,
+		-- CRITICAL FIX: Age requirement increased - can't achieve "dreams" at age 15-23!
+		-- Need to be at least 30 and have some accomplishments
+		minAge = 30, maxAge = 100,
+		baseChance = 0.18, -- CRITICAL FIX: Reduced from 0.32 - this should be rare
+		cooldown = 10, -- CRITICAL FIX: Increased from 4 - dreams don't happen every year
 		stage = STAGE,
-		ageBand = "any",
+		ageBand = "adult",
 		category = "milestone",
 		tags = { "dream", "achievement", "goal" },
+		oneTime = true, -- CRITICAL FIX: Can only achieve your dream ONCE
+		maxOccurrences = 1,
+		
+		-- CRITICAL FIX: Must have ACTUAL accomplishments before "dream" can be achieved!
+		-- User complained: "DREAM ACHIEVEMENT POPPED UP BUT I AM AGE 23 HAVNT RLLY DID ANY ACHIEVEMENTS"
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			local money = state.Money or 0
+			local hasJob = state.CurrentJob ~= nil
+			local age = state.Age or 0
+			
+			-- Must be at least 30
+			if age < 30 then return false end
+			
+			-- Need SOME kind of accomplishment: good job, money, or specific flags
+			local hasAccomplishment = hasJob 
+				or money >= 50000 
+				or flags.promoted 
+				or flags.got_degree 
+				or flags.started_business
+				or flags.famous
+				or flags.wealthy
+				or flags.successful_career
+				or flags.published_author
+				or flags.award_winner
+			
+			if not hasAccomplishment then
+				return false -- Can't "achieve dream" with no actual achievements!
+			end
+			
+			return true
+		end,
 		
 		choices = {
 			{ text = "Career dream realized", effects = { Happiness = 20, Smarts = 5, Money = 500 }, setFlags = { career_dream = true }, feedText = "⭐ DREAM JOB/ACHIEVEMENT! Years of work paid off! On top of the world!" },

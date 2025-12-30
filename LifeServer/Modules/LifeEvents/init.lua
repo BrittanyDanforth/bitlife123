@@ -1275,16 +1275,18 @@ local function canEventTrigger(event, state)
 	
 	if flags.hospitalized then
 		local eventCategory = event._category or event.category or ""
+		-- CRITICAL FIX: Ensure event.id is a valid string before using string.find
+		local eventIdStr = (event.id and type(event.id) == "string") and event.id or ""
 		local allowedInHospital = event.allowedInHospital
 			or eventCategory == "medical"
 			or eventCategory == "recovery"
 			or eventCategory == "random" -- Allow random events like recovery
-			or (event.id and (
-				string.find(event.id, "hospital")
-				or string.find(event.id, "recovery")
-				or string.find(event.id, "medical")
-				or string.find(event.id, "health")
-				or string.find(event.id, "injury")
+			or (eventIdStr ~= "" and (
+				string.find(eventIdStr, "hospital")
+				or string.find(eventIdStr, "recovery")
+				or string.find(eventIdStr, "medical")
+				or string.find(eventIdStr, "health")
+				or string.find(eventIdStr, "injury")
 			))
 		
 		if not allowedInHospital then

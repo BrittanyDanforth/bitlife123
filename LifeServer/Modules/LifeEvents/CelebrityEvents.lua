@@ -1841,7 +1841,8 @@ CelebrityEvents.GeneralFameEvents = {
 	
 	-- REALITY TV OFFER
 	{
-		id = "reality_tv_offer",
+		-- CRITICAL FIX: Renamed from "reality_tv_offer" to avoid duplicate ID
+		id = "celebrity_reality_show",
 		title = "📺 Reality TV Offer",
 		emoji = "📺",
 		text = "Network executives want to document your life in a reality series. Fame and fortune, but zero privacy.",
@@ -2636,7 +2637,8 @@ CelebrityEvents.GeneralFameEvents = {
 	
 	-- AWARD NOMINATION
 	{
-		id = "major_award_nomination",
+		-- CRITICAL FIX: Renamed from "major_award_nomination" to avoid duplicate ID
+		id = "celebrity_award_nomination",
 		title = "🏆 Major Award Nomination!",
 		emoji = "🏆",
 		text = "You've been nominated for one of the biggest awards in your industry!",

@@ -1164,7 +1164,8 @@ MafiaEvents.LifeEvents = {
 		},
 	},
 	{
-		id = "heist_planning",
+		-- CRITICAL FIX: Renamed from "heist_planning" to avoid duplicate ID
+		id = "heist_big_score",
 		title = "💎 The Big Score",
 		emoji = "💎",
 		text = "Word came down about a major heist opportunity. A wealthy businessman has $10 million in his safe.",
