@@ -1327,31 +1327,89 @@ local function showResultPopup(data, callback)
 		bodyText = isPositive and "Things worked out in your favor!" or "That didn't go as planned..."
 	end
 	
-	-- CRITICAL FIX: Dynamic text sizing for long result text - keep readable!
-	local textLen = #bodyText
-	local baseResultTextSize = Device.IS_TINY_PHONE and 16 or textSize(20)
-	local adjustedResultTextSize = baseResultTextSize
-	local adjustedResultLineHeight = Device.IS_TINY_PHONE and 1.25 or 1.35
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: GUARANTEED OK BUTTON VISIBILITY!
+	-- User bug: "I can't see the OK button" for driving test result
+	-- Problem: Long text + stats pushed OK button off screen
+	-- Solution: Calculate available space, reserve space for button, scale content
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local screenHeight = screenGui.AbsoluteSize.Y
+	local topReserved = 60  -- Top of screen reserved
+	local bottomReserved = 40  -- Bottom reserved
+	local maxAvailableHeight = screenHeight - topReserved - bottomReserved
 	
-	-- Gently reduce text size - never go too small!
-	if textLen > 350 then
-		adjustedResultTextSize = Device.IS_TINY_PHONE and 13 or 15
+	-- Reserve space for fixed elements (emoji, title, button, padding, margins)
+	local emojiHeight = Device.IS_TINY_PHONE and 28 or 52
+	local titleHeight = Device.IS_TINY_PHONE and 22 or 32
+	local okBtnHeight = Device.IS_TINY_PHONE and 32 or 40
+	local paddingAndMargins = Device.IS_TINY_PHONE and 60 or 100  -- All padding, margins, layout gaps
+	local reservedHeight = emojiHeight + titleHeight + okBtnHeight + paddingAndMargins
+	
+	-- Calculate max space for body text + stats
+	local maxContentHeight = maxAvailableHeight - reservedHeight
+	
+	-- Count stats to estimate their height
+	local statCount = 0
+	if data.happiness and data.happiness ~= 0 then statCount = statCount + 1 end
+	if data.health and data.health ~= 0 then statCount = statCount + 1 end
+	if data.smarts and data.smarts ~= 0 then statCount = statCount + 1 end
+	if data.looks and data.looks ~= 0 then statCount = statCount + 1 end
+	if data.money and data.money ~= 0 then statCount = statCount + 1 end
+	
+	local statsHeight = statCount * (Device.IS_TINY_PHONE and 20 or 24)
+	local maxBodyHeight = maxContentHeight - statsHeight - 20  -- 20 for stats padding
+	
+	-- Dynamic text sizing for long result text
+	local textLen = #bodyText
+	local baseResultTextSize = Device.IS_TINY_PHONE and 14 or textSize(18)
+	local adjustedResultTextSize = baseResultTextSize
+	local adjustedResultLineHeight = Device.IS_TINY_PHONE and 1.2 or 1.3
+	
+	-- Estimate lines of text and adjust sizing
+	local charsPerLine = Device.IS_TINY_PHONE and 35 or 45
+	local estimatedLines = math.ceil(textLen / charsPerLine)
+	local lineHeight = adjustedResultTextSize * adjustedResultLineHeight
+	local estimatedTextHeight = estimatedLines * lineHeight
+	
+	-- If text would overflow, progressively shrink
+	if estimatedTextHeight > maxBodyHeight then
+		-- Calculate scale factor needed
+		local scaleFactor = maxBodyHeight / estimatedTextHeight
+		scaleFactor = math.max(0.6, scaleFactor)  -- Don't go below 60%
+		
+		adjustedResultTextSize = math.max(10, math.floor(baseResultTextSize * scaleFactor))
+		adjustedResultLineHeight = math.max(1.05, adjustedResultLineHeight * 0.9)
+		
+		-- If still too long after scaling, truncate the text
+		local newEstimatedLines = maxBodyHeight / (adjustedResultTextSize * adjustedResultLineHeight)
+		local maxChars = math.floor(newEstimatedLines * charsPerLine)
+		
+		if textLen > maxChars + 20 then
+			-- Truncate with ellipsis
+			bodyText = string.sub(bodyText, 1, maxChars) .. "..."
+		end
+	elseif textLen > 200 then
+		-- Moderate length - slightly smaller
+		adjustedResultTextSize = Device.IS_TINY_PHONE and 13 or 16
 		adjustedResultLineHeight = 1.15
-	elseif textLen > 250 then
-		adjustedResultTextSize = Device.IS_TINY_PHONE and 14 or 16
-		adjustedResultLineHeight = 1.18
-	elseif textLen > 180 then
-		adjustedResultTextSize = Device.IS_TINY_PHONE and 15 or 18
-		adjustedResultLineHeight = 1.22
 	elseif textLen > 120 then
-		adjustedResultTextSize = Device.IS_TINY_PHONE and 15 or 19
-		adjustedResultLineHeight = 1.25
+		-- Slightly smaller for medium text
+		adjustedResultTextSize = Device.IS_TINY_PHONE and 14 or 17
+		adjustedResultLineHeight = 1.2
 	end
 	
 	-- CRITICAL FIX: Use safe text size setter to prevent UITextSizeConstraint errors
 	safeSetTextSize(ResultUI.body, adjustedResultTextSize)
 	ResultUI.body.LineHeight = adjustedResultLineHeight
 	ResultUI.body.Text = bodyText
+	
+	-- CRITICAL: Add max height constraint to body to GUARANTEE button visibility
+	local bodySizeConstraint = ResultUI.body:FindFirstChildOfClass("UISizeConstraint")
+	if not bodySizeConstraint then
+		bodySizeConstraint = Instance.new("UISizeConstraint")
+		bodySizeConstraint.Parent = ResultUI.body
+	end
+	bodySizeConstraint.MaxSize = Vector2.new(math.huge, math.max(50, maxBodyHeight))
 
 	-- Clear old stat previews
 	for _, child in ipairs(ResultUI.statsPreview:GetChildren()) do
@@ -1359,6 +1417,10 @@ local function showResultPopup(data, callback)
 	end
 
 	-- Add stat changes (compact style)
+	-- CRITICAL FIX: Smaller stat rows on mobile to ensure button visibility
+	local statRowHeight = Device.IS_TINY_PHONE and 18 or (Device.IS_SMALL_PHONE and 20 or 24)
+	local statTextSize = Device.IS_TINY_PHONE and 11 or (Device.IS_SMALL_PHONE and 12 or 14)
+	
 	local statChanges = {
 		{ key = "Happiness", icon = "😀", delta = data.happiness },
 		{ key = "Health", icon = "❤️", delta = data.health },
@@ -1369,7 +1431,7 @@ local function showResultPopup(data, callback)
 	for _, stat in ipairs(statChanges) do
 		if stat.delta and stat.delta ~= 0 then
 			local row = Instance.new("Frame")
-			row.Size = UDim2.new(1, 0, 0, 24)
+			row.Size = UDim2.new(1, 0, 0, statRowHeight)
 			row.BackgroundTransparency = 1
 			row.ZIndex = 85
 			row.Parent = ResultUI.statsPreview
@@ -1378,7 +1440,7 @@ local function showResultPopup(data, callback)
 			lbl.Size = UDim2.new(0.5, 0, 1, 0)
 			lbl.BackgroundTransparency = 1
 			lbl.Font = F.Medium
-			lbl.TextSize = 14
+			lbl.TextSize = statTextSize
 			lbl.TextColor3 = C.Gray600
 			lbl.TextXAlignment = Enum.TextXAlignment.Left
 			lbl.Text = stat.icon .. " " .. stat.key
@@ -1390,7 +1452,7 @@ local function showResultPopup(data, callback)
 			val.Position = UDim2.new(0.5, 0, 0, 0)
 			val.BackgroundTransparency = 1
 			val.Font = F.Title
-			val.TextSize = 14
+			val.TextSize = statTextSize
 			val.TextColor3 = stat.delta > 0 and C.Green or C.Red
 			val.TextXAlignment = Enum.TextXAlignment.Right
 			val.Text = (stat.delta > 0 and "+" or "") .. stat.delta
@@ -1399,10 +1461,10 @@ local function showResultPopup(data, callback)
 		end
 	end
 
-	-- Money change
+	-- Money change (uses same compact sizing as stat rows)
 	if data.money and data.money ~= 0 then
 		local row = Instance.new("Frame")
-		row.Size = UDim2.new(1, 0, 0, 24)
+		row.Size = UDim2.new(1, 0, 0, statRowHeight)
 		row.BackgroundTransparency = 1
 		row.ZIndex = 85
 		row.Parent = ResultUI.statsPreview
@@ -1411,7 +1473,7 @@ local function showResultPopup(data, callback)
 		lbl.Size = UDim2.new(0.5, 0, 1, 0)
 		lbl.BackgroundTransparency = 1
 		lbl.Font = F.Medium
-		lbl.TextSize = 14
+		lbl.TextSize = statTextSize
 		lbl.TextColor3 = C.Gray600
 		lbl.TextXAlignment = Enum.TextXAlignment.Left
 		lbl.Text = "💵 Money"
@@ -1423,7 +1485,7 @@ local function showResultPopup(data, callback)
 		val.Position = UDim2.new(0.5, 0, 0, 0)
 		val.BackgroundTransparency = 1
 		val.Font = F.Title
-		val.TextSize = 14
+		val.TextSize = statTextSize
 		val.TextColor3 = data.money > 0 and C.Green or C.Red
 		val.TextXAlignment = Enum.TextXAlignment.Right
 		val.Text = (data.money > 0 and "+" or "") .. formatMoney(data.money)
