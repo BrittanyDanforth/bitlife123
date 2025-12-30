@@ -3211,6 +3211,52 @@ local function chooseRandom(list)
 	return list[RANDOM:NextInteger(1, #list)]
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: WEIGHTED RANDOM SELECTION for events!
+-- User bug: "health events aren't linked to health stat"
+-- This function picks from a list using weights, so events with higher weights
+-- are more likely to be selected. Events can use getWeight() function to
+-- dynamically adjust their probability based on player state.
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function chooseWeightedRandom(list, state, getWeightFunc)
+	if #list == 0 then
+		return nil
+	end
+	if #list == 1 then
+		return list[1]
+	end
+	
+	-- Calculate total weight
+	local totalWeight = 0
+	local weights = {}
+	
+	for i, item in ipairs(list) do
+		local weight = 100 -- Default weight
+		if getWeightFunc then
+			local success, result = pcall(getWeightFunc, item, state)
+			if success and type(result) == "number" then
+				weight = math.max(1, result * 100) -- Ensure minimum weight of 1
+			end
+		end
+		weights[i] = weight
+		totalWeight = totalWeight + weight
+	end
+	
+	-- Pick a random point in the total weight range
+	local pick = RANDOM:NextNumber() * totalWeight
+	local cumulativeWeight = 0
+	
+	for i, weight in ipairs(weights) do
+		cumulativeWeight = cumulativeWeight + weight
+		if pick <= cumulativeWeight then
+			return list[i]
+		end
+	end
+	
+	-- Fallback to last item (shouldn't happen but safety)
+	return list[#list]
+end
+
 local function formatMoney(amount)
 	-- CRITICAL FIX: Handle nil and invalid values
 	if not amount or type(amount) ~= "number" then
@@ -8723,7 +8769,33 @@ function LifeBackend:buildCareerEvent(state)
 		return nil
 	end
 	
-	local template = chooseRandom(eligibleEvents)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Use WEIGHTED RANDOM selection!
+	-- User bug: "health events aren't linked to health stat"
+	-- Events with getWeight() functions can now dynamically adjust their probability
+	-- based on player state (health, age, flags, etc.)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local function getEventWeight(event, playerState)
+		local weight = (event.baseChance or 0.5) -- Start with base chance
+		
+		-- Use event's getWeight function if available
+		if event.getWeight and type(event.getWeight) == "function" then
+			local success, customWeight = pcall(event.getWeight, playerState)
+			if success and type(customWeight) == "number" then
+				-- Custom weight is returned as percentage (100 = normal, 150 = 50% more likely)
+				weight = weight * (customWeight / 100)
+			end
+		end
+		
+		-- Apply weight multiplier if present
+		if event.weightMultiplier then
+			weight = weight * event.weightMultiplier
+		end
+		
+		return math.max(0.01, weight) -- Ensure minimum positive weight
+	end
+	
+	local template = chooseWeightedRandom(eligibleEvents, state, getEventWeight)
 	if not template then
 		return nil
 	end

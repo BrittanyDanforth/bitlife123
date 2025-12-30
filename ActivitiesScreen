@@ -215,22 +215,20 @@ local DoPrisonAction = getRemote("DoPrisonAction")
 -- Activity Data - Must match server's Activities IDs!
 -- CRITICAL FIX: Added minigames to MORE activities for increased variety and engagement!
 local MindBody = {
-	-- CRITICAL FIX: Reading now has a QTE minigame (focus while reading)
-	{ id = "read", name = "Read a Book", emoji = "📖", effect = "+Smarts +Happiness", minAge = 5, cost = 0, hasMinigame = true, minigameType = "qte" },
-	{ id = "study", name = "Study", emoji = "📚", effect = "+Smarts", minAge = 5, cost = 0, hasMinigame = true, minigameType = "mash" },
-	{ id = "meditate", name = "Meditate", emoji = "🧘", effect = "+Happiness +Health", minAge = 8, cost = 0, hasMinigame = true, minigameType = "qte" },
-	{ id = "gym", name = "Go to the Gym", emoji = "💪", effect = "+Health +Looks", minAge = 14, cost = 0, hasMinigame = true, minigameType = "mash" },
-	-- CRITICAL FIX: Running now has mash minigame (sprint!)
-	{ id = "run", name = "Go for a Run", emoji = "🏃", effect = "+Health +Happiness", minAge = 6, cost = 0, hasMinigame = true, minigameType = "mash" },
-	-- CRITICAL FIX: Yoga now has QTE minigame (hold the pose!)
-	{ id = "yoga", name = "Yoga", emoji = "🧘‍♀️", effect = "+Health +Happiness", minAge = 10, cost = 0, hasMinigame = true, minigameType = "qte" },
-	-- CRITICAL FIX: Spa day now has QTE minigame (relaxation timing)
-	{ id = "spa", name = "Spa Day", emoji = "💆", effect = "+Looks +Happiness", minAge = 16, cost = 200, hasMinigame = true, minigameType = "qte" },
-	{ id = "salon", name = "Salon Visit", emoji = "💇", effect = "+Looks +Happiness", minAge = 12, cost = 80 },
-	-- CRITICAL FIX: Driver's license with QTE driving test minigame
-	{ id = "drivers_license", name = "Get Driver's License", emoji = "🚗", effect = "License!", minAge = 16, cost = 50, hasMinigame = true, minigameType = "qte" },
-	-- NEW: Martial arts with fight minigame
-	{ id = "martial_arts", name = "Martial Arts Class", emoji = "🥋", effect = "+Health +Looks", minAge = 8, cost = 100, hasMinigame = true, minigameType = "combat" },
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: All activities now show ACTUAL stat numbers!
+	-- User bug: "it says +HEALTH +LOOKS BUT NOT A NUMBER AMT"
+	-- ═══════════════════════════════════════════════════════════════════════════
+	{ id = "read", name = "Read a Book", emoji = "📖", effect = "+5 Smarts +2 Happiness", minAge = 5, cost = 0, hasMinigame = true, minigameType = "qte" },
+	{ id = "study", name = "Study", emoji = "📚", effect = "+6 Smarts", minAge = 5, cost = 0, hasMinigame = true, minigameType = "mash" },
+	{ id = "meditate", name = "Meditate", emoji = "🧘", effect = "+5 Happiness +2 Health", minAge = 8, cost = 0, hasMinigame = true, minigameType = "qte" },
+	{ id = "gym", name = "Go to the Gym", emoji = "💪", effect = "+8 Health +3 Looks", minAge = 14, cost = 0, hasMinigame = true, minigameType = "mash" },
+	{ id = "run", name = "Go for a Run", emoji = "🏃", effect = "+7 Health +3 Happiness", minAge = 6, cost = 0, hasMinigame = true, minigameType = "mash" },
+	{ id = "yoga", name = "Yoga", emoji = "🧘‍♀️", effect = "+6 Health +4 Happiness", minAge = 10, cost = 0, hasMinigame = true, minigameType = "qte" },
+	{ id = "spa", name = "Spa Day", emoji = "💆", effect = "+4 Looks +8 Happiness +2 Health", minAge = 16, cost = 200, hasMinigame = true, minigameType = "qte" },
+	{ id = "salon", name = "Salon Visit", emoji = "💇", effect = "+5 Looks +3 Happiness", minAge = 12, cost = 80 },
+	{ id = "drivers_license", name = "Get Driver's License", emoji = "🚗", effect = "Get your license!", minAge = 16, cost = 50, hasMinigame = true, minigameType = "qte" },
+	{ id = "martial_arts", name = "Martial Arts Class", emoji = "🥋", effect = "+6 Health +3 Looks +2 Happiness", minAge = 8, cost = 100, hasMinigame = true, minigameType = "combat" },
 	
 	-- ═══════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Added medical activities for health management!
@@ -256,20 +254,18 @@ local MindBody = {
 -- CRITICAL FIX: Added minigames to education for exam-style gameplay!
 -- ═══════════════════════════════════════════════════════════════════════════
 local Education = {
-	-- CRITICAL FIX: GED test has mash minigame (cram session!)
-	{ id = "get_ged", name = "Get Your GED", emoji = "📜", effect = "High School Equivalent!", minAge = 16, cost = 150, requiresFlag = "dropped_out_high_school", hasMinigame = true, minigameType = "mash" },
-	{ id = "return_high_school", name = "Return to High School", emoji = "🏫", effect = "Back to School!", minAge = 14, cost = 0, requiresFlag = "dropped_out_high_school", maxAge = 21 },
-	-- CRITICAL FIX: College application has debate minigame (interview!)
-	{ id = "community_college", name = "Community College", emoji = "🎓", effect = "+Smarts +Career", minAge = 18, cost = 2000, requiresFlag = "has_ged_or_diploma", hasMinigame = true, minigameType = "debate" },
-	{ id = "university", name = "Apply to University", emoji = "🏛️", effect = "4-Year Degree!", minAge = 18, cost = 5000, requiresFlag = "has_ged_or_diploma", hasMinigame = true, minigameType = "debate" },
-	-- CRITICAL FIX: Trade school has mash minigame (hands-on training!)
-	{ id = "trade_school", name = "Trade School", emoji = "🔧", effect = "Learn a Trade!", minAge = 18, cost = 3000, hasMinigame = true, minigameType = "mash" },
-	-- CRITICAL FIX: Coding bootcamp has hacking minigame!
-	{ id = "coding_bootcamp", name = "Coding Bootcamp", emoji = "💻", effect = "+Tech Skills!", minAge = 18, cost = 8000, hasMinigame = true, minigameType = "hacking" },
-	-- CRITICAL FIX: Professional schools have debate minigame (interview/exam!)
-	{ id = "medical_school", name = "Medical School", emoji = "🏥", effect = "Become a Doctor!", minAge = 22, cost = 50000, requiresFlag = "has_degree", hasMinigame = true, minigameType = "debate" },
-	{ id = "law_school", name = "Law School", emoji = "⚖️", effect = "Become a Lawyer!", minAge = 22, cost = 40000, requiresFlag = "has_degree", hasMinigame = true, minigameType = "debate" },
-	{ id = "business_school", name = "Business School", emoji = "💼", effect = "MBA!", minAge = 22, cost = 35000, requiresFlag = "has_degree", hasMinigame = true, minigameType = "debate" },
+	-- ═══════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Education activities now show stat impacts!
+	-- ═══════════════════════════════════════════════════════════════════════════
+	{ id = "get_ged", name = "Get Your GED", emoji = "📜", effect = "+10 Smarts +8 Happiness", minAge = 16, cost = 150, requiresFlag = "dropped_out_high_school", hasMinigame = true, minigameType = "mash" },
+	{ id = "return_high_school", name = "Return to High School", emoji = "🏫", effect = "+5 Smarts +3 Happiness", minAge = 14, cost = 0, requiresFlag = "dropped_out_high_school", maxAge = 21 },
+	{ id = "community_college", name = "Community College", emoji = "🎓", effect = "+8 Smarts +5 Happiness", minAge = 18, cost = 2000, requiresFlag = "has_ged_or_diploma", hasMinigame = true, minigameType = "debate" },
+	{ id = "university", name = "Apply to University", emoji = "🏛️", effect = "+10 Smarts +6 Happiness", minAge = 18, cost = 5000, requiresFlag = "has_ged_or_diploma", hasMinigame = true, minigameType = "debate" },
+	{ id = "trade_school", name = "Trade School", emoji = "🔧", effect = "+6 Smarts +5 Happiness", minAge = 18, cost = 3000, hasMinigame = true, minigameType = "mash" },
+	{ id = "coding_bootcamp", name = "Coding Bootcamp", emoji = "💻", effect = "+12 Smarts +4 Happiness", minAge = 18, cost = 8000, hasMinigame = true, minigameType = "hacking" },
+	{ id = "medical_school", name = "Medical School", emoji = "🏥", effect = "+15 Smarts +3 Happiness", minAge = 22, cost = 50000, requiresFlag = "has_degree", hasMinigame = true, minigameType = "debate" },
+	{ id = "law_school", name = "Law School", emoji = "⚖️", effect = "+14 Smarts +2 Happiness", minAge = 22, cost = 40000, requiresFlag = "has_degree", hasMinigame = true, minigameType = "debate" },
+	{ id = "business_school", name = "Business School", emoji = "💼", effect = "+12 Smarts +4 Happiness", minAge = 22, cost = 35000, requiresFlag = "has_degree", hasMinigame = true, minigameType = "debate" },
 }
 
 -- CRITICAL FIX: Added minigames to social activities for more engaging gameplay!
@@ -277,52 +273,43 @@ local Social = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: DATING & ROMANCE ACTIVITIES - These were completely missing!
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	{ id = "look_for_love", name = "Look for Love", emoji = "💕", effect = "Meet someone new!", minAge = 16, cost = 0, requiresSingle = true },
-	{ id = "online_dating", name = "Online Dating", emoji = "📱", effect = "Swipe right!", minAge = 18, cost = 0, requiresSingle = true },
-	{ id = "speed_dating", name = "Speed Dating", emoji = "⏱️", effect = "Meet lots of people!", minAge = 18, cost = 50, requiresSingle = true },
-	{ id = "go_on_date", name = "Go on a Date", emoji = "💑", effect = "+Happiness +Relationship", minAge = 16, cost = 50, requiresPartner = true },
-	{ id = "romantic_dinner", name = "Romantic Dinner", emoji = "🍷", effect = "+Happiness +Relationship", minAge = 18, cost = 150, requiresPartner = true },
-	{ id = "spend_time_partner", name = "Spend Time Together", emoji = "💞", effect = "+Relationship", minAge = 14, cost = 0, requiresPartner = true },
-	{ id = "flirt", name = "Flirt", emoji = "😉", effect = "Maybe something happens!", minAge = 14, cost = 0, requiresSingle = true },
-	{ id = "propose", name = "Propose", emoji = "💍", effect = "Pop the question!", minAge = 18, cost = 500, requiresPartner = true },
-	{ id = "plan_wedding", name = "Plan Wedding", emoji = "💒", effect = "Get married!", minAge = 18, cost = 5000, requiresEngaged = true },
+	-- CRITICAL FIX: All activities now show ACTUAL stat numbers!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{ id = "look_for_love", name = "Look for Love", emoji = "💕", effect = "+5 Happiness - Meet someone!", minAge = 16, cost = 0, requiresSingle = true },
+	{ id = "online_dating", name = "Online Dating", emoji = "📱", effect = "+3 Happiness", minAge = 18, cost = 0, requiresSingle = true },
+	{ id = "speed_dating", name = "Speed Dating", emoji = "⏱️", effect = "+4 Happiness", minAge = 18, cost = 50, requiresSingle = true },
+	{ id = "go_on_date", name = "Go on a Date", emoji = "💑", effect = "+8 Happiness +Relationship", minAge = 16, cost = 50, requiresPartner = true },
+	{ id = "romantic_dinner", name = "Romantic Dinner", emoji = "🍷", effect = "+10 Happiness +Relationship", minAge = 18, cost = 150, requiresPartner = true },
+	{ id = "spend_time_partner", name = "Spend Time Together", emoji = "💞", effect = "+6 Happiness +Relationship", minAge = 14, cost = 0, requiresPartner = true },
+	{ id = "flirt", name = "Flirt", emoji = "😉", effect = "+4 Happiness", minAge = 14, cost = 0, requiresSingle = true },
+	{ id = "propose", name = "Propose", emoji = "💍", effect = "+15 Happiness 💍", minAge = 18, cost = 500, requiresPartner = true },
+	{ id = "plan_wedding", name = "Plan Wedding", emoji = "💒", effect = "+20 Happiness 💒", minAge = 18, cost = 5000, requiresEngaged = true },
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- FRIEND ACTIVITIES
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	{ id = "make_friends", name = "Make New Friends", emoji = "👋", effect = "+Friends", minAge = 5, cost = 0 },
-	{ id = "hang_with_friends", name = "Hang with Friends", emoji = "🤝", effect = "+Friendship", minAge = 5, cost = 0 },
-	{ id = "friend_trip", name = "Friends Trip", emoji = "🚗", effect = "+Happiness +Friendship", minAge = 16, cost = 500 },
+	{ id = "make_friends", name = "Make New Friends", emoji = "👋", effect = "+5 Happiness", minAge = 5, cost = 0 },
+	{ id = "hang_with_friends", name = "Hang with Friends", emoji = "🤝", effect = "+6 Happiness", minAge = 5, cost = 0 },
+	{ id = "friend_trip", name = "Friends Trip", emoji = "🚗", effect = "+12 Happiness +3 Health", minAge = 16, cost = 500 },
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- PARTY & SOCIAL ACTIVITIES
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX: Party now has mash minigame (dance off!)
-	{ id = "party", name = "Go to a Party", emoji = "🎉", effect = "+Happiness", minAge = 14, cost = 0, hasMinigame = true, minigameType = "mash" },
-	-- CRITICAL FIX: Hangout now has QTE minigame (social timing!)
-	{ id = "hangout", name = "Hang Out", emoji = "👥", effect = "+Happiness", minAge = 5, cost = 0, hasMinigame = true, minigameType = "qte" },
-	{ id = "nightclub", name = "Nightclub", emoji = "🕺", effect = "+Happiness -Health", minAge = 21, cost = 50, hasMinigame = true, minigameType = "mash" },
-	-- CRITICAL FIX: Host party now has QTE minigame (hosting is hard!)
-	{ id = "host_party", name = "Host a Party", emoji = "🎊", effect = "+Happiness", minAge = 16, cost = 300, hasMinigame = true, minigameType = "qte" },
-	-- NEW: Karaoke with debate minigame (singing competition!)
-	{ id = "karaoke", name = "Karaoke Night", emoji = "🎤", effect = "+Happiness", minAge = 10, cost = 20, hasMinigame = true, minigameType = "debate" },
-	-- NEW: Pick a Fight with combat minigame
+	{ id = "party", name = "Go to a Party", emoji = "🎉", effect = "+5 Happiness", minAge = 14, cost = 0, hasMinigame = true, minigameType = "mash" },
+	{ id = "hangout", name = "Hang Out", emoji = "👥", effect = "+3 Happiness", minAge = 5, cost = 0, hasMinigame = true, minigameType = "qte" },
+	{ id = "nightclub", name = "Nightclub", emoji = "🕺", effect = "+6 Happiness -2 Health", minAge = 21, cost = 50, hasMinigame = true, minigameType = "mash" },
+	{ id = "host_party", name = "Host a Party", emoji = "🎊", effect = "+8 Happiness", minAge = 16, cost = 300, hasMinigame = true, minigameType = "qte" },
+	{ id = "karaoke", name = "Karaoke Night", emoji = "🎤", effect = "+6 Happiness +1 Looks", minAge = 10, cost = 20, hasMinigame = true, minigameType = "debate" },
 	{ id = "pick_fight", name = "Pick a Fight", emoji = "👊", effect = "??", minAge = 14, cost = 0, isCombat = true, hasMinigame = true, minigameType = "combat" },
-	-- CRITICAL FIX: Changed from "Bar Fight" to "Club Fight" for Roblox TOS compliance
 	{ id = "club_fight", name = "Club Fight", emoji = "🎉", effect = "??", minAge = 21, cost = 0, isCombat = true, hasMinigame = true, minigameType = "combat" },
 }
 
--- CRITICAL FIX: Added minigames to entertainment activities!
+-- CRITICAL FIX: All Entertainment activities show stat numbers!
 local Entertainment = {
-	{ id = "tv", name = "Watch TV", emoji = "📺", effect = "+Happiness", minAge = 2, cost = 0 },
-	-- CRITICAL FIX: Video games have mash minigame now (button mashing!)
-	{ id = "games", name = "Play Video Games", emoji = "🎮", effect = "+Happiness +Smarts", minAge = 5, cost = 0, hasMinigame = true, minigameType = "mash" },
-	-- CRITICAL FIX: Movies now has QTE minigame (stay awake/engaged!)
-	{ id = "movies", name = "Go to Movies", emoji = "🎬", effect = "+Happiness", minAge = 5, cost = 20, hasMinigame = true, minigameType = "qte" },
-	-- CRITICAL FIX: Concert now has mash minigame (moshing/dancing!)
-	{ id = "concert", name = "Concert", emoji = "🎤", effect = "+Happiness", minAge = 12, cost = 150, hasMinigame = true, minigameType = "mash" },
-	-- CRITICAL FIX: Vacation now has QTE minigame (adventure moments!)
-	{ id = "vacation", name = "Vacation", emoji = "✈️", effect = "+Happiness +Health", minAge = 5, cost = 2000, hasMinigame = true, minigameType = "qte" },
-	-- NEW: Arcade with mash minigame (classic arcade action!)
-	{ id = "arcade", name = "Arcade", emoji = "🕹️", effect = "+Happiness +Smarts", minAge = 8, cost = 30, hasMinigame = true, minigameType = "mash" },
+	{ id = "tv", name = "Watch TV", emoji = "📺", effect = "+2 Happiness", minAge = 2, cost = 0 },
+	{ id = "games", name = "Play Video Games", emoji = "🎮", effect = "+3 Happiness +1 Smarts", minAge = 5, cost = 0, hasMinigame = true, minigameType = "mash" },
+	{ id = "movies", name = "Go to Movies", emoji = "🎬", effect = "+3 Happiness", minAge = 5, cost = 20, hasMinigame = true, minigameType = "qte" },
+	{ id = "concert", name = "Concert", emoji = "🎤", effect = "+5 Happiness", minAge = 12, cost = 150, hasMinigame = true, minigameType = "mash" },
+	{ id = "vacation", name = "Vacation", emoji = "✈️", effect = "+10 Happiness +4 Health", minAge = 5, cost = 2000, hasMinigame = true, minigameType = "qte" },
+	{ id = "arcade", name = "Arcade", emoji = "🕹️", effect = "+5 Happiness +2 Smarts", minAge = 8, cost = 30, hasMinigame = true, minigameType = "mash" },
 }
 
 -- Crime IDs MUST match server's Crimes table exactly!
@@ -362,62 +349,65 @@ local Crimes = {
 	{ id = "murder", name = "Murder", emoji = "🔪", risk = 90, reward = "$0-$5K", minAge = 18, hasMinigame = true, minigameType = "combat" },
 }
 
--- CRITICAL FIX: Prison activities with appropriate minigames
+-- CRITICAL FIX: Prison activities with stat numbers
 local PrisonActivities = {
-	{ id = "prison_escape", name = "Escape Prison", emoji = "🔓", effect = "Freedom!", minAge = 0, risk = 90, hasMinigame = true, minigameType = "prison_escape" },
-	{ id = "prison_workout", name = "Yard Workout", emoji = "💪", effect = "+Health +Looks", minAge = 0, hasMinigame = true, minigameType = "mash" },
-	{ id = "prison_study", name = "Get GED", emoji = "📚", effect = "+Smarts", minAge = 0 },
-	{ id = "prison_crew", name = "Join Prison Crew", emoji = "⛓️", effect = "+Respect -Health", minAge = 0, hasMinigame = true, minigameType = "fight" },
-	{ id = "prison_riot", name = "Start Riot", emoji = "🔥", effect = "Dangerous!", minAge = 0, risk = 85, hasMinigame = true, minigameType = "fight" },
-	{ id = "prison_snitch", name = "Snitch", emoji = "🐀", effect = "-Sentence +Risk", minAge = 0 },
-	{ id = "prison_appeal", name = "Appeal Sentence", emoji = "⚖️", effect = "Legal Help", minAge = 0, cost = 5000 },
-	{ id = "prison_goodbehavior", name = "Good Behavior", emoji = "😇", effect = "-Sentence Time", minAge = 0 },
+	{ id = "prison_escape", name = "Escape Prison", emoji = "🔓", effect = "Freedom! (Risky)", minAge = 0, risk = 90, hasMinigame = true, minigameType = "prison_escape" },
+	{ id = "prison_workout", name = "Yard Workout", emoji = "💪", effect = "+8 Health +3 Looks", minAge = 0, hasMinigame = true, minigameType = "mash" },
+	{ id = "prison_study", name = "Get GED", emoji = "📚", effect = "+10 Smarts", minAge = 0 },
+	{ id = "prison_crew", name = "Join Prison Crew", emoji = "⛓️", effect = "+5 Respect -3 Health", minAge = 0, hasMinigame = true, minigameType = "fight" },
+	{ id = "prison_riot", name = "Start Riot", emoji = "🔥", effect = "-10 Health (Very Risky)", minAge = 0, risk = 85, hasMinigame = true, minigameType = "fight" },
+	{ id = "prison_snitch", name = "Snitch", emoji = "🐀", effect = "-2 Years +Risk", minAge = 0 },
+	{ id = "prison_appeal", name = "Appeal Sentence", emoji = "⚖️", effect = "May reduce sentence", minAge = 0, cost = 5000 },
+	{ id = "prison_goodbehavior", name = "Good Behavior", emoji = "😇", effect = "-1 Year off sentence", minAge = 0 },
 }
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- BABY/TODDLER MISCHIEF (Ages 0-4) - Cause trouble like a little one!
+-- CRITICAL FIX: Effects now show what actually happens!
 -- ═══════════════════════════════════════════════════════════════════════════
 local BabyMischief = {
-	{ id = "cry_loudly", name = "Cry Really Loud", emoji = "😭", effect = "+Attention", minAge = 0, maxAge = 4 },
-	{ id = "throw_food", name = "Throw Food", emoji = "🍝", effect = "Messy!", minAge = 0, maxAge = 4 },
-	{ id = "break_toy", name = "Break a Toy", emoji = "🧸", effect = "Oopsie!", minAge = 0, maxAge = 4 },
-	{ id = "draw_walls", name = "Draw on the Walls", emoji = "🖍️", effect = "Art Time!", minAge = 1, maxAge = 4 },
-	{ id = "refuse_nap", name = "Refuse to Nap", emoji = "😤", effect = "-Sleep +Happiness", minAge = 0, maxAge = 4 },
-	{ id = "tantrum", name = "Throw a Tantrum", emoji = "🤬", effect = "+Attention -Happiness", minAge = 1, maxAge = 4 },
-	{ id = "bite_sibling", name = "Bite Someone", emoji = "🦷", effect = "Mean!", minAge = 1, maxAge = 4 },
-	{ id = "hide_mom_keys", name = "Hide Mom's Keys", emoji = "🔑", effect = "Sneaky!", minAge = 2, maxAge = 4 },
+	{ id = "cry_loudly", name = "Cry Really Loud", emoji = "😭", effect = "+3 Happiness (Got attention!)", minAge = 0, maxAge = 4 },
+	{ id = "throw_food", name = "Throw Food", emoji = "🍝", effect = "+2 Happiness (Fun!)", minAge = 0, maxAge = 4 },
+	{ id = "break_toy", name = "Break a Toy", emoji = "🧸", effect = "+1 Smarts (Curious!)", minAge = 0, maxAge = 4 },
+	{ id = "draw_walls", name = "Draw on the Walls", emoji = "🖍️", effect = "+2 Smarts (Artist!)", minAge = 1, maxAge = 4 },
+	{ id = "refuse_nap", name = "Refuse to Nap", emoji = "😤", effect = "+2 Happiness -1 Health", minAge = 0, maxAge = 4 },
+	{ id = "tantrum", name = "Throw a Tantrum", emoji = "🤬", effect = "-2 Happiness +3 Attention", minAge = 1, maxAge = 4 },
+	{ id = "bite_sibling", name = "Bite Someone", emoji = "🦷", effect = "-2 Happiness (Trouble!)", minAge = 1, maxAge = 4 },
+	{ id = "hide_mom_keys", name = "Hide Mom's Keys", emoji = "🔑", effect = "+3 Smarts (Sneaky!)", minAge = 2, maxAge = 4 },
 }
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- CHILD MISCHIEF (Ages 5-12) - Kid trouble!
+-- CRITICAL FIX: Effects now show what actually happens!
 -- ═══════════════════════════════════════════════════════════════════════════
 local ChildMischief = {
-	{ id = "skip_chores", name = "Skip Your Chores", emoji = "🧹", effect = "-Trouble", minAge = 5, maxAge = 12 },
-	{ id = "prank_sibling", name = "Prank Your Sibling", emoji = "😈", effect = "Funny!", minAge = 5, maxAge = 12 },
-	{ id = "sneak_candy", name = "Sneak Candy", emoji = "🍬", effect = "+Happiness +Sugar", minAge = 5, maxAge = 12 },
-	{ id = "stay_up_late", name = "Stay Up Late", emoji = "🌙", effect = "No Sleep!", minAge = 5, maxAge = 12 },
-	{ id = "cheat_test", name = "Cheat on a Test", emoji = "📝", effect = "Risky!", minAge = 6, maxAge = 12, risk = 25 },
-	{ id = "talk_back", name = "Talk Back to Parents", emoji = "🗣️", effect = "Sassy!", minAge = 5, maxAge = 12 },
-	{ id = "blame_sibling", name = "Blame Your Sibling", emoji = "👉", effect = "Sneaky!", minAge = 5, maxAge = 12 },
-	{ id = "fake_sick", name = "Fake Being Sick", emoji = "🤒", effect = "No School!", minAge = 6, maxAge = 12 },
-	{ id = "toilet_paper_house", name = "TP Neighbor's House", emoji = "🧻", effect = "Mischief!", minAge = 8, maxAge = 12, risk = 15 },
-	{ id = "ring_doorbell_run", name = "Ding Dong Ditch", emoji = "🚪", effect = "Run!", minAge = 7, maxAge = 12, risk = 10 },
+	{ id = "skip_chores", name = "Skip Your Chores", emoji = "🧹", effect = "+2 Happiness -1 Looks", minAge = 5, maxAge = 12 },
+	{ id = "prank_sibling", name = "Prank Your Sibling", emoji = "😈", effect = "+4 Happiness", minAge = 5, maxAge = 12 },
+	{ id = "sneak_candy", name = "Sneak Candy", emoji = "🍬", effect = "+3 Happiness -1 Health", minAge = 5, maxAge = 12 },
+	{ id = "stay_up_late", name = "Stay Up Late", emoji = "🌙", effect = "+3 Happiness -2 Health", minAge = 5, maxAge = 12 },
+	{ id = "cheat_test", name = "Cheat on a Test", emoji = "📝", effect = "+5 Smarts (if caught: -10 Smarts)", minAge = 6, maxAge = 12, risk = 25 },
+	{ id = "talk_back", name = "Talk Back to Parents", emoji = "🗣️", effect = "+2 Happiness -Relationship", minAge = 5, maxAge = 12 },
+	{ id = "blame_sibling", name = "Blame Your Sibling", emoji = "👉", effect = "+1 Smarts -Relationship", minAge = 5, maxAge = 12 },
+	{ id = "fake_sick", name = "Fake Being Sick", emoji = "🤒", effect = "+4 Happiness (Day off!)", minAge = 6, maxAge = 12 },
+	{ id = "toilet_paper_house", name = "TP Neighbor's House", emoji = "🧻", effect = "+5 Happiness (if caught: Trouble)", minAge = 8, maxAge = 12, risk = 15 },
+	{ id = "ring_doorbell_run", name = "Ding Dong Ditch", emoji = "🚪", effect = "+3 Happiness", minAge = 7, maxAge = 12, risk = 10 },
 }
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- TEEN MISCHIEF (Ages 13-17) - Rebellious teen stuff
+-- CRITICAL FIX: Effects now show what actually happens!
 -- ═══════════════════════════════════════════════════════════════════════════
 local TeenMischief = {
-	{ id = "sneak_out", name = "Sneak Out at Night", emoji = "🌃", effect = "Adventure!", minAge = 13, maxAge = 17, risk = 20 },
-	{ id = "skip_class", name = "Skip Class", emoji = "🏫", effect = "Freedom!", minAge = 13, maxAge = 17, risk = 15 },
-	{ id = "party_crash", name = "Crash a Party", emoji = "🎉", effect = "+Fun +Risk", minAge = 14, maxAge = 17, risk = 25 },
-	{ id = "fake_id", name = "Get a Fake ID", emoji = "🪪", effect = "Illegal!", minAge = 15, maxAge = 17, risk = 40 },
-	{ id = "vandalize", name = "Vandalize Something", emoji = "🎨", effect = "Bad!", minAge = 13, maxAge = 17, risk = 35 },
-	{ id = "bully", name = "Bully Someone", emoji = "😠", effect = "Mean!", minAge = 13, maxAge = 17, risk = 20 },
-	{ id = "steal_parents_car", name = "Steal Parents' Car", emoji = "🚗", effect = "Joyride!", minAge = 14, maxAge = 17, risk = 50 },
-	{ id = "break_curfew", name = "Break Curfew", emoji = "⏰", effect = "Late!", minAge = 13, maxAge = 17, risk = 15 },
-	{ id = "drink_underage", name = "Underage Drinking", emoji = "🍺", effect = "Party!", minAge = 14, maxAge = 17, risk = 30 },
-	{ id = "smoke", name = "Try Smoking", emoji = "🚬", effect = "-Health", minAge = 13, maxAge = 17, risk = 10 },
+	{ id = "sneak_out", name = "Sneak Out at Night", emoji = "🌃", effect = "+6 Happiness", minAge = 13, maxAge = 17, risk = 20 },
+	{ id = "skip_class", name = "Skip Class", emoji = "🏫", effect = "+4 Happiness -2 Smarts", minAge = 13, maxAge = 17, risk = 15 },
+	{ id = "party_crash", name = "Crash a Party", emoji = "🎉", effect = "+8 Happiness", minAge = 14, maxAge = 17, risk = 25 },
+	{ id = "fake_id", name = "Get a Fake ID", emoji = "🪪", effect = "Opens doors... (Risky)", minAge = 15, maxAge = 17, risk = 40 },
+	{ id = "vandalize", name = "Vandalize Something", emoji = "🎨", effect = "+3 Happiness (if caught: Jail)", minAge = 13, maxAge = 17, risk = 35 },
+	{ id = "bully", name = "Bully Someone", emoji = "😠", effect = "-5 Happiness (Karma)", minAge = 13, maxAge = 17, risk = 20 },
+	{ id = "steal_parents_car", name = "Steal Parents' Car", emoji = "🚗", effect = "+10 Happiness (Very risky!)", minAge = 14, maxAge = 17, risk = 50 },
+	{ id = "break_curfew", name = "Break Curfew", emoji = "⏰", effect = "+4 Happiness", minAge = 13, maxAge = 17, risk = 15 },
+	{ id = "drink_underage", name = "Underage Drinking", emoji = "🍺", effect = "+5 Happiness -3 Health", minAge = 14, maxAge = 17, risk = 30 },
+	{ id = "smoke", name = "Try Smoking", emoji = "🚬", effect = "-5 Health (Bad habit!)", minAge = 13, maxAge = 17, risk = 10 },
 }
 
 -- ═══════════════════════════════════════════════════════════════════════════

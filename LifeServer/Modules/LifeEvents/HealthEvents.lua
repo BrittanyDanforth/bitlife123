@@ -34,6 +34,27 @@ HealthEvents.events = {
 		ageBand = "any",
 		category = "health",
 		tags = { "illness", "sick", "recovery" },
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Illness MORE LIKELY when health is low!
+		-- User bug: "health events aren't linked to health stat"
+		-- Low health = higher chance of getting sick, high health = lower chance
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		getWeight = function(state)
+			local health = (state.Stats and state.Stats.Health) or 50
+			-- Base weight: 100
+			-- Low health (< 30): +50 weight (150 total = much more likely)
+			-- Medium health (30-60): +25 weight (125 total)
+			-- Good health (60-80): 0 bonus (100 total)
+			-- Excellent health (> 80): -30 weight (70 total = less likely)
+			if health < 30 then
+				return 150
+			elseif health < 60 then
+				return 125
+			elseif health > 80 then
+				return 70
+			end
+			return 100
+		end,
 		
 		-- CRITICAL: Random illness severity
 		choices = {
@@ -96,6 +117,34 @@ HealthEvents.events = {
 		ageBand = "any",
 		category = "health",
 		tags = { "injury", "accident", "recovery" },
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Injuries MORE LIKELY when health is low!
+		-- User bug: "health events aren't linked to health stat"
+		-- Low health = more prone to accidents, high health = less likely
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		getWeight = function(state)
+			local health = (state.Stats and state.Stats.Health) or 50
+			local age = state.Age or 30
+			-- Base weight: 100
+			-- Low health (< 30): +60 weight (160 = much more likely)
+			-- Old age (> 70): +40 weight (accidents more likely with age)
+			-- Excellent health (> 80): -40 weight (60 = less likely)
+			local weight = 100
+			if health < 30 then
+				weight = weight + 60
+			elseif health < 50 then
+				weight = weight + 30
+			elseif health > 80 then
+				weight = weight - 40
+			end
+			-- Older people more prone to falls/injuries
+			if age > 70 then
+				weight = weight + 40
+			elseif age > 50 then
+				weight = weight + 20
+			end
+			return weight
+		end,
 		
 		-- CRITICAL: Random injury severity
 		choices = {
@@ -163,6 +212,28 @@ HealthEvents.events = {
 		ageBand = "any",
 		category = "health",
 		tags = { "checkup", "doctor", "preventive" },
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Doctor checkups more likely when health is medium or player is older
+		-- This helps players manage their health better
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		getWeight = function(state)
+			local health = (state.Stats and state.Stats.Health) or 50
+			local age = state.Age or 30
+			local weight = 100
+			-- Low-medium health: need checkups more
+			if health < 50 then
+				weight = weight + 40
+			elseif health < 70 then
+				weight = weight + 20
+			end
+			-- Older people more likely to visit doctor
+			if age > 50 then
+				weight = weight + 30
+			elseif age > 35 then
+				weight = weight + 15
+			end
+			return weight
+		end,
 		
 		-- CRITICAL: Random checkup results
 		choices = {

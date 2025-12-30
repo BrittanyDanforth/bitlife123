@@ -5071,6 +5071,20 @@ function LifeEvents.getWeightModifier(event, state)
 		modifier = modifier * event.weightMultiplier
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Use event's getWeight function if provided!
+	-- User bug: "health events aren't linked to health stat"
+	-- This allows events to dynamically adjust their weight based on player state
+	-- e.g., illness events more likely when health is low
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if event.getWeight and type(event.getWeight) == "function" then
+		local success, eventWeight = pcall(event.getWeight, state)
+		if success and type(eventWeight) == "number" then
+			-- Event weight is returned as percentage (100 = normal, 150 = 50% more likely)
+			modifier = modifier * (eventWeight / 100)
+		end
+	end
+	
 	return modifier
 end
 

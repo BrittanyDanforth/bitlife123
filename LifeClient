@@ -4748,16 +4748,54 @@ showEvent = function(payload)
 		
 		-- Get screen dimensions for smart scaling
 		local screenHeight = screenGui.AbsoluteSize.Y
+		local screenWidth = screenGui.AbsoluteSize.X
 		local safeHeight = screenHeight - 80  -- Account for header/notch
-		local maxCardHeight = Device.IS_TINY_PHONE and 500 or (Device.IS_SMALL_PHONE and 560 or 650)
-		maxCardHeight = math.min(maxCardHeight, safeHeight)
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: PC vs MOBILE scaling!
+		-- User bug: "PC THE BUTTONS GET TINY EVEN THO THERES MORE SCREEN SIZE"
+		-- On PC with large screens, buttons should be BIGGER, not smaller!
+		-- Only apply aggressive scaling on mobile devices where space is limited.
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local isPC = not Device.IS_MOBILE
+		local isLargeScreen = screenHeight >= 800 and screenWidth >= 1000
+		
+		-- PC gets larger card and no aggressive scaling
+		local maxCardHeight
+		if isPC or isLargeScreen then
+			maxCardHeight = math.min(750, safeHeight)  -- PC can have taller cards
+		else
+			maxCardHeight = Device.IS_TINY_PHONE and 500 or (Device.IS_SMALL_PHONE and 560 or 650)
+			maxCardHeight = math.min(maxCardHeight, safeHeight)
+		end
+		
+		-- Base button sizing - PC gets LARGER base values!
+		local baseButtonHeight, baseSpacing, baseTextSize, baseCorner
+		if isPC or isLargeScreen then
+			baseButtonHeight = 56  -- Larger buttons on PC
+			baseSpacing = 10
+			baseTextSize = 18  -- Larger text on PC
+			baseCorner = 12
+		elseif Device.IS_TINY_PHONE then
+			baseButtonHeight = 32
+			baseSpacing = 3
+			baseTextSize = 10
+			baseCorner = 5
+		elseif Device.IS_SMALL_PHONE then
+			baseButtonHeight = 38
+			baseSpacing = 5
+			baseTextSize = 12
+			baseCorner = 7
+		else
+			baseButtonHeight = 48
+			baseSpacing = 8
+			baseTextSize = 15
+			baseCorner = 10
+		end
 		
 		-- Estimate content height to determine if we need to scale
-		-- Header: ~60, Title: ~50, Body: varies, Question: ~30, Buttons: baseHeight * count
-		local baseButtonHeight = Device.IS_TINY_PHONE and 32 or (Device.IS_SMALL_PHONE and 38 or 48)
-		local baseSpacing = Device.IS_TINY_PHONE and 3 or (Device.IS_SMALL_PHONE and 5 or 8)
-		local estimatedBodyHeight = math.min(200, textLen * 0.5)  -- Rough estimate
-		local fixedContentHeight = 60 + 50 + 30 + 40  -- Header + title section + question + padding
+		local estimatedBodyHeight = math.min(200, textLen * 0.5)
+		local fixedContentHeight = 60 + 50 + 30 + 40
 		local estimatedButtonsHeight = (baseButtonHeight + baseSpacing) * totalButtons
 		local estimatedTotalHeight = fixedContentHeight + estimatedBodyHeight + estimatedButtonsHeight
 		
@@ -4765,42 +4803,54 @@ showEvent = function(payload)
 		local scaleFactor = 1.0
 		if estimatedTotalHeight > maxCardHeight then
 			scaleFactor = maxCardHeight / estimatedTotalHeight
-			scaleFactor = math.max(0.55, scaleFactor)  -- Never go below 55% size
+			-- PC has a higher minimum scale (don't shrink as much)
+			local minScale = (isPC or isLargeScreen) and 0.75 or 0.55
+			scaleFactor = math.max(minScale, scaleFactor)
 		end
 		
-		-- Additional scaling for many choices (even if they might fit, make them compact)
-		if totalButtons >= 8 then
-			scaleFactor = math.min(scaleFactor, 0.60)
-		elseif totalButtons >= 7 then
-			scaleFactor = math.min(scaleFactor, 0.68)
-		elseif totalButtons >= 6 then
-			scaleFactor = math.min(scaleFactor, 0.75)
-		elseif totalButtons >= 5 then
-			scaleFactor = math.min(scaleFactor, 0.85)
+		-- Additional scaling for many choices - LESS AGGRESSIVE ON PC
+		if isPC or isLargeScreen then
+			-- PC: Only scale down for 8+ choices, and not as much
+			if totalButtons >= 8 then
+				scaleFactor = math.min(scaleFactor, 0.80)
+			elseif totalButtons >= 7 then
+				scaleFactor = math.min(scaleFactor, 0.85)
+			end
+			-- 6 or fewer choices on PC = NO additional scaling needed
+		else
+			-- Mobile: Scale more aggressively for screen fit
+			if totalButtons >= 8 then
+				scaleFactor = math.min(scaleFactor, 0.60)
+			elseif totalButtons >= 7 then
+				scaleFactor = math.min(scaleFactor, 0.68)
+			elseif totalButtons >= 6 then
+				scaleFactor = math.min(scaleFactor, 0.75)
+			elseif totalButtons >= 5 then
+				scaleFactor = math.min(scaleFactor, 0.85)
+			end
 		end
 		
-		-- Apply scale factor to button sizing
-		local baseMinHeight = Device.IS_TINY_PHONE and 28 or (Device.IS_SMALL_PHONE and 32 or 44)
-		local choiceBtnTextSize = Device.IS_TINY_PHONE and 10 or (Device.IS_SMALL_PHONE and 12 or 15)
-		local choiceBtnCorner = Device.IS_TINY_PHONE and 5 or (Device.IS_SMALL_PHONE and 7 or 10)
-		local choiceBtnPadH = Device.IS_TINY_PHONE and 3 or (Device.IS_SMALL_PHONE and 5 or 8)
-		local choiceBtnPadV = Device.IS_TINY_PHONE and 1 or (Device.IS_SMALL_PHONE and 2 or 4)
+		-- Apply scale factor to button sizing with device-appropriate minimums
+		local minHeight = (isPC or isLargeScreen) and 40 or 20
+		local minTextSize = (isPC or isLargeScreen) and 14 or 8
+		local minCorner = (isPC or isLargeScreen) and 8 or 3
 		
-		-- Scale everything down based on calculated factor
-		baseMinHeight = math.max(20, math.floor(baseMinHeight * scaleFactor))
-		choiceBtnTextSize = math.max(8, math.floor(choiceBtnTextSize * scaleFactor))
-		choiceBtnCorner = math.max(3, math.floor(choiceBtnCorner * scaleFactor))
+		local baseMinHeight = math.max(minHeight, math.floor(baseButtonHeight * scaleFactor))
+		local choiceBtnTextSize = math.max(minTextSize, math.floor(baseTextSize * scaleFactor))
+		local choiceBtnCorner = math.max(minCorner, math.floor(baseCorner * scaleFactor))
+		local choiceBtnPadH = (isPC or isLargeScreen) and 12 or (Device.IS_TINY_PHONE and 3 or (Device.IS_SMALL_PHONE and 5 or 8))
+		local choiceBtnPadV = (isPC or isLargeScreen) and 6 or (Device.IS_TINY_PHONE and 1 or (Device.IS_SMALL_PHONE and 2 or 4))
 		
-		-- Also scale body text if we need to shrink significantly
-		if scaleFactor < 0.85 then
+		-- Only scale body text on mobile when really needed
+		if scaleFactor < 0.85 and not isPC then
 			adjustedBodyTextSize = math.max(9, math.floor(adjustedBodyTextSize * scaleFactor))
 			adjustedLineHeight = math.max(1.0, adjustedLineHeight * 0.9)
 			safeSetTextSize(EventUI.body, adjustedBodyTextSize)
 			EventUI.body.LineHeight = adjustedLineHeight
 		end
 		
-		-- Tighten spacing based on scale factor
-		local choiceSpacing = math.max(1, math.floor(baseSpacing * scaleFactor))
+		-- Tighten spacing based on scale factor (but keep generous on PC)
+		local choiceSpacing = math.max((isPC or isLargeScreen) and 6 or 1, math.floor(baseSpacing * scaleFactor))
 		
 		-- Update the layout padding dynamically
 		local choicesLayout = EventUI.choicesSection:FindFirstChildOfClass("UIListLayout")
