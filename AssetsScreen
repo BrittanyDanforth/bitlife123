@@ -302,6 +302,9 @@ end
 local AssetsScreen = {}
 AssetsScreen.__index = AssetsScreen
 
+-- CRITICAL DEBUG: Track module initialization
+print("[AssetsScreen] ✓ Module table created")
+
 -- Debug logging (Disabled for production - was ENABLED to trace asset sync issues)
 -- CRITICAL FIX: Debug enabled for action tracking
 local DEBUG = true
@@ -388,7 +391,11 @@ local Shop = {
 	{ id = "piano", name = "Grand Piano", emoji = "🎹", price = 50000, happiness = 8, desc = "+8 Happiness, +5 Smarts, Music skill!", minAge = 18 },
 }
 
+-- CRITICAL DEBUG: Track .new function definition
+print("[AssetsScreen] ✓ About to define .new function")
+
 function AssetsScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, playerState)
+	print("[AssetsScreen] ✓ .new function called")
 	log("=== CREATING AssetsScreen ===")
 	local self = setmetatable({}, AssetsScreen)
 	self.screenGui = screenGui
@@ -2846,5 +2853,10 @@ function AssetsScreen:hide()
 	end)
 	self.isVisible = false
 end
+
+-- CRITICAL DEBUG: Verify module before return
+print("[AssetsScreen] ✓ Module fully loaded, .new exists:", AssetsScreen.new ~= nil)
+print("[AssetsScreen] ✓ Type of AssetsScreen:", type(AssetsScreen))
+print("[AssetsScreen] ✓ Type of .new:", type(AssetsScreen.new))
 
 return AssetsScreen
