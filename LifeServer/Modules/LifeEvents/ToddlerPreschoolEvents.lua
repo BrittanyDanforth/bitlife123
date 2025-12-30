@@ -650,8 +650,8 @@ events[#events + 1] = {
 	text = "Another kid wants to play with YOUR toy!",
 	question = "Do you share?",
 	minAge = 3, maxAge = 5,
-	baseChance = 0.7,
-	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+	baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7 to prevent spam
+	cooldown = 5, -- CRITICAL FIX: Increased from 4 to reduce spam
 	category = "childhood",
 
 	choices = {

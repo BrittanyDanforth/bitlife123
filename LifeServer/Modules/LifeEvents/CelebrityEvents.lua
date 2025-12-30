@@ -1105,8 +1105,8 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "✨",
 		text = "You're walking the red carpet at a major premiere!",
 		minFame = 40,
-		cooldown = 2, -- CRITICAL FIX: Prevent spam
-		maxOccurrences = 10, -- CRITICAL FIX: Limit red carpet events
+		cooldown = 3, -- CRITICAL FIX: Prevent spam (once per 3 years is enough)
+		maxOccurrences = 8, -- CRITICAL FIX: Limit red carpet events
 		choices = {
 			{
 				text = "Wear designer outfit ($50K)",
@@ -3991,7 +3991,8 @@ CelebrityEvents.CareerProgressionEvents = {
 		minAge = 17,
 		maxAge = 100,
 		isCelebrityOnly = true,
-		cooldown = 1,
+		cooldown = 3, -- CRITICAL FIX: Increased from 1
+		oneTime = true, -- CRITICAL FIX: This should only happen once
 		conditions = { requiresFlags = { celebrity_career_chosen = true } },
 		blockedByFlags = { completed_year_one = true },
 		choices = {

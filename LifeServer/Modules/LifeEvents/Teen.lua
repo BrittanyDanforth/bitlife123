@@ -3734,6 +3734,208 @@ Teen.events = {
 			},
 		},
 	},
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- NEW VARIETY EVENTS - Making ages 13-17 less repetitive
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "teen_internet_rabbit_hole",
+		title = "🕳️ Internet Rabbit Hole",
+		emoji = "🕳️",
+		text = "You started watching one video and now it's 3 AM. You've gone deep down an internet rabbit hole.",
+		question = "What weird thing did you discover?",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.4,
+		cooldown = 4,
+		category = "entertainment",
+		tags = { "internet", "discovery", "hobby", "late_night" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "A new hobby that actually interests you",
+				effects = { Smarts = 4, Happiness = 6 },
+				setFlags = { found_internet_hobby = true },
+				feedText = "🕳️ You discovered something amazing - woodworking/coding/music production! New passion unlocked!",
+			},
+			{
+				text = "Conspiracy theories that blow your mind",
+				effects = { Smarts = -2, Happiness = 3 },
+				setFlags = { conspiracy_phase = true },
+				feedText = "🕳️ The moon landing... was it real? You're questioning EVERYTHING now.",
+			},
+			{
+				text = "A content creator you now follow obsessively",
+				effects = { Happiness = 4 },
+				setFlags = { has_favorite_creator = true },
+				feedText = "🕳️ You found your new favorite creator! Watched 50 videos in one night.",
+			},
+			{
+				text = "Cringy old content of yourself",
+				effects = { Happiness = -5 },
+				feedText = "🕳️ Why does 12-year-old you exist on the internet?! Delete! DELETE!",
+			},
+		},
+	},
+	{
+		id = "teen_random_act_kindness",
+		title = "💝 Random Kindness",
+		emoji = "💝",
+		text = "A stranger did something unexpectedly kind for you today.",
+		question = "What happened?",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.35,
+		cooldown = 5,
+		category = "social",
+		tags = { "kindness", "positive", "stranger", "good_day" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Someone paid for my coffee/food",
+				effects = { Happiness = 8, Money = 10 },
+				setFlags = { experienced_kindness = true },
+				feedText = "💝 A stranger ahead of you paid for your order. Faith in humanity restored!",
+			},
+			{
+				text = "Someone complimented me genuinely",
+				effects = { Happiness = 6, Looks = 2 },
+				feedText = "💝 A random person said 'You look really nice today!' Made your whole week!",
+			},
+			{
+				text = "Someone helped me when I was lost/struggling",
+				effects = { Happiness = 5, Smarts = 2 },
+				feedText = "💝 When you were visibly struggling, someone stopped to help. Angels exist!",
+			},
+			{
+				text = "Someone defended me from mean people",
+				effects = { Happiness = 8 },
+				setFlags = { had_defender = true },
+				feedText = "💝 A stranger stood up for you when others were being jerks. Hero!",
+			},
+		},
+	},
+	{
+		id = "teen_awkward_silence",
+		title = "😬 Awkward Moment",
+		emoji = "😬",
+		text = "Something super awkward just happened. Time slowed down. You could feel everyone cringing.",
+		question = "What happened?",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.4,
+		cooldown = 4,
+		category = "social",
+		tags = { "awkward", "social", "embarrassment", "relatable" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "Waved at someone who wasn't waving at me",
+				effects = { Happiness = -3 },
+				feedText = "😬 They were waving at someone behind you. You pretended to fix your hair.",
+			},
+			{
+				text = "Said 'you too' when it didn't make sense",
+				effects = { Happiness = -2 },
+				feedText = "😬 'Enjoy your meal!' 'You too!' You're replaying it in your head for days.",
+			},
+			{
+				text = "Your stomach growled LOUD in a quiet room",
+				effects = { Happiness = -4 },
+				feedText = "😬 Dead silence. Then YOUR STOMACH. Everyone looked. Mortifying.",
+			},
+			{
+				text = "Laughed way too hard at something unfunny",
+				effects = { Happiness = -3 },
+				feedText = "😬 No one else laughed. You laughed alone. For too long. In the silence.",
+			},
+		},
+	},
+	{
+		id = "teen_existential_crisis",
+		title = "🌌 Late Night Thoughts",
+		emoji = "🌌",
+		text = "It's 2 AM and you're staring at the ceiling having deep thoughts about life, the universe, and everything.",
+		question = "What are you thinking about?",
+		minAge = 14, maxAge = 18,
+		baseChance = 0.35,
+		cooldown = 5,
+		oneTime = true,
+		category = "philosophy",
+		tags = { "existential", "deep_thoughts", "growing_up", "identity" },
+		blockedByFlags = { in_prison = true, had_existential_crisis = true },
+		
+		choices = {
+			{
+				text = "What do I even want to do with my life?",
+				effects = { Happiness = -2, Smarts = 3 },
+				setFlags = { career_questioning = true, had_existential_crisis = true },
+				feedText = "🌌 The pressure of 'what do you want to be?' is overwhelming. No answers yet.",
+			},
+			{
+				text = "Does anyone actually understand me?",
+				effects = { Happiness = -4 },
+				setFlags = { feeling_misunderstood = true, had_existential_crisis = true },
+				feedText = "🌌 You feel like you're playing a character. Who is the REAL you?",
+			},
+			{
+				text = "Will I ever actually matter?",
+				effects = { Happiness = -3, Smarts = 4 },
+				setFlags = { legacy_aware = true, had_existential_crisis = true },
+				feedText = "🌌 7 billion people on Earth. What makes you special? Heavy thoughts.",
+			},
+			{
+				text = "Life is actually pretty amazing when you think about it",
+				effects = { Happiness = 6, Smarts = 3 },
+				setFlags = { grateful_perspective = true, had_existential_crisis = true },
+				feedText = "🌌 You're alive! On a rock! Flying through space! That's incredible!",
+			},
+		},
+	},
+	{
+		id = "teen_unexpected_talent",
+		title = "✨ Hidden Talent!",
+		emoji = "✨",
+		text = "You tried something new today and discovered you're actually... really good at it?!",
+		question = "What's your hidden talent?",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.35,
+		cooldown = 6,
+		oneTime = true,
+		category = "discovery",
+		tags = { "talent", "discovery", "skill", "surprise" },
+		blockedByFlags = { in_prison = true, found_hidden_talent = true },
+		
+		choices = {
+			{
+				text = "Cooking - made something actually delicious!",
+				effects = { Happiness = 8, Smarts = 3 },
+				setFlags = { cooking_talent = true, found_hidden_talent = true },
+				hintCareer = "chef",
+				feedText = "✨ Your family was shocked. 'YOU made this?!' Future chef potential!",
+			},
+			{
+				text = "Athletics - outperformed everyone!",
+				effects = { Happiness = 8, Health = 5 },
+				setFlags = { athletic_talent = true, found_hidden_talent = true },
+				hintCareer = "sports",
+				feedText = "✨ Turns out you're naturally athletic! Coach is already interested!",
+			},
+			{
+				text = "Public speaking - held everyone's attention!",
+				effects = { Happiness = 7, Smarts = 4 },
+				setFlags = { public_speaking_talent = true, found_hidden_talent = true },
+				hintCareer = "law",
+				feedText = "✨ You got up to present and... everyone was captivated. Natural orator!",
+			},
+			{
+				text = "Art - created something beautiful!",
+				effects = { Happiness = 8, Looks = 2 },
+				setFlags = { art_talent = true, found_hidden_talent = true },
+				hintCareer = "creative",
+				feedText = "✨ You drew/painted something and people actually wanted to BUY it!",
+			},
+		},
+	},
 }
 
 return Teen

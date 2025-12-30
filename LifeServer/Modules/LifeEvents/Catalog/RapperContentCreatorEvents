@@ -404,8 +404,8 @@ RapperContentCreatorEvents.events = {
 		text = "A local venue is doing an open mic night. You could perform your tracks live for the first time. Terrifying but exciting!",
 		question = "Do you perform?",
 		minAge = 16, maxAge = 45,
-		baseChance = 0.7, -- CRITICAL FIX #518: Increased from 0.5 to 0.7
-		cooldown = 1, -- CRITICAL FIX #519: Reduced from 3 to 1 for more events
+		baseChance = 0.6, -- CRITICAL FIX: Balanced chance for first show
+		cooldown = 3, -- CRITICAL FIX: Increased from 1 to prevent spam
 		oneTime = true,
 		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #520: Accept multiple flags for rapper eligibility
@@ -458,8 +458,8 @@ RapperContentCreatorEvents.events = {
 		text = "Another underground rapper in your city reached out! They want to do a track together. They have 500 monthly listeners - bigger than you!",
 		question = "How do you respond?",
 		minAge = 15, maxAge = 45,
-		baseChance = 0.65, -- CRITICAL FIX #521: Increased from 0.4 to 0.65
-		cooldown = 1, -- CRITICAL FIX #522: Reduced from 2 to 1
+		baseChance = 0.55, -- CRITICAL FIX: Balanced chance for collab
+		cooldown = 3, -- CRITICAL FIX: Increased from 1 to prevent spam
 		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #523: Use eligibility function instead of requiresFlags
 		eligibility = function(state)
@@ -504,8 +504,8 @@ RapperContentCreatorEvents.events = {
 		text = "Someone at the local hip-hop meetup is calling you out! They want to battle rap. The crowd is forming a circle. Your reputation is on the line!",
 		question = "What do you do?",
 		minAge = 15, maxAge = 40,
-		baseChance = 0.6, -- CRITICAL FIX #524: Increased from 0.35 to 0.6
-		cooldown = 1, -- CRITICAL FIX #525: Reduced from 3 to 1
+		baseChance = 0.5, -- CRITICAL FIX: Balanced chance for battle
+		cooldown = 4, -- CRITICAL FIX: Increased from 1 to prevent spam
 		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #526: Use eligibility function
 		eligibility = function(state)
@@ -604,8 +604,8 @@ RapperContentCreatorEvents.events = {
 		text = "A local club wants you to perform! They're offering $200 for a 20-minute set. This is PAID WORK as a rapper!",
 		question = "Do you take the gig?",
 		minAge = 18, maxAge = 50,
-		baseChance = 0.6, -- CRITICAL FIX #530: Increased from 0.35 to 0.6
-		cooldown = 1, -- CRITICAL FIX #531: Reduced from 3 to 1
+		baseChance = 0.5, -- CRITICAL FIX: Balanced chance for paid show
+		cooldown = 3, -- CRITICAL FIX: Increased from 1 to prevent spam
 		category = "career_rapper",  -- FIXED: Use career_rapper not career_music
 		-- CRITICAL FIX #532: Loosened requirements - just need to be a rapper
 		eligibility = function(state)
