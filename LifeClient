@@ -34,6 +34,14 @@ if ScreensFolder then
 			if s then
 				if r then
 					print("[LifeClient] ✅ Successfully required:", name)
+					-- CRITICAL DEBUG: Check what we actually got back
+					print("[LifeClient] 🔍 Module type:", type(r))
+					if type(r) == "table" then
+						print("[LifeClient] 🔍 Has .new?", r.new ~= nil)
+						if r.new then
+							print("[LifeClient] 🔍 .new type:", type(r.new))
+						end
+					end
 					return r
 				else
 					warn("[LifeClient] ❌ Module", name, "returned nil from require")
@@ -8134,8 +8142,21 @@ local function safeNew(mod, name, ...)
 		warn("[LifeClient] ❌ Module " .. tostring(name) .. " is nil - failed to require")
 		return nil
 	end
+	-- CRITICAL DEBUG: Detailed module inspection
+	print("[LifeClient] 🔎 safeNew checking", name, "- type:", type(mod))
+	if type(mod) == "table" then
+		local count = 0
+		for k, v in pairs(mod) do
+			count = count + 1
+			if count <= 5 then
+				print("[LifeClient] 🔎  ", name, "has key:", tostring(k), "type:", type(v))
+			end
+		end
+		print("[LifeClient] 🔎 ", name, "total keys:", count)
+	end
 	if not mod.new then
 		warn("[LifeClient] ❌ Module " .. tostring(name) .. " has no .new function")
+		warn("[LifeClient] ❌ mod.new is:", tostring(mod.new), "type:", type(mod.new))
 		return nil
 	end
 	local s, r = pcall(mod.new, ...)

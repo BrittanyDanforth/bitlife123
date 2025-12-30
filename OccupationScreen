@@ -3555,7 +3555,12 @@ function OccupationScreen:populateJobs()
 end
 
 function OccupationScreen:createCurrentJobCard(parent, job)
-	log("Creating current job card for:", job.name)
+	-- CRITICAL FIX: Nil guard for job parameter
+	if not job then
+		log("WARNING: createCurrentJobCard called with nil job")
+		return nil
+	end
+	log("Creating current job card for:", job.name or "Unknown")
 
 	-- Get career data
 	local performance = self:getCareerPerformance()

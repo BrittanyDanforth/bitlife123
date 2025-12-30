@@ -199,7 +199,8 @@ local events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
 
 	{
-		id = "teen_social_media",
+		-- CRITICAL FIX: Renamed from "teen_social_media" to avoid duplicate ID with EarlyLifeEvents
+		id = "milestone_first_social_media",
 		emoji = "📱",
 		title = "First Social Media Account",
 		text = "Everyone at school has Instagram, TikTok, or Snapchat. You're the ONLY ONE without it. FOMO is real. Your friends share memes you don't see. Make plans in group chats you're not in. Your parents are hesitant: 'You're only 13...' But you feel LEFT OUT. Create an account in secret? Ask permission? Or stay offline?",
@@ -494,7 +495,7 @@ local events = {
 			},
 			{
 				index = 5,
-				text = "Volunteer gap year (free)",
+				text = "Volunteer gap year",
 				effects = { Happiness = 8, Health = 3, Smarts = 2 },
 				setFlags = { gap_year = true, volunteer_gap_year = true },
 				feedText = "🎓 Volunteer gap year! Free room and board while helping others!",

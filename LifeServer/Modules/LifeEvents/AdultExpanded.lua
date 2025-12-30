@@ -1892,13 +1892,259 @@ AdultExpanded.events = {
 					end
 				end,
 			},
-			{
-				text = "Keep what I have",
-				effects = { Happiness = 2 },
-				feedText = "Your current situation works for now.",
-			},
+		{
+			text = "Keep what I have",
+			effects = { Happiness = 2 },
+			feedText = "Your current situation works for now.",
 		},
 	},
+},
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- MID-LIFE VARIETY EVENTS (Ages 30-50)
+-- CRITICAL FIX: User complaint - "ADD A BIT MORE VARIETY TO MID LIFE EVENT STUFF"
+-- These events add more interesting experiences during the 30-50 age range
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+{
+	id = "midlife_hobby_discovery",
+	title = "🎯 New Passion Discovered",
+	emoji = "🎯",
+	text = "You stumbled upon something that genuinely excites you for the first time in years!",
+	question = "What new passion did you discover?",
+	minAge = 32, maxAge = 50,
+	baseChance = 0.35,
+	cooldown = 6,
+	stage = "adult",
+	category = "life",
+	tags = { "hobby", "passion", "midlife", "variety" },
+	
+	choices = {
+		{ 
+			text = "Woodworking/Crafting", 
+			effects = { Happiness = 12, Smarts = 3 }, 
+			setFlags = { has_creative_hobby = true, woodworker = true }, 
+			feedText = "🪵 Building things with your hands is incredibly satisfying!" 
+		},
+		{ 
+			text = "Playing an instrument", 
+			effects = { Happiness = 15, Smarts = 4 }, 
+			setFlags = { has_creative_hobby = true, musician_hobby = true }, 
+			feedText = "🎸 It's never too late to rock! Music feeds the soul!" 
+		},
+		{ 
+			text = "Gardening/Farming", 
+			effects = { Happiness = 10, Health = 5 }, 
+			setFlags = { has_outdoor_hobby = true, gardener = true }, 
+			feedText = "🌱 Growing things brings unexpected peace and joy!" 
+		},
+		{ 
+			text = "Martial arts/Boxing", 
+			effects = { Happiness = 8, Health = 8, Smarts = 2 }, 
+			setFlags = { fitness_hobby = true, martial_artist = true }, 
+			feedText = "🥊 The discipline and fitness benefits are amazing!" 
+		},
+	},
+},
+
+{
+	id = "midlife_unexpected_friendship",
+	title = "🤝 Unexpected Connection",
+	emoji = "🤝",
+	text = "You met someone who could become a great friend in the most unexpected place!",
+	question = "Where did you meet them?",
+	minAge = 30, maxAge = 55,
+	baseChance = 0.30,
+	cooldown = 5,
+	stage = "adult",
+	category = "social",
+	tags = { "friendship", "social", "midlife", "variety" },
+	
+	choices = {
+		{ 
+			text = "At a random coffee shop", 
+			effects = { Happiness = 10 }, 
+			setFlags = { made_adult_friend = true }, 
+			feedText = "☕ Who knew a coffee run would lead to a great friendship!" 
+		},
+		{ 
+			text = "Through a mutual hobby", 
+			effects = { Happiness = 12, Smarts = 2 }, 
+			setFlags = { made_adult_friend = true, hobby_friend = true }, 
+			feedText = "🎯 Shared interests make the best foundations for friendship!" 
+		},
+		{ 
+			text = "At your kid's school event", 
+			effects = { Happiness = 8 }, 
+			setFlags = { made_adult_friend = true, parent_friend = true }, 
+			feedText = "👪 Parent friends understand the struggle!" 
+		},
+		{ 
+			text = "Online community", 
+			effects = { Happiness = 6, Smarts = 1 }, 
+			setFlags = { made_adult_friend = true, online_friend = true }, 
+			feedText = "💻 Distance doesn't matter when you click with someone!" 
+		},
+	},
+},
+
+{
+	id = "midlife_random_kindness",
+	title = "💝 Random Act of Kindness",
+	emoji = "💝",
+	text = "A complete stranger did something incredibly kind for you today.",
+	question = "How do you react?",
+	minAge = 25, maxAge = 65,
+	baseChance = 0.28,
+	cooldown = 4,
+	stage = "adult",
+	category = "experience",
+	tags = { "kindness", "heartwarming", "variety" },
+	
+	choices = {
+		{ 
+			text = "Pay it forward immediately", 
+			effects = { Happiness = 15, Money = -50 }, 
+			setFlags = { pays_it_forward = true }, 
+			feedText = "💝 The kindness chain continues! You helped someone else!" 
+		},
+		{ 
+			text = "Thank them profusely and chat", 
+			effects = { Happiness = 12 }, 
+			feedText = "💝 A brief but meaningful human connection!" 
+		},
+		{ 
+			text = "Reflect on humanity's goodness", 
+			effects = { Happiness = 10, Smarts = 2 }, 
+			feedText = "💝 Faith in humanity: restored!" 
+		},
+		{ 
+			text = "Feel awkward but grateful", 
+			effects = { Happiness = 6 }, 
+			feedText = "💝 Still processing that random kindness..." 
+		},
+	},
+},
+
+{
+	id = "midlife_nostalgia_trip",
+	title = "📼 Nostalgia Wave",
+	emoji = "📼",
+	text = "You found something from your past that brought back a flood of memories!",
+	question = "What did you find?",
+	minAge = 35, maxAge = 60,
+	baseChance = 0.32,
+	cooldown = 5,
+	stage = "adult",
+	category = "experience",
+	tags = { "nostalgia", "memories", "midlife", "variety" },
+	
+	choices = {
+		{ 
+			text = "Old photos from childhood", 
+			effects = { Happiness = 12 }, 
+			setFlags = { nostalgic = true }, 
+			feedText = "📸 Look how young everyone was! Those were simpler times..." 
+		},
+		{ 
+			text = "Music you used to love", 
+			effects = { Happiness = 15 }, 
+			setFlags = { nostalgic = true }, 
+			feedText = "🎵 This song takes you RIGHT back! The feels!" 
+		},
+		{ 
+			text = "Old letters or journals", 
+			effects = { Happiness = 8, Smarts = 3 }, 
+			setFlags = { nostalgic = true }, 
+			feedText = "✉️ Your younger self had a lot to say. Interesting perspective!" 
+		},
+		{ 
+			text = "A childhood toy or item", 
+			effects = { Happiness = 10 }, 
+			setFlags = { nostalgic = true, kept_childhood_item = true }, 
+			feedText = "🧸 This little thing meant the world to young you!" 
+		},
+	},
+},
+
+{
+	id = "midlife_cooking_adventure",
+	title = "👨‍🍳 Kitchen Adventure",
+	emoji = "👨‍🍳",
+	text = "You decided to try cooking something completely outside your comfort zone!",
+	question = "How did it turn out?",
+	minAge = 25, maxAge = 70,
+	baseChance = 0.30,
+	cooldown = 4,
+	stage = "adult",
+	category = "experience",
+	tags = { "cooking", "food", "variety" },
+	
+	choices = {
+		{ 
+			text = "Master chef moment!", 
+			effects = { Happiness = 15, Smarts = 3 }, 
+			setFlags = { good_cook = true }, 
+			feedText = "👨‍🍳 INCREDIBLE! You might have a hidden talent!" 
+		},
+		{ 
+			text = "Edible but... interesting", 
+			effects = { Happiness = 8, Smarts = 1 }, 
+			feedText = "👨‍🍳 Well, it won't poison anyone. A learning experience!" 
+		},
+		{ 
+			text = "Complete disaster, ordered pizza", 
+			effects = { Happiness = 3, Money = -20 }, 
+			feedText = "🍕 The smoke detector is basically a cooking timer now..." 
+		},
+		{ 
+			text = "Set off the fire alarm", 
+			effects = { Happiness = -2, Health = -1 }, 
+			setFlags = { bad_cook = true }, 
+			feedText = "🔥 Neighbors checking if you're okay. Maybe stick to sandwiches." 
+		},
+	},
+},
+
+{
+	id = "midlife_spontaneous_day",
+	title = "🌈 Spontaneous Day Off",
+	emoji = "🌈",
+	text = "You woke up and decided today is going to be different. No plans. Pure freedom.",
+	question = "What do you do with your spontaneous day?",
+	minAge = 25, maxAge = 55,
+	baseChance = 0.25,
+	cooldown = 6,
+	stage = "adult",
+	category = "experience",
+	tags = { "spontaneous", "freedom", "variety" },
+	
+	choices = {
+		{ 
+			text = "Random road trip adventure", 
+			effects = { Happiness = 18, Money = -100, Health = 2 }, 
+			setFlags = { spontaneous = true }, 
+			feedText = "🚗 Best. Day. Ever! Where did you even end up?!" 
+		},
+		{ 
+			text = "Full spa and self-care day ($150)", 
+			effects = { Happiness = 15, Health = 5, Money = -150 }, 
+			feedText = "🧖 Complete reset. You feel like a new person!",
+			eligibility = function(state) return (state.Money or 0) >= 150, "💸 Need $150 for spa day" end,
+		},
+		{ 
+			text = "Binge a show guilt-free", 
+			effects = { Happiness = 10 }, 
+			feedText = "📺 Zero productivity, maximum relaxation. Worth it!" 
+		},
+		{ 
+			text = "Reconnect with old friend", 
+			effects = { Happiness = 12 }, 
+			setFlags = { reconnected_friend = true }, 
+			feedText = "📞 Hours of catching up! Why don't you do this more often?" 
+		},
+	},
+},
 }
 
 return AdultExpanded

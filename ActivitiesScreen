@@ -234,13 +234,15 @@ local MindBody = {
 	-- CRITICAL FIX: Added medical activities for health management!
 	-- User bug: "health can be hard to manage and few things gives positive health"
 	-- ═══════════════════════════════════════════════════════════════════════════
-	{ id = "doctor", name = "Doctor Visit", emoji = "🩺", effect = "+8 Health", minAge = 0, cost = 100 },
-	{ id = "dentist", name = "Dentist", emoji = "🦷", effect = "+3 Health +2 Looks", minAge = 3, cost = 150 },
-	{ id = "therapist", name = "Therapist", emoji = "🧠", effect = "+8 Happiness +2 Health", minAge = 10, cost = 200 },
-	{ id = "doctor_visit", name = "Full Checkup", emoji = "🏥", effect = "+8 Health", minAge = 0, cost = 500 },
-	{ id = "hospital_treatment", name = "Hospital Treatment", emoji = "🏨", effect = "+25 Health!", minAge = 0, cost = 5000 },
-	{ id = "get_surgery", name = "Surgery", emoji = "🔪", effect = "+40 Health!", minAge = 0, cost = 20000 },
-	{ id = "chiropractor", name = "Chiropractor", emoji = "🦴", effect = "+5 Health +3 Happiness", minAge = 16, cost = 100 },
+	-- CRITICAL FIX: Medical activities - better descriptions, blocked in jail
+	-- User complaint: "DOCTOR VISIT SHOULD BE LIKE BITLIFE" + "HOSPITAL TREATMENT SURGERY CHIROPRACTOR SHOULDNT LET ME DO IT WHILE IN JAIL"
+	{ id = "doctor", name = "Doctor Visit", emoji = "🩺", effect = "Check your health", minAge = 0, cost = 100, isMedical = true },
+	{ id = "dentist", name = "Dentist", emoji = "🦷", effect = "Dental checkup", minAge = 3, cost = 150, isMedical = true },
+	{ id = "therapist", name = "Therapist", emoji = "🧠", effect = "Talk about your feelings", minAge = 10, cost = 200, isMedical = true },
+	{ id = "doctor_visit", name = "Full Checkup", emoji = "🏥", effect = "Complete health screening", minAge = 0, cost = 500, isMedical = true },
+	{ id = "hospital_treatment", name = "Hospital Treatment", emoji = "🏨", effect = "Treat health issues", minAge = 0, cost = 5000, isMedical = true },
+	{ id = "get_surgery", name = "Surgery", emoji = "🔪", effect = "Major medical procedure", minAge = 0, cost = 20000, isMedical = true },
+	{ id = "chiropractor", name = "Chiropractor", emoji = "🦴", effect = "Spinal adjustment", minAge = 16, cost = 100, isMedical = true },
 	{ id = "diet", name = "Go on a Diet", emoji = "🥗", effect = "+5 Health +3 Looks", minAge = 14, cost = 0 },
 	{ id = "swimming", name = "Go Swimming", emoji = "🏊", effect = "+7 Health +4 Happiness", minAge = 6, cost = 0 },
 	{ id = "cycling", name = "Go Cycling", emoji = "🚴", effect = "+7 Health +3 Happiness", minAge = 8, cost = 0 },
@@ -1085,10 +1087,10 @@ function ActivitiesScreen:rebuildTabs()
 	local tabs
 
 	if inJail then
-		-- PRISON MODE: Limited activities
+		-- PRISON MODE: ONLY Prison tab - hide other tabs since they're all locked anyway
+		-- User complaint: "SENSE IM IN PRISON JUST HAVE THE PRISON TAB ONLY AND HIDE EXERCISE TAB"
 		tabs = {
-			{ id = "prison", text = "Prison", color = C.Gray700 },
-			{ id = "mindbody", text = "Exercise", color = C.Cyan },
+			{ id = "prison", text = "⛓️ Prison", color = C.Gray700 },
 		}
 		self.currentTab = "prison"
 	elseif age < 5 then
@@ -2512,11 +2514,14 @@ end
 -- User feedback: "minigames even if successful still jail me"
 -- Operations done from ActivitiesScreen MUST also support minigames!
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Combat-based mafia operations that require minigames
+-- "intimidate" uses "confrontation" minigame for intimidation dialogue!
 local CombatMafiaOpsFromActivities = {
 	enforcer_hit = true,
 	intimidation = true,
 	protection = true,
 	heist = true,
+	intimidate = true,  -- CRITICAL FIX: Added intimidate - uses confrontation minigame
 }
 
 function ActivitiesScreen:doMobOperation(opId, opName)
@@ -2546,7 +2551,16 @@ function ActivitiesScreen:doMobOperation(opId, opName)
 			local minigameInstance = Minigames.new(self.screenGui)
 			
 			-- Determine minigame type and options
-			local minigameType = (opId == "heist") and "heist" or "combat"
+			-- CRITICAL FIX: "intimidate" uses "confrontation" minigame!
+			-- User complaint: "INTIMIDATION MINIGAME IT SAYS THEY SNEER..."
+			local minigameType
+			if opId == "heist" then
+				minigameType = "heist"
+			elseif opId == "intimidate" or opId == "intimidation" then
+				minigameType = "confrontation"  -- Use dialogue-based intimidation minigame!
+			else
+				minigameType = "combat"
+			end
 			
 			-- ═══════════════════════════════════════════════════════════════════════════
 			-- CRITICAL FIX: Pass proper options to minigame!
@@ -2555,7 +2569,7 @@ function ActivitiesScreen:doMobOperation(opId, opName)
 			-- Heist operations have 60% risk - this is a high-risk crime!
 			-- ═══════════════════════════════════════════════════════════════════════════
 			local minigameOptions = {
-				risk = (opId == "heist") and 60 or 50,  -- Heist is high risk
+				risk = (opId == "heist") and 60 or ((opId == "intimidate") and 25 or 50),
 				difficulty = (opId == "heist") and "hard" or "medium",
 				context = opId,
 			}
@@ -2581,10 +2595,14 @@ function ActivitiesScreen:doMobOperation(opId, opName)
 				elseif minigameType == "heist" then
 					modifiers.heistCompleted = true
 					modifiers.heistSuccess = won  -- Explicit boolean (true/false)
+				elseif minigameType == "confrontation" then
+					-- CRITICAL FIX: Handle intimidation/confrontation minigame
+					modifiers.intimidationCompleted = true
+					modifiers.intimidationWon = won  -- Explicit boolean (true/false)
 				end
 				
-				log(string.format("[MOB_MINIGAME] Type: %s | Won: %s | Sending heistSuccess: %s", 
-					tostring(minigameType), tostring(won), tostring(modifiers.heistSuccess)))
+				log(string.format("[MOB_MINIGAME] Type: %s | Won: %s | Modifiers: %s", 
+					tostring(minigameType), tostring(won), tostring(modifiers.heistSuccess or modifiers.combatWon or modifiers.intimidationWon)))
 				
 				-- Call server with minigame results
 				local success, result = pcall(function()
@@ -5353,7 +5371,13 @@ end
 -- User complaint: "ensure mafia and royalty tab works greatly and isnt boring"
 -- Now these activities will show proper event cards with choices like regular activities!
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Only activities with proper templates should show event cards!
+-- Activities without templates will show simple result popups instead
+-- This prevents "generic" boring event cards that look half-baked
+-- ═══════════════════════════════════════════════════════════════════════════════
 local FULL_EVENT_ACTIVITIES = {
+	-- These ALL have matching templates in ActivityEventTemplates
 	gym = true,
 	meditate = true,
 	party = true,
@@ -5363,17 +5387,19 @@ local FULL_EVENT_ACTIVITIES = {
 	nightclub = true,
 	yoga = true,
 	spa = true,
-	salon = true,
 	run = true,
-	host_party = true,
-	hangout = true,
 	concert = true,
 	movies = true,
-	tv = true,
-	games = true,
-	arcade = true,
-	karaoke = true,
 	martial_arts = true,
+	beach = true,
+	-- Medical activities with proper templates
+	doctor = true,
+	doctor_visit = true,
+	dentist = true,
+	therapist = true,
+	hospital_treatment = true,
+	get_surgery = true,
+	chiropractor = true,
 	-- CRITICAL FIX: ROYAL ACTIVITIES (no longer boring!)
 	public_appearance = true,
 	charity_visit = true,
@@ -5804,6 +5830,58 @@ function ActivitiesScreen:doPrisonActivity(item)
 	if item.id == "prison_escape" then
 		log("Starting prison escape minigame...")
 		self:showEscapeMinigame()
+		return
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Prison Workout and other mash minigame activities
+	-- User complaint: "IN JAIL I CANT DO EXCERSISE IT SAYS JAILED"
+	-- Prison workout should have a tap/mash minigame!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if item.id == "prison_workout" and item.hasMinigame then
+		log("Starting prison workout mash minigame...")
+		
+		-- Get minigames module
+		local ReplicatedStorage = game:GetService("ReplicatedStorage")
+		local MinigamesModule = ReplicatedStorage:FindFirstChild("Minigames")
+		if MinigamesModule then
+			local Minigames = require(MinigamesModule)
+			local minigameInstance = Minigames.new(self.screenGui)
+			
+			-- Start mash minigame for workout
+			minigameInstance:play("mash", function(won, stats)
+				log("Prison workout result - Won:", won)
+				
+				-- Call server with result
+				local serverSuccess, serverResult = pcall(function()
+					return DoPrisonAction:InvokeServer(item.id, {
+						minigameCompleted = true,
+						minigameWon = won,
+					})
+				end)
+				
+				-- Show result
+				if won then
+					self:showActivityResult(true, "💪 Great workout! You're getting buff in the yard!", item, "💪")
+				else
+					self:showActivityResult(false, "You gave up on your workout... try harder next time!", item, "😅")
+				end
+			end, {
+				title = "💪 Prison Yard Workout",
+				instruction = "Tap fast to pump iron!",
+				targetTaps = 20, -- CRITICAL FIX: Reduced from 30 - easier for all ages
+				timeLimit = 8,
+			})
+		else
+			-- Fallback: just call server directly if minigames not available
+			log("Minigames not available, calling server directly for workout")
+			local success, result = pcall(function()
+				return DoPrisonAction:InvokeServer(item.id)
+			end)
+			if result then
+				self:showActivityResult(result.success, result.message or "You worked out in the yard!", item, "💪")
+			end
+		end
 		return
 	end
 
@@ -6734,35 +6812,90 @@ local ActivityEventTemplates = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- MEDICAL & WELLNESS ACTIVITIES
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- MEDICAL ACTIVITIES - Simple, clean templates with NO hidden costs!
+	-- All choices are FREE once you've paid for the activity itself
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	doctor = {
 		{
 			title = "🩺 Doctor's Visit",
 			emoji = "🩺",
 			texts = {
-				"Time for your checkup.",
-				"The doctor will see you now.",
-				"Better safe than sorry - regular checkups are important!",
+				"The doctor sees you for your appointment.",
+				"Time for your checkup!",
+				"The nurse takes your vitals. Everything looks good.",
 			},
 			choices = {
-				{ text = "✅ Get full exam", feed = "Everything looks good! You're healthy!" },
-				{ text = "❓ Ask questions", feed = "The doctor answered all your concerns." },
-				{ text = "💊 Get prescriptions", feed = "You got what you needed." },
+				{ text = "👍 Thanks, doc!", feed = "The doctor gave you a clean bill of health! +8 Health" },
 			},
 		},
 	},
-	therapy = {
+	doctor_visit = {
+		{
+			title = "🏥 Full Checkup",
+			emoji = "🏥",
+			texts = {
+				"You get a comprehensive health screening.",
+				"The doctor runs all the standard tests.",
+				"Time for your annual physical!",
+			},
+			choices = {
+				{ text = "👍 Great to know!", feed = "Everything checked out fine! You're healthy. +8 Health" },
+			},
+		},
+	},
+	hospital_treatment = {
+		{
+			title = "🏨 Hospital Treatment",
+			emoji = "🏨",
+			texts = {
+				"The medical team takes excellent care of you.",
+				"Modern medicine works its magic.",
+				"You're in good hands at the hospital.",
+			},
+			choices = {
+				{ text = "🙏 Thank you!", feed = "The treatment worked! You're feeling much better. +25 Health" },
+			},
+		},
+	},
+	get_surgery = {
+		{
+			title = "🔪 Surgery Complete",
+			emoji = "🔪",
+			texts = {
+				"The surgery was a success!",
+				"You wake up from anesthesia feeling groggy but alive.",
+				"The surgical team did an excellent job.",
+			},
+			choices = {
+				{ text = "😌 What a relief!", feed = "Full recovery expected! +40 Health" },
+			},
+		},
+	},
+	chiropractor = {
+		{
+			title = "🦴 Chiropractor",
+			emoji = "🦴",
+			texts = {
+				"Crack! Pop! Your spine feels aligned.",
+				"The chiropractor works out all the kinks.",
+				"Ahh... that's the spot!",
+			},
+			choices = {
+				{ text = "😌 Much better!", feed = "Your back feels great! +5 Health +3 Happiness" },
+			},
+		},
+	},
+	therapist = {
 		{
 			title = "🧠 Therapy Session",
 			emoji = "🧠",
 			texts = {
-				"You walk into your therapist's calming office.",
-				"Time to work on your mental health.",
-				"Taking care of your mind is just as important as your body.",
+				"Your therapist listens attentively.",
+				"A safe space to work through your thoughts.",
+				"Mental health is just as important as physical health.",
 			},
 			choices = {
-				{ text = "💭 Open up", feed = "Talking about it really helped." },
-				{ text = "📝 Set goals", feed = "You have a clear path forward." },
-				{ text = "🧘 Learn techniques", feed = "New coping strategies acquired." },
+				{ text = "😌 I feel better", feed = "Talking really helped! +8 Happiness +2 Health" },
 			},
 		},
 	},
@@ -6771,14 +6904,12 @@ local ActivityEventTemplates = {
 			title = "💆 Spa Day",
 			emoji = "💆",
 			texts = {
-				"Time to pamper yourself!",
-				"Relaxation and rejuvenation await.",
+				"Pure relaxation and rejuvenation!",
 				"You deserve this self-care day!",
+				"Time to pamper yourself!",
 			},
 			choices = {
-				{ text = "💆 Full body massage", feed = "All tension has melted away." },
-				{ text = "🧖 Facial treatment", feed = "Your skin is glowing!" },
-				{ text = "🛁 Hot tub soak", feed = "Pure bliss in warm water." },
+				{ text = "😌 So relaxing!", feed = "All tension has melted away! +4 Looks +8 Happiness +2 Health" },
 			},
 		},
 	},
@@ -6788,13 +6919,11 @@ local ActivityEventTemplates = {
 			emoji = "🦷",
 			texts = {
 				"Open wide! Time for your dental checkup.",
-				"The dentist's chair awaits...",
+				"The dentist gives your teeth a thorough cleaning.",
 				"Keeping those pearly whites healthy!",
 			},
 			choices = {
-				{ text = "😁 Just a cleaning", feed = "Your teeth are sparkling clean!" },
-				{ text = "🔍 Full checkup", feed = "No cavities! Good job brushing!" },
-				{ text = "✨ Whitening treatment", feed = "Your smile is brighter than ever!" },
+				{ text = "😁 Pearly whites!", feed = "Your teeth are sparkling clean! +3 Health +2 Looks" },
 			},
 		},
 	},

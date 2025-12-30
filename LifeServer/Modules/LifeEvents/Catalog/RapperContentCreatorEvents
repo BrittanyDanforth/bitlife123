@@ -61,6 +61,10 @@ end
 -- FIX: Now explicitly BLOCKS streamers/creators before checking for rapper status
 -- ═══════════════════════════════════════════════════════════════════════════════
 local function isRapper(state)
+	-- CRITICAL FIX: Can't be an active rapper while in prison!
+	local flags = state.Flags or {}
+	if flags.in_prison or flags.incarcerated then return false end
+	
 	-- CRITICAL FIX #RVS-FAME-2: Check premium path blocking first
 	if isBlockedByPremiumPath(state) then return false end
 	
@@ -133,6 +137,10 @@ local function isRapper(state)
 end
 
 local function isContentCreator(state)
+	-- CRITICAL FIX: Can't create content while in prison!
+	local flags = state.Flags or {}
+	if flags.in_prison or flags.incarcerated then return false end
+	
 	-- CRITICAL FIX #RVS-FAME-3: Check premium path blocking first
 	if isBlockedByPremiumPath(state) then return false end
 	

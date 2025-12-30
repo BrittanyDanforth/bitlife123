@@ -2071,7 +2071,8 @@ JobSpecificEvents.events = {
 	-- OFFICE / CORPORATE JOBS (admin, HR, management)
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "office_meeting_marathon",
+		-- CRITICAL FIX: Renamed from "office_meeting_marathon" to avoid duplicate ID
+		id = "office_calendar_nightmare",
 		title = "Meeting Marathon",
 		emoji = "📅",
 		text = "Your calendar is completely packed with back-to-back meetings today.",
@@ -2698,7 +2699,8 @@ JobSpecificEvents.events = {
 	-- MORE GOVERNMENT EVENTS
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "government_whistleblower",
+		-- CRITICAL FIX: Renamed from "government_whistleblower" to avoid duplicate ID with Career.lua
+		id = "gov_whistleblower_alt",
 		title = "Witness Misconduct",
 		emoji = "🔔",
 		text = "You've discovered your department is wasting taxpayer money or breaking rules.",
@@ -2766,7 +2768,8 @@ JobSpecificEvents.events = {
 		},
 	},
 	{
-		id = "government_promotion_politics",
+		-- CRITICAL FIX: Renamed from "government_promotion_politics" to avoid duplicate ID with Career.lua
+		id = "gov_promotion_politics_alt",
 		title = "Political Promotion",
 		emoji = "🏛️",
 		text = "A promotion is available, but it seems to be going to the director's friend who's less qualified.",

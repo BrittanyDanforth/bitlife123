@@ -305,7 +305,7 @@ Milestones.events = {
 				end,
 			},
 			{
-				text = "Borrow parents' old car (free)",
+				text = "Borrow parents' old car",
 				effects = { Happiness = 3 },
 				setFlags = { has_car = true, has_vehicle = true, owes_parents = true },
 				feedText = "🚙 Parents loaned you the old family car. You owe them!",
@@ -1306,7 +1306,8 @@ Milestones.events = {
 	-- Making important ages feel SPECIAL and memorable!
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "first_best_friend",
+		-- CRITICAL FIX: Renamed from "first_best_friend" to avoid duplicate ID with Childhood.lua
+		id = "milestone_first_best_friend",
 		title = "Best Friends Forever!",
 		emoji = "🤝",
 		text = "You've made a BEST FRIEND! Someone you tell all your secrets to!",
@@ -1399,7 +1400,8 @@ Milestones.events = {
 		},
 	},
 	{
-		id = "first_heartbreak",
+		-- CRITICAL FIX: Renamed from "first_heartbreak" to avoid duplicate ID with Teen.lua
+		id = "milestone_first_heartbreak",
 		title = "First Heartbreak",
 		emoji = "💔",
 		text = "Your first crush doesn't like you back... or worse, likes someone else. It HURTS.",

@@ -126,7 +126,8 @@ RandomExpanded.events = {
 		},
 	},
 	{
-		id = "random_flat_tire",
+		-- CRITICAL FIX: Renamed from "random_flat_tire" to avoid duplicate ID
+		id = "random_tire_blowout",
 		title = "Flat Tire!",
 		emoji = "🚗",
 		text = "You've got a flat tire!",
@@ -463,7 +464,8 @@ RandomExpanded.events = {
 		},
 	},
 	{
-		id = "random_surprise_visit",
+		-- CRITICAL FIX: Renamed from "random_surprise_visit" to avoid duplicate ID
+		id = "random_doorbell_visitor",
 		title = "Surprise Visit",
 		emoji = "🚪",
 		text = "Someone's at your door unexpectedly!",
@@ -702,7 +704,8 @@ RandomExpanded.events = {
 		},
 	},
 	{
-		id = "random_food_poisoning",
+		-- CRITICAL FIX: Renamed from "random_food_poisoning" to avoid duplicate ID
+		id = "random_bad_meal",
 		title = "Food Poisoning",
 		emoji = "🤢",
 		text = "Something you ate didn't agree with you!",
@@ -881,9 +884,10 @@ RandomExpanded.events = {
 						if state.AddFeed then state:AddFeed("🔐 False alarm! Just a weird charge. All good.") end
 					elseif roll < 0.70 then
 						if state.ModifyStat then state:ModifyStat("Happiness", -4) end
-						-- CRITICAL FIX: Can't lose more money than you have
-						local loss = math.min(100, state.Money or 0)
-						state.Money = math.max(0, (state.Money or 0) - loss)
+						-- CRITICAL FIX: Can't lose more money than you have - ensure numbers
+						local currentMoney = tonumber(state.Money) or 0
+						local loss = math.min(100, currentMoney)
+						state.Money = math.max(0, currentMoney - loss)
 						if state.AddFeed then 
 							if loss > 0 then
 								state:AddFeed(string.format("🔐 Small fraud. Bank fixed it. Lost $%d and time.", loss))
@@ -893,9 +897,10 @@ RandomExpanded.events = {
 						end
 					elseif roll < 0.90 then
 						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
-						-- CRITICAL FIX: Can't lose more money than you have
-						local loss = math.min(500, state.Money or 0)
-						state.Money = math.max(0, (state.Money or 0) - loss)
+						-- CRITICAL FIX: Can't lose more money than you have - ensure numbers
+						local currentMoney = tonumber(state.Money) or 0
+						local loss = math.min(500, currentMoney)
+						state.Money = math.max(0, currentMoney - loss)
 						state.Flags = state.Flags or {}
 						state.Flags.identity_theft = true
 						if state.AddFeed then 
@@ -907,9 +912,10 @@ RandomExpanded.events = {
 						end
 					else
 						if state.ModifyStat then state:ModifyStat("Happiness", -12) end
-						-- CRITICAL FIX: Can't lose more money than you have
-						local loss = math.min(2000, state.Money or 0)
-						state.Money = math.max(0, (state.Money or 0) - loss)
+						-- CRITICAL FIX: Can't lose more money than you have - ensure numbers
+						local currentMoney = tonumber(state.Money) or 0
+						local loss = math.min(2000, currentMoney)
+						state.Money = math.max(0, currentMoney - loss)
 						state.Flags = state.Flags or {}
 						state.Flags.major_identity_theft = true
 						if state.AddFeed then 

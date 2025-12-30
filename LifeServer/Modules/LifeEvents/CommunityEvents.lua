@@ -104,9 +104,48 @@ CommunityEvents.events = {
 					end
 				end,
 			},
-			{ text = "Parking wars", effects = { Happiness = -4 }, setFlags = { parking_feud = true }, feedText = "😤 Someone took your spot. This means war." },
-			{ text = "Property line disagreement", effects = { Happiness = -3 }, feedText = "😤 Had to deal with boundary disputes. Stressful." },
-			{ text = "Pet issues", effects = { Happiness = -3 }, feedText = "😤 Their pet is causing problems. Awkward confrontation." },
+			-- CRITICAL FIX: Parking wars requires having a car!
+			{ 
+				text = "Parking wars", 
+				effects = { Happiness = -4 }, 
+				setFlags = { parking_feud = true }, 
+				feedText = "😤 Someone took your spot. This means war.",
+				eligibility = function(state)
+					local flags = state.Flags or {}
+					if flags.has_car or flags.owns_vehicle or flags.has_vehicle then
+						return true
+					end
+					if state.Assets and state.Assets.Vehicles and #state.Assets.Vehicles > 0 then
+						return true
+					end
+					return false, "No car to park"
+				end,
+			},
+			-- CRITICAL FIX: Property disputes require owning property!
+			{ 
+				text = "Property line disagreement", 
+				effects = { Happiness = -3 }, 
+				feedText = "😤 Had to deal with boundary disputes. Stressful.",
+				eligibility = function(state)
+					local flags = state.Flags or {}
+					local housing = state.HousingState or {}
+					-- Homeowners have property lines, renters typically don't care
+					if flags.homeowner or flags.owns_home or housing.status == "owner" then
+						return true
+					end
+					if state.Assets and state.Assets.Properties and #state.Assets.Properties > 0 then
+						return true
+					end
+					return false, "No property to dispute"
+				end,
+			},
+			-- CRITICAL FIX: Pet issues require having a pet OR neighbor has pet
+			{ 
+				text = "Pet issues", 
+				effects = { Happiness = -3 }, 
+				feedText = "😤 Their pet is causing problems. Awkward confrontation.",
+				-- No eligibility needed - neighbor's pet, not yours
+			},
 		},
 	},
 	{
@@ -164,18 +203,43 @@ CommunityEvents.events = {
 		-- CRITICAL FIX: Can't have neighborhood crime while YOU are in prison!
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		
+		-- CRITICAL FIX: Block this entire event for homeless players! 
+		-- They don't have a "neighborhood" to have crime in
+		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true, living_in_car = true },
+		
+		-- CRITICAL FIX: Also need to have housing for this event to make sense!
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			local housing = state.HousingState or {}
+			-- Need SOME form of housing
+			if flags.homeless or flags.living_in_car or flags.couch_surfing then
+				return false, "No neighborhood when homeless"
+			end
+			return true
+		end,
+		
 		choices = {
 			{
 				text = "Break-in nearby",
 				effects = {},
 				feedText = "Police in the neighborhood...",
+				-- CRITICAL FIX: Break-in requires having a home!
+				eligibility = function(state)
+					local flags = state.Flags or {}
+					local housing = state.HousingState or {}
+					if flags.homeless or housing.status == "homeless" then
+						return false, "No home to break into"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.20 then
 						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
-						-- CRITICAL FIX: Don't go negative
-						local loss = math.min(500, state.Money or 0)
-						state.Money = math.max(0, (state.Money or 0) - loss)
+						-- CRITICAL FIX: Don't go negative - ensure numbers for math.min
+						local currentMoney = tonumber(state.Money) or 0
+						local loss = math.min(500, currentMoney)
+						state.Money = math.max(0, currentMoney - loss)
 						state.Flags = state.Flags or {}
 						state.Flags.home_burglarized = true
 						if state.AddFeed then 
@@ -191,8 +255,38 @@ CommunityEvents.events = {
 					end
 				end,
 			},
-			{ text = "Car vandalized", effects = { Happiness = -6 }, feedText = "🚔 Someone keyed your car. Why?!" },
-			{ text = "Package theft", effects = { Happiness = -4 }, setFlags = { package_stolen = true }, feedText = "🚔 Porch pirates took your delivery. Frustrating." },
+			-- CRITICAL FIX: Car vandalized choice must check if player HAS a car!
+			-- User bug: "IT SAID SOMEBODY KEYED YOUR CAR WHY?! BUT I DONT HAVE A CAR"
+			{ 
+				text = "Car vandalized", 
+				effects = { Happiness = -6 }, 
+				feedText = "🚔 Someone keyed your car. Why?!",
+				eligibility = function(state)
+					local flags = state.Flags or {}
+					-- CRITICAL FIX: Also check Assets.Vehicles
+					if flags.has_car or flags.owns_vehicle or flags.owns_car then
+						return true
+					end
+					if state.Assets and state.Assets.Vehicles and #state.Assets.Vehicles > 0 then
+						return true
+					end
+					return false, "No car to vandalize"
+				end,
+			},
+			-- CRITICAL FIX: Package theft requires having a home/address!
+			{ 
+				text = "Package theft", 
+				effects = { Happiness = -4 }, 
+				setFlags = { package_stolen = true }, 
+				feedText = "🚔 Porch pirates took your delivery. Frustrating.",
+				eligibility = function(state)
+					local flags = state.Flags or {}
+					if flags.homeless or flags.living_in_car then
+						return false, "No address for packages"
+					end
+					return true
+				end,
+			},
 			{ text = "Suspicious person reported", effects = { Happiness = -2 }, feedText = "🚔 Neighborhood on alert. Staying vigilant." },
 		},
 	},

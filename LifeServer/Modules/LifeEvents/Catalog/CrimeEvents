@@ -1484,7 +1484,8 @@ local events = {
 	
 	-- IDENTITY THEFT
 	{
-		id = "identity_theft_opportunity",
+		-- CRITICAL FIX: Renamed from "identity_theft_opportunity" to avoid duplicate ID
+		id = "identity_theft_wallet_find",
 		emoji = "💳",
 		title = "Stolen Identity",
 		text = "You found someone's wallet with all their personal documents - credit cards, SSN, everything.",

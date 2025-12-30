@@ -42,7 +42,7 @@ Relationships.events = {
 					local names = partnerIsMale 
 						and {"James", "Michael", "David", "Chris", "Ryan", "Alex", "Matt", "Jake", "Tyler", "Jordan", "Liam", "Noah", "Ethan", "Mason", "Lucas"}
 						or {"Sarah", "Jessica", "Emily", "Ashley", "Amanda", "Samantha", "Lauren", "Megan", "Rachel", "Nicole", "Sophia", "Olivia", "Emma", "Ava", "Mia"}
-					local partnerName = names[math.random(1, #names)]
+					local partnerName = names[math.random(1, #names)] or "Someone"
 					state.Relationships.partner = {
 						id = "partner",
 						name = partnerName,
@@ -92,7 +92,7 @@ Relationships.events = {
 					local names = partnerIsMale 
 						and {"Daniel", "Marcus", "Andrew", "Joshua", "Brandon", "Kevin", "Justin", "Eric", "Sean", "Derek", "William", "Benjamin", "Henry", "Alexander", "Sebastian"}
 						or {"Michelle", "Stephanie", "Christina", "Jennifer", "Elizabeth", "Heather", "Amber", "Melissa", "Rebecca", "Tiffany", "Victoria", "Natalie", "Hannah", "Grace", "Lily"}
-					local partnerName = names[math.random(1, #names)]
+					local partnerName = names[math.random(1, #names)] or "Someone"
 					state.Relationships.partner = {
 						id = "partner",
 						name = partnerName,
@@ -267,7 +267,7 @@ Relationships.events = {
 				feedText = "💍 Simple, intimate, perfect. They said YES!",
 			},
 			{ 
-				text = "Propose from the heart (free)", 
+				text = "Propose from the heart", 
 				effects = { Happiness = 10 }, 
 				setFlags = { engaged = true }, 
 				feedText = "💍 You proposed with pure love - no ring needed. They said YES!",
@@ -506,7 +506,7 @@ Relationships.events = {
 					local isBoy = math.random() > 0.5
 					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Aiden"} 
 						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia", "Amelia", "Harper"}
-					local childName = names[math.random(1, #names)]
+					local childName = names[math.random(1, #names)] or "Baby"
 					local childId = "child_" .. tostring(childCount)
 					state.Relationships[childId] = {
 						id = childId,
@@ -526,7 +526,7 @@ Relationships.events = {
 				end,
 			},
 			{ 
-				text = "Have a baby - hand-me-downs (free)", 
+				text = "Have a baby with hand-me-downs", 
 				effects = { Happiness = 12 }, 
 				setFlags = { has_child = true, has_children = true, parent = true }, 
 				feedText = "👶 Budget baby prep! Hand-me-downs and love!",
@@ -537,7 +537,7 @@ Relationships.events = {
 					local isBoy = math.random() > 0.5
 					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Aiden"} 
 						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia", "Amelia", "Harper"}
-					local childName = names[math.random(1, #names)]
+					local childName = names[math.random(1, #names)] or "Baby"
 					local childId = "child_" .. tostring(childCount)
 					state.Relationships[childId] = {
 						id = childId,
@@ -591,7 +591,7 @@ Relationships.events = {
 					local isBoy = math.random() > 0.5
 					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Aiden"} 
 						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia", "Amelia", "Harper"}
-					local childName = names[math.random(1, #names)]
+					local childName = names[math.random(1, #names)] or "Baby"
 					local childId = "child_" .. tostring(childCount)
 					local childAge = math.random(0, 5)  -- Adopted children can be ages 0-5
 					state.Relationships[childId] = {
@@ -779,7 +779,7 @@ Relationships.events = {
 						local names = partnerIsMale 
 							and {"Liam", "Noah", "Oliver", "Elijah", "Lucas", "Mason", "Logan", "Henry", "Jack", "Owen"}
 							or {"Sophia", "Olivia", "Emma", "Ava", "Isabella", "Mia", "Luna", "Harper", "Ella", "Evelyn"}
-						local partnerName = names[math.random(1, #names)]
+						local partnerName = names[math.random(1, #names)] or "Someone"
 						state.Relationships.partner = {
 							id = "partner",
 							name = partnerName,
@@ -821,7 +821,7 @@ Relationships.events = {
 						local names = partnerIsMale 
 							and {"Ethan", "Aiden", "Jackson", "Sebastian", "Mateo", "Leo", "Asher", "Benjamin", "Ezra", "Miles"}
 							or {"Chloe", "Penelope", "Layla", "Riley", "Zoey", "Nora", "Lily", "Eleanor", "Hannah", "Lillian"}
-						local partnerName = names[math.random(1, #names)]
+						local partnerName = names[math.random(1, #names)] or "Someone"
 						state.Relationships.partner = {
 							id = "partner",
 							name = partnerName,
@@ -859,7 +859,7 @@ Relationships.events = {
 						local names = partnerIsMale 
 							and {"Carter", "Jayden", "Luke", "Dylan", "Grayson", "Isaac", "Nathan", "Caleb", "Ryan", "Adrian"}
 							or {"Addison", "Aubrey", "Savannah", "Brooklyn", "Leah", "Stella", "Natalie", "Zoe", "Hazel", "Violet"}
-						local partnerName = names[math.random(1, #names)]
+						local partnerName = names[math.random(1, #names)] or "Someone"
 						state.Relationships.partner = {
 							id = "partner",
 							name = partnerName,
@@ -910,7 +910,7 @@ Relationships.events = {
 					local names = partnerIsMale 
 						and {"Jason", "Kyle", "Brian", "Steven", "Patrick", "Nathan", "Cody", "Trevor", "Austin", "Zach"}
 						or {"Katie", "Brittany", "Amy", "Kelly", "Angela", "Danielle", "Holly", "Lindsey", "Brooke", "Whitney"}
-					local partnerName = names[math.random(1, #names)]
+					local partnerName = names[math.random(1, #names)] or "Someone"
 					state.Relationships.partner = {
 						id = "partner",
 						name = partnerName,
@@ -1621,7 +1621,7 @@ Relationships.events = {
 					local isBoy = math.random() > 0.5
 					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Aiden"} 
 						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia", "Amelia", "Harper"}
-					local childName = names[math.random(1, #names)]
+					local childName = names[math.random(1, #names)] or "Baby"
 					local childId = "child_" .. tostring(childCount)
 					state.Relationships[childId] = {
 						id = childId,
@@ -1650,7 +1650,7 @@ Relationships.events = {
 					local isBoy = math.random() > 0.5
 					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Aiden"} 
 						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia", "Amelia", "Harper"}
-					local childName = names[math.random(1, #names)]
+					local childName = names[math.random(1, #names)] or "Baby"
 					local childId = "child_" .. tostring(childCount)
 					state.Relationships[childId] = {
 						id = childId,

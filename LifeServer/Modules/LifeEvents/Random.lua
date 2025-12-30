@@ -2638,7 +2638,8 @@ Random.events = {
 	-- This prevents rich players from getting eviction notices!
 	requiresFlags = { bum_life = true },
 	-- CRITICAL FIX: Can't be evicted if living with family!
-	blockedByFlags = { homeless = true, evicted = true, lives_with_parents = true, living_with_family = true, boomerang_kid = true },
+	-- CRITICAL FIX: Block if housing changed this year to prevent contradictory messages
+	blockedByFlags = { homeless = true, evicted = true, lives_with_parents = true, living_with_family = true, boomerang_kid = true, housing_changed_this_year = true },
 		-- CRITICAL FIX: Custom eligibility check to ensure player is actually broke
 		eligibility = function(state)
 			local money = state.Money or 0
@@ -2737,6 +2738,8 @@ Random.events = {
 					if math.random() < 0.3 then
 						state.Flags.homeless = nil
 						state.Flags.has_temp_housing = true
+						-- CRITICAL FIX: Mark housing changed this year
+						state.Flags.housing_changed_this_year = true
 						state.Money = (state.Money or 0) + 200
 						state:AddFeed("🎉 You found day labor work! Enough for a cheap room tonight.")
 					else
@@ -3328,7 +3331,8 @@ Random.events = {
 	},
 	
 	{
-		id = "viral_moment",
+		-- CRITICAL FIX: Renamed from "viral_moment" to avoid duplicate ID
+		id = "random_viral_post",
 		emoji = "📱",
 		title = "You Went Viral!",
 		text = "Something you posted online went completely viral! Thousands of views!",

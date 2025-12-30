@@ -749,9 +749,26 @@ FinancialEvents.events = {
 				end
 			end,
 		},
-		{ text = "Student loans calling ($200)", effects = { Happiness = -4, Money = -200 }, setFlags = { has_student_loans = true }, feedText = "💳 Monthly payment due. Education costs never end.", eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for payment" end },
-		{ text = "Medical debt ($300)", effects = { Happiness = -5, Money = -300 }, setFlags = { medical_debt = true }, feedText = "💳 Got sick AND went broke. American healthcare.", eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for payment" end },
-		{ text = "Consolidate and strategize ($100)", effects = { Happiness = 3, Smarts = 3, Money = -100 }, feedText = "💳 Working with financial advisor. Plan in place.", eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for advisor" end },
+		{ 
+			-- CRITICAL FIX: Student loans are a SITUATION not a payment choice - no cost to acknowledge!
+			text = "It's my student loans weighing on me", 
+			effects = { Happiness = -4 }, 
+			setFlags = { has_student_loans = true, stressed_about_debt = true }, 
+			feedText = "💳 Those student loans keep growing with interest. Need a plan." 
+		},
+		{ 
+			-- CRITICAL FIX: Medical debt is a SITUATION not a payment - no cost to acknowledge!
+			text = "Medical bills from when I got sick", 
+			effects = { Happiness = -5 }, 
+			setFlags = { medical_debt = true, stressed_about_debt = true }, 
+			feedText = "💳 That hospital visit left a big bill. American healthcare." 
+		},
+		{ 
+			text = "Make a payment plan", 
+			effects = { Happiness = 3, Smarts = 2 }, 
+			setFlags = { has_payment_plan = true },
+			feedText = "💳 Set up manageable monthly payments. Progress!" 
+		},
 		{ text = "Ignore and hope it goes away", effects = { Happiness = -2 }, setFlags = { ignoring_debt = true }, feedText = "💳 Head in the sand. This won't end well." },
 			-- ⚡ GOD MODE PREMIUM OPTION
 			{
@@ -1587,7 +1604,8 @@ FinancialEvents.events = {
 	},
 	
 	{
-		id = "fin_crypto_opportunity",
+		-- CRITICAL FIX: Renamed from "fin_crypto_opportunity" to avoid duplicate ID
+		id = "fin_crypto_craze_alt",
 		title = "Crypto Craze!",
 		emoji = "🪙",
 		text = "Everyone's talking about this new cryptocurrency!",

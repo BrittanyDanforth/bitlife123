@@ -101,7 +101,8 @@ FamilyEvents.events = {
 					local isBoy = math.random() > 0.5
 					local boyNames = {"James", "William", "Oliver", "Benjamin", "Lucas", "Henry", "Alexander", "Mason", "Ethan", "Noah"}
 					local girlNames = {"Emma", "Olivia", "Ava", "Isabella", "Sophia", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn"}
-					local childName = isBoy and boyNames[math.random(1, #boyNames)] or girlNames[math.random(1, #girlNames)]
+					-- CRITICAL FIX: Add fallback in case random returns nil
+					local childName = (isBoy and boyNames[math.random(1, #boyNames)] or girlNames[math.random(1, #girlNames)]) or "Baby"
 					local childId = "child_" .. tostring(os.clock()):gsub("%.", "")
 					
 					state.Relationships[childId] = {

@@ -964,8 +964,20 @@ CelebrityEvents.GeneralFameEvents = {
 		id = "endorsement_deal",
 		title = "💰 Endorsement Opportunity!",
 		emoji = "💰",
+		-- CRITICAL FIX: Added text variants for variety!
+		textVariants = {
+			"A major brand wants you to endorse their product!",
+			"A sports drink company reached out - they want YOU as their face!",
+			"A luxury watch brand is offering a massive deal for you to be their ambassador!",
+			"A clothing line wants you in their next campaign. Big bucks on the table!",
+			"A tech company thinks you'd be perfect for their new product launch!",
+			"A makeup/skincare brand is offering millions for your endorsement!",
+			"A car manufacturer wants you to be their celebrity spokesperson!",
+		},
 		text = "A major brand wants you to endorse their product!",
 		minFame = 40,
+		cooldown = 3, -- CRITICAL FIX: Prevent spam
+		maxOccurrences = 6, -- CRITICAL FIX: Limit endorsements per life
 		choices = {
 			{
 				text = "Accept the deal",
@@ -999,8 +1011,20 @@ CelebrityEvents.GeneralFameEvents = {
 		id = "tabloid_story",
 		title = "📰 Tabloid Story!",
 		emoji = "📰",
+		-- CRITICAL FIX: Added text variants for variety!
+		textVariants = {
+			"A tabloid is running a story about you. It's completely made up!",
+			"BREAKING: You're on the cover of a gossip magazine with a FAKE scandal!",
+			"Paparazzi caught you at the worst angle. Now there's a story about 'your secret struggles'!",
+			"An 'anonymous source' told a tabloid complete lies about your personal life!",
+			"A gossip site is claiming you had a public meltdown. You were just having lunch!",
+			"Rumors are swirling that you're feuding with another celebrity. News to you!",
+			"A magazine claims you're secretly broke. Your accountant begs to differ.",
+		},
 		text = "A tabloid is running a story about you. It's completely made up!",
 		minFame = 35,
+		cooldown = 3, -- CRITICAL FIX: Prevent spam
+		maxOccurrences = 5, -- CRITICAL FIX: Limit tabloid stories
 		choices = {
 			{
 				text = "Ignore it completely",
@@ -1035,8 +1059,19 @@ CelebrityEvents.GeneralFameEvents = {
 		id = "award_show_invite",
 		title = "🏆 Award Show Invitation!",
 		emoji = "🏆",
+		-- CRITICAL FIX: Added text variants for variety!
+		textVariants = {
+			"You've been invited to present at a major award show!",
+			"The Grammy/Emmy/Oscar producers want you to present an award! Red carpet time!",
+			"You've been nominated for a major industry award! Will you win?",
+			"The People's Choice Awards wants you to accept the Favorite Star award!",
+			"A prestigious ceremony invited you as a presenter AND a nominee!",
+			"You've been asked to host a segment at this year's biggest award show!",
+		},
 		text = "You've been invited to present at a major award show!",
 		minFame = 45,
+		cooldown = 3, -- CRITICAL FIX: Prevent spam
+		maxOccurrences = 6, -- CRITICAL FIX: Limit award invites
 		choices = {
 			{
 				text = "Attend and present",
@@ -1070,6 +1105,8 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "✨",
 		text = "You're walking the red carpet at a major premiere!",
 		minFame = 40,
+		cooldown = 2, -- CRITICAL FIX: Prevent spam
+		maxOccurrences = 10, -- CRITICAL FIX: Limit red carpet events
 		choices = {
 			{
 				text = "Wear designer outfit ($50K)",
@@ -1103,6 +1140,8 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "🎤",
 		text = "A famous talk show host wants to interview you!",
 		minFame = 50,
+		cooldown = 3, -- CRITICAL FIX: Prevent spam
+		maxOccurrences = 8, -- CRITICAL FIX: Limit interviews
 		choices = {
 			{
 				text = "Give a great interview",
@@ -1136,6 +1175,8 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "💝",
 		text = "A major charity wants you as their global ambassador!",
 		minFame = 55,
+		cooldown = 5, -- CRITICAL FIX: Prevent spam
+		maxOccurrences = 3, -- CRITICAL FIX: Limit charity offers
 		choices = {
 			{
 				-- CRITICAL FIX: Show donation cost!
@@ -1168,6 +1209,8 @@ CelebrityEvents.GeneralFameEvents = {
 		emoji = "⚠️",
 		text = "Someone is threatening to release damaging information about you!",
 		minFame = 45,
+		cooldown = 5, -- CRITICAL FIX: Prevent spam
+		maxOccurrences = 3, -- CRITICAL FIX: Limit scandals
 		choices = {
 			{
 				text = "Pay them off ($500K)",
@@ -1235,7 +1278,8 @@ CelebrityEvents.GeneralFameEvents = {
 	
 	-- VIRAL MOMENT
 	{
-		id = "viral_moment",
+		-- CRITICAL FIX: Renamed to avoid duplicate ID
+		id = "celebrity_viral_clip",
 		title = "📱 Going Viral!",
 		emoji = "📱",
 		text = "Something you did went incredibly viral! Millions of people have seen it.",
@@ -1505,7 +1549,8 @@ CelebrityEvents.GeneralFameEvents = {
 	
 	-- VIRAL MOMENT
 	{
-		id = "viral_moment",
+		-- CRITICAL FIX: Renamed to avoid duplicate ID
+		id = "celebrity_viral_moment",
 		title = "📱 Viral Moment",
 		emoji = "📱",
 		text = "Something you did just went viral! Millions are watching, sharing, and talking about you.",
@@ -1841,7 +1886,8 @@ CelebrityEvents.GeneralFameEvents = {
 	
 	-- REALITY TV OFFER
 	{
-		id = "reality_tv_offer",
+		-- CRITICAL FIX: Renamed from "reality_tv_offer" to avoid duplicate ID
+		id = "celebrity_reality_show",
 		title = "📺 Reality TV Offer",
 		emoji = "📺",
 		text = "Network executives want to document your life in a reality series. Fame and fortune, but zero privacy.",
@@ -2636,7 +2682,8 @@ CelebrityEvents.GeneralFameEvents = {
 	
 	-- AWARD NOMINATION
 	{
-		id = "major_award_nomination",
+		-- CRITICAL FIX: Renamed from "major_award_nomination" to avoid duplicate ID
+		id = "celebrity_award_nomination",
 		title = "🏆 Major Award Nomination!",
 		emoji = "🏆",
 		text = "You've been nominated for one of the biggest awards in your industry!",
@@ -3493,7 +3540,8 @@ CelebrityEvents.StreamerCareer = {
 			},
 		},
 		{
-			id = "sponsorship_deal",
+			-- CRITICAL FIX: Renamed from "sponsorship_deal" to avoid duplicate ID with RacingEvents
+			id = "celebrity_sponsorship_offer",
 			title = "💰 Major Sponsorship!",
 			text = "A gaming chair company / energy drink brand wants you as their face!",
 			minStage = 3,
@@ -4642,7 +4690,8 @@ end
 local ExclusivePremiumCelebrityEvents = {
 	-- VIRAL MOMENT
 	{
-		id = "celebrity_viral_moment",
+		-- CRITICAL FIX: Renamed from "celebrity_viral_moment" to avoid duplicate ID
+		id = "celebrity_premium_viral",
 		title = "🔥 YOU WENT VIRAL!",
 		emoji = "🔥",
 		text = "OMG! Something you did just blew up on social media! Everyone is talking about you!",
@@ -4661,7 +4710,9 @@ local ExclusivePremiumCelebrityEvents = {
 				fameGain = 20,
 				feedText = "You struck while the iron was hot! Brand deals pouring in!",
 				onResolve = function(state)
-					state.Fame = math.min(100, (state.Fame or 0) + 20)
+					-- CRITICAL FIX: Ensure numbers for math.min
+					local currentFame = tonumber(state.Fame) or 0
+					state.Fame = math.min(100, currentFame + 20)
 					state.Flags = state.Flags or {}
 					state.Flags.viral_celebrity = true
 					if state.AddFeed then
@@ -4684,7 +4735,9 @@ local ExclusivePremiumCelebrityEvents = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.6 then
-						state.Fame = math.min(100, (state.Fame or 0) + 25)
+						-- CRITICAL FIX: Ensure numbers for math.min
+						local currentFame = tonumber(state.Fame) or 0
+						state.Fame = math.min(100, currentFame + 25)
 						state.Money = (state.Money or 0) + 1000000
 						if state.AddFeed then
 							state:AddFeed("🔥 LEGENDARY! You turned viral into a cultural moment! Sponsors FIGHTING for you!")
@@ -4735,7 +4788,9 @@ local ExclusivePremiumCelebrityEvents = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.5 then
-						state.Fame = math.min(100, (state.Fame or 0) + 20)
+						-- CRITICAL FIX: Ensure numbers for math.min
+						local currentFame = tonumber(state.Fame) or 0
+						state.Fame = math.min(100, currentFame + 20)
 						if state.AddFeed then
 							state:AddFeed("🎤 Your statement resonated! You're being called a voice of a generation!")
 						end
@@ -4791,7 +4846,9 @@ local ExclusivePremiumCelebrityEvents = {
 					local roll = math.random()
 					if roll < 0.4 then
 						state.Money = (state.Money or 0) + 15000000
-						state.Fame = math.min(100, (state.Fame or 0) + 15)
+						-- CRITICAL FIX: Ensure numbers for math.min
+						local currentFame = tonumber(state.Fame) or 0
+						state.Fame = math.min(100, currentFame + 15)
 						state.Flags = state.Flags or {}
 						state.Flags.brand_ambassador = true
 						state.Flags.mega_deal = true
@@ -4930,7 +4987,9 @@ local ExclusivePremiumCelebrityEvents = {
 				setFlags = { collab_with_legend = true },
 				feedText = "You collaborated with a LEGEND! Your career has peaked!",
 				onResolve = function(state)
-					state.Fame = math.min(100, (state.Fame or 0) + 25)
+					-- CRITICAL FIX: Ensure numbers for math.min
+					local currentFame = tonumber(state.Fame) or 0
+					state.Fame = math.min(100, currentFame + 25)
 					if state.AddFeed then
 						state:AddFeed("👑 The collab dropped and BROKE THE INTERNET! You're now legendary too!")
 					end
@@ -4992,7 +5051,9 @@ local ExclusivePremiumCelebrityEvents = {
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.4 then
-						state.Fame = math.min(100, (state.Fame or 0) + 5)
+						-- CRITICAL FIX: Ensure numbers for math.min
+						local currentFame = tonumber(state.Fame) or 0
+						state.Fame = math.min(100, currentFame + 5)
 						if state.AddFeed then
 							state:AddFeed("😌 The story died down. Crisis averted... for now.")
 						end
@@ -5012,7 +5073,9 @@ local ExclusivePremiumCelebrityEvents = {
 				fameGain = 10,
 				feedText = "You leaned into the controversy!",
 				onResolve = function(state)
-					state.Fame = math.min(100, (state.Fame or 0) + 10)
+					-- CRITICAL FIX: Ensure numbers for math.min
+					local currentFame = tonumber(state.Fame) or 0
+					state.Fame = math.min(100, currentFame + 10)
 					state.Flags = state.Flags or {}
 					state.Flags.controversial_celebrity = true
 					if state.AddFeed then

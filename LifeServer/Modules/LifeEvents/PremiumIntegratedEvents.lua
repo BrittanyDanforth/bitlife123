@@ -769,12 +769,13 @@ PremiumIntegratedEvents.events = {
 				end,
 			},
 			{
-				-- CRITICAL FIX: Show price!
-				text = "Follow your passion (-$500 income)",
-				effects = { Happiness = 12, Money = -500 },
-				setFlags = { passion_follower = true },
-				feedText = "Money isn't everything. Doing what you love!",
-				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need savings to take pay cut" end,
+				-- CRITICAL FIX: Following passion is about lower income going forward, NOT an upfront cost!
+				-- This represents taking a career that pays less but makes you happier
+				text = "Follow your passion (lower income)",
+				effects = { Happiness = 15 },
+				setFlags = { passion_follower = true, chose_passion_over_money = true },
+				feedText = "Money isn't everything. Doing what you love! Less pay but more purpose.",
+				-- No eligibility - anyone can choose passion over money
 			},
 			-- 🔫 MAFIA PREMIUM OPTION
 			{
@@ -916,8 +917,10 @@ PremiumIntegratedEvents.events = {
 				effects = { Happiness = -10, Health = 5 },
 				feedText = "You gave them what they wanted. Alive is what matters.",
 				onResolve = function(state)
-					local loss = math.min(state.Money or 0, math.random(100, 500))
-					state.Money = (state.Money or 0) - loss
+					-- CRITICAL FIX: Ensure values are numbers for math.min
+					local currentMoney = tonumber(state.Money) or 0
+					local loss = math.min(currentMoney, math.random(100, 500))
+					state.Money = currentMoney - loss
 					state:AddFeed(string.format("🔪 Lost $%d but you're safe.", loss))
 				end,
 			},
@@ -933,8 +936,10 @@ PremiumIntegratedEvents.events = {
 						state:ModifyStat("Health", -5)
 						state:AddFeed("🔪 Escaped! Heart pounding but safe!")
 					else
-						local loss = math.min(state.Money or 0, math.random(200, 800))
-						state.Money = (state.Money or 0) - loss
+						-- CRITICAL FIX: Ensure values are numbers for math.min
+						local currentMoney = tonumber(state.Money) or 0
+						local loss = math.min(currentMoney, math.random(200, 800))
+						state.Money = currentMoney - loss
 						state:ModifyStat("Health", -20)
 						state:ModifyStat("Happiness", -15)
 						state:AddFeed(string.format("🔪 Caught and beaten. Lost $%d and your pride.", loss))
@@ -957,8 +962,10 @@ PremiumIntegratedEvents.events = {
 						state:ModifyStat("Health", -25)
 						state:AddFeed("🔪 Survived but badly hurt. Was it worth it?")
 					else
-						local loss = math.min(state.Money or 0, math.random(300, 1000))
-						state.Money = (state.Money or 0) - loss
+						-- CRITICAL FIX: Ensure values are numbers for math.min
+						local currentMoney = tonumber(state.Money) or 0
+						local loss = math.min(currentMoney, math.random(300, 1000))
+						state.Money = currentMoney - loss
 						state:ModifyStat("Health", -40)
 						state:ModifyStat("Happiness", -20)
 						state:AddFeed(string.format("🔪 Beaten badly. Lost $%d. Hospital bound.", loss))
@@ -1021,7 +1028,7 @@ PremiumIntegratedEvents.events = {
 				end,
 			},
 			{
-				text = "Use public defender (free)",
+				text = "Use public defender",
 				effects = {},
 				feedText = "Getting public defender...",
 				onResolve = function(state)
@@ -2529,8 +2536,9 @@ PremiumIntegratedEvents.events = {
 							state:ModifyStat(statName, delta)
 						else
 							state.Stats = state.Stats or {}
-							state.Stats[statName] = (state.Stats[statName] or 50) + delta
-							state.Stats[statName] = math.max(0, math.min(100, state.Stats[statName]))
+							local currentVal = tonumber(state.Stats[statName]) or 50
+							local newVal = currentVal + (tonumber(delta) or 0)
+							state.Stats[statName] = math.max(0, math.min(100, newVal))
 						end
 					end
 					local function addFeed(text)
@@ -2609,8 +2617,9 @@ PremiumIntegratedEvents.events = {
 							state:ModifyStat(statName, delta)
 						else
 							state.Stats = state.Stats or {}
-							state.Stats[statName] = (state.Stats[statName] or 50) + delta
-							state.Stats[statName] = math.max(0, math.min(100, state.Stats[statName]))
+							local currentVal = tonumber(state.Stats[statName]) or 50
+							local newVal = currentVal + (tonumber(delta) or 0)
+							state.Stats[statName] = math.max(0, math.min(100, newVal))
 						end
 					end
 					local function addFeed(text)
@@ -2704,8 +2713,9 @@ PremiumIntegratedEvents.events = {
 							state:ModifyStat(statName, delta)
 						else
 							state.Stats = state.Stats or {}
-							state.Stats[statName] = (state.Stats[statName] or 50) + delta
-							state.Stats[statName] = math.max(0, math.min(100, state.Stats[statName]))
+							local currentVal = tonumber(state.Stats[statName]) or 50
+							local newVal = currentVal + (tonumber(delta) or 0)
+							state.Stats[statName] = math.max(0, math.min(100, newVal))
 						end
 					end
 					local function addFeed(text)
@@ -2852,8 +2862,9 @@ PremiumIntegratedEvents.events = {
 							state:ModifyStat(statName, delta)
 						else
 							state.Stats = state.Stats or {}
-							state.Stats[statName] = (state.Stats[statName] or 50) + delta
-							state.Stats[statName] = math.max(0, math.min(100, state.Stats[statName]))
+							local currentVal = tonumber(state.Stats[statName]) or 50
+							local newVal = currentVal + (tonumber(delta) or 0)
+							state.Stats[statName] = math.max(0, math.min(100, newVal))
 						end
 					end
 					local function addFeed(text)
@@ -2942,8 +2953,9 @@ PremiumIntegratedEvents.events = {
 							state:ModifyStat(statName, delta)
 						else
 							state.Stats = state.Stats or {}
-							state.Stats[statName] = (state.Stats[statName] or 50) + delta
-							state.Stats[statName] = math.max(0, math.min(100, state.Stats[statName]))
+							local currentVal = tonumber(state.Stats[statName]) or 50
+							local newVal = currentVal + (tonumber(delta) or 0)
+							state.Stats[statName] = math.max(0, math.min(100, newVal))
 						end
 					end
 					local function addFeed(text)
@@ -3074,8 +3086,9 @@ PremiumIntegratedEvents.events = {
 							state:ModifyStat(statName, delta)
 						else
 							state.Stats = state.Stats or {}
-							state.Stats[statName] = (state.Stats[statName] or 50) + delta
-							state.Stats[statName] = math.max(0, math.min(100, state.Stats[statName]))
+							local currentVal = tonumber(state.Stats[statName]) or 50
+							local newVal = currentVal + (tonumber(delta) or 0)
+							state.Stats[statName] = math.max(0, math.min(100, newVal))
 						end
 					end
 					local function addFeed(text)

@@ -77,7 +77,8 @@ events[#events + 1] = {
 	-- CRITICAL FIX #HOMELESS-9: Mark as high priority so it doesn't get lost in pool
 	priority = "high",
 	-- CRITICAL FIX: Can't be evicted if living with family (they don't pay rent!)
-	blockedByFlags = { homeless = true, in_prison = true, couch_surfing = true, living_in_car = true, lives_with_parents = true, living_with_family = true, boomerang_kid = true },
+	-- CRITICAL FIX: Block if housing already changed this year (prevents contradictory events)
+	blockedByFlags = { homeless = true, in_prison = true, couch_surfing = true, living_in_car = true, lives_with_parents = true, living_with_family = true, boomerang_kid = true, housing_changed_this_year = true },
 	
 	choices = {
 		{
@@ -584,6 +585,8 @@ events[#events + 1] = {
 				if math.random() < 0.8 then
 					state.Flags.homeless = nil
 					state.Flags.in_transitional_housing = true
+					-- CRITICAL FIX: Mark housing changed this year
+					state.Flags.housing_changed_this_year = true
 					state:AddFeed("🏠 You have a real roof over your head again!")
 				else
 					state:AddFeed("😔 The program waitlist is too long right now.")
@@ -695,6 +698,8 @@ events[#events + 1] = {
 				state.Flags.homeless = nil
 				state.Flags.has_apartment = true
 				state.Flags.recovering_homeless = true
+				-- CRITICAL FIX: Mark housing changed this year
+				state.Flags.housing_changed_this_year = true
 				state.Money = (state.Money or 0) - math.min(state.Money or 0, 400) -- First month deposit
 				state:AddFeed("🏠 You're no longer homeless! The struggle continues, but you have a home.")
 			end,
@@ -723,6 +728,8 @@ events[#events + 1] = {
 			onResolve = function(state)
 				state.Flags.homeless = nil
 				state.Flags.living_with_family = true
+				-- CRITICAL FIX: Mark housing changed this year
+				state.Flags.housing_changed_this_year = true
 				state:AddFeed("💕 Family gave you another chance. Don't waste it.")
 			end,
 		},
@@ -771,6 +778,8 @@ events[#events + 1] = {
 				state.Money = (state.Money or 0) + donations
 				state.Flags.homeless = nil
 				state.Flags.community_helped = true
+				-- CRITICAL FIX: Mark housing changed this year to prevent conflicting events
+				state.Flags.housing_changed_this_year = true
 				state:AddFeed(string.format("🌟 The community raised $%d for you! You're getting a fresh start!", donations))
 			end,
 		},
@@ -782,6 +791,8 @@ events[#events + 1] = {
 				if math.random() < 0.7 then
 					state.Flags.homeless = nil
 					state.Flags.friend_helping = true
+					-- CRITICAL FIX: Mark housing changed this year
+					state.Flags.housing_changed_this_year = true
 					state.Money = (state.Money or 0) + 400
 					state:AddFeed("👥 They're letting you stay with them until you're stable.")
 				else

@@ -210,7 +210,7 @@ Teen.events = {
 					local names = partnerIsMale 
 						and {"Jake", "Tyler", "Brandon", "Kyle", "Zach", "Dylan", "Josh", "Austin", "Connor", "Trevor"}
 						or {"Emma", "Olivia", "Hannah", "Madison", "Chloe", "Alexis", "Taylor", "Savannah", "Kayla", "Hailey"}
-					local partnerName = names[math.random(1, #names)]
+					local partnerName = names[math.random(1, #names)] or "Someone"
 					state.Relationships.partner = {
 						id = "partner",
 						name = partnerName,
@@ -656,12 +656,12 @@ Teen.events = {
 		oneTime = true,
 		-- CRITICAL FIX: Random promposal outcomes
 		choices = {
-			{
-				text = "Ask my crush with a big promposal ($100)",
-				effects = { Money = -100 },
-				feedText = "You planned an elaborate promposal...",
-				-- CRITICAL FIX: Add eligibility to prevent softlock
-				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Can't afford a fancy promposal ($100 needed). Try a different approach!" end,
+		{
+			-- CRITICAL FIX: Big promposal is optional - there's a free simple ask too!
+			text = "Big elaborate promposal ($100)",
+			effects = { Money = -100 },
+			feedText = "You planned an elaborate promposal...",
+			eligibility = function(state) return (state.Money or 0) >= 100, "💸 Try asking simply instead!" end,
 				onResolve = function(state)
 					local looks = (state.Stats and state.Stats.Looks) or 50
 					local happiness = (state.Stats and state.Stats.Happiness) or 50
@@ -715,16 +715,36 @@ Teen.events = {
 					end
 				end,
 			},
-			{
-				text = "Skip prom entirely",
-				effects = { Happiness = -2, Money = 200 },
-				setFlags = { skipped_prom = true },
-				feedText = "You decided prom wasn't worth the hype.",
-			},
-			{
-				text = "Go alone and own it",
-				effects = { Happiness = 5 },
-				setFlags = { independent = true },
+		{
+			-- CRITICAL FIX: Free option to ask your crush simply
+			text = "Simply ask your crush",
+			effects = {},
+			feedText = "You asked them sincerely...",
+			onResolve = function(state)
+				local looks = (state.Stats and state.Stats.Looks) or 50
+				local roll = math.random()
+				local successChance = 0.40 + (looks / 200)
+				if roll < successChance then
+					if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+					state.Flags = state.Flags or {}
+					state.Flags.prom_date = true
+					if state.AddFeed then state:AddFeed("💃 They said YES! Sometimes simple is best!") end
+				else
+					if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+					if state.AddFeed then state:AddFeed("💃 They said no... but at least you asked!") end
+				end
+			end,
+		},
+		{
+			text = "Skip prom entirely",
+			effects = { Happiness = -2, Money = 200 },
+			setFlags = { skipped_prom = true },
+			feedText = "You decided prom wasn't worth the hype.",
+		},
+		{
+			text = "Go alone and own it",
+			effects = { Happiness = 5 },
+			setFlags = { independent = true },
 				feedText = "You proved you don't need a date to have a great time!",
 			},
 		},
@@ -880,7 +900,7 @@ Teen.events = {
 						local names = partnerIsMale 
 							and {"Ryan", "Tyler", "Brandon", "Kyle", "Zach", "Dylan", "Josh", "Austin", "Connor", "Trevor"}
 							or {"Lily", "Sophie", "Grace", "Chloe", "Zoe", "Bella", "Mia", "Emma", "Ava", "Harper"}
-						local partnerName = names[math.random(1, #names)]
+						local partnerName = names[math.random(1, #names)] or "Someone"
 						state.Relationships.partner = {
 							id = "partner",
 							name = partnerName,
@@ -1481,7 +1501,7 @@ Teen.events = {
 						local names = partnerIsMale 
 							and {"Mason", "Ethan", "Noah", "Liam", "Lucas", "Oliver", "Aiden", "Elijah"}
 							or {"Ava", "Isabella", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn", "Luna"}
-						local partnerName = names[math.random(1, #names)]
+						local partnerName = names[math.random(1, #names)] or "Someone"
 						state.Relationships.partner = {
 							id = "partner",
 							name = partnerName,
@@ -1524,7 +1544,7 @@ Teen.events = {
 					local names = partnerIsMale 
 						and {"Mason", "Ethan", "Noah", "Liam", "Lucas", "Oliver", "Aiden", "Elijah"}
 						or {"Ava", "Isabella", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn", "Luna"}
-					local partnerName = names[math.random(1, #names)]
+					local partnerName = names[math.random(1, #names)] or "Someone"
 					state.Relationships.partner = {
 						id = "partner",
 						name = partnerName,
@@ -2402,7 +2422,8 @@ Teen.events = {
 		},
 	},
 	{
-		id = "viral_moment",
+		-- CRITICAL FIX: Renamed from "viral_moment" to avoid duplicate ID with Adult.lua/CelebrityEvents.lua
+		id = "teen_filmed_viral",
 		title = "Your Video Went VIRAL!",
 		emoji = "📱",
 		text = "Someone filmed you doing something and posted it online. It's blowing up!",
@@ -3499,7 +3520,8 @@ Teen.events = {
 		},
 	},
 	{
-		id = "teen_social_media_drama",
+		-- CRITICAL FIX: Renamed from "teen_social_media_drama" to avoid duplicate ID
+		id = "teen_social_media_explosion",
 		title = "Social Media Explosion!",
 		emoji = "📱",
 		text = "Someone posted something about you online. It's going VIRAL in your school. Your phone is blowing up with notifications.",

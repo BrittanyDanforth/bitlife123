@@ -717,7 +717,8 @@ RandomLifeEvents.events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
 	
 	{
-		id = "random_deja_vu",
+		-- CRITICAL FIX: Renamed from "random_deja_vu" to avoid duplicate ID
+		id = "random_deja_vu_moment",
 		title = "🌀 Déjà Vu",
 		emoji = "🌀",
 		text = "You have an intense feeling of déjà vu. This exact moment feels like you've lived it before.",
@@ -786,7 +787,8 @@ RandomLifeEvents.events = {
 	},
 	
 	{
-		id = "random_wrong_number",
+		-- CRITICAL FIX: Renamed from "random_wrong_number" to avoid duplicate ID
+		id = "random_wrong_number_gary",
 		title = "📱 Wrong Number",
 		emoji = "📱",
 		text = "Someone keeps calling you insisting you're someone named 'Gary' who owes them money.",

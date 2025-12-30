@@ -930,19 +930,21 @@ HealthEvents.events = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "health_diagnosis_cold_flu",
-		title = "🤒 You're Sick: Cold or Flu",
+		-- CRITICAL FIX: Changed title to not look like a "diagnosis" - it's just getting sick
+		title = "🤒 Under the Weather",
 		emoji = "🤒",
 		text = "You've come down with a cold or flu! You woke up feeling terrible - stuffy nose, sore throat, and body aches.",
 		question = "Looks like a cold or flu virus. What do you want to do?",
 		minAge = 3, maxAge = 100,
-		baseChance = 0.35,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.25, -- CRITICAL FIX: Reduced from 0.35 to reduce spam
+		cooldown = 5, -- CRITICAL FIX: Increased from 4 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",
 		tags = { "illness", "cold", "flu", "sick" },
-		isDiagnosisCard = true,
-		diagnosisType = "cold_flu",
+		-- CRITICAL FIX: Removed isDiagnosisCard - this is just a common illness, not a diagnosis
+		-- isDiagnosisCard = true,
+		-- diagnosisType = "cold_flu",
 		
 		choices = {
 		{ text = "Rest at home", effects = { Health = 3, Happiness = -2 }, setFlags = { has_cold = true }, feedText = "🤒 Resting at home. Should recover in a week." },
@@ -957,8 +959,8 @@ HealthEvents.events = {
 		text = "After testing, the doctor has diagnosed you with diabetes.",
 		question = "Your diagnosis: TYPE 2 DIABETES\n\n🩸 Blood Sugar: Elevated\n⚠️ Severity: Chronic Condition\n💊 Treatment: Lifestyle changes + medication\n\nThis is a lifelong condition that requires management.",
 		minAge = 25, maxAge = 100,
-		baseChance = 0.25,
-		cooldown = 40, -- Only diagnose once
+		baseChance = 0.15, -- CRITICAL FIX: Reduced from 0.25 - diagnosis shouldn't be common
+		cooldown = 50, -- CRITICAL FIX: Increased from 40
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",
@@ -967,21 +969,22 @@ HealthEvents.events = {
 		diagnosisType = "diabetes",
 		oneTime = true,
 		maxOccurrences = 1,
-		-- CRITICAL FIX: Only show if player visited doctor or has symptoms
+		-- CRITICAL FIX: STRICT requirement - MUST visit doctor, no random popups!
+		-- User complained: "RANDOM DIAGNOSIS POPPING UP BUT I DIDNT GO TO DOCTOR"
 		eligibility = function(state)
 			local health = (state.Stats and state.Stats.Health) or 50
 			local flags = state.Flags or {}
 			-- Already have diabetes? Don't show again
 			if flags.diabetes then return false end
-			-- CRITICAL FIX: Must have visited doctor OR have symptoms
+			-- CRITICAL FIX: MUST have visited doctor - removed health < 40 as a bypass!
+			-- Diagnoses should ONLY come from doctor visits, not random popups!
 			local visitedDoctor = flags.went_to_doctor or flags.doctor_checkup or flags.recent_checkup
-			local hasSymptoms = flags.feeling_sick or flags.frequent_urination or flags.excessive_thirst
-				or flags.unexplained_weight_loss or flags.fatigue or health < 40
-			-- Only show if visited doctor with low health OR has specific symptoms
-			if not visitedDoctor and not hasSymptoms then
-				return false
+				or flags.annual_checkup or flags.health_screening
+			if not visitedDoctor then
+				return false -- NO diagnosis without doctor visit!
 			end
-			return health < 60
+			-- Only diagnose if health is concerning during checkup
+			return health < 55
 		end,
 		
 		choices = {
@@ -990,6 +993,13 @@ HealthEvents.events = {
 				effects = { Happiness = -5, Health = -10 },
 				setFlags = { diabetes = true, chronic_illness = true, on_medication = true },
 				feedText = "💉 Diabetes diagnosis. Started insulin and lifestyle changes.",
+				-- CRITICAL FIX: Clear doctor visit flags after diagnosis so player needs new visit for next diagnosis
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.went_to_doctor = nil
+					state.Flags.doctor_checkup = nil
+					state.Flags.recent_checkup = nil
+				end,
 			},
 			{
 				text = "Get second opinion ($200)",
@@ -1000,6 +1010,10 @@ HealthEvents.events = {
 					state.Flags = state.Flags or {}
 					state.Flags.diabetes = true
 					state.Flags.chronic_illness = true
+					-- CRITICAL FIX: Clear doctor visit flags
+					state.Flags.went_to_doctor = nil
+					state.Flags.doctor_checkup = nil
+					state.Flags.recent_checkup = nil
 				end,
 			},
 			{
@@ -1007,6 +1021,13 @@ HealthEvents.events = {
 				effects = { Health = -15 },
 				setFlags = { diabetes = true, untreated_condition = true },
 				feedText = "💉 Ignoring diabetes is dangerous. Condition will worsen.",
+				-- CRITICAL FIX: Clear doctor visit flags after diagnosis
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.went_to_doctor = nil
+					state.Flags.doctor_checkup = nil
+					state.Flags.recent_checkup = nil
+				end,
 			},
 		},
 	},
@@ -1030,7 +1051,7 @@ HealthEvents.events = {
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		-- CRITICAL FIX #530: Heart disease diagnosis REQUIRES doctor visit!
 		-- User complaint: "DIAGNOSIS SHOWING UP BUT I DIDNT GO TO DOCTOR"
-		-- Must have: went_to_doctor OR doctor_checkup OR recent_checkup flag
+		-- STRICTER: MUST visit doctor - no health-based bypass!
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		eligibility = function(state)
 			local health = (state.Stats and state.Stats.Health) or 50
@@ -1038,12 +1059,14 @@ HealthEvents.events = {
 			local flags = state.Flags or {}
 			-- Already have heart disease? Don't show again
 			if flags.heart_disease then return false end
-			-- CRITICAL FIX: Must have visited doctor OR have severe symptoms
+			-- CRITICAL FIX: MUST have visited doctor OR been hospitalized
+			-- Removed health < 30 bypass - no random diagnoses!
 			local visitedDoctor = flags.went_to_doctor or flags.doctor_checkup or flags.recent_checkup
-			local hasSymptoms = flags.chest_pain or flags.shortness_of_breath or flags.heart_palpitations 
-				or flags.feeling_faint or flags.hospitalized or health < 30
-			if not visitedDoctor and not hasSymptoms then
-				return false
+				or flags.annual_checkup or flags.health_screening or flags.hospitalized
+			-- Only allow severe physical symptoms that would REQUIRE medical attention
+			local severeSymptoms = flags.chest_pain or flags.heart_attack_scare or flags.collapsed
+			if not visitedDoctor and not severeSymptoms then
+				return false -- NO diagnosis without medical visit!
 			end
 			return (age > 45 and health < 55)
 		end,
@@ -1055,6 +1078,13 @@ HealthEvents.events = {
 				setFlags = { heart_disease = true, chronic_illness = true, on_heart_medication = true },
 				feedText = "❤️‍🩹 Heart disease diagnosed. On medication and strict diet now.",
 				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Can't afford treatment ($500 needed)" end,
+				-- CRITICAL FIX: Clear doctor visit flags after diagnosis
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.went_to_doctor = nil
+					state.Flags.doctor_checkup = nil
+					state.Flags.recent_checkup = nil
+				end,
 			},
 			{
 				text = "Get bypass surgery if needed ($5,000)",
@@ -1062,8 +1092,27 @@ HealthEvents.events = {
 				setFlags = { heart_disease = true, had_heart_surgery = true },
 				feedText = "❤️‍🩹 Underwent heart surgery. Long recovery ahead.",
 				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Can't afford surgery ($5,000 needed)" end,
+				-- CRITICAL FIX: Clear doctor visit flags after diagnosis
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.went_to_doctor = nil
+					state.Flags.doctor_checkup = nil
+					state.Flags.recent_checkup = nil
+				end,
 			},
-			{ text = "Try lifestyle changes only (free but risky)", effects = { Happiness = -5, Health = -20 }, setFlags = { heart_disease = true, untreated_heart_condition = true }, feedText = "❤️‍🩹 No treatment. Trying diet and exercise only. Very risky choice." },
+			{ 
+				text = "Try lifestyle changes only (free but risky)", 
+				effects = { Happiness = -5, Health = -20 }, 
+				setFlags = { heart_disease = true, untreated_heart_condition = true }, 
+				feedText = "❤️‍🩹 No treatment. Trying diet and exercise only. Very risky choice.",
+				-- CRITICAL FIX: Clear doctor visit flags after diagnosis
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.went_to_doctor = nil
+					state.Flags.doctor_checkup = nil
+					state.Flags.recent_checkup = nil
+				end,
+			},
 			-- ⚡ GOD MODE PREMIUM OPTION
 			{
 				text = "⚡ [God Mode] Cure heart disease",
@@ -1072,6 +1121,13 @@ HealthEvents.events = {
 				requiresGamepass = "GOD_MODE",
 				gamepassEmoji = "⚡",
 				feedText = "⚡ GOD MODE ACTIVATED! Your heart is now perfectly healthy! Miracle!",
+				-- CRITICAL FIX: Clear doctor visit flags
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.went_to_doctor = nil
+					state.Flags.doctor_checkup = nil
+					state.Flags.recent_checkup = nil
+				end,
 			},
 		},
 	},
@@ -1093,22 +1149,24 @@ HealthEvents.events = {
 		oneTime = true,
 		maxOccurrences = 1,
 		-- ═══════════════════════════════════════════════════════════════════════════════
-		-- CRITICAL FIX #531: Cancer diagnosis REQUIRES doctor visit or screening!
+		-- CRITICAL FIX #531: Cancer diagnosis ABSOLUTELY REQUIRES medical visit!
 		-- User complaint: "DIAGNOSIS SHOWING UP BUT I DIDNT GO TO DOCTOR"
 		-- This is a MAJOR diagnosis - should NEVER pop up randomly!
+		-- STRICTEST CHECK: Doctor/screening REQUIRED, symptoms alone not enough!
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		eligibility = function(state)
 			local flags = state.Flags or {}
 			-- Already have cancer or survived? Don't show again
 			if flags.has_cancer or flags.cancer_survivor then return false end
-			-- CRITICAL FIX: Must have visited doctor OR had screening
-			local visitedDoctor = flags.went_to_doctor or flags.doctor_checkup or flags.recent_checkup
-			local hadScreening = flags.cancer_screening or flags.biopsy or flags.mammogram 
-				or flags.colonoscopy or flags.blood_work
-			local hasSevereSymptoms = flags.unexplained_weight_loss or flags.persistent_cough 
-				or flags.found_lump or flags.unusual_bleeding or flags.severe_fatigue
-			if not visitedDoctor and not hadScreening and not hasSevereSymptoms then
-				return false
+			-- CRITICAL FIX: MUST have visited doctor OR had specific screening
+			-- Symptoms alone should NOT trigger diagnosis - need medical confirmation!
+			local hadMedicalVisit = flags.went_to_doctor or flags.doctor_checkup or flags.recent_checkup
+				or flags.annual_checkup or flags.health_screening or flags.hospitalized
+			local hadCancerScreening = flags.cancer_screening or flags.biopsy or flags.mammogram 
+				or flags.colonoscopy or flags.blood_work or flags.MRI or flags.CT_scan
+			-- ONLY medical visits/screenings can trigger - NO symptom bypasses!
+			if not hadMedicalVisit and not hadCancerScreening then
+				return false -- Absolutely NO random cancer diagnoses!
 			end
 			return true
 		end,
@@ -1126,6 +1184,10 @@ HealthEvents.events = {
 					-- Patient can try again at doctor later
 					local roll = math.random()
 					state.Flags = state.Flags or {}
+					-- CRITICAL FIX: Clear doctor visit flags after diagnosis
+					state.Flags.went_to_doctor = nil
+					state.Flags.doctor_checkup = nil
+					state.Flags.recent_checkup = nil
 					if roll < 0.40 then
 						-- Treatment showing early promise
 						state.Flags.treatment_responding = true
@@ -1152,6 +1214,10 @@ HealthEvents.events = {
 				onResolve = function(state)
 					local roll = math.random()
 					state.Flags = state.Flags or {}
+					-- CRITICAL FIX: Clear doctor visit flags after diagnosis
+					state.Flags.went_to_doctor = nil
+					state.Flags.doctor_checkup = nil
+					state.Flags.recent_checkup = nil
 					state.Flags.has_cancer = true
 					state.Flags.cancer = true
 					if roll < 0.15 then
@@ -1176,6 +1242,13 @@ HealthEvents.events = {
 				effects = { Happiness = -30, Health = -40 },
 				setFlags = { has_cancer = true, terminal_illness = true, refusing_treatment = true },
 				feedText = "🎗️ Choosing to live remaining time without treatment.",
+				-- CRITICAL FIX: Clear doctor visit flags after diagnosis
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.went_to_doctor = nil
+					state.Flags.doctor_checkup = nil
+					state.Flags.recent_checkup = nil
+				end,
 			},
 			-- ⚡ GOD MODE PREMIUM OPTION
 			{
@@ -1185,6 +1258,13 @@ HealthEvents.events = {
 				requiresGamepass = "GOD_MODE",
 				gamepassEmoji = "⚡",
 				feedText = "⚡ GOD MODE ACTIVATED! The cancer has completely vanished! Miraculous recovery!",
+				-- CRITICAL FIX: Clear doctor visit flags
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.went_to_doctor = nil
+					state.Flags.doctor_checkup = nil
+					state.Flags.recent_checkup = nil
+				end,
 			},
 		},
 	},
@@ -1202,10 +1282,23 @@ HealthEvents.events = {
 		ageBand = "any",
 		category = "health",
 		tags = { "cancer", "treatment", "followup" },
-		-- Only show for people actively fighting cancer
+		-- CRITICAL FIX: STRICT eligibility - MUST have cancer diagnosis AND be in treatment!
+		-- User complained: "FOR CANCER TREATMENT IT POPPED UP AND I DONT HAVE CANCER THO MY GOD I NEVER GOT DIAGNOSED"
+		-- This MUST require both has_cancer AND in_treatment flags!
+		requiresFlags = { has_cancer = true, in_treatment = true },
+		blockedByFlags = { cancer_survivor = true, terminal_illness = true },
 		eligibility = function(state)
 			local flags = state.Flags or {}
-			return flags.has_cancer and flags.in_treatment and not flags.cancer_survivor and not flags.terminal_illness
+			-- TRIPLE CHECK: Must have ALL of these conditions:
+			-- 1. has_cancer flag (from diagnosis event)
+			-- 2. in_treatment flag (from choosing treatment)
+			-- 3. NOT already a survivor
+			-- 4. NOT terminal
+			if not flags.has_cancer then return false end
+			if not flags.in_treatment then return false end
+			if flags.cancer_survivor then return false end
+			if flags.terminal_illness then return false end
+			return true
 		end,
 		
 		choices = {
@@ -1317,22 +1410,26 @@ HealthEvents.events = {
 		oneTime = true,
 		maxOccurrences = 1,
 		-- ═══════════════════════════════════════════════════════════════════════════════
-		-- CRITICAL FIX #532: Depression diagnosis requires VERY low happiness or doctor visit
-		-- Changed the text to say "After evaluation" so it makes sense narratively
+		-- CRITICAL FIX #532: Depression diagnosis REQUIRES professional evaluation!
+		-- The text says "After evaluation" - MUST have seen a doctor/therapist!
+		-- REMOVED happiness < 25 bypass - no random diagnoses!
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		eligibility = function(state)
 			local happiness = (state.Stats and state.Stats.Happiness) or 50
 			local flags = state.Flags or {}
 			-- Already have depression? Don't show again
 			if flags.depression then return false end
-			-- Need either: doctor visit OR VERY severe symptoms (happiness below 25)
+			-- CRITICAL FIX: MUST have seen a professional - text says "After evaluation"!
+			-- Removed happiness bypass - that was causing random popups!
 			local visitedDoctor = flags.went_to_doctor or flags.doctor_checkup or flags.recent_checkup
+				or flags.annual_checkup or flags.hospitalized
 			local visitedTherapist = flags.therapy_session or flags.saw_therapist or flags.mental_health_eval
-			local severeSymptoms = happiness < 25 or flags.suicidal_thoughts or flags.cant_get_out_of_bed
-			if not visitedDoctor and not visitedTherapist and not severeSymptoms then
-				return false
+				or flags.counseling or flags.psychiatrist
+			if not visitedDoctor and not visitedTherapist then
+				return false -- NO random diagnoses - must see professional!
 			end
-			return happiness < 35
+			-- Also need to actually be struggling
+			return happiness < 40
 		end,
 		
 		choices = {
@@ -1378,20 +1475,25 @@ HealthEvents.events = {
 		oneTime = true,
 		maxOccurrences = 1,
 		-- ═══════════════════════════════════════════════════════════════════════════════
-		-- CRITICAL FIX #533: Anxiety diagnosis requires doctor/therapist or severe symptoms
+		-- CRITICAL FIX #533: Anxiety diagnosis REQUIRES professional evaluation!
+		-- The text says "evaluated by a mental health professional" - MUST have seen one!
+		-- REMOVED symptom bypasses - no random diagnoses!
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		eligibility = function(state)
 			local flags = state.Flags or {}
 			-- Already have anxiety? Don't show again
 			if flags.anxiety then return false end
-			-- Need either: doctor/therapist visit OR explicit panic attacks
+			-- CRITICAL FIX: MUST have seen a professional - text says "evaluated"!
+			-- Removed panic_attacks bypass - need professional diagnosis!
 			local visitedDoctor = flags.went_to_doctor or flags.doctor_checkup or flags.recent_checkup
+				or flags.annual_checkup or flags.hospitalized
 			local visitedTherapist = flags.therapy_session or flags.saw_therapist or flags.mental_health_eval
-			local hasSymptoms = flags.panic_attacks or flags.severe_anxiety or flags.anxiety_attack
-			if not visitedDoctor and not visitedTherapist and not hasSymptoms then
-				return false
+				or flags.counseling or flags.psychiatrist
+			if not visitedDoctor and not visitedTherapist then
+				return false -- NO random diagnoses - must see professional!
 			end
-			return flags.stressed or flags.panic_attacks or flags.nervous
+			-- Also should show some anxiety indicators
+			return flags.stressed or flags.panic_attacks or flags.nervous or flags.anxious
 		end,
 		
 		choices = {
@@ -1430,19 +1532,21 @@ HealthEvents.events = {
 		isDiagnosisCard = true,
 		diagnosisType = "infection",
 		-- ═══════════════════════════════════════════════════════════════════════════════
-		-- CRITICAL FIX #534: Infection diagnosis requires being sick or doctor visit
+		-- CRITICAL FIX #534: Infection diagnosis requires doctor visit or being explicitly sick
 		-- User complaint: "DIAGNOSIS SHOWING UP BUT I DIDNT GO TO DOCTOR"
+		-- FIXED: Removed lowHealth bypass - need actual symptoms or doctor visit!
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		eligibility = function(state)
 			local flags = state.Flags or {}
-			local health = (state.Stats and state.Stats.Health) or 50
 			-- Currently recovering? Don't show again
 			if flags.recovering_from_infection then return false end
-			-- Must have: visited doctor, OR been sick, OR have low health
+			-- CRITICAL FIX: Must have visited doctor OR have explicit illness symptoms
+			-- Removed health < 40 bypass - that was causing random popups!
 			local visitedDoctor = flags.went_to_doctor or flags.doctor_checkup or flags.recent_checkup
-			local beenSick = flags.feeling_sick or flags.has_cold or flags.prolonged_illness or flags.fever
-			local lowHealth = health < 40
-			return visitedDoctor or beenSick or lowHealth
+				or flags.hospitalized
+			local hasExplicitSymptoms = flags.feeling_sick or flags.has_cold or flags.prolonged_illness 
+				or flags.fever or flags.flu
+			return visitedDoctor or hasExplicitSymptoms
 		end,
 		
 		choices = {
@@ -2078,7 +2182,9 @@ HealthEvents.events[#HealthEvents.events + 1] = {
 				if roll <= 25 then
 					-- NEW TREATMENT WORKS - CONDITION REMISSION!
 					state.Stats = state.Stats or {}
-					state.Stats.Health = math.min(100, (state.Stats.Health or 50) + 20)
+					-- CRITICAL FIX: Ensure numbers for math.min
+					local currentHealth = tonumber(state.Stats.Health) or 50
+					state.Stats.Health = math.min(100, currentHealth + 20)
 					state.Flags = state.Flags or {}
 					state.Flags.condition_in_remission = true
 					-- Chance to clear the chronic flag
@@ -2096,7 +2202,9 @@ HealthEvents.events[#HealthEvents.events + 1] = {
 				elseif roll <= 60 then
 					-- Some improvement
 					state.Stats = state.Stats or {}
-					state.Stats.Health = math.min(100, (state.Stats.Health or 50) + 5)
+					-- CRITICAL FIX: Ensure numbers for math.min
+					local currentHealth = tonumber(state.Stats.Health) or 50
+					state.Stats.Health = math.min(100, currentHealth + 5)
 					if state.AddFeed then
 						state:AddFeed("🏥 New medication helping a bit. Slow progress but hopeful.")
 					end
@@ -2118,14 +2226,18 @@ HealthEvents.events[#HealthEvents.events + 1] = {
 				if roll <= 15 then
 					-- Actually worked (rare)
 					state.Stats = state.Stats or {}
-					state.Stats.Health = math.min(100, (state.Stats.Health or 50) + 8)
+					-- CRITICAL FIX: Ensure numbers for math.min
+					local currentHealth = tonumber(state.Stats.Health) or 50
+					state.Stats.Health = math.min(100, currentHealth + 8)
 					if state.AddFeed then
 						state:AddFeed("🌿 Surprisingly, the alternative approach helped! You feel better!")
 					end
 				elseif roll <= 50 then
 					-- Placebo effect
 					state.Stats = state.Stats or {}
-					state.Stats.Happiness = math.min(100, (state.Stats.Happiness or 50) + 5)
+					-- CRITICAL FIX: Ensure numbers for math.min
+					local currentHappiness = tonumber(state.Stats.Happiness) or 50
+					state.Stats.Happiness = math.min(100, currentHappiness + 5)
 					if state.AddFeed then
 						state:AddFeed("🌿 Hard to say if it worked, but you feel more positive.")
 					end
@@ -2205,7 +2317,9 @@ HealthEvents.events[#HealthEvents.events + 1] = {
 				if roll <= 20 then
 					-- REMISSION possible with Type 2
 					state.Stats = state.Stats or {}
-					state.Stats.Health = math.min(100, (state.Stats.Health or 50) + 15)
+					-- CRITICAL FIX: Ensure numbers for math.min
+					local currentHealth = tonumber(state.Stats.Health) or 50
+					state.Stats.Health = math.min(100, currentHealth + 15)
 					state.Flags = state.Flags or {}
 					state.Flags.diabetes_remission = true
 					if state.AddFeed then
@@ -2213,7 +2327,9 @@ HealthEvents.events[#HealthEvents.events + 1] = {
 					end
 				elseif roll <= 60 then
 					state.Stats = state.Stats or {}
-					state.Stats.Health = math.min(100, (state.Stats.Health or 50) + 5)
+					-- CRITICAL FIX: Ensure numbers for math.min
+					local currentHealth = tonumber(state.Stats.Health) or 50
+					state.Stats.Health = math.min(100, currentHealth + 5)
 					if state.AddFeed then
 						state:AddFeed("💉 New medication helping. Fewer spikes in blood sugar.")
 					end

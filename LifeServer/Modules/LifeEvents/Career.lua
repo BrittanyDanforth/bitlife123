@@ -358,7 +358,7 @@ Career.events = {
 				feedText = "🛤️ You're starting over in a new field! Invested in training!",
 			},
 			{ 
-				text = "Self-teach and pivot (free)", 
+				text = "Self-teach and pivot", 
 				effects = { Smarts = 3, Happiness = 3 }, 
 				setFlags = { career_changer = true }, 
 				feedText = "🛤️ Self-teaching with free online courses. Slower but free!",
@@ -1083,7 +1083,7 @@ Career.events = {
 					local names = partnerIsMale 
 						and {"Brian", "Kevin", "Scott", "Greg", "Craig", "Derek", "Todd", "Chad", "Brett", "Lance"}
 						or {"Heather", "Dana", "Kristen", "Jen", "Monica", "Paula", "Stacy", "Allison", "Brittany", "Shannon"}
-					local partnerName = names[math.random(1, #names)]
+					local partnerName = names[math.random(1, #names)] or "Someone"
 					state.Relationships.partner = {
 						id = "partner",
 						name = partnerName,
@@ -1116,7 +1116,7 @@ Career.events = {
 					local names = partnerIsMale 
 						and {"Brian", "Kevin", "Scott", "Greg", "Craig", "Derek", "Todd", "Chad", "Brett", "Lance"}
 						or {"Heather", "Dana", "Kristen", "Jen", "Monica", "Paula", "Stacy", "Allison", "Brittany", "Shannon"}
-					local partnerName = names[math.random(1, #names)]
+					local partnerName = names[math.random(1, #names)] or "Someone"
 					state.Relationships.partner = {
 						id = "partner",
 						name = partnerName,

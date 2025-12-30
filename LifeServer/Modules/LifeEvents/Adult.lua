@@ -980,7 +980,7 @@ Adult.events = {
 					local names = partnerIsMale 
 						and {"Mike", "Chris", "Jason", "Brian", "Matt", "Steve", "Dave", "Tom", "Nick", "Ben"}
 						or {"Jessica", "Ashley", "Sarah", "Emily", "Lauren", "Amanda", "Megan", "Nicole", "Brittany", "Rachel"}
-					local partnerName = names[math.random(1, #names)]
+					local partnerName = names[math.random(1, #names)] or "Someone"
 					state.Relationships.partner = {
 						id = "partner",
 						name = partnerName,
@@ -993,7 +993,7 @@ Adult.events = {
 						metThrough = "dating_app",
 					}
 					if state.AddFeed then
-						state:AddFeed(string.format("📱 Swipe right on %s turned into real love!", partnerName))
+						state:AddFeed(string.format("📱 Swipe right on %s turned into real love!", tostring(partnerName)))
 					end
 				end,
 			},
@@ -1188,7 +1188,7 @@ Adult.events = {
 					local isBoy = math.random() > 0.5
 					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason", "Lucas"} 
 						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia", "Amelia"}
-					local childName = names[math.random(1, #names)]
+					local childName = names[math.random(1, #names)] or "Baby"
 					local childId = "child_" .. tostring(childCount)
 					state.Relationships[childId] = {
 						id = childId,
@@ -1217,7 +1217,7 @@ Adult.events = {
 					local isBoy = math.random() > 0.5
 					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason"} 
 						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia"}
-					local childName = names[math.random(1, #names)]
+					local childName = names[math.random(1, #names)] or "Baby"
 					local childId = "child_" .. tostring(childCount)
 					state.Relationships[childId] = {
 						id = childId,
@@ -1246,7 +1246,7 @@ Adult.events = {
 					local isBoy = math.random() > 0.5
 					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason"} 
 						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia"}
-					local childName = names[math.random(1, #names)]
+					local childName = names[math.random(1, #names)] or "Baby"
 					local childId = "child_" .. tostring(childCount)
 					state.Relationships[childId] = {
 						id = childId,
@@ -1276,7 +1276,7 @@ Adult.events = {
 					local isBoy = math.random() > 0.5
 					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason"} 
 						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia"}
-					local childName = names[math.random(1, #names)]
+					local childName = names[math.random(1, #names)] or "Baby"
 					local childId = "child_" .. tostring(childCount)
 					state.Relationships[childId] = {
 						id = childId,
@@ -1305,7 +1305,7 @@ Adult.events = {
 					local isBoy = math.random() > 0.5
 					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason"} 
 						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia"}
-					local childName = names[math.random(1, #names)]
+					local childName = names[math.random(1, #names)] or "Baby"
 					local childId = "child_" .. tostring(childCount)
 					state.Relationships[childId] = {
 						id = childId,
@@ -1392,7 +1392,7 @@ Adult.events = {
 						state.CareerInfo.promotions = (state.CareerInfo.promotions or 0) + 1
 						state.CareerInfo.raises = (state.CareerInfo.raises or 0) + 1
 						if state.AddFeed then
-							state:AddFeed(string.format("📈 PROMOTED! Salary now $%d (+25%%)!", state.CurrentJob.salary))
+							state:AddFeed(string.format("📈 PROMOTED! Salary now $%d (+25%%)!", state.CurrentJob.salary or 0))
 						end
 					end
 				end,
@@ -1410,7 +1410,7 @@ Adult.events = {
 						state.CareerInfo = state.CareerInfo or {}
 						state.CareerInfo.promotions = (state.CareerInfo.promotions or 0) + 1
 						if state.AddFeed then
-							state:AddFeed(string.format("📈 Relocated for the promotion! New salary: $%d", state.CurrentJob.salary))
+							state:AddFeed(string.format("📈 Relocated for the promotion! New salary: $%d", state.CurrentJob.salary or 0))
 						end
 					end
 				end,
@@ -1428,7 +1428,7 @@ Adult.events = {
 						state.CareerInfo = state.CareerInfo or {}
 						state.CareerInfo.promotions = (state.CareerInfo.promotions or 0) + 1
 						if state.AddFeed then
-							state:AddFeed(string.format("📈 Manager now! Salary: $%d. Time to lead.", state.CurrentJob.salary))
+							state:AddFeed(string.format("📈 Manager now! Salary: $%d. Time to lead.", state.CurrentJob.salary or 0))
 						end
 					end
 				end,
@@ -1974,7 +1974,7 @@ Adult.events = {
 				feedText = "📚 You're never too old to learn something new!",
 			},
 			{ 
-				text = "Learn online (free)", 
+				text = "Learn online", 
 				effects = { Happiness = 5, Smarts = 3 },
 				setFlags = { lifelong_learner = true }, 
 				feedText = "📚 Free online courses! Self-taught and proud!",
@@ -3287,24 +3287,11 @@ Adult.events = {
 		},
 	},
 	
-	-- UNEXPECTED INHERITANCE
-	{
-		id = "unexpected_inheritance",
-		title = "Surprise Inheritance",
-		emoji = "💰",
-		text = "A distant relative you barely knew passed away and left you in their will!",
-		question = "What did you inherit?",
-		minAge = 25, maxAge = 70,
-		baseChance = 0.15,
-		oneTime = true,
-		maxOccurrences = 1,
-		choices = {
-			{ text = "A substantial sum of money", effects = { Happiness = 20, Money = 100000 }, feedText = "💰 $100,000! Life-changing money!" },
-			{ text = "A modest amount", effects = { Happiness = 10, Money = 15000 }, feedText = "💵 $15,000 - enough for something nice." },
-			{ text = "A property in need of work ($5,000)", effects = { Happiness = 8, Money = -5000 }, setFlags = { inherited_property = true }, feedText = "🏚️ A fixer-upper. Could be worth it!", eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 for repairs" end },
-			{ text = "Just sentimental items", effects = { Happiness = 5 }, setFlags = { inherited_heirlooms = true }, feedText = "📦 Not valuable, but meaningful." },
-		},
-	},
+	-- REMOVED: OLD Inheritance event that let player CHOOSE what they inherit
+	-- This was BAD design - inheritance should be a SURPRISE, not a choice!
+	-- The fixed version is below at id "unexpected_inheritance_surprise"
+	-- User complained: "FIX THE SURPRISE INHERITANCE TO BE AN ACTUAL SURPRISE NOT LET ME CHOOSE"
+	-- Also: "A HOUSE THAT NEEDS WORKING ON AND I LOSE 5K?? THATS DUMB"
 	
 	-- HEALTH SCARE
 	{
@@ -3369,7 +3356,8 @@ Adult.events = {
 	-- These events make adult life more interesting and keep players hooked
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "viral_moment",
+		-- CRITICAL FIX: Renamed from "viral_moment" to avoid duplicate ID
+		id = "adult_viral_fame",
 		title = "🌟 Viral Fame!",
 		emoji = "📱",
 		text = "Something you posted online has gone VIRAL! Your phone is blowing up with notifications. Millions of people are watching, sharing, commenting...",
