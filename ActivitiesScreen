@@ -5371,7 +5371,13 @@ end
 -- User complaint: "ensure mafia and royalty tab works greatly and isnt boring"
 -- Now these activities will show proper event cards with choices like regular activities!
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Only activities with proper templates should show event cards!
+-- Activities without templates will show simple result popups instead
+-- This prevents "generic" boring event cards that look half-baked
+-- ═══════════════════════════════════════════════════════════════════════════════
 local FULL_EVENT_ACTIVITIES = {
+	-- These ALL have matching templates in ActivityEventTemplates
 	gym = true,
 	meditate = true,
 	party = true,
@@ -5381,19 +5387,12 @@ local FULL_EVENT_ACTIVITIES = {
 	nightclub = true,
 	yoga = true,
 	spa = true,
-	salon = true,
 	run = true,
-	host_party = true,
-	hangout = true,
 	concert = true,
 	movies = true,
-	tv = true,
-	games = true,
-	arcade = true,
-	karaoke = true,
 	martial_arts = true,
-	-- CRITICAL FIX: Medical activities should be full event cards like BitLife!
-	-- User complaint: "DOCTOR VISIT SHOULD BE LIKE BITLIFE"
+	beach = true,
+	-- Medical activities with proper templates
 	doctor = true,
 	doctor_visit = true,
 	dentist = true,
@@ -6813,43 +6812,34 @@ local ActivityEventTemplates = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- MEDICAL & WELLNESS ACTIVITIES
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX: BitLife-style Doctor Visit!
-	-- User complaint: "DOCTOR VISIT SHOULD BE LIKE BITLIFE CHECK UP ON UR HEALTH"
+	-- MEDICAL ACTIVITIES - Simple, clean templates with NO hidden costs!
+	-- All choices are FREE once you've paid for the activity itself
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	doctor = {
 		{
-			title = "🩺 Doctor's Office",
+			title = "🩺 Doctor's Visit",
 			emoji = "🩺",
 			texts = {
-				"You arrive at the doctor's office for your appointment.",
-				"The nurse takes your vitals before the doctor comes in.",
-				"The waiting room is full, but they call your name quickly.",
+				"The doctor sees you for your appointment.",
+				"Time for your checkup!",
+				"The nurse takes your vitals. Everything looks good.",
 			},
-			question = "What would you like the doctor to check?",
 			choices = {
-				{ text = "🔍 General Health Check", feed = "The doctor examined you thoroughly. Everything looks good!", checkHealth = true },
-				{ text = "❤️ Check Heart", feed = "Your heart sounds healthy. Keep up the good work!", checkHeart = true },
-				{ text = "🩸 Blood Work", feed = "Your blood test results came back normal.", checkBlood = true },
-				{ text = "🧠 Mental Health Screen", feed = "The doctor discussed your mental wellbeing.", checkMental = true },
+				{ text = "👍 Thanks, doc!", feed = "The doctor gave you a clean bill of health! +8 Health" },
 			},
 		},
 	},
 	doctor_visit = {
 		{
-			title = "🏥 Full Medical Checkup",
+			title = "🏥 Full Checkup",
 			emoji = "🏥",
 			texts = {
-				"Time for your comprehensive annual checkup.",
-				"The doctor is ready to give you a full examination.",
-				"A thorough health screening to catch anything early.",
+				"You get a comprehensive health screening.",
+				"The doctor runs all the standard tests.",
+				"Time for your annual physical!",
 			},
-			question = "The doctor asks what concerns you most:",
 			choices = {
-				{ text = "🔬 Full Body Scan", feed = "Complete head-to-toe examination complete. You're in good health!" },
-				{ text = "💊 Check Current Medications", feed = "Your medications are working well. No changes needed." },
-				{ text = "🏃 Fitness Assessment", feed = "Your fitness levels are looking good!" },
-				{ text = "🧬 Genetic Testing", feed = "No concerning genetic markers found." },
+				{ text = "👍 Great to know!", feed = "Everything checked out fine! You're healthy. +8 Health" },
 			},
 		},
 	},
@@ -6858,65 +6848,54 @@ local ActivityEventTemplates = {
 			title = "🏨 Hospital Treatment",
 			emoji = "🏨",
 			texts = {
-				"You check into the hospital for treatment.",
-				"The medical team is ready to help you recover.",
-				"Modern medicine is here to help!",
+				"The medical team takes excellent care of you.",
+				"Modern medicine works its magic.",
+				"You're in good hands at the hospital.",
 			},
-			question = "What treatment do you need?",
 			choices = {
-				{ text = "💉 IV Treatment", feed = "The fluids and medication are making you feel better!" },
-				{ text = "🩹 Wound Care", feed = "The medical staff patched you up nicely." },
-				{ text = "💊 Medication Adjustment", feed = "Your treatment plan has been optimized." },
-				{ text = "🏥 Overnight Observation", feed = "You're stable and recovering well." },
+				{ text = "🙏 Thank you!", feed = "The treatment worked! You're feeling much better. +25 Health" },
 			},
 		},
 	},
 	get_surgery = {
 		{
-			title = "🔪 Surgery",
+			title = "🔪 Surgery Complete",
 			emoji = "🔪",
 			texts = {
-				"You're being prepped for surgery.",
-				"The surgical team is ready. Don't worry, you're in good hands.",
-				"Modern surgery has come a long way. You'll be fine!",
+				"The surgery was a success!",
+				"You wake up from anesthesia feeling groggy but alive.",
+				"The surgical team did an excellent job.",
 			},
-			question = "Type of procedure:",
 			choices = {
-				{ text = "🔬 Minor Procedure", feed = "The surgery went smoothly! Quick recovery expected." },
-				{ text = "❤️ Corrective Surgery", feed = "The operation was a success! You'll feel much better soon." },
-				{ text = "🩺 Exploratory Surgery", feed = "The doctors found and fixed the issue. All clear!" },
+				{ text = "😌 What a relief!", feed = "Full recovery expected! +40 Health" },
 			},
 		},
 	},
 	chiropractor = {
 		{
-			title = "🦴 Chiropractor Visit",
+			title = "🦴 Chiropractor",
 			emoji = "🦴",
 			texts = {
-				"Time to get your spine adjusted!",
-				"The chiropractor examines your posture and alignment.",
-				"Crack! Pop! Ahh... that's the spot.",
+				"Crack! Pop! Your spine feels aligned.",
+				"The chiropractor works out all the kinks.",
+				"Ahh... that's the spot!",
 			},
 			choices = {
-				{ text = "💆 Full Adjustment", feed = "Your spine feels perfectly aligned!" },
-				{ text = "🔥 Heat Therapy", feed = "The warmth really loosened things up." },
-				{ text = "🏃 Posture Advice", feed = "Great tips for better posture!" },
+				{ text = "😌 Much better!", feed = "Your back feels great! +5 Health +3 Happiness" },
 			},
 		},
 	},
-	therapy = {
+	therapist = {
 		{
 			title = "🧠 Therapy Session",
 			emoji = "🧠",
 			texts = {
-				"You walk into your therapist's calming office.",
-				"Time to work on your mental health.",
-				"Taking care of your mind is just as important as your body.",
+				"Your therapist listens attentively.",
+				"A safe space to work through your thoughts.",
+				"Mental health is just as important as physical health.",
 			},
 			choices = {
-				{ text = "💭 Open up", feed = "Talking about it really helped." },
-				{ text = "📝 Set goals", feed = "You have a clear path forward." },
-				{ text = "🧘 Learn techniques", feed = "New coping strategies acquired." },
+				{ text = "😌 I feel better", feed = "Talking really helped! +8 Happiness +2 Health" },
 			},
 		},
 	},
@@ -6925,14 +6904,12 @@ local ActivityEventTemplates = {
 			title = "💆 Spa Day",
 			emoji = "💆",
 			texts = {
-				"Time to pamper yourself!",
-				"Relaxation and rejuvenation await.",
+				"Pure relaxation and rejuvenation!",
 				"You deserve this self-care day!",
+				"Time to pamper yourself!",
 			},
 			choices = {
-				{ text = "💆 Full body massage", feed = "All tension has melted away." },
-				{ text = "🧖 Facial treatment", feed = "Your skin is glowing!" },
-				{ text = "🛁 Hot tub soak", feed = "Pure bliss in warm water." },
+				{ text = "😌 So relaxing!", feed = "All tension has melted away! +4 Looks +8 Happiness +2 Health" },
 			},
 		},
 	},
@@ -6942,13 +6919,11 @@ local ActivityEventTemplates = {
 			emoji = "🦷",
 			texts = {
 				"Open wide! Time for your dental checkup.",
-				"The dentist's chair awaits...",
+				"The dentist gives your teeth a thorough cleaning.",
 				"Keeping those pearly whites healthy!",
 			},
 			choices = {
-				{ text = "😁 Just a cleaning", feed = "Your teeth are sparkling clean!" },
-				{ text = "🔍 Full checkup", feed = "No cavities! Good job brushing!" },
-				{ text = "✨ Whitening treatment", feed = "Your smile is brighter than ever!" },
+				{ text = "😁 Pearly whites!", feed = "Your teeth are sparkling clean! +3 Health +2 Looks" },
 			},
 		},
 	},
