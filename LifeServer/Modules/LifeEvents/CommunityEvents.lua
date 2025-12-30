@@ -502,13 +502,14 @@ CommunityEvents.events = {
 		category = "community",
 		tags = { "business", "local", "shopping" },
 		
-		choices = {
-			{ text = "Grand opening celebration ($20)", effects = { Happiness = 6, Money = -20 }, feedText = "🏪 New store! Free samples! Supporting local!" },
-			{ text = "Going out of business sale ($50)", effects = { Happiness = 3, Money = -50 }, feedText = "🏪 Sad to see them go. Got some deals though." },
-			{ text = "Become a regular customer ($30)", effects = { Happiness = 5, Money = -30 }, setFlags = { supports_local = true }, feedText = "🏪 Know the staff by name now. Community!" },
-			{ text = "Just window shopping", effects = { Happiness = 3 }, feedText = "🏪 Nice to look around! Didn't buy anything but enjoyed it." },
-			{ text = "Bad service experience", effects = { Happiness = -4 }, feedText = "🏪 Not going back there. Left bad review." },
-		},
+	choices = {
+		-- CRITICAL FIX #21: Add eligibility check for money costs
+		{ text = "Grand opening celebration ($20)", effects = { Happiness = 6, Money = -20 }, feedText = "🏪 New store! Free samples! Supporting local!", eligibility = function(state) return (state.Money or 0) >= 20, "💸 Need $20" end },
+		{ text = "Going out of business sale ($50)", effects = { Happiness = 3, Money = -50 }, feedText = "🏪 Sad to see them go. Got some deals though.", eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50" end },
+		{ text = "Become a regular customer ($30)", effects = { Happiness = 5, Money = -30 }, setFlags = { supports_local = true }, feedText = "🏪 Know the staff by name now. Community!", eligibility = function(state) return (state.Money or 0) >= 30, "💸 Need $30" end },
+		{ text = "Just window shopping", effects = { Happiness = 3 }, feedText = "🏪 Nice to look around! Didn't buy anything but enjoyed it." },
+		{ text = "Bad service experience", effects = { Happiness = -4 }, feedText = "🏪 Not going back there. Left bad review." },
+	},
 	},
 	{
 		id = "community_farmers_market",
@@ -524,13 +525,14 @@ CommunityEvents.events = {
 		category = "community",
 		tags = { "farmers_market", "food", "local" },
 		
-		choices = {
-			{ text = "Buy fresh local produce ($25)", effects = { Happiness = 6, Health = 3, Money = -25 }, feedText = "🥕 Fresh veggies! Supporting local farmers!" },
-			{ text = "Browse and sample ($5)", effects = { Happiness = 4, Money = -5 }, feedText = "🥕 Free samples! Discovered new favorite foods!" },
-			{ text = "Buy artisan goods ($40)", effects = { Happiness = 5, Money = -40 }, feedText = "🥕 Unique handmade items. Worth the premium." },
-			{ text = "Just enjoy the atmosphere", effects = { Happiness = 4 }, feedText = "🥕 Live music, fresh air, good vibes! No purchase needed." },
-			{ text = "Too crowded - leave", effects = { Happiness = -1 }, feedText = "🥕 Wall-to-wall people. Maybe next time." },
-		},
+	choices = {
+		-- CRITICAL FIX #22: Add eligibility check for money costs
+		{ text = "Buy fresh local produce ($25)", effects = { Happiness = 6, Health = 3, Money = -25 }, feedText = "🥕 Fresh veggies! Supporting local farmers!", eligibility = function(state) return (state.Money or 0) >= 25, "💸 Need $25" end },
+		{ text = "Browse and sample ($5)", effects = { Happiness = 4, Money = -5 }, feedText = "🥕 Free samples! Discovered new favorite foods!", eligibility = function(state) return (state.Money or 0) >= 5, "💸 Need $5" end },
+		{ text = "Buy artisan goods ($40)", effects = { Happiness = 5, Money = -40 }, feedText = "🥕 Unique handmade items. Worth the premium.", eligibility = function(state) return (state.Money or 0) >= 40, "💸 Need $40" end },
+		{ text = "Just enjoy the atmosphere", effects = { Happiness = 4 }, feedText = "🥕 Live music, fresh air, good vibes! No purchase needed." },
+		{ text = "Too crowded - leave", effects = { Happiness = -1 }, feedText = "🥕 Wall-to-wall people. Maybe next time." },
+	},
 	},
 	{
 		id = "community_library",

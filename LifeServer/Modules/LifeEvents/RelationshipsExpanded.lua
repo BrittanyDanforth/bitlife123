@@ -1354,6 +1354,8 @@ RelationshipsExpanded.events = {
 				text = "💃 Attend and try to mingle with royalty ($5,000 gala ticket)",
 				effects = { Money = -5000 }, -- Gala ticket and outfit
 				feedText = "Heading to the gala...",
+				-- CRITICAL FIX #2: Add eligibility check for gala ticket!
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Can't afford gala ticket ($5,000 needed)" end,
 				onResolve = function(state)
 					local looks = (state.Stats and state.Stats.Looks) or 50
 					local fame = state.Fame or 0
@@ -1403,6 +1405,8 @@ RelationshipsExpanded.events = {
 				text = "🍾 Just enjoy the party ($5,000 gala ticket)",
 				effects = { Money = -5000, Happiness = 8 },
 				feedText = "🎉 Amazing night! Great food, music, and people!",
+				-- CRITICAL FIX #3: Add eligibility check for gala ticket!
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Can't afford gala ticket ($5,000 needed)" end,
 			},
 		{
 			text = "Skip it - too fancy for me",

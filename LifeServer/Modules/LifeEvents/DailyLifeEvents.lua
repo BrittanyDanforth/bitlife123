@@ -72,10 +72,10 @@ DailyLifeEvents.events = {
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		
 		choices = {
-			{ text = "Healthy breakfast ($5)", effects = { Health = 3, Happiness = 3, Money = -5 }, feedText = "🍳 Eggs, fruit, good stuff! Fueled for the day!" },
-			{ text = "Quick cereal/toast ($2)", effects = { Happiness = 2, Money = -2 }, feedText = "🍳 Basic breakfast. Does the job." },
+			{ text = "Healthy breakfast ($5)", effects = { Health = 3, Happiness = 3, Money = -5 }, feedText = "🍳 Eggs, fruit, good stuff! Fueled for the day!", eligibility = function(state) return (state.Money or 0) >= 5, "💸 Need $5" end },
+			{ text = "Quick cereal/toast ($2)", effects = { Happiness = 2, Money = -2 }, feedText = "🍳 Basic breakfast. Does the job.", eligibility = function(state) return (state.Money or 0) >= 2, "💸 Need $2" end },
 			{ text = "Skip breakfast", effects = { Health = -2, Happiness = -1 }, feedText = "🍳 No time! Running on empty. Coffee will do." },
-			{ text = "Fancy brunch ($25)", effects = { Happiness = 8, Money = -25, Health = 1 }, feedText = "🍳 Treating yourself! Avocado toast energy!" },
+			{ text = "Fancy brunch ($25)", effects = { Happiness = 8, Money = -25, Health = 1 }, feedText = "🍳 Treating yourself! Avocado toast energy!", eligibility = function(state) return (state.Money or 0) >= 25, "💸 Need $25" end },
 		},
 	},
 	{
@@ -321,17 +321,20 @@ DailyLifeEvents.events = {
 		
 		choices = {
 			{ text = "Packed lunch (saves money)", effects = { Health = 2, Happiness = 3, Money = 5 }, feedText = "🥪 Healthy and economical! Adult achievement!" },
-			{ text = "Buy lunch ($15)", effects = { Happiness = 4, Money = -15, Health = -1 }, feedText = "🥪 Treating yourself! Restaurant/takeout life!" },
+			{ text = "Buy lunch ($15)", effects = { Happiness = 4, Money = -15, Health = -1 }, feedText = "🥪 Treating yourself! Restaurant/takeout life!", eligibility = function(state) return (state.Money or 0) >= 15, "💸 Need $15" end },
 			{ text = "Skip lunch (busy)", effects = { Health = -3, Happiness = -2, Smarts = 1 }, feedText = "🥪 No time! Working through. Hangry later." },
 			{ 
 			-- CRITICAL FIX: Show price!
 			text = "Social lunch with coworkers ($15)", 
 			effects = { Happiness = 6, Money = -15 }, 
 			feedText = "🥪 Great conversation! Work friendships building!",
-			-- CRITICAL FIX: Can only have lunch with coworkers if you HAVE coworkers (a job)
+			-- CRITICAL FIX #4: Check both job AND money!
 			eligibility = function(state)
 				if not state.CurrentJob then
 					return false, "You don't have coworkers - you don't have a job!"
+				end
+				if (state.Money or 0) < 15 then
+					return false, "💸 Need $15 for lunch"
 				end
 				return true
 			end,
@@ -386,9 +389,9 @@ DailyLifeEvents.events = {
 		end,
 		
 		choices = {
-			{ text = "Exercise/gym ($5)", effects = { Health = 5, Happiness = 4, Money = -5 }, setFlags = { regular_exerciser = true }, feedText = "🏠 Post-work workout! Stress relief! Endorphins!" },
+			{ text = "Exercise/gym ($5)", effects = { Health = 5, Happiness = 4, Money = -5 }, setFlags = { regular_exerciser = true }, feedText = "🏠 Post-work workout! Stress relief! Endorphins!", eligibility = function(state) return (state.Money or 0) >= 5, "💸 Need $5" end },
 			{ text = "TV/streaming binge", effects = { Happiness = 5, Health = -1 }, feedText = "🏠 Decompressing with shows! Couch comfort!" },
-			{ text = "Social plans ($30)", effects = { Happiness = 7, Money = -30, Health = -1 }, feedText = "🏠 Seeing friends! Good times! Social battery charging!" },
+			{ text = "Social plans ($30)", effects = { Happiness = 7, Money = -30, Health = -1 }, feedText = "🏠 Seeing friends! Good times! Social battery charging!", eligibility = function(state) return (state.Money or 0) >= 30, "💸 Need $30" end },
 			{ text = "Productive hobbies", effects = { Happiness = 6, Smarts = 2 }, feedText = "🏠 Working on projects! Creative outlet! Fulfilling!" },
 			{ text = "Chores and responsibilities", effects = { Happiness = 2, Smarts = 1 }, feedText = "🏠 Adulting. Laundry, dishes, bills. Boring but necessary." },
 		},
