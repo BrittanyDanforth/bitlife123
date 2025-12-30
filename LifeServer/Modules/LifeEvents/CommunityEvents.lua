@@ -164,11 +164,35 @@ CommunityEvents.events = {
 		-- CRITICAL FIX: Can't have neighborhood crime while YOU are in prison!
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		
+		-- CRITICAL FIX: Block this entire event for homeless players! 
+		-- They don't have a "neighborhood" to have crime in
+		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true, living_in_car = true },
+		
+		-- CRITICAL FIX: Also need to have housing for this event to make sense!
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			local housing = state.HousingState or {}
+			-- Need SOME form of housing
+			if flags.homeless or flags.living_in_car or flags.couch_surfing then
+				return false, "No neighborhood when homeless"
+			end
+			return true
+		end,
+		
 		choices = {
 			{
 				text = "Break-in nearby",
 				effects = {},
 				feedText = "Police in the neighborhood...",
+				-- CRITICAL FIX: Break-in requires having a home!
+				eligibility = function(state)
+					local flags = state.Flags or {}
+					local housing = state.HousingState or {}
+					if flags.homeless or housing.status == "homeless" then
+						return false, "No home to break into"
+					end
+					return true
+				end,
 				onResolve = function(state)
 					local roll = math.random()
 					if roll < 0.20 then
@@ -191,8 +215,38 @@ CommunityEvents.events = {
 					end
 				end,
 			},
-			{ text = "Car vandalized", effects = { Happiness = -6 }, feedText = "🚔 Someone keyed your car. Why?!" },
-			{ text = "Package theft", effects = { Happiness = -4 }, setFlags = { package_stolen = true }, feedText = "🚔 Porch pirates took your delivery. Frustrating." },
+			-- CRITICAL FIX: Car vandalized choice must check if player HAS a car!
+			-- User bug: "IT SAID SOMEBODY KEYED YOUR CAR WHY?! BUT I DONT HAVE A CAR"
+			{ 
+				text = "Car vandalized", 
+				effects = { Happiness = -6 }, 
+				feedText = "🚔 Someone keyed your car. Why?!",
+				eligibility = function(state)
+					local flags = state.Flags or {}
+					-- CRITICAL FIX: Also check Assets.Vehicles
+					if flags.has_car or flags.owns_vehicle or flags.owns_car then
+						return true
+					end
+					if state.Assets and state.Assets.Vehicles and #state.Assets.Vehicles > 0 then
+						return true
+					end
+					return false, "No car to vandalize"
+				end,
+			},
+			-- CRITICAL FIX: Package theft requires having a home/address!
+			{ 
+				text = "Package theft", 
+				effects = { Happiness = -4 }, 
+				setFlags = { package_stolen = true }, 
+				feedText = "🚔 Porch pirates took your delivery. Frustrating.",
+				eligibility = function(state)
+					local flags = state.Flags or {}
+					if flags.homeless or flags.living_in_car then
+						return false, "No address for packages"
+					end
+					return true
+				end,
+			},
 			{ text = "Suspicious person reported", effects = { Happiness = -2 }, feedText = "🚔 Neighborhood on alert. Staying vigilant." },
 		},
 	},
