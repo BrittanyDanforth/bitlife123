@@ -2436,7 +2436,9 @@ function Minigames:startMash(callback, options)
 
 	self.mashTaps = 0
 	self.mashTimeLeft = options.duration or 5
-	self.mashTarget = options.target or 30
+	-- CRITICAL FIX: Reduced default target from 30 to 20 - was too hard for kids!
+	-- User complaint: "MASH MINIGAME EASIER CUZ LITTLE KIDS CANNOT MASH 30 TIMES THAT QUICK"
+	self.mashTarget = options.target or 20
 	self.mashProgress = 0
 
 	self.mashProgressFill.Size = UDim2.new(0, 0, 1, 0)

@@ -1302,6 +1302,8 @@ MafiaEvents.LifeEvents = {
 			},
 		},
 	},
+	-- CRITICAL FIX: Added cooldown and maxOccurrences to prevent spam!
+	-- User complaint: "WHEN IM IN PRISON AND A MAFIA MEMBER THE SAME LIKE 4 LIFEEVENTS SPAM BRUH"
 	{
 		id = "prison_politics",
 		title = "🔒 Prison Politics",
@@ -1311,6 +1313,9 @@ MafiaEvents.LifeEvents = {
 		minAge = 18,
 		maxAge = 80,
 		isMafiaOnly = true,
+		cooldown = 5,  -- CRITICAL FIX: Added cooldown to prevent spam
+		maxOccurrences = 2,  -- CRITICAL FIX: Limit occurrences
+		baseChance = 0.15,  -- CRITICAL FIX: Lower chance
 		conditions = { requiresFlags = { in_mob = true, in_prison = true } },
 		choices = {
 			{
@@ -1996,8 +2001,9 @@ MafiaEvents.LifeEvents = {
 		minAge = 21,
 		maxAge = 70,
 		isMafiaOnly = true,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
-		maxOccurrences = 4,
+		cooldown = 5, -- CRITICAL FIX: Increased from 4 to further reduce spam
+		maxOccurrences = 2,  -- CRITICAL FIX: Reduced from 4 to 2 to prevent spam
+		baseChance = 0.2,  -- CRITICAL FIX: Added base chance to reduce frequency
 		conditions = { 
 			requiresFlags = { in_mob = true, in_prison = true },
 		},

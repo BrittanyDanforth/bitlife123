@@ -547,7 +547,10 @@ local DeathCauses = {
 	{ id = "prison_fight",   cause = "a prison altercation", requiresFlag = "in_prison", chance = 0.02, description = "Prison is a dangerous place" },
 	-- CRITICAL FIX: Don't end players' lives with robbery_gone_wrong if they're IN prison
 	-- Also requires they be free (not incarcerated) since robberies happen outside
-	{ id = "robbery_gone_wrong", cause = "a robbery gone wrong", requiresFlag = "criminal_record", blockedByFlag = "in_prison", chance = 0.01, description = "Crime doesn't pay" },
+	-- CRITICAL FIX #2: Reduced chance from 0.01 to 0.005 and added minAge
+	-- User complaint: "I JUST DIED TO A ROBBERY GONE WRONG BUT NO CARD POPPED UP"
+	-- This was too random and unexpected for players
+	{ id = "robbery_gone_wrong", cause = "a robbery gone wrong", requiresFlag = "criminal_record", blockedByFlag = "in_prison", chance = 0.005, minAge = 25, description = "Crime doesn't pay" },
 	
 	-- ═════════════════════════════════════════════════════════════════════════
 	-- CAREER-RELATED DEATHS (for dangerous professions)

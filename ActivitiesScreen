@@ -234,13 +234,15 @@ local MindBody = {
 	-- CRITICAL FIX: Added medical activities for health management!
 	-- User bug: "health can be hard to manage and few things gives positive health"
 	-- ═══════════════════════════════════════════════════════════════════════════
-	{ id = "doctor", name = "Doctor Visit", emoji = "🩺", effect = "+8 Health", minAge = 0, cost = 100 },
-	{ id = "dentist", name = "Dentist", emoji = "🦷", effect = "+3 Health +2 Looks", minAge = 3, cost = 150 },
-	{ id = "therapist", name = "Therapist", emoji = "🧠", effect = "+8 Happiness +2 Health", minAge = 10, cost = 200 },
-	{ id = "doctor_visit", name = "Full Checkup", emoji = "🏥", effect = "+8 Health", minAge = 0, cost = 500 },
-	{ id = "hospital_treatment", name = "Hospital Treatment", emoji = "🏨", effect = "+25 Health!", minAge = 0, cost = 5000 },
-	{ id = "get_surgery", name = "Surgery", emoji = "🔪", effect = "+40 Health!", minAge = 0, cost = 20000 },
-	{ id = "chiropractor", name = "Chiropractor", emoji = "🦴", effect = "+5 Health +3 Happiness", minAge = 16, cost = 100 },
+	-- CRITICAL FIX: Medical activities - better descriptions, blocked in jail
+	-- User complaint: "DOCTOR VISIT SHOULD BE LIKE BITLIFE" + "HOSPITAL TREATMENT SURGERY CHIROPRACTOR SHOULDNT LET ME DO IT WHILE IN JAIL"
+	{ id = "doctor", name = "Doctor Visit", emoji = "🩺", effect = "Check your health", minAge = 0, cost = 100, isMedical = true },
+	{ id = "dentist", name = "Dentist", emoji = "🦷", effect = "Dental checkup", minAge = 3, cost = 150, isMedical = true },
+	{ id = "therapist", name = "Therapist", emoji = "🧠", effect = "Talk about your feelings", minAge = 10, cost = 200, isMedical = true },
+	{ id = "doctor_visit", name = "Full Checkup", emoji = "🏥", effect = "Complete health screening", minAge = 0, cost = 500, isMedical = true },
+	{ id = "hospital_treatment", name = "Hospital Treatment", emoji = "🏨", effect = "Treat health issues", minAge = 0, cost = 5000, isMedical = true },
+	{ id = "get_surgery", name = "Surgery", emoji = "🔪", effect = "Major medical procedure", minAge = 0, cost = 20000, isMedical = true },
+	{ id = "chiropractor", name = "Chiropractor", emoji = "🦴", effect = "Spinal adjustment", minAge = 16, cost = 100, isMedical = true },
 	{ id = "diet", name = "Go on a Diet", emoji = "🥗", effect = "+5 Health +3 Looks", minAge = 14, cost = 0 },
 	{ id = "swimming", name = "Go Swimming", emoji = "🏊", effect = "+7 Health +4 Happiness", minAge = 6, cost = 0 },
 	{ id = "cycling", name = "Go Cycling", emoji = "🚴", effect = "+7 Health +3 Happiness", minAge = 8, cost = 0 },
@@ -1085,10 +1087,10 @@ function ActivitiesScreen:rebuildTabs()
 	local tabs
 
 	if inJail then
-		-- PRISON MODE: Limited activities
+		-- PRISON MODE: ONLY Prison tab - hide other tabs since they're all locked anyway
+		-- User complaint: "SENSE IM IN PRISON JUST HAVE THE PRISON TAB ONLY AND HIDE EXERCISE TAB"
 		tabs = {
-			{ id = "prison", text = "Prison", color = C.Gray700 },
-			{ id = "mindbody", text = "Exercise", color = C.Cyan },
+			{ id = "prison", text = "⛓️ Prison", color = C.Gray700 },
 		}
 		self.currentTab = "prison"
 	elseif age < 5 then
@@ -2512,11 +2514,14 @@ end
 -- User feedback: "minigames even if successful still jail me"
 -- Operations done from ActivitiesScreen MUST also support minigames!
 -- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Combat-based mafia operations that require minigames
+-- "intimidate" uses "confrontation" minigame for intimidation dialogue!
 local CombatMafiaOpsFromActivities = {
 	enforcer_hit = true,
 	intimidation = true,
 	protection = true,
 	heist = true,
+	intimidate = true,  -- CRITICAL FIX: Added intimidate - uses confrontation minigame
 }
 
 function ActivitiesScreen:doMobOperation(opId, opName)
@@ -2546,7 +2551,16 @@ function ActivitiesScreen:doMobOperation(opId, opName)
 			local minigameInstance = Minigames.new(self.screenGui)
 			
 			-- Determine minigame type and options
-			local minigameType = (opId == "heist") and "heist" or "combat"
+			-- CRITICAL FIX: "intimidate" uses "confrontation" minigame!
+			-- User complaint: "INTIMIDATION MINIGAME IT SAYS THEY SNEER..."
+			local minigameType
+			if opId == "heist" then
+				minigameType = "heist"
+			elseif opId == "intimidate" or opId == "intimidation" then
+				minigameType = "confrontation"  -- Use dialogue-based intimidation minigame!
+			else
+				minigameType = "combat"
+			end
 			
 			-- ═══════════════════════════════════════════════════════════════════════════
 			-- CRITICAL FIX: Pass proper options to minigame!
@@ -2555,7 +2569,7 @@ function ActivitiesScreen:doMobOperation(opId, opName)
 			-- Heist operations have 60% risk - this is a high-risk crime!
 			-- ═══════════════════════════════════════════════════════════════════════════
 			local minigameOptions = {
-				risk = (opId == "heist") and 60 or 50,  -- Heist is high risk
+				risk = (opId == "heist") and 60 or ((opId == "intimidate") and 25 or 50),
 				difficulty = (opId == "heist") and "hard" or "medium",
 				context = opId,
 			}
@@ -2581,10 +2595,14 @@ function ActivitiesScreen:doMobOperation(opId, opName)
 				elseif minigameType == "heist" then
 					modifiers.heistCompleted = true
 					modifiers.heistSuccess = won  -- Explicit boolean (true/false)
+				elseif minigameType == "confrontation" then
+					-- CRITICAL FIX: Handle intimidation/confrontation minigame
+					modifiers.intimidationCompleted = true
+					modifiers.intimidationWon = won  -- Explicit boolean (true/false)
 				end
 				
-				log(string.format("[MOB_MINIGAME] Type: %s | Won: %s | Sending heistSuccess: %s", 
-					tostring(minigameType), tostring(won), tostring(modifiers.heistSuccess)))
+				log(string.format("[MOB_MINIGAME] Type: %s | Won: %s | Modifiers: %s", 
+					tostring(minigameType), tostring(won), tostring(modifiers.heistSuccess or modifiers.combatWon or modifiers.intimidationWon)))
 				
 				-- Call server with minigame results
 				local success, result = pcall(function()
@@ -5374,6 +5392,15 @@ local FULL_EVENT_ACTIVITIES = {
 	arcade = true,
 	karaoke = true,
 	martial_arts = true,
+	-- CRITICAL FIX: Medical activities should be full event cards like BitLife!
+	-- User complaint: "DOCTOR VISIT SHOULD BE LIKE BITLIFE"
+	doctor = true,
+	doctor_visit = true,
+	dentist = true,
+	therapist = true,
+	hospital_treatment = true,
+	get_surgery = true,
+	chiropractor = true,
 	-- CRITICAL FIX: ROYAL ACTIVITIES (no longer boring!)
 	public_appearance = true,
 	charity_visit = true,
@@ -5843,7 +5870,7 @@ function ActivitiesScreen:doPrisonActivity(item)
 			end, {
 				title = "💪 Prison Yard Workout",
 				instruction = "Tap fast to pump iron!",
-				targetTaps = 30, -- Reasonable target
+				targetTaps = 20, -- CRITICAL FIX: Reduced from 30 - easier for all ages
 				timeLimit = 8,
 			})
 		else
@@ -6786,19 +6813,94 @@ local ActivityEventTemplates = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- MEDICAL & WELLNESS ACTIVITIES
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: BitLife-style Doctor Visit!
+	-- User complaint: "DOCTOR VISIT SHOULD BE LIKE BITLIFE CHECK UP ON UR HEALTH"
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	doctor = {
 		{
-			title = "🩺 Doctor's Visit",
+			title = "🩺 Doctor's Office",
 			emoji = "🩺",
 			texts = {
-				"Time for your checkup.",
-				"The doctor will see you now.",
-				"Better safe than sorry - regular checkups are important!",
+				"You arrive at the doctor's office for your appointment.",
+				"The nurse takes your vitals before the doctor comes in.",
+				"The waiting room is full, but they call your name quickly.",
+			},
+			question = "What would you like the doctor to check?",
+			choices = {
+				{ text = "🔍 General Health Check", feed = "The doctor examined you thoroughly. Everything looks good!", checkHealth = true },
+				{ text = "❤️ Check Heart", feed = "Your heart sounds healthy. Keep up the good work!", checkHeart = true },
+				{ text = "🩸 Blood Work", feed = "Your blood test results came back normal.", checkBlood = true },
+				{ text = "🧠 Mental Health Screen", feed = "The doctor discussed your mental wellbeing.", checkMental = true },
+			},
+		},
+	},
+	doctor_visit = {
+		{
+			title = "🏥 Full Medical Checkup",
+			emoji = "🏥",
+			texts = {
+				"Time for your comprehensive annual checkup.",
+				"The doctor is ready to give you a full examination.",
+				"A thorough health screening to catch anything early.",
+			},
+			question = "The doctor asks what concerns you most:",
+			choices = {
+				{ text = "🔬 Full Body Scan", feed = "Complete head-to-toe examination complete. You're in good health!" },
+				{ text = "💊 Check Current Medications", feed = "Your medications are working well. No changes needed." },
+				{ text = "🏃 Fitness Assessment", feed = "Your fitness levels are looking good!" },
+				{ text = "🧬 Genetic Testing", feed = "No concerning genetic markers found." },
+			},
+		},
+	},
+	hospital_treatment = {
+		{
+			title = "🏨 Hospital Treatment",
+			emoji = "🏨",
+			texts = {
+				"You check into the hospital for treatment.",
+				"The medical team is ready to help you recover.",
+				"Modern medicine is here to help!",
+			},
+			question = "What treatment do you need?",
+			choices = {
+				{ text = "💉 IV Treatment", feed = "The fluids and medication are making you feel better!" },
+				{ text = "🩹 Wound Care", feed = "The medical staff patched you up nicely." },
+				{ text = "💊 Medication Adjustment", feed = "Your treatment plan has been optimized." },
+				{ text = "🏥 Overnight Observation", feed = "You're stable and recovering well." },
+			},
+		},
+	},
+	get_surgery = {
+		{
+			title = "🔪 Surgery",
+			emoji = "🔪",
+			texts = {
+				"You're being prepped for surgery.",
+				"The surgical team is ready. Don't worry, you're in good hands.",
+				"Modern surgery has come a long way. You'll be fine!",
+			},
+			question = "Type of procedure:",
+			choices = {
+				{ text = "🔬 Minor Procedure", feed = "The surgery went smoothly! Quick recovery expected." },
+				{ text = "❤️ Corrective Surgery", feed = "The operation was a success! You'll feel much better soon." },
+				{ text = "🩺 Exploratory Surgery", feed = "The doctors found and fixed the issue. All clear!" },
+			},
+		},
+	},
+	chiropractor = {
+		{
+			title = "🦴 Chiropractor Visit",
+			emoji = "🦴",
+			texts = {
+				"Time to get your spine adjusted!",
+				"The chiropractor examines your posture and alignment.",
+				"Crack! Pop! Ahh... that's the spot.",
 			},
 			choices = {
-				{ text = "✅ Get full exam", feed = "Everything looks good! You're healthy!" },
-				{ text = "❓ Ask questions", feed = "The doctor answered all your concerns." },
-				{ text = "💊 Get prescriptions", feed = "You got what you needed." },
+				{ text = "💆 Full Adjustment", feed = "Your spine feels perfectly aligned!" },
+				{ text = "🔥 Heat Therapy", feed = "The warmth really loosened things up." },
+				{ text = "🏃 Posture Advice", feed = "Great tips for better posture!" },
 			},
 		},
 	},
