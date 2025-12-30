@@ -4099,22 +4099,61 @@ showDeathOverlay = function(causeText, age, canContinueAsKid, continueAsKidData)
 	
 	-- CRITICAL FIX: Use career history if no current job (e.g., retired, fired, etc.)
 	-- This fixes the bug where death screen shows "Unemployed" even when player had jobs
+	-- BUG FIX: Check ALL possible field names (Title/title, name/Name, Job/CurrentJob)
 	local career = "Unemployed"
-	if currentState.CurrentJob and currentState.CurrentJob.Title then
-		career = currentState.CurrentJob.Title
-	elseif currentState.CurrentJob and currentState.CurrentJob.name then
-		career = currentState.CurrentJob.name
-	elseif currentState.CareerInfo and currentState.CareerInfo.lastJob and currentState.CareerInfo.lastJob.title then
-		career = currentState.CareerInfo.lastJob.title .. " (Retired)"
-	elseif currentState.CareerInfo and currentState.CareerInfo.lastJob and currentState.CareerInfo.lastJob.name then
-		career = currentState.CareerInfo.lastJob.name .. " (Retired)"
-	elseif currentState.CareerInfo and currentState.CareerInfo.careerHistory and #currentState.CareerInfo.careerHistory > 0 then
-		local lastCareer = currentState.CareerInfo.careerHistory[#currentState.CareerInfo.careerHistory]
-		if lastCareer and lastCareer.title then
-			career = lastCareer.title .. " (Former)"
+	
+	-- Check CurrentJob with all possible field name variations
+	local currentJob = currentState.CurrentJob or currentState.Job
+	if currentJob then
+		local jobTitle = currentJob.Title or currentJob.title or currentJob.name or currentJob.Name or currentJob.jobTitle
+		if jobTitle and jobTitle ~= "" and jobTitle ~= "Unemployed" then
+			career = jobTitle
 		end
-	elseif currentState.Flags and currentState.Flags.previous_career then
-		career = currentState.Flags.previous_career .. " (Former)"
+	end
+	
+	-- If still unemployed, check career history
+	if career == "Unemployed" then
+		if currentState.CareerInfo then
+			-- Check lastJob
+			local lastJob = currentState.CareerInfo.lastJob or currentState.CareerInfo.LastJob
+			if lastJob then
+				local jobTitle = lastJob.title or lastJob.Title or lastJob.name or lastJob.Name
+				if jobTitle and jobTitle ~= "" then
+					career = jobTitle .. " (Retired)"
+				end
+			end
+			
+			-- Check careerHistory array
+			if career == "Unemployed" then
+				local history = currentState.CareerInfo.careerHistory or currentState.CareerInfo.CareerHistory or {}
+				if #history > 0 then
+					local lastCareer = history[#history]
+					if lastCareer then
+						local jobTitle = lastCareer.title or lastCareer.Title or lastCareer.name or lastCareer.Name
+						if jobTitle and jobTitle ~= "" then
+							career = jobTitle .. " (Former)"
+						end
+					end
+				end
+			end
+		end
+		
+		-- Check flags for previous career
+		if career == "Unemployed" and currentState.Flags then
+			local prevCareer = currentState.Flags.previous_career or currentState.Flags.previousCareer or currentState.Flags.last_job
+			if prevCareer and prevCareer ~= "" then
+				career = prevCareer .. " (Former)"
+			end
+		end
+		
+		-- Check ExtendedState if available
+		if career == "Unemployed" and currentState.ExtendedState then
+			local ext = currentState.ExtendedState
+			local jobTitle = ext.CurrentJobTitle or ext.LastJobTitle or ext.JobTitle
+			if jobTitle and jobTitle ~= "" and jobTitle ~= "Unemployed" then
+				career = jobTitle
+			end
+		end
 	end
 	
 	local flags = currentState.Flags or {}
@@ -7243,8 +7282,16 @@ function updateFromState()
 	end
 
 	for key, card in pairs(statCards) do
-		local val = currentState[key] or (currentState.Stats and currentState.Stats[key]) or 50
-		card.percentLabel.Text = val .. "%"
+		-- CRITICAL FIX: Check BOTH locations for stat values
+		-- Server sends state.Health, activities update state.Stats.Health - check both!
+		local val = currentState[key]
+		if val == nil and currentState.Stats then
+			val = currentState.Stats[key]
+		end
+		if val == nil then
+			val = 50  -- Default fallback
+		end
+		card.percentLabel.Text = math.floor(val) .. "%"
 		tween(card.barFill, TweenInfo.new(0.3), {
 			Size = UDim2.new(math.clamp(val/100, 0, 1), 0, 1, 0),
 		})

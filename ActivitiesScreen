@@ -5540,21 +5540,30 @@ function ActivitiesScreen:doActivity(item, bonus)
 					if stat == "Money" or stat == "money" then
 						state.Money = math.max(0, (state.Money or 0) + delta)
 					elseif stat == "Health" or stat == "H" then
-						local newVal = math.min(100, math.max(0, (state.Stats.Health or 50) + delta))
+						-- CRITICAL FIX: Read current value from EITHER location (server uses state.Health, we use state.Stats.Health)
+						local currentVal = state.Health or state.Stats.Health or 50
+						local newVal = math.min(100, math.max(0, currentVal + delta))
 						state.Stats.Health = newVal
-						state.Health = newVal
+						state.Health = newVal  -- Update BOTH locations!
+						log("Health changed:", currentVal, "->", newVal, "(delta:", delta, ")")
 					elseif stat == "Happiness" or stat == "Happy" then
-						local newVal = math.min(100, math.max(0, (state.Stats.Happiness or 50) + delta))
+						local currentVal = state.Happiness or state.Stats.Happiness or 50
+						local newVal = math.min(100, math.max(0, currentVal + delta))
 						state.Stats.Happiness = newVal
 						state.Happiness = newVal
+						log("Happiness changed:", currentVal, "->", newVal, "(delta:", delta, ")")
 					elseif stat == "Smarts" then
-						local newVal = math.min(100, math.max(0, (state.Stats.Smarts or 50) + delta))
+						local currentVal = state.Smarts or state.Stats.Smarts or 50
+						local newVal = math.min(100, math.max(0, currentVal + delta))
 						state.Stats.Smarts = newVal
 						state.Smarts = newVal
+						log("Smarts changed:", currentVal, "->", newVal, "(delta:", delta, ")")
 					elseif stat == "Looks" then
-						local newVal = math.min(100, math.max(0, (state.Stats.Looks or 50) + delta))
+						local currentVal = state.Looks or state.Stats.Looks or 50
+						local newVal = math.min(100, math.max(0, currentVal + delta))
 						state.Stats.Looks = newVal
 						state.Looks = newVal
+						log("Looks changed:", currentVal, "->", newVal, "(delta:", delta, ")")
 					end
 				end
 				-- CRITICAL FIX: Update money from cost on client too!
@@ -7248,24 +7257,25 @@ function ActivitiesScreen:showActivityResult(success, message, item, emoji, wasC
 			-- Standard Mind activities
 			read = { Smarts = 5, Happiness = 2 },
 			study = { Smarts = 6 },
-			meditate = { Happiness = 5, Health = 2 },
+			meditate = { Happiness = 5, Health = 4 },  -- BUFFED: Meditation gives more health
 			library = { Smarts = 4, Happiness = 2 },
 			puzzle = { Smarts = 4 },
 			chess = { Smarts = 5 },
 			learn_instrument = { Smarts = 3, Happiness = 4 },
 			
 			-- Body/Health activities
-			gym = { Health = 6, Looks = 2 },
-			run = { Health = 5, Happiness = 2 },
-			yoga = { Health = 4, Happiness = 3 },
-			spa = { Looks = 3, Happiness = 4 },
+			-- CRITICAL FIX: Buffed health gains - user feedback "health is hard to manage"
+			gym = { Health = 8, Looks = 3 },  -- BUFFED from 6/2
+			run = { Health = 7, Happiness = 3 },  -- BUFFED from 5/2
+			yoga = { Health = 6, Happiness = 4 },  -- BUFFED from 4/3
+			spa = { Looks = 3, Happiness = 4, Health = 2 },  -- Added health bonus
 			salon = { Looks = 3, Happiness = 2 },
-			martial_arts = { Health = 4, Looks = 2 },
-			swimming = { Health = 5, Happiness = 3 },
-			cycling = { Health = 5, Happiness = 2 },
-			walk = { Health = 3, Happiness = 2 },
-			doctor = { Health = 5 },
-			dentist = { Health = 2 },
+			martial_arts = { Health = 6, Looks = 3 },  -- BUFFED from 4/2
+			swimming = { Health = 7, Happiness = 4 },  -- BUFFED from 5/3
+			cycling = { Health = 7, Happiness = 3 },  -- BUFFED from 5/2
+			walk = { Health = 4, Happiness = 3 },  -- BUFFED from 3/2
+			doctor = { Health = 8 },  -- BUFFED from 5
+			dentist = { Health = 3 },  -- BUFFED from 2
 			
 			-- Social activities
 			party = { Happiness = 5 },

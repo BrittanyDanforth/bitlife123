@@ -11561,6 +11561,42 @@ function LifeBackend:applyHabitEffects(state)
 		healthChange = healthChange + RANDOM:NextInteger(1, 2)
 	end
 	
+	-- CRITICAL FIX: More ways to gain health naturally!
+	-- User feedback: "health can be hard to manage and few things gives positive health"
+	-- Added more positive health modifiers
+	
+	-- Regular exerciser gets health boost
+	if state.Flags.exercises_regularly or state.Flags.works_out or state.Flags.gym_rat then
+		healthChange = healthChange + RANDOM:NextInteger(1, 3)
+	end
+	
+	-- Healthy eater gets health boost  
+	if state.Flags.healthy_eater or state.Flags.vegetarian or state.Flags.vegan then
+		healthChange = healthChange + RANDOM:NextInteger(0, 2)
+	end
+	
+	-- Good sleep habits
+	if state.Flags.good_sleep or state.Flags.early_riser then
+		healthChange = healthChange + RANDOM:NextInteger(0, 1)
+	end
+	
+	-- Meditation/mindfulness helps health
+	if state.Flags.meditates or state.Flags.zen_master then
+		healthChange = healthChange + RANDOM:NextInteger(0, 2)
+	end
+	
+	-- Young people naturally regenerate health slightly (under 40)
+	if (state.Age or 0) < 40 and healthChange == 0 then
+		-- If no other effects, young people gain 1-2 health naturally
+		healthChange = healthChange + RANDOM:NextInteger(1, 2)
+	end
+	
+	-- Middle age (40-60) maintains health
+	-- Elderly (60+) may lose health naturally if not active
+	if (state.Age or 0) >= 60 and not (state.Flags.fitness_enthusiast or state.Flags.exercises_regularly) then
+		healthChange = healthChange - RANDOM:NextInteger(0, 2) -- Slight natural decline
+	end
+	
 	-- Apply changes
 	if healthChange ~= 0 then
 		state.Stats.Health = clamp((state.Stats.Health or 50) + healthChange, 0, 100)
