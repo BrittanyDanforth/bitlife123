@@ -1604,7 +1604,8 @@ FinancialEvents.events = {
 	},
 	
 	{
-		id = "fin_crypto_opportunity",
+		-- CRITICAL FIX: Renamed from "fin_crypto_opportunity" to avoid duplicate ID
+		id = "fin_crypto_craze_alt",
 		title = "Crypto Craze!",
 		emoji = "🪙",
 		text = "Everyone's talking about this new cryptocurrency!",

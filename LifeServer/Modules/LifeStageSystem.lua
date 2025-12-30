@@ -517,8 +517,10 @@ local DeathCauses = {
 	{ id = "old_age",        cause = "peacefully in their sleep", minAge = 75, description = "After a long and full life" },
 	{ id = "heart_attack",   cause = "a sudden heart attack", minAge = 55, healthFactor = 0.15, description = "It was sudden and unexpected" },
 	{ id = "stroke",         cause = "a stroke", minAge = 60, healthFactor = 0.12, description = "Despite quick medical attention" },
-	{ id = "cancer",         cause = "cancer", minAge = 45, baseChance = 0.005, description = "After a brave battle" },
-	{ id = "heart_disease",  cause = "heart disease", minAge = 50, healthFactor = 0.10, description = "Years of strain finally caught up" },
+	-- CRITICAL FIX: Cancer death REQUIRES cancer diagnosis flag! User complained about dying from cancer without being diagnosed
+	{ id = "cancer",         cause = "cancer", minAge = 45, requiresFlag = "has_cancer", baseChance = 0.005, description = "After a brave battle" },
+	-- CRITICAL FIX: Heart disease death should require the heart_disease flag OR be for VERY old age
+	{ id = "heart_disease",  cause = "heart disease", minAge = 70, healthFactor = 0.10, description = "Years of strain finally caught up" },
 	{ id = "dementia",       cause = "complications from dementia", minAge = 70, baseChance = 0.008, description = "The mind faded before the body" },
 	{ id = "pneumonia",      cause = "pneumonia", minAge = 65, healthFactor = 0.08, description = "A respiratory illness proved fatal" },
 	

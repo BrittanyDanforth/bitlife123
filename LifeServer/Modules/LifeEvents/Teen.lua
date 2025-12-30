@@ -210,7 +210,7 @@ Teen.events = {
 					local names = partnerIsMale 
 						and {"Jake", "Tyler", "Brandon", "Kyle", "Zach", "Dylan", "Josh", "Austin", "Connor", "Trevor"}
 						or {"Emma", "Olivia", "Hannah", "Madison", "Chloe", "Alexis", "Taylor", "Savannah", "Kayla", "Hailey"}
-					local partnerName = names[math.random(1, #names)]
+					local partnerName = names[math.random(1, #names)] or "Someone"
 					state.Relationships.partner = {
 						id = "partner",
 						name = partnerName,
@@ -880,7 +880,7 @@ Teen.events = {
 						local names = partnerIsMale 
 							and {"Ryan", "Tyler", "Brandon", "Kyle", "Zach", "Dylan", "Josh", "Austin", "Connor", "Trevor"}
 							or {"Lily", "Sophie", "Grace", "Chloe", "Zoe", "Bella", "Mia", "Emma", "Ava", "Harper"}
-						local partnerName = names[math.random(1, #names)]
+						local partnerName = names[math.random(1, #names)] or "Someone"
 						state.Relationships.partner = {
 							id = "partner",
 							name = partnerName,
@@ -1481,7 +1481,7 @@ Teen.events = {
 						local names = partnerIsMale 
 							and {"Mason", "Ethan", "Noah", "Liam", "Lucas", "Oliver", "Aiden", "Elijah"}
 							or {"Ava", "Isabella", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn", "Luna"}
-						local partnerName = names[math.random(1, #names)]
+						local partnerName = names[math.random(1, #names)] or "Someone"
 						state.Relationships.partner = {
 							id = "partner",
 							name = partnerName,
@@ -1524,7 +1524,7 @@ Teen.events = {
 					local names = partnerIsMale 
 						and {"Mason", "Ethan", "Noah", "Liam", "Lucas", "Oliver", "Aiden", "Elijah"}
 						or {"Ava", "Isabella", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn", "Luna"}
-					local partnerName = names[math.random(1, #names)]
+					local partnerName = names[math.random(1, #names)] or "Someone"
 					state.Relationships.partner = {
 						id = "partner",
 						name = partnerName,

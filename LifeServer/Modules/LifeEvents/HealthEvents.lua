@@ -930,19 +930,21 @@ HealthEvents.events = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "health_diagnosis_cold_flu",
-		title = "🤒 You're Sick: Cold or Flu",
+		-- CRITICAL FIX: Changed title to not look like a "diagnosis" - it's just getting sick
+		title = "🤒 Under the Weather",
 		emoji = "🤒",
 		text = "You've come down with a cold or flu! You woke up feeling terrible - stuffy nose, sore throat, and body aches.",
 		question = "Looks like a cold or flu virus. What do you want to do?",
 		minAge = 3, maxAge = 100,
-		baseChance = 0.35,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.25, -- CRITICAL FIX: Reduced from 0.35 to reduce spam
+		cooldown = 5, -- CRITICAL FIX: Increased from 4 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",
 		tags = { "illness", "cold", "flu", "sick" },
-		isDiagnosisCard = true,
-		diagnosisType = "cold_flu",
+		-- CRITICAL FIX: Removed isDiagnosisCard - this is just a common illness, not a diagnosis
+		-- isDiagnosisCard = true,
+		-- diagnosisType = "cold_flu",
 		
 		choices = {
 		{ text = "Rest at home", effects = { Health = 3, Happiness = -2 }, setFlags = { has_cold = true }, feedText = "🤒 Resting at home. Should recover in a week." },

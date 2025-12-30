@@ -22,7 +22,7 @@ local function getRandomName(isMale)
     local maleNames = {"James", "William", "Robert", "Michael", "David", "Richard", "Joseph", "Thomas", "Charles", "Daniel"}
     local femaleNames = {"Mary", "Patricia", "Jennifer", "Linda", "Elizabeth", "Barbara", "Susan", "Jessica", "Sarah", "Karen"}
     local names = isMale and maleNames or femaleNames
-    return names[math.random(1, #names)]
+    return names[math.random(1, #names)] or (isMale and "John" or "Jane")
 end
 
 Senior.events = {

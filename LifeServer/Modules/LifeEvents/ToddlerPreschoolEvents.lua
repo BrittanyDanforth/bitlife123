@@ -713,7 +713,8 @@ events[#events + 1] = {
 -- ════════════════════════════════════════════════════════════════════════════
 
 events[#events + 1] = {
-	id = "imaginary_friend",
+	-- CRITICAL FIX: Renamed from "imaginary_friend" to avoid duplicate ID with Childhood.lua
+	id = "toddler_imaginary_friend",
 	title = "Imaginary Friend",
 	emoji = "👻",
 	textVariants = {
