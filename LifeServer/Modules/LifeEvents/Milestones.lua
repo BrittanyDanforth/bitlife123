@@ -305,7 +305,7 @@ Milestones.events = {
 				end,
 			},
 			{
-				text = "Borrow parents' old car (free)",
+				text = "Borrow parents' old car",
 				effects = { Happiness = 3 },
 				setFlags = { has_car = true, has_vehicle = true, owes_parents = true },
 				feedText = "🚙 Parents loaned you the old family car. You owe them!",

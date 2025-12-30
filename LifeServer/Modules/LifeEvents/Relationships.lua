@@ -267,7 +267,7 @@ Relationships.events = {
 				feedText = "💍 Simple, intimate, perfect. They said YES!",
 			},
 			{ 
-				text = "Propose from the heart (free)", 
+				text = "Propose from the heart", 
 				effects = { Happiness = 10 }, 
 				setFlags = { engaged = true }, 
 				feedText = "💍 You proposed with pure love - no ring needed. They said YES!",
@@ -526,7 +526,7 @@ Relationships.events = {
 				end,
 			},
 			{ 
-				text = "Have a baby - hand-me-downs (free)", 
+				text = "Have a baby with hand-me-downs", 
 				effects = { Happiness = 12 }, 
 				setFlags = { has_child = true, has_children = true, parent = true }, 
 				feedText = "👶 Budget baby prep! Hand-me-downs and love!",

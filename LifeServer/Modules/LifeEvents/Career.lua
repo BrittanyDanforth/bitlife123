@@ -358,7 +358,7 @@ Career.events = {
 				feedText = "🛤️ You're starting over in a new field! Invested in training!",
 			},
 			{ 
-				text = "Self-teach and pivot (free)", 
+				text = "Self-teach and pivot", 
 				effects = { Smarts = 3, Happiness = 3 }, 
 				setFlags = { career_changer = true }, 
 				feedText = "🛤️ Self-teaching with free online courses. Slower but free!",

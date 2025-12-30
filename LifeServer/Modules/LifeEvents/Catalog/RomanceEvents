@@ -557,7 +557,7 @@ local events = {
 			},
 			{
 				index = 3,
-				text = "Stay home and relax together (free)",
+				text = "Stay home and relax together",
 				effects = { Happiness = 5 },
 				feedText = "🏠 Quality time at home. Nothing beats being together!",
 			},
@@ -597,7 +597,7 @@ local events = {
 			},
 			{
 				index = 3,
-				text = "Simple dinner at home (free)",
+				text = "Simple dinner at home",
 				effects = { Happiness = 8 },
 				feedText = "🎂 Intimate and meaningful. Love doesn't need money!",
 			},

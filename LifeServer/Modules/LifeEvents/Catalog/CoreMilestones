@@ -495,7 +495,7 @@ local events = {
 			},
 			{
 				index = 5,
-				text = "Volunteer gap year (free)",
+				text = "Volunteer gap year",
 				effects = { Happiness = 8, Health = 3, Smarts = 2 },
 				setFlags = { gap_year = true, volunteer_gap_year = true },
 				feedText = "🎓 Volunteer gap year! Free room and board while helping others!",

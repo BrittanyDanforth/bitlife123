@@ -1022,7 +1022,7 @@ PremiumIntegratedEvents.events = {
 				end,
 			},
 			{
-				text = "Use public defender (free)",
+				text = "Use public defender",
 				effects = {},
 				feedText = "Getting public defender...",
 				onResolve = function(state)

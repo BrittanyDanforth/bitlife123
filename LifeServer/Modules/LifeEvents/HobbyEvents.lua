@@ -31,13 +31,40 @@ HobbyEvents.events = {
 		tags = { "hobby", "discovery", "lifestyle" },
 		blockedByFlags = { in_prison = true, incarcerated = true },
 		
+		-- CRITICAL FIX: Dynamically adjust choices based on age!
+		-- Kids shouldn't need to pay $150 for video games - use common sense!
+		preProcess = function(state, eventDef)
+			local age = state.Age or 18
+			local isKid = age < 18
+			
+			-- Update choice texts based on age
+			if isKid then
+				-- Kids get hobbies for free (parents buy stuff, use family resources)
+				eventDef.choices[1].text = "🎮 Video games!"
+				eventDef.choices[1].effects = { Happiness = 5 }
+				eventDef.choices[1].eligibility = nil -- No money needed
+				eventDef.choices[1].feedText = "🎮 You got into gaming! So many games to play!"
+				
+				eventDef.choices[3].text = "👨‍🍳 Cooking/baking with family"
+				eventDef.choices[3].effects = { Happiness = 4, Smarts = 1 }
+				eventDef.choices[3].eligibility = nil -- No money needed
+				eventDef.choices[3].feedText = "👨‍🍳 You're learning to cook with your family! Fun and delicious!"
+			end
+			return true
+		end,
+		
 		choices = {
 			{
+				-- CRITICAL FIX: Adults pay $150, kids get it free via preProcess
 				text = "🎮 Video games! ($150)",
 				effects = { Happiness = 5, Money = -150 },
 				setFlags = { gamer = true, plays_video_games = true, owns_console = true },
 				feedText = "🎮 You bought a gaming console! Time to play!",
-				eligibility = function(state) return (state.Money or 0) >= 150, "💸 Can't afford gaming setup ($150)" end,
+				eligibility = function(state)
+					local age = state.Age or 18
+					if age < 18 then return true end -- Kids don't pay
+					return (state.Money or 0) >= 150, "💸 Can't afford gaming setup ($150)"
+				end,
 			},
 			{
 				text = "📚 Reading more",
@@ -46,11 +73,16 @@ HobbyEvents.events = {
 				feedText = "📚 You joined the library and got a library card! So many books!",
 			},
 			{
+				-- CRITICAL FIX: Adults pay $30, kids cook with family for free
 				text = "👨‍🍳 Cooking/baking ($30)",
 				effects = { Happiness = 4, Money = -30 },
 				setFlags = { pursuing_cooking = true, interested_in_cooking = true },
 				feedText = "👨‍🍳 You bought a cookbook and some kitchen supplies! Let's cook!",
-				eligibility = function(state) return (state.Money or 0) >= 30, "Need $30 for cooking supplies" end,
+				eligibility = function(state)
+					local age = state.Age or 18
+					if age < 18 then return true end -- Kids cook with family for free
+					return (state.Money or 0) >= 30, "Need $30 for cooking supplies"
+				end,
 			},
 			{
 				text = "💪 Fitness/exercise",

@@ -1186,19 +1186,19 @@ ProgressiveLifeEvents.events = {
 				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 for gym membership" end,
 			},
 			{
-				text = "Take up running (free!)",
+				text = "Take up running",
 				effects = { Health = 5, Happiness = 2 },
 				setFlags = { runner = true },
 				feedText = "💪 You started running! It's free and effective.",
 			},
 			{
-				text = "Try yoga at home (free!)",
+				text = "Try yoga at home",
 				effects = { Health = 4, Happiness = 3 },
 				setFlags = { yoga_practitioner = true },
 				feedText = "💪 Flexibility and mindfulness combined. Namaste!",
 			},
 			{
-				text = "Workout at home (free!)",
+				text = "Workout at home",
 				effects = { Health = 4 },
 				setFlags = { home_workout = true },
 				feedText = "💪 YouTube workouts and pushups. No excuses!",

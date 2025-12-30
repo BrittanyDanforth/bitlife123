@@ -1974,7 +1974,7 @@ Adult.events = {
 				feedText = "📚 You're never too old to learn something new!",
 			},
 			{ 
-				text = "Learn online (free)", 
+				text = "Learn online", 
 				effects = { Happiness = 5, Smarts = 3 },
 				setFlags = { lifelong_learner = true }, 
 				feedText = "📚 Free online courses! Self-taught and proud!",
