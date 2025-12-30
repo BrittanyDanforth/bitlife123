@@ -104,9 +104,48 @@ CommunityEvents.events = {
 					end
 				end,
 			},
-			{ text = "Parking wars", effects = { Happiness = -4 }, setFlags = { parking_feud = true }, feedText = "😤 Someone took your spot. This means war." },
-			{ text = "Property line disagreement", effects = { Happiness = -3 }, feedText = "😤 Had to deal with boundary disputes. Stressful." },
-			{ text = "Pet issues", effects = { Happiness = -3 }, feedText = "😤 Their pet is causing problems. Awkward confrontation." },
+			-- CRITICAL FIX: Parking wars requires having a car!
+			{ 
+				text = "Parking wars", 
+				effects = { Happiness = -4 }, 
+				setFlags = { parking_feud = true }, 
+				feedText = "😤 Someone took your spot. This means war.",
+				eligibility = function(state)
+					local flags = state.Flags or {}
+					if flags.has_car or flags.owns_vehicle or flags.has_vehicle then
+						return true
+					end
+					if state.Assets and state.Assets.Vehicles and #state.Assets.Vehicles > 0 then
+						return true
+					end
+					return false, "No car to park"
+				end,
+			},
+			-- CRITICAL FIX: Property disputes require owning property!
+			{ 
+				text = "Property line disagreement", 
+				effects = { Happiness = -3 }, 
+				feedText = "😤 Had to deal with boundary disputes. Stressful.",
+				eligibility = function(state)
+					local flags = state.Flags or {}
+					local housing = state.HousingState or {}
+					-- Homeowners have property lines, renters typically don't care
+					if flags.homeowner or flags.owns_home or housing.status == "owner" then
+						return true
+					end
+					if state.Assets and state.Assets.Properties and #state.Assets.Properties > 0 then
+						return true
+					end
+					return false, "No property to dispute"
+				end,
+			},
+			-- CRITICAL FIX: Pet issues require having a pet OR neighbor has pet
+			{ 
+				text = "Pet issues", 
+				effects = { Happiness = -3 }, 
+				feedText = "😤 Their pet is causing problems. Awkward confrontation.",
+				-- No eligibility needed - neighbor's pet, not yours
+			},
 		},
 	},
 	{
