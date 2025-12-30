@@ -577,9 +577,17 @@ function EventEngine.isChoiceEligible(choice, state)
 	end
 	
 	-- Check effects.Money
-	if choice.effects and choice.effects.Money and choice.effects.Money < 0 then
-		if money < math.abs(choice.effects.Money) then
-			return false, string.format("Can't afford $%d", math.abs(choice.effects.Money))
+	-- CRITICAL FIX: Handle range-based Money effects safely
+	if choice.effects and choice.effects.Money then
+		local moneyEffect = choice.effects.Money
+		-- If it's a range, use the minimum value for affordability check
+		if type(moneyEffect) == "table" and moneyEffect[1] and moneyEffect[2] then
+			moneyEffect = math.min(moneyEffect[1], moneyEffect[2])
+		end
+		if type(moneyEffect) == "number" and moneyEffect < 0 then
+			if money < math.abs(moneyEffect) then
+				return false, string.format("Can't afford $%d", math.abs(moneyEffect))
+			end
 		end
 	end
 	
@@ -735,14 +743,22 @@ function EventEngine.Pipeline.createPatch(choice, isSuccess)
 	end
 	
 	-- Extract stat changes
-	if effects.Health then patch.stats.Health = effects.Health end
-	if effects.Happiness then patch.stats.Happiness = effects.Happiness end
-	if effects.Smarts then patch.stats.Smarts = effects.Smarts end
-	if effects.Looks then patch.stats.Looks = effects.Looks end
+	-- CRITICAL FIX: Handle range-based effects like { Health = {5, 12} }
+	local function resolveValue(val)
+		if type(val) == "table" and val[1] and val[2] then
+			return math.random(val[1], val[2])
+		end
+		return val
+	end
+	
+	if effects.Health then patch.stats.Health = resolveValue(effects.Health) end
+	if effects.Happiness then patch.stats.Happiness = resolveValue(effects.Happiness) end
+	if effects.Smarts then patch.stats.Smarts = resolveValue(effects.Smarts) end
+	if effects.Looks then patch.stats.Looks = resolveValue(effects.Looks) end
 	
 	-- Extract money
-	if effects.Money then patch.money = effects.Money end
-	if effects.money then patch.money = effects.money end
+	if effects.Money then patch.money = resolveValue(effects.Money) end
+	if effects.money then patch.money = resolveValue(effects.money) end
 	
 	-- CRITICAL FIX: Handle 'cost' field from ActivityEvents and MedicalActivityEvents
 	if choice.cost and choice.cost > 0 then
@@ -1970,11 +1986,17 @@ function EventEngine.executeEventPipeline(event, choiceIndex, state, options)
 	end
 	
 	-- Apply effects to patch
+	-- CRITICAL FIX: Handle range-based effects like { Health = {5, 12} }
 	for stat, delta in pairs(effectsToUse) do
+		local actualDelta = delta
+		if type(delta) == "table" and delta[1] and delta[2] then
+			actualDelta = math.random(delta[1], delta[2])
+		end
+		
 		if stat ~= "Money" then
-			patch.stats[stat] = delta
+			patch.stats[stat] = actualDelta
 		else
-			patch.money = (patch.money or 0) + delta
+			patch.money = (patch.money or 0) + actualDelta
 		end
 	end
 	patch.money = patch.money + moneyToUse
