@@ -13523,6 +13523,31 @@ function LifeBackend:presentEvent(player, eventDef, feedText)
 			minigame = choice.minigame,
 		}
 		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Send cost/effects data to client for affordability checking!
+		-- User feedback: "should just grey them out saying (cant afford)"
+		-- The client needs to know the cost to gray out unaffordable choices!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		if choice.effects then
+			choiceData.effects = {}
+			-- Only send Money effect (for affordability) - don't send stat effects
+			if choice.effects.Money then
+				choiceData.effects.Money = choice.effects.Money
+			end
+		end
+		if choice.cost then
+			choiceData.cost = choice.cost
+		end
+		
+		-- Also check eligibility function and mark as unavailable if can't afford
+		if choice.eligibility and type(choice.eligibility) == "function" then
+			local success, result, reason = pcall(choice.eligibility, state)
+			if success and result == false then
+				choiceData.unavailable = true
+				choiceData.unavailableReason = reason or "Not eligible"
+			end
+		end
+		
 		-- Add premium choice info if this choice requires a gamepass
 		if choice.requiresGamepass then
 			choiceData.requiresGamepass = choice.requiresGamepass

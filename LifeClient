@@ -3346,34 +3346,19 @@ local function buildEventModal()
 	EventUI.question.Parent = bodySection
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX: Use ScrollingFrame for choices to handle many options
-	-- User bug: "OK button was barely showing and bottom half was cut off"
-	-- ScrollingFrame allows all buttons to be accessible even on small screens
-	-- AutomaticSize.Y makes it expand up to max height, then scroll kicks in
+	-- CRITICAL FIX: NO SCROLLING - Card scales dynamically to fit screen!
+	-- User feedback: "scroll is bad, should scale nicely depending on size"
+	-- The showEvent function will dynamically adjust text/button sizes based on content
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	local maxChoicesHeight = Device.IS_TINY_PHONE and 200 or (Device.IS_SMALL_PHONE and 280 or 350)
-	
-	EventUI.choicesSection = Instance.new("ScrollingFrame")
+	EventUI.choicesSection = Instance.new("Frame")
 	EventUI.choicesSection.Name = "ChoicesContainer"
-	-- Use AutomaticSize so it only takes up as much space as needed
 	EventUI.choicesSection.Size = UDim2.new(1, 0, 0, 0)
 	EventUI.choicesSection.AutomaticSize = Enum.AutomaticSize.Y
-	EventUI.choicesSection.AutomaticCanvasSize = Enum.AutomaticSize.Y
-	EventUI.choicesSection.CanvasSize = UDim2.new(1, 0, 0, 0)
 	EventUI.choicesSection.BackgroundTransparency = 1
-	EventUI.choicesSection.BorderSizePixel = 0
-	EventUI.choicesSection.ScrollBarThickness = Device.IS_TINY_PHONE and 3 or 5
-	EventUI.choicesSection.ScrollBarImageColor3 = Color3.fromRGB(150, 150, 150)
-	EventUI.choicesSection.ScrollingDirection = Enum.ScrollingDirection.Y
 	EventUI.choicesSection.LayoutOrder = 4
 	EventUI.choicesSection.ZIndex = 64
+	EventUI.choicesSection.ClipsDescendants = false  -- Don't clip - let parent handle it
 	EventUI.choicesSection.Parent = EventUI.card
-	
-	-- Add a size constraint to limit how tall the choices section can get
-	-- This triggers scrolling for events with many choices
-	local choicesSizeConstraint = Instance.new("UISizeConstraint")
-	choicesSizeConstraint.MaxSize = Vector2.new(math.huge, maxChoicesHeight)
-	choicesSizeConstraint.Parent = EventUI.choicesSection
 
 	-- MOBILE FIX: VERY tight choice section padding on tiny phones
 	local choicePadSide = Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 8 or padSize(18))
@@ -3385,7 +3370,6 @@ local function buildEventModal()
 	choicesLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	choicesLayout.SortOrder = Enum.SortOrder.LayoutOrder  -- CRITICAL: Force correct order
 	-- MOBILE FIX: Very tight spacing between buttons on tiny phones
-	-- BUG FIX: Even tighter spacing to fit all buttons
 	choicesLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 4 or padSize(8)))
 	choicesLayout.Parent = EventUI.choicesSection
 end
@@ -4691,15 +4675,76 @@ showEvent = function(payload)
 
 		local choiceHandlers = {}
 
-		-- MOBILE FIX: Self-sizing choice buttons with minimum tap height
-		-- CRITICAL FIX: SMALLER buttons on tiny phones (iPhone 6)
-		-- BUG FIX: Even smaller buttons to guarantee they fit on screen
-		-- User report: "NO OPTIONS MY GOD ON SMALL MOBILE PHONE"
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: DYNAMIC SCALING based on number of choices!
+		-- User feedback: "should scale nicely depending on size, no scrolling"
+		-- More choices = smaller buttons/text so everything fits on screen perfectly
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local numChoices = #(payload.choices or {})
+		local hasSurpriseBtn = numChoices >= 2  -- Surprise btn only shows for 2+ choices
+		local totalButtons = numChoices + (hasSurpriseBtn and 1 or 0)
+		
+		-- Get screen dimensions for smart scaling
+		local screenHeight = screenGui.AbsoluteSize.Y
+		local safeHeight = screenHeight - 80  -- Account for header/notch
+		local maxCardHeight = Device.IS_TINY_PHONE and 500 or (Device.IS_SMALL_PHONE and 560 or 650)
+		maxCardHeight = math.min(maxCardHeight, safeHeight)
+		
+		-- Estimate content height to determine if we need to scale
+		-- Header: ~60, Title: ~50, Body: varies, Question: ~30, Buttons: baseHeight * count
+		local baseButtonHeight = Device.IS_TINY_PHONE and 32 or (Device.IS_SMALL_PHONE and 38 or 48)
+		local baseSpacing = Device.IS_TINY_PHONE and 3 or (Device.IS_SMALL_PHONE and 5 or 8)
+		local estimatedBodyHeight = math.min(200, textLen * 0.5)  -- Rough estimate
+		local fixedContentHeight = 60 + 50 + 30 + 40  -- Header + title section + question + padding
+		local estimatedButtonsHeight = (baseButtonHeight + baseSpacing) * totalButtons
+		local estimatedTotalHeight = fixedContentHeight + estimatedBodyHeight + estimatedButtonsHeight
+		
+		-- Calculate scale factor based on how much we need to shrink
+		local scaleFactor = 1.0
+		if estimatedTotalHeight > maxCardHeight then
+			scaleFactor = maxCardHeight / estimatedTotalHeight
+			scaleFactor = math.max(0.55, scaleFactor)  -- Never go below 55% size
+		end
+		
+		-- Additional scaling for many choices (even if they might fit, make them compact)
+		if totalButtons >= 8 then
+			scaleFactor = math.min(scaleFactor, 0.60)
+		elseif totalButtons >= 7 then
+			scaleFactor = math.min(scaleFactor, 0.68)
+		elseif totalButtons >= 6 then
+			scaleFactor = math.min(scaleFactor, 0.75)
+		elseif totalButtons >= 5 then
+			scaleFactor = math.min(scaleFactor, 0.85)
+		end
+		
+		-- Apply scale factor to button sizing
 		local baseMinHeight = Device.IS_TINY_PHONE and 28 or (Device.IS_SMALL_PHONE and 32 or 44)
 		local choiceBtnTextSize = Device.IS_TINY_PHONE and 10 or (Device.IS_SMALL_PHONE and 12 or 15)
 		local choiceBtnCorner = Device.IS_TINY_PHONE and 5 or (Device.IS_SMALL_PHONE and 7 or 10)
 		local choiceBtnPadH = Device.IS_TINY_PHONE and 3 or (Device.IS_SMALL_PHONE and 5 or 8)
 		local choiceBtnPadV = Device.IS_TINY_PHONE and 1 or (Device.IS_SMALL_PHONE and 2 or 4)
+		
+		-- Scale everything down based on calculated factor
+		baseMinHeight = math.max(20, math.floor(baseMinHeight * scaleFactor))
+		choiceBtnTextSize = math.max(8, math.floor(choiceBtnTextSize * scaleFactor))
+		choiceBtnCorner = math.max(3, math.floor(choiceBtnCorner * scaleFactor))
+		
+		-- Also scale body text if we need to shrink significantly
+		if scaleFactor < 0.85 then
+			adjustedBodyTextSize = math.max(9, math.floor(adjustedBodyTextSize * scaleFactor))
+			adjustedLineHeight = math.max(1.0, adjustedLineHeight * 0.9)
+			safeSetTextSize(EventUI.body, adjustedBodyTextSize)
+			EventUI.body.LineHeight = adjustedLineHeight
+		end
+		
+		-- Tighten spacing based on scale factor
+		local choiceSpacing = math.max(1, math.floor(baseSpacing * scaleFactor))
+		
+		-- Update the layout padding dynamically
+		local choicesLayout = EventUI.choicesSection:FindFirstChildOfClass("UIListLayout")
+		if choicesLayout then
+			choicesLayout.Padding = UDim.new(0, choiceSpacing)
+		end
 		
 		for i, choice in ipairs(payload.choices or {}) do
 			local btn = Instance.new("TextButton")
@@ -4708,10 +4753,12 @@ showEvent = function(payload)
 			btn.AutomaticSize = Enum.AutomaticSize.Y
 			
 			-- ═══════════════════════════════════════════════════════════════════════════════
-			-- CRITICAL FIX: Handle UNAVAILABLE choices (from retry after can't afford)
-			-- Gray out choices that player already tried and couldn't afford
+			-- CRITICAL FIX: Handle UNAVAILABLE choices (server already checked eligibility)
+			-- Server sends unavailable=true for choices the player can't use
+			-- This includes eligibility function checks (e.g., "need a job", "need partner")
 			-- ═══════════════════════════════════════════════════════════════════════════════
 			local isUnavailable = choice.unavailable == true
+			local unavailableReason = choice.unavailableReason or "Not available"
 			
 			-- ═══════════════════════════════════════════════════════════════════════════════
 			-- CRITICAL FIX #AFFORD-1: Check if player can AFFORD this choice!
@@ -4738,6 +4785,14 @@ showEvent = function(payload)
 				if playerMoney < choiceCost then
 					cannotAfford = true
 				end
+			end
+			
+			-- If server marked as unavailable due to eligibility, treat as unavailable
+			-- (This catches non-money eligibility like "need a job", "need partner", etc.)
+			if isUnavailable and not cannotAfford then
+				-- Server already determined this is unavailable for some reason
+				-- The unavailableReason might say "You don't have a job" etc.
+				cannotAfford = false  -- Keep isUnavailable handling for non-money reasons
 			end
 			
 			-- ═══════════════════════════════════════════════════════════════════════════════
@@ -4788,13 +4843,22 @@ showEvent = function(payload)
 			btn.TextColor3 = C.White
 			
 			-- ═══════════════════════════════════════════════════════════════════════════════
-			-- CRITICAL FIX #AFFORD-2: Show "(Can't Afford)" for unaffordable choices
+			-- CRITICAL FIX #AFFORD-2: Show "(Can't Afford)" or reason for unavailable choices
 			-- User feedback: "should just grey them out saying (cant afford)"
-			-- Players can SEE all options but know which ones they can't afford!
+			-- Players can SEE all options but know which ones they can't pick!
 			-- ═══════════════════════════════════════════════════════════════════════════════
 			local displayText = choice.text
 			if cannotAfford then
 				displayText = "💰 " .. displayText .. " (Can't Afford)"
+				btn.TextColor3 = Color3.fromRGB(180, 180, 180)  -- Dimmed text
+			elseif isUnavailable then
+				-- Server marked this unavailable for non-money reasons (e.g., "need a job")
+				-- Shorten long reasons for mobile display
+				local shortReason = unavailableReason
+				if #shortReason > 30 then
+					shortReason = string.sub(shortReason, 1, 27) .. "..."
+				end
+				displayText = "🚫 " .. displayText .. " (" .. shortReason .. ")"
 				btn.TextColor3 = Color3.fromRGB(180, 180, 180)  -- Dimmed text
 			end
 			btn.Text = displayText
@@ -4867,14 +4931,21 @@ showEvent = function(payload)
 				end
 				
 				-- ═══════════════════════════════════════════════════════════════════════════════
-				-- CRITICAL FIX #AFFORD-3: Block clicking UNAFFORDABLE choices
+				-- CRITICAL FIX #AFFORD-3: Block clicking UNAFFORDABLE or UNAVAILABLE choices
 				-- User feedback: "grey them out saying (cant afford)"
-				-- Players can see but not select choices they can't afford!
+				-- Players can see but not select choices they can't afford or aren't eligible for!
 				-- ═══════════════════════════════════════════════════════════════════════════════
 				if cannotAfford then
 					-- Show feedback that player can't afford this
 					flashScreen(Color3.fromRGB(255, 180, 100), 0.5, 0.2)  -- Orange flash
 					-- Don't process - they need to pick an affordable choice
+					return
+				end
+				
+				if isUnavailable then
+					-- Show feedback that player can't use this option
+					flashScreen(Color3.fromRGB(200, 150, 100), 0.5, 0.2)  -- Brown flash for unavailable
+					-- Don't process - they need to pick an available choice
 					return
 				end
 
@@ -4964,6 +5035,13 @@ showEvent = function(payload)
 
 		-- Only show Surprise Me when there are 2+ choices
 		surpriseBtn.Visible = (payload.choices and #payload.choices >= 2) or false
+		
+		-- CRITICAL FIX: Scale surprise button to match choice buttons!
+		-- User bug: "Surprise me cuts off at bottom"
+		local surpriseBtnHeight = math.floor((Device.IS_TINY_PHONE and 28 or (Device.IS_SMALL_PHONE and 32 or 36)) * scaleFactor)
+		local surpriseBtnTextSize = math.floor((Device.IS_TINY_PHONE and 10 or (Device.IS_SMALL_PHONE and 12 or 14)) * scaleFactor)
+		surpriseBtn.Size = UDim2.new(1, 0, 0, surpriseBtnHeight)
+		surpriseBtn.TextSize = math.max(8, surpriseBtnTextSize)
 
 		EventUI.surpriseConnection = surpriseBtn.MouseButton1Click:Connect(function()
 			if EventUI.currentEventId and #choiceHandlers > 0 then
