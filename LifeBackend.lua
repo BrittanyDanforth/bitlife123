@@ -10180,6 +10180,10 @@ function LifeBackend:onPlayerRemoving(player)
 	-- Now clear the state
 	self.playerStates[player] = nil
 	self.pendingEvents[player.UserId] = nil
+	-- CRITICAL FIX: Also clear pending minigame events to prevent memory leak
+	if self.pendingMinigameEvents then
+		self.pendingMinigameEvents[player.UserId] = nil
+	end
 end
 
 -- CRITICAL FIX: Filter text using Roblox's TextService for custom names
@@ -13377,6 +13381,11 @@ function LifeBackend:replaceTextVariables(text, state)
 		return text
 	end
 	
+	-- CRITICAL FIX: Handle nil state to prevent crashes
+	if not state then
+		return text
+	end
+	
 	local result = text
 	
 	-- Partner name replacement - CRITICAL: Define at function scope so it's available for {partner} replacement later
@@ -15774,8 +15783,10 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 	local wasInJailBefore = state.InJail or false
 
 	if choice.effects or eventDef.source == "lifeevents" or eventDef.source == "stage" then
+		-- CRITICAL FIX: Ensure Stats exists before cloning to prevent nil error
+		state.Stats = state.Stats or { Health = 50, Happiness = 50, Smarts = 50, Looks = 50 }
 		local preStats = table.clone(state.Stats)
-		local preMoney = state.Money
+		local preMoney = state.Money or 0
 		local success, result = pcall(function()
 			return EventEngine.completeEvent(eventDef, choiceIndex, state)
 		end)
@@ -16801,7 +16812,7 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 				state.RoyalState.country = partner.royalCountry or "European Kingdom"
 				state.RoyalState.title = state.Gender == "Female" and "Princess" or "Prince"
 				state.RoyalState.popularity = 60
-				state.RoyalState.spouse = partner.name
+				state.RoyalState.spouse = partner.name or "Royal Spouse"
 				
 				-- Update partner relationship
 				partner.type = "spouse"
@@ -19570,6 +19581,11 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 	if not asset.price or type(asset.price) ~= "number" then
 		warn("[LifeBackend] Invalid asset price for", assetId)
 		return { success = false, message = "Asset unavailable." }
+	end
+	
+	-- CRITICAL FIX: Ensure asset has a name (fallback to id if missing)
+	if not asset.name then
+		asset.name = asset.id or "Unknown Item"
 	end
 	
 	debugPrint("  Found asset:", asset.name, "Price:", asset.price)
