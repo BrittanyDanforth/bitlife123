@@ -170,6 +170,8 @@ local function applyMafiaEffect(state, mafiaEffect)
 		state.InJail = false
 		state.JailYearsLeft = 0
 		state.Flags.in_prison = nil
+		state.Flags.incarcerated = nil -- CRITICAL FIX: Also clear incarcerated flag!
+		state.Flags.in_jail = nil -- CRITICAL FIX: Also clear in_jail flag!
 		state.Flags.escaped_prison = true
 		mobState.heat = math.min(100, (mobState.heat or 0) + 30) -- Escaping adds heat
 	end
