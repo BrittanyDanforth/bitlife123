@@ -354,6 +354,7 @@ SocialMediaEvents.events = {
 		ageBand = "any",
 		category = "shopping",
 		tags = { "shopping", "online", "spending" },
+		blockedByFlags = { in_prison = true, incarcerated = true }, -- CRITICAL FIX: Can't shop from prison!
 		
 		eligibility = function(state)
 			local money = state.Money or 0
@@ -588,6 +589,7 @@ SocialMediaEvents.events = {
 		ageBand = "any",
 		category = "entertainment",
 		tags = { "memes", "funny", "culture" },
+		blockedByFlags = { in_prison = true, incarcerated = true }, -- CRITICAL FIX: Limited internet in prison
 		
 		choices = {
 			{ text = "You became a meme", effects = {}, feedText = "Your face/moment going viral...",
