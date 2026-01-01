@@ -1480,12 +1480,15 @@ function EventEngine.createRelationship(state, relType, options)
 	options = options or {}
 
 	-- Initialize relationships table if needed
-	state.Relationships = state.Relationships or {
-		family = {},
-		friends = {},
-		romantic = {},
-		enemies = {},
-	}
+	state.Relationships = state.Relationships or {}
+	-- CRITICAL FIX: Always ensure sub-tables exist (the "or {}" shorthand doesn't add missing keys!)
+	state.Relationships.family = state.Relationships.family or {}
+	state.Relationships.friends = state.Relationships.friends or {}
+	state.Relationships.romantic = state.Relationships.romantic or {}
+	state.Relationships.enemies = state.Relationships.enemies or {}
+	
+	-- CRITICAL FIX: Ensure Flags exist for partner tracking
+	state.Flags = state.Flags or {}
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Better age generation for new relationships
@@ -1564,10 +1567,14 @@ function EventEngine.createRelationship(state, relType, options)
 		relationship.metAt = options.metAt or "dating"
 		relationship.isMarried = options.isMarried or false
 		relationship.category = "romance"
+		-- CRITICAL FIX: Add explicit flags for UI detection
+		-- User bug: "I start to date her but then tells me im not dating anyone"
+		relationship.isPartner = true
+		relationship.isRomance = true
+		relationship.type = "romance" -- Force type to "romance" for consistency
 		-- CRITICAL FIX: Store in flat lookup, as partner, AND typed array
 		state.Relationships[relId] = relationship
 		state.Relationships.partner = relationship
-		state.Flags = state.Flags or {}
 		state.Flags.has_partner = true
 		state.Flags.dating = true
 		if type(state.Relationships.romantic) == "table" then
