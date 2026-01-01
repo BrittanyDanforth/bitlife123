@@ -329,8 +329,8 @@ C.Amber      = C.Amber      or Color3.fromRGB(245, 158, 11)
 local RelationshipsScreen = {}
 RelationshipsScreen.__index = RelationshipsScreen
 
--- CRITICAL FIX: Debug enabled for action tracking
-local DEBUG = true
+-- Debug logging
+local DEBUG = false
 local function log(...)
 	if DEBUG then
 		print("[RelationshipsScreen]", ...)
