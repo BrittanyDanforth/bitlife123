@@ -3259,7 +3259,8 @@ Adult.events = {
 		oneTime = true,
 		maxOccurrences = 1,
 		blockedByFlags = { married = true, engaged = true },
-		requiresFlags = { in_relationship = true },
+		-- CRITICAL FIX: Changed from in_relationship to has_partner (most dating events set has_partner not in_relationship)
+		requiresFlags = { has_partner = true },
 		choices = {
 			{ text = "Grand romantic gesture ($5,000)", effects = { Happiness = 25, Money = -5000 }, setFlags = { engaged = true, romantic = true }, feedText = "💍 They said YES! What a magical moment!", eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 for grand gesture" end },
 			{ text = "Simple and heartfelt", effects = { Happiness = 22 }, setFlags = { engaged = true }, feedText = "💍 They said YES! Sometimes simple is perfect." },
@@ -3342,7 +3343,8 @@ Adult.events = {
 		baseChance = 0.5,
 		oneTime = true,
 		maxOccurrences = 1,
-		requiresFlags = { has_children = true },
+		-- CRITICAL FIX: Changed from has_children to has_child (most events set has_child not has_children)
+		requiresFlags = { has_child = true },
 		choices = {
 			{ text = "Rediscover yourself and hobbies", effects = { Happiness = 15 }, setFlags = { empty_nester = true, self_renewed = true }, feedText = "Freedom! Time to focus on YOU again." },
 			{ text = "Struggle with the silence", effects = { Happiness = -15 }, setFlags = { empty_nester = true }, feedText = "It's harder than expected. You miss them." },
