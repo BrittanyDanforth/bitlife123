@@ -1737,7 +1737,10 @@ function RelationshipsScreen:populateRomance()
 		UI.tween(meetBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Pink })
 	end)
 	meetBtn.MouseButton1Click:Connect(function()
-		self:doInteraction("meet_someone", "romance", nil)
+		-- CRITICAL FIX: Pass explicit empty table {} to indicate "create new person"
+		-- Previously nil fell back to self.currentInteractPerson (the friend they clicked on!)
+		-- This caused "meet someone" to keep targeting the same friend instead of creating a new romantic interest
+		self:doInteraction("meet_someone", "romance", {})
 	end)
 
 	if #romances > 0 then
@@ -1908,7 +1911,9 @@ function RelationshipsScreen:populateFriends()
 		UI.tween(makeBtn, TweenInfo.new(0.12), { BackgroundColor3 = C.Purple })
 	end)
 	makeBtn.MouseButton1Click:Connect(function()
-		self:doInteraction("make_friend", "friend", nil)
+		-- CRITICAL FIX: Pass explicit empty table {} to indicate "create new person"
+		-- Previously nil fell back to self.currentInteractPerson
+		self:doInteraction("make_friend", "friend", {})
 	end)
 
 	if #friends > 0 then
@@ -3234,7 +3239,20 @@ function RelationshipsScreen:doInteraction(actionId, relTypeOverride, personOver
 	end
 
 	local relType = relTypeOverride or self.currentInteractType or "family"
-	local person  = personOverride or self.currentInteractPerson
+	
+	-- CRITICAL FIX: Handle personOverride properly
+	-- - If personOverride is nil, use self.currentInteractPerson (existing behavior)
+	-- - If personOverride is an empty table {}, it means "create new person, no target"
+	-- - If personOverride is a real person table, use that person
+	local person
+	if personOverride == nil then
+		person = self.currentInteractPerson
+	elseif type(personOverride) == "table" and personOverride.id then
+		person = personOverride
+	else
+		-- Empty table {} or invalid value = no specific target (for meet_someone/make_friend)
+		person = nil
+	end
 
 	local payload = {
 		actionId              = actionId,

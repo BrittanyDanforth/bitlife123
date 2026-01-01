@@ -1769,34 +1769,59 @@ function FriendshipDecayEvents.processYearlyDecay(state)
 		if type(rel) == "table" then
 			if rel.type == "friend" or rel.role == "Friend" or id:find("friend") then
 				if rel.alive ~= false then
-					-- CRITICAL FIX: metAt can be a string like "childhood" or "randomly"!
-					local lastContact = rel.lastContact or rel.lastInteraction
-					if type(lastContact) ~= "number" then
-						if type(rel.metAt) == "number" then
-							lastContact = rel.metAt
-						else
-							lastContact = 0
-						end
-					end
-					local yearsSince = math.max(0, currentAge - (tonumber(lastContact) or 0))
+					-- CRITICAL FIX: Childhood friends are protected from early decay!
+					-- They're friends you grew up with, so they naturally stay in contact
+					local isChildhoodFriend = id:find("childhood") or rel.role == "Childhood Friend" or rel.metAt == "childhood"
 					
-					-- Decay relationship based on years without contact
-					if yearsSince >= 1 then
-						local decayAmount = 0
-						if yearsSince >= 5 then
-							decayAmount = 15 -- Severe decay after 5+ years
-						elseif yearsSince >= 3 then
-							decayAmount = 8 -- Moderate decay after 3+ years
-						elseif yearsSince >= 1 then
-							decayAmount = 3 -- Light decay after 1+ year
+					-- Children (under 18) don't lose childhood friends to decay - they see them at school!
+					local skipDecay = false
+					if isChildhoodFriend and currentAge < 18 then
+						-- Update lastContact to current age so they don't decay
+						rel.lastContact = currentAge
+						-- Skip decay processing entirely for childhood friends during childhood
+						skipDecay = true
+					end
+					
+					if not skipDecay then
+						-- CRITICAL FIX: metAt can be a string like "childhood" or "randomly"!
+						local lastContact = rel.lastContact or rel.lastInteraction
+						if type(lastContact) ~= "number" then
+							if type(rel.metAt) == "number" then
+								lastContact = rel.metAt
+							elseif isChildhoodFriend then
+								-- Childhood friends: assume they've been in contact recently
+								lastContact = math.max(0, currentAge - 2)
+							else
+								lastContact = 0
+							end
 						end
+						local yearsSince = math.max(0, currentAge - (tonumber(lastContact) or 0))
 						
-						rel.relationship = math.max(0, (rel.relationship or 50) - decayAmount)
-						
-						-- Mark as estranged if relationship hits 0
-						if rel.relationship <= 0 then
-							rel.estranged = true
-							table.insert(decayedFriends, rel.name or "A friend")
+						-- CRITICAL FIX: Much gentler decay rates
+						-- Old rates caused all friends to disappear within a few years!
+						-- New rates allow friendships to survive longer without active maintenance
+						if yearsSince >= 2 then -- Changed from 1 year to 2 years minimum
+							local decayAmount = 0
+							if yearsSince >= 10 then
+								decayAmount = 8 -- Was 15 - severe decay only after 10+ years
+							elseif yearsSince >= 5 then
+								decayAmount = 4 -- Was 8 - moderate decay after 5+ years
+							elseif yearsSince >= 2 then
+								decayAmount = 2 -- Was 3 - very light decay after 2+ years
+							end
+							
+							-- Childhood friends decay even slower (lifelong bond)
+							if isChildhoodFriend then
+								decayAmount = math.floor(decayAmount * 0.5)
+							end
+							
+							rel.relationship = math.max(0, (rel.relationship or 50) - decayAmount)
+							
+							-- Mark as estranged if relationship hits 0
+							if rel.relationship <= 0 then
+								rel.estranged = true
+								table.insert(decayedFriends, rel.name or "A friend")
+							end
 						end
 					end
 				end

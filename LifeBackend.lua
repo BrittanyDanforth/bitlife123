@@ -20941,9 +20941,14 @@ function LifeBackend:handleInteraction(player, payload)
 	end
 
 	-- Single-only actions (meet_someone etc.)
+	-- CRITICAL FIX: Check BOTH partner AND spouse (partner becomes spouse after marriage!)
+	-- Also check relationship flags for complete detection
 	if action.requiresSingle then
 		local partner = state.Relationships.partner
-		if partner and partner.alive ~= false then
+		local spouse = state.Relationships.spouse
+		local hasPartnerFlag = state.Flags.has_partner or state.Flags.has_spouse or state.Flags.dating or state.Flags.engaged or state.Flags.married
+		
+		if (partner and partner.alive ~= false) or (spouse and spouse.alive ~= false) or hasPartnerFlag then
 			return { success = false, message = "You're already in a relationship." }
 		end
 	end
