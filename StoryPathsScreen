@@ -193,7 +193,8 @@ local Paths = {
 		id = "political",
 		name = "Political Career",
 		emoji = "🏛️",
-		description = "Rise through the political ranks from local office to President!",
+		-- CRITICAL FIX: Removed President (not implemented yet)
+		description = "Rise through the political ranks from local office to Senator!",
 		color = C.Blue,
 		colorPale = C.BluePale,
 		colorDark = C.BlueDark,
@@ -205,7 +206,7 @@ local Paths = {
 			{ id = "mayor", name = "Mayor", emoji = "🏙️", description = "Lead your city" },
 			{ id = "governor", name = "Governor", emoji = "🗺️", description = "State leadership" },
 			{ id = "senator", name = "Senator", emoji = "🏛️", description = "National representation" },
-			{ id = "president", name = "President", emoji = "🇺🇸", description = "Leader of the nation!" },
+			-- REMOVED: President stage (not implemented)
 		},
 		actions = {
 			{ id = "campaign", name = "Campaign", emoji = "📢", effect = "+Votes", cost = 5000 },
@@ -453,6 +454,13 @@ function StoryPathsScreen:createUI()
 		colorDark = C.PurpleDark,
 		zIndex = 85
 	})
+	-- CRITICAL FIX: Ensure close button has proper X text and font
+	-- User bug: "the X button is a weird X not just a normal X"
+	if headerData.closeButton then
+		headerData.closeButton.Text = "X"
+		headerData.closeButton.Font = Enum.Font.GothamBold
+		headerData.closeButton.TextSize = 18
+	end
 	headerData.closeButton.MouseButton1Click:Connect(function() self:hide() end)
 	headerData.closeButton.MouseEnter:Connect(function()
 		UI.tween(headerData.closeButton, TweenInfo.new(0.12), { BackgroundTransparency = 0 })
