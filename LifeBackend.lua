@@ -3456,11 +3456,22 @@ function RelationshipDecaySystem.processYearlyDecay(state)
 			end
 			
 			-- Initialize last contact if missing
-			if not rel.lastContact then
-				rel.lastContact = rel.metAt or rel.createdAt or (currentAge - 1)
+			-- CRITICAL FIX: metAt/createdAt can be strings like "childhood" or "randomly"!
+			-- Only use numeric values for lastContact
+			if not rel.lastContact or type(rel.lastContact) ~= "number" then
+				-- Try to get a numeric value, fallback to current age - 1
+				local numericContact = nil
+				if type(rel.createdAt) == "number" then
+					numericContact = rel.createdAt
+				elseif type(rel.metAt) == "number" then
+					numericContact = rel.metAt
+				end
+				rel.lastContact = numericContact or math.max(0, (currentAge or 1) - 1)
 			end
 			
-			local yearsSinceContact = currentAge - (rel.lastContact or 0)
+			-- CRITICAL FIX: Ensure both values are numbers before arithmetic
+			local lastContactNum = tonumber(rel.lastContact) or 0
+			local yearsSinceContact = (currentAge or 0) - lastContactNum
 			
 			-- Apply decay based on neglect
 			if yearsSinceContact >= 1 then
@@ -9669,7 +9680,8 @@ function LifeBackend:createInitialState(player)
 			alive = true,
 			isFriend = true,
 			category = "friend",
-			metAt = "childhood",
+			metAt = "childhood", -- Descriptive string
+			lastContact = 0, -- CRITICAL FIX: Numeric value for decay calculations (met at birth)
 			yearsKnown = 0,
 		}
 		

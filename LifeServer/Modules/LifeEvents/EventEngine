@@ -1556,6 +1556,9 @@ function EventEngine.createRelationship(state, relType, options)
 	if relType == "friend" then
 		relationship.role = options.role or "Friend"
 		relationship.metAt = options.metAt or "randomly"
+		-- CRITICAL FIX: Always set numeric lastContact for decay calculations!
+		-- metAt is descriptive (string), lastContact is numeric (age when met)
+		relationship.lastContact = playerAge
 		relationship.category = "friend"
 		-- CRITICAL FIX: Store both in the flat lookup AND typed arrays
 		state.Relationships[relId] = relationship
@@ -1565,6 +1568,8 @@ function EventEngine.createRelationship(state, relType, options)
 	elseif relType == "romance" or relType == "partner" then
 		relationship.role = options.role or "Partner"
 		relationship.metAt = options.metAt or "dating"
+		-- CRITICAL FIX: Always set numeric lastContact for decay calculations!
+		relationship.lastContact = playerAge
 		relationship.isMarried = options.isMarried or false
 		relationship.category = "romance"
 		-- CRITICAL FIX: Add explicit flags for UI detection

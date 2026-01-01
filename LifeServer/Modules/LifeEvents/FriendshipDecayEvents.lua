@@ -90,8 +90,19 @@ end
 -- Calculate years since last interaction
 local function getYearsSinceContact(friendData, currentAge)
 	if not friendData then return 0 end
-	local lastContact = friendData.lastContact or friendData.lastInteraction or friendData.metAt or 0
-	return (currentAge or 0) - lastContact
+	-- CRITICAL FIX: metAt can be a string like "childhood" or "randomly"!
+	-- Only use numeric values for calculations
+	local lastContact = friendData.lastContact or friendData.lastInteraction
+	if type(lastContact) ~= "number" then
+		-- Try metAt if it's numeric
+		if type(friendData.metAt) == "number" then
+			lastContact = friendData.metAt
+		else
+			-- Default to 0 (means they haven't contacted in a while)
+			lastContact = 0
+		end
+	end
+	return math.max(0, (currentAge or 0) - (tonumber(lastContact) or 0))
 end
 
 -- Check if player has any friends
@@ -1758,8 +1769,16 @@ function FriendshipDecayEvents.processYearlyDecay(state)
 		if type(rel) == "table" then
 			if rel.type == "friend" or rel.role == "Friend" or id:find("friend") then
 				if rel.alive ~= false then
-					local lastContact = rel.lastContact or rel.lastInteraction or rel.metAt or 0
-					local yearsSince = currentAge - lastContact
+					-- CRITICAL FIX: metAt can be a string like "childhood" or "randomly"!
+					local lastContact = rel.lastContact or rel.lastInteraction
+					if type(lastContact) ~= "number" then
+						if type(rel.metAt) == "number" then
+							lastContact = rel.metAt
+						else
+							lastContact = 0
+						end
+					end
+					local yearsSince = math.max(0, currentAge - (tonumber(lastContact) or 0))
 					
 					-- Decay relationship based on years without contact
 					if yearsSince >= 1 then
