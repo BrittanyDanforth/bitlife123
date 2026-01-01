@@ -594,10 +594,26 @@ function EventEngine.isChoiceEligible(choice, state)
 	end
 	
 	-- Check required flags
+	-- CRITICAL FIX: requiresFlags can be either:
+	-- 1. Array format: { "flag1", "flag2" } - use ipairs
+	-- 2. Key-value format: { flag1 = true, flag2 = true } - use pairs on keys
+	-- The old code used ipairs() which ONLY works for arrays!
+	-- Key-value tables have NO numeric indices so ipairs returns NOTHING!
 	if choice.requiresFlags then
-		for _, flag in ipairs(choice.requiresFlags) do
-			if not flags[flag] then
-				return false, string.format("Missing requirement: %s", flag)
+		-- Check if it's an array (has numeric keys) or key-value table
+		if choice.requiresFlags[1] then
+			-- Array format
+			for _, flag in ipairs(choice.requiresFlags) do
+				if not flags[flag] then
+					return false, string.format("Missing requirement: %s", flag)
+				end
+			end
+		else
+			-- Key-value format { flag = true }
+			for flag, required in pairs(choice.requiresFlags) do
+				if required and not flags[flag] then
+					return false, string.format("Missing requirement: %s", flag)
+				end
 			end
 		end
 	end
@@ -1892,10 +1908,26 @@ function EventEngine.checkEligibilityDetailed(event, state, context)
 	end
 	
 	-- Flag requirements
+	-- CRITICAL FIX: requiresFlags can be either:
+	-- 1. Array format: { "flag1", "flag2" } - use ipairs
+	-- 2. Key-value format: { flag1 = true, flag2 = true } - use pairs on keys
+	-- The old code used ipairs() which ONLY works for arrays!
+	-- Key-value tables have NO numeric indices so ipairs returns NOTHING!
 	if event.requiresFlags then
-		for _, flag in ipairs(event.requiresFlags) do
-			if not context.flags[flag] then
-				table.insert(reasons, string.format("Missing flag: %s", flag))
+		-- Check if it's an array (has numeric keys) or key-value table
+		if event.requiresFlags[1] then
+			-- Array format
+			for _, flag in ipairs(event.requiresFlags) do
+				if not context.flags[flag] then
+					table.insert(reasons, string.format("Missing flag: %s", flag))
+				end
+			end
+		else
+			-- Key-value format { flag = true }
+			for flag, required in pairs(event.requiresFlags) do
+				if required and not context.flags[flag] then
+					table.insert(reasons, string.format("Missing flag: %s", flag))
+				end
 			end
 		end
 	end
