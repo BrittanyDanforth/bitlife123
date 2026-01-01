@@ -458,16 +458,16 @@ local events = {
 				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 to relocate" end,
 				feedText = "🏃 Relocated to a new city. Fresh start!",
 			},
-			{
-				index = 4,
-				text = "Lay low here",
-				effects = { Happiness = -6 },
-				setFlags = { laying_low = true },
-				feedText = "🏃 Can't afford to move. Laying low instead...",
-			},
-			{
-				index = 4,
-				text = "Turn informant for immunity",
+		{
+			index = 4,
+			text = "Lay low here",
+			effects = { Happiness = -6 },
+			setFlags = { laying_low = true },
+			feedText = "🏃 Can't afford to move. Laying low instead...",
+		},
+		{
+			index = 5,
+			text = "Turn informant for immunity",
 				effects = { Happiness = -10 },
 				setFlags = { informant = true, snitch = true },
 				feedText = "You cooperated with the police in exchange for immunity.",

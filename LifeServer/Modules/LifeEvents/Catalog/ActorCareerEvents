@@ -254,7 +254,7 @@ ActorCareerEvents.events = {
 					if roll <= 40 then
 						state.Money = (state.Money or 0) + math.random(500000, 2000000)
 						state:ModifyStat("Happiness", 30)
-						state.Fame = (state.Fame or 0) + 100
+						state.Fame = math.min(100, (state.Fame or 0) + 100) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.oscar_winner = true
 						state:AddFeed("🏆 AND THE OSCAR GOES TO... YOU! Academy Award winner! This changes everything!")
@@ -274,7 +274,7 @@ ActorCareerEvents.events = {
 					if roll <= 25 then
 						state.Money = (state.Money or 0) + math.random(300000, 1000000)
 						state:ModifyStat("Happiness", 25)
-						state.Fame = (state.Fame or 0) + 80
+						state.Fame = math.min(100, (state.Fame or 0) + 80) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.oscar_winner = true
 						state:AddFeed("🏆 WON WITHOUT CAMPAIGNING! The most authentic Oscar speech ever!")
@@ -432,7 +432,7 @@ ActorCareerEvents.events = {
 				onResolve = function(state)
 					local contract = math.random(5000000, 20000000)
 					state.Money = (state.Money or 0) + contract
-					state.Fame = (state.Fame or 0) + 80
+					state.Fame = math.min(100, (state.Fame or 0) + 80) -- CRITICAL FIX: Cap fame at 100
 					state.Flags = state.Flags or {}
 					state.Flags.franchise_star = true
 					state.Flags.superhero_actor = true

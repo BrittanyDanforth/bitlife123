@@ -155,7 +155,7 @@ CelebrityEvents.ActingCareer = {
 			activities = { "Choose your projects", "Command huge salaries", "Set trends" },
 		},
 		{
-			id = "legend",
+			id = "acting_legend", -- CRITICAL FIX: Renamed from "legend" to avoid duplicate ID with athlete career
 			name = "Hollywood Legend",
 			emoji = "👑",
 			salary = { min = 25000000, max = 100000000 },
@@ -297,7 +297,7 @@ CelebrityEvents.MusicCareer = {
 			activities = { "Release platinum albums", "Win music awards", "Collaborate with other stars" },
 		},
 		{
-			id = "superstar",
+			id = "music_superstar", -- CRITICAL FIX: Renamed from "superstar" to avoid duplicate ID with athlete career
 			name = "Superstar",
 			emoji = "🌟",
 			salary = { min = 10000000, max = 50000000 },
@@ -308,7 +308,7 @@ CelebrityEvents.MusicCareer = {
 			activities = { "World tours", "Super Bowl halftime shows", "Break streaming records" },
 		},
 		{
-			id = "icon",
+			id = "music_icon", -- CRITICAL FIX: Renamed from "icon" to avoid duplicate ID with influencer/model careers
 			name = "Music Icon",
 			emoji = "👑",
 			salary = { min = 30000000, max = 150000000 },
@@ -473,7 +473,7 @@ CelebrityEvents.InfluencerCareer = {
 			activities = { "Appear on talk shows", "Write bestselling books", "Star in productions" },
 		},
 		{
-			id = "icon",
+			id = "influencer_icon", -- CRITICAL FIX: Renamed from "icon" to avoid duplicate ID with music/model careers
 			name = "Social Media Icon",
 			emoji = "👑",
 			salary = { min = 20000000, max = 100000000 },
@@ -551,7 +551,7 @@ CelebrityEvents.AthleteCareer = {
 	
 	stages = {
 		{
-			id = "amateur",
+			id = "athlete_amateur", -- CRITICAL FIX: Renamed from "amateur" to avoid duplicate ID with model career
 			name = "Amateur",
 			emoji = "🏃",
 			salary = { min = 0, max = 500 },
@@ -606,7 +606,7 @@ CelebrityEvents.AthleteCareer = {
 			activities = { "Lead your team", "Make highlight reels", "Get national coverage" },
 		},
 		{
-			id = "allstar",
+			id = "athlete_allstar", -- CRITICAL FIX: Renamed from "allstar" to avoid duplicate ID with AwardTypes
 			name = "All-Star",
 			emoji = "🌟",
 			salary = { min = 10000000, max = 30000000 },
@@ -617,7 +617,7 @@ CelebrityEvents.AthleteCareer = {
 			activities = { "All-Star selections", "MVP voting", "Massive endorsements" },
 		},
 		{
-			id = "superstar",
+			id = "athlete_superstar", -- CRITICAL FIX: Renamed from "superstar" to avoid duplicate ID with music career
 			name = "Superstar",
 			emoji = "💫",
 			salary = { min = 30000000, max = 60000000 },
@@ -628,7 +628,7 @@ CelebrityEvents.AthleteCareer = {
 			activities = { "Face of the franchise", "Global recognition", "Legacy building" },
 		},
 		{
-			id = "legend",
+			id = "athlete_legend", -- CRITICAL FIX: Renamed from "legend" to avoid duplicate ID with acting career
 			name = "Sports Legend",
 			emoji = "👑",
 			salary = { min = 50000000, max = 150000000 },
@@ -711,7 +711,7 @@ CelebrityEvents.ModelCareer = {
 	
 	stages = {
 		{
-			id = "amateur",
+			id = "model_amateur", -- CRITICAL FIX: Renamed from "amateur" to avoid duplicate ID with athlete career
 			name = "Amateur Model",
 			emoji = "📷",
 			salary = { min = 100, max = 1000 },
@@ -723,7 +723,7 @@ CelebrityEvents.ModelCareer = {
 			activities = { "TFP shoots", "Build portfolio", "Find an agency" },
 		},
 		{
-			id = "catalog",
+			id = "model_catalog_stage", -- CRITICAL FIX: Renamed from "catalog" to avoid conflict with model type ID
 			name = "Catalog Model",
 			emoji = "📖",
 			salary = { min = 5000, max = 20000 },
@@ -735,7 +735,7 @@ CelebrityEvents.ModelCareer = {
 			activities = { "Department store catalogs", "Local advertisements", "Steady work" },
 		},
 		{
-			id = "commercial",
+			id = "model_commercial_stage", -- CRITICAL FIX: Renamed from "commercial" to avoid conflict with model type ID
 			name = "Commercial Model",
 			emoji = "📺",
 			salary = { min = 30000, max = 80000 },
@@ -747,7 +747,7 @@ CelebrityEvents.ModelCareer = {
 			activities = { "TV commercials", "Billboard campaigns", "Brand spokesmodel" },
 		},
 		{
-			id = "fashion",
+			id = "model_fashion_stage", -- CRITICAL FIX: Renamed from "fashion" to avoid conflict with model type ID
 			name = "Fashion Model",
 			emoji = "👗",
 			salary = { min = 100000, max = 300000 },
@@ -795,7 +795,7 @@ CelebrityEvents.ModelCareer = {
 			activities = { "Global icon status", "Your own beauty line", "Victoria's Secret Angel" },
 		},
 		{
-			id = "icon",
+			id = "model_icon", -- CRITICAL FIX: Renamed from "icon" to avoid duplicate ID with music/influencer careers
 			name = "Fashion Icon",
 			emoji = "👑",
 			salary = { min = 15000000, max = 50000000 },
@@ -3411,7 +3411,7 @@ CelebrityEvents.StreamerCareer = {
 	maxStartAge = 45,
 	
 	platforms = {
-		{ id = "twitch", name = "Twitch", emoji = "🟣", focus = "gaming" },
+		{ id = "streamer_twitch", name = "Twitch", emoji = "🟣", focus = "gaming" }, -- CRITICAL FIX: Renamed from "twitch" to avoid duplicate ID with InfluencerCareer.platforms
 		{ id = "youtube_gaming", name = "YouTube Gaming", emoji = "🎮", focus = "gaming" },
 		{ id = "kick", name = "Kick", emoji = "🟢", focus = "gaming" },
 		{ id = "youtube_live", name = "YouTube Live", emoji = "📺", focus = "variety" },

@@ -641,14 +641,13 @@ RoyaltyEvents.LifeEvents = {
 				setFlags = { shy_royal = true, first_appearance_done = true },
 				feed = "You were adorably shy at your first appearance.",
 			},
-			{
-				text = "Make a funny face at the cameras",
-				effects = { Happiness = 10 },
-				royaltyEffect = { popularity = 3, scandals = 0 },
-				setFlags = { first_appearance_done = true },
-				setFlags = { playful_royal = true },
-				feed = "Your funny face became a viral meme!",
-			},
+		{
+			text = "Make a funny face at the cameras",
+			effects = { Happiness = 10 },
+			royaltyEffect = { popularity = 3, scandals = 0 },
+			setFlags = { first_appearance_done = true, playful_royal = true },
+			feed = "Your funny face became a viral meme!",
+		},
 		},
 	},
 	-- CRITICAL FIX #287: Added oneTime to royal education choice

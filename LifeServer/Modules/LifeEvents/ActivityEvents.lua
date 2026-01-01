@@ -1105,7 +1105,7 @@ ActivityEvents.Vacation = {
 		},
 	},
 	{
-		id = "vacation_luxury",
+		id = "vacation_luxury_upgrade", -- CRITICAL FIX: Renamed from vacation_luxury to avoid duplicate ID with VacationActivityEvents.lua
 		title = "🏨 Luxury Upgrade",
 		emoji = "🏨",
 		weight = 8,

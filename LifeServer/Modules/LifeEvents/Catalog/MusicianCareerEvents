@@ -131,7 +131,7 @@ MusicianCareerEvents.events = {
 						local sales = math.random(500000, 2000000)
 						state.Money = (state.Money or 0) + sales
 						state:ModifyStat("Happiness", 25)
-						state.Fame = (state.Fame or 0) + 50
+						state.Fame = math.min(100, (state.Fame or 0) + 50) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.platinum_album = true
 						state:AddFeed(string.format("🎵 PLATINUM ALBUM! %d streams in first week! You're a superstar!", sales * 100))
@@ -284,7 +284,7 @@ MusicianCareerEvents.events = {
 					if roll <= 40 then
 						state.Money = (state.Money or 0) + math.random(200000, 1000000)
 						state:ModifyStat("Happiness", 30)
-						state.Fame = (state.Fame or 0) + 70
+						state.Fame = math.min(100, (state.Fame or 0) + 70) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.grammy_winner = true
 						state:AddFeed("🏆 AND THE GRAMMY GOES TO... YOU! Grammy winner! Dreams come true!")
@@ -304,7 +304,7 @@ MusicianCareerEvents.events = {
 					if roll <= 30 then
 						state.Money = (state.Money or 0) + math.random(150000, 500000)
 						state:ModifyStat("Happiness", 25)
-						state.Fame = (state.Fame or 0) + 60
+						state.Fame = math.min(100, (state.Fame or 0) + 60) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.grammy_winner = true
 						state:AddFeed("🏆 SURPRISE! You won! The most genuine reaction on TV!")
@@ -644,7 +644,7 @@ MusicianCareerEvents.events = {
 						local earnings = math.random(800000, 2500000)
 						state.Money = (state.Money or 0) + earnings
 						state:ModifyStat("Happiness", 30)
-						state.Fame = (state.Fame or 0) + 60
+						state.Fame = math.min(100, (state.Fame or 0) + 60) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.multi_platinum = true
 						state.Flags.music_legend = true
@@ -758,7 +758,7 @@ MusicianCareerEvents.events = {
 				feedText = "Giving credit...",
 				onResolve = function(state)
 					state.Money = (state.Money or 0) + math.random(500000, 1500000)
-					state.Fame = (state.Fame or 0) + 80
+					state.Fame = math.min(100, (state.Fame or 0) + 80) -- CRITICAL FIX: Cap fame at 100
 					state.Flags = state.Flags or {}
 					state.Flags.grammy_winner = true
 					state.Flags.critically_acclaimed = true
@@ -773,7 +773,7 @@ MusicianCareerEvents.events = {
 					local roll = math.random(1, 100)
 					if roll <= 60 then
 						state.Money = (state.Money or 0) + math.random(400000, 1000000)
-						state.Fame = (state.Fame or 0) + 50
+						state.Fame = math.min(100, (state.Fame or 0) + 50) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.grammy_winner = true
 						state:AddFeed("🎨 Mic drop moment! 'They said no one would listen!' Viral speech!")
@@ -1230,7 +1230,7 @@ MusicianCareerEvents.events = {
 					local roll = math.random(1, 100)
 					if roll <= 55 then
 						state.Money = (state.Money or 0) + math.random(300000, 1000000)
-						state.Fame = (state.Fame or 0) + 50
+						state.Fame = math.min(100, (state.Fame or 0) + 50) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.documentary_star = true
 						state:AddFeed("🎬 'Raw and honest' - Critics LOVED it! Emmy nominated! Career peak!")
