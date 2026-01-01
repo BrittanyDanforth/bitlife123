@@ -1593,8 +1593,8 @@ local function getNextPromotion(jobId)
 	return CareerPaths[jobId]
 end
 
--- Debug logging - CRITICAL FIX: Enabled for action tracking
-local DEBUG = true
+-- Debug logging
+local DEBUG = false
 local function log(...)
 	if DEBUG then print("[OccupationScreen]", ...) end
 end
@@ -2468,7 +2468,7 @@ function OccupationScreen:createUI()
 	closeButton.Font = Enum.Font.GothamBold
 	closeButton.TextSize = textSize(20)
 	closeButton.TextColor3 = C.Gray700
-	closeButton.Text = "X"
+	closeButton.Text = "✕"
 	closeButton.AutoButtonColor = false
 	closeButton.ZIndex = 86
 	closeButton.Parent = header

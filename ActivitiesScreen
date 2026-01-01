@@ -428,8 +428,8 @@ local BabyFun = {
 	{ id = "play_outside", name = "Play Outside", emoji = "🌳", effect = "+Health +Happiness", minAge = 1, maxAge = 5, cost = 0 },
 }
 
--- Debug logging - CRITICAL FIX: Enabled for action tracking
-local DEBUG = true
+-- Debug logging
+local DEBUG = false
 local function log(...)
 	if DEBUG then print("[ActivitiesScreen]", ...) end
 end
@@ -941,7 +941,7 @@ function ActivitiesScreen:createUI()
 	closeButton.Font = Enum.Font.GothamBold
 	closeButton.TextSize = textSize(20)
 	closeButton.TextColor3 = C.Gray700
-	closeButton.Text = "X"
+	closeButton.Text = "✕"
 	closeButton.AutoButtonColor = false
 	closeButton.ZIndex = 86
 	closeButton.Parent = header

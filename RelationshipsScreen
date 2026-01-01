@@ -795,7 +795,7 @@ function RelationshipsScreen:createUI()
 	closeButton.Font = Enum.Font.GothamBold
 	closeButton.TextSize = textSize(16)
 	closeButton.TextColor3 = C.Gray600
-	closeButton.Text = "X"
+	closeButton.Text = "✕"
 	closeButton.AutoButtonColor = false
 	closeButton.ZIndex = 87
 	closeButton.Parent = header

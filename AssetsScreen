@@ -305,9 +305,8 @@ AssetsScreen.__index = AssetsScreen
 -- CRITICAL DEBUG: Track module initialization
 print("[AssetsScreen] ✓ Module table created")
 
--- Debug logging (Disabled for production - was ENABLED to trace asset sync issues)
--- CRITICAL FIX: Debug enabled for action tracking
-local DEBUG = true
+-- Debug logging
+local DEBUG = false
 local function log(...)
 	if DEBUG then print("[AssetsScreen]", ...) end
 end
@@ -1064,7 +1063,7 @@ function AssetsScreen:createGamblingModal()
 	closeBtn.Font = F.Title
 	closeBtn.TextSize = 18
 	closeBtn.TextColor3 = C.GoldDark
-	closeBtn.Text = "X"
+	closeBtn.Text = "✕"
 	closeBtn.AutoButtonColor = false
 	closeBtn.ZIndex = 100
 	closeBtn.Parent = header

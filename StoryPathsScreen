@@ -454,9 +454,8 @@ function StoryPathsScreen:createUI()
 		zIndex = 85
 	})
 	-- CRITICAL FIX: Ensure close button has proper X text and font
-	-- User bug: "the X button is a weird X not just a normal X"
 	if headerData.closeButton then
-		headerData.closeButton.Text = "X"
+		headerData.closeButton.Text = "✕"
 		headerData.closeButton.Font = Enum.Font.GothamBold
 		headerData.closeButton.TextSize = 18
 	end
@@ -1358,7 +1357,7 @@ function StoryPathsScreen:showPathActions(path)
 	closeBtn.Font = F.Title
 	closeBtn.TextSize = 18
 	closeBtn.TextColor3 = path.color
-	closeBtn.Text = "X"
+	closeBtn.Text = "✕"
 	closeBtn.AutoButtonColor = false
 	closeBtn.ZIndex = 98
 	closeBtn.Parent = header
