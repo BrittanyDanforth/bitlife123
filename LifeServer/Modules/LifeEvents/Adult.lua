@@ -2235,16 +2235,27 @@ Adult.events = {
 			state.Flags.married = nil
 			state.Flags.engaged = nil
 			state.Flags.has_partner = nil
+			state.Flags.has_spouse = nil
 			state.Flags.dating = nil
 			state.Flags.committed_relationship = nil
 			state.Flags.lives_with_partner = nil
-			-- Mark partner as deceased but keep reference for memories
-			if state.Relationships and state.Relationships.partner then
-				state.Relationships.partner.alive = false
-				state.Relationships.partner.deceased = true
-				-- Move to a different key so new relationship can form
-				state.Relationships.late_spouse = state.Relationships.partner
-				state.Relationships.partner = nil
+			
+			-- CRITICAL FIX #WIDOW-1: Check BOTH spouse and partner!
+			-- After marriage, partner is moved to spouse field
+			if state.Relationships then
+				-- Check spouse first (after proper marriage)
+				if state.Relationships.spouse then
+					state.Relationships.spouse.alive = false
+					state.Relationships.spouse.deceased = true
+					state.Relationships.late_spouse = state.Relationships.spouse
+					state.Relationships.spouse = nil
+				-- Fallback to partner (old code path)
+				elseif state.Relationships.partner then
+					state.Relationships.partner.alive = false
+					state.Relationships.partner.deceased = true
+					state.Relationships.late_spouse = state.Relationships.partner
+					state.Relationships.partner = nil
+				end
 			end
 		end,
 	},

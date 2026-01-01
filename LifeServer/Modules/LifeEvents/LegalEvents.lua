@@ -206,7 +206,19 @@ LegalEvents.events = {
 						state:ModifyStat("Happiness", -6)
 						state.Flags = state.Flags or {}
 						state.Flags.married = nil
+						state.Flags.has_spouse = nil
+						state.Flags.has_partner = nil
 						state.Flags.divorced = true
+						-- MINOR FIX #DIVORCE-1: Also clear the spouse relationship!
+						if state.Relationships then
+							if state.Relationships.spouse then
+								state.Relationships.ex_spouse = state.Relationships.spouse
+								state.Relationships.spouse = nil
+							elseif state.Relationships.partner then
+								state.Relationships.ex_spouse = state.Relationships.partner
+								state.Relationships.partner = nil
+							end
+						end
 						state:AddFeed("💔 Painful but civil. Fair split. Moving forward.")
 					else
 						state:ModifyStat("Happiness", -10)
@@ -214,7 +226,19 @@ LegalEvents.events = {
 						state.Money = math.max(0, (state.Money or 0) - 500)
 						state.Flags = state.Flags or {}
 						state.Flags.married = nil
+						state.Flags.has_spouse = nil
+						state.Flags.has_partner = nil
 						state.Flags.divorced = true
+						-- MINOR FIX #DIVORCE-1: Also clear the spouse relationship!
+						if state.Relationships then
+							if state.Relationships.spouse then
+								state.Relationships.ex_spouse = state.Relationships.spouse
+								state.Relationships.spouse = nil
+							elseif state.Relationships.partner then
+								state.Relationships.ex_spouse = state.Relationships.partner
+								state.Relationships.partner = nil
+							end
+						end
 						state:AddFeed("💔 Got contentious. More lawyers. More money gone.")
 					end
 				end,
@@ -227,18 +251,38 @@ LegalEvents.events = {
 				eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Can't afford legal fees ($2,000 needed)" end,
 				onResolve = function(state)
 					local roll = math.random()
+					-- MINOR FIX #DIVORCE-2: Clear spouse relationship in contested divorce
+					local function clearSpouse()
+						if state.Relationships then
+							if state.Relationships.spouse then
+								state.Relationships.ex_spouse = state.Relationships.spouse
+								state.Relationships.spouse = nil
+							elseif state.Relationships.partner then
+								state.Relationships.ex_spouse = state.Relationships.partner
+								state.Relationships.partner = nil
+							end
+						end
+					end
+					
 					if roll < 0.40 then
 						state:ModifyStat("Happiness", -8)
 						state.Money = (state.Money or 0) + 3000
 						state.Flags = state.Flags or {}
 						state.Flags.married = nil
+						state.Flags.has_spouse = nil
+						state.Flags.has_partner = nil
 						state.Flags.divorced = true
+						clearSpouse()
 						state:AddFeed("💔 Won in court. Better settlement. Still painful.")
 					else
 						state:ModifyStat("Happiness", -15)
 						state.Flags = state.Flags or {}
 						state.Flags.married = nil
+						state.Flags.has_spouse = nil
+						state.Flags.has_partner = nil
 						state.Flags.messy_divorce = true
+						state.Flags.divorced = true -- MINOR FIX: Also set divorced flag!
+						clearSpouse()
 						state:AddFeed("💔 Brutal court battle. Lost a lot. Traumatic process.")
 					end
 				end,

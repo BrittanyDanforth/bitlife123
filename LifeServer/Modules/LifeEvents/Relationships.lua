@@ -217,16 +217,26 @@ Relationships.events = {
 				setFlags = { recently_single = true }, 
 				feedText = "The conversation led to a breakup.",
 				-- CRITICAL FIX: Properly clear all relationship flags on breakup
+				-- MINOR FIX #BREAKUP-1: Also clear spouse and has_spouse!
 				onResolve = function(state)
 					state.Flags = state.Flags or {}
 					state.Flags.has_partner = nil
+					state.Flags.has_spouse = nil
 					state.Flags.dating = nil
 					state.Flags.committed_relationship = nil
 					state.Flags.engaged = nil
 					state.Flags.married = nil
 					state.Flags.lives_with_partner = nil
 					if state.Relationships then
-						state.Relationships.partner = nil
+						-- Clear both partner and spouse
+						if state.Relationships.partner then
+							state.Relationships.last_ex = state.Relationships.partner
+							state.Relationships.partner = nil
+						end
+						if state.Relationships.spouse then
+							state.Relationships.ex_spouse = state.Relationships.spouse
+							state.Relationships.spouse = nil
+						end
 					end
 				end,
 			},

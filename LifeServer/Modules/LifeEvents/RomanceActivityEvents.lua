@@ -363,6 +363,9 @@ RomanceEvents.Proposal = {
 					"The moment is perfect. This memory will last forever.",
 				},
 				effects = { Happiness = 40, Relationship = 40 },
+				-- CRITICAL FIX #ENGAGED-1: Proposals need to set engaged flag!
+				-- Previously only God Mode set this, causing regular proposals to fail
+				setFlags = { engaged = true },
 			},
 			{
 				text = "Give a heartfelt speech first",
@@ -372,6 +375,8 @@ RomanceEvents.Proposal = {
 					"'I've never felt more loved,' {partner} says through tears.",
 				},
 				effects = { Happiness = 45, Relationship = 45 },
+				-- CRITICAL FIX #ENGAGED-1: Proposals need to set engaged flag!
+				setFlags = { engaged = true, heartfelt_proposal = true },
 			},
 			{
 				text = "Pop the question casually",
@@ -381,6 +386,8 @@ RomanceEvents.Proposal = {
 					"{partner} laughs and says yes!",
 				},
 				effects = { Happiness = 35, Relationship = 38 },
+				-- CRITICAL FIX #ENGAGED-1: Proposals need to set engaged flag!
+				setFlags = { engaged = true, casual_proposal = true },
 			},
 			-- ⚡ GOD MODE PREMIUM OPTION
 			{
@@ -417,6 +424,8 @@ RomanceEvents.Proposal = {
 					"Everyone applauds as {partner} says YES!",
 				},
 				effects = { Happiness = 50, Relationship = 50 },
+				-- CRITICAL FIX #ENGAGED-2: Elaborate proposals need to set engaged flag!
+				setFlags = { engaged = true, flashmob_proposal = true },
 			},
 			{
 				text = "Propose at a special location",
@@ -426,6 +435,8 @@ RomanceEvents.Proposal = {
 					"The perfect place for the perfect moment.",
 				},
 				effects = { Happiness = 48, Relationship = 52 },
+				-- CRITICAL FIX #ENGAGED-2: Elaborate proposals need to set engaged flag!
+				setFlags = { engaged = true, special_location_proposal = true },
 			},
 			{
 				text = "Skywriting/Billboard",
@@ -435,6 +446,8 @@ RomanceEvents.Proposal = {
 					"Grand gesture successful! They said YES!",
 				},
 				effects = { Happiness = 55, Relationship = 48 },
+				-- CRITICAL FIX #ENGAGED-2: Elaborate proposals need to set engaged flag!
+				setFlags = { engaged = true, public_proposal = true },
 			},
 		},
 	},
@@ -457,6 +470,8 @@ RomanceEvents.Proposal = {
 					"You're engaged! Dreams really do come true!",
 				},
 				effects = { Happiness = 50, Relationship = 50 },
+				-- CRITICAL FIX #ENGAGED-3: Accepting proposal sets engaged flag!
+				setFlags = { engaged = true, was_proposed_to = true },
 			},
 			{
 				text = "Ask for time to think",
@@ -466,6 +481,7 @@ RomanceEvents.Proposal = {
 					"The mood is awkward now...",
 				},
 				effects = { Happiness = -5, Relationship = -20 },
+				setFlags = { delayed_answer = true },
 			},
 			{
 				text = "Say no",
@@ -475,6 +491,7 @@ RomanceEvents.Proposal = {
 					"The relationship may never recover from this.",
 				},
 				effects = { Happiness = -30, Relationship = -50 },
+				setFlags = { rejected_proposal = true },
 			},
 		},
 	},
