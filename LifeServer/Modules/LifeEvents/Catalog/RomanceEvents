@@ -595,18 +595,18 @@ local events = {
 				eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50" end,
 				feedText = "🎂 Small but thoughtful anniversary celebration!",
 			},
-			{
-				index = 3,
-				text = "Simple dinner at home",
-				effects = { Happiness = 8 },
-				feedText = "🎂 Intimate and meaningful. Love doesn't need money!",
-			},
-			{
-				index = 3,
-				text = "Completely forgot...",
-				effects = { Happiness = -10 },
-				feedText = "Your partner is NOT happy.",
-			},
+		{
+			index = 3,
+			text = "Simple dinner at home",
+			effects = { Happiness = 8 },
+			feedText = "🎂 Intimate and meaningful. Love doesn't need money!",
+		},
+		{
+			index = 4,
+			text = "Completely forgot...",
+			effects = { Happiness = -10 },
+			feedText = "Your partner is NOT happy.",
+		},
 		},
 	},
 

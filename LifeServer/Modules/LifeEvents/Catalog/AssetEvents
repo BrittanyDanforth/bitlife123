@@ -736,13 +736,14 @@ local events = {
 				effects = { Happiness = 5, Smarts = 3 },
 				feedText = "You kept a low profile. Class move.",
 			},
-			{
-				index = 3,
-				text = "Help others - share your fortune ($5,000)",
-				effects = { Happiness = 15, Money = -5000 },
-				setFlags = { generous = true, philanthropist = true },
-				feedText = "You helped someone in need. That's real wealth.",
-			},
+		{
+			index = 3,
+			text = "Help others - share your fortune ($5,000)",
+			effects = { Happiness = 15, Money = -5000 },
+			setFlags = { generous = true, philanthropist = true },
+			feedText = "You helped someone in need. That's real wealth.",
+			eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 to donate" end,
+		},
 		},
 	},
 	
