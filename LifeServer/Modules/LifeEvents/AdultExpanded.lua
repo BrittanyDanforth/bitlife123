@@ -2145,6 +2145,205 @@ AdultExpanded.events = {
 		},
 	},
 },
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- NEW VARIETY EVENTS - Making mid-life more interesting
+-- ═══════════════════════════════════════════════════════════════════════════════
+{
+	id = "midlife_random_opportunity",
+	title = "💫 Unexpected Opportunity",
+	emoji = "💫",
+	text = "Out of nowhere, an interesting opportunity has landed in your lap. Life is full of surprises!",
+	question = "What opportunity came your way?",
+	minAge = 25, maxAge = 55,
+	baseChance = 0.3,
+	cooldown = 5,
+	stage = "adult",
+	category = "opportunity",
+	tags = { "opportunity", "surprise", "variety" },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "Free tickets to a sold-out event",
+			effects = { Happiness = 15 },
+			feedText = "💫 Someone couldn't go and offered you their tickets! Best night ever!",
+		},
+		{
+			text = "A side gig that pays well",
+			effects = { Money = 800, Happiness = 8 },
+			setFlags = { lucky_side_gig = true },
+			feedText = "💫 Someone needed your skills for a quick job. Easy money!",
+		},
+		{
+			text = "Chance to travel somewhere new",
+			effects = { Happiness = 12, Money = -500 },
+			setFlags = { spontaneous_traveler = true },
+			feedText = "💫 Last-minute travel deal! You're seeing new places!",
+			eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for travel" end,
+		},
+		{
+			text = "Meeting someone who changes your perspective",
+			effects = { Happiness = 10, Smarts = 4 },
+			setFlags = { met_mentor = true },
+			feedText = "💫 A conversation that shifted how you see things. Powerful!",
+		},
+	},
+},
+{
+	id = "midlife_mundane_joy",
+	title = "☀️ Simple Pleasures",
+	emoji = "☀️",
+	text = "Sometimes it's the little things that make life worth living.",
+	question = "What small joy did you experience today?",
+	minAge = 25, maxAge = 70,
+	baseChance = 0.35,
+	cooldown = 4,
+	stage = "adult",
+	category = "experience",
+	tags = { "joy", "positive", "variety", "happiness" },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "Perfect cup of coffee on a quiet morning",
+			effects = { Happiness = 6, Health = 1 },
+			feedText = "☕ The temperature, the taste, the peace... perfection.",
+		},
+		{
+			text = "A genuine laugh with someone you care about",
+			effects = { Happiness = 8 },
+			feedText = "😂 You laughed so hard your stomach hurt. Pure joy!",
+		},
+		{
+			text = "First bite of a really good meal",
+			effects = { Happiness = 7, Health = 2 },
+			feedText = "🍽️ That moment when flavor hits perfectly... chef's kiss!",
+		},
+		{
+			text = "Unexpected nap on a lazy afternoon",
+			effects = { Happiness = 8, Health = 5 },
+			feedText = "😴 No alarms. Just peace. Woke up feeling amazing!",
+		},
+	},
+},
+{
+	id = "midlife_close_call",
+	title = "😰 Close Call!",
+	emoji = "😰",
+	text = "Something scary almost happened today! You're shaken but okay.",
+	question = "What was the close call?",
+	minAge = 20, maxAge = 70,
+	baseChance = 0.25,
+	cooldown = 6,
+	stage = "adult",
+	category = "experience",
+	tags = { "close_call", "scary", "variety" },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "Almost got in a bad car accident",
+			effects = { Happiness = -5, Health = -2 },
+			setFlags = { had_close_call = true },
+			feedText = "😰 Brakes squealed. Heart pounding. That was too close!",
+		},
+		{
+			text = "Barely avoided a scam",
+			effects = { Happiness = -2, Smarts = 3 },
+			feedText = "😰 That 'bank' calling was NOT your bank. Almost got fooled!",
+		},
+		{
+			text = "Near-miss with something falling",
+			effects = { Happiness = -4, Health = -1 },
+			feedText = "😰 One second later and that would have hit you! Lucky!",
+		},
+		{
+			text = "Caught a health issue just in time",
+			effects = { Happiness = 5, Health = 5 },
+			setFlags = { early_detection = true },
+			feedText = "😰 Good thing you went to the doctor! Caught early = easily fixed!",
+		},
+	},
+},
+{
+	id = "midlife_past_comes_back",
+	title = "📸 Blast from the Past",
+	emoji = "📸",
+	text = "Something from your past unexpectedly resurfaced today.",
+	question = "What came back?",
+	minAge = 28, maxAge = 60,
+	baseChance = 0.3,
+	cooldown = 5,
+	stage = "adult",
+	category = "experience",
+	tags = { "past", "nostalgia", "variety" },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "Old friend you lost touch with reached out",
+			effects = { Happiness = 10 },
+			setFlags = { reconnected_old_friend = true },
+			feedText = "📸 They found you on social media! Time to catch up!",
+		},
+		{
+			text = "Found old photos that made you emotional",
+			effects = { Happiness = 4 },
+			feedText = "📸 Look at baby you! Look at how far you've come!",
+		},
+		{
+			text = "A childhood song came on the radio",
+			effects = { Happiness = 6 },
+			feedText = "📸 Instant time travel! All those memories flooding back!",
+		},
+		{
+			text = "Old dream you forgot about resurfaced",
+			effects = { Happiness = 5, Smarts = 3 },
+			setFlags = { remembered_dream = true },
+			feedText = "📸 Remember when you wanted to be a...? Maybe it's not too late!",
+		},
+	},
+},
+{
+	id = "midlife_small_victory",
+	title = "🎉 Small Victory!",
+	emoji = "🎉",
+	text = "Sometimes winning at the little things matters just as much!",
+	question = "What did you accomplish today?",
+	minAge = 20, maxAge = 70,
+	baseChance = 0.35,
+	cooldown = 4,
+	stage = "adult",
+	category = "experience",
+	tags = { "victory", "positive", "variety" },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "Finally finished that thing you've been putting off",
+			effects = { Happiness = 10, Smarts = 2 },
+			setFlags = { beat_procrastination = true },
+			feedText = "🎉 IT'S DONE! The relief is INCREDIBLE!",
+		},
+		{
+			text = "Got a compliment from someone you respect",
+			effects = { Happiness = 8, Looks = 2 },
+			feedText = "🎉 They noticed your effort! Validation feels amazing!",
+		},
+		{
+			text = "Cooked something that actually turned out great",
+			effects = { Happiness = 7, Health = 2 },
+			setFlags = { cooking_win = true },
+			feedText = "🎉 You're basically a chef now! This is restaurant quality!",
+		},
+		{
+			text = "Made someone's day with a kind gesture",
+			effects = { Happiness = 10 },
+			setFlags = { spread_kindness = true },
+			feedText = "🎉 Their smile made YOUR day! Kindness is a two-way street!",
+		},
+	},
+},
 }
 
 return AdultExpanded

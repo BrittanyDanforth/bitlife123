@@ -62,11 +62,13 @@ PetEvents.events = {
 						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
 						state.Flags = state.Flags or {}
 						state.Flags.has_dog = true
+						state.Flags.has_pet = true -- CRITICAL FIX: Set generic has_pet flag for other events
 						if state.AddFeed then state:AddFeed(string.format("🐾 BEST FRIEND! %s loves you unconditionally!", state.PetData.dogName)) end
 					else
 						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
 						state.Flags = state.Flags or {}
 						state.Flags.has_dog = true
+						state.Flags.has_pet = true -- CRITICAL FIX: Set generic has_pet flag for other events
 						if state.AddFeed then state:AddFeed(string.format("🐾 %s is adjusting. Puppy phase is challenging but worth it!", state.PetData.dogName)) end
 					end
 				end,
@@ -95,11 +97,13 @@ PetEvents.events = {
 						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
 						state.Flags = state.Flags or {}
 						state.Flags.has_cat = true
+						state.Flags.has_pet = true -- CRITICAL FIX: Set generic has_pet flag for other events
 						if state.AddFeed then state:AddFeed(string.format("🐾 Purrfect companion! %s has chosen you as servant!", state.PetData.catName)) end
 					else
 						if state.ModifyStat then state:ModifyStat("Happiness", 6) end
 						state.Flags = state.Flags or {}
 						state.Flags.has_cat = true
+						state.Flags.has_pet = true -- CRITICAL FIX: Set generic has_pet flag for other events
 						if state.AddFeed then state:AddFeed(string.format("🐾 %s is aloof but you love them anyway!", state.PetData.catName)) end
 					end
 				end,
@@ -107,7 +111,7 @@ PetEvents.events = {
 			{ 
 			text = "Get a small pet ($100)", 
 			effects = { Money = -100, Happiness = 8 }, 
-			setFlags = { has_small_pet = true }, 
+			setFlags = { has_small_pet = true, has_pet = true }, -- CRITICAL FIX: Also set generic has_pet flag
 			feedText = "🐾 Hamster/fish/bird! Low maintenance joy!",
 			eligibility = function(state) return (state.Money or 0) >= 100, "💸 Can't afford small pet ($100)" end,
 			-- CRITICAL FIX: Initialize PetData for small pet lifecycle tracking
@@ -148,6 +152,7 @@ PetEvents.events = {
 						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
 						state.Flags = state.Flags or {}
 						state.Flags.rescued_pet = true
+						state.Flags.has_pet = true -- CRITICAL FIX: Set generic has_pet flag for other events
 						if state.AddFeed then state:AddFeed("🐕 Rescued! They're so grateful! Forever home found!") end
 					elseif roll < 0.85 then
 						if state.ModifyStat then state:ModifyStat("Happiness", 6) end
@@ -156,6 +161,8 @@ PetEvents.events = {
 						if state.ModifyStat then state:ModifyStat("Happiness", 3) end
 						-- CRITICAL FIX: Prevent negative money
 						state.Money = math.max(0, (state.Money or 0) - 200)
+						state.Flags = state.Flags or {}
+						state.Flags.has_pet = true -- CRITICAL FIX: Set generic has_pet flag for other events
 						if state.AddFeed then state:AddFeed("🐕 Needed lots of vet care. Worth it to help.") end
 					end
 				end,

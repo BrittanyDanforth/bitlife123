@@ -496,10 +496,11 @@ FamilyEvents.events = {
 				return false
 			end
 			-- Check Relationships for parent status
+			-- CRITICAL FIX: Use pairs() not ipairs() - Relationships is a dictionary not array!
 			if state.Relationships then
 				local hasLivingParent = false
-				for _, rel in ipairs(state.Relationships) do
-					if (rel.type == "parent" or rel.role == "Parent" or rel.role == "Mother" or rel.role == "Father")
+				for _, rel in pairs(state.Relationships) do
+					if type(rel) == "table" and (rel.type == "parent" or rel.role == "Parent" or rel.role == "Mother" or rel.role == "Father")
 					   and not rel.deceased and not rel.dead then
 						hasLivingParent = true
 						break
@@ -508,8 +509,8 @@ FamilyEvents.events = {
 				-- If we have relationship data but no living parents, don't show event
 				if not hasLivingParent then
 					local parentCount = 0
-					for _, rel in ipairs(state.Relationships) do
-						if rel.type == "parent" or rel.role == "Parent" or rel.role == "Mother" or rel.role == "Father" then
+					for _, rel in pairs(state.Relationships) do
+						if type(rel) == "table" and (rel.type == "parent" or rel.role == "Parent" or rel.role == "Mother" or rel.role == "Father") then
 							parentCount = parentCount + 1
 						end
 					end

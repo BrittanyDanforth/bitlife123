@@ -3115,12 +3115,17 @@ end
 
 function LifeState:HasPartner()
 	if not self.Relationships then return false end
+	-- CRITICAL FIX: Check partner first
 	if self.Relationships.partner and self.Relationships.partner.alive ~= false then
 		return true
 	end
-	-- Check for partner in other locations
+	-- CRITICAL FIX: Also check spouse (partner becomes spouse after marriage!)
+	if self.Relationships.spouse and self.Relationships.spouse.alive ~= false then
+		return true
+	end
+	-- Check for partner/spouse in other locations
 	for _, rel in pairs(self.Relationships) do
-		if type(rel) == "table" and rel.role == "Partner" and rel.alive ~= false then
+		if type(rel) == "table" and (rel.role == "Partner" or rel.role == "Spouse" or rel.role == "Boyfriend" or rel.role == "Girlfriend" or rel.role == "Wife" or rel.role == "Husband") and rel.alive ~= false then
 			return true
 		end
 	end
@@ -3129,11 +3134,17 @@ end
 
 function LifeState:GetPartner()
 	if not self.Relationships then return nil end
+	-- CRITICAL FIX: Check partner first
 	if self.Relationships.partner and self.Relationships.partner.alive ~= false then
 		return self.Relationships.partner
 	end
+	-- CRITICAL FIX: Also check spouse (partner becomes spouse after marriage!)
+	if self.Relationships.spouse and self.Relationships.spouse.alive ~= false then
+		return self.Relationships.spouse
+	end
+	-- Check for partner/spouse in other locations
 	for _, rel in pairs(self.Relationships) do
-		if type(rel) == "table" and rel.role == "Partner" and rel.alive ~= false then
+		if type(rel) == "table" and (rel.role == "Partner" or rel.role == "Spouse" or rel.role == "Boyfriend" or rel.role == "Girlfriend" or rel.role == "Wife" or rel.role == "Husband") and rel.alive ~= false then
 			return rel
 		end
 	end

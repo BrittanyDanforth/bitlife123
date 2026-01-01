@@ -1277,7 +1277,7 @@ HealthEvents.events = {
 		question = "How is your treatment going?",
 		minAge = 20, maxAge = 100,
 		baseChance = 0.70,
-		cooldown = 1,
+		cooldown = 3, -- CRITICAL FIX: Increased from 1 to prevent spam (once per 3 years is enough for check-ups)
 		stage = STAGE,
 		ageBand = "any",
 		category = "health",

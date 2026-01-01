@@ -1921,8 +1921,10 @@ local function canEventTrigger(event, state)
 	
 	if event.requiresPartner then
 		-- CRITICAL FIX: Check BOTH relationship table AND flags for partner status
-		local hasPartnerRelation = state.Relationships and state.Relationships.partner
-		local hasPartnerFlag = state.Flags and (state.Flags.has_partner or state.Flags.dating or state.Flags.engaged or state.Flags.married)
+		-- CRITICAL FIX #2: Also check for spouse (partner becomes spouse after marriage!)
+		-- MINOR FIX #PARTNER-1: Also check has_spouse flag added during proper marriage!
+		local hasPartnerRelation = state.Relationships and (state.Relationships.partner or state.Relationships.spouse)
+		local hasPartnerFlag = state.Flags and (state.Flags.has_partner or state.Flags.has_spouse or state.Flags.dating or state.Flags.engaged or state.Flags.married)
 		if not hasPartnerRelation and not hasPartnerFlag then
 			return false -- MUST have a partner
 		end
@@ -1930,8 +1932,10 @@ local function canEventTrigger(event, state)
 	
 	if event.requiresSingle or event.requiresNoPartner then
 		-- CRITICAL FIX: Check BOTH relationship table AND flags for partner status
-		local hasPartnerRelation = state.Relationships and state.Relationships.partner
-		local hasPartnerFlag = state.Flags and (state.Flags.has_partner or state.Flags.dating or state.Flags.engaged or state.Flags.married)
+		-- CRITICAL FIX #2: Also check for spouse (partner becomes spouse after marriage!)
+		-- CRITICAL FIX #SINGLE-1: Also check has_spouse flag added during proper marriage!
+		local hasPartnerRelation = state.Relationships and (state.Relationships.partner or state.Relationships.spouse)
+		local hasPartnerFlag = state.Flags and (state.Flags.has_partner or state.Flags.has_spouse or state.Flags.dating or state.Flags.engaged or state.Flags.married)
 		if hasPartnerRelation or hasPartnerFlag then
 			return false -- MUST be single
 		end
@@ -3601,6 +3605,10 @@ function LifeEvents.replaceTemplateVariables(text, state)
 		if state.Relationships.partner and type(state.Relationships.partner) == "table" then
 			partnerName = state.Relationships.partner.name or state.Relationships.partner.Name or partnerName
 		end
+		-- CRITICAL FIX: Also check spouse (partner becomes spouse after marriage!)
+		if state.Relationships.spouse and type(state.Relationships.spouse) == "table" then
+			partnerName = state.Relationships.spouse.name or state.Relationships.spouse.Name or partnerName
+		end
 	end
 	
 	result = result:gsub("{{FATHER_NAME}}", fatherName)
@@ -4612,12 +4620,22 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 	-- CRITICAL FIX: Handle BOTH wedding_day event AND any event that sets married = true
 	if eventId == "wedding_day" then
 		if state.Relationships and state.Relationships.partner then
-			state.Relationships.partner.role = "Spouse"
+			-- CRITICAL FIX #SPOUSE-2: Move partner to spouse field on wedding
+			local partner = state.Relationships.partner
+			partner.role = "Spouse"
+			partner.isSpouse = true
+			partner.marriedAt = state.Age
+			
+			-- Move to spouse field for proper detection
+			state.Relationships.spouse = partner
+			state.Relationships.partner = nil -- They're now spouse!
+			
 			state.Flags.married = true
+			state.Flags.has_spouse = true
 			state.Flags.engaged = nil
 			state.Flags.dating = nil -- No longer just dating!
 			-- CRITICAL FIX: Safe access to partner name with fallback
-			local partnerName = state.Relationships.partner.name or state.Relationships.partner.Name or "your partner"
+			local partnerName = partner.name or partner.Name or "your partner"
 			outcome.feedText = "You married " .. partnerName .. "!"
 		end
 	end
@@ -4626,11 +4644,24 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 	-- This ensures wedding_planning (Adult.lua) and similar events update relationship properly
 	if choice.setFlags and choice.setFlags.married then
 		if state.Relationships and state.Relationships.partner then
-			state.Relationships.partner.role = "Spouse"
+			-- CRITICAL FIX #SPOUSE-1: Move partner to spouse field AND update role
+			-- Previously only changed role to "Spouse" but didn't move to spouse field
+			-- This caused bugs where LifeState:HasPartner() couldn't find the spouse!
+			local partner = state.Relationships.partner
+			partner.role = "Spouse"
+			partner.isSpouse = true
+			partner.marriedAt = state.Age
+			
+			-- Move to spouse field for proper detection
+			state.Relationships.spouse = partner
+			state.Relationships.partner = nil -- Clear partner - they're now spouse!
+			
 			state.Flags.engaged = nil -- No longer engaged, now married
 			state.Flags.dating = nil -- No longer just dating
+			state.Flags.has_spouse = true -- Set spouse flag for detection
+			
 			-- CRITICAL FIX: Safe access to partner name with fallback
-			local partnerName = state.Relationships.partner.name or state.Relationships.partner.Name or "your partner"
+			local partnerName = partner.name or partner.Name or "your partner"
 			-- Update feed text to include partner name if not already mentioned
 			if outcome.feedText and not outcome.feedText:find("married") then
 				outcome.feedText = outcome.feedText .. " You and " .. partnerName .. " are officially married!"
@@ -4681,11 +4712,21 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 	-- MINOR FIX: Also handle divorce specifically (sets divorced flag)
 	if choice.setFlags and choice.setFlags.divorced then
 		local partnerName = "your spouse"
-		if state.Relationships and state.Relationships.partner then
-			partnerName = state.Relationships.partner.name or state.Relationships.partner.Name or "your spouse"
-			state.Relationships.ex_spouse = state.Relationships.partner
-			state.Relationships.ex_spouse.divorceAge = state.Age
-			state.Relationships.partner = nil
+		-- CRITICAL FIX: Check BOTH partner and spouse (partner becomes spouse after marriage!)
+		if state.Relationships then
+			if state.Relationships.spouse then
+				-- After marriage, the partner is stored as spouse
+				partnerName = state.Relationships.spouse.name or state.Relationships.spouse.Name or "your spouse"
+				state.Relationships.ex_spouse = state.Relationships.spouse
+				state.Relationships.ex_spouse.divorceAge = state.Age
+				state.Relationships.spouse = nil
+			elseif state.Relationships.partner then
+				-- Fallback: Some code paths still use partner
+				partnerName = state.Relationships.partner.name or state.Relationships.partner.Name or "your spouse"
+				state.Relationships.ex_spouse = state.Relationships.partner
+				state.Relationships.ex_spouse.divorceAge = state.Age
+				state.Relationships.partner = nil
+			end
 		end
 		
 		-- Clear relationship flags

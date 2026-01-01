@@ -170,6 +170,8 @@ local function applyMafiaEffect(state, mafiaEffect)
 		state.InJail = false
 		state.JailYearsLeft = 0
 		state.Flags.in_prison = nil
+		state.Flags.incarcerated = nil -- CRITICAL FIX: Also clear incarcerated flag!
+		state.Flags.in_jail = nil -- CRITICAL FIX: Also clear in_jail flag!
 		state.Flags.escaped_prison = true
 		mobState.heat = math.min(100, (mobState.heat or 0) + 30) -- Escaping adds heat
 	end
@@ -592,10 +594,26 @@ function EventEngine.isChoiceEligible(choice, state)
 	end
 	
 	-- Check required flags
+	-- CRITICAL FIX: requiresFlags can be either:
+	-- 1. Array format: { "flag1", "flag2" } - use ipairs
+	-- 2. Key-value format: { flag1 = true, flag2 = true } - use pairs on keys
+	-- The old code used ipairs() which ONLY works for arrays!
+	-- Key-value tables have NO numeric indices so ipairs returns NOTHING!
 	if choice.requiresFlags then
-		for _, flag in ipairs(choice.requiresFlags) do
-			if not flags[flag] then
-				return false, string.format("Missing requirement: %s", flag)
+		-- Check if it's an array (has numeric keys) or key-value table
+		if choice.requiresFlags[1] then
+			-- Array format
+			for _, flag in ipairs(choice.requiresFlags) do
+				if not flags[flag] then
+					return false, string.format("Missing requirement: %s", flag)
+				end
+			end
+		else
+			-- Key-value format { flag = true }
+			for flag, required in pairs(choice.requiresFlags) do
+				if required and not flags[flag] then
+					return false, string.format("Missing requirement: %s", flag)
+				end
 			end
 		end
 	end
@@ -1478,12 +1496,15 @@ function EventEngine.createRelationship(state, relType, options)
 	options = options or {}
 
 	-- Initialize relationships table if needed
-	state.Relationships = state.Relationships or {
-		family = {},
-		friends = {},
-		romantic = {},
-		enemies = {},
-	}
+	state.Relationships = state.Relationships or {}
+	-- CRITICAL FIX: Always ensure sub-tables exist (the "or {}" shorthand doesn't add missing keys!)
+	state.Relationships.family = state.Relationships.family or {}
+	state.Relationships.friends = state.Relationships.friends or {}
+	state.Relationships.romantic = state.Relationships.romantic or {}
+	state.Relationships.enemies = state.Relationships.enemies or {}
+	
+	-- CRITICAL FIX: Ensure Flags exist for partner tracking
+	state.Flags = state.Flags or {}
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Better age generation for new relationships
@@ -1551,6 +1572,9 @@ function EventEngine.createRelationship(state, relType, options)
 	if relType == "friend" then
 		relationship.role = options.role or "Friend"
 		relationship.metAt = options.metAt or "randomly"
+		-- CRITICAL FIX: Always set numeric lastContact for decay calculations!
+		-- metAt is descriptive (string), lastContact is numeric (age when met)
+		relationship.lastContact = playerAge
 		relationship.category = "friend"
 		-- CRITICAL FIX: Store both in the flat lookup AND typed arrays
 		state.Relationships[relId] = relationship
@@ -1560,12 +1584,18 @@ function EventEngine.createRelationship(state, relType, options)
 	elseif relType == "romance" or relType == "partner" then
 		relationship.role = options.role or "Partner"
 		relationship.metAt = options.metAt or "dating"
+		-- CRITICAL FIX: Always set numeric lastContact for decay calculations!
+		relationship.lastContact = playerAge
 		relationship.isMarried = options.isMarried or false
 		relationship.category = "romance"
+		-- CRITICAL FIX: Add explicit flags for UI detection
+		-- User bug: "I start to date her but then tells me im not dating anyone"
+		relationship.isPartner = true
+		relationship.isRomance = true
+		relationship.type = "romance" -- Force type to "romance" for consistency
 		-- CRITICAL FIX: Store in flat lookup, as partner, AND typed array
 		state.Relationships[relId] = relationship
 		state.Relationships.partner = relationship
-		state.Flags = state.Flags or {}
 		state.Flags.has_partner = true
 		state.Flags.dating = true
 		if type(state.Relationships.romantic) == "table" then
@@ -1878,10 +1908,26 @@ function EventEngine.checkEligibilityDetailed(event, state, context)
 	end
 	
 	-- Flag requirements
+	-- CRITICAL FIX: requiresFlags can be either:
+	-- 1. Array format: { "flag1", "flag2" } - use ipairs
+	-- 2. Key-value format: { flag1 = true, flag2 = true } - use pairs on keys
+	-- The old code used ipairs() which ONLY works for arrays!
+	-- Key-value tables have NO numeric indices so ipairs returns NOTHING!
 	if event.requiresFlags then
-		for _, flag in ipairs(event.requiresFlags) do
-			if not context.flags[flag] then
-				table.insert(reasons, string.format("Missing flag: %s", flag))
+		-- Check if it's an array (has numeric keys) or key-value table
+		if event.requiresFlags[1] then
+			-- Array format
+			for _, flag in ipairs(event.requiresFlags) do
+				if not context.flags[flag] then
+					table.insert(reasons, string.format("Missing flag: %s", flag))
+				end
+			end
+		else
+			-- Key-value format { flag = true }
+			for flag, required in pairs(event.requiresFlags) do
+				if required and not context.flags[flag] then
+					table.insert(reasons, string.format("Missing flag: %s", flag))
+				end
 			end
 		end
 	end

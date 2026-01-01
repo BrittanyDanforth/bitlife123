@@ -3456,11 +3456,22 @@ function RelationshipDecaySystem.processYearlyDecay(state)
 			end
 			
 			-- Initialize last contact if missing
-			if not rel.lastContact then
-				rel.lastContact = rel.metAt or rel.createdAt or (currentAge - 1)
+			-- CRITICAL FIX: metAt/createdAt can be strings like "childhood" or "randomly"!
+			-- Only use numeric values for lastContact
+			if not rel.lastContact or type(rel.lastContact) ~= "number" then
+				-- Try to get a numeric value, fallback to current age - 1
+				local numericContact = nil
+				if type(rel.createdAt) == "number" then
+					numericContact = rel.createdAt
+				elseif type(rel.metAt) == "number" then
+					numericContact = rel.metAt
+				end
+				rel.lastContact = numericContact or math.max(0, (currentAge or 1) - 1)
 			end
 			
-			local yearsSinceContact = currentAge - (rel.lastContact or 0)
+			-- CRITICAL FIX: Ensure both values are numbers before arithmetic
+			local lastContactNum = tonumber(rel.lastContact) or 0
+			local yearsSinceContact = (currentAge or 0) - lastContactNum
 			
 			-- Apply decay based on neglect
 			if yearsSinceContact >= 1 then
@@ -9644,6 +9655,45 @@ function LifeBackend:createInitialState(player)
 		}
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Add initial childhood friends!
+	-- User review: "Why can't I have any friends other than this one girl named grace?"
+	-- Players need to start with some friends to interact with during childhood
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	state.Relationships.friends = state.Relationships.friends or {}
+	
+	-- Create 2-4 childhood friends for variety
+	local numFriends = RANDOM:NextInteger(2, 4)
+	for i = 1, numFriends do
+		local isBoy = RANDOM:NextNumber() > 0.5
+		local friendId = "childhood_friend_" .. tostring(i)
+		local friendAge = RANDOM:NextInteger(-1, 1) -- Same age roughly (friend from daycare/neighborhood)
+		
+		local friendRelation = {
+			id = friendId,
+			name = randomName(isBoy and "male" or "female"),
+			type = "friend",
+			role = "Childhood Friend",
+			relationship = 50 + RANDOM:NextInteger(0, 25),
+			age = math.max(0, friendAge), -- At birth, friends are babies too
+			gender = isBoy and "male" or "female",
+			alive = true,
+			isFriend = true,
+			category = "friend",
+			metAt = "childhood", -- Descriptive string
+			lastContact = 0, -- CRITICAL FIX: Numeric value for decay calculations (met at birth)
+			yearsKnown = 0,
+		}
+		
+		-- Store in both flat lookup AND friends array
+		state.Relationships[friendId] = friendRelation
+		table.insert(state.Relationships.friends, friendRelation)
+	end
+	
+	-- Set flag so childhood friend events can fire
+	state.Flags = state.Flags or {}
+	state.Flags.has_childhood_friends = true
+	
 	-- CRITICAL FIX: Ensure Assets table is properly initialized
 	-- This prevents the "state.Assets is NIL" error on client
 	state.Assets = state.Assets or {}
@@ -11373,7 +11423,9 @@ function LifeBackend:applyLivingExpenses(state)
 	-- If no job and young, they likely live with parents (much lower expenses)
 	-- If in college, they have student living expenses (moderate)
 	-- If employed, normal adult expenses
-	local baseCost = 8000 -- Default $8,000/year minimum for basic living
+	-- CRITICAL FIX: Reduced base cost to be more reasonable/kid-friendly
+	-- User review: "Every time I press it takes off all my money" - expenses too aggressive
+	local baseCost = 5000 -- Default $5,000/year minimum for basic living (reduced from $8000)
 	local totalExpenses = 0
 	local expenseDescription = "living expenses"
 	
@@ -11404,8 +11456,9 @@ function LifeBackend:applyLivingExpenses(state)
 	elseif age <= 25 and not hasJob and hasOwnHousing then
 		-- CRITICAL FIX: Young adult with their own place but no job - needs to pay rent!
 		-- This was the bug: renters without jobs were treated as with parents
-		local rent = housingState.rent or 9000 -- Default $750/month
-		baseCost = 4000 -- Base personal expenses
+		-- CRITICAL FIX: Reduced rent to be more kid-friendly
+		local rent = housingState.rent or 6000 -- Default $500/month (reduced from $750)
+		baseCost = 3000 -- Base personal expenses (reduced from $4000)
 		totalExpenses = baseCost + rent
 		expenseDescription = "rent and living costs"
 	else
@@ -11419,12 +11472,13 @@ function LifeBackend:applyLivingExpenses(state)
 			expenseDescription = "homeowner living costs"
 		elseif hasOwnHousing and not hasProperty then
 			-- Renting - use HousingState rent or calculate based on age
-			local rentCost = housingState.rent or 9000 -- Use stored rent or default $750/month
+			-- CRITICAL FIX: Reduced rent to be more kid-friendly
+			local rentCost = housingState.rent or 6000 -- Use stored rent or default $500/month (reduced)
 			if age > 30 and (housingState.rent == nil or housingState.rent == 0) then
-				rentCost = 12000 -- $1,000/month for established adult
+				rentCost = 9000 -- $750/month for established adult (reduced from $1000)
 			end
 			if age > 45 and (housingState.rent == nil or housingState.rent == 0) then
-				rentCost = 15000 -- $1,250/month for established family
+				rentCost = 12000 -- $1,000/month for established family (reduced from $1250)
 			end
 			totalExpenses = totalExpenses + rentCost
 			expenseDescription = "rent and living costs"
@@ -11434,12 +11488,13 @@ function LifeBackend:applyLivingExpenses(state)
 			expenseDescription = "personal expenses (living with family)"
 		else
 			-- No clear housing situation - assume needs rent
-			local rentCost = 9000 -- Base rent $750/month for starter apartment
+			-- CRITICAL FIX: Reduced rent to be more kid-friendly
+			local rentCost = 6000 -- Base rent $500/month for starter apartment (reduced)
 			if age > 30 then
-				rentCost = 12000 -- $1,000/month for established adult
+				rentCost = 9000 -- $750/month for established adult (reduced from $1000)
 			end
 			if age > 45 then
-				rentCost = 15000 -- $1,250/month for established family
+				rentCost = 12000 -- $1,000/month for established family (reduced from $1250)
 			end
 			totalExpenses = totalExpenses + rentCost
 			expenseDescription = "rent and living costs"
@@ -20886,9 +20941,14 @@ function LifeBackend:handleInteraction(player, payload)
 	end
 
 	-- Single-only actions (meet_someone etc.)
+	-- CRITICAL FIX: Check BOTH partner AND spouse (partner becomes spouse after marriage!)
+	-- Also check relationship flags for complete detection
 	if action.requiresSingle then
 		local partner = state.Relationships.partner
-		if partner and partner.alive ~= false then
+		local spouse = state.Relationships.spouse
+		local hasPartnerFlag = state.Flags.has_partner or state.Flags.has_spouse or state.Flags.dating or state.Flags.engaged or state.Flags.married
+		
+		if (partner and partner.alive ~= false) or (spouse and spouse.alive ~= false) or hasPartnerFlag then
 			return { success = false, message = "You're already in a relationship." }
 		end
 	end
