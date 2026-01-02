@@ -484,7 +484,8 @@ HobbyEvents.Sports = {
 	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	-- Event 1: Working out
 	{
-		id = "sports_workout",
+		-- CRITICAL FIX: Renamed to hobby_sports_workout for unique ID
+		id = "hobby_sports_workout",
 		title = "💪 Getting Active",
 		texts = {
 			"Time to get moving and work up a sweat!",
@@ -533,7 +534,8 @@ HobbyEvents.Sports = {
 	},
 	-- Event 2: Personal best
 	{
-		id = "sports_personal_best",
+		-- CRITICAL FIX: Renamed to hobby_sports_personal_best for unique ID
+		id = "hobby_sports_personal_best",
 		title = "🥇 Personal Best!",
 		texts = {
 			"You've beaten your personal record!",
@@ -573,7 +575,8 @@ HobbyEvents.Sports = {
 	},
 	-- Event 3: Sports injury
 	{
-		id = "sports_injury",
+		-- CRITICAL FIX: Renamed to hobby_sports_injury for unique ID
+		id = "hobby_sports_injury",
 		title = "🤕 Sports Injury",
 		texts = {
 			"Ouch! You've hurt yourself during exercise!",

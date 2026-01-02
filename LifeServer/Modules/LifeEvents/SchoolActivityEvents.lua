@@ -500,7 +500,8 @@ SchoolEvents.ClubActivity = {
 SchoolEvents.SportsTeam = {
 	-- Event 1: Tryouts
 	{
-		id = "sports_tryouts",
+		-- CRITICAL FIX: Renamed to school_sports_tryouts for unique ID
+		id = "school_sports_tryouts",
 		title = "🏃 Sports Tryouts",
 		texts = {
 			"Today is the day of sports tryouts!",
@@ -540,7 +541,8 @@ SchoolEvents.SportsTeam = {
 	},
 	-- Event 2: Big game
 	{
-		id = "sports_game",
+		-- CRITICAL FIX: Renamed to school_sports_game for unique ID
+		id = "school_sports_game",
 		title = "🏆 The Big Game",
 		texts = {
 			"It's game day! The whole school is watching!",
@@ -580,7 +582,8 @@ SchoolEvents.SportsTeam = {
 	},
 	-- Event 3: Practice
 	{
-		id = "sports_practice",
+		-- CRITICAL FIX: Renamed to school_sports_practice for unique ID
+		id = "school_sports_practice",
 		title = "💪 Team Practice",
 		texts = {
 			"Practice makes perfect! Time to train!",
