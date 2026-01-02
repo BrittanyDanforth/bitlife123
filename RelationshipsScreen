@@ -795,7 +795,7 @@ function RelationshipsScreen:createUI()
 	closeButton.Font = Enum.Font.GothamBold
 	closeButton.TextSize = textSize(16)
 	closeButton.TextColor3 = C.Gray600
-	closeButton.Text = "✕"
+	closeButton.Text = "X"
 	closeButton.AutoButtonColor = false
 	closeButton.ZIndex = 87
 	closeButton.Parent = header
@@ -2653,7 +2653,7 @@ function RelationshipsScreen:createInteractionModal()
 	closeBtn.Font = Enum.Font.GothamBold
 	closeBtn.TextSize = 16
 	closeBtn.TextColor3 = C.Pink
-	closeBtn.Text = "✕"
+	closeBtn.Text = "X"
 	closeBtn.AutoButtonColor = false
 	closeBtn.ZIndex = 100
 	closeBtn.Parent = self.interactHeader

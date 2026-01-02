@@ -2468,7 +2468,7 @@ function OccupationScreen:createUI()
 	closeButton.Font = Enum.Font.GothamBold
 	closeButton.TextSize = textSize(20)
 	closeButton.TextColor3 = C.Gray700
-	closeButton.Text = "✕"
+	closeButton.Text = "X"
 	closeButton.AutoButtonColor = false
 	closeButton.ZIndex = 86
 	closeButton.Parent = header
@@ -4454,7 +4454,7 @@ function OccupationScreen:createJobInfoModal()
 	closeBtn.Font = Enum.Font.GothamBold
 	closeBtn.TextSize = 14
 	closeBtn.TextColor3 = C.Blue
-	closeBtn.Text = "✕"
+	closeBtn.Text = "X"
 	closeBtn.AutoButtonColor = false
 	closeBtn.ZIndex = 101
 	closeBtn.Parent = header
@@ -4822,7 +4822,7 @@ function OccupationScreen:showInterviewModal(jobId, jobData)
 	closeBtn.Size = UDim2.new(0, px(36), 0, px(36))
 	closeBtn.Position = UDim2.new(1, -px(36), 0, 0)
 	closeBtn.BackgroundColor3 = C.Gray100
-	closeBtn.Text = "✕"
+	closeBtn.Text = "X"
 	closeBtn.TextSize = textSize(16)
 	closeBtn.TextColor3 = C.TextSecondary
 	closeBtn.Font = Enum.Font.GothamBold
@@ -6746,7 +6746,7 @@ function OccupationScreen:createEducationInfoModal()
 	closeBtn.Font = Enum.Font.GothamBold
 	closeBtn.TextSize = IS_TINY_PHONE and 10 or 13
 	closeBtn.TextColor3 = C.Purple
-	closeBtn.Text = "✕"
+	closeBtn.Text = "X"
 	closeBtn.AutoButtonColor = false
 	closeBtn.ZIndex = 101
 	closeBtn.Parent = header
@@ -8218,7 +8218,7 @@ function OccupationScreen:createCareerInfoModal()
 	closeBtn.Font = Enum.Font.GothamBold
 	closeBtn.TextSize = IS_TINY_PHONE and 11 or 13
 	closeBtn.TextColor3 = C.Blue
-	closeBtn.Text = "✕"
+	closeBtn.Text = "X"
 	closeBtn.AutoButtonColor = false
 	closeBtn.ZIndex = 101
 	closeBtn.Parent = header

@@ -9261,17 +9261,27 @@ function LifeBackend:setupRemotes()
 		state.Feed = state.Feed or {}
 		table.insert(state.Feed, "☠️ You gave up on life at age " .. (state.Age or 0) .. "...")
 		
-		-- Save past life data (for tracking)
+		-- Save past life data with full details
 		state.PastLives = state.PastLives or {}
 		table.insert(state.PastLives, {
 			name = state.Name or "Unknown",
 			age = state.Age or 0,
 			netWorth = state.Money or 0,
 			cause = "Gave Up",
-			timestamp = os.time()
+			timestamp = os.time(),
+			-- Extra details for Past Lives display
+			happiness = state.Happiness or 0,
+			health = state.Health or 0,
+			smarts = state.Smarts or 0,
+			looks = state.Looks or 0,
+			fame = state.Fame or 0,
+			married = state.Flags and state.Flags.married or false,
+			famous = (state.Fame or 0) >= 50,
+			job = state.Job or nil,
+			achievements = {}
 		})
 		
-		-- Push the death state to client
+		-- Push the death state to client (this triggers death screen)
 		self:pushState(player, state)
 	end)
 	
@@ -13307,6 +13317,41 @@ function LifeBackend:processDeathCleanup(state)
 	
 	state.Flags = state.Flags or {}
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Save this life to PastLives before death cleanup
+	-- This allows the Progress screen to track all past lives
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	state.PastLives = state.PastLives or {}
+	
+	-- Only add if not already recorded (prevent duplicates from GiveUp)
+	local alreadyRecorded = false
+	for _, life in ipairs(state.PastLives) do
+		if life.timestamp and os.time() - life.timestamp < 5 then
+			alreadyRecorded = true
+			break
+		end
+	end
+	
+	if not alreadyRecorded then
+		table.insert(state.PastLives, {
+			name = state.Name or "Unknown",
+			age = state.Age or 0,
+			netWorth = state.Money or 0,
+			cause = state.Flags.cause_of_death or state.CauseOfDeath or state.DeathReason or "Natural causes",
+			timestamp = os.time(),
+			-- Extra details for Past Lives display
+			happiness = state.Happiness or 0,
+			health = 0, -- Dead
+			smarts = state.Smarts or 0,
+			looks = state.Looks or 0,
+			fame = state.Fame or 0,
+			married = state.Flags.married or false,
+			famous = (state.Fame or 0) >= 50,
+			job = state.CurrentJob and state.CurrentJob.title or nil,
+			achievements = {}
+		})
+	end
+	
 	-- Set all death flags
 	state.Flags.dead = true
 	state.Flags.is_dead = true
@@ -14836,6 +14881,16 @@ function LifeBackend:resetLife(player)
 	debugPrint("Resetting life for", player.Name)
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Preserve PastLives before resetting!
+	-- PastLives should persist across all lives for the Progress screen
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local oldState = self.playerStates[player.UserId]
+	local preservedPastLives = nil
+	if oldState and oldState.PastLives then
+		preservedPastLives = oldState.PastLives
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #7-20: COMPREHENSIVE STATE RESET ON NEW LIFE
 	-- Previously, many state fields persisted across lives causing bugs like:
 	-- - Old job showing after death
@@ -15125,6 +15180,16 @@ function LifeBackend:resetLife(player)
 			publicApproval = 50,
 			heirs = {},
 		}
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Restore PastLives after reset
+	-- This preserves the player's history across all lives for the Progress screen
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if preservedPastLives then
+		newState.PastLives = preservedPastLives
+	else
+		newState.PastLives = {}
 	end
 	
 	-- Store the new state

@@ -941,7 +941,7 @@ function ActivitiesScreen:createUI()
 	closeButton.Font = Enum.Font.GothamBold
 	closeButton.TextSize = textSize(20)
 	closeButton.TextColor3 = C.Gray700
-	closeButton.Text = "✕"
+	closeButton.Text = "X"
 	closeButton.AutoButtonColor = false
 	closeButton.ZIndex = 86
 	closeButton.Parent = header
