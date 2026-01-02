@@ -19850,7 +19850,7 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 	
 	-- Apply fame bonus immediately
 	if asset.fameBonus and asset.fameBonus > 0 then
-		state.Fame = (state.Fame or 0) + asset.fameBonus
+		state.Fame = math.min(100, (state.Fame or 0) + asset.fameBonus) -- CRITICAL FIX: Cap fame at 100
 	end
 	
 	-- Vehicle-specific flags

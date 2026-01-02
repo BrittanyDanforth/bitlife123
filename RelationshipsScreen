@@ -3151,8 +3151,17 @@ function RelationshipsScreen:createResultModal()
 		end)
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: When dismissing result card, don't try to switch tabs if screen is hidden
+	-- The screen closes BEFORE showing the card (like ActivitiesScreen combat flow)
+	-- Just hide the card - user can reopen RelationshipsScreen from main menu
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	local function onDismiss()
-		self:switchTab(self.currentTab)
+		-- Only try to switch tabs if the screen is still visible
+		if self.isVisible then
+			self:switchTab(self.currentTab)
+		end
+		-- Screen is already hidden - card dismissal just closes the card
 	end
 	
 	closeArea.MouseButton1Click:Connect(function()
@@ -3281,6 +3290,15 @@ function RelationshipsScreen:doInteraction(actionId, relTypeOverride, personOver
 	-- Close interaction modal for snappy feel
 	if self.interactOverlay and self.interactOverlay.Visible then
 		self:hideInteractionModal()
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: CLOSE THE SCREEN with animation before showing result card!
+	-- User feedback: "ActivitiesScreen closes nicely and pops card, Relationships doesn't"
+	-- This makes the experience match ActivitiesScreen combat/minigame flow
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if self.isVisible then
+		self:hide()
 	end
 
 	local ok, result = pcall(function()

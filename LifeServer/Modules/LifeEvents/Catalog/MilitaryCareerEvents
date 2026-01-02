@@ -290,9 +290,9 @@ MilitaryCareerEvents.events = {
 					local medals = { "Army Achievement Medal", "Meritorious Service Medal", "Bronze Star", "Legion of Merit" }
 					local medal = medals[math.random(1, #medals)]
 					state.Flags = state.Flags or {}
-					state.Flags.decorated_soldier = true
-					state.Fame = (state.Fame or 0) + 10
-					state:AddFeed(string.format("🎗️ Awarded the %s! Your service is recognized!", medal))
+				state.Flags.decorated_soldier = true
+				state.Fame = math.min(100, (state.Fame or 0) + 10) -- CRITICAL FIX: Cap fame at 100
+				state:AddFeed(string.format("🎗️ Awarded the %s! Your service is recognized!", medal))
 				end,
 			},
 		},

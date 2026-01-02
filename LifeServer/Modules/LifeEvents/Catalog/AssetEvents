@@ -2864,9 +2864,9 @@ local events = {
 				feedText = "You set up streaming software...",
 				onResolve = function(state)
 					local roll = RANDOM:NextNumber()
-					if roll < 0.2 then
-						state.Fame = (state.Fame or 0) + 5
-						state.Money = (state.Money or 0) + RANDOM:NextInteger(100, 500)
+				if roll < 0.2 then
+					state.Fame = math.min(100, (state.Fame or 0) + 5) -- CRITICAL FIX: Cap fame at 100
+					state.Money = (state.Money or 0) + RANDOM:NextInteger(100, 500)
 						state.Flags = state.Flags or {}
 						state.Flags.streamer = true
 						state.Flags.content_creator = true
@@ -2927,9 +2927,9 @@ local events = {
 				feedText = "You play your heart out...",
 				onResolve = function(state)
 					local roll = RANDOM:NextNumber()
-					if roll < 0.4 then
-						state.Fame = (state.Fame or 0) + 3
-						state.Flags = state.Flags or {}
+				if roll < 0.4 then
+					state.Fame = math.min(100, (state.Fame or 0) + 3) -- CRITICAL FIX: Cap fame at 100
+					state.Flags = state.Flags or {}
 						state.Flags.talented_pianist = true
 						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
 						if state.AddFeed then
@@ -3027,9 +3027,9 @@ local events = {
 				feedText = "📸 You pose like a pro...",
 				onResolve = function(state)
 					local roll = RANDOM:NextNumber()
-					if roll < 0.3 then
-						state.Fame = (state.Fame or 0) + 5
-						if state.ModifyStat then state:ModifyStat("Happiness", 12) end
+				if roll < 0.3 then
+					state.Fame = math.min(100, (state.Fame or 0) + 5) -- CRITICAL FIX: Cap fame at 100
+					if state.ModifyStat then state:ModifyStat("Happiness", 12) end
 						if state.AddFeed then
 							state:AddFeed("👜 The photo went viral! You're a fashion icon now! People asking where you shop!")
 						end

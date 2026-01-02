@@ -227,12 +227,12 @@ RapperContentCreatorEvents.events = {
 					state.FameState.monthlyListeners = math.random(10, 100)
 					state.FameState.totalStreams = math.random(50, 500)
 					state.FameState.totalTracks = 1
-					state.FameState.style = "trap"
-					state.Fame = (state.Fame or 0) + 1
-				end,
-			},
-			{
-				text = "📚 Lyrical conscious rap - real bars, real message ($50)",
+				state.FameState.style = "trap"
+				state.Fame = math.min(100, (state.Fame or 0) + 1) -- CRITICAL FIX: Cap fame at 100
+			end,
+		},
+		{
+			text = "📚 Lyrical conscious rap - real bars, real message ($50)",
 				effects = { Happiness = 12, Smarts = 5, Health = -2, Money = -50 },  -- ENHANCED: Lyrical = smarts boost
 				setFlags = { first_track_recorded = true, lyrical_rapper = true },
 				feedText = "🎤 YOU POURED YOUR SOUL INTO THOSE BARS. 3 verses, no hook, just pure lyrics about life, struggle, and dreams. Marcus said 'yo, you actually have something to say.' The underground will respect this. It's not for everyone, but the ones who get it will REALLY get it. Posted on SoundCloud - 47 plays in the first week. Small start, big potential.",
@@ -245,12 +245,12 @@ RapperContentCreatorEvents.events = {
 					state.FameState.monthlyListeners = math.random(10, 100)
 					state.FameState.totalStreams = math.random(50, 500)
 					state.FameState.totalTracks = 1
-					state.FameState.style = "lyrical"
-					state.Fame = (state.Fame or 0) + 1
-				end,
-			},
-			{
-				text = "🎵 Melodic auto-tune vibes - modern sound ($50)",
+				state.FameState.style = "lyrical"
+				state.Fame = math.min(100, (state.Fame or 0) + 1) -- CRITICAL FIX: Cap fame at 100
+			end,
+		},
+		{
+			text = "🎵 Melodic auto-tune vibes - modern sound ($50)",
 				effects = { Happiness = 15, Looks = 2, Health = -2, Money = -50 },  -- ENHANCED: Melodic = image boost
 				setFlags = { first_track_recorded = true, melodic_rapper = true },
 				feedText = "🎤 THE AUTO-TUNE MADE YOUR VOICE SOUND CRAZY. That melodic flow, the emotional delivery... Marcus had to double-check you hadn't done this before. You layered harmonies, ad-libs, everything. It sounds like something that could be on the radio. TikTok could blow this up. You're already thinking about the music video...",
@@ -263,12 +263,12 @@ RapperContentCreatorEvents.events = {
 					state.FameState.monthlyListeners = math.random(10, 100)
 					state.FameState.totalStreams = math.random(50, 500)
 					state.FameState.totalTracks = 1
-					state.FameState.style = "melodic"
-					state.Fame = (state.Fame or 0) + 1
-				end,
-			},
-			{
-				text = "🔫 Drill/Street rap - raw and real ($50)",
+				state.FameState.style = "melodic"
+				state.Fame = math.min(100, (state.Fame or 0) + 1) -- CRITICAL FIX: Cap fame at 100
+			end,
+		},
+		{
+			text = "🔫 Drill/Street rap - raw and real ($50)",
 				effects = { Happiness = 12, Health = -4, Money = -50 },  -- ENHANCED: Drill is risky
 				setFlags = { first_track_recorded = true, drill_rapper = true },
 				feedText = "🎤 You recorded your first track! Hard drill beat. Streets will feel this!",
@@ -281,12 +281,12 @@ RapperContentCreatorEvents.events = {
 					state.FameState.monthlyListeners = math.random(10, 100)
 					state.FameState.totalStreams = math.random(50, 500)
 					state.FameState.totalTracks = 1
-					state.FameState.style = "drill"
-					state.Fame = (state.Fame or 0) + 1
-				end,
-			},
-			{
-				text = "📱 Record on phone/free software - DIY style",
+				state.FameState.style = "drill"
+				state.Fame = math.min(100, (state.Fame or 0) + 1) -- CRITICAL FIX: Cap fame at 100
+			end,
+		},
+		{
+			text = "📱 Record on phone/free software - DIY style",
 				effects = { Happiness = 8, Smarts = 3 },
 				setFlags = { first_track_recorded = true, bedroom_producer = true },
 				feedText = "🎤 You recorded on your phone with free beats from YouTube! Quality isn't studio-level but you're in the game now! Started from the bottom!",
@@ -295,14 +295,14 @@ RapperContentCreatorEvents.events = {
 					state.FameState.careerPath = state.FameState.careerPath or "rapper"
 					state.FameState.isFamous = true
 					state.FameState.monthlyListeners = math.random(5, 30)
-					state.FameState.totalStreams = math.random(20, 100)
-					state.FameState.totalTracks = 1
-					state.FameState.style = "underground"
-					state.Fame = (state.Fame or 0) + 1
-				end,
-			},
+				state.FameState.totalStreams = math.random(20, 100)
+				state.FameState.totalTracks = 1
+				state.FameState.style = "underground"
+				state.Fame = math.min(100, (state.Fame or 0) + 1) -- CRITICAL FIX: Cap fame at 100
+			end,
 		},
 	},
+},
 	{
 		id = "rapper_soundcloud_grind",
 		title = "🎧 SoundCloud Grind",
@@ -579,9 +579,9 @@ RapperContentCreatorEvents.events = {
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(500, 1500)
-					state.FameState.radioPlays = (state.FameState.radioPlays or 0) + 1
-					state.Fame = (state.Fame or 0) + 3
-					state.Flags = state.Flags or {}
+				state.FameState.radioPlays = (state.FameState.radioPlays or 0) + 1
+				state.Fame = math.min(100, (state.Fame or 0) + 3) -- CRITICAL FIX: Cap fame at 100
+				state.Flags = state.Flags or {}
 					state.Flags.radio_played = true
 				end,
 			},
@@ -591,9 +591,9 @@ RapperContentCreatorEvents.events = {
 				feedText = "📻 Live interview on college radio! Talked about your journey. Very authentic! New fans incoming!",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
-					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(800, 2000)
-					state.Fame = (state.Fame or 0) + 5
-				end,
+				state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(800, 2000)
+				state.Fame = math.min(100, (state.Fame or 0) + 5) -- CRITICAL FIX: Cap fame at 100
+			end,
 			},
 		},
 	},
@@ -674,9 +674,9 @@ RapperContentCreatorEvents.events = {
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(2000, 5000)
-					state.FameState.blogFeatures = (state.FameState.blogFeatures or 0) + 1
-					state.Fame = (state.Fame or 0) + 5
-				end,
+				state.FameState.blogFeatures = (state.FameState.blogFeatures or 0) + 1
+				state.Fame = math.min(100, (state.Fame or 0) + 5) -- CRITICAL FIX: Cap fame at 100
+			end,
 			},
 			{
 				text = "Do an interview for the feature",
@@ -684,9 +684,9 @@ RapperContentCreatorEvents.events = {
 				feedText = "📝 Full interview published! Talked about your story. People connecting with you on a deeper level!",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
-					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(3000, 7000)
-					state.Fame = (state.Fame or 0) + 7
-				end,
+				state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(3000, 7000)
+				state.Fame = math.min(100, (state.Fame or 0) + 7) -- CRITICAL FIX: Cap fame at 100
+			end,
 			},
 		},
 	},
@@ -727,9 +727,9 @@ RapperContentCreatorEvents.events = {
 					state.FameState = state.FameState or {}
 					local boost = math.random(3000, 8000)
 					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + boost
-					state.FameState.mixtapesReleased = (state.FameState.mixtapesReleased or 0) + 1
-					state.Fame = (state.Fame or 0) + 8
-					state:AddFeed(string.format("📀 Mixtape did %d streams first week! Building momentum!", boost * 5))
+				state.FameState.mixtapesReleased = (state.FameState.mixtapesReleased or 0) + 1
+				state.Fame = math.min(100, (state.Fame or 0) + 8) -- CRITICAL FIX: Cap fame at 100
+				state:AddFeed(string.format("📀 Mixtape did %d streams first week! Building momentum!", boost * 5))
 				end,
 			},
 			{
@@ -751,9 +751,9 @@ RapperContentCreatorEvents.events = {
 					state.FameState = state.FameState or {}
 					local boost = math.random(4000, 10000)
 					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + boost
-					state.FameState.epsReleased = (state.FameState.epsReleased or 0) + 1
-					state.Fame = (state.Fame or 0) + 10
-				end,
+				state.FameState.epsReleased = (state.FameState.epsReleased or 0) + 1
+				state.Fame = math.min(100, (state.Fame or 0) + 10) -- CRITICAL FIX: Cap fame at 100
+			end,
 			},
 			{
 				text = "Wait until everything is perfect",
@@ -886,9 +886,9 @@ RapperContentCreatorEvents.events = {
 					state.FameState = state.FameState or {}
 					local currentListeners = state.FameState.monthlyListeners or 0
 					local boost = math.max(10000, math.floor(currentListeners * 0.2) + math.random(5000, 15000))
-					state.FameState.monthlyListeners = currentListeners + boost
-					state.Fame = (state.Fame or 0) + 7
-				end,
+				state.FameState.monthlyListeners = currentListeners + boost
+				state.Fame = math.min(100, (state.Fame or 0) + 7) -- CRITICAL FIX: Cap fame at 100
+			end,
 			},
 		},
 	},
@@ -977,9 +977,9 @@ RapperContentCreatorEvents.events = {
 				feedText = "Mysterious approach. Some fans intrigued. Others moved on. Could've capitalized harder.",
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
-					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(15000, 40000)
-					state.Fame = (state.Fame or 0) + 10
-				end,
+				state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(15000, 40000)
+				state.Fame = math.min(100, (state.Fame or 0) + 10) -- CRITICAL FIX: Cap fame at 100
+			end,
 			},
 		},
 	},
@@ -1353,9 +1353,9 @@ RapperContentCreatorEvents.events = {
 					state.FameState.subscribers = math.random(5, 50)
 					state.FameState.totalViews = math.random(30, 200)
 					state.FameState.totalVideos = 1
-					state.FameState.contentType = "gaming"
-					state.Fame = (state.Fame or 0) + 1
-				end,
+				state.FameState.contentType = "gaming"
+				state.Fame = math.min(100, (state.Fame or 0) + 1) -- CRITICAL FIX: Cap fame at 100
+			end,
 			},
 			{
 				text = "Vlogs - Daily life content",
@@ -1370,9 +1370,9 @@ RapperContentCreatorEvents.events = {
 					state.FameState.subscribers = math.random(5, 50)
 					state.FameState.totalViews = math.random(30, 200)
 					state.FameState.totalVideos = 1
-					state.FameState.contentType = "vlogs"
-					state.Fame = (state.Fame or 0) + 1
-				end,
+				state.FameState.contentType = "vlogs"
+				state.Fame = math.min(100, (state.Fame or 0) + 1) -- CRITICAL FIX: Cap fame at 100
+			end,
 			},
 			{
 				text = "Educational/Tutorial content",
@@ -1387,9 +1387,9 @@ RapperContentCreatorEvents.events = {
 					state.FameState.subscribers = math.random(10, 100)
 					state.FameState.totalViews = math.random(50, 300)
 					state.FameState.totalVideos = 1
-					state.FameState.contentType = "educational"
-					state.Fame = (state.Fame or 0) + 1
-				end,
+				state.FameState.contentType = "educational"
+				state.Fame = math.min(100, (state.Fame or 0) + 1) -- CRITICAL FIX: Cap fame at 100
+			end,
 			},
 			{
 				text = "Comedy/Entertainment skits",
@@ -1404,9 +1404,9 @@ RapperContentCreatorEvents.events = {
 					state.FameState.subscribers = math.random(15, 150)
 					state.FameState.totalViews = math.random(100, 500)
 					state.FameState.totalVideos = 1
-					state.FameState.contentType = "comedy"
-					state.Fame = (state.Fame or 0) + 1
-				end,
+				state.FameState.contentType = "comedy"
+				state.Fame = math.min(100, (state.Fame or 0) + 1) -- CRITICAL FIX: Cap fame at 100
+			end,
 			},
 		},
 	},
@@ -1769,9 +1769,9 @@ RapperContentCreatorEvents.events = {
 					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(500, 1500)
 					state.FameState.producerConnect = true
 					state.FameState.totalTracks = (state.FameState.totalTracks or 0) + 8
-					state.Money = (state.Money or 0) + math.random(200, 800)  -- Some streaming revenue
-					state.Fame = (state.Fame or 0) + 3
-				end,
+				state.Money = (state.Money or 0) + math.random(200, 800)  -- Some streaming revenue
+				state.Fame = math.min(100, (state.Fame or 0) + 3) -- CRITICAL FIX: Cap fame at 100
+			end,
 			},
 			{
 				text = "💰 Negotiate better - I want 70/30 my favor",
@@ -1898,9 +1898,9 @@ RapperContentCreatorEvents.events = {
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(2000, 6000)
-					state.FameState.musicVideos = (state.FameState.musicVideos or 0) + 1
-					state.Fame = (state.Fame or 0) + 5
-				end,
+				state.FameState.musicVideos = (state.FameState.musicVideos or 0) + 1
+				state.Fame = math.min(100, (state.Fame or 0) + 5) -- CRITICAL FIX: Cap fame at 100
+			end,
 			},
 		},
 	},
@@ -2025,9 +2025,9 @@ RapperContentCreatorEvents.events = {
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(1000, 3000)
-					state.FameState.showsPerformed = (state.FameState.showsPerformed or 0) + 1
-					state.Fame = (state.Fame or 0) + 3
-				end,
+				state.FameState.showsPerformed = (state.FameState.showsPerformed or 0) + 1
+				state.Fame = math.min(100, (state.Fame or 0) + 3) -- CRITICAL FIX: Cap fame at 100
+			end,
 			},
 			{
 				text = "Network backstage after",
@@ -2072,9 +2072,9 @@ RapperContentCreatorEvents.events = {
 				setFlags = { local_rapper = true },
 				feedText = "🎉 10K CELEBRATION! Your real fans showed up! Community built!",
 				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for party" end,
-				onResolve = function(state)
-					state.Fame = (state.Fame or 0) + 10
-					state.CurrentJob = state.CurrentJob or {}
+			onResolve = function(state)
+				state.Fame = math.min(100, (state.Fame or 0) + 10) -- CRITICAL FIX: Cap fame at 100
+				state.CurrentJob = state.CurrentJob or {}
 					state.CurrentJob.name = "Local Rapper"
 					state.CurrentJob.salary = 15000
 				end,
@@ -2084,9 +2084,9 @@ RapperContentCreatorEvents.events = {
 				effects = { Happiness = 15 },
 				setFlags = { local_rapper = true, hungry_rapper = true },
 				feedText = "🎉 10K is just the beginning. Eyes on 100K. No celebrations til we're there!",
-				onResolve = function(state)
-					state.Fame = (state.Fame or 0) + 8
-				end,
+			onResolve = function(state)
+				state.Fame = math.min(100, (state.Fame or 0) + 8) -- CRITICAL FIX: Cap fame at 100
+			end,
 			},
 		},
 	},
@@ -2550,9 +2550,9 @@ RapperContentCreatorEvents.events = {
 				feedText = "👕 Full collection launched! Hoodies, tees, hats! $25,000 in sales! BRAND BUILT!",
 				eligibility = function(state) return (state.Money or 0) >= 10000, "💸 Need $10K for full collection" end,
 				onResolve = function(state)
-					state.Money = (state.Money or 0) + 25000
-					state.Fame = (state.Fame or 0) + 10
-				end,
+				state.Money = (state.Money or 0) + 25000
+				state.Fame = math.min(100, (state.Fame or 0) + 10) -- CRITICAL FIX: Cap fame at 100
+			end,
 			},
 			-- CRITICAL FIX: FREE option to prevent hard lock!
 			{

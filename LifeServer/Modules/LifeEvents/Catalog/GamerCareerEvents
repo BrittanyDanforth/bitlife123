@@ -373,9 +373,9 @@ GamerCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 30 then
-						state:ModifyStat("Happiness", 8)
-						state.Fame = (state.Fame or 0) + 5
-						state:AddFeed("😤 Your clap-back went viral! Entertainment value saved your image!")
+					state:ModifyStat("Happiness", 8)
+					state.Fame = math.min(100, (state.Fame or 0) + 5) -- CRITICAL FIX: Cap fame at 100
+					state:AddFeed("😤 Your clap-back went viral! Entertainment value saved your image!")
 					else
 						state:ModifyStat("Happiness", -15)
 						state.Fame = math.max(0, (state.Fame or 0) - 20) -- CRITICAL FIX: Prevent negative Fame
@@ -615,9 +615,9 @@ GamerCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 30 then
-						state:ModifyStat("Happiness", 12)
-						state.Fame = (state.Fame or 0) + 5
-						state:AddFeed("🔥 Your clapback went VIRAL! Clip is everywhere! W!")
+					state:ModifyStat("Happiness", 12)
+					state.Fame = math.min(100, (state.Fame or 0) + 5) -- CRITICAL FIX: Cap fame at 100
+					state:AddFeed("🔥 Your clapback went VIRAL! Clip is everywhere! W!")
 					elseif roll <= 70 then
 						state:ModifyStat("Happiness", 3)
 						state:AddFeed("🔥 Got into a flame war. Nobody won but it felt good.")

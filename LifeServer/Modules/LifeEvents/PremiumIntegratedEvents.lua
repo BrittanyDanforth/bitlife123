@@ -265,9 +265,9 @@ PremiumIntegratedEvents.events = {
 					local roll = math.random()
 					if roll < 0.30 then
 						state:ModifyStat("Happiness", 10)
-						state:AddFeed("🌟 Wait, they actually liked you! Minor local fame!")
-						state.Fame = (state.Fame or 0) + 5
-					else
+					state:AddFeed("🌟 Wait, they actually liked you! Minor local fame!")
+					state.Fame = math.min(100, (state.Fame or 0) + 5) -- CRITICAL FIX: Cap fame at 100
+				else
 						state:ModifyStat("Happiness", -5)
 						state:AddFeed("🌟 Didn't make the cut. At least you tried!")
 					end
@@ -318,9 +318,9 @@ PremiumIntegratedEvents.events = {
 					local roll = math.random()
 					if roll < 0.25 then
 						state.Money = (state.Money or 0) + math.random(1000, 5000)
-						state:ModifyStat("Happiness", 10)
-						state.Fame = (state.Fame or 0) + 10
-						state:AddFeed("📱 Made some money from brand deals! Nice!")
+					state:ModifyStat("Happiness", 10)
+					state.Fame = math.min(100, (state.Fame or 0) + 10) -- CRITICAL FIX: Cap fame at 100
+					state:AddFeed("📱 Made some money from brand deals! Nice!")
 					elseif roll < 0.60 then
 						state.Money = (state.Money or 0) + math.random(100, 500)
 						state:ModifyStat("Happiness", 5)
@@ -1755,9 +1755,9 @@ PremiumIntegratedEvents.events = {
 					local smarts = (state.Stats and state.Stats.Smarts) or 50
 					local roll = math.random() + (smarts / 200)
 					if roll > 0.5 then
-						state:ModifyStat("Happiness", 15)
-						state.Fame = (state.Fame or 0) + 5
-						state:AddFeed("🎤 STANDING OVATION! You crushed it!")
+					state:ModifyStat("Happiness", 15)
+					state.Fame = math.min(100, (state.Fame or 0) + 5) -- CRITICAL FIX: Cap fame at 100
+					state:AddFeed("🎤 STANDING OVATION! You crushed it!")
 						state.Flags = state.Flags or {}
 						state.Flags.great_speaker = true
 					else

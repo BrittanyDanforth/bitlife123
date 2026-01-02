@@ -58,8 +58,8 @@ IntelligenceCareerEvents.events = {
 						state:ModifyStat("Happiness", 25)
 						state:ModifyStat("Smarts", 5)
 						state.Flags = state.Flags or {}
-						state.Flags.legendary_spy = true
-						state.Fame = (state.Fame or 0) + 10 -- Secret fame within the agency
+					state.Flags.legendary_spy = true
+					state.Fame = math.min(100, (state.Fame or 0) + 10) -- CRITICAL FIX: Cap fame at 100
 						state:AddFeed("🕵️ Mission successful! Extracted critical intelligence! Medal (classified) awarded!")
 					elseif roll <= 75 then
 						state:ModifyStat("Happiness", 8)

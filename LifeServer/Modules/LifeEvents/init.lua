@@ -4314,9 +4314,9 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 				state.Money = math.max(0, (state.Money or 0) + choice.successMoney)
 				outcome.moneyChange = choice.successMoney
 			end
-			if choice.successFame then
-				state.Fame = (state.Fame or 0) + choice.successFame
-			end
+		if choice.successFame then
+			state.Fame = math.min(100, (state.Fame or 0) + choice.successFame) -- CRITICAL FIX: Cap fame at 100
+		end
 			-- CRITICAL FIX #474: Handle successMafiaEffect
 			if choice.successMafiaEffect and state.MobState then
 				local mEffect = choice.successMafiaEffect
