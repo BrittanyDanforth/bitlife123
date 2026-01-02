@@ -655,7 +655,7 @@ function MafiaScreen:createHeader()
 	closeBtn.Position = UDim2.new(0, px(5), 0.5, 0)
 	closeBtn.AnchorPoint = Vector2.new(0, 0.5)
 	closeBtn.BackgroundColor3 = MafiaColors.DarkBorder
-	closeBtn.Text = "✕"
+	closeBtn.Text = "X"
 	closeBtn.TextColor3 = C.White
 	closeBtn.TextSize = textSize(18)
 	closeBtn.Font = Enum.Font.GothamBold

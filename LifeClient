@@ -18,7 +18,7 @@ local player = Players.LocalPlayer
 
 local ScreensFolder = ReplicatedStorage:WaitForChild("Screens", 3) -- Reduced timeout
 
-local OccupationScreen, AssetsScreen, RelationshipsScreen, ActivitiesScreen, StoryPathsScreen, MafiaScreen
+local OccupationScreen, AssetsScreen, RelationshipsScreen, ActivitiesScreen, StoryPathsScreen, MafiaScreen, ProgressScreen
 local MinigamesModule
 
 if ScreensFolder then
@@ -65,6 +65,7 @@ if ScreensFolder then
 	ActivitiesScreen    = safeRequire("ActivitiesScreen")
 	StoryPathsScreen    = safeRequire("StoryPathsScreen")
 	MafiaScreen         = safeRequire("MafiaScreen")
+	ProgressScreen      = safeRequire("ProgressScreen")
 	
 	print("[LifeClient] 📂 Screen modules loaded. AssetsScreen is:", AssetsScreen and "OK" or "NIL")
 else
@@ -2896,6 +2897,12 @@ local function createNavButton(info, parent, order)
 			else
 				warn("[LifeClient] ❌ StoryPathsScreen not available!")
 			end
+		elseif info.screen == "progress" then
+			if ScreenInstances.progress then
+				ScreenInstances.progress:show()
+			else
+				warn("[LifeClient] ❌ ProgressScreen not available!")
+			end
 		end
 	end)
 
@@ -2906,12 +2913,14 @@ end
 -- BitLife-style nav: Jobs, Assets, Relationships, Activities, Story Paths
 -- CRITICAL FIX: Added Story Paths button that was missing from bottom navigation
 -- CRITICAL FIX #801: Shortened text labels to prevent overlap on right side
-createNavButton({ icon = "💼", text = "Jobs",    screen = "occupation"   }, navLeft,  1)
-createNavButton({ icon = "🏠", text = "Assets",  screen = "assets"       }, navLeft,  2)
-createNavButton({ icon = "👥", text = "People",  screen = "relationships"}, navRight, 1)  -- CRITICAL FIX #801: "Relations" -> "People"
-createNavButton({ icon = "⚡", text = "Actions", screen = "activities"   }, navRight, 2)  -- CRITICAL FIX #801: "Activities" -> "Actions"
-createNavButton({ icon = "📖", text = "Story",   screen = "storypaths"   }, navRight, 3)  -- CRITICAL FIX #801: "Paths" -> "Story"
+createNavButton({ icon = "💼", text = "Jobs",     screen = "occupation"   }, navLeft,  1)
+createNavButton({ icon = "🏠", text = "Assets",   screen = "assets"       }, navLeft,  2)
+createNavButton({ icon = "🏆", text = "Progress", screen = "progress"     }, navLeft,  3)  -- Awards, Past Lives, Leaderboards
+createNavButton({ icon = "👥", text = "People",   screen = "relationships"}, navRight, 1)  -- CRITICAL FIX #801: "Relations" -> "People"
+createNavButton({ icon = "⚡", text = "Actions",  screen = "activities"   }, navRight, 2)  -- CRITICAL FIX #801: "Activities" -> "Actions"
+createNavButton({ icon = "📖", text = "Story",    screen = "storypaths"   }, navRight, 3)  -- Story Paths
 end)() -- End Nav Bar IIFE
+
 
 ----------------------------------------------------------------
 -- AGE BUTTON - TINY PHONE FIX: More compact
@@ -7747,6 +7756,10 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 		if ScreenInstances.storypaths and ScreenInstances.storypaths.updateState then
 			ScreenInstances.storypaths:updateState(currentState)
 		end
+		-- CRITICAL FIX: Update progress screen state
+		if ScreenInstances.progress and ScreenInstances.progress.updateState then
+			ScreenInstances.progress:updateState(currentState)
+		end
 
 		-- SHOW INTRO MODAL
 		showIntro()
@@ -7896,6 +7909,10 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 		elseif ScreenInstances.storypaths.visible then
 			ScreenInstances.storypaths:updateUI()
 		end
+	end
+	-- CRITICAL FIX: Update progress screen state
+	if ScreenInstances.progress and ScreenInstances.progress.updateState then
+		ScreenInstances.progress:updateState(currentState)
 	end
 
 	-- CRITICAL FIX: Check for death FIRST before showing any popups
@@ -8181,8 +8198,38 @@ end
 
 ScreenInstances.occupation   = safeNew(OccupationScreen,    "OccupationScreen",    screenGui, blurOverlay, showBlur, hideBlur, currentState)
 ScreenInstances.assets       = safeNew(AssetsScreen,        "AssetsScreen",        screenGui, blurOverlay, showBlur, hideBlur, currentState)
-ScreenInstances.relationships= safeNew(RelationshipsScreen, "RelationshipsScreen", screenGui, blurOverlay, showBlur, hideBlur, currentState)
 ScreenInstances.storypaths   = safeNew(StoryPathsScreen,    "StoryPathsScreen",    screenGui, currentState)
+ScreenInstances.progress     = safeNew(ProgressScreen,      "ProgressScreen",      screenGui, blurOverlay, showBlur, hideBlur, currentState)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Create RelationshipsScreen with onShowEventCard callback
+-- This allows relationship interactions to show proper BitLife-style event cards!
+-- User feedback: "I want actual card thingy like activities do"
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function onRelationshipShowEventCard(eventCard, onChoiceCallback)
+	-- Hide the RelationshipsScreen first
+	if ScreenInstances.relationships and ScreenInstances.relationships.hide then
+		ScreenInstances.relationships:hide()
+	end
+	hideBlur()
+	
+	-- Show the event card on the main UI using LifeClient's proper event system!
+	if showEvent then
+		showEvent({
+			id = eventCard.id or "relationship_event",
+			title = eventCard.title or "💕 Relationship",
+			emoji = eventCard.emoji or "💕",
+			text = eventCard.text or "Something happened...",
+			question = eventCard.question or "What will you do?",
+			choices = eventCard.choices or {{text = "Continue", index = 1}},
+			category = eventCard.category,
+			isActivityEvent = true, -- Use activity event handler for callbacks
+			onActivityChoice = onChoiceCallback,
+		})
+	end
+end
+
+ScreenInstances.relationships= safeNew(RelationshipsScreen, "RelationshipsScreen", screenGui, blurOverlay, showBlur, hideBlur, currentState, onRelationshipShowEventCard)
 
 -- CRITICAL FIX: Create ActivitiesScreen with onShowEventCard callback
 -- This allows activities to show proper BitLife-style event cards in the main UI

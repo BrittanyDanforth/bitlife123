@@ -381,11 +381,11 @@ RandomLifeEvents.events = {
 				feedText = "Going to meet a celebrity...",
 				onResolve = function(state)
 					local roll = math.random(1, 100)
-					if roll <= 15 then
-						state:ModifyStat("Happiness", 25)
-						state.Fame = (state.Fame or 0) + 5
-						state.Flags = state.Flags or {}
-						state.Flags.met_celebrity = true
+				if roll <= 15 then
+					state:ModifyStat("Happiness", 25)
+					state.Fame = math.min(100, (state.Fame or 0) + 5) -- CRITICAL FIX: Cap fame at 100
+					state.Flags = state.Flags or {}
+					state.Flags.met_celebrity = true
 						state:AddFeed("⭐ IT WAS THEM! Got a selfie! They were SO NICE! Best day ever!")
 					elseif roll <= 35 then
 						state:ModifyStat("Happiness", 10)

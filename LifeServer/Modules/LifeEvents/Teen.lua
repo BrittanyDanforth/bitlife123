@@ -564,7 +564,8 @@ Teen.events = {
 	-- EXTRACURRICULAR
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "sports_varsity",
+		-- CRITICAL FIX: Renamed to teen_sports_varsity for unique ID
+		id = "teen_sports_varsity",
 		title = "Varsity Tryouts",
 		emoji = "🏅",
 		text = "Varsity sports tryouts are coming up. You've been practicing hard.",
@@ -579,6 +580,197 @@ Teen.events = {
 			{ text = "Soccer", effects = { Health = 5, Happiness = 5 }, setFlags = { varsity_athlete = true, plays_soccer = true }, hintCareer = "sports", feedText = "You made the soccer team!" },
 			{ text = "Track & Field", effects = { Health = 7, Happiness = 5 }, setFlags = { varsity_athlete = true, runs_track = true }, hintCareer = "sports", feedText = "You joined the track team!" },
 			{ text = "Not really into sports", effects = { }, feedText = "Organized sports aren't your thing." },
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: EXPANDED TEEN SPORTS EVENTS
+	-- User feedback: "have events that let u be like nah or taking sports more seriously"
+	-- These connect to childhood sports progression for athlete career path
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	{
+		id = "teen_sports_college_scout",
+		title = "College Scout at Your Game!",
+		emoji = "🎓",
+		text = "There's a college scout in the stands watching YOUR game! Your coach told you to play your best. This could be a scholarship opportunity!",
+		question = "How do you handle the pressure?",
+		minAge = 15, maxAge = 17,
+		baseChance = 0.35,
+		cooldown = 8,
+		oneTime = true,
+		requiresFlags = { varsity_athlete = true },
+		blockedByFlags = { quit_sports = true },
+		requiresStats = { Health = 60 },
+		
+		choices = {
+			{
+				text = "Play my heart out - this is my moment!",
+				effects = { Health = 3 },
+				feedText = "Time to shine!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 35 then
+						state:ModifyStat("Happiness", 20)
+						state.Flags.college_sports_interest = true
+						state.Flags.scholarship_likely = true
+						state:AddFeed("🎓 INCREDIBLE performance! The scout took notes the WHOLE game! They want to meet with you!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags.college_sports_interest = true
+						state:AddFeed("🎓 Solid game! The scout seemed impressed. You might hear from them!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state.Flags.choked_scout_game = true
+						state:AddFeed("🎓 Nerves got to you. Not your best game. The scout left early...")
+					end
+				end,
+			},
+			{
+				text = "Just play my normal game - don't overthink it",
+				effects = { Happiness = 5 },
+				feedText = "Staying calm...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 12)
+						state.Flags.college_sports_interest = true
+						state:AddFeed("🎓 Your consistent play impressed the scout! They appreciate players who don't crack under pressure!")
+					else
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🎓 Average game. The scout made some notes but didn't seem blown away.")
+					end
+				end,
+			},
+			{
+				text = "I don't think college sports is for me",
+				effects = { Happiness = 2 },
+				feedText = "Sports for fun, not for a career.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.casual_athlete = true
+					state.Flags.varsity_athlete = nil
+					state:AddFeed("🎓 You decided sports will stay a hobby, not a career. There are other paths!")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "teen_sports_state_championship",
+		title = "State Championship Game!",
+		emoji = "🏆",
+		text = "Your team made it to the STATE CHAMPIONSHIP! This is the biggest game of your life. The whole school is going. Local news will be there. Scouts are watching.",
+		question = "How do you prepare for the biggest game ever?",
+		minAge = 15, maxAge = 18,
+		baseChance = 0.3,
+		cooldown = 10,
+		oneTime = true,
+		requiresFlags = { varsity_athlete = true },
+		blockedByFlags = { quit_sports = true },
+		
+		choices = {
+			{
+				text = "Train harder than ever - I WILL be ready",
+				effects = { Health = 5 },
+				feedText = "Extra practice, extra film study...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					state.Flags.state_championship_played = true
+					if roll <= 45 then
+						state:ModifyStat("Happiness", 25)
+						state.Flags.state_champion = true
+						state.Flags.sports_legend = true
+						state.Fame = math.min(100, (state.Fame or 0) + 15)
+						state:AddFeed("🏆 STATE CHAMPIONS!!! You played the game of your LIFE! MVP! Legend status!")
+					elseif roll <= 75 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🏆 Lost in a close game. Heartbreaking but you left it all on the field. Proud moment.")
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🏆 Got blown out. Tough loss. But making it to state is still an achievement.")
+					end
+				end,
+			},
+			{
+				text = "Stay loose - don't put too much pressure on myself",
+				effects = { Happiness = 3 },
+				feedText = "Keeping things in perspective...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					state.Flags.state_championship_played = true
+					if roll <= 35 then
+						state:ModifyStat("Happiness", 20)
+						state.Flags.state_champion = true
+						state:AddFeed("🏆 Your relaxed approach worked! STATE CHAMPIONS! What a game!")
+					else
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🏆 Didn't win, but you enjoyed the experience. No regrets!")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "teen_sports_injury_setback",
+		title = "Sports Injury Setback",
+		emoji = "🤕",
+		text = "You got injured during practice. The doctor says you need several weeks to recover. You might miss the rest of the season.",
+		question = "How do you deal with this setback?",
+		minAge = 14, maxAge = 17,
+		baseChance = 0.3,
+		cooldown = 8,
+		requiresFlags = { varsity_athlete = true },
+		blockedByFlags = { quit_sports = true },
+		
+		choices = {
+			{
+				text = "Focus on recovery - I'll come back stronger",
+				effects = { Health = 5, Smarts = 3 },
+				feedText = "Patience and determination...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.overcame_injury = true
+					state.Flags.resilient = true
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("🤕 The recovery was hard but you came back stronger than ever! Coaches noticed your dedication.")
+				end,
+			},
+			{
+				text = "Try to play through it - the team needs me",
+				effects = { Health = -10 },
+				feedText = "Risking it all...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					if roll <= 30 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags.played_through_pain = true
+						state:AddFeed("🤕 You gutted it out! Team MVP for your dedication!")
+					else
+						state:ModifyStat("Health", -15)
+						state:ModifyStat("Happiness", -15)
+						state.Flags.chronic_injury = true
+						state:AddFeed("🤕 Made the injury WORSE. Now you're out even longer. Should have rested.")
+					end
+				end,
+			},
+			{
+				text = "Maybe this is a sign to quit sports",
+				effects = { Happiness = -5 },
+				feedText = "Reconsidering everything...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.quit_sports = true
+					state.Flags.varsity_athlete = nil
+					state:AddFeed("🤕 You decided sports aren't worth the physical toll. Time for new pursuits.")
+				end,
+			},
 		},
 	},
 	{

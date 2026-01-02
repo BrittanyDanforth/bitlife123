@@ -370,7 +370,8 @@ RoyaltyEvents.RoyalDuties = {
 		frequency = "yearly",
 	},
 	{
-		id = "sports_event",
+		-- CRITICAL FIX: Renamed from sports_event to royal_sports_event for unique ID
+		id = "royal_sports_event",
 		name = "Sports Event Appearance",
 		emoji = "🏆",
 		category = "sports",

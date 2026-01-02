@@ -4412,13 +4412,13 @@ local FamePathEvents = {
 					local gain = math.random(10, 50)
 					state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + gain
 					state.FameState.followers = (state.FameState.followers or 0) + gain  -- BUG FIX: Sync followers
-					state.FameState.contentPlatforms = state.FameState.contentPlatforms or {}
-					state.FameState.contentPlatforms.youtube = true
-					state.Fame = (state.Fame or 0) + 2
-				end,
-			},
-			{
-				text = "Start a lifestyle/vlog channel 📹",
+				state.FameState.contentPlatforms = state.FameState.contentPlatforms or {}
+				state.FameState.contentPlatforms.youtube = true
+				state.Fame = math.min(100, (state.Fame or 0) + 2) -- CRITICAL FIX: Cap fame at 100
+			end,
+		},
+		{
+			text = "Start a lifestyle/vlog channel 📹",
 				effects = { Happiness = 15, Looks = 2 },
 				setFlags = { youtube_started = true, vlog_content = true, content_creator = true },
 				feedText = "You started your vlogging journey! Your first video got 23 views.",
@@ -4427,13 +4427,13 @@ local FamePathEvents = {
 					local gain = math.random(10, 50)
 					state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + gain
 					state.FameState.followers = (state.FameState.followers or 0) + gain  -- BUG FIX: Sync followers
-					state.FameState.contentPlatforms = state.FameState.contentPlatforms or {}
-					state.FameState.contentPlatforms.youtube = true
-					state.Fame = (state.Fame or 0) + 2
-				end,
-			},
-			{
-				text = "Maybe later...",
+				state.FameState.contentPlatforms = state.FameState.contentPlatforms or {}
+				state.FameState.contentPlatforms.youtube = true
+				state.Fame = math.min(100, (state.Fame or 0) + 2) -- CRITICAL FIX: Cap fame at 100
+			end,
+		},
+		{
+			text = "Maybe later...",
 				effects = { Happiness = -3 },
 				feedText = "You're not ready to start creating content yet.",
 			},
@@ -4468,17 +4468,17 @@ local FamePathEvents = {
 						-- BUG FIX #1: Sync socialFollowers with main followers counter
 						state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + followersGain
 						state.FameState.followers = (state.FameState.followers or 0) + followersGain
-						state.Fame = (state.Fame or 0) + math.floor(followersGain / 200)
-						if state.AddFeed then
-							state:AddFeed("📱 Your TikTok went semi-viral! +" .. followersGain .. " followers!")
+					state.Fame = math.min(100, (state.Fame or 0) + math.floor(followersGain / 200)) -- CRITICAL FIX: Cap fame at 100
+					if state.AddFeed then
+						state:AddFeed("📱 Your TikTok went semi-viral! +" .. followersGain .. " followers!")
 						end
 					else
-						if state.AddFeed then
-							state:AddFeed("📱 Your TikTok got some views but didn't blow up.")
-						end
-						state.Fame = (state.Fame or 0) + 1
+					if state.AddFeed then
+						state:AddFeed("📱 Your TikTok got some views but didn't blow up.")
 					end
-				end,
+					state.Fame = math.min(100, (state.Fame or 0) + 1) -- CRITICAL FIX: Cap fame at 100
+				end
+			end,
 			},
 			{
 				text = "Create something original instead",
@@ -4524,20 +4524,20 @@ local FamePathEvents = {
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					local gain = math.random(200, 500)
-					state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + gain
-					state.FameState.followers = (state.FameState.followers or 0) + gain  -- BUG FIX: Sync followers
-					state.Fame = (state.Fame or 0) + 5
-				end,
-			},
-			{
-				text = "Thank your followers with a special post ❤️",
+				state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + gain
+				state.FameState.followers = (state.FameState.followers or 0) + gain  -- BUG FIX: Sync followers
+				state.Fame = math.min(100, (state.Fame or 0) + 5) -- CRITICAL FIX: Cap fame at 100
+			end,
+		},
+		{
+			text = "Thank your followers with a special post ❤️",
 				effects = { Happiness = 12 },
 				setFlags = { hit_1k_followers = true, grateful_creator = true },
-				feedText = "Your followers appreciate your gratitude!",
-				onResolve = function(state)
-					state.Fame = (state.Fame or 0) + 3
-				end,
-			},
+			feedText = "Your followers appreciate your gratitude!",
+			onResolve = function(state)
+				state.Fame = math.min(100, (state.Fame or 0) + 3) -- CRITICAL FIX: Cap fame at 100
+			end,
+		},
 		},
 	},
 	
@@ -4565,11 +4565,11 @@ local FamePathEvents = {
 				text = "Accept the deal! Free stuff! 🎁",
 				effects = { Happiness = 12 },
 				setFlags = { first_brand_deal = true, has_brand_deals = true },
-				feedText = "You received your first brand partnership! Free products incoming!",
-				onResolve = function(state)
-					state.Fame = (state.Fame or 0) + 3
-					-- Gift them some value from the products
-					state.Money = (state.Money or 0) + math.random(50, 200)
+			feedText = "You received your first brand partnership! Free products incoming!",
+			onResolve = function(state)
+				state.Fame = math.min(100, (state.Fame or 0) + 3) -- CRITICAL FIX: Cap fame at 100
+				-- Gift them some value from the products
+				state.Money = (state.Money or 0) + math.random(50, 200)
 				end,
 			},
 			{
@@ -4581,11 +4581,11 @@ local FamePathEvents = {
 					if roll <= 40 then
 						state.Money = (state.Money or 0) + math.random(100, 500)
 						state.Flags = state.Flags or {}
-						state.Flags.first_brand_deal = true
-						state.Flags.has_brand_deals = true
-						state.Fame = (state.Fame or 0) + 4
-						if state.AddFeed then
-							state:AddFeed("💰 They agreed to pay you! Smart negotiation!")
+					state.Flags.first_brand_deal = true
+					state.Flags.has_brand_deals = true
+					state.Fame = math.min(100, (state.Fame or 0) + 4) -- CRITICAL FIX: Cap fame at 100
+					if state.AddFeed then
+						state:AddFeed("💰 They agreed to pay you! Smart negotiation!")
 						end
 					else
 						state.Flags = state.Flags or {}
@@ -4632,15 +4632,15 @@ local FamePathEvents = {
 				feedText = "The drama might attract attention...",
 				onResolve = function(state)
 					local roll = math.random(1, 100)
-					if roll <= 50 then
-						-- Drama brings attention
-						state.Fame = (state.Fame or 0) + 5
-						state.FameState = state.FameState or {}
-						local gain = math.random(100, 500)
-						state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + gain
-						state.FameState.followers = (state.FameState.followers or 0) + gain  -- BUG FIX: Sync followers
-						if state.AddFeed then
-							state:AddFeed("🔥 The drama went viral! People love the content!")
+				if roll <= 50 then
+					-- Drama brings attention
+					state.Fame = math.min(100, (state.Fame or 0) + 5) -- CRITICAL FIX: Cap fame at 100
+					state.FameState = state.FameState or {}
+					local gain = math.random(100, 500)
+					state.FameState.socialFollowers = (state.FameState.socialFollowers or 0) + gain
+					state.FameState.followers = (state.FameState.followers or 0) + gain  -- BUG FIX: Sync followers
+					if state.AddFeed then
+						state:AddFeed("🔥 The drama went viral! People love the content!")
 						end
 					else
 						-- Backlash

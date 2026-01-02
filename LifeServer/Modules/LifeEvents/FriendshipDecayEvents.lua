@@ -1547,11 +1547,11 @@ FriendshipDecayEvents.events = {
 					local roll = math.random()
 					state.Flags = state.Flags or {}
 					state.Flags.leadership_tested = true
-					if roll < 0.70 then
-						modStatIfPossible(state, "Happiness", 20)
-						state.Fame = (state.Fame or 0) + 3
-						state.Flags.proven_leader = true
-						addFeed(state, "👔 You led everyone through the crisis! People will remember this!")
+				if roll < 0.70 then
+					modStatIfPossible(state, "Happiness", 20)
+					state.Fame = math.min(100, (state.Fame or 0) + 3) -- CRITICAL FIX: Cap fame at 100
+					state.Flags.proven_leader = true
+					addFeed(state, "👔 You led everyone through the crisis! People will remember this!")
 					else
 						modStatIfPossible(state, "Happiness", 5)
 						addFeed(state, "👔 You did your best. Not perfect, but you tried. That matters.")
@@ -1595,11 +1595,11 @@ FriendshipDecayEvents.events = {
 					state.Flags.esports_chance = true
 					if roll < 0.40 then
 						local prize = math.random(1000, 10000)
-						state.Money = (state.Money or 0) + prize
-						modStatIfPossible(state, "Happiness", 25)
-						state.Fame = (state.Fame or 0) + 5
-						state.Flags.esports_winner = true
-						addFeed(state, string.format("🎮 YOU WON! $%d prize! All those hours gaming paid off!", prize))
+					state.Money = (state.Money or 0) + prize
+					modStatIfPossible(state, "Happiness", 25)
+					state.Fame = math.min(100, (state.Fame or 0) + 5) -- CRITICAL FIX: Cap fame at 100
+					state.Flags.esports_winner = true
+					addFeed(state, string.format("🎮 YOU WON! $%d prize! All those hours gaming paid off!", prize))
 					elseif roll < 0.70 then
 						modStatIfPossible(state, "Happiness", 10)
 						addFeed(state, "🎮 Didn't win, but you held your own! Gaming community respects you!")
@@ -1728,11 +1728,11 @@ FriendshipDecayEvents.events = {
 					local roll = math.random()
 					state.Flags = state.Flags or {}
 					state.Flags.music_moment_happened = true
-					if roll < 0.50 then
-						modStatIfPossible(state, "Happiness", 25)
-						state.Fame = (state.Fame or 0) + 5
-						state.Flags.performed_publicly = true
-						addFeed(state, "🎵 STANDING OVATION! Your childhood music practice created magic!")
+				if roll < 0.50 then
+					modStatIfPossible(state, "Happiness", 25)
+					state.Fame = math.min(100, (state.Fame or 0) + 5) -- CRITICAL FIX: Cap fame at 100
+					state.Flags.performed_publicly = true
+					addFeed(state, "🎵 STANDING OVATION! Your childhood music practice created magic!")
 					elseif roll < 0.80 then
 						modStatIfPossible(state, "Happiness", 12)
 						addFeed(state, "🎵 Good reception! People clapped and smiled. That felt AMAZING!")

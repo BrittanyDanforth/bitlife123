@@ -1063,7 +1063,7 @@ function AssetsScreen:createGamblingModal()
 	closeBtn.Font = F.Title
 	closeBtn.TextSize = 18
 	closeBtn.TextColor3 = C.GoldDark
-	closeBtn.Text = "✕"
+	closeBtn.Text = "X"
 	closeBtn.AutoButtonColor = false
 	closeBtn.ZIndex = 100
 	closeBtn.Parent = header
@@ -1432,9 +1432,10 @@ function AssetsScreen:populateProperty()
 		else
 			statusColor = C.Pink or C.Purple
 		end
-	elseif flags.has_partner or flags.dating or flags.cohabiting or hasPartnerFromRelationships then
+	elseif flags.lives_with_partner or flags.cohabiting or (flags.has_partner and flags.moved_out) then
 		-- Living with boyfriend/girlfriend
-		-- CRITICAL FIX: Also check Relationships table for partner
+		-- CRITICAL FIX: Check lives_with_partner flag (set when moving in together)
+		-- CRITICAL FIX #2: Also check Relationships table for partner
 		livingEmoji = "💕"
 		livingStatus = "With Partner"
 		if partnerNameFromRelationships then

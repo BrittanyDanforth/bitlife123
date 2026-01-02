@@ -251,6 +251,8 @@ local events = {
 				onResolve = function(state)
 					if RANDOM:NextNumber() < 0.2 then
 						-- Internal affairs was watching
+						-- CRITICAL FIX: Initialize Flags table before assignment
+						state.Flags = state.Flags or {}
 						state.Flags.under_investigation = true
 						if state.AddFeed then
 							state:AddFeed("😰 Someone was watching. Internal Affairs wants to see you...")
@@ -291,7 +293,9 @@ local events = {
 				feedText = "You cooperated with the investigation...",
 				onResolve = function(state)
 					local outcome = RANDOM:NextNumber()
-					local corrupt = state.Flags and state.Flags.corrupt_cop
+					-- CRITICAL FIX: Initialize Flags table before any flag access
+					state.Flags = state.Flags or {}
+					local corrupt = state.Flags.corrupt_cop
 					if corrupt then
 						if outcome < 0.5 then
 							-- They found evidence

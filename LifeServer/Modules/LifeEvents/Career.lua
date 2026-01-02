@@ -1853,7 +1853,8 @@ Career.events = {
 -- ══════════════════════════════════════════════════════════════════════════════
 {
 	-- CRITICAL FIX: Player can't choose injury severity - random outcome
-	id = "sports_injury_scare",
+	-- CRITICAL FIX: Renamed to career_sports_injury_scare for unique ID
+	id = "career_sports_injury_scare",
 	title = "Career-Threatening Injury",
 	emoji = "🏥",
 	text = "During practice, you go down. Pain shoots through your leg. Trainers rush over. You're carried off. MRI scheduled. This could be BAD.",

@@ -213,7 +213,25 @@ Relationships.events = {
 		requiresPartner = true,
 		requiresFlags = { committed_relationship = true },
 		choices = {
-			{ text = "Yes! Let's do it!", effects = { Happiness = 10, Money = 500 }, setFlags = { lives_with_partner = true }, feedText = "You moved in together!" },
+			{ 
+			text = "Yes! Let's do it!", 
+			effects = { Happiness = 10, Money = 500 }, 
+			setFlags = { lives_with_partner = true, moved_out = true }, 
+			feedText = "You moved in together!",
+			-- CRITICAL FIX: Clear homeless flags when moving in with partner!
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags.homeless = nil
+				state.Flags.couch_surfing = nil
+				state.Flags.living_in_car = nil
+				state.Flags.using_shelter = nil
+				state.Flags.at_risk_homeless = nil
+				-- Update HousingState
+				state.HousingState = state.HousingState or {}
+				state.HousingState.status = "with_partner"
+				state.HousingState.type = "shared"
+			end,
+		},
 			{ text = "I'm not ready yet", effects = { Happiness = -3 }, feedText = "You need more time." },
 			{ 
 				text = "Break up instead", 

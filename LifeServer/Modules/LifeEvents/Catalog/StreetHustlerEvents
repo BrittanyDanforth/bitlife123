@@ -1686,9 +1686,9 @@ local events = {
 				feedText = "YOLO!",
 				onResolve = function(state)
 					local roll = RANDOM:NextNumber()
-					if roll < 0.40 then
-						state.Fame = (state.Fame or 0) + 10
-						state:AddFeed("🎰 Living large! Everyone sees you winning! Feels good!")
+				if roll < 0.40 then
+					state.Fame = math.min(100, (state.Fame or 0) + 10) -- CRITICAL FIX: Cap fame at 100
+					state:AddFeed("🎰 Living large! Everyone sees you winning! Feels good!")
 					else
 						state.Money = math.max(0, (state.Money or 0) - RANDOM:NextInteger(10000, 50000))
 						state:AddFeed("🎰 Too much attention. Got robbed. People knew you were rich.")

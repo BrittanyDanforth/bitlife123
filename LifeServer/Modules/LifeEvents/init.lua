@@ -2168,24 +2168,27 @@ local AgeMilestoneEvents = {
 	-- CRITICAL FIX #604: Added premium events to age milestones for gamepass exposure
 	[5] = { "first_day_kindergarten", "royal_education_choice", "stage_transition_child", "child_reading_discovery", "lost_first_tooth", "first_homework", "making_friends", "child_adventure_call" },
 	[6] = { "first_day_school", "first_best_friend", "child_show_and_tell", "child_music_lesson", "elementary_adventure", "learning_to_read", "playground_king", "premium_career_day_dream", "child_adventure_call" },
-	[7] = { "child_playground_adventure", "child_sports_tryout", "child_allowance_lesson", "science_project", "first_crush_maybe", "school_play", "summer_reading", "premium_magic_wish", "child_superpower_discovery" },
-	[8] = { "learning_to_ride_bike", "child_video_games_discovery", "child_summer_camp", "sleepover_first", "collector_hobby", "tree_climbing", "neighborhood_explorer", "premium_dream_big" },
+	[7] = { "child_playground_adventure", "child_sports_tryout", "sports_talent_discovered", "child_allowance_lesson", "science_project", "first_crush_maybe", "school_play", "summer_reading", "premium_magic_wish", "child_superpower_discovery" },
+	[8] = { "learning_to_ride_bike", "child_video_games_discovery", "sports_first_competition", "child_summer_camp", "sleepover_first", "collector_hobby", "tree_climbing", "neighborhood_explorer", "premium_dream_big" },
 	
 	-- LATE CHILDHOOD (9-12) - Growing up
-	[9] = { "discovered_passion", "child_first_crush", "hobby_discovery", "sports_team", "best_friend_forever", "school_award", "family_vacation", "premium_dream_big" },
+	-- CRITICAL FIX: Added sports progression events for athlete career path
+	[9] = { "discovered_passion", "child_first_crush", "hobby_discovery", "sports_interest_growing", "sports_burnout_warning", "best_friend_forever", "school_award", "family_vacation", "premium_dream_big" },
 	[10] = { "talent_show", "double_digits", "school_competition", "first_cell_phone", "sleepover_party", "childhood_ending", "growing_independence", "premium_dream_big" },
-	[11] = { "middle_school_start", "royal_summer_vacation", "friend_group_changes", "new_interests", "voice_changing", "growth_spurt", "independence_growing" },
-	[12] = { "elementary_graduation", "growing_up_fast", "teen_transition", "first_dance", "mature_conversations", "childhood_goodbye", "middle_school_life" },
+	[11] = { "middle_school_start", "royal_summer_vacation", "friend_group_changes", "sports_scholarship_talk", "new_interests", "voice_changing", "growth_spurt", "independence_growing" },
+	[12] = { "elementary_graduation", "growing_up_fast", "teen_transition", "sports_scholarship_talk", "first_dance", "mature_conversations", "childhood_goodbye", "middle_school_life" },
 	
 	-- EARLY TEEN (13-15) - Identity formation
+	-- CRITICAL FIX: Added teen sports events for athlete career path progression
 	[13] = { "stage_transition_teen", "teen_social_media", "talent_discovery", "teen_social_media_debut", "first_crush_serious", "style_change", "friend_drama" },
-	[14] = { "class_selection", "teen_study_habits", "teen_friend_drama", "first_relationship", "high_school_prep", "rebel_phase", "identity_question" },
-	[15] = { "learning_to_drive", "teen_part_time_job_decision", "teen_future_planning", "sweet_fifteen", "independence_push", "career_dream", "first_car_dream" },
+	[14] = { "class_selection", "teen_study_habits", "teen_friend_drama", "teen_sports_varsity", "first_relationship", "high_school_prep", "rebel_phase", "identity_question" },
+	[15] = { "learning_to_drive", "teen_part_time_job_decision", "teen_sports_college_scout", "teen_future_planning", "sweet_fifteen", "independence_push", "career_dream", "first_car_dream" },
 	
 	-- LATE TEEN (16-18) - Major milestones
 	-- CRITICAL FIX #604: Added premium turning point events for gamepass exposure
-	[16] = { "driving_license", "teen_first_job", "prom_invite", "fame_audition", "teen_first_heartbreak", "sweet_sixteen", "car_obsession", "college_prep", "premium_turning_point" },
-	[17] = { "high_school_graduation", "prom_invite", "senior_year", "college_applications", "last_summer", "farewell_friends", "adult_soon", "premium_turning_point" },
+	-- CRITICAL FIX: Added teen sports events for athlete career path
+	[16] = { "driving_license", "teen_first_job", "prom_invite", "teen_sports_state_championship", "teen_sports_injury_setback", "fame_audition", "teen_first_heartbreak", "sweet_sixteen", "car_obsession", "college_prep", "premium_turning_point" },
+	[17] = { "high_school_graduation", "prom_invite", "teen_sports_college_scout", "teen_sports_state_championship", "senior_year", "college_applications", "last_summer", "farewell_friends", "adult_soon", "premium_turning_point" },
 	[18] = { "turning_18", "high_school_graduation", "moving_out", "young_adult_move_out", "coming_of_age_ball", "young_adult_adulting_struggle", "legal_adult", "vote_first_time", "premium_life_crossroads" },
 	
 	-- YOUNG ADULT (19-24) - Independence and discovery
@@ -3573,9 +3576,15 @@ function LifeEvents.replaceTemplateVariables(text, state)
 	result = result:gsub("{{SALARY}}", tostring(job.salary or job.Salary or "your salary"))
 	result = result:gsub("{{YEARS_AT_JOB}}", tostring(job.yearsWorked or job.YearsWorked or 1))
 	
-	-- Family info (try to find relationships)
-	local fatherName = "Dad"
-	local motherName = "Mom"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Family names - Use "Your Mom"/"Your Dad" instead of actual names!
+	-- User feedback: "for like first day of school ever it says the parents name like 
+	-- there direct name have it say Your Mom or Your Dad so its easier understand!"
+	-- For parents: Use role titles (Your Mom, Your Dad) for clarity
+	-- For others: Use actual names when known
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local fatherName = "your dad"
+	local motherName = "your mom"
 	local partnerName = "your partner"
 	local friendName = "your friend"
 	local siblingName = "your sibling"
@@ -3586,10 +3595,11 @@ function LifeEvents.replaceTemplateVariables(text, state)
 			if type(rel) == "table" then
 				local relType = (rel.type or rel.relationship or ""):lower()
 				local relRole = (rel.role or ""):lower()
+				-- CRITICAL FIX: Parents use role titles, not actual names!
 				if relType == "father" or relRole == "father" then
-					fatherName = rel.name or rel.Name or "Dad"
+					fatherName = "your dad" -- Always use "your dad" for clarity
 				elseif relType == "mother" or relRole == "mother" then
-					motherName = rel.name or rel.Name or "Mom"
+					motherName = "your mom" -- Always use "your mom" for clarity
 				elseif relType == "partner" or relType == "spouse" or relType == "romantic" or relType == "fiance" or relRole == "partner" or relRole == "spouse" or relRole == "boyfriend" or relRole == "girlfriend" or relRole == "husband" or relRole == "wife" then
 					partnerName = rel.name or rel.Name or "your partner"
 				elseif relType == "friend" or relRole == "friend" then
@@ -3631,6 +3641,21 @@ function LifeEvents.replaceTemplateVariables(text, state)
 	-- Also handle lowercase/alternative formats that might slip through
 	result = result:gsub("{parent%.role}", parentRole)
 	result = result:gsub("{parent%.name}", parentName)
+	
+	-- CRITICAL FIX: Replace any remaining raw parent names with role titles
+	-- This catches cases where parent names were hardcoded into event text
+	if state.Relationships and state.Relationships.mother then
+		local momActualName = state.Relationships.mother.name or state.Relationships.mother.Name
+		if momActualName and momActualName ~= "" and momActualName ~= "Mom" then
+			result = result:gsub(momActualName, "your mom")
+		end
+	end
+	if state.Relationships and state.Relationships.father then
+		local dadActualName = state.Relationships.father.name or state.Relationships.father.Name
+		if dadActualName and dadActualName ~= "" and dadActualName ~= "Dad" then
+			result = result:gsub(dadActualName, "your dad")
+		end
+	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Support LOWERCASE template formats!
@@ -4314,9 +4339,9 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 				state.Money = math.max(0, (state.Money or 0) + choice.successMoney)
 				outcome.moneyChange = choice.successMoney
 			end
-			if choice.successFame then
-				state.Fame = (state.Fame or 0) + choice.successFame
-			end
+		if choice.successFame then
+			state.Fame = math.min(100, (state.Fame or 0) + choice.successFame) -- CRITICAL FIX: Cap fame at 100
+		end
 			-- CRITICAL FIX #474: Handle successMafiaEffect
 			if choice.successMafiaEffect and state.MobState then
 				local mEffect = choice.successMafiaEffect
@@ -4861,15 +4886,26 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local flags = state.Flags or {}
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: GOD MODE allows players to be BOTH royalty AND mafia!
+	-- User feedback: "GODMODE IS SUPPOSED TO LET YOU BE ROYALTY AND MAFIA IF U WANT AT SAME TIME"
+	-- Only clear conflicting states for non-God-Mode players
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local hasGodMode = flags.god_mode or flags.godmode_owner or 
+		(state.GamepassOwnership and state.GamepassOwnership.GOD_MODE)
+	
 	-- Check if player just became royalty through this event
 	if flags.is_royalty or flags.royal_by_marriage then
-		-- Clear conflicting mafia state
-		if flags.in_mob or state.MobState then
-			warn("[EventEngine] CONFLICT: Player became royalty but had mafia state - clearing mafia")
+		-- CRITICAL FIX: God Mode players can be BOTH royalty AND mafia - skip conflict clearing!
+		if not hasGodMode and (flags.in_mob or state.MobState) then
+			warn("[EventEngine] CONFLICT: Player became royalty but had mafia state - clearing mafia (no God Mode)")
 			flags.in_mob = nil
 			flags.mafia_member = nil
 			flags.chose_mafia_path = nil
 			state.MobState = nil
+		elseif hasGodMode and (flags.in_mob or state.MobState) then
+			-- God Mode: Allow both! Just log for debugging
+			print("[EventEngine] GOD MODE: Player is BOTH royalty AND mafia - allowed!")
 		end
 		-- Ensure primary_wish_type is correct
 		if flags.primary_wish_type ~= "royalty" then
@@ -4890,14 +4926,17 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 	
 	-- Check if player just joined mafia through this event
 	if flags.in_mob or (state.MobState and state.MobState.inMob) then
-		-- Clear conflicting royalty state
-		if flags.is_royalty or state.RoyalState then
-			warn("[EventEngine] CONFLICT: Player joined mafia but had royalty state - clearing royalty")
+		-- CRITICAL FIX: God Mode players can be BOTH royalty AND mafia - skip conflict clearing!
+		if not hasGodMode and (flags.is_royalty or state.RoyalState) then
+			warn("[EventEngine] CONFLICT: Player joined mafia but had royalty state - clearing royalty (no God Mode)")
 			flags.is_royalty = nil
 			flags.royal_birth = nil
 			flags.dating_royalty = nil
 			flags.chose_royalty_path = nil
 			state.RoyalState = nil
+		elseif hasGodMode and (flags.is_royalty or state.RoyalState) then
+			-- God Mode: Allow both! Just log for debugging
+			print("[EventEngine] GOD MODE: Player is BOTH mafia AND royalty - allowed!")
 		end
 		-- Clear conflicting celebrity state
 		if flags.fame_career and not flags.mob_fame then

@@ -259,8 +259,18 @@ local Education = {
 	-- ═══════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Education activities now show stat impacts!
 	-- ═══════════════════════════════════════════════════════════════════════════
+	-- SCHOOL ACTIVITIES (for current students)
+	{ id = "do_homework", name = "Do Homework", emoji = "📝", effect = "+4 Smarts", minAge = 5, maxAge = 22, cost = 0 },
+	{ id = "study_hard", name = "Study Hard", emoji = "📖", effect = "+6 Smarts -1 Happiness", minAge = 5, maxAge = 22, cost = 0, hasMinigame = true, minigameType = "mash" },
+	{ id = "join_club", name = "Join a Club", emoji = "🎭", effect = "+3 Happiness +2 Smarts", minAge = 10, maxAge = 22, cost = 0 },
+	{ id = "sports_tryout", name = "Sports Tryout", emoji = "⚽", effect = "+4 Health +2 Happiness", minAge = 10, maxAge = 22, cost = 0, hasMinigame = true, minigameType = "mash" },
+	{ id = "school_play", name = "Join School Play", emoji = "🎭", effect = "+4 Happiness +2 Looks", minAge = 8, maxAge = 18, cost = 0 },
+	{ id = "ask_teacher_help", name = "Ask Teacher for Help", emoji = "👩‍🏫", effect = "+5 Smarts", minAge = 5, maxAge = 22, cost = 0 },
+	{ id = "library_time", name = "Library Time", emoji = "📚", effect = "+4 Smarts +1 Happiness", minAge = 5, maxAge = 22, cost = 0 },
+	-- RE-ENROLLMENT OPTIONS
 	{ id = "get_ged", name = "Get Your GED", emoji = "📜", effect = "+10 Smarts +8 Happiness", minAge = 16, cost = 150, requiresFlag = "dropped_out_high_school", hasMinigame = true, minigameType = "mash" },
 	{ id = "return_high_school", name = "Return to High School", emoji = "🏫", effect = "+5 Smarts +3 Happiness", minAge = 14, cost = 0, requiresFlag = "dropped_out_high_school", maxAge = 21 },
+	-- HIGHER EDUCATION
 	{ id = "community_college", name = "Community College", emoji = "🎓", effect = "+8 Smarts +5 Happiness", minAge = 18, cost = 2000, requiresFlag = "has_ged_or_diploma", hasMinigame = true, minigameType = "debate" },
 	{ id = "university", name = "Apply to University", emoji = "🏛️", effect = "+10 Smarts +6 Happiness", minAge = 18, cost = 5000, requiresFlag = "has_ged_or_diploma", hasMinigame = true, minigameType = "debate" },
 	{ id = "trade_school", name = "Trade School", emoji = "🔧", effect = "+6 Smarts +5 Happiness", minAge = 18, cost = 3000, hasMinigame = true, minigameType = "mash" },
@@ -282,21 +292,20 @@ local Social = {
 	{ id = "speed_dating", name = "Speed Dating", emoji = "⏱️", effect = "+4 Happiness", minAge = 18, cost = 50, requiresSingle = true },
 	{ id = "go_on_date", name = "Go on a Date", emoji = "💑", effect = "+8 Happiness +Relationship", minAge = 16, cost = 50, requiresPartner = true },
 	{ id = "romantic_dinner", name = "Romantic Dinner", emoji = "🍷", effect = "+10 Happiness +Relationship", minAge = 18, cost = 150, requiresPartner = true },
-	{ id = "spend_time_partner", name = "Spend Time Together", emoji = "💞", effect = "+6 Happiness +Relationship", minAge = 14, cost = 0, requiresPartner = true },
-	{ id = "flirt", name = "Flirt", emoji = "😉", effect = "+4 Happiness", minAge = 14, cost = 0, requiresSingle = true },
+	{ id = "spend_time_partner", name = "Spend Time Together", emoji = "💞", effect = "+6 Happiness +Relationship", minAge = 16, cost = 0, requiresPartner = true },
+	{ id = "flirt", name = "Flirt", emoji = "😉", effect = "+4 Happiness", minAge = 16, cost = 0, requiresSingle = true },
 	{ id = "propose", name = "Propose", emoji = "💍", effect = "+15 Happiness 💍", minAge = 18, cost = 500, requiresPartner = true },
 	{ id = "plan_wedding", name = "Plan Wedding", emoji = "💒", effect = "+20 Happiness 💒", minAge = 18, cost = 5000, requiresEngaged = true },
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- FRIEND ACTIVITIES
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{ id = "make_friends", name = "Make New Friends", emoji = "👋", effect = "+5 Happiness", minAge = 5, cost = 0 },
-	{ id = "hang_with_friends", name = "Hang with Friends", emoji = "🤝", effect = "+6 Happiness", minAge = 5, cost = 0 },
+	{ id = "hang_with_friends", name = "Hang with Friends", emoji = "🤝", effect = "+6 Happiness", minAge = 5, cost = 0, hasMinigame = true, minigameType = "qte" },
 	{ id = "friend_trip", name = "Friends Trip", emoji = "🚗", effect = "+12 Happiness +3 Health", minAge = 16, cost = 500 },
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- PARTY & SOCIAL ACTIVITIES
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{ id = "party", name = "Go to a Party", emoji = "🎉", effect = "+5 Happiness", minAge = 14, cost = 0, hasMinigame = true, minigameType = "mash" },
-	{ id = "hangout", name = "Hang Out", emoji = "👥", effect = "+3 Happiness", minAge = 5, cost = 0, hasMinigame = true, minigameType = "qte" },
 	{ id = "nightclub", name = "Nightclub", emoji = "🕺", effect = "+6 Happiness -2 Health", minAge = 21, cost = 50, hasMinigame = true, minigameType = "mash" },
 	{ id = "host_party", name = "Host a Party", emoji = "🎊", effect = "+8 Happiness", minAge = 16, cost = 300, hasMinigame = true, minigameType = "qte" },
 	{ id = "karaoke", name = "Karaoke Night", emoji = "🎤", effect = "+6 Happiness +1 Looks", minAge = 10, cost = 20, hasMinigame = true, minigameType = "debate" },
@@ -941,7 +950,7 @@ function ActivitiesScreen:createUI()
 	closeButton.Font = Enum.Font.GothamBold
 	closeButton.TextSize = textSize(20)
 	closeButton.TextColor3 = C.Gray700
-	closeButton.Text = "✕"
+	closeButton.Text = "X"
 	closeButton.AutoButtonColor = false
 	closeButton.ZIndex = 86
 	closeButton.Parent = header
@@ -3195,7 +3204,18 @@ function ActivitiesScreen:doMischief(item)
 	
 	log("Doing mischief:", item.id, item.name)
 	
-	-- Use DoActivity remote for mischief (server handles it)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Use event card system for mischief activities!
+	-- User request: "have trouble do cardresult popups too and can get u introuble"
+	-- Show proper BitLife-style event cards with choices and consequences!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if FULL_EVENT_ACTIVITIES[item.id] and self.onShowEventCard then
+		-- Use the full event card system for this mischief activity
+		self:showMischiefEventCard(item)
+		return
+	end
+	
+	-- Fallback: Use DoActivity remote for mischief (server handles it)
 	-- CRITICAL FIX: Add pcall protection for robust error handling
 	if DoActivity then
 		local success, result = pcall(function()
@@ -3251,6 +3271,99 @@ function ActivitiesScreen:doMischief(item)
 	
 	-- Update UI
 	self:updateInfoBar()
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- MISCHIEF EVENT CARD - Shows choices with potential consequences (fights/trouble)
+-- ═══════════════════════════════════════════════════════════════════════════════
+function ActivitiesScreen:showMischiefEventCard(item)
+	if not self.onShowEventCard then
+		self:showActivityResult(true, "You did some mischief!", item, item.emoji)
+		return
+	end
+	
+	local templates = ActivityEventTemplates[item.id]
+	local template = templates and templates[math.random(#templates)]
+	
+	if not template then
+		-- Fallback - create generic mischief event
+		template = {
+			title = item.emoji .. " " .. item.name,
+			emoji = item.emoji,
+			texts = { "Time to cause some trouble!" },
+			choices = {
+				{ text = "😈 Do it!", feed = "Mischief managed!" },
+				{ text = "🙅 Back out", feed = "Maybe not today." },
+			},
+		}
+	end
+	
+	-- Pick random text
+	local eventText = template.texts[math.random(#template.texts)]
+	
+	-- Create the event card
+	local eventCard = {
+		id = "mischief_" .. item.id .. "_" .. math.random(10000),
+		title = template.title,
+		emoji = template.emoji,
+		text = eventText,
+		question = template.question or "What do you do?",
+		choices = template.choices,
+		category = "mischief",
+	}
+	
+	-- Show the event card
+	self.onShowEventCard(eventCard, function(choiceIndex, choiceData)
+		log("Mischief choice made:", choiceIndex)
+		
+		local feedText = choiceData and choiceData.feed or "You caused some trouble!"
+		local gotInTrouble = false
+		local gotInFight = false
+		
+		-- Check for trouble consequences
+		if choiceData and choiceData.triggersTrouble then
+			local troubleChance = choiceData.troubleChance or 30
+			local roll = math.random(100)
+			if roll <= troubleChance then
+				gotInTrouble = true
+				feedText = feedText .. " 🚨 You got CAUGHT!"
+			end
+		end
+		
+		-- Check for fight consequences  
+		if choiceData and choiceData.triggersFight then
+			local fightChance = choiceData.fightChance or 20
+			local roll = math.random(100)
+			if roll <= fightChance then
+				gotInFight = true
+				feedText = feedText .. " 👊 Someone wanted to fight!"
+			end
+		end
+		
+		-- Show result based on consequences
+		if gotInFight then
+			-- Trigger a fight!
+			self:showActivityResult(false, feedText, item, "👊")
+			-- Could trigger combat minigame here if desired
+		elseif gotInTrouble then
+			self:showActivityResult(false, feedText, item, "🚨")
+		else
+			self:showActivityResult(true, feedText, item, item.emoji)
+		end
+		
+		-- Call server to process mischief
+		if DoActivity then
+			pcall(function()
+				DoActivity:InvokeServer(item.id, {
+					gotCaught = gotInTrouble,
+					gotInFight = gotInFight,
+					choiceId = choiceData and choiceData.text or nil,
+				})
+			end)
+		end
+		
+		self:updateInfoBar()
+	end)
 end
 
 function ActivitiesScreen:populatePrison()
@@ -5425,6 +5538,23 @@ local FULL_EVENT_ACTIVITIES = {
 	recruit_soldiers = true,
 	mob_meeting = true,
 	pick_fight = true,
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- MISCHIEF/TROUBLE ACTIVITIES - Show event cards with consequences!
+	-- User request: "have the trouble do cardresult popups too and can get u introuble"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	sneak_out = true,
+	skip_class = true,
+	party_crash = true,
+	vandalize = true,
+	bully = true,
+	steal_parents_car = true,
+	break_curfew = true,
+	drink_underage = true,
+	toilet_paper_house = true,
+	ring_doorbell_run = true,
+	fake_id = true,
+	cheat_test = true,
+	prank_sibling = true,
 }
 
 -- Combat event templates for fight activities
@@ -7136,6 +7266,245 @@ local ActivityEventTemplates = {
 			},
 		},
 	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- MISCHIEF/TROUBLE ACTIVITIES - BitLife-style consequences!
+	-- User request: "have trouble do cardresult popups, can get u introuble or fight"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	sneak_out = {
+		{
+			title = "🌃 Sneaking Out!",
+			emoji = "🌃",
+			texts = {
+				"Everyone's asleep... time to make your escape!",
+				"You carefully open the window and slip out into the night.",
+				"The house is quiet. Perfect time to sneak out!",
+			},
+			question = "Where do you go?",
+			choices = {
+				{ text = "🎉 Meet friends at a party", feed = "Wild night with friends!", triggersTrouble = true, troubleChance = 30 },
+				{ text = "🚶 Just walk around town", feed = "A peaceful midnight stroll." },
+				{ text = "💑 Meet up with someone special", feed = "Secret rendezvous!", triggersTrouble = true, troubleChance = 20 },
+				{ text = "🏃 Quick, back inside!", feed = "You chickened out. Smart move?" },
+			},
+		},
+	},
+	skip_class = {
+		{
+			title = "🏫 Skipping Class!",
+			emoji = "🏫",
+			texts = {
+				"School is SO boring today. Maybe you should skip...",
+				"You duck into the bathroom and consider ditching class.",
+				"The bell rings but you don't feel like going to class.",
+			},
+			question = "What do you do?",
+			choices = {
+				{ text = "🍟 Go get food", feed = "Freedom tastes like fries!", triggersTrouble = true, troubleChance = 40 },
+				{ text = "🎮 Go home and play games", feed = "Best gaming session ever!", triggersTrouble = true, troubleChance = 50 },
+				{ text = "🛒 Hang at the mall", feed = "Mall adventure instead of math!", triggersTrouble = true, troubleChance = 35 },
+				{ text = "📚 Actually, go to class", feed = "You decided education matters." },
+			},
+		},
+	},
+	party_crash = {
+		{
+			title = "🎉 Crashing a Party!",
+			emoji = "🎉",
+			texts = {
+				"You heard about a party you weren't invited to...",
+				"There's a party tonight. You're not on the list. So what?",
+				"A party is happening. Time to invite yourself!",
+			},
+			question = "How do you get in?",
+			choices = {
+				{ text = "🚪 Just walk in confidently", feed = "Act like you belong!", triggersTrouble = true, troubleChance = 25 },
+				{ text = "🪟 Sneak in the back", feed = "Stealth mode activated!", triggersTrouble = true, troubleChance = 35 },
+				{ text = "😎 Pretend you know the host", feed = "Of course I was invited!", triggersTrouble = true, troubleChance = 30 },
+				{ text = "🙅 Maybe this isn't a good idea", feed = "Wisdom prevails." },
+			},
+		},
+	},
+	vandalize = {
+		{
+			title = "🎨 Vandalism!",
+			emoji = "🎨",
+			texts = {
+				"You're feeling rebellious. Maybe leave your mark somewhere?",
+				"The spray can feels heavy in your hand...",
+				"That blank wall is just begging to be tagged.",
+			},
+			question = "What do you do?",
+			choices = {
+				{ text = "🖍️ Write your name", feed = "Your tag is now famous!", triggersTrouble = true, troubleChance = 45, triggersFight = true, fightChance = 10 },
+				{ text = "🎨 Draw something artistic", feed = "Modern art or vandalism?", triggersTrouble = true, troubleChance = 40 },
+				{ text = "💔 Write something mean", feed = "That's just mean...", triggersTrouble = true, troubleChance = 50, triggersFight = true, fightChance = 20 },
+				{ text = "🚶 Walk away", feed = "You thought better of it." },
+			},
+		},
+	},
+	bully = {
+		{
+			title = "😠 Being a Bully",
+			emoji = "😠",
+			texts = {
+				"You see someone smaller than you...",
+				"An easy target crosses your path.",
+				"Maybe you can assert dominance over this kid...",
+			},
+			question = "What do you do?",
+			choices = {
+				{ text = "👊 Push them around", feed = "You're a jerk.", triggersTrouble = true, troubleChance = 35, triggersFight = true, fightChance = 40 },
+				{ text = "🗣️ Make fun of them", feed = "Words can hurt too.", triggersTrouble = true, troubleChance = 30 },
+				{ text = "💰 Take their lunch money", feed = "Theft is theft.", triggersTrouble = true, troubleChance = 45 },
+				{ text = "🤝 Actually be nice", feed = "You chose kindness. Respect." },
+			},
+		},
+	},
+	steal_parents_car = {
+		{
+			title = "🚗 Taking the Car!",
+			emoji = "🚗",
+			texts = {
+				"The car keys are just sitting there...",
+				"Your parents are asleep. The car is calling to you.",
+				"How hard can driving be, really?",
+			},
+			question = "What do you do?",
+			choices = {
+				{ text = "🛣️ Just a quick joyride", feed = "Wind in your hair!", triggersTrouble = true, troubleChance = 60 },
+				{ text = "🎉 Pick up friends", feed = "You're the cool friend now!", triggersTrouble = true, troubleChance = 70 },
+				{ text = "🏎️ Go fast!", feed = "SPEED!", triggersTrouble = true, troubleChance = 80 },
+				{ text = "🔑 Put the keys back", feed = "Not worth the risk." },
+			},
+		},
+	},
+	break_curfew = {
+		{
+			title = "⏰ Breaking Curfew!",
+			emoji = "⏰",
+			texts = {
+				"It's way past your curfew but the night is young!",
+				"You should be home by now but you're having too much fun.",
+				"Curfew? What curfew?",
+			},
+			question = "How late do you stay out?",
+			choices = {
+				{ text = "🕐 Just 30 more minutes", feed = "Reasonable rebellion.", triggersTrouble = true, troubleChance = 20 },
+				{ text = "🕑 A couple more hours", feed = "Living dangerously!", triggersTrouble = true, troubleChance = 45 },
+				{ text = "🌅 All night!", feed = "You're gonna be in SO much trouble!", triggersTrouble = true, troubleChance = 75 },
+				{ text = "🏃 Rush home now!", feed = "Smart choice." },
+			},
+		},
+	},
+	drink_underage = {
+		{
+			title = "🍺 Underage Drinking!",
+			emoji = "🍺",
+			texts = {
+				"Someone offers you a drink at the party...",
+				"There's alcohol at this party. Do you try some?",
+				"Peer pressure is real. Everyone else is drinking.",
+			},
+			question = "What do you do?",
+			choices = {
+				{ text = "🍺 Just one drink", feed = "This tastes... weird.", triggersTrouble = true, troubleChance = 25 },
+				{ text = "🥴 Go all out", feed = "You're gonna regret this...", triggersTrouble = true, troubleChance = 55 },
+				{ text = "🥤 Pretend to drink", feed = "Smart! Fit in without the risk." },
+				{ text = "🙅 No thanks", feed = "You stood your ground." },
+			},
+		},
+	},
+	toilet_paper_house = {
+		{
+			title = "🧻 TP'ing a House!",
+			emoji = "🧻",
+			texts = {
+				"Armed with toilet paper, you approach your target...",
+				"The neighbor's house will look great covered in TP!",
+				"It's time to decorate someone's yard!",
+			},
+			question = "How thorough are you?",
+			choices = {
+				{ text = "🌳 Just the trees", feed = "A tasteful decoration!", triggersTrouble = true, troubleChance = 20 },
+				{ text = "🏠 The whole house", feed = "Maximum coverage achieved!", triggersTrouble = true, troubleChance = 40 },
+				{ text = "🚗 Include their car", feed = "You went ALL out!", triggersTrouble = true, troubleChance = 55 },
+				{ text = "🏃 Run away before starting", feed = "Cold feet." },
+			},
+		},
+	},
+	ring_doorbell_run = {
+		{
+			title = "🔔 Ding Dong Ditch!",
+			emoji = "🔔",
+			texts = {
+				"Classic prank time! Ring and run!",
+				"You creep up to the front door...",
+				"The doorbell is right there. You know what to do.",
+			},
+			question = "What's your strategy?",
+			choices = {
+				{ text = "🔔 Ring once and bolt!", feed = "Speed is key!", triggersTrouble = true, troubleChance = 15 },
+				{ text = "🔔🔔 Ring multiple times", feed = "Maximum annoyance!", triggersTrouble = true, troubleChance = 30, triggersFight = true, fightChance = 10 },
+				{ text = "👀 Wait and watch them open it", feed = "Risky but satisfying!", triggersTrouble = true, troubleChance = 40 },
+				{ text = "🚶 Walk away casually", feed = "Maybe not today." },
+			},
+		},
+	},
+	fake_id = {
+		{
+			title = "🪪 Using a Fake ID!",
+			emoji = "🪪",
+			texts = {
+				"You got your hands on a fake ID...",
+				"Time to test if this fake ID actually works.",
+				"The bouncer doesn't know your real age...",
+			},
+			question = "Where do you try it?",
+			choices = {
+				{ text = "🍺 At a liquor store", feed = "Buying alcohol underage!", triggersTrouble = true, troubleChance = 40 },
+				{ text = "🎰 At a casino", feed = "Gambling while underage!", triggersTrouble = true, troubleChance = 50 },
+				{ text = "🎵 At a 21+ concert", feed = "Got in to see the show!", triggersTrouble = true, troubleChance = 30 },
+				{ text = "🗑️ Throw it away", feed = "Too risky." },
+			},
+		},
+	},
+	cheat_test = {
+		{
+			title = "📝 Cheating on a Test!",
+			emoji = "📝",
+			texts = {
+				"The test is impossible. You didn't study at all.",
+				"Your neighbor's answers are right there...",
+				"Desperate times call for desperate measures.",
+			},
+			question = "How do you cheat?",
+			choices = {
+				{ text = "👀 Peek at neighbor's paper", feed = "Subtle glances...", triggersTrouble = true, troubleChance = 35 },
+				{ text = "📱 Hidden phone", feed = "Technology to the rescue!", triggersTrouble = true, troubleChance = 45 },
+				{ text = "✍️ Notes on your hand", feed = "Classic cheat method!", triggersTrouble = true, troubleChance = 30 },
+				{ text = "📖 Actually try to remember", feed = "You did your best honestly." },
+			},
+		},
+	},
+	prank_sibling = {
+		{
+			title = "😈 Pranking Your Sibling!",
+			emoji = "😈",
+			texts = {
+				"Your sibling has it coming...",
+				"Time to get some revenge on your brother/sister!",
+				"The perfect prank opportunity has arrived!",
+			},
+			question = "What prank do you pull?",
+			choices = {
+				{ text = "🕷️ Fake spider in their bed", feed = "SCREAM! Totally worth it!", triggersFight = true, fightChance = 25 },
+				{ text = "💦 Water bucket above door", feed = "SPLASH! Drenched!", triggersFight = true, fightChance = 30 },
+				{ text = "🌶️ Hot sauce in their food", feed = "Their face turned RED!", triggersFight = true, fightChance = 40 },
+				{ text = "🤗 Maybe just a harmless joke", feed = "Kept it light-hearted." },
+			},
+		},
+	},
 }
 
 function ActivitiesScreen:showActivityEventCard(activityId, success, serverMessage, item)
@@ -7428,7 +7797,7 @@ function ActivitiesScreen:showActivityResult(success, message, item, emoji, wasC
 			
 			-- Social activities
 			party = { Happiness = 5 },
-			hangout = { Happiness = 3 },
+			hang_with_friends = { Happiness = 6 },
 			nightclub = { Happiness = 6, Health = -2 },
 			tv = { Happiness = 2 },
 			games = { Happiness = 4, Smarts = 1 },

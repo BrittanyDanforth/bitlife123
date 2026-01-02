@@ -931,7 +931,9 @@ Childhood.events = {
 		},
 	},
 	{
-		id = "sports_tryout",
+		-- CRITICAL FIX: Renamed from "sports_tryout" to "childhood_sports_choice" to avoid duplicate ID
+		-- SchoolActivityEvents.lua has sports_tryouts, EarlyLifeEvents has youth_sports_tryout
+		id = "childhood_sports_choice",
 		title = "Youth Sports Tryouts",
 		emoji = "⚽",
 		text = "Tryouts for a youth sports team are coming up!",
@@ -2994,6 +2996,292 @@ Childhood.events = {
 						state:ModifyStat("Happiness", -5)
 						state:AddFeed("👨‍🍳 Got a minor burn. Kitchen privileges revoked!")
 					end
+				end,
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: EXPANDED SPORTS EVENTS WITH BRANCHING PATHS
+	-- User feedback: "have some more events that popup that let u be like nah or taking sports more seriously"
+	-- These events wire sports interest into future athlete career path
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	{
+		id = "sports_interest_growing",
+		title = "Getting Serious About Sports",
+		emoji = "🏆",
+		text = "You've been playing sports for a while now, and your coach noticed something - you're actually pretty good! Your coach wants to talk to your parents about putting you in a more competitive league.",
+		question = "How do you feel about taking sports more seriously?",
+		minAge = 8, maxAge = 12,
+		baseChance = 0.5,
+		cooldown = 8,
+		requiresFlags = { school_athlete = true },
+		blockedByFlags = { quit_sports = true, elite_athlete_kid = true },
+		
+		choices = {
+			{
+				text = "YES! I want to be the best!",
+				effects = { Happiness = 10, Health = 8 },
+				feedText = "You're all in on sports!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.serious_about_sports = true
+					state.Flags.elite_athlete_kid = true
+					state.Flags.athlete_potential = true
+					state:AddFeed("🏆 Your parents sign you up for travel team! Early practices, weekend tournaments - but you're LOVING it!")
+				end,
+			},
+			{
+				text = "I like sports but not THAT seriously",
+				effects = { Happiness = 5, Health = 3 },
+				feedText = "Keeping it casual...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.casual_athlete = true
+					state:AddFeed("🏆 You stay on the regular team. Sports are fun but so are other things!")
+				end,
+			},
+			{
+				text = "Actually, I'm not that into sports anymore",
+				effects = { Happiness = 2 },
+				feedText = "Sports aren't really your thing...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.quit_sports = true
+					state.Flags.school_athlete = nil
+					state:AddFeed("🏆 You tell your coach you're done. More time for other hobbies!")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "sports_talent_discovered",
+		title = "Natural Athletic Talent!",
+		emoji = "⭐",
+		text = "During gym class, the PE teacher pulled you aside. 'Kid, you've got something special. Have you ever thought about joining a sports team?' You haven't really tried sports yet, but apparently you're a natural athlete.",
+		question = "Do you want to explore this talent?",
+		minAge = 7, maxAge = 11,
+		baseChance = 0.35,
+		cooldown = 10,
+		oneTime = true,
+		blockedByFlags = { school_athlete = true, quit_sports = true },
+		requiresStats = { Health = 55 },
+		
+		choices = {
+			{
+				text = "Yeah! Let's see what I can do!",
+				effects = { Health = 5, Happiness = 8 },
+				feedText = "Time to discover your athletic potential!",
+				onResolve = function(state)
+					local sports = { "soccer", "basketball", "baseball", "track", "swimming" }
+					local sport = sports[math.random(#sports)]
+					state.Flags = state.Flags or {}
+					state.Flags.school_athlete = true
+					state.Flags.natural_athlete = true
+					state.Flags["plays_" .. sport] = true
+					state:AddFeed(string.format("⭐ You tried out for %s and made the team immediately! Coach says you're a natural!", sport))
+				end,
+			},
+			{
+				text = "Nah, sports aren't really my thing",
+				effects = { Happiness = 2, Smarts = 2 },
+				feedText = "You'd rather focus on other interests.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.not_interested_sports = true
+					state:AddFeed("⭐ You politely decline. Lots of other ways to be active and have fun!")
+				end,
+			},
+			{
+				text = "Maybe later... I'm nervous",
+				effects = { Happiness = 1 },
+				feedText = "The idea makes you anxious.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.sports_curious = true
+					state:AddFeed("⭐ You say maybe next year. The PE teacher nods understandingly.")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "sports_first_competition",
+		title = "Your First Big Competition!",
+		emoji = "🥇",
+		text = "Your first real tournament is this weekend! Your parents took the day off work, grandparents are coming, everyone's excited. The pressure is ON. How do you handle it?",
+		question = "Big game nerves - what's your mindset?",
+		minAge = 7, maxAge = 13,
+		baseChance = 0.55,
+		cooldown = 5,
+		requiresFlags = { school_athlete = true },
+		blockedByFlags = { first_competition_done = true },
+		
+		choices = {
+			{
+				text = "I'm SO ready! Let's WIN!",
+				effects = { Health = 3 },
+				feedText = "You're pumped and confident!",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					state.Flags.first_competition_done = true
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 15)
+						state.Flags.competition_winner = true
+						state:AddFeed("🥇 YOU WON! First place! Your family goes CRAZY! Best day ever!")
+					elseif roll <= 75 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🥇 You did great! Didn't win but played your heart out. Family is SO proud!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state.Flags.choked_under_pressure = true
+						state:AddFeed("🥇 Nerves got the best of you. You froze up. But you learned something important about pressure.")
+					end
+				end,
+			},
+			{
+				text = "I'm terrified but I'll try my best",
+				effects = { Happiness = -2 },
+				feedText = "You're nervous but brave...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					state.Flags.first_competition_done = true
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags.overcame_nerves = true
+						state:AddFeed("🥇 Your nerves disappeared once you started! You played amazing!")
+					else
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("🥇 Shaky start but you pushed through. Character building!")
+					end
+				end,
+			},
+			{
+				text = "Actually... I don't want to go",
+				effects = { Happiness = -8 },
+				feedText = "The pressure is too much.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.first_competition_done = true
+					state.Flags.skipped_first_competition = true
+					state:ModifyStat("Happiness", -10)
+					state:AddFeed("🥇 You told your parents you were sick. They know you weren't. Awkward silence in the car.")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "sports_burnout_warning",
+		title = "Feeling Burned Out",
+		emoji = "😩",
+		text = "Practice every day, games every weekend, no time for friends or video games. You used to love this sport but now... you're just tired. Your parents noticed you've been dragging.",
+		question = "What do you want to do?",
+		minAge = 9, maxAge = 14,
+		baseChance = 0.4,
+		cooldown = 8,
+		requiresFlags = { elite_athlete_kid = true },
+		blockedByFlags = { handled_burnout = true, quit_sports = true },
+		
+		choices = {
+			{
+				text = "Push through - winners don't quit!",
+				effects = { Health = -5 },
+				feedText = "No pain no gain...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					state.Flags.handled_burnout = true
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 5)
+						state.Flags.mental_toughness = true
+						state:AddFeed("😩 The hard work paid off! You found a second wind and love the sport again!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state.Flags.sports_burnout = true
+						state:AddFeed("😩 You're running on empty. Something has to change.")
+					end
+				end,
+			},
+			{
+				text = "Ask to take a break",
+				effects = { Happiness = 5 },
+				feedText = "Maybe some time off will help...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.handled_burnout = true
+					state.Flags.took_sports_break = true
+					state:ModifyStat("Happiness", 8)
+					state:AddFeed("😩 Your parents understand. A month off helped you remember why you love the sport!")
+				end,
+			},
+			{
+				text = "I want to quit - this isn't fun anymore",
+				effects = { Happiness = 3 },
+				feedText = "Time to walk away...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.handled_burnout = true
+					state.Flags.quit_sports = true
+					state.Flags.elite_athlete_kid = nil
+					state.Flags.school_athlete = nil
+					state:AddFeed("😩 You told coach you're done. It was hard but you feel relieved. Time for new adventures!")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "sports_scholarship_talk",
+		title = "Could Sports Be Your Future?",
+		emoji = "🎓",
+		text = "Your coach pulled your parents aside after the game. 'Your kid has real talent. If they keep at it, a college scholarship could be in their future. Maybe even beyond...' You overhear the conversation.",
+		question = "A sports scholarship? Professional athlete? What do you think?",
+		minAge = 11, maxAge = 14,
+		baseChance = 0.35,
+		cooldown = 15,
+		oneTime = true,
+		requiresFlags = { elite_athlete_kid = true },
+		blockedByFlags = { quit_sports = true },
+		requiresStats = { Health = 65 },
+		
+		choices = {
+			{
+				text = "That's my DREAM! I'm going all in!",
+				effects = { Happiness = 15, Health = 5 },
+				feedText = "You've found your calling!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.athlete_career_path = true
+					state.Flags.scholarship_potential = true
+					state.Flags.dreams_of_going_pro = true
+					state:AddFeed("🎓 You start training harder than ever! Early morning workouts, special coaching - you're chasing the dream!")
+				end,
+			},
+			{
+				text = "Cool but I want other options too",
+				effects = { Happiness = 8, Smarts = 3 },
+				feedText = "Keeping your options open...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.balanced_athlete = true
+					state.Flags.scholarship_potential = true
+					state:AddFeed("🎓 You keep playing but also focus on school. Sports AND brains - why not both?")
+				end,
+			},
+			{
+				text = "I don't want that kind of pressure",
+				effects = { Happiness = 2, Smarts = 2 },
+				feedText = "That's too much to think about...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.casual_athlete = true
+					state.Flags.elite_athlete_kid = nil
+					state:AddFeed("🎓 You tell your parents you just want to play for fun. No pressure. They're supportive.")
 				end,
 			},
 		},

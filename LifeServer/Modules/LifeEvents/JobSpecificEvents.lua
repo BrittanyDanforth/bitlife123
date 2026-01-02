@@ -1702,7 +1702,8 @@ JobSpecificEvents.events = {
 	-- SPORTS/ATHLETICS JOBS
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "sports_big_game",
+		-- CRITICAL FIX: Renamed to pro_sports_big_game for unique ID
+		id = "pro_sports_big_game",
 		title = "Big Game",
 		emoji = "🏆",
 		text = "The most important game/competition of the season!",
@@ -1755,7 +1756,8 @@ JobSpecificEvents.events = {
 		},
 	},
 	{
-		id = "sports_career_ending_injury",
+		-- CRITICAL FIX: Renamed to pro_sports_career_ending_injury for unique ID
+		id = "pro_sports_career_ending_injury",
 		title = "Injury Concern",
 		emoji = "🤕",
 		text = "A recurring injury is getting worse.",
@@ -1824,7 +1826,8 @@ JobSpecificEvents.events = {
 		},
 	},
 	{
-		id = "sports_retirement_age",
+		-- CRITICAL FIX: Renamed to pro_sports_retirement_age for unique ID
+		id = "pro_sports_retirement_age",
 		title = "Career Twilight",
 		emoji = "🌅",
 		text = "You're getting older for this sport. Body doesn't recover like it used to.",

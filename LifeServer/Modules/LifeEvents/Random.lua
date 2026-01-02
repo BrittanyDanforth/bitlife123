@@ -203,11 +203,29 @@ Random.events = {
 		-- CRITICAL FIX: Random injury type and severity
 		choices = {
 			{
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				-- CRITICAL FIX: Children under 18 shouldn't pay for medical care - parents pay!
+				-- User feedback: "IM 12/13 YEARS OLD AND IT SAYS PAY $100 FOR DOCTOR BRUH IM A KID"
+				-- For minors, parents handle medical costs
+				-- ═══════════════════════════════════════════════════════════════════════════════
 				text = "Go to the doctor ($100)",
 				effects = { Money = -100 },
 				feedText = "You went to see a doctor...",
-				eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for doctor visit" end,
+				eligibility = function(state) 
+					local age = state.Age or 0
+					-- CRITICAL FIX: Kids under 18 don't need money - parents pay!
+					if age < 18 then
+						return true, nil -- Always eligible for minors
+					end
+					return (state.Money or 0) >= 100, "💸 Need $100 for doctor visit" 
+				end,
 				onResolve = function(state)
+					-- CRITICAL FIX: Children don't pay - parents do!
+					local age = state.Age or 0
+					if age < 18 then
+						-- Parent pays, restore the $100 that was deducted
+						state.Money = (state.Money or 0) + 100
+					end
 					local roll = math.random()
 					local injuries = {
 						{ type = "Tripped and fell", health = -5, hap = -3 },
@@ -864,11 +882,28 @@ Random.events = {
 		-- CRITICAL FIX: Random injury type and severity
 		choices = {
 		{
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX: Children under 18 shouldn't pay for medical care - parents pay!
+			-- User feedback: "IM 12/13 YEARS OLD AND IT SAYS PAY $300 FOR DOCTOR BRUH IM A KID"
+			-- ═══════════════════════════════════════════════════════════════════════════════
 			text = "Get medical attention immediately ($300)",
 			effects = { Money = -300 },
 			feedText = "You got checked out right away...",
-			eligibility = function(state) return (state.Money or 0) >= 300, "💸 Need $300 for medical care" end,
+			eligibility = function(state) 
+				local age = state.Age or 0
+				-- CRITICAL FIX: Kids under 18 don't need money - parents pay!
+				if age < 18 then
+					return true, nil -- Always eligible for minors
+				end
+				return (state.Money or 0) >= 300, "💸 Need $300 for medical care" 
+			end,
 			onResolve = function(state)
+					-- CRITICAL FIX: Children don't pay - parents do!
+					local age = state.Age or 0
+					if age < 18 then
+						-- Parent pays, restore the $300 that was deducted
+						state.Money = (state.Money or 0) + 300
+					end
 					local roll = math.random()
 					if roll < 0.15 then -- Ankle
 						state:ModifyStat("Health", -8)

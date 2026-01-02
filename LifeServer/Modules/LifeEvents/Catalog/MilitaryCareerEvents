@@ -290,9 +290,9 @@ MilitaryCareerEvents.events = {
 					local medals = { "Army Achievement Medal", "Meritorious Service Medal", "Bronze Star", "Legion of Merit" }
 					local medal = medals[math.random(1, #medals)]
 					state.Flags = state.Flags or {}
-					state.Flags.decorated_soldier = true
-					state.Fame = (state.Fame or 0) + 10
-					state:AddFeed(string.format("🎗️ Awarded the %s! Your service is recognized!", medal))
+				state.Flags.decorated_soldier = true
+				state.Fame = math.min(100, (state.Fame or 0) + 10) -- CRITICAL FIX: Cap fame at 100
+				state:AddFeed(string.format("🎗️ Awarded the %s! Your service is recognized!", medal))
 				end,
 			},
 		},
@@ -1196,6 +1196,368 @@ MilitaryCareerEvents.events = {
 						state:ModifyStat("Happiness", -5)
 						state:AddFeed("🤝 Recruit failed and blamed you for lack of guidance. Fair point.")
 					end
+				end,
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: MORE MILITARY EVENTS FOR VARIETY
+	-- User feedback: "FIX MILITARY TO ACTUALLY ENLIST YOU ETC"
+	-- Adding recruitment and enlistment events
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	{
+		id = "mil_recruitment_opportunity",
+		title = "Military Recruiter Approaches",
+		emoji = "🪖",
+		text = "A military recruiter approaches you. They say you'd make a great soldier. Benefits include college tuition, healthcare, and a signing bonus.",
+		category = "career_military",
+		weight = 25, -- High weight for discovery
+		minAge = 17, maxAge = 26,
+		baseChance = 0.5,
+		cooldown = 6,
+		oneTime = true,
+		blockedByFlags = { military_experience = true, enlisted = true, in_prison = true },
+		requiresStats = { Health = 40 },
+		choices = {
+			{
+				text = "Enlist in the Army!",
+				effects = { Happiness = 10, Health = 5 },
+				feedText = "Signing up for service...",
+				onResolve = function(state)
+					state.CurrentJob = {
+						id = "enlisted",
+						name = "Enlisted Soldier",
+						company = "US Army",
+						salary = 35000,
+						category = "military",
+					}
+					state.Flags = state.Flags or {}
+					state.Flags.military_experience = true
+					state.Flags.enlisted = true
+					state.Flags.combat_training = true
+					state.Money = (state.Money or 0) + 10000 -- Signing bonus
+					if state.AddFeed then state:AddFeed("🪖 Enlisted! Boot camp ahead. $10,000 signing bonus in the bank! Hooah!") end
+				end,
+			},
+			{
+				text = "Join the Marines!",
+				effects = { Happiness = 8, Health = 8 },
+				feedText = "The few, the proud...",
+				onResolve = function(state)
+					state.CurrentJob = {
+						id = "enlisted_marines",
+						name = "Marine",
+						company = "US Marines",
+						salary = 35000,
+						category = "military",
+					}
+					state.Flags = state.Flags or {}
+					state.Flags.military_experience = true
+					state.Flags.enlisted = true
+					state.Flags.marine = true
+					state.Flags.combat_training = true
+					state.Money = (state.Money or 0) + 8000
+					if state.AddFeed then state:AddFeed("🪖 A Marine! Toughest boot camp ahead. Semper Fi!") end
+				end,
+			},
+			{
+				text = "Join the Navy!",
+				effects = { Happiness = 10, Smarts = 2 },
+				feedText = "Setting sail...",
+				onResolve = function(state)
+					state.CurrentJob = {
+						id = "enlisted_navy",
+						name = "Seaman",
+						company = "US Navy",
+						salary = 34000,
+						category = "military",
+					}
+					state.Flags = state.Flags or {}
+					state.Flags.military_experience = true
+					state.Flags.enlisted = true
+					state.Flags.navy = true
+					state.Money = (state.Money or 0) + 12000
+					if state.AddFeed then state:AddFeed("⚓ Joined the Navy! See the world from the deck of a ship!") end
+				end,
+			},
+			{
+				text = "Join the Air Force!",
+				effects = { Happiness = 12, Smarts = 3 },
+				feedText = "Taking to the skies...",
+				onResolve = function(state)
+					state.CurrentJob = {
+						id = "enlisted_airforce",
+						name = "Airman",
+						company = "US Air Force",
+						salary = 36000,
+						category = "military",
+					}
+					state.Flags = state.Flags or {}
+					state.Flags.military_experience = true
+					state.Flags.enlisted = true
+					state.Flags.air_force = true
+					state.Money = (state.Money or 0) + 15000
+					if state.AddFeed then state:AddFeed("✈️ Joined the Air Force! Best facilities and tech in the military!") end
+				end,
+			},
+			{
+				text = "Not interested - civilian life for me",
+				effects = { Happiness = 2 },
+				feedText = "Declined the recruiter. Not everyone is cut out for military life.",
+			},
+		},
+	},
+
+	{
+		id = "mil_boot_camp",
+		title = "Boot Camp",
+		emoji = "💪",
+		text = "Boot camp is brutal! Drill sergeants screaming, early mornings, physical training until you drop. Are you going to make it?",
+		category = "career_military",
+		weight = 20,
+		minAge = 17, maxAge = 35,
+		baseChance = 0.6,
+		cooldown = 0, -- One-time immediately after enlisting
+		oneTime = true,
+		requiresFlags = { enlisted = true },
+		blockedByFlags = { boot_camp_complete = true, in_prison = true },
+		choices = {
+			{
+				text = "Push through - I can do this!",
+				effects = { Health = 10 },
+				feedText = "Grinding through the pain...",
+				onResolve = function(state)
+					local health = (state.Stats and state.Stats.Health) or 50
+					local roll = math.random(1, 100)
+					local healthBonus = math.floor(health / 10)
+					
+					if roll + healthBonus <= 85 then
+						state:ModifyStat("Happiness", 15)
+						state:ModifyStat("Health", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.boot_camp_complete = true
+						state.Flags.soldier = true
+						if state.AddFeed then state:AddFeed("💪 BOOT CAMP COMPLETE! You're a soldier now! The pride is overwhelming!") end
+					else
+						state:ModifyStat("Happiness", -10)
+						state:ModifyStat("Health", -5)
+						state.Flags = state.Flags or {}
+						state.Flags.boot_camp_struggle = true
+						if state.AddFeed then state:AddFeed("💪 Struggled but got recycled. Extra weeks of training. Eventually made it.") end
+					end
+				end,
+			},
+			{
+				text = "Quit - this isn't for me",
+				effects = { Happiness = -15 },
+				feedText = "Dropping out...",
+				onResolve = function(state)
+					state.CurrentJob = nil
+					state.Flags = state.Flags or {}
+					state.Flags.military_washout = true
+					state.Flags.enlisted = nil
+					state.Flags.military_experience = nil
+					if state.AddFeed then state:AddFeed("💪 Couldn't handle it. Entry-level separation. Back to civilian life with regret.") end
+				end,
+			},
+		},
+	},
+
+	{
+		id = "mil_promotion_e5",
+		title = "Promotion Board",
+		emoji = "⬆️",
+		text = "Your commander recommends you for promotion to Sergeant! You'll need to pass a promotion board.",
+		category = "career_military",
+		weight = 15,
+		minAge = 22, maxAge = 45,
+		baseChance = 0.4,
+		cooldown = 8,
+		requiresJob = true,
+		eligibility = hasMilitaryJob,
+		blockedByFlags = { in_prison = true, is_sergeant = true, is_officer = true },
+		requiresFlags = { boot_camp_complete = true },
+		choices = {
+			{
+				text = "Attend the promotion board",
+				effects = { Smarts = 3 },
+				feedText = "Facing the board...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random(1, 100)
+					
+					if roll + smarts/2 >= 70 then
+						state.CurrentJob = {
+							id = "sergeant",
+							name = "Sergeant",
+							company = state.CurrentJob and state.CurrentJob.company or "US Armed Forces",
+							salary = 55000,
+							category = "military",
+						}
+						state.Flags = state.Flags or {}
+						state.Flags.is_sergeant = true
+						state.Flags.nco = true
+						state:ModifyStat("Happiness", 15)
+						if state.AddFeed then state:AddFeed("⬆️ PROMOTED TO SERGEANT! E-5! Now you're leading soldiers!") end
+					else
+						state:ModifyStat("Happiness", -5)
+						if state.AddFeed then state:AddFeed("⬆️ Didn't make the cut. Try again next cycle.") end
+					end
+				end,
+			},
+			{
+				text = "Decline - not ready yet",
+				effects = { Happiness = -2 },
+				feedText = "Passed on the opportunity for now.",
+			},
+		},
+	},
+
+	{
+		id = "mil_officer_commission",
+		title = "Officer Candidate School",
+		emoji = "🎖️",
+		text = "With your education and service record, you qualify for Officer Candidate School. You could become a commissioned officer.",
+		category = "career_military",
+		weight = 10,
+		minAge = 22, maxAge = 35,
+		baseChance = 0.3,
+		cooldown = 15,
+		oneTime = true,
+		requiresJob = true,
+		eligibility = hasMilitaryJob,
+		requiresFlags = { boot_camp_complete = true },
+		blockedByFlags = { in_prison = true, is_officer = true },
+		requiresStats = { Smarts = 60 },
+		choices = {
+			{
+				text = "Apply for OCS!",
+				effects = { Smarts = 5 },
+				feedText = "Going for a commission...",
+				onResolve = function(state)
+					local smarts = (state.Stats and state.Stats.Smarts) or 50
+					local roll = math.random(1, 100)
+					
+					if roll <= 60 + (smarts - 50)/2 then
+						state.CurrentJob = {
+							id = "officer",
+							name = "Military Officer",
+							company = "US Armed Forces",
+							salary = 75000,
+							category = "military",
+						}
+						state.Flags = state.Flags or {}
+						state.Flags.is_officer = true
+						state.Flags.commissioned = true
+						state.Flags.military_officer = true
+						state:ModifyStat("Happiness", 20)
+						if state.AddFeed then state:AddFeed("🎖️ COMMISSIONED AS AN OFFICER! Lieutenant bars on your shoulders! Lead with honor!") end
+					else
+						state:ModifyStat("Happiness", -8)
+						if state.AddFeed then state:AddFeed("🎖️ Washed out of OCS. Returned to enlisted ranks. It happens.") end
+					end
+				end,
+			},
+			{
+				text = "Stay enlisted - happy where I am",
+				effects = { Happiness = 3 },
+				feedText = "NCOs are the backbone of the military anyway.",
+			},
+		},
+	},
+
+	{
+		id = "mil_special_forces_tryout",
+		title = "Special Forces Selection",
+		emoji = "🔱",
+		text = "You've been invited to try out for Special Forces. It's the most grueling training in the military. Most don't make it.",
+		category = "career_military",
+		weight = 6,
+		minAge = 21, maxAge = 35,
+		baseChance = 0.25,
+		cooldown = 20,
+		oneTime = true,
+		requiresJob = true,
+		eligibility = hasMilitaryJob,
+		requiresFlags = { boot_camp_complete = true, combat_veteran = true },
+		blockedByFlags = { in_prison = true, special_forces = true },
+		requiresStats = { Health = 75, Smarts = 55 },
+		choices = {
+			{
+				text = "Try out for Special Forces!",
+				effects = { Health = -10 },
+				feedText = "The most brutal selection in the world...",
+				onResolve = function(state)
+					local health = (state.Stats and state.Stats.Health) or 50
+					local roll = math.random(1, 100)
+					
+					if roll <= 25 + (health - 50)/2 then
+						state.CurrentJob = {
+							id = "special_forces",
+							name = "Special Forces Operator",
+							company = "US Special Operations Command",
+							salary = 120000,
+							category = "military",
+						}
+						state.Flags = state.Flags or {}
+						state.Flags.special_forces = true
+						state.Flags.elite_soldier = true
+						state:ModifyStat("Happiness", 25)
+						state:ModifyStat("Health", 15)
+						if state.AddFeed then state:AddFeed("🔱 SPECIAL FORCES! One of the elite! The green beret is yours!") end
+					else
+						state:ModifyStat("Happiness", -15)
+						state:ModifyStat("Health", -10)
+						if state.AddFeed then state:AddFeed("🔱 Didn't make selection. Sent back to regular unit. The toughest fail rate in the world.") end
+					end
+				end,
+			},
+			{
+				text = "I'm not ready for that",
+				effects = { Happiness = 2 },
+				feedText = "Wise to know your limits.",
+			},
+		},
+	},
+
+	{
+		id = "mil_discharge_honorable",
+		title = "End of Service",
+		emoji = "🏠",
+		text = "Your enlistment is up. You can re-enlist or take an honorable discharge and return to civilian life.",
+		category = "career_military",
+		weight = 10,
+		minAge = 22, maxAge = 60,
+		baseChance = 0.35,
+		cooldown = 10,
+		requiresJob = true,
+		eligibility = hasMilitaryJob,
+		blockedByFlags = { in_prison = true },
+		choices = {
+			{
+				text = "Re-enlist - military is my life",
+				effects = { Happiness = 8 },
+				feedText = "Signing up for another tour...",
+				onResolve = function(state)
+					state.Money = (state.Money or 0) + 15000 -- Re-enlistment bonus
+					state.Flags = state.Flags or {}
+					state.Flags.career_soldier = true
+					if state.AddFeed then state:AddFeed("🪖 Re-enlisted! $15,000 bonus! Making a career of service.") end
+				end,
+			},
+			{
+				text = "Honorable discharge - time for civilian life",
+				effects = { Happiness = 5 },
+				feedText = "Transitioning out...",
+				onResolve = function(state)
+					state.CurrentJob = nil
+					state.Flags = state.Flags or {}
+					state.Flags.veteran = true
+					state.Flags.honorable_discharge = true
+					state.Flags.gi_bill = true -- Educational benefits
+					if state.AddFeed then state:AddFeed("🏠 Honorable discharge! Thank you for your service. GI Bill available for college!") end
 				end,
 			},
 		},

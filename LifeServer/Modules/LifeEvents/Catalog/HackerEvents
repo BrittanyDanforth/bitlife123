@@ -915,6 +915,336 @@ local events = {
 			},
 		},
 	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: NEW HACKER EVENTS FOR VARIETY
+	-- User feedback: "BLACK HAT HACKER AND HACKER JOBS ARE SO REPETITIVE"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	{
+		id = "hacker_zero_day_discovery",
+		emoji = "🔓",
+		title = "Zero-Day Vulnerability",
+		text = "You discovered a critical zero-day vulnerability in a major software. This could be worth millions on the black market or a big bounty legitimately.",
+		category = "career_hacker",
+		weight = 12,
+		minAge = 18, maxAge = 55,
+		baseChance = 0.4,
+		cooldown = 8,
+		requiresFlags = { hacker_discovered = true },
+		blockedByFlags = { in_prison = true },
+		choices = {
+			{
+				text = "Sell to the highest bidder (black market)",
+				effects = { Smarts = 2 },
+				feedText = "Putting it up for sale...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 60 then
+						local payout = math.random(100000, 500000)
+						state.Money = (state.Money or 0) + payout
+						state.Flags = state.Flags or {}
+						state.Flags.black_hat = true
+						state.Flags.zero_day_sold = true
+						if state.AddFeed then state:AddFeed(string.format("💰 Sold the zero-day for $%d! Underground reputation soaring!", payout)) end
+					else
+						state.Flags = state.Flags or {}
+						state.Flags.under_investigation = true
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						if state.AddFeed then state:AddFeed("🚨 The buyer was an FBI sting operation! You're being watched now...") end
+					end
+				end,
+			},
+			{
+				text = "Report to bug bounty program (legit)",
+				effects = { Smarts = 3, Happiness = 5 },
+				feedText = "Submitting responsible disclosure...",
+				onResolve = function(state)
+					local bounty = math.random(10000, 75000)
+					state.Money = (state.Money or 0) + bounty
+					state.Flags = state.Flags or {}
+					state.Flags.white_hat = true
+					state.Flags.bug_hunter = true
+					if state.AddFeed then state:AddFeed(string.format("🏆 Bug bounty awarded: $%d! Your name in the security hall of fame!", bounty)) end
+				end,
+			},
+			{
+				text = "Keep it secret for later use",
+				effects = { Smarts = 3 },
+				setFlags = { has_zero_day = true },
+				feedText = "📁 Saved for a rainy day. This could come in handy...",
+			},
+		},
+	},
+
+	{
+		id = "hacker_cryptocurrency_hack",
+		emoji = "₿",
+		title = "Crypto Exchange Vulnerability",
+		text = "You found a flaw in a crypto exchange's hot wallet. You could drain millions... but the blockchain is permanent evidence.",
+		category = "career_hacker",
+		weight = 8,
+		minAge = 20, maxAge = 50,
+		baseChance = 0.35,
+		cooldown = 10,
+		requiresFlags = { black_hat = true },
+		blockedByFlags = { in_prison = true },
+		choices = {
+			{
+				text = "Exploit it - take everything!",
+				effects = {},
+				feedText = "Executing the heist...",
+				triggerMinigame = "hacking",
+				minigameOptions = { codes = 5, time = 30 },
+				onResolve = function(state, minigameResult)
+					if minigameResult and minigameResult.success then
+						local score = math.random(500000, 2000000)
+						state.Money = (state.Money or 0) + score
+						state.Flags = state.Flags or {}
+						state.Flags.crypto_heist = true
+						state.Flags.most_wanted = true
+						if state.AddFeed then state:AddFeed(string.format("₿ MASSIVE SCORE! $%d in crypto! Laundering through mixers...", score)) end
+					else
+						local jailYears = math.random(8, 20)
+						state.InJail = true
+						state.JailYearsLeft = jailYears
+						state.Flags = state.Flags or {}
+						state.Flags.in_prison = true
+						state.CurrentJob = nil
+						if state.AddFeed then state:AddFeed("🔒 Blockchain traced! FBI caught you. " .. jailYears .. " years!") end
+					end
+				end,
+			},
+			{
+				text = "Report to exchange for bounty",
+				effects = { Happiness = 8 },
+				feedText = "Being a white hat...",
+				onResolve = function(state)
+					local bounty = math.random(20000, 100000)
+					state.Money = (state.Money or 0) + bounty
+					state.Flags = state.Flags or {}
+					state.Flags.crypto_bounty = true
+					if state.AddFeed then state:AddFeed(string.format("🏆 Exchange paid $%d bounty! Going legit pays!", bounty)) end
+				end,
+			},
+		},
+	},
+
+	{
+		id = "hacker_social_engineering",
+		emoji = "🎭",
+		title = "Social Engineering Op",
+		text = "Sometimes the best hack is the human mind. A CEO's executive assistant is susceptible to manipulation...",
+		category = "career_hacker",
+		weight = 15,
+		minAge = 18, maxAge = 55,
+		baseChance = 0.45,
+		cooldown = 5,
+		requiresFlags = { hacker_discovered = true },
+		blockedByFlags = { in_prison = true },
+		choices = {
+			{
+				text = "Phish for credentials",
+				effects = { Smarts = 2 },
+				feedText = "Crafting the perfect email...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 55 then
+						local data_value = math.random(5000, 25000)
+						state.Money = (state.Money or 0) + data_value
+						state.Flags = state.Flags or {}
+						state.Flags.social_engineer = true
+						if state.AddFeed then state:AddFeed(string.format("🎣 They clicked the link! Sold the credentials for $%d!", data_value)) end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then state:AddFeed("🚫 They got suspicious. Reported your email. Operation burned.") end
+					end
+				end,
+			},
+			{
+				text = "Voice phishing (vishing) for wire transfer",
+				effects = {},
+				feedText = "Calling as 'IT support'...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						local wire = math.random(50000, 200000)
+						state.Money = (state.Money or 0) + wire
+						state.Flags = state.Flags or {}
+						state.Flags.vishing_expert = true
+						if state.AddFeed then state:AddFeed(string.format("📞 They wired $%d to your offshore account! Smooth talking pays!", wire)) end
+					elseif roll <= 70 then
+						if state.AddFeed then state:AddFeed("📞 They almost bought it but checked with their boss. Close call.") end
+					else
+						state.Flags = state.Flags or {}
+						state.Flags.under_investigation = true
+						if state.AddFeed then state:AddFeed("📞 They traced the call! Security is investigating...") end
+					end
+				end,
+			},
+			{
+				text = "Skip it - too risky",
+				effects = { Happiness = -2 },
+				feedText = "Maybe next time...",
+			},
+		},
+	},
+
+	{
+		id = "hacker_nation_state_recruitment",
+		emoji = "🕵️",
+		title = "Government Recruitment",
+		text = "A shadowy figure approaches you. They represent a government agency that wants your skills for 'national security operations'.",
+		category = "career_hacker",
+		weight = 6,
+		minAge = 22, maxAge = 45,
+		baseChance = 0.3,
+		cooldown = 15,
+		requiresFlags = { elite_hacker = true },
+		oneTime = true,
+		blockedByFlags = { in_prison = true, reformed = true },
+		choices = {
+			{
+				text = "Join as a cyber operative",
+				effects = { Smarts = 5 },
+				feedText = "Welcome to the shadows...",
+				onResolve = function(state)
+					state.CurrentJob = {
+						id = "cyber_operative",
+						name = "Cyber Intelligence Operative",
+						company = "Classified",
+						salary = 250000,
+						category = "government",
+					}
+					state.Flags = state.Flags or {}
+					state.Flags.government_hacker = true
+					state.Flags.classified_clearance = true
+					if state.AddFeed then state:AddFeed("🕵️ You now work for the government. Officially, you don't exist.") end
+				end,
+			},
+			{
+				text = "Decline - I work for myself",
+				effects = { Happiness = 5 },
+				feedText = "Freedom is worth more than a government paycheck.",
+			},
+			{
+				text = "Double agent - pretend to join, sell secrets",
+				effects = {},
+				feedText = "Playing both sides...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state.Money = (state.Money or 0) + 1000000
+						state.Flags = state.Flags or {}
+						state.Flags.double_agent = true
+						if state.AddFeed then state:AddFeed("🕵️ Sold government secrets for $1M! Living dangerously!") end
+					else
+						local jailYears = math.random(15, 30)
+						state.InJail = true
+						state.JailYearsLeft = jailYears
+						state.Flags = state.Flags or {}
+						state.Flags.in_prison = true
+						state.Flags.treason = true
+						state.CurrentJob = nil
+						if state.AddFeed then state:AddFeed("🔒 TREASON! Life in supermax. " .. jailYears .. " years minimum.") end
+					end
+				end,
+			},
+		},
+	},
+
+	{
+		id = "hacker_defcon_competition",
+		emoji = "🏆",
+		title = "DEF CON Hacking Competition",
+		text = "The world's biggest hacking conference is hosting a CTF (Capture The Flag) competition. Big prize money and even bigger reputation.",
+		category = "career_hacker",
+		weight = 12,
+		minAge = 18, maxAge = 50,
+		baseChance = 0.4,
+		cooldown = 6,
+		requiresFlags = { hacker_discovered = true },
+		blockedByFlags = { in_prison = true },
+		choices = {
+			{
+				text = "Enter the competition!",
+				effects = { Smarts = 2 },
+				feedText = "Time to prove yourself...",
+				triggerMinigame = "hacking",
+				minigameOptions = { codes = 5, time = 35 },
+				onResolve = function(state, minigameResult)
+					if minigameResult and minigameResult.success then
+						local prize = math.random(25000, 100000)
+						state.Money = (state.Money or 0) + prize
+						state.Fame = math.min(100, (state.Fame or 0) + 10)
+						state.Flags = state.Flags or {}
+						state.Flags.ctf_champion = true
+						state.Flags.hacker_famous = true
+						if state.AddFeed then state:AddFeed(string.format("🏆 WON DEF CON CTF! $%d prize! You're a legend in the community!", prize)) end
+					else
+						if state.ModifyStat then state:ModifyStat("Smarts", 3) end
+						if state.AddFeed then state:AddFeed("🏆 Didn't win, but learned a lot. Next year!") end
+					end
+				end,
+			},
+			{
+				text = "Network with other hackers instead",
+				effects = { Happiness = 8, Smarts = 2 },
+				setFlags = { hacker_network = true },
+				feedText = "Made valuable connections in the hacker underground.",
+			},
+		},
+	},
+
+	{
+		id = "hacker_startup_offer",
+		emoji = "🚀",
+		title = "Security Startup Opportunity",
+		text = "A VC firm wants to fund a cybersecurity startup. They need a technical co-founder with your skills.",
+		category = "career_hacker",
+		weight = 8,
+		minAge = 22, maxAge = 45,
+		baseChance = 0.35,
+		cooldown = 12,
+		requiresFlags = { white_hat = true },
+		oneTime = true,
+		blockedByFlags = { in_prison = true, black_hat = true },
+		choices = {
+			{
+				text = "Co-found the startup!",
+				effects = { Happiness = 15, Smarts = 3 },
+				feedText = "Building something legit...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 40 then
+						state.Money = (state.Money or 0) + 5000000
+						state.Flags = state.Flags or {}
+						state.Flags.startup_founder = true
+						state.Flags.tech_millionaire = true
+						state.Fame = math.min(100, (state.Fame or 0) + 15)
+						if state.AddFeed then state:AddFeed("🚀 STARTUP ACQUIRED! $5M payout! You're a tech success story!") end
+					elseif roll <= 75 then
+						state.CurrentJob = {
+							id = "startup_cto",
+							name = "CTO",
+							company = "CyberGuard Solutions",
+							salary = 200000,
+							category = "tech",
+						}
+						if state.AddFeed then state:AddFeed("🚀 Startup is growing! You're CTO now. Building something real.") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						if state.AddFeed then state:AddFeed("🚀 Startup failed. Burned through funding. Back to job hunting.") end
+					end
+				end,
+			},
+			{
+				text = "Consult instead - keep my freedom",
+				effects = { Money = 50000, Happiness = 5 },
+				feedText = "💰 Took a consulting fee instead. Less risk, guaranteed money.",
+			},
+		},
+	},
 }
 
 return events

@@ -79,7 +79,7 @@ ScienceCareerEvents.events = {
 					if roll <= 35 then
 						-- AAA FIX: Nil check for all state methods
 						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
-						state.Fame = (state.Fame or 0) + 15
+						state.Fame = math.min(100, (state.Fame or 0) + 15) -- CRITICAL FIX: Cap fame at 100
 						if state.AddFeed then state:AddFeed("🧪 Paper published! Scientific community is intrigued!") end
 					else
 						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
@@ -375,7 +375,7 @@ ScienceCareerEvents.events = {
 					if roll + bonus <= 50 then
 						-- AAA FIX: Nil check for all state methods
 						if state.ModifyStat then state:ModifyStat("Happiness", 18) end
-						state.Fame = (state.Fame or 0) + 15
+						state.Fame = math.min(100, (state.Fame or 0) + 15) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.respected_scientist = true
 						if state.AddFeed then state:AddFeed("🎤 Standing ovation! Brilliant Q&A! Networking opportunities!") end
@@ -416,7 +416,7 @@ ScienceCareerEvents.events = {
 					if roll <= 45 then
 						-- AAA FIX: Nil check for all state methods
 						if state.ModifyStat then state:ModifyStat("Happiness", 20) end
-						state.Fame = (state.Fame or 0) + 20
+						state.Fame = math.min(100, (state.Fame or 0) + 20) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.published_first = true
 						if state.AddFeed then state:AddFeed("🏃 Published first! YOU get the credit! Science is competitive!") end

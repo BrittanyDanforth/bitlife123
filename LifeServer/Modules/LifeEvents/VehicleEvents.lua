@@ -857,7 +857,7 @@ VehicleEvents.events = {
                     
                     if roll <= 60 then
                         state:ModifyStat("Happiness", 20)
-                        state.Fame = (state.Fame or 0) + 5
+                        state.Fame = math.min(100, (state.Fame or 0) + 5) -- CRITICAL FIX: Cap fame at 100
                         state.Flags = state.Flags or {}
                         state.Flags.party_legend = true
                         state:AddFeed(string.format("🛥️ LEGENDARY YACHT PARTY! Cost $%d but made memories for LIFE! Everyone's talking about it!", cost))
@@ -939,7 +939,7 @@ VehicleEvents.events = {
                     local roll = math.random(100)
                     if roll <= 40 then
                         state:ModifyStat("Happiness", 15)
-                        state.Fame = (state.Fame or 0) + 3
+                        state.Fame = math.min(100, (state.Fame or 0) + 3) -- CRITICAL FIX: Cap fame at 100
                         state.Flags = state.Flags or {}
                         state.Flags.celebrity_friend = true
                         state:AddFeed("⭐ They waved back! You exchanged numbers! Celebrity yacht friend acquired!")
@@ -986,7 +986,7 @@ VehicleEvents.events = {
                 onResolve = function(state)
                     state:ModifyStat("Happiness", 12)
                     state:ModifyStat("Looks", 2)
-                    state.Fame = (state.Fame or 0) + 3
+                    state.Fame = math.min(100, (state.Fame or 0) + 3) -- CRITICAL FIX: Cap fame at 100
                     state.Flags = state.Flags or {}
                     state.Flags.loves_attention = true
                     state:AddFeed("📸 You posed like a superstar! The crowd loved it! Photos everywhere!")
@@ -1000,7 +1000,7 @@ VehicleEvents.events = {
                     local roll = math.random(100)
                     if roll <= 80 then
                         state:ModifyStat("Happiness", 15)
-                        state.Fame = (state.Fame or 0) + 2
+                        state.Fame = math.min(100, (state.Fame or 0) + 2) -- CRITICAL FIX: Cap fame at 100
                         state:AddFeed("🔥 EPIC EXIT! The crowd cheered as you roared away! LEGENDARY!")
                     else
                         state:ModifyStat("Happiness", -5)
