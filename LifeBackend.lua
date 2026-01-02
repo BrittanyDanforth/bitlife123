@@ -266,6 +266,24 @@ local function serializeState(state)
 	if state.PastLives then
 		serialized.PastLives = state.PastLives
 	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Save PetData to persist pet names and ages!
+	-- User bug: Pets losing their names/ages on rejoin
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.PetData then
+		serialized.PetData = state.PetData
+	end
+	
+	-- CRITICAL FIX: Save HousingState to persist housing information!
+	if state.HousingState then
+		serialized.HousingState = state.HousingState
+	end
+	
+	-- CRITICAL FIX: Save EducationData for education tracking!
+	if state.EducationData then
+		serialized.EducationData = state.EducationData
+	end
 
 	-- Timestamp for debugging
 	serialized._savedAt = os.time()
@@ -9409,6 +9427,10 @@ function LifeBackend:setupRemotes()
 	-- self.remotes.Gamble = self:createRemote("Gamble", "RemoteFunction")
 
 	self.remotes.DoInteraction = self:createRemote("DoInteraction", "RemoteFunction")
+	
+	-- CRITICAL FIX: Pet interaction remote for RelationshipsScreen!
+	-- User request: "have PET instead of TALK how humans have"
+	self.remotes.InteractWithPet = self:createRemote("InteractWithPet", "RemoteFunction")
 
 	self.remotes.StartPath = self:createRemote("StartPath", "RemoteFunction")
 	self.remotes.DoPathAction = self:createRemote("DoPathAction", "RemoteFunction")
@@ -9568,6 +9590,12 @@ function LifeBackend:setupRemotes()
 
 	self.remotes.DoInteraction.OnServerInvoke = safeHandler(function(self, player, payload)
 		return self:handleInteraction(player, payload)
+	end)
+	
+	-- CRITICAL FIX: Pet interaction handler!
+	-- User request: "have PET instead of TALK how humans have"
+	self.remotes.InteractWithPet.OnServerInvoke = safeHandler(function(self, player, petId, action)
+		return self:handlePetInteraction(player, petId, action)
 	end)
 
 	self.remotes.StartPath.OnServerInvoke = safeHandler(function(self, player, pathId)
@@ -22745,6 +22773,130 @@ function LifeBackend:ensureRelationship(state, relType, targetId, options)
 	end
 
 	return targetId and state.Relationships[targetId] or nil
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Pet Interaction Handler
+-- User request: "have PET instead of TALK how humans have"
+-- Allows players to pet their animals from RelationshipsScreen
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:handlePetInteraction(player, petId, action)
+	local state = self:getState(player)
+	if not state then
+		return { success = false, message = "Life data missing." }
+	end
+	
+	state.Flags = state.Flags or {}
+	state.PetData = state.PetData or {}
+	
+	-- Validate pet exists
+	local hasPet = false
+	local petName = "Your pet"
+	local petEmoji = "🐾"
+	
+	if petId == "dog" and state.Flags.has_dog then
+		hasPet = true
+		petName = state.PetData.dogName or "Buddy"
+		petEmoji = "🐕"
+	elseif petId == "cat" and state.Flags.has_cat then
+		hasPet = true
+		petName = state.PetData.catName or "Whiskers"
+		petEmoji = "🐱"
+	elseif petId == "small_pet" and state.Flags.has_small_pet then
+		hasPet = true
+		petName = state.PetData.smallPetName or "Little One"
+		petEmoji = "🐹"
+	elseif petId == "fish" and state.Flags.has_fish then
+		hasPet = true
+		petName = state.PetData.fishName or "Goldie"
+		petEmoji = "🐠"
+	elseif petId == "bird" and state.Flags.has_bird then
+		hasPet = true
+		petName = state.PetData.birdName or "Tweety"
+		petEmoji = "🐦"
+	end
+	
+	if not hasPet then
+		return { success = false, message = "You don't have that pet!" }
+	end
+	
+	-- Handle different pet actions
+	action = action or "pet"
+	
+	if action == "pet" then
+		-- Petting gives happiness!
+		local happinessGain = math.random(3, 8)
+		if state.ModifyStat then
+			state:ModifyStat("Happiness", happinessGain)
+		else
+			state.Stats = state.Stats or {}
+			state.Stats.Happiness = math.min(100, (state.Stats.Happiness or 50) + happinessGain)
+		end
+		
+		-- Random cute messages
+		local messages = {
+			petEmoji .. " " .. petName .. " loves the attention! Tail wagging!",
+			petEmoji .. " " .. petName .. " purrs/wags with happiness!",
+			petEmoji .. " " .. petName .. " nuzzles against you affectionately!",
+			petEmoji .. " " .. petName .. " looks at you with pure love!",
+			petEmoji .. " " .. petName .. " is so happy! Best pet parent ever!",
+			petEmoji .. " You pet " .. petName .. "! They're so happy!",
+		}
+		local message = messages[math.random(1, #messages)]
+		
+		if state.AddFeed then
+			state:AddFeed(message)
+		end
+		
+		self:pushState(player, message)
+		
+		return { 
+			success = true, 
+			message = message,
+			happiness = happinessGain
+		}
+	elseif action == "feed" then
+		-- Feeding costs a little but increases pet bond
+		local cost = 10
+		if (state.Money or 0) < cost then
+			return { success = false, message = "You need $10 for pet food!" }
+		end
+		
+		state.Money = state.Money - cost
+		local happinessGain = math.random(2, 5)
+		if state.ModifyStat then
+			state:ModifyStat("Happiness", happinessGain)
+		end
+		
+		local message = petEmoji .. " " .. petName .. " gobbles up the food! Yum!"
+		if state.AddFeed then
+			state:AddFeed(message)
+		end
+		
+		self:pushState(player, message)
+		
+		return { success = true, message = message }
+	elseif action == "play" then
+		-- Playing with pet - uses some health but gives more happiness
+		local happinessGain = math.random(5, 10)
+		local healthCost = 2
+		
+		if state.ModifyStat then
+			state:ModifyStat("Happiness", happinessGain)
+			state:ModifyStat("Health", -healthCost)
+		end
+		
+		local message = petEmoji .. " You played with " .. petName .. "! So much fun!"
+		if state.AddFeed then
+			state:AddFeed(message)
+		end
+		
+		self:pushState(player, message)
+		
+		return { success = true, message = message }
+	end
+	
+	return { success = false, message = "Unknown pet action." }
 end
 
 function LifeBackend:handleInteraction(player, payload)
