@@ -236,33 +236,28 @@ SpecialMoments.events = {
 		title = "Dream Achievement",
 		emoji = "⭐",
 		text = "You achieved something you've always dreamed of!",
-		question = "What dream did you achieve?",
-		-- CRITICAL FIX: Age requirement increased - can't achieve "dreams" at age 15-23!
-		-- Need to be at least 30 and have some accomplishments
+		-- CRITICAL FIX: NO question - this should auto-determine based on career/life!
 		minAge = 30, maxAge = 100,
-		baseChance = 0.18, -- CRITICAL FIX: Reduced from 0.32 - this should be rare
-		cooldown = 10, -- CRITICAL FIX: Increased from 4 - dreams don't happen every year
+		baseChance = 0.12, -- Reduced - dreams are RARE
+		cooldown = 15, -- Can't achieve multiple dreams quickly
 		stage = STAGE,
 		ageBand = "adult",
 		category = "milestone",
 		tags = { "dream", "achievement", "goal" },
-		oneTime = true, -- CRITICAL FIX: Can only achieve your dream ONCE
+		oneTime = true,
 		maxOccurrences = 1,
 		
-		-- CRITICAL FIX: Must have ACTUAL accomplishments before "dream" can be achieved!
-		-- User complained: "DREAM ACHIEVEMENT POPPED UP BUT I AM AGE 23 HAVNT RLLY DID ANY ACHIEVEMENTS"
+		-- CRITICAL FIX: Must have ACTUAL accomplishments!
 		eligibility = function(state)
 			local flags = state.Flags or {}
 			local money = state.Money or 0
 			local hasJob = state.CurrentJob ~= nil
 			local age = state.Age or 0
 			
-			-- Must be at least 30
 			if age < 30 then return false end
 			
-			-- Need SOME kind of accomplishment: good job, money, or specific flags
-			local hasAccomplishment = hasJob 
-				or money >= 50000 
+			-- Need significant accomplishments
+			local hasAccomplishment = (hasJob and money >= 100000)
 				or flags.promoted 
 				or flags.got_degree 
 				or flags.started_business
@@ -271,19 +266,71 @@ SpecialMoments.events = {
 				or flags.successful_career
 				or flags.published_author
 				or flags.award_winner
+				or flags.nfl_drafted or flags.nba_drafted
+				or flags.championship_winner
+				or flags.military_decorated
 			
-			if not hasAccomplishment then
-				return false -- Can't "achieve dream" with no actual achievements!
-			end
-			
-			return true
+			return hasAccomplishment
 		end,
 		
+		-- CRITICAL FIX: Single choice - auto-determines dream based on career!
 		choices = {
-			{ text = "Career dream realized", effects = { Happiness = 20, Smarts = 5, Money = 500 }, setFlags = { career_dream = true }, feedText = "⭐ DREAM JOB/ACHIEVEMENT! Years of work paid off! On top of the world!" },
-			{ text = "Personal goal accomplished", effects = { Happiness = 18, Health = 5 }, setFlags = { personal_dream = true }, feedText = "⭐ Did what you set out to do! Proves anything is possible!" },
-			{ text = "Creative dream fulfilled", effects = { Happiness = 18, Smarts = 3 }, setFlags = { creative_dream = true }, feedText = "⭐ Your art/creation is out there! Dream become reality!" },
-			{ text = "Financial milestone hit", effects = { Happiness = 15, Money = 1000 }, setFlags = { financial_dream = true }, feedText = "⭐ Reached your money goal! Financial security feels amazing!" },
+			{
+				text = "Celebrate this achievement!",
+				effects = { Happiness = 25 },
+				feedText = "Dreams DO come true!",
+				onResolve = function(state)
+					local flags = state.Flags or {}
+					local job = state.CurrentJob
+					local dreamText = ""
+					local bonus = 0
+					
+					-- Auto-determine dream based on actual career/life!
+					if flags.nfl_drafted or flags.nba_drafted or flags.pro_athlete then
+						dreamText = "⭐ DREAM REALIZED: You made it to the big leagues! All those years of training paid off!"
+						bonus = 10000
+						flags.athlete_dream_achieved = true
+					elseif flags.military_decorated or (job and job.category == "military") then
+						dreamText = "⭐ DREAM REALIZED: You served your country with distinction! A true patriot!"
+						bonus = 5000
+						flags.military_dream_achieved = true
+					elseif flags.famous or flags.celebrity then
+						dreamText = "⭐ DREAM REALIZED: You became famous! People know your name!"
+						bonus = 15000
+						flags.fame_dream_achieved = true
+					elseif flags.started_business or flags.entrepreneur then
+						dreamText = "⭐ DREAM REALIZED: Your business succeeded! You're your own boss!"
+						bonus = 20000
+						flags.business_dream_achieved = true
+					elseif flags.got_degree or flags.phd then
+						dreamText = "⭐ DREAM REALIZED: Your education goals achieved! Knowledge is power!"
+						bonus = 3000
+						flags.education_dream_achieved = true
+					elseif (state.Money or 0) >= 500000 then
+						dreamText = "⭐ DREAM REALIZED: Financial freedom achieved! You made it!"
+						bonus = 0
+						flags.wealth_dream_achieved = true
+					elseif job then
+						dreamText = "⭐ DREAM REALIZED: You built a successful career as a " .. (job.name or "professional") .. "!"
+						bonus = 5000
+						flags.career_dream_achieved = true
+					else
+						dreamText = "⭐ DREAM REALIZED: You accomplished something meaningful in life!"
+						bonus = 2500
+						flags.personal_dream_achieved = true
+					end
+					
+					state.Money = (state.Money or 0) + bonus
+					state:ModifyStat("Happiness", 25)
+					state.Flags = flags
+					
+					if bonus > 0 then
+						state:AddFeed(dreamText .. " (+$" .. bonus .. " recognition bonus!)")
+					else
+						state:AddFeed(dreamText)
+					end
+				end,
+			},
 		},
 	},
 	{

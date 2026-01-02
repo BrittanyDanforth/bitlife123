@@ -1991,6 +1991,265 @@ MilitaryCareerEvents.events = {
 			},
 		},
 	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: MORE DAILY MILITARY LIFE EVENTS FOR VARIETY
+	-- User complaint: "vacation even tho im LEGIT A SEGEANT" - need military-specific life events
+	-- ══════════════════════════════════════════════════════════════════════════════
+	
+	{
+		id = "mil_leave_time",
+		title = "Military Leave",
+		emoji = "🏖️",
+		text = "You've earned some leave days! Time to use that military benefit.",
+		question = "How do you spend your leave?",
+		category = "career_military",
+		weight = 20, -- High weight for variety
+		minAge = 18, maxAge = 60,
+		baseChance = 0.6,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasMilitaryJob,
+		
+		choices = {
+			{
+				text = "Visit family back home",
+				effects = { Happiness = 15, Health = 5 },
+				feedText = "🏖️ Nothing like home-cooked meals and family time!",
+			},
+			{
+				text = "Travel somewhere exciting ($500)",
+				effects = { Happiness = 18, Money = -500 },
+				feedText = "🏖️ Military discounts make travel affordable!",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500" end,
+			},
+			{
+				text = "Just relax on base",
+				effects = { Happiness = 8, Health = 5 },
+				feedText = "🏖️ Sometimes doing nothing is exactly what you need.",
+			},
+			{
+				text = "Pickup extra duty for pay",
+				effects = { Happiness = -3, Money = 800 },
+				feedText = "💰 Working through leave. Extra cash but no rest.",
+			},
+		},
+	},
+	
+	{
+		id = "mil_pt_test",
+		title = "Physical Fitness Test",
+		emoji = "💪",
+		text = "It's time for your annual physical fitness test. Push-ups, sit-ups, and a 2-mile run.",
+		question = "How prepared are you?",
+		category = "career_military",
+		weight = 18,
+		minAge = 18, maxAge = 60,
+		baseChance = 0.55,
+		cooldown = 3,
+		requiresJob = true,
+		eligibility = hasMilitaryJob,
+		
+		choices = {
+			{
+				text = "Crush it - I've been training",
+				effects = {},
+				feedText = "Let's see those scores...",
+				onResolve = function(state)
+					local health = (state.Stats and state.Stats.Health) or 50
+					local roll = math.random(1, 100)
+					local bonus = (health - 50) / 2
+					
+					if roll + bonus >= 70 then
+						state:ModifyStat("Happiness", 15)
+						state:ModifyStat("Health", 5)
+						state.Flags = state.Flags or {}
+						state.Flags.pt_excellence = true
+						state:AddFeed("💪 MAXED the PT test! 300+ score! You're a physical specimen!")
+					elseif roll + bonus >= 40 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("💪 Passed with flying colors! Good fitness scores!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("💪 Passed... barely. Time to hit the gym more.")
+					end
+				end,
+			},
+			{
+				text = "Hope for the best",
+				effects = {},
+				feedText = "Winging it...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("💪 Somehow passed! Lucky day!")
+					else
+						state:ModifyStat("Happiness", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.pt_remedial = true
+						state:AddFeed("💪 Failed! Now on remedial PT. Extra workouts every morning.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "mil_base_housing",
+		title = "On-Base Housing",
+		emoji = "🏠",
+		text = "A spot opened up in base housing! Better than BAH allowance and the commute would be zero.",
+		question = "Do you move on-base?",
+		category = "career_military",
+		weight = 12,
+		minAge = 18, maxAge = 55,
+		baseChance = 0.35,
+		cooldown = 8,
+		oneTime = true,
+		requiresJob = true,
+		eligibility = hasMilitaryJob,
+		blockedByFlags = { lives_on_base = true },
+		
+		choices = {
+			{
+				text = "Move on-base",
+				effects = { Happiness = 5, Money = 300 },
+				setFlags = { lives_on_base = true },
+				feedText = "🏠 Short commute, decent housing, and PX nearby!",
+			},
+			{
+				text = "Keep living off-base",
+				effects = { Happiness = 3 },
+				feedText = "🏠 More freedom living off-base. Worth the BAH.",
+			},
+		},
+	},
+	
+	{
+		id = "mil_leadership_challenge",
+		title = "Leadership Challenge",
+		emoji = "👨‍✈️",
+		text = "A junior soldier is struggling. As their superior, how you handle this matters.",
+		question = "What's your approach?",
+		category = "career_military",
+		weight = 16,
+		minAge = 22, maxAge = 55,
+		baseChance = 0.45,
+		cooldown = 4,
+		requiresJob = true,
+		eligibility = hasMilitaryJob,
+		
+		choices = {
+			{
+				text = "Mentor them personally",
+				effects = { Happiness = 8, Smarts = 3 },
+				feedText = "Leadership is about lifting others up...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 75 then
+						state:ModifyStat("Happiness", 12)
+						state.Flags = state.Flags or {}
+						state.Flags.good_leader = true
+						state:AddFeed("👨‍✈️ Your mentoring paid off! They turned it around and thanked you sincerely.")
+					else
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("👨‍✈️ You tried your best. Some soldiers just aren't cut out for it.")
+					end
+				end,
+			},
+			{
+				text = "By-the-book discipline",
+				effects = {},
+				feedText = "Standards exist for a reason...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("👨‍✈️ The discipline worked. They shaped up quick.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("👨‍✈️ They washed out anyway. Sometimes discipline isn't enough.")
+					end
+				end,
+			},
+			{
+				text = "Let their sergeant handle it",
+				effects = { Happiness = 2 },
+				feedText = "👨‍✈️ Delegated the issue. That's what NCOs are for.",
+			},
+		},
+	},
+	
+	{
+		id = "mil_commendation",
+		title = "Commander's Commendation",
+		emoji = "📜",
+		text = "Your commanding officer noticed your exceptional work! You're being put in for a commendation.",
+		category = "career_military",
+		weight = 14,
+		minAge = 18, maxAge = 60,
+		baseChance = 0.35,
+		cooldown = 5,
+		requiresJob = true,
+		eligibility = hasMilitaryJob,
+		
+		choices = {
+			{
+				text = "Accept with pride",
+				effects = { Happiness = 15, Fame = 3 },
+				feedText = "📜 Well deserved recognition!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.commended = true
+					state.Money = (state.Money or 0) + math.random(500, 2000)
+					state:ModifyStat("Happiness", 15)
+					state:AddFeed("📜 Received a Commander's Commendation! This goes in your permanent record!")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "mil_specialty_training",
+		title = "Specialty Training Opportunity",
+		emoji = "🎓",
+		text = "You've been selected for advanced specialty training. This could open new career paths!",
+		question = "What training interests you?",
+		category = "career_military",
+		weight = 14,
+		minAge = 19, maxAge = 40,
+		baseChance = 0.4,
+		cooldown = 5,
+		requiresJob = true,
+		eligibility = hasMilitaryJob,
+		
+		choices = {
+			{
+				text = "Combat medic training",
+				effects = { Health = 5, Smarts = 8 },
+				setFlags = { combat_medic = true },
+				feedText = "🎓 Learning to save lives under fire! Invaluable skills.",
+			},
+			{
+				text = "Technical/IT training",
+				effects = { Smarts = 10 },
+				setFlags = { mil_tech_trained = true },
+				feedText = "🎓 Cybersecurity, networks, and systems. Civilian jobs will want you!",
+			},
+			{
+				text = "Leadership school",
+				effects = { Smarts = 5, Happiness = 5 },
+				setFlags = { leadership_trained = true },
+				feedText = "🎓 Learning to lead! NCO academy here you come!",
+			},
+			{
+				text = "Decline - happy where I am",
+				effects = { Happiness = 2 },
+				feedText = "🎓 Passed on the training. Sometimes stability is better.",
+			},
+		},
+	},
 }
 
 return MilitaryCareerEvents

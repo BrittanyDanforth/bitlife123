@@ -2946,10 +2946,20 @@ Adult.events = {
 		question = "Where do you go?",
 		minAge = 22, maxAge = 70,
 		baseChance = 0.5,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		cooldown = 4,
 		blockedByFlags = { in_prison = true, homeless = true },
-		-- CRITICAL FIX: Removed money check - event has free "Just relax at home" option
+		-- CRITICAL FIX: Block for military - they have different leave system!
 		eligibility = function(state)
+			-- Military personnel don't get "vacation planning" - they have military leave
+			if state.CurrentJob and state.CurrentJob.category == "military" then
+				return false
+			end
+			if state.Flags then
+				if state.Flags.military or state.Flags.enlisted or state.Flags.soldier or
+				   state.Flags.army or state.Flags.navy or state.Flags.air_force or state.Flags.marines then
+					return false
+				end
+			end
 			return true
 		end,
 		

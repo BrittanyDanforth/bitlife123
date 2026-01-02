@@ -1838,6 +1838,293 @@ Senior.events = {
             },
         },
     },
+    
+    -- ══════════════════════════════════════════════════════════════════════════════
+    -- CRITICAL FIX: CAREER-PERSONALIZED SENIOR EVENTS
+    -- User complaint: "when old it is so boring... nothing personalized"
+    -- These events reference the player's past career and achievements!
+    -- ══════════════════════════════════════════════════════════════════════════════
+    
+    {
+        id = "senior_military_veterans_day",
+        title = "Veterans Day Recognition",
+        emoji = "🎖️",
+        text = "It's Veterans Day. Your military service is being honored at a local event. They want you to speak!",
+        question = "How do you respond?",
+        minAge = 60, maxAge = 95,
+        baseChance = 0.7,
+        cooldown = 3,
+        -- CRITICAL: Only for military veterans!
+        eligibility = function(state)
+            local flags = state.Flags or {}
+            if flags.military or flags.enlisted or flags.veteran or flags.military_service or
+               flags.army or flags.navy or flags.air_force or flags.marines or
+               flags.military_retired then
+                return true
+            end
+            if state.CareerInfo and state.CareerInfo.lastJob then
+                local lastCat = state.CareerInfo.lastJob.category
+                if lastCat == "military" then return true end
+            end
+            return false
+        end,
+        
+        stage = STAGE,
+        ageBand = "senior",
+        category = "career_memory",
+        tags = { "military", "veteran", "honor" },
+        
+        choices = {
+            {
+                text = "Give a speech about your service",
+                effects = { Happiness = 15, Fame = 5 },
+                feedText = "The crowd is moved by your words...",
+                onResolve = function(state)
+                    state.Flags = state.Flags or {}
+                    state.Flags.honored_veteran = true
+                    local rank = state.Flags.military_rank or "veteran"
+                    state:ModifyStat("Happiness", 15)
+                    state:AddFeed("🎖️ You shared stories of your service as a " .. rank .. ". The community thanks you for your sacrifice!")
+                end,
+            },
+            {
+                text = "Attend quietly - let others be recognized",
+                effects = { Happiness = 10 },
+                feedText = "🎖️ You're proud of your service, but prefer to let others shine.",
+            },
+            {
+                text = "Skip it - too many memories",
+                effects = { Happiness = -5 },
+                feedText = "🎖️ Some memories are still too raw to revisit...",
+            },
+        },
+    },
+    
+    {
+        id = "senior_military_reunion",
+        title = "Military Unit Reunion",
+        emoji = "🪖",
+        text = "Your old military unit is holding a reunion! Some faces you haven't seen in decades.",
+        question = "Do you attend?",
+        minAge = 55, maxAge = 90,
+        oneTime = true,
+        -- Only for military veterans
+        eligibility = function(state)
+            local flags = state.Flags or {}
+            return flags.military or flags.enlisted or flags.veteran or
+                   flags.army or flags.navy or flags.air_force or flags.marines
+        end,
+        
+        stage = STAGE,
+        ageBand = "senior",
+        category = "career_memory",
+        tags = { "military", "reunion", "nostalgia" },
+        
+        choices = {
+            {
+                text = "Attend and reconnect with old comrades",
+                effects = { Happiness = 15, Money = -200 },
+                feedText = "Nothing like the bonds forged in service!",
+                eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for travel" end,
+                onResolve = function(state)
+                    state.Flags = state.Flags or {}
+                    state.Flags.military_reunion_attended = true
+                    state:ModifyStat("Happiness", 15)
+                    state:AddFeed("🪖 You swapped war stories with your old unit. Brothers and sisters in arms forever!")
+                end,
+            },
+            {
+                text = "Can't afford to travel",
+                effects = { Happiness = -8 },
+                feedText = "🪖 Sadly, you couldn't make it to the reunion...",
+            },
+        },
+    },
+    
+    {
+        id = "senior_career_nostalgia",
+        title = "Career Memories",
+        emoji = "📸",
+        text = "You found old photos and mementos from your working years. Memories flood back...",
+        question = "How do you feel looking back on your career?",
+        minAge = 65, maxAge = 95,
+        baseChance = 0.5,
+        cooldown = 5,
+        requiresFlags = { retired = true },
+        
+        stage = STAGE,
+        ageBand = "senior",
+        category = "career_memory",
+        tags = { "nostalgia", "career", "memories" },
+        
+        choices = {
+            {
+                text = "Share the memories with family",
+                effects = { Happiness = 12 },
+                feedText = "Looking back on a career well lived...",
+                onResolve = function(state)
+                    local careerName = "professional"
+                    if state.CareerInfo and state.CareerInfo.lastJob then
+                        careerName = state.CareerInfo.lastJob.name or "professional"
+                    end
+                    local flags = state.Flags or {}
+                    if flags.military then careerName = "soldier"
+                    elseif flags.doctor then careerName = "doctor"
+                    elseif flags.police then careerName = "officer"
+                    elseif flags.famous then careerName = "celebrity"
+                    elseif flags.nfl_drafted then careerName = "NFL player"
+                    elseif flags.nba_drafted then careerName = "NBA player"
+                    end
+                    state:ModifyStat("Happiness", 12)
+                    state:AddFeed("📸 You told your grandkids about your years as a " .. careerName .. ". They were fascinated!")
+                end,
+            },
+            {
+                text = "Put them away - it's in the past",
+                effects = { Happiness = 2 },
+                feedText = "📸 Some things are better left in the past.",
+            },
+            {
+                text = "Write about your experiences",
+                effects = { Happiness = 10, Smarts = 3 },
+                setFlags = { writing_memoir = true },
+                feedText = "📸 Maybe it's time to write that memoir...",
+            },
+        },
+    },
+    
+    {
+        id = "senior_pro_athlete_reunion",
+        title = "Pro Sports Alumni Event",
+        emoji = "🏆",
+        text = "The league is honoring retired players at a special gala. You're invited as a former pro!",
+        question = "Do you attend?",
+        minAge = 40, maxAge = 85,
+        oneTime = true,
+        -- Only for retired pro athletes
+        eligibility = function(state)
+            local flags = state.Flags or {}
+            return flags.nfl_drafted or flags.nba_drafted or flags.pro_athlete or
+                   flags.nfl_retired or flags.nba_retired or flags.retired_athlete or
+                   flags.super_bowl_champion or flags.nba_champion
+        end,
+        
+        stage = STAGE,
+        ageBand = "senior",
+        category = "career_memory",
+        tags = { "sports", "athlete", "reunion" },
+        
+        choices = {
+            {
+                text = "Attend the gala in style",
+                effects = { Happiness = 20, Fame = 10, Money = -500 },
+                feedText = "Walking the red carpet one more time!",
+                eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for attire" end,
+                onResolve = function(state)
+                    local flags = state.Flags or {}
+                    local sport = "professional"
+                    if flags.nfl_drafted or flags.nfl_retired then sport = "NFL"
+                    elseif flags.nba_drafted or flags.nba_retired then sport = "NBA"
+                    end
+                    state:ModifyStat("Happiness", 20)
+                    state:ModifyStat("Fame", 10)
+                    state:AddFeed("🏆 You walked the red carpet as a " .. sport .. " legend! Fans still remember you!")
+                end,
+            },
+            {
+                text = "Skip it - those days are behind me",
+                effects = { Happiness = 3 },
+                feedText = "🏆 You prefer to remember the glory days privately.",
+            },
+        },
+    },
+    
+    {
+        id = "senior_mentoring",
+        title = "Passing Down Wisdom",
+        emoji = "📖",
+        text = "Young people in your old profession want to learn from your experience.",
+        question = "Do you mentor them?",
+        minAge = 60, maxAge = 85,
+        baseChance = 0.4,
+        cooldown = 6,
+        requiresFlags = { retired = true },
+        
+        stage = STAGE,
+        ageBand = "senior",
+        category = "career_memory",
+        tags = { "mentoring", "wisdom", "legacy" },
+        
+        choices = {
+            {
+                text = "Become a mentor - share everything",
+                effects = { Happiness = 15, Smarts = 5 },
+                setFlags = { mentor = true },
+                feedText = "Teaching the next generation!",
+                onResolve = function(state)
+                    local careerName = "your profession"
+                    if state.CareerInfo and state.CareerInfo.lastJob then
+                        careerName = state.CareerInfo.lastJob.name or "your profession"
+                    end
+                    state:ModifyStat("Happiness", 15)
+                    state:AddFeed("📖 You're mentoring young " .. careerName .. "s. Seeing them succeed feels incredible!")
+                end,
+            },
+            {
+                text = "Give occasional advice",
+                effects = { Happiness = 8 },
+                feedText = "📖 You offer guidance when asked. Experience has value!",
+            },
+            {
+                text = "They need to figure it out themselves",
+                effects = { Happiness = 2 },
+                feedText = "📖 Life taught you - let it teach them too.",
+            },
+        },
+    },
+    
+    {
+        id = "senior_financial_reflection",
+        title = "Financial Legacy",
+        emoji = "💰",
+        text = "You're reviewing your finances and thinking about what you'll leave behind.",
+        question = "What's your approach?",
+        minAge = 70, maxAge = 95,
+        baseChance = 0.35,
+        cooldown = 8,
+        
+        stage = STAGE,
+        ageBand = "senior",
+        category = "finance",
+        tags = { "money", "legacy", "planning" },
+        
+        choices = {
+            {
+                text = "Set up a trust for the family",
+                effects = { Happiness = 10, Money = -5000 },
+                setFlags = { has_trust = true },
+                feedText = "💰 Family will be taken care of.",
+                eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5,000 for trust" end,
+            },
+            {
+                text = "Donate to charity",
+                effects = { Happiness = 12, Fame = 5, Money = -2000 },
+                setFlags = { philanthropist = true },
+                feedText = "💰 Giving back feels amazing!",
+                eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2,000" end,
+            },
+            {
+                text = "Spend it while I can!",
+                effects = { Happiness = 8 },
+                feedText = "💰 You can't take it with you!",
+            },
+            {
+                text = "Just let the kids sort it out",
+                effects = { Happiness = 3 },
+                feedText = "💰 Future problem for future people.",
+            },
+        },
+    },
 }
 
 return Senior

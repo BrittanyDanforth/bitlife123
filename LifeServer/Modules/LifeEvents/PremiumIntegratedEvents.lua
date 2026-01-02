@@ -769,12 +769,12 @@ PremiumIntegratedEvents.events = {
 				end,
 			},
 			{
-				-- CRITICAL FIX: Following passion is about lower income going forward, NOT an upfront cost!
-				-- This represents taking a career that pays less but makes you happier
-				text = "Follow your passion (lower income)",
-				effects = { Happiness = 15 },
+				-- CRITICAL FIX: Removed negative "(lower income)" text - just say follow passion!
+				-- User feedback: "dont have it saying (lower income)"
+				text = "Follow your passion 💜",
+				effects = { Happiness = 15, Health = 3 },
 				setFlags = { passion_follower = true, chose_passion_over_money = true },
-				feedText = "Money isn't everything. Doing what you love! Less pay but more purpose.",
+				feedText = "💜 Money isn't everything. Doing what you LOVE! Living your dream!",
 				-- No eligibility - anyone can choose passion over money
 			},
 			-- 🔫 MAFIA PREMIUM OPTION

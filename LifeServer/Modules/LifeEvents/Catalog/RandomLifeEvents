@@ -633,8 +633,8 @@ RandomLifeEvents.events = {
 		category = "random",
 		weight = 8,
 		minAge = 10, maxAge = 100,
-		baseChance = 0.3,
-		cooldown = 6,
+		baseChance = 0.25,
+		cooldown = 8,
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
@@ -644,22 +644,66 @@ RandomLifeEvents.events = {
 				feedText = "Is this real life?",
 				onResolve = function(state)
 					local roll = math.random(1, 100)
-					local dreams = {
-						"Got recognized for something you worked hard on!",
-						"That person you've admired noticed you!",
-						"An opportunity you gave up on came back!",
-						"Something you lost long ago was returned!",
-						"A wish you made as a kid came true!",
-						"The perfect moment you imagined actually happened!",
-					}
-					local dream = dreams[math.random(1, #dreams)]
+					local flags = state.Flags or {}
 					
-					if roll <= 70 then
-						state:ModifyStat("Happiness", 20)
-						state:AddFeed("✨ " .. dream .. " Life is beautiful!")
+					-- CRITICAL FIX: Give contextual rewards including MONEY!
+					-- User complaint: "dream came true but im still broke"
+					local dreams = {}
+					local bonus = 0
+					
+					-- Career-specific dreams
+					if state.CurrentJob then
+						local job = state.CurrentJob
+						if job.category == "military" then
+							dreams = {
+								{ text = "Your unit won a prestigious award!", money = 5000 },
+								{ text = "You received a commendation for excellence!", money = 3000 },
+								{ text = "Your leadership was publicly recognized!", money = 4000 },
+							}
+						elseif job.category == "tech" or job.category == "hacker" then
+							dreams = {
+								{ text = "Your code went viral - tech community loves it!", money = 10000 },
+								{ text = "A major company noticed your work!", money = 15000 },
+								{ text = "You solved a problem no one else could!", money = 8000 },
+							}
+						elseif job.salary and job.salary > 100000 then
+							dreams = {
+								{ text = "Got a massive unexpected bonus!", money = math.floor(job.salary * 0.2) },
+								{ text = "Your hard work got noticed - big reward!", money = 10000 },
+								{ text = "Career milestone achieved - bonus incoming!", money = 15000 },
+							}
+						else
+							dreams = {
+								{ text = "Your work finally got the recognition it deserves!", money = 5000 },
+								{ text = "An unexpected raise came through!", money = 3000 },
+								{ text = "A dream opportunity opened up!", money = 2000 },
+							}
+						end
 					else
-						state:ModifyStat("Happiness", 10)
-						state:AddFeed("✨ " .. dream .. " Not exactly how you imagined, but still amazing!")
+						-- No job - generic dreams with smaller rewards
+						dreams = {
+							{ text = "Won a small contest you entered ages ago!", money = 1000 },
+							{ text = "Found money you forgot you had saved!", money = 500 },
+							{ text = "An old friend paid back a favor!", money = 800 },
+							{ text = "A lucky break came your way!", money = 1500 },
+						}
+					end
+					
+					-- Add some pure happiness dreams too
+					local allDreams = dreams
+					table.insert(allDreams, { text = "That person you've admired noticed you!", money = 0 })
+					table.insert(allDreams, { text = "A wish you made as a kid came true!", money = 500 })
+					
+					local dream = allDreams[math.random(1, #allDreams)]
+					bonus = dream.money or 0
+					
+					-- Apply rewards
+					state:ModifyStat("Happiness", roll <= 70 and 20 or 12)
+					if bonus > 0 then
+						state.Money = (state.Money or 0) + bonus
+						state:AddFeed("✨ " .. dream.text .. " Life is beautiful! (+$" .. bonus .. ")")
+					else
+						state:AddFeed("✨ " .. dream.text .. " Life is beautiful!")
 					end
 				end,
 			},
