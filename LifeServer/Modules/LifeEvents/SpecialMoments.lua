@@ -619,14 +619,12 @@ SpecialMoments.events = {
 		category = "growth",
 		tags = { "passion", "discovery", "purpose" },
 		
+		-- MAX 5 CHOICES as requested
 		choices = {
 			{ text = "💻 Coding and technology!", effects = { Happiness = 15, Smarts = 5 }, setFlags = { found_tech_passion = true, loves_coding = true }, feedText = "❤️‍🔥 CODE IS POETRY! You see solutions everywhere!" },
-			{ text = "🎨 Creating art and design!", effects = { Happiness = 15, Smarts = 3, Looks = 2 }, setFlags = { found_creative_passion = true, loves_art = true }, feedText = "❤️‍🔥 You see beauty in everything! Art is LIFE!" },
 			{ text = "🎮 Gaming and streaming!", effects = { Happiness = 14, Smarts = 2 }, setFlags = { found_gaming_passion = true, loves_gaming = true }, feedText = "❤️‍🔥 Gaming is more than fun - it's your IDENTITY!" },
-			{ text = "📝 Writing stories!", effects = { Happiness = 13, Smarts = 5 }, setFlags = { found_writing_passion = true, loves_writing = true }, feedText = "❤️‍🔥 Words flow from you! Stories are your superpower!" },
 			{ text = "💪 Fitness and health!", effects = { Happiness = 12, Health = 8 }, setFlags = { found_fitness_passion = true, fitness_focused = true }, feedText = "❤️‍🔥 Your body is a temple! Fitness is freedom!" },
 			{ text = "🎵 Music and performing!", effects = { Happiness = 15, Looks = 3 }, setFlags = { found_music_passion = true, loves_music = true }, feedText = "❤️‍🔥 Music is your LANGUAGE! The stage awaits!" },
-			{ text = "📸 Photography/videography!", effects = { Happiness = 13, Smarts = 3 }, setFlags = { found_visual_passion = true, loves_photography = true }, feedText = "❤️‍🔥 You capture moments others miss! Visual genius!" },
 			{ text = "🌍 Helping my community!", effects = { Happiness = 12, Smarts = 4 }, setFlags = { found_cause = true, community_focused = true }, feedText = "❤️‍🔥 Making a DIFFERENCE is your purpose!" },
 		},
 	},

@@ -1684,58 +1684,6 @@ TeenExpanded.events = {
 		},
 	},
 	{
-		id = "teen_art_showcase",
-		title = "Art Show Opportunity!",
-		emoji = "🎨",
-		text = "A local gallery wants to display student art. Your work is GOOD enough!",
-		textVariants = {
-			"Your art teacher nominated you for the student showcase!",
-			"People keep saying your art is amazing. Time to show the world?",
-			"An art competition has prizes. Your style is unique enough to win!",
-		},
-		question = "Do you submit your work?",
-		minAge = 13, maxAge = 17,
-		baseChance = 0.5,
-		cooldown = 5,
-		stage = STAGE,
-		category = "hobbies",
-		tags = { "art", "creative", "passion" },
-		requiresFlags = { passionate_artist = true },
-		blockedByFlags = { in_prison = true },
-		
-		choices = {
-			{
-				text = "🖼️ Submit my best piece!",
-				effects = {},
-				feedText = "Your art is on display...",
-				onResolve = function(state)
-					local roll = math.random()
-					state.Flags = state.Flags or {}
-					if roll < 0.4 then
-						state:ModifyStat("Happiness", 20)
-						state:ModifyStat("Looks", 2)
-						state.Money = (state.Money or 0) + 150
-						state.Flags.art_award_winner = true
-						state:AddFeed("🎨🏆 YOUR ART WON! People are buying prints! You're a real artist!")
-					elseif roll < 0.8 then
-						state:ModifyStat("Happiness", 10)
-						state.Flags.exhibited_artist = true
-						state:AddFeed("🎨 People loved your work! Great feedback! Keep creating!")
-					else
-						state:ModifyStat("Happiness", 3)
-						state:AddFeed("🎨 Didn't win but your art was SEEN. That's what matters!")
-					end
-				end,
-			},
-			{
-				text = "Too nervous to share",
-				effects = { Happiness = -3 },
-				setFlags = { stage_fright = true },
-				feedText = "Maybe next time. Your art stays private for now.",
-			},
-		},
-	},
-	{
 		id = "teen_music_performance",
 		title = "Your First Gig!",
 		emoji = "🎵",
@@ -1784,58 +1732,6 @@ TeenExpanded.events = {
 				text = "Not ready yet",
 				effects = { Happiness = -2 },
 				feedText = "Practice more. Next time will be YOUR time.",
-			},
-		},
-	},
-	{
-		id = "teen_writing_published",
-		title = "Your Story Got Noticed!",
-		emoji = "📝",
-		text = "You've been writing stories for years. Someone wants to PUBLISH your work!",
-		textVariants = {
-			"A teen writing contest is accepting submissions. You've got a killer story!",
-			"Your creative writing teacher wants to submit your work to a magazine!",
-			"You posted a story online and it's getting THOUSANDS of reads!",
-		},
-		question = "What do you do?",
-		minAge = 13, maxAge = 17,
-		baseChance = 0.5,
-		cooldown = 5,
-		stage = STAGE,
-		category = "hobbies",
-		tags = { "writing", "creative", "passion" },
-		requiresFlags = { passionate_writer = true },
-		blockedByFlags = { in_prison = true },
-		
-		choices = {
-			{
-				text = "📖 Submit for publication!",
-				effects = {},
-				feedText = "Your words are out there...",
-				onResolve = function(state)
-					local roll = math.random()
-					state.Flags = state.Flags or {}
-					if roll < 0.35 then
-						state:ModifyStat("Happiness", 25)
-						state:ModifyStat("Smarts", 5)
-						state.Money = (state.Money or 0) + 200
-						state.Flags.published_author = true
-						state:AddFeed("📝🏆 PUBLISHED! Your story is IN PRINT! You're an AUTHOR!")
-					elseif roll < 0.75 then
-						state:ModifyStat("Happiness", 12)
-						state:ModifyStat("Smarts", 3)
-						state.Flags.recognized_writer = true
-						state:AddFeed("📝 Honorable mention! Editors loved your voice! Keep writing!")
-					else
-						state:ModifyStat("Happiness", 3)
-						state:AddFeed("📝 Rejected this time. Every famous writer got rejected. Keep going!")
-					end
-				end,
-			},
-			{
-				text = "Keep it private for now",
-				effects = { Happiness = 1 },
-				feedText = "Your stories are just for you. Maybe someday...",
 			},
 		},
 	},

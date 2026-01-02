@@ -455,9 +455,9 @@ Childhood.events = {
 		tags = { "core", "identity", "talent" },
 		careerTags = { "sports", "creative", "science", "tech", "medical", "entertainment", "gaming", "writing" },
 
+		-- MAX 5 CHOICES as requested by user
 		choices = {
 			{ 
-				-- CRITICAL FIX: More specific and exciting choice text!
 				text = "⚽ I LOVE playing sports!", 
 				effects = { Health = 10, Happiness = 8 },
 				setFlags = { 
@@ -471,21 +471,6 @@ Childhood.events = {
 				feedText = "⭐ YES! Sports is YOUR thing! You feel alive on the field!",
 			},
 			{ 
-				-- CRITICAL FIX: Specific creative options!
-				text = "🎨 I love drawing and making art!", 
-				effects = { Happiness = 10, Looks = 5, Smarts = 3 }, 
-				setFlags = { 
-					passionate_artist = true,
-					discovered_passion = true,
-					creative_talent = true,
-					artistic = true,
-					likes_art = true,
-				}, 
-				hintCareer = "creative", 
-				feedText = "⭐ Art is YOUR superpower! You see the world differently!",
-			},
-			{ 
-				-- CRITICAL FIX: Coding specific!
 				text = "💻 I love coding and computers!", 
 				effects = { Smarts = 12, Happiness = 6 }, 
 				setFlags = { 
@@ -529,7 +514,7 @@ Childhood.events = {
 				feedText = "⭐ Gaming is your LIFE! Maybe you'll be a streamer or game dev!",
 			},
 			{ 
-				text = "🎵 I love music and singing!", 
+				text = "🎵 I love music and performing!", 
 				effects = { Happiness = 12, Looks = 4 }, 
 				setFlags = { 
 					passionate_performer = true,
@@ -541,34 +526,6 @@ Childhood.events = {
 				}, 
 				hintCareer = "entertainment", 
 				feedText = "⭐ Music moves your SOUL! The stage is calling your name!",
-			},
-			{ 
-				text = "📚 I love reading and writing stories!", 
-				effects = { Smarts = 10, Happiness = 6 }, 
-				setFlags = { 
-					passionate_writer = true,
-					discovered_passion = true,
-					creative_talent = true,
-					storyteller = true,
-					likes_writing = true,
-					bookworm = true,
-				}, 
-				hintCareer = "creative", 
-				feedText = "⭐ Words are your magic! You're a natural storyteller!",
-			},
-			{ 
-				text = "🏥 I want to help sick people!", 
-				effects = { Happiness = 10, Health = 3 }, 
-				setFlags = { 
-					passionate_helper = true,
-					discovered_passion = true,
-					empathetic = true,
-					caring_nature = true,
-					likes_helping = true,
-					future_doctor = true,
-				}, 
-				hintCareer = "medical", 
-				feedText = "⭐ You have a healer's heart! Helping others is your calling!",
 			},
 		},
 	},
