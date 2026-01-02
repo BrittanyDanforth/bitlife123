@@ -1873,10 +1873,17 @@ EarlyLifeEvents.events = {
 		minAge = 11, maxAge = 14,
 		oneTime = true,
 		isMilestone = true,
-		-- CRITICAL FIX #800: Block if already had growth spurt - user complaint about spam
+		-- CRITICAL FIX: User complaint "growing taller ALWAYS shows every life"
+		-- Reduced baseChance significantly - not everyone gets a notable growth spurt event
+		baseChance = 0.25, -- Only 25% of players get this event
 		blockedByFlags = { had_growth_spurt = true, growth_spurt_complete = true },
-		cooldown = 99, -- Extra protection against respawning
-		maxOccurrences = 1, -- Can only happen once per life
+		cooldown = 99,
+		maxOccurrences = 1,
+		-- CRITICAL FIX: Add eligibility to make it even more selective
+		eligibility = function(state)
+			-- Only trigger if random check passes (adds more variety)
+			return math.random() < 0.5
+		end,
 		
 		choices = {
 			{

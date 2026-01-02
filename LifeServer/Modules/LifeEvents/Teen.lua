@@ -2518,13 +2518,28 @@ Teen.events = {
 				feedText = "Scouts are already keeping an eye on you!",
 				fameEffect = { fame = 2 },
 			},
-			{
-				text = "Social media - you're going viral",
-				effects = { Happiness = 10, Smarts = 2 },
-				setFlags = { talent_social = true, social_media_star = true, viral_content = true },
-				feedText = "Your content is blowing up online!",
-				fameEffect = { fame = 3, followers = 5000 },
-			},
+		{
+			text = "Content creation - you love making videos",
+			effects = { Happiness = 8, Smarts = 3 },
+			setFlags = { talent_social = true, content_creator = true },
+			feedText = "You discovered a love for creating content!",
+			-- CRITICAL FIX: Player can't DECIDE to go viral - that's random!
+			-- They can only discover they like content creation. Going viral happens later randomly.
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags.talent_social = true
+				state.Flags.content_creator = true
+				-- Small chance they actually go viral (not guaranteed!)
+				local roll = math.random(1, 100)
+				if roll <= 15 then
+					state.Fame = math.min(100, (state.Fame or 0) + 5)
+					state.Flags.viral_content = true
+					state:AddFeed("⭐ Your content actually went viral! This could be big!")
+				else
+					state:AddFeed("⭐ You love making content! Who knows where this could lead...")
+				end
+			end,
+		},
 		},
 	},
 	{
@@ -4104,30 +4119,109 @@ Teen.events = {
 			{
 				text = "Cooking - made something actually delicious!",
 				effects = { Happiness = 8, Smarts = 3 },
-				setFlags = { cooking_talent = true, found_hidden_talent = true },
+				-- CRITICAL FIX: Set more comprehensive flags for career wiring!
+				setFlags = { 
+					cooking_talent = true, 
+					found_hidden_talent = true,
+					chef_potential = true,
+					culinary_interest = true,
+					food_service_interest = true,
+				},
 				hintCareer = "chef",
 				feedText = "✨ Your family was shocked. 'YOU made this?!' Future chef potential!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.cooking_talent = true
+					state.Flags.chef_potential = true
+					state:AddFeed("✨ Hidden talent: COOKING! This could be a career path!")
+				end,
 			},
 			{
 				text = "Athletics - outperformed everyone!",
 				effects = { Happiness = 8, Health = 5 },
-				setFlags = { athletic_talent = true, found_hidden_talent = true },
+				-- CRITICAL FIX: Wire to sports career path
+				setFlags = { 
+					athletic_talent = true, 
+					found_hidden_talent = true,
+					natural_athlete = true,
+					sports_interest = true,
+					varsity_potential = true,
+					passionate_athlete = true, -- Same flag as discovered_passion!
+				},
 				hintCareer = "sports",
 				feedText = "✨ Turns out you're naturally athletic! Coach is already interested!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.athletic_talent = true
+					state.Flags.natural_athlete = true
+					state.Flags.passionate_athlete = true
+					state:AddFeed("✨ Hidden talent: ATHLETICS! Sports careers may open up!")
+				end,
 			},
 			{
 				text = "Public speaking - held everyone's attention!",
 				effects = { Happiness = 7, Smarts = 4 },
-				setFlags = { public_speaking_talent = true, found_hidden_talent = true },
+				-- CRITICAL FIX: Wire to law/politics/business careers
+				setFlags = { 
+					public_speaking_talent = true, 
+					found_hidden_talent = true,
+					natural_leader = true,
+					law_interest = true,
+					politics_interest = true,
+					charismatic = true,
+				},
 				hintCareer = "law",
 				feedText = "✨ You got up to present and... everyone was captivated. Natural orator!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.public_speaking_talent = true
+					state.Flags.natural_leader = true
+					state:AddFeed("✨ Hidden talent: PUBLIC SPEAKING! Law, politics, or leadership await!")
+				end,
 			},
 			{
 				text = "Art - created something beautiful!",
 				effects = { Happiness = 8, Looks = 2 },
-				setFlags = { art_talent = true, found_hidden_talent = true },
+				-- CRITICAL FIX: Wire to creative careers
+				setFlags = { 
+					art_talent = true, 
+					found_hidden_talent = true,
+					creative_talent = true,
+					artistic = true,
+					passionate_artist = true, -- Same flag as discovered_passion!
+					design_interest = true,
+				},
 				hintCareer = "creative",
 				feedText = "✨ You drew/painted something and people actually wanted to BUY it!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.art_talent = true
+					state.Flags.creative_talent = true
+					state.Flags.passionate_artist = true
+					state:AddFeed("✨ Hidden talent: ART! Creative careers may open up!")
+				end,
+			},
+			{
+				text = "Tech/Coding - figured out complex stuff fast!",
+				effects = { Happiness = 7, Smarts = 5 },
+				-- CRITICAL FIX: Wire to tech careers
+				setFlags = { 
+					tech_talent = true, 
+					found_hidden_talent = true,
+					coding_prodigy = true,
+					tech_savvy = true,
+					passionate_scientist = true, -- Same flag as discovered_passion!
+					hacker_interest = true,
+				},
+				hintCareer = "tech",
+				feedText = "✨ You built something amazing with code! Silicon Valley calling?",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.tech_talent = true
+					state.Flags.coding_prodigy = true
+					state.Flags.passionate_scientist = true
+					state:AddFeed("✨ Hidden talent: TECH! Programming and engineering await!")
+				end,
 			},
 		},
 	},

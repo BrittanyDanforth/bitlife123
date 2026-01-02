@@ -540,8 +540,8 @@ Childhood.events = {
 		text = "It's science fair season! What kind of project will you do?",
 		question = "Choose your project:",
 		minAge = 7, maxAge = 11,
-		baseChance = 0.45, -- CRITICAL FIX: Reduced from 0.7
-		cooldown = 5, -- CRITICAL FIX: Increased from 3
+		baseChance = 0.45,
+		cooldown = 5,
 
 		-- META
 		stage = STAGE,
@@ -550,11 +550,63 @@ Childhood.events = {
 		tags = { "science", "project", "school" },
 		careerTags = { "science", "tech" },
 		blockedByFlags = { in_prison = true },
+		
+		-- CRITICAL FIX: Wire passion flags! Passionate scientists get bonus outcomes!
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- If player has science passion, ALWAYS eligible and will get bonus
+			if flags.passionate_scientist or flags.science_interest or flags.math_science_talent then
+				return true
+			end
+			return true -- Everyone can do science fair
+		end,
 
 		choices = {
-			{ text = "Volcano eruption", effects = { Smarts = 3, Happiness = 5 }, setFlags = { likes_chemistry = true }, hintCareer = "science", feedText = "Your baking soda volcano was the hit of the fair!" },
-			{ text = "Growing plants experiment", effects = { Smarts = 5 }, setFlags = { patient_researcher = true }, hintCareer = "science", feedText = "You carefully documented how different conditions affect plant growth." },
-			{ text = "Build a simple robot", effects = { Smarts = 7 }, setFlags = { tech_enthusiast = true }, hintCareer = "tech", feedText = "Your robot impressed the judges. Future engineer!" },
+			{ 
+				text = "Volcano eruption", 
+				effects = { Smarts = 3, Happiness = 5 }, 
+				setFlags = { likes_chemistry = true }, 
+				hintCareer = "science", 
+				feedText = "Your baking soda volcano was the hit of the fair!",
+				-- CRITICAL FIX: Bonus for passionate scientists!
+				onResolve = function(state)
+					local flags = state.Flags or {}
+					if flags.passionate_scientist or flags.science_interest then
+						state:ModifyStat("Smarts", 5) -- Extra bonus!
+						state:AddFeed("🔬 Your passion for science really showed! You won 2nd place!")
+					end
+				end,
+			},
+			{ 
+				text = "Growing plants experiment", 
+				effects = { Smarts = 5 }, 
+				setFlags = { patient_researcher = true }, 
+				hintCareer = "science", 
+				feedText = "You carefully documented how different conditions affect plant growth.",
+				onResolve = function(state)
+					local flags = state.Flags or {}
+					if flags.passionate_scientist or flags.science_interest then
+						state:ModifyStat("Smarts", 5)
+						state.Flags.science_fair_winner = true
+						state:AddFeed("🔬 Your scientific method was PERFECT! You won 1st place!")
+					end
+				end,
+			},
+			{ 
+				text = "Build a simple robot", 
+				effects = { Smarts = 7 }, 
+				setFlags = { tech_enthusiast = true }, 
+				hintCareer = "tech", 
+				feedText = "Your robot impressed the judges. Future engineer!",
+				onResolve = function(state)
+					local flags = state.Flags or {}
+					if flags.passionate_scientist or flags.tech_talent or flags.likes_tech then
+						state:ModifyStat("Smarts", 5)
+						state.Flags.robotics_winner = true
+						state:AddFeed("🤖 Your robot WORKED PERFECTLY! You won Best Technical Project!")
+					end
+				end,
+			},
 			{ text = "Skip it", effects = { Smarts = -2 }, feedText = "You didn't participate in the science fair this year." },
 		},
 	},
@@ -3070,7 +3122,25 @@ Childhood.events = {
 		cooldown = 10,
 		oneTime = true,
 		blockedByFlags = { school_athlete = true, quit_sports = true },
-		requiresStats = { Health = 55 },
+		-- CRITICAL FIX: Wire passion flags! If player discovered athletic passion, this is MORE likely!
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- If player has passionate_athlete flag, ALWAYS eligible (passion pays off!)
+			if flags.passionate_athlete or flags.athletic_talent or flags.sports_interest or flags.likes_sports then
+				return true -- Passion makes you eligible regardless of Health!
+			end
+			-- Otherwise need good health
+			local health = (state.Stats and state.Stats.Health) or 50
+			return health >= 55
+		end,
+		-- CRITICAL FIX: Higher weight for passionate athletes
+		weight = function(state)
+			local flags = state.Flags or {}
+			if flags.passionate_athlete or flags.likes_sports then
+				return 25 -- Much more likely to trigger!
+			end
+			return 12 -- Base weight
+		end,
 		
 		choices = {
 			{
