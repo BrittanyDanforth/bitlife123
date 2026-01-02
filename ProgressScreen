@@ -1166,9 +1166,9 @@ function ProgressScreen:refreshLeaderboards()
 	
 	-- Fetch both leaderboards asynchronously
 	task.spawn(function()
-		-- Fetch richest leaderboard
+		-- Fetch richest leaderboard (TOP 50!)
 		local richestSuccess, richestData = pcall(function()
-			return getLeaderboard:InvokeServer("richest")
+			return getLeaderboard:InvokeServer("richest", 50)  -- CRITICAL FIX: Request TOP 50
 		end)
 		
 		-- Clear loading message
@@ -1204,9 +1204,9 @@ function ProgressScreen:refreshLeaderboards()
 	end)
 	
 	task.spawn(function()
-		-- Fetch oldest leaderboard
+		-- Fetch oldest leaderboard (TOP 50!)
 		local oldestSuccess, oldestData = pcall(function()
-			return getLeaderboard:InvokeServer("oldest")
+			return getLeaderboard:InvokeServer("oldest", 50)  -- CRITICAL FIX: Request TOP 50
 		end)
 		
 		-- Clear loading message

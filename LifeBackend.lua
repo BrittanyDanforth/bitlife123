@@ -90,9 +90,10 @@ local function updateGlobalLeaderboards(player, lifeName, age, netWorth)
 end
 
 -- Fetch global leaderboard data for client display
+-- CRITICAL FIX: Changed default from 10 to 50 for TOP 50 leaderboards!
 local function fetchGlobalLeaderboard(leaderboardType, limit)
 	local richest, oldest = initLeaderboards()
-	limit = limit or 10
+	limit = limit or 50  -- CRITICAL FIX: TOP 50 by default!
 	
 	local store = leaderboardType == "richest" and richest or oldest
 	if not store then return {} end
@@ -9715,9 +9716,12 @@ function LifeBackend:setupRemotes()
 	-- GLOBAL LEADERBOARD HANDLER: Fetch global leaderboard data for client
 	-- User complaint: "leaderboard... ITS FOR EVERYBODY WHO PLAYS GAME"
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	self.remotes.GetGlobalLeaderboard.OnServerInvoke = function(player, leaderboardType)
+	self.remotes.GetGlobalLeaderboard.OnServerInvoke = function(player, leaderboardType, limit)
 		-- leaderboardType is "richest" or "oldest"
-		local results = fetchGlobalLeaderboard(leaderboardType, 10)
+		-- CRITICAL FIX: Accept limit parameter from client for TOP 50 leaderboards!
+		-- Clamp limit to prevent abuse (1-100 entries max)
+		local safeLimit = math.clamp(limit or 50, 1, 100)
+		local results = fetchGlobalLeaderboard(leaderboardType, safeLimit)
 		return results
 	end
 end
