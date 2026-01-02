@@ -277,7 +277,7 @@ function ProgressScreen:createTabBar()
 	local tabs = {
 		{ id = "awards", name = "Awards", icon = "🏆", color = C.Amber },
 		{ id = "pastlives", name = "Lives", icon = "📜", color = C.Blue },
-		{ id = "leaderboards", name = "Ranks", icon = "🏅", color = C.Green },
+		{ id = "leaderboards", name = "Boards", icon = "🏅", color = C.Green },
 		{ id = "giveup", name = "Give Up", icon = "☠️", color = C.Red },
 	}
 	
@@ -722,7 +722,7 @@ function ProgressScreen:buildLeaderboardsTab()
 	yourTitle.Font = F.Bold
 	yourTitle.TextSize = 13
 	yourTitle.TextColor3 = C.GreenDark
-	yourTitle.Text = "🏅 Your Current Stats"
+	yourTitle.Text = "📊 Leaderboard Stats"
 	yourTitle.ZIndex = 83
 	yourTitle.Parent = yourCard
 	
@@ -763,9 +763,9 @@ function ProgressScreen:buildLeaderboardsTab()
 	end
 	
 	self.yourStats = {
-		money = createYourStat("💰", "$0", 1),
-		age = createYourStat("📅", "Age 0", 2),
-		fame = createYourStat("⭐", "0", 3),
+		money = createYourStat("💰", "Money\n$0", 1),
+		age = createYourStat("📅", "Age\n0", 2),
+		fame = createYourStat("⭐", "Fame\n0", 3),
 	}
 	
 	-- Info text
@@ -1003,9 +1003,9 @@ function ProgressScreen:refreshLeaderboards()
 	local playerName = Players.LocalPlayer and Players.LocalPlayer.Name or "You"
 	
 	if self.yourStats then
-		self.yourStats.money.Text = "💰 " .. formatMoney(state and state.Money or 0)
-		self.yourStats.age.Text = "📅 " .. (state and state.Age or 0)
-		self.yourStats.fame.Text = "⭐ " .. (state and state.Fame or 0)
+		self.yourStats.money.Text = "💰 Money\n" .. formatMoney(state and state.Money or 0)
+		self.yourStats.age.Text = "📅 Age\n" .. (state and state.Age or 0)
+		self.yourStats.fame.Text = "⭐ Fame\n" .. (state and state.Fame or 0)
 	end
 end
 
