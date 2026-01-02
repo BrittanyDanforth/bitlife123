@@ -683,94 +683,215 @@ FinancialEvents.events = {
 	
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- DEBT & FINANCIAL STRUGGLES
+	-- CRITICAL FIX: Completely rewritten! Game DETECTS your debt, doesn't let you choose it!
+	-- Like BitLife: You get a letter/call about your ACTUAL debt and choose how to respond
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "fin_debt_situation",
-		title = "Debt Problems",
+		title = "💳 Debt Notice",
 		emoji = "💳",
-		text = "You're dealing with debt issues!",
-		question = "What's the debt situation?",
+		text = "You've received a concerning financial notice...",
+		question = "What do you do about it?",
 		minAge = 18, maxAge = 70,
-		baseChance = 0.45,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.40,
+		cooldown = 5,
 		stage = STAGE,
 		ageBand = "any",
 		category = "finance",
 		tags = { "debt", "credit", "financial_trouble" },
 		
-		choices = {
-		{
-			text = "Credit card debt piling up",
-			effects = {},
-			feedText = "Looking at the statements...",
-			-- CRITICAL FIX #26: Properly track credit card debt as a growing balance
-			onResolve = function(state)
-				local roll = math.random()
-				state.Flags = state.Flags or {}
-				
-				-- Initialize or increase credit card debt
-				local currentDebt = state.Flags.credit_card_debt or 0
-				
-				if roll < 0.30 then
-					-- Debt growing out of control
-					local newDebt = 2000 + math.floor(math.random() * 3000) -- $2000-$5000 new debt
-					state.Flags.credit_card_debt = currentDebt + newDebt
-					state.Flags.in_debt = true
-					state.Flags.bad_credit = true
-					state:ModifyStat("Happiness", -8)
-					state:AddFeed(string.format("💳 Credit cards maxed out! Total debt: $%d. Interest is crushing.", state.Flags.credit_card_debt))
-				elseif roll < 0.60 then
-					-- Some debt but manageable
-					local newDebt = 500 + math.floor(math.random() * 1500) -- $500-$2000 new debt
-					state.Flags.credit_card_debt = currentDebt + newDebt
-					state.Flags.in_debt = true
-					state:ModifyStat("Happiness", -4)
-					state:AddFeed(string.format("💳 Racked up $%d in credit card debt. Need to pay this down.", newDebt))
+		-- CRITICAL FIX: Only trigger if player has SOME debt or could plausibly have debt
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Trigger if: has student loans, has credit card debt, has medical debt, went to college, or has low money
+			if flags.has_student_loans or flags.student_loans or flags.credit_card_debt or 
+			   flags.medical_debt or flags.in_debt or flags.went_to_college or flags.attended_college or
+			   (state.Money or 0) < 500 then
+				return true
+			end
+			-- Also trigger randomly for adults who might have accumulated debt
+			if (state.Age or 18) >= 22 and math.random() < 0.4 then
+				return true
+			end
+			return false
+		end,
+		
+		-- CRITICAL: onInit determines WHAT debt based on player's actual situation
+		onInit = function(event, state)
+			local flags = state.Flags or {}
+			local debtType = "credit_card" -- Default
+			local debtAmount = 0
+			local debtText = ""
+			
+			-- Detect actual debt type from player state
+			if flags.has_student_loans or flags.student_loans or flags.went_to_college or flags.attended_college then
+				debtType = "student_loans"
+				debtAmount = flags.student_loan_amount or math.random(15000, 80000)
+				flags.student_loan_amount = debtAmount -- Store it
+				debtText = string.format("📬 You received a student loan statement. Your balance is $%d and interest is accruing. Monthly payment due!", debtAmount)
+			elseif flags.medical_debt or flags.had_surgery or flags.hospitalized then
+				debtType = "medical"
+				debtAmount = flags.medical_debt_amount or math.random(2000, 25000)
+				flags.medical_debt_amount = debtAmount
+				debtText = string.format("🏥 Medical bill arrived! You owe $%d from your hospital visit. Payment demanded.", debtAmount)
+			elseif flags.credit_card_debt and type(flags.credit_card_debt) == "number" and flags.credit_card_debt > 0 then
+				debtType = "credit_card"
+				debtAmount = flags.credit_card_debt
+				debtText = string.format("💳 Credit card statement: Balance $%d with %d%% APR. Minimum payment required!", debtAmount, math.random(18, 29))
+			else
+				-- Random new debt accumulation (realistic - people get into debt)
+				local roll = math.random(1, 100)
+				if roll <= 40 then
+					debtType = "credit_card"
+					debtAmount = math.random(1000, 5000)
+					flags.credit_card_debt = (flags.credit_card_debt or 0) + debtAmount
+					debtText = string.format("💳 Your credit card spending got out of control! New balance: $%d", flags.credit_card_debt)
+				elseif roll <= 60 then
+					debtType = "car_loan"
+					debtAmount = math.random(5000, 20000)
+					debtText = string.format("🚗 Car payment reminder: You owe $%d on your auto loan. Don't miss the payment!", debtAmount)
 				else
-					-- Managed to pay some down
-					local payment = math.min(currentDebt, 200 + math.floor(math.random() * 300))
-					-- CRITICAL FIX: Also limit payment to available money
-					payment = math.min(payment, state.Money or 0)
-					if payment > 0 then
-						state.Flags.credit_card_debt = math.max(0, currentDebt - payment)
-						-- CRITICAL FIX: Prevent negative money
-						state.Money = math.max(0, (state.Money or 0) - payment)
-						state:ModifyStat("Happiness", 3)
-						state:AddFeed(string.format("💳 Paid $%d toward credit card. Progress!", payment))
-						if state.Flags.credit_card_debt <= 0 then
-							state.Flags.credit_card_debt = nil
-							state.Flags.in_debt = nil
-							state:AddFeed("💳 Credit card paid off! Debt free!")
-						end
-					else
-						state:ModifyStat("Happiness", -2)
-						state:AddFeed("💳 No debt to pay down but tight budget.")
-					end
+					debtType = "misc"
+					debtAmount = math.random(500, 3000)
+					debtText = "📬 Unexpected bills have piled up. You're behind on payments and creditors are getting impatient."
 				end
-			end,
-		},
-		{ 
-			-- CRITICAL FIX: Student loans are a SITUATION not a payment choice - no cost to acknowledge!
-			text = "It's my student loans weighing on me", 
-			effects = { Happiness = -4 }, 
-			setFlags = { has_student_loans = true, stressed_about_debt = true }, 
-			feedText = "💳 Those student loans keep growing with interest. Need a plan." 
-		},
-		{ 
-			-- CRITICAL FIX: Medical debt is a SITUATION not a payment - no cost to acknowledge!
-			text = "Medical bills from when I got sick", 
-			effects = { Happiness = -5 }, 
-			setFlags = { medical_debt = true, stressed_about_debt = true }, 
-			feedText = "💳 That hospital visit left a big bill. American healthcare." 
-		},
-		{ 
-			text = "Make a payment plan", 
-			effects = { Happiness = 3, Smarts = 2 }, 
-			setFlags = { has_payment_plan = true },
-			feedText = "💳 Set up manageable monthly payments. Progress!" 
-		},
-		{ text = "Ignore and hope it goes away", effects = { Happiness = -2 }, setFlags = { ignoring_debt = true }, feedText = "💳 Head in the sand. This won't end well." },
-			-- ⚡ GOD MODE PREMIUM OPTION
+			end
+			
+			-- Store debt info in event
+			event._debtType = debtType
+			event._debtAmount = debtAmount
+			event.text = debtText
+			event.title = debtType == "student_loans" and "🎓 Student Loan Statement" or
+			              debtType == "medical" and "🏥 Medical Bill" or
+			              debtType == "credit_card" and "💳 Credit Card Bill" or
+			              debtType == "car_loan" and "🚗 Auto Loan Notice" or "💳 Debt Notice"
+			
+			return event
+		end,
+		
+		choices = {
+			{
+				text = "💰 Make a payment",
+				effects = {},
+				feedText = "Paying what you can...",
+				onResolve = function(state, _, event)
+					local debtType = event._debtType or "credit_card"
+					local debtAmount = event._debtAmount or 1000
+					state.Flags = state.Flags or {}
+					
+					-- Calculate payment (10-25% of debt or what player can afford)
+					local idealPayment = math.floor(debtAmount * (math.random(10, 25) / 100))
+					local actualPayment = math.min(idealPayment, state.Money or 0)
+					
+					if actualPayment >= 100 then
+						state.Money = (state.Money or 0) - actualPayment
+						
+						-- Reduce stored debt
+						if debtType == "student_loans" then
+							state.Flags.student_loan_amount = math.max(0, (state.Flags.student_loan_amount or debtAmount) - actualPayment)
+							if state.Flags.student_loan_amount <= 0 then
+								state.Flags.has_student_loans = nil
+								state.Flags.student_loans = nil
+								if state.AddFeed then state:AddFeed(string.format("🎓 Paid $%d! STUDENT LOANS PAID OFF! You're free!", actualPayment)) end
+							else
+								if state.AddFeed then state:AddFeed(string.format("🎓 Paid $%d toward loans. Remaining: $%d. Progress!", actualPayment, state.Flags.student_loan_amount)) end
+							end
+						elseif debtType == "medical" then
+							state.Flags.medical_debt_amount = math.max(0, (state.Flags.medical_debt_amount or debtAmount) - actualPayment)
+							if state.Flags.medical_debt_amount <= 0 then
+								state.Flags.medical_debt = nil
+								if state.AddFeed then state:AddFeed(string.format("🏥 Paid $%d! Medical debt cleared!", actualPayment)) end
+							else
+								if state.AddFeed then state:AddFeed(string.format("🏥 Paid $%d. Still owe $%d. Getting there.", actualPayment, state.Flags.medical_debt_amount)) end
+							end
+						elseif debtType == "credit_card" then
+							state.Flags.credit_card_debt = math.max(0, (state.Flags.credit_card_debt or debtAmount) - actualPayment)
+							if state.Flags.credit_card_debt <= 0 then
+								state.Flags.credit_card_debt = nil
+								state.Flags.in_debt = nil
+								if state.AddFeed then state:AddFeed(string.format("💳 Paid $%d! Credit card PAID OFF!", actualPayment)) end
+							else
+								if state.AddFeed then state:AddFeed(string.format("💳 Paid $%d. Balance: $%d. Interest still hurts.", actualPayment, state.Flags.credit_card_debt)) end
+							end
+						else
+							if state.AddFeed then state:AddFeed(string.format("💰 Paid $%d toward the debt. Chipping away at it.", actualPayment)) end
+						end
+						if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then state:AddFeed("💰 Can't afford to make a meaningful payment right now. The debt grows...") end
+						-- Debt grows from interest
+						if debtType == "credit_card" then
+							state.Flags.credit_card_debt = math.floor((state.Flags.credit_card_debt or debtAmount) * 1.02) -- 2% interest
+						end
+					end
+				end,
+			},
+			{
+				text = "📋 Set up payment plan",
+				effects = { Smarts = 2 },
+				feedText = "Negotiating terms...",
+				onResolve = function(state, _, event)
+					local debtType = event._debtType or "credit_card"
+					local debtAmount = event._debtAmount or 1000
+					state.Flags = state.Flags or {}
+					state.Flags.has_payment_plan = true
+					state.Flags.responsible_with_debt = true
+					
+					local monthlyPayment = math.floor(debtAmount / math.random(12, 36))
+					if state.ModifyStat then state:ModifyStat("Happiness", 3) end
+					if state.AddFeed then state:AddFeed(string.format("📋 Set up a payment plan: $%d/month. Manageable. Responsible choice!", monthlyPayment)) end
+				end,
+			},
+			{
+				text = "😰 Ignore it",
+				effects = { Happiness = -3 },
+				feedText = "Avoiding the problem...",
+				onResolve = function(state, _, event)
+					local debtType = event._debtType or "credit_card"
+					state.Flags = state.Flags or {}
+					state.Flags.ignoring_debt = true
+					state.Flags.in_debt = true
+					
+					-- Debt grows when ignored
+					if debtType == "student_loans" then
+						state.Flags.student_loan_amount = math.floor((state.Flags.student_loan_amount or 20000) * 1.05)
+					elseif debtType == "credit_card" then
+						state.Flags.credit_card_debt = math.floor((state.Flags.credit_card_debt or 2000) * 1.05)
+						state.Flags.bad_credit = true
+					end
+					
+					if state.AddFeed then state:AddFeed("😰 Threw the notice in a drawer. The debt keeps growing with interest. This won't end well.") end
+				end,
+			},
+			{
+				text = "📞 Negotiate with creditors",
+				effects = {},
+				feedText = "Calling to negotiate...",
+				onResolve = function(state, _, event)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					
+					if roll <= 35 then
+						-- Great negotiation
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						state.Flags.negotiated_debt = true
+						if state.AddFeed then state:AddFeed("📞 Amazing! Negotiated a 30% reduction! They'd rather get something than nothing!") end
+						-- Reduce all debts by 30%
+						if state.Flags.credit_card_debt then state.Flags.credit_card_debt = math.floor(state.Flags.credit_card_debt * 0.7) end
+						if state.Flags.medical_debt_amount then state.Flags.medical_debt_amount = math.floor(state.Flags.medical_debt_amount * 0.7) end
+					elseif roll <= 70 then
+						-- Partial success
+						if state.ModifyStat then state:ModifyStat("Happiness", 3) end
+						if state.AddFeed then state:AddFeed("📞 Got them to lower the interest rate. Small win.") end
+					else
+						-- Failed
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then state:AddFeed("📞 They wouldn't budge. Payment still due. Worth a shot.") end
+					end
+				end,
+			},
+			-- ⚡ GOD MODE PREMIUM OPTION - Keep this!
 			{
 				text = "⚡ [God Mode] Clear all debt",
 				effects = { Happiness = 30 },
@@ -780,9 +901,12 @@ FinancialEvents.events = {
 				onResolve = function(state)
 					state.Flags = state.Flags or {}
 					state.Flags.credit_card_debt = nil
+					state.Flags.student_loan_amount = nil
+					state.Flags.medical_debt_amount = nil
 					state.Flags.in_debt = nil
 					state.Flags.bad_credit = nil
 					state.Flags.has_student_loans = nil
+					state.Flags.student_loans = nil
 					state.Flags.medical_debt = nil
 					state.Flags.ignoring_debt = nil
 				end,
