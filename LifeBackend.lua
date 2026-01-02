@@ -58,34 +58,43 @@ end
 -- Update global leaderboard when a player's life ends
 local function updateGlobalLeaderboards(player, lifeName, age, netWorth)
 	local richest, oldest = initLeaderboards()
-	if not richest or not oldest then return end
+	if not richest or not oldest then 
+		warn("[LifeBackend] ❌ Leaderboard stores not initialized!")
+		return 
+	end
 	
 	-- Create unique key: UserId_timestamp to allow multiple entries per player
 	local timestamp = os.time()
 	local entryKey = tostring(player.UserId) .. "_" .. tostring(timestamp)
 	
-	-- Store the player name for retrieval (OrderedDataStore only stores numbers)
-	-- We'll encode name in a separate standard DataStore if needed, or just use UserId
-	-- For simplicity, we'll use just the score value
+	print("[LifeBackend] 📊 Updating leaderboards for", player.Name, "- Age:", age, "Money:", netWorth)
 	
-	-- Update richest leaderboard (only if significant wealth)
-	if netWorth >= 1000 then
-		local success1 = pcall(function()
+	-- Update richest leaderboard (lowered threshold to $100 so more people appear)
+	if netWorth >= 100 then
+		local success1, err1 = pcall(function()
 			richest:SetAsync(entryKey, math.floor(netWorth))
 		end)
 		if success1 then
-			print("[LifeBackend] Updated richest leaderboard:", lifeName, netWorth)
+			print("[LifeBackend] ✅ Updated richest leaderboard:", player.Name, "$" .. netWorth)
+		else
+			warn("[LifeBackend] ❌ Failed to update richest leaderboard:", err1)
 		end
+	else
+		print("[LifeBackend] ⏭️ Skipped richest (net worth < $100):", netWorth)
 	end
 	
-	-- Update oldest leaderboard (only if lived to reasonable age)
-	if age >= 10 then
-		local success2 = pcall(function()
+	-- Update oldest leaderboard (lowered threshold to age 5 so more people appear)
+	if age >= 5 then
+		local success2, err2 = pcall(function()
 			oldest:SetAsync(entryKey, age)
 		end)
 		if success2 then
-			print("[LifeBackend] Updated oldest leaderboard:", lifeName, age)
+			print("[LifeBackend] ✅ Updated oldest leaderboard:", player.Name, "age", age)
+		else
+			warn("[LifeBackend] ❌ Failed to update oldest leaderboard:", err2)
 		end
+	else
+		print("[LifeBackend] ⏭️ Skipped oldest (age < 5):", age)
 	end
 end
 
@@ -96,7 +105,10 @@ local function fetchGlobalLeaderboard(leaderboardType, limit)
 	limit = limit or 50  -- CRITICAL FIX: TOP 50 by default!
 	
 	local store = leaderboardType == "richest" and richest or oldest
-	if not store then return {} end
+	if not store then 
+		warn("[LifeBackend] ❌ Leaderboard store not found for type:", leaderboardType)
+		return {} 
+	end
 	
 	local results = {}
 	local success, pages = pcall(function()
@@ -104,32 +116,43 @@ local function fetchGlobalLeaderboard(leaderboardType, limit)
 	end)
 	
 	if success and pages then
-		local data = pages:GetCurrentPage()
-		for rank, entry in ipairs(data) do
-			-- entry.key contains UserId_timestamp, entry.value contains the score
-			local keyParts = string.split(entry.key, "_")
-			local userId = tonumber(keyParts[1])
-			local playerName = "Player"
-			
-			-- Try to get player name
-			if userId then
-				local nameSuccess, name = pcall(function()
-					return Players:GetNameFromUserIdAsync(userId)
-				end)
-				if nameSuccess and name then
-					playerName = name
+		local dataSuccess, data = pcall(function()
+			return pages:GetCurrentPage()
+		end)
+		
+		if dataSuccess and data then
+			print("[LifeBackend] 📊 Fetched", #data, "entries for", leaderboardType, "leaderboard")
+			for rank, entry in ipairs(data) do
+				-- entry.key contains UserId_timestamp, entry.value contains the score
+				local keyParts = string.split(entry.key, "_")
+				local userId = tonumber(keyParts[1])
+				local playerName = "Player"
+				
+				-- Try to get player name
+				if userId then
+					local nameSuccess, name = pcall(function()
+						return Players:GetNameFromUserIdAsync(userId)
+					end)
+					if nameSuccess and name then
+						playerName = name
+					end
 				end
+				
+				table.insert(results, {
+					rank = rank,
+					playerName = playerName,
+					userId = userId,
+					value = entry.value,
+				})
 			end
-			
-			table.insert(results, {
-				rank = rank,
-				playerName = playerName,
-				userId = userId,
-				value = entry.value,
-			})
+		else
+			warn("[LifeBackend] ❌ Failed to get current page for", leaderboardType)
 		end
+	else
+		warn("[LifeBackend] ❌ Failed to fetch leaderboard:", leaderboardType, pages)
 	end
 	
+	print("[LifeBackend] 📤 Returning", #results, "leaderboard entries for", leaderboardType)
 	return results
 end
 
@@ -185,9 +208,8 @@ local function serializeState(state)
 		end
 	end
 
-	-- CRITICAL: Add flag to indicate this is restored data (skip intro!)
-	serialized.Flags = serialized.Flags or {}
-	serialized.Flags.data_restored = true
+	-- NOTE: data_restored flag is ONLY set during actual DataStore load (line ~10882)
+	-- Do NOT set it here - serializeState is called on every sync, not just restores!
 
 	-- Career info
 	if state.CurrentJob then
@@ -10145,6 +10167,12 @@ end
 function LifeBackend:createInitialState(player)
 	local state = LifeState.new(player)
 	
+	-- CRITICAL FIX: Ensure data_restored is FALSE for new lives!
+	-- This prevents the "restored from save" spam bug
+	state.Flags = state.Flags or {}
+	state.Flags.data_restored = nil  -- Explicitly clear this flag for new lives
+	state.Flags.intro_complete = nil -- Allow intro for new lives
+	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #11: BITIZENSHIP BENEFITS
 	-- Players with Bitizenship get bonus starting money and special flags
@@ -15747,6 +15775,13 @@ function LifeBackend:resetLife(player)
 	newState.Flags.graduated_high_school = nil
 	newState.Flags.has_degree = nil
 	newState.Flags.has_student_loans = nil
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Clear data restoration flags for fresh life!
+	-- This prevents "restored from save - skipping intro" spam
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.Flags.data_restored = nil
+	newState.Flags.intro_complete = nil
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #12: Reset premium feature states (but preserve gamepass ownership!)

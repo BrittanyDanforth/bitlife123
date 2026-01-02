@@ -7777,8 +7777,11 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 	-- This takes precedence over all other checks
 	if dataRestored and state.Name and state.Name ~= "" then
 		isNewLife = false
-		introComplete = true  -- Skip intro entirely
-		print("[LifeClient] 📂 Data restored from save - NOT a new life. Name:", state.Name, "Age:", state.Age)
+		if not introComplete then
+			introComplete = true  -- Skip intro entirely
+			-- Only print once on actual data restore, not every sync
+			print("[LifeClient] 📂 Data restored from save - NOT a new life. Name:", state.Name, "Age:", state.Age)
+		end
 	end
 
 	-- ═══════════════════════════════════════════════════════════════
@@ -8146,12 +8149,14 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 	-- CRITICAL: Skip intro if data was restored from save!
 	local dataRestored = currentState.Flags and currentState.Flags.data_restored
 	if dataRestored and currentState.Name and currentState.Name ~= "" then
-		-- Data was restored - skip intro entirely
-		introComplete = true
+		-- Data was restored - skip intro entirely (only log once)
+		if not introComplete then
+			introComplete = true
+			print("[LifeClient] ✅ Restored from save - skipping intro. Name:", currentState.Name)
+		end
 		if IntroUI.overlay.Visible then
 			hideIntro()
 		end
-		print("[LifeClient] ✅ Restored from save - skipping intro. Name:", currentState.Name)
 	elseif not introComplete and (not currentState.Name or currentState.Name == "") then
 		showIntro()
 	elseif currentState.Name and IntroUI.overlay.Visible then
