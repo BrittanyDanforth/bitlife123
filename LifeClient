@@ -802,13 +802,46 @@ Device.IS_SMALL_PHONE = Device.IS_MOBILE and not Device.IS_TABLET and (initialVi
 Device.IS_TINY_PHONE = Device.IS_MOBILE and not Device.IS_TABLET and (initialViewport.X <= 380 or initialViewport.Y <= 680)
 
 -- Viewport tracking
+-- CRITICAL FIX: Track viewport changes more robustly to prevent UI sizing issues
+local viewportChangeCallbacks = {}
+local lastViewportSize = initialViewport
+
 local function updateViewport()
-	Device.ViewportSize = Camera.ViewportSize
+	local newViewport = Camera.ViewportSize
+	
+	-- CRITICAL: Skip if viewport is invalid (loading state)
+	if newViewport.X < 100 or newViewport.Y < 100 then
+		return
+	end
+	
+	-- Only process if viewport actually changed significantly
+	local sizeChanged = math.abs(newViewport.X - lastViewportSize.X) > 10 or 
+	                    math.abs(newViewport.Y - lastViewportSize.Y) > 10
+	
+	Device.ViewportSize = newViewport
 	Device.IS_MOBILE = detectMobile()
 	Device.IS_TABLET = Device.IS_MOBILE and (Device.ViewportSize.X >= 768 or Device.ViewportSize.Y >= 768)
 	Device.IS_SMALL_PHONE = Device.IS_MOBILE and not Device.IS_TABLET and (Device.ViewportSize.X < 450 or Device.ViewportSize.Y < 750)
 	Device.IS_TINY_PHONE = Device.IS_MOBILE and not Device.IS_TABLET and (Device.ViewportSize.X <= 380 or Device.ViewportSize.Y <= 680)
+	
+	-- If significant change, notify any callbacks
+	if sizeChanged then
+		lastViewportSize = newViewport
+		for _, callback in ipairs(viewportChangeCallbacks) do
+			pcall(callback, newViewport)
+		end
+	end
 end
+
+-- CRITICAL: Also check viewport on a small delay after initial load
+-- This catches cases where viewport reports wrong size initially
+task.delay(0.5, function()
+	updateViewport()
+end)
+task.delay(1.5, function()
+	updateViewport()
+end)
+
 Camera:GetPropertyChangedSignal("ViewportSize"):Connect(updateViewport)
 
 -- Responsive sizing helpers - MORE AGGRESSIVE for tiny phones

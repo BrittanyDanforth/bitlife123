@@ -77,6 +77,7 @@ end
 NFLCareerEvents.events = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- NFL DRAFT DECLARATION (Age 21-23)
+	-- CRITICAL FIX: Requires ACTUAL football background!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "nfl_draft_declaration",
@@ -84,18 +85,25 @@ NFLCareerEvents.events = {
 		emoji = "🏈",
 		text = "NFL scouts have been watching your college games. Your agent thinks you could be drafted. This is your shot at the league!",
 		question = "Do you declare for the NFL Draft?",
-		category = "career_sports",
-		weight = 25,
+		category = "career_nfl",
+		weight = 15, -- Lower to reduce spam
 		minAge = 21, maxAge = 23,
-		baseChance = 0.4,
+		baseChance = 0.25, -- Lower base chance
 		oneTime = true,
 		eligibility = function(state)
 			if not isEligibleForNFL(state) then return false end
 			if state.Flags and state.Flags.nfl_declared then return false end
-			-- Must have football background
-			return hasFootballBackground(state) or (state.Health or 0) >= 90
+			if state.Flags and state.Flags.nfl_player then return false end -- Already in NFL
+			-- CRITICAL: MUST have football background!
+			if not hasFootballBackground(state) then return false end
+			-- Must have college football OR varsity football
+			local hasRealBackground = state.Flags and (
+				state.Flags.college_football or 
+				state.Flags.plays_football
+			)
+			return hasRealBackground
 		end,
-		blockedByFlags = { in_prison = true, injured = true, nfl_declared = true },
+		blockedByFlags = { in_prison = true, injured = true, nfl_declared = true, nfl_player = true },
 		
 		choices = {
 			{
@@ -212,19 +220,25 @@ NFLCareerEvents.events = {
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- SUPER BOWL!!!
+	-- CRITICAL FIX: Super Bowl is RARE - only for established NFL players!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "nfl_super_bowl",
 		title = "🏆 SUPER BOWL!!!",
 		emoji = "🏆",
 		text = "YOUR TEAM IS IN THE SUPER BOWL! The biggest game in sports! Over 100 MILLION people watching! THIS IS IT!",
-		category = "career_sports",
-		weight = 30,
-		minAge = 21, maxAge = 40,
-		baseChance = 0.2,
-		cooldown = 2,
-		eligibility = isNFLPlayer,
-		blockedByFlags = { injured = true },
+		category = "career_nfl",
+		weight = 8, -- Very low - Super Bowl is rare!
+		minAge = 22, maxAge = 38,
+		baseChance = 0.10, -- Very low base chance
+		cooldown = 3, -- Minimum 3 years between Super Bowls
+		-- CRITICAL: Must be active NFL player with experience
+		eligibility = function(state)
+			if not isNFLPlayer(state) then return false end
+			if not state.Flags or not state.Flags.nfl_player then return false end
+			return true
+		end,
+		blockedByFlags = { injured = true, nfl_retired = true },
 		
 		choices = {
 			{
@@ -300,41 +314,63 @@ NFLCareerEvents.events = {
 	},
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- PRO BOWL SELECTION
+	-- PRO BOWL VOTING RESULTS
+	-- CRITICAL FIX: Not guaranteed selection - requires roll!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "nfl_pro_bowl",
-		title = "⭐ Pro Bowl Selection!",
+		title = "⭐ Pro Bowl Voting Results",
 		emoji = "⭐",
-		text = "You've been selected to the NFL Pro Bowl! You're officially one of the best at your position!",
-		category = "career_sports",
-		weight = 20,
-		minAge = 22, maxAge = 38,
-		baseChance = 0.3,
-		cooldown = 1,
-		eligibility = isNFLPlayer,
-		blockedByFlags = { injured = true },
+		text = "Pro Bowl voting has concluded. Your season performance is being evaluated...",
+		category = "career_nfl",
+		weight = 10, -- Lower weight
+		minAge = 23, maxAge = 36,
+		baseChance = 0.12, -- Lower base chance
+		cooldown = 2, -- Every 2 years minimum
+		-- CRITICAL: Must be established NFL player
+		eligibility = function(state)
+			if not isNFLPlayer(state) then return false end
+			if not state.Flags or not state.Flags.nfl_player then return false end
+			-- Must have at least 2 years in NFL
+			return true
+		end,
+		blockedByFlags = { injured = true, nfl_retired = true },
 		
 		choices = {
 			{
-				text = "🌟 What an honor! All my hard work paid off!",
-				effects = { Happiness = 15 },
-				feedText = "Pro Bowler!",
+				text = "Check the results...",
+				effects = {},
+				feedText = "Checking Pro Bowl results...",
 				onResolve = function(state)
 					state.Flags = state.Flags or {}
-					state.Flags.nfl_pro_bowl = true
-					state.Flags.nfl_pro_bowl_count = (state.Flags.nfl_pro_bowl_count or 0) + 1
-					state.Fame = math.min(100, (state.Fame or 0) + 20)
 					
-					local bonus = math.random(50000, 200000)
-					state.Money = (state.Money or 0) + bonus
+					-- Roll to see if selected (not guaranteed!)
+					local roll = math.random(1, 100)
+					local bonus = 0
+					if state.Flags.nfl_first_round then bonus = bonus + 20 end
+					if (state.Fame or 0) >= 60 then bonus = bonus + 15 end
+					if state.Flags.nfl_pro_bowl then bonus = bonus + 20 end -- Easier for repeat selections
 					
-					local count = state.Flags.nfl_pro_bowl_count
-					if count >= 8 then
-						state.Flags.nfl_perennial_pro_bowler = true
-						state:AddFeed(string.format("⭐ %dx PRO BOWLER! Hall of Fame trajectory! $%s bonus!", count, bonus))
+					if roll + bonus >= 55 then
+						-- Made it!
+						state.Flags.nfl_pro_bowl = true
+						state.Flags.nfl_pro_bowl_count = (state.Flags.nfl_pro_bowl_count or 0) + 1
+						state.Fame = math.min(100, (state.Fame or 0) + 15)
+						
+						local bonusMoney = math.random(50000, 150000)
+						state.Money = (state.Money or 0) + bonusMoney
+						
+						local count = state.Flags.nfl_pro_bowl_count
+						if count >= 8 then
+							state.Flags.nfl_perennial_pro_bowler = true
+							state:AddFeed(string.format("⭐ %dx PRO BOWLER! Hall of Fame lock! $%s bonus!", count, bonusMoney))
+						else
+							state:AddFeed(string.format("⭐ PRO BOWL SELECTED! #%d selection! $%s bonus!", count, bonusMoney))
+						end
+						state:ModifyStat("Happiness", 20)
 					else
-						state:AddFeed(string.format("⭐ Pro Bowl #%d! $%s bonus! Elite company!", count, bonus))
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("⭐ Didn't make the Pro Bowl this year. Solid season but not elite.")
 					end
 				end,
 			},
@@ -343,21 +379,28 @@ NFLCareerEvents.events = {
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- NFL MVP
+	-- CRITICAL FIX: MVP is VERY rare - only for Pro Bowl level players!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "nfl_mvp_race",
 		title = "🏅 NFL MVP Race!",
 		emoji = "🏅",
 		text = "You're in the running for NFL MVP! Your season has been HISTORIC. The whole league is watching!",
-		category = "career_sports",
-		weight = 18,
-		minAge = 23, maxAge = 38,
-		baseChance = 0.15,
-		cooldown = 1,
+		category = "career_nfl",
+		weight = 6, -- Very low - MVP is extremely rare
+		minAge = 24, maxAge = 35,
+		baseChance = 0.06, -- Very low base chance
+		cooldown = 2,
+		-- CRITICAL: Must have Pro Bowl OR be first rounder with high fame
 		eligibility = function(state)
-			return isNFLPlayer(state) and (state.Fame or 0) >= 50
+			if not isNFLPlayer(state) then return false end
+			if not state.Flags or not state.Flags.nfl_player then return false end
+			-- Must have Pro Bowl OR elite credentials
+			local hasProBowl = state.Flags.nfl_pro_bowl
+			local hasEliteCredentials = state.Flags.nfl_first_round and (state.Fame or 0) >= 65
+			return hasProBowl or hasEliteCredentials
 		end,
-		blockedByFlags = { injured = true },
+		blockedByFlags = { injured = true, nfl_retired = true },
 		
 		choices = {
 			{
@@ -405,13 +448,19 @@ NFLCareerEvents.events = {
 		id = "nfl_franchise_tag_contract",
 		title = "💰 MASSIVE CONTRACT OFFER!",
 		emoji = "💰",
-		text = "You're a free agent and teams are FIGHTING over you! Record-breaking money on the table!",
-		category = "career_sports",
-		weight = 22,
+		text = "Your contract is up. Teams are evaluating your performance...",
+		category = "career_nfl",
+		weight = 12,
 		minAge = 24, maxAge = 32,
-		baseChance = 0.35,
+		baseChance = 0.18,
 		cooldown = 4,
-		eligibility = isNFLStar,
+		-- CRITICAL FIX: Only for proven NFL players
+		eligibility = function(state)
+			if not isNFLPlayer(state) then return false end
+			if not state.Flags or not state.Flags.nfl_player then return false end
+			return true
+		end,
+		blockedByFlags = { nfl_retired = true, nfl_big_contract = true },
 		
 		choices = {
 			{
@@ -460,18 +509,24 @@ NFLCareerEvents.events = {
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- NFL INJURY (Football is brutal)
+	-- CRITICAL FIX: Reduced frequency - injuries still happen but not constantly
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "nfl_major_injury",
 		title = "🏥 Serious Injury!",
 		emoji = "🏥",
 		text = "You went down on a routine play. The trainers are rushing out. This doesn't look good...",
-		category = "career_sports",
-		weight = 15,
-		minAge = 21, maxAge = 38,
-		baseChance = 0.35,
-		cooldown = 3,
-		eligibility = isNFLPlayer,
+		category = "career_nfl",
+		weight = 10,
+		minAge = 22, maxAge = 36,
+		baseChance = 0.20,
+		cooldown = 4,
+		eligibility = function(state)
+			if not isNFLPlayer(state) then return false end
+			if not state.Flags or not state.Flags.nfl_player then return false end
+			return true
+		end,
+		blockedByFlags = { nfl_retired = true, injured = true },
 		
 		choices = {
 			{
@@ -511,17 +566,25 @@ NFLCareerEvents.events = {
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- NFL RETIREMENT
+	-- CRITICAL FIX: Only for active NFL players who haven't retired
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "nfl_retirement_decision",
 		title = "🏈 Time to Hang It Up?",
 		emoji = "🏈",
 		text = "Your body has taken a beating. Every hit hurts more. The game is passing you by. Is it time?",
-		category = "career_sports",
-		weight = 20,
-		minAge = 30, maxAge = 40,
-		baseChance = 0.5,
-		eligibility = isNFLPlayer,
+		category = "career_nfl",
+		weight = 12,
+		minAge = 32, maxAge = 40,
+		baseChance = 0.30,
+		cooldown = 2,
+		eligibility = function(state)
+			if not isNFLPlayer(state) then return false end
+			if not state.Flags or not state.Flags.nfl_player then return false end
+			if state.Flags.nfl_retired then return false end
+			return true
+		end,
+		blockedByFlags = { nfl_retired = true },
 		
 		choices = {
 			{
@@ -574,21 +637,26 @@ NFLCareerEvents.events = {
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- COLLEGE FOOTBALL SCHOLARSHIP
+	-- CRITICAL FIX: Requires actual high school football experience
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "college_football_scholarship",
 		title = "🎓 College Football Scholarship!",
 		emoji = "🎓",
 		text = "A D1 college football program wants YOU! Full ride scholarship plus NIL deals! Your path to the NFL!",
-		category = "education",
-		weight = 20,
+		category = "career_nfl",
+		weight = 12,
 		minAge = 17, maxAge = 18,
-		baseChance = 0.4,
+		baseChance = 0.30,
 		oneTime = true,
 		eligibility = function(state)
 			if not isEligibleForNFL(state) then return false end
-			return hasFootballBackground(state)
+			if state.Flags and state.Flags.college_football then return false end -- Already have it
+			-- MUST have played football in high school
+			if not state.Flags then return false end
+			return state.Flags.plays_football or state.Flags.varsity_athlete
 		end,
+		blockedByFlags = { college_football = true },
 		
 		choices = {
 			{
@@ -622,20 +690,26 @@ NFLCareerEvents.events = {
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- HEISMAN TROPHY (College)
+	-- CRITICAL FIX: Much stricter - requires college football AND performance
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "college_heisman_race",
 		title = "🏆 Heisman Trophy Race!",
 		emoji = "🏆",
 		text = "You're a finalist for the HEISMAN TROPHY! The most prestigious award in college football!",
-		category = "career_sports",
-		weight = 15,
-		minAge = 19, maxAge = 22,
-		baseChance = 0.2,
+		category = "career_nfl",
+		weight = 8, -- Lower weight - Heisman is rare
+		minAge = 20, maxAge = 22,
+		baseChance = 0.12, -- Lower base chance
 		oneTime = true,
 		eligibility = function(state)
-			return state.Flags and state.Flags.college_football and (state.Fame or 0) >= 20
+			if not state.Flags then return false end
+			if not state.Flags.college_football then return false end
+			if state.Flags.heisman_winner then return false end -- Already won
+			-- Must have some fame from college performance
+			return (state.Fame or 0) >= 30
 		end,
+		blockedByFlags = { heisman_winner = true },
 		
 		choices = {
 			{

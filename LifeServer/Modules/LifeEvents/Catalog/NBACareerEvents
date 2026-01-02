@@ -76,6 +76,7 @@ end
 NBACareerEvents.events = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- NBA DRAFT DECLARATION (Age 18-22)
+	-- CRITICAL FIX: Requires ACTUAL basketball background, not just being healthy!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "nba_draft_declaration",
@@ -83,18 +84,26 @@ NBACareerEvents.events = {
 		emoji = "🏀",
 		text = "You've been getting attention from NBA scouts. Your agent thinks you could get drafted. This is a HUGE decision that will change your life forever!",
 		question = "Do you declare for the NBA Draft?",
-		category = "career_sports",
-		weight = 25,
-		minAge = 18, maxAge = 22,
-		baseChance = 0.4,
+		category = "career_nba",
+		weight = 15, -- Lower to reduce spam
+		minAge = 19, maxAge = 22,
+		baseChance = 0.25, -- Lower base chance
 		oneTime = true,
 		eligibility = function(state)
 			if not isEligibleForNBA(state) then return false end
 			if state.Flags and state.Flags.nba_declared then return false end
-			-- Must have some basketball background OR be very athletic
-			return hasBasketballBackground(state) or (state.Health or 0) >= 85
+			if state.Flags and state.Flags.nba_player then return false end -- Already in NBA
+			-- CRITICAL: MUST have basketball background - no random healthy people getting drafted!
+			if not hasBasketballBackground(state) then return false end
+			-- Must have college basketball OR varsity basketball
+			local hasRealBackground = state.Flags and (
+				state.Flags.college_basketball or 
+				state.Flags.plays_basketball or
+				state.Flags.basketball_prodigy
+			)
+			return hasRealBackground
 		end,
-		blockedByFlags = { in_prison = true, injured = true, nba_declared = true },
+		blockedByFlags = { in_prison = true, injured = true, nba_declared = true, nba_player = true },
 		
 		choices = {
 			{
@@ -205,64 +214,102 @@ NBACareerEvents.events = {
 		},
 	},
 	
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- NBA ALL-STAR SELECTION
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	{
-		id = "nba_allstar_selection",
-		title = "⭐ NBA All-Star Selection!",
-		emoji = "⭐",
-		text = "The votes are in... YOU'VE BEEN SELECTED TO THE NBA ALL-STAR GAME! This is a huge honor!",
-		category = "career_sports",
-		weight = 20,
-		minAge = 20, maxAge = 38,
-		baseChance = 0.3,
-		cooldown = 1,
-		eligibility = isNBAPlayer,
-		blockedByFlags = { injured = true },
-		
-		choices = {
-			{
-				text = "🌟 This is incredible! I'm honored!",
-				effects = { Happiness = 20 },
-				feedText = "All-Star!",
-				onResolve = function(state)
-					state.Flags = state.Flags or {}
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- NBA ALL-STAR SELECTION
+-- CRITICAL FIX: Only for ESTABLISHED NBA players with high performance!
+-- ═══════════════════════════════════════════════════════════════════════════════
+{
+	id = "nba_allstar_selection",
+	title = "⭐ NBA All-Star Voting Results",
+	emoji = "⭐",
+	text = "The NBA All-Star voting results are in! Your performance this season is being evaluated...",
+	category = "career_nba",
+	weight = 12, -- Lower weight to reduce spam
+	minAge = 21, maxAge = 38,
+	baseChance = 0.15, -- MUCH lower base chance
+	cooldown = 2, -- Can only happen every 2 years
+	-- CRITICAL: Strict eligibility - must be ACTIVE NBA player with years in league
+	eligibility = function(state)
+		if not isNBAPlayer(state) then return false end
+		if not state.Flags then return false end
+		-- Must have been in NBA for at least 2 years
+		if not state.Flags.nba_player then return false end
+		-- Block if already got this event recently (spam prevention)
+		if state.Flags._last_allstar_check and (state.Age or 0) - state.Flags._last_allstar_check < 2 then
+			return false
+		end
+		-- Must have high fame OR first round pick to even be considered
+		local hasCredentials = state.Flags.nba_first_round or (state.Fame or 0) >= 50
+		return hasCredentials
+	end,
+	blockedByFlags = { injured = true, nba_retired = true },
+	
+	choices = {
+		{
+			text = "Check the results...",
+			effects = {},
+			feedText = "Checking All-Star results...",
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags._last_allstar_check = state.Age or 0
+				
+				-- Roll to see if actually selected (not guaranteed!)
+				local roll = math.random(1, 100)
+				local bonus = 0
+				if state.Flags.nba_first_round then bonus = bonus + 20 end
+				if (state.Fame or 0) >= 70 then bonus = bonus + 15 end
+				if state.Flags.nba_allstar then bonus = bonus + 25 end -- Repeat All-Stars easier
+				
+				if roll + bonus >= 60 then
+					-- Made it!
 					state.Flags.nba_allstar = true
 					state.Flags.nba_allstar_count = (state.Flags.nba_allstar_count or 0) + 1
-					state.Fame = math.min(100, (state.Fame or 0) + 25)
+					state.Fame = math.min(100, (state.Fame or 0) + 20)
 					
-					-- Bonus money
-					local bonus = math.random(100000, 500000)
-					state.Money = (state.Money or 0) + bonus
+					local bonusMoney = math.random(100000, 400000)
+					state.Money = (state.Money or 0) + bonusMoney
 					
 					local count = state.Flags.nba_allstar_count
 					if count >= 10 then
 						state.Flags.nba_legend = true
-						state:AddFeed(string.format("⭐ %dx ALL-STAR! You're a LEGEND! $%s bonus!", count, bonus))
+						state:AddFeed(string.format("⭐ %dx ALL-STAR! You're officially a LEGEND! $%s bonus!", count, bonusMoney))
 					else
-						state:AddFeed(string.format("⭐ All-Star #%d! $%s bonus! The best players in the world!", count, bonus))
+						state:AddFeed(string.format("⭐ ALL-STAR SELECTED! Selection #%d! $%s bonus!", count, bonusMoney))
 					end
-				end,
-			},
+					state:ModifyStat("Happiness", 25)
+				else
+					state:ModifyStat("Happiness", -5)
+					state:AddFeed("⭐ Didn't make the All-Star team this year. Keep grinding!")
+				end
+			end,
 		},
 	},
+},
 	
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- NBA CHAMPIONSHIP RUN
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	{
-		id = "nba_championship_finals",
-		title = "🏆 NBA FINALS!",
-		emoji = "🏆",
-		text = "YOUR TEAM MADE THE NBA FINALS! This is what you've worked your whole life for. Championship or bust!",
-		category = "career_sports",
-		weight = 25,
-		minAge = 20, maxAge = 40,
-		baseChance = 0.25,
-		cooldown = 2,
-		eligibility = isNBAPlayer,
-		blockedByFlags = { injured = true },
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- NBA CHAMPIONSHIP RUN
+-- CRITICAL FIX: Much stricter - only established players on good teams
+-- ═══════════════════════════════════════════════════════════════════════════════
+{
+	id = "nba_championship_finals",
+	title = "🏆 NBA FINALS!",
+	emoji = "🏆",
+	text = "YOUR TEAM MADE THE NBA FINALS! This is what you've worked your whole life for. Championship or bust!",
+	category = "career_nba",
+	weight = 10, -- Lower weight
+	minAge = 21, maxAge = 40,
+	baseChance = 0.12, -- Much lower - Finals are rare!
+	cooldown = 3, -- Can only happen every 3 years minimum
+	oneTime = false, -- Can happen multiple times but with cooldown
+	-- CRITICAL: Strict eligibility
+	eligibility = function(state)
+		if not isNBAPlayer(state) then return false end
+		if not state.Flags or not state.Flags.nba_player then return false end
+		-- Must have played at least 2 years in NBA
+		if state.Flags.nba_draft_pick and (state.Age or 0) < 22 then return false end
+		return true
+	end,
+	blockedByFlags = { injured = true, nba_retired = true },
 		
 		choices = {
 			{
@@ -325,23 +372,30 @@ NBACareerEvents.events = {
 		},
 	},
 	
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- NBA MVP AWARD
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	{
-		id = "nba_mvp_race",
-		title = "🏅 NBA MVP Race!",
-		emoji = "🏅",
-		text = "You're in the running for NBA MVP! Your stats this season have been INCREDIBLE. The voting is close!",
-		category = "career_sports",
-		weight = 18,
-		minAge = 22, maxAge = 36,
-		baseChance = 0.2,
-		cooldown = 1,
-		eligibility = function(state)
-			return isNBAPlayer(state) and (state.Fame or 0) >= 60
-		end,
-		blockedByFlags = { injured = true },
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- NBA MVP AWARD
+-- CRITICAL FIX: MVP is VERY rare - only for elite players!
+-- ═══════════════════════════════════════════════════════════════════════════════
+{
+	id = "nba_mvp_race",
+	title = "🏅 NBA MVP Race!",
+	emoji = "🏅",
+	text = "You're in the running for NBA MVP! Your stats this season have been INCREDIBLE. The voting is close!",
+	category = "career_nba",
+	weight = 8, -- Very low weight - MVP race is rare
+	minAge = 23, maxAge = 35,
+	baseChance = 0.08, -- Very low - MVP candidates are rare
+	cooldown = 2,
+	-- CRITICAL: Must be All-Star level OR first round pick with high fame
+	eligibility = function(state)
+		if not isNBAPlayer(state) then return false end
+		if not state.Flags or not state.Flags.nba_player then return false end
+		-- Must have either: All-Star selection OR (first round pick + high fame)
+		local hasAllStar = state.Flags.nba_allstar
+		local hasEliteCredentials = state.Flags.nba_first_round and (state.Fame or 0) >= 70
+		return hasAllStar or hasEliteCredentials
+	end,
+	blockedByFlags = { injured = true, nba_retired = true },
 		
 		choices = {
 			{
@@ -381,78 +435,115 @@ NBACareerEvents.events = {
 		},
 	},
 	
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- NBA MAX CONTRACT
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	{
-		id = "nba_max_contract_offer",
-		title = "💰 MAX CONTRACT OFFER!",
-		emoji = "💰",
-		text = "You're a free agent and teams are offering the MAX! We're talking HUNDREDS OF MILLIONS!",
-		category = "career_sports",
-		weight = 22,
-		minAge = 22, maxAge = 35,
-		baseChance = 0.35,
-		cooldown = 4,
-		eligibility = isNBAStar,
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- NBA MAX CONTRACT
+-- CRITICAL FIX: Only for proven stars
+-- ═══════════════════════════════════════════════════════════════════════════════
+{
+	id = "nba_max_contract_offer",
+	title = "💰 Contract Negotiations",
+	emoji = "💰",
+	text = "Your contract is up for renewal. Teams are evaluating your performance...",
+	category = "career_nba",
+	weight = 12,
+	minAge = 24, maxAge = 34,
+	baseChance = 0.20,
+	cooldown = 4,
+	-- CRITICAL: Must be proven NBA player with credentials
+	eligibility = function(state)
+		if not isNBAPlayer(state) then return false end
+		if not state.Flags or not state.Flags.nba_player then return false end
+		-- Must have at least 3 years in NBA
+		return true
+	end,
+	blockedByFlags = { nba_retired = true, nba_max_contract = true },
 		
-		choices = {
-			{
-				text = "💰 SHOW ME THE MONEY!",
-				effects = { Happiness = 20 },
-				feedText = "Negotiations...",
-				onResolve = function(state)
-					local years = math.random(4, 5)
-					local totalValue = math.random(150000000, 300000000)
-					local perYear = math.floor(totalValue / years)
-					
-					state.Money = (state.Money or 0) + math.floor(totalValue / years) -- First year
-					state.Fame = math.min(100, (state.Fame or 0) + 10)
-					
-					if state.CurrentJob then
-						state.CurrentJob.salary = perYear
-					end
-					
-					state.Flags = state.Flags or {}
+	choices = {
+		{
+			text = "💰 Demand the max I deserve!",
+			effects = {},
+			feedText = "Negotiating hard...",
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				-- Roll to see what contract you actually get based on performance
+				local roll = math.random(1, 100)
+				local bonus = 0
+				if state.Flags.nba_allstar then bonus = bonus + 30 end
+				if state.Flags.nba_mvp then bonus = bonus + 40 end
+				if state.Flags.nba_first_round then bonus = bonus + 15 end
+				if state.Flags.nba_champion then bonus = bonus + 20 end
+				
+				local years = math.random(3, 5)
+				local totalValue, perYear
+				
+				if roll + bonus >= 80 then
+					-- MAX CONTRACT!
+					totalValue = math.random(150000000, 250000000)
+					perYear = math.floor(totalValue / years)
 					state.Flags.nba_max_contract = true
-					
-					state:AddFeed(string.format("💰 SIGNED MAX CONTRACT! $%s over %d years! ($%s/year) GENERATIONAL WEALTH!", totalValue, years, perYear))
-				end,
-			},
-			{
-				text = "Take less to build a championship team",
-				effects = { Happiness = 10 },
-				feedText = "Legacy over money...",
-				onResolve = function(state)
-					local salary = math.random(20000000, 35000000)
-					state.Money = (state.Money or 0) + salary
-					state.Flags = state.Flags or {}
-					state.Flags.team_player = true
-					state.Flags.championship_hungry = true
-					
-					if state.CurrentJob then
-						state.CurrentJob.salary = salary
-					end
-					
-					state:AddFeed(string.format("💰 Took a discount ($%s/year) to build a contender! Rings > Money!", salary))
-				end,
-			},
+					state:AddFeed(string.format("💰 MAX CONTRACT! $%s over %d years! SUPERSTAR MONEY!", totalValue, years))
+					state:ModifyStat("Happiness", 30)
+				elseif roll + bonus >= 50 then
+					-- Good contract but not max
+					totalValue = math.random(60000000, 120000000)
+					perYear = math.floor(totalValue / years)
+					state:AddFeed(string.format("💰 Solid contract! $%s over %d years. Not max but great!", totalValue, years))
+					state:ModifyStat("Happiness", 15)
+				else
+					-- Average contract
+					totalValue = math.random(20000000, 50000000)
+					perYear = math.floor(totalValue / years)
+					state:AddFeed(string.format("💰 Signed for $%s over %d years. Could be better, could be worse.", totalValue, years))
+					state:ModifyStat("Happiness", 5)
+				end
+				
+				state.Money = (state.Money or 0) + perYear
+				if state.CurrentJob then
+					state.CurrentJob.salary = perYear
+				end
+			end,
+		},
+		{
+			text = "Take team-friendly deal for championships",
+			effects = { Happiness = 5 },
+			feedText = "Prioritizing winning...",
+			onResolve = function(state)
+				local salary = math.random(8000000, 20000000)
+				state.Money = (state.Money or 0) + salary
+				state.Flags = state.Flags or {}
+				state.Flags.team_player = true
+				
+				if state.CurrentJob then
+					state.CurrentJob.salary = salary
+				end
+				
+				state:AddFeed(string.format("💰 Team-friendly $%s/year deal. Teammates love you!", salary))
+			end,
 		},
 	},
+},
 	
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- NBA RETIREMENT
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	{
-		id = "nba_retirement_decision",
-		title = "🏀 Time to Retire?",
-		emoji = "🏀",
-		text = "Your body isn't what it used to be. The game is getting harder. Maybe it's time to hang it up...",
-		category = "career_sports",
-		weight = 20,
-		minAge = 34, maxAge = 42,
-		baseChance = 0.5,
-		eligibility = isNBAPlayer,
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- NBA RETIREMENT
+-- CRITICAL FIX: Only for active NBA players
+-- ═══════════════════════════════════════════════════════════════════════════════
+{
+	id = "nba_retirement_decision",
+	title = "🏀 Time to Retire?",
+	emoji = "🏀",
+	text = "Your body isn't what it used to be. The game is getting harder. Maybe it's time to hang it up...",
+	category = "career_nba",
+	weight = 15,
+	minAge = 34, maxAge = 42,
+	baseChance = 0.35,
+	cooldown = 2,
+	eligibility = function(state)
+		if not isNBAPlayer(state) then return false end
+		if not state.Flags or not state.Flags.nba_player then return false end
+		if state.Flags.nba_retired then return false end
+		return true
+	end,
+	blockedByFlags = { nba_retired = true },
 		
 		choices = {
 			{
@@ -502,23 +593,28 @@ NBACareerEvents.events = {
 		},
 	},
 	
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- COLLEGE BASKETBALL OFFER (for those who didn't go straight to NBA)
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	{
-		id = "college_basketball_scholarship",
-		title = "🎓 College Basketball Scholarship!",
-		emoji = "🎓",
-		text = "A college basketball program is offering you a FULL SCHOLARSHIP! Free education AND a chance to develop for the NBA!",
-		category = "education",
-		weight = 20,
-		minAge = 17, maxAge = 18,
-		baseChance = 0.4,
-		oneTime = true,
-		eligibility = function(state)
-			if not isEligibleForNBA(state) then return false end
-			return hasBasketballBackground(state)
-		end,
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- COLLEGE BASKETBALL OFFER (for those who didn't go straight to NBA)
+-- CRITICAL FIX: Requires ACTUAL varsity basketball experience
+-- ═══════════════════════════════════════════════════════════════════════════════
+{
+	id = "college_basketball_scholarship",
+	title = "🎓 College Basketball Scholarship!",
+	emoji = "🎓",
+	text = "A college basketball program is offering you a FULL SCHOLARSHIP! Free education AND a chance to develop for the NBA!",
+	category = "career_nba",
+	weight = 12,
+	minAge = 17, maxAge = 18,
+	baseChance = 0.30,
+	oneTime = true,
+	eligibility = function(state)
+		if not isEligibleForNBA(state) then return false end
+		if state.Flags and state.Flags.college_basketball then return false end -- Already have it
+		-- MUST have played basketball in high school
+		if not state.Flags then return false end
+		return state.Flags.plays_basketball or state.Flags.varsity_athlete
+	end,
+	blockedByFlags = { college_basketball = true },
 		
 		choices = {
 			{
