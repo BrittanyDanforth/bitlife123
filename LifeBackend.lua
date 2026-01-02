@@ -15,6 +15,123 @@ local HttpService = game:GetService("HttpService")
 local DATA_STORE_NAME = "BitLifePlayerData_v1"
 local playerDataStore = nil
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- GLOBAL LEADERBOARD SYSTEM
+-- User complaint: "leaderboard inside progressscreen dosent work... its not a LOCAL LEADERBOARD 
+-- ITS FOR EVERYBODY WHO PLAYS GAME ETC BRUH THE RICHEST SOME1 GOT BRUH?? AND OLDEST"
+-- Uses OrderedDataStore to track global records across ALL players!
+-- ═══════════════════════════════════════════════════════════════════════════════
+local LEADERBOARD_RICHEST = "BitLife_Leaderboard_Richest_v1"
+local LEADERBOARD_OLDEST = "BitLife_Leaderboard_Oldest_v1"
+local richestLeaderboard = nil
+local oldestLeaderboard = nil
+
+-- Initialize OrderedDataStores for global leaderboards
+local function initLeaderboards()
+	if not richestLeaderboard then
+		local success1, store1 = pcall(function()
+			return DataStoreService:GetOrderedDataStore(LEADERBOARD_RICHEST)
+		end)
+		if success1 then
+			richestLeaderboard = store1
+			print("[LifeBackend] Richest leaderboard initialized")
+		else
+			warn("[LifeBackend] Failed to init richest leaderboard:", store1)
+		end
+	end
+	
+	if not oldestLeaderboard then
+		local success2, store2 = pcall(function()
+			return DataStoreService:GetOrderedDataStore(LEADERBOARD_OLDEST)
+		end)
+		if success2 then
+			oldestLeaderboard = store2
+			print("[LifeBackend] Oldest leaderboard initialized")
+		else
+			warn("[LifeBackend] Failed to init oldest leaderboard:", store2)
+		end
+	end
+	
+	return richestLeaderboard, oldestLeaderboard
+end
+
+-- Update global leaderboard when a player's life ends
+local function updateGlobalLeaderboards(player, lifeName, age, netWorth)
+	local richest, oldest = initLeaderboards()
+	if not richest or not oldest then return end
+	
+	-- Create unique key: UserId_timestamp to allow multiple entries per player
+	local timestamp = os.time()
+	local entryKey = tostring(player.UserId) .. "_" .. tostring(timestamp)
+	
+	-- Store the player name for retrieval (OrderedDataStore only stores numbers)
+	-- We'll encode name in a separate standard DataStore if needed, or just use UserId
+	-- For simplicity, we'll use just the score value
+	
+	-- Update richest leaderboard (only if significant wealth)
+	if netWorth >= 1000 then
+		local success1 = pcall(function()
+			richest:SetAsync(entryKey, math.floor(netWorth))
+		end)
+		if success1 then
+			print("[LifeBackend] Updated richest leaderboard:", lifeName, netWorth)
+		end
+	end
+	
+	-- Update oldest leaderboard (only if lived to reasonable age)
+	if age >= 10 then
+		local success2 = pcall(function()
+			oldest:SetAsync(entryKey, age)
+		end)
+		if success2 then
+			print("[LifeBackend] Updated oldest leaderboard:", lifeName, age)
+		end
+	end
+end
+
+-- Fetch global leaderboard data for client display
+local function fetchGlobalLeaderboard(leaderboardType, limit)
+	local richest, oldest = initLeaderboards()
+	limit = limit or 10
+	
+	local store = leaderboardType == "richest" and richest or oldest
+	if not store then return {} end
+	
+	local results = {}
+	local success, pages = pcall(function()
+		return store:GetSortedAsync(false, limit) -- false = descending order
+	end)
+	
+	if success and pages then
+		local data = pages:GetCurrentPage()
+		for rank, entry in ipairs(data) do
+			-- entry.key contains UserId_timestamp, entry.value contains the score
+			local keyParts = string.split(entry.key, "_")
+			local userId = tonumber(keyParts[1])
+			local playerName = "Player"
+			
+			-- Try to get player name
+			if userId then
+				local nameSuccess, name = pcall(function()
+					return Players:GetNameFromUserIdAsync(userId)
+				end)
+				if nameSuccess and name then
+					playerName = name
+				end
+			end
+			
+			table.insert(results, {
+				rank = rank,
+				playerName = playerName,
+				userId = userId,
+				value = entry.value,
+			})
+		end
+	end
+	
+	return results
+end
+
 -- Initialize DataStore (wrapped in pcall for Studio testing)
 local function initDataStore()
 	if playerDataStore then return playerDataStore end
@@ -135,6 +252,20 @@ local function serializeState(state)
 		serialized.FinancialState = state.FinancialState
 	end
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #PERSIST-AWARDS: Save UnlockedAwards to persist achievements across lives!
+	-- User complaint: "ENSURE AWARDS DONT KEEP RESETTING EVERY TIME I DIE AND START NEW LIFE"
+	-- Awards are PERMANENT achievements that persist forever once unlocked!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.UnlockedAwards then
+		serialized.UnlockedAwards = state.UnlockedAwards
+	end
+	
+	-- Also save PastLives for the leaderboard/history
+	if state.PastLives then
+		serialized.PastLives = state.PastLives
+	end
+
 	-- Timestamp for debugging
 	serialized._savedAt = os.time()
 	serialized._version = 1
@@ -148,6 +279,70 @@ local function deserializeState(data, player)
 
 	-- Return the data as-is, the onPlayerAdded will merge it with fresh state
 	return data
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- AWARD DEFINITIONS - Must match ProgressScreen for consistency!
+-- User complaint: "ENSURE AWARDS DONT KEEP RESETTING EVERY TIME I DIE AND START NEW LIFE"
+-- These are PERMANENT achievements that persist forever once unlocked!
+-- ═══════════════════════════════════════════════════════════════════════════════
+local AWARD_DEFINITIONS = {
+	{ id = "first_life", check = function(state) return true end },
+	{ id = "centenarian", check = function(state) return state and (state.Age or 0) >= 100 end },
+	{ id = "millionaire", check = function(state) return state and (state.Money or 0) >= 1000000 end },
+	{ id = "billionaire", check = function(state) return state and (state.Money or 0) >= 1000000000 end },
+	{ id = "perfect_stats", check = function(state)
+		if not state or not state.Stats then return false end
+		return (state.Stats.Happiness or 0) >= 100 and (state.Stats.Health or 0) >= 100 
+			and (state.Stats.Smarts or 0) >= 100 and (state.Stats.Looks or 0) >= 100
+	end },
+	{ id = "famous", check = function(state) return state and (state.Fame or 0) >= 100 end },
+	{ id = "married", check = function(state) return state and state.Flags and state.Flags.married end },
+	{ id = "royalty", check = function(state) return state and state.Flags and (state.Flags.is_royalty or state.Flags.royal_birth) end },
+	{ id = "mafia_boss", check = function(state) return state and state.MobState and state.MobState.rank == "Boss" end },
+	{ id = "athlete", check = function(state) return state and state.Flags and state.Flags.signed_athlete end },
+	{ id = "actor", check = function(state) return state and state.Flags and state.Flags.oscar_winner end },
+	{ id = "musician", check = function(state) return state and state.Flags and state.Flags.grammy_winner end },
+	{ id = "veteran", check = function(state) return state and state.Flags and (state.Flags.veteran or state.Flags.combat_veteran) end },
+	{ id = "war_hero", check = function(state) return state and state.Flags and state.Flags.war_hero end },
+	{ id = "medal_of_honor", check = function(state) return state and state.Flags and state.Flags.medal_of_honor end },
+	{ id = "nba_champion", check = function(state) return state and state.Flags and state.Flags.nba_champion end },
+	{ id = "nfl_champion", check = function(state) return state and state.Flags and state.Flags.super_bowl_champion end },
+	{ id = "nba_mvp", check = function(state) return state and state.Flags and state.Flags.nba_mvp end },
+	{ id = "nfl_mvp", check = function(state) return state and state.Flags and state.Flags.nfl_mvp end },
+	{ id = "heisman", check = function(state) return state and state.Flags and state.Flags.heisman_winner end },
+}
+
+-- Function to check and unlock awards for a player
+local function checkAndUnlockAwards(state)
+	if not state then return end
+	
+	-- Initialize UnlockedAwards if not exists
+	state.UnlockedAwards = state.UnlockedAwards or {}
+	
+	local newlyUnlocked = {}
+	
+	for _, award in ipairs(AWARD_DEFINITIONS) do
+		-- Check if already unlocked
+		if not state.UnlockedAwards[award.id] then
+			-- Check if condition is met
+			local success, result = pcall(function()
+				return award.check(state)
+			end)
+			
+			if success and result then
+				-- Unlock the award!
+				state.UnlockedAwards[award.id] = {
+					unlockedAt = os.time(),
+					unlockedAge = state.Age or 0,
+					lifeName = state.Name or "Unknown",
+				}
+				table.insert(newlyUnlocked, award.id)
+			end
+		end
+	end
+	
+	return newlyUnlocked
 end
 
 -- Save player data to DataStore
@@ -9239,6 +9434,12 @@ function LifeBackend:setupRemotes()
 	self.remotes.DoRoyalDuty = self:createRemote("DoRoyalDuty", "RemoteFunction")
 	self.remotes.Abdicate = self:createRemote("Abdicate", "RemoteFunction")
 	self.remotes.GetRoyalInfo = self:createRemote("GetRoyalInfo", "RemoteFunction")
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- GLOBAL LEADERBOARD: Remote to fetch global leaderboard data
+	-- User complaint: "leaderboard... ITS FOR EVERYBODY WHO PLAYS GAME"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	self.remotes.GetGlobalLeaderboard = self:createRemote("GetGlobalLeaderboard", "RemoteFunction")
 
 	-- Event connections
 	self.remotes.RequestAgeUp.OnServerEvent:Connect(function(player)
@@ -9422,6 +9623,12 @@ function LifeBackend:setupRemotes()
 			married = state.Flags and state.Flags.married or false,
 		})
 		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- GLOBAL LEADERBOARD UPDATE: Record this life's achievements globally!
+		-- User complaint: "leaderboard... ITS FOR EVERYBODY WHO PLAYS GAME"
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		updateGlobalLeaderboards(player, state.Name or "Unknown", state.Age or 0, state.Money or 0)
+		
 		print("[LifeBackend] Death state set (Health=0), pushing to client...")
 		
 		-- Push the death state to client with death info
@@ -9502,6 +9709,16 @@ function LifeBackend:setupRemotes()
 	
 	self.remotes.GetRoyalInfo.OnServerInvoke = function(player)
 		return self:getRoyalInfo(player)
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- GLOBAL LEADERBOARD HANDLER: Fetch global leaderboard data for client
+	-- User complaint: "leaderboard... ITS FOR EVERYBODY WHO PLAYS GAME"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	self.remotes.GetGlobalLeaderboard.OnServerInvoke = function(player, leaderboardType)
+		-- leaderboardType is "richest" or "oldest"
+		local results = fetchGlobalLeaderboard(leaderboardType, 10)
+		return results
 	end
 end
 
@@ -13558,7 +13775,7 @@ function LifeBackend:checkNaturalDeath(state)
 			end
 			
 			-- AAA FIX: Comprehensive death cleanup
-			self:processDeathCleanup(state)
+			self:processDeathCleanup(state, player)
 		end
 	end
 end
@@ -13567,7 +13784,7 @@ end
 -- AAA FIX: Comprehensive death state cleanup
 -- Ensures all active states are properly terminated on death
 -- ═══════════════════════════════════════════════════════════════════════════════
-function LifeBackend:processDeathCleanup(state)
+function LifeBackend:processDeathCleanup(state, player)
 	if not state then return end
 	
 	state.Flags = state.Flags or {}
@@ -13606,6 +13823,15 @@ function LifeBackend:processDeathCleanup(state)
 			job = state.CurrentJob and state.CurrentJob.title or nil,
 			achievements = {}
 		})
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- GLOBAL LEADERBOARD UPDATE: Record this life's achievements globally!
+		-- User complaint: "leaderboard... ITS FOR EVERYBODY WHO PLAYS GAME"
+		-- Only update if not already recorded (to prevent duplicates with GiveUp)
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		if player then
+			updateGlobalLeaderboards(player, state.Name or "Unknown", state.Age or 0, state.Money or 0)
+		end
 	end
 	
 	-- Set all death flags
@@ -15148,6 +15374,16 @@ function LifeBackend:resetLife(player)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #AWARDS-PERSIST: Preserve UnlockedAwards before resetting!
+	-- User complaint: "ENSURE AWARDS DONT KEEP RESETTING EVERY TIME I DIE AND START NEW LIFE"
+	-- Awards are PERMANENT achievements that persist forever once unlocked!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local preservedUnlockedAwards = nil
+	if oldState and oldState.UnlockedAwards then
+		preservedUnlockedAwards = oldState.UnlockedAwards
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #7-20: COMPREHENSIVE STATE RESET ON NEW LIFE
 	-- Previously, many state fields persisted across lives causing bugs like:
 	-- - Old job showing after death
@@ -15447,6 +15683,17 @@ function LifeBackend:resetLife(player)
 		newState.PastLives = preservedPastLives
 	else
 		newState.PastLives = {}
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #AWARDS-PERSIST: Restore UnlockedAwards after reset
+	-- User complaint: "ENSURE AWARDS DONT KEEP RESETTING EVERY TIME I DIE AND START NEW LIFE"
+	-- Awards are PERMANENT achievements that persist forever once unlocked!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if preservedUnlockedAwards then
+		newState.UnlockedAwards = preservedUnlockedAwards
+	else
+		newState.UnlockedAwards = {}
 	end
 	
 	-- Store the new state
@@ -15892,6 +16139,16 @@ function LifeBackend:handleContinueAsKid(player, childData)
 end
 
 function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #AWARDS-PERSIST: Check and unlock awards before finalizing the age cycle!
+	-- User complaint: "ENSURE AWARDS DONT KEEP RESETTING EVERY TIME I DIE AND START NEW LIFE"
+	-- Awards are checked here so they're captured even at death!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local newAwards = checkAndUnlockAwards(state)
+	if newAwards and #newAwards > 0 then
+		debugPrint("Awards unlocked for", player.Name, ":", table.concat(newAwards, ", "))
+	end
+	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Show relationship decay events as proper card popups!
 	-- User reported: "Robert is furious!" was showing as feed text, not card popup

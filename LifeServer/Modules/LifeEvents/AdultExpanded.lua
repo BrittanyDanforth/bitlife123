@@ -1027,64 +1027,8 @@ AdultExpanded.events = {
 			{ text = "Working on self-improvement", effects = { Happiness = 3, Smarts = 2 }, setFlags = { mental_health_work = true }, feedText = "Self-care through free resources. YouTube meditation, journaling." },
 		},
 	},
-	{
-		id = "adult_addiction_struggle",
-		title = "Addiction Concern",
-		emoji = "⚠️",
-		text = "Something has become a problem in your life.",
-		question = "What are you struggling with?",
-		minAge = 20, maxAge = 60,
-		baseChance = 0.4,
-		cooldown = 4,
-		stage = STAGE,
-		ageBand = "adult",
-		category = "health",
-		tags = { "addiction", "struggle", "health" },
-		-- CRITICAL FIX: Only show if player actually has addiction/substance issues!
-		eligibility = function(state)
-			local flags = state.Flags or {}
-			local hasAddiction = flags.has_addiction or flags.substance_abuse or flags.alcoholic 
-				or flags.party_lifestyle or flags.excessive_drinking or flags.drug_use
-				or flags.gambling_problem or flags.gaming_addiction or flags.social_media_addiction
-			return hasAddiction, "No addiction issues"
-		end,
-		
-		choices = {
-			{
-				text = "Recognize and seek help",
-				effects = {},
-				feedText = "Taking the first step...",
-				onResolve = function(state)
-					local roll = math.random()
-					if roll < 0.60 then
-						state:ModifyStat("Happiness", 6)
-						state:ModifyStat("Health", 5)
-						state.Flags = state.Flags or {}
-						state.Flags.in_recovery = true
-						state:AddFeed("⚠️ Recovery journey started. Hard but hopeful.")
-					else
-						state:ModifyStat("Happiness", 2)
-						state:ModifyStat("Health", 2)
-						state:AddFeed("⚠️ Relapsed but trying again. One day at a time.")
-					end
-				end,
-			},
-			{
-				text = "Deny there's a problem",
-				effects = { Happiness = -6, Health = -6 },
-				setFlags = { denial = true },
-				feedText = "It's not that bad. You can stop anytime. (You can't.)",
-			},
-			{
-			-- CRITICAL FIX: Make consequence clear
-			text = "Hit rock bottom first (lose $500)",
-			effects = { Happiness = -12, Health = -10, Money = -500 },
-			setFlags = { rock_bottom = true },
-			feedText = "Lost so much. Maybe now you'll change.",
-			-- This is a consequence - addiction costs money
-			},
-		},
-	},
+	-- REMOVED: adult_addiction_struggle event deleted for TOS compliance
+	-- The event was about addiction which could violate platform guidelines
 	
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- SOCIAL & FRIENDSHIPS (Ages 25-60)

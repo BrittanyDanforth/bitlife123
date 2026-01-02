@@ -722,7 +722,7 @@ local EducationRanks = {
 -- ════════════════════════════════════════════════════════════════════════════════════════════════
 
 local InterviewQuestions = {
-	-- Default questions for any job
+	-- Default questions for any job - EXPANDED for variety!
 	default = {
 		{
 			question = "Why do you want to work here?",
@@ -749,6 +749,52 @@ local InterviewQuestions = {
 				{ text = "Probably somewhere else", bonus = -10 },
 				{ text = "I haven't really thought about it", bonus = -5 },
 				{ text = "Building my skills and taking on more responsibility", bonus = 10 },
+			},
+		},
+		-- NEW QUESTIONS for more variety!
+		{
+			question = "Tell me about a time you overcame a challenge.",
+			options = {
+				{ text = "I identified the problem, made a plan, and persevered", bonus = 15, correct = true },
+				{ text = "I usually ask others for help", bonus = 5 },
+				{ text = "I can't think of anything specific", bonus = -10 },
+				{ text = "I stay positive and keep trying", bonus = 10 },
+			},
+		},
+		{
+			question = "What motivates you to do your best work?",
+			options = {
+				{ text = "Personal growth and making a meaningful impact", bonus = 15, correct = true },
+				{ text = "Money, obviously", bonus = -5 },
+				{ text = "Recognition and praise from others", bonus = 5 },
+				{ text = "Meeting goals and seeing results", bonus = 10 },
+			},
+		},
+		{
+			question = "How do you handle constructive criticism?",
+			options = {
+				{ text = "I appreciate feedback and use it to improve", bonus = 15, correct = true },
+				{ text = "It's hard but I try to listen", bonus = 5 },
+				{ text = "I usually disagree with criticism", bonus = -10 },
+				{ text = "I ask for specific examples to understand better", bonus = 10 },
+			},
+		},
+		{
+			question = "What would your previous employer say about you?",
+			options = {
+				{ text = "Reliable, hardworking, and a great team player", bonus = 15, correct = true },
+				{ text = "I don't know, we didn't talk much", bonus = -5 },
+				{ text = "They'd say I was okay", bonus = 0 },
+				{ text = "That I always went above and beyond", bonus = 10 },
+			},
+		},
+		{
+			question = "Why did you leave your last job?",
+			options = {
+				{ text = "I'm looking for new challenges and growth opportunities", bonus = 15, correct = true },
+				{ text = "I hated my boss", bonus = -15 },
+				{ text = "The company downsized", bonus = 5 },
+				{ text = "I needed a change of environment", bonus = 5 },
 			},
 		},
 	},

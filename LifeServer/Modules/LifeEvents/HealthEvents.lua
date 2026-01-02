@@ -1713,9 +1713,16 @@ HealthEvents.events = {
 		-- User complaint: "DIAGNOSIS BROKEN BONE POPPED UP RANDOMLY BRO I DIDNT GET IN A FIGHT"
 		-- Must require: car accident, fight, fall, sports injury, or similar event
 		-- ═══════════════════════════════════════════════════════════════════════════════
+		
+		-- CRITICAL: Require injury flags - this is a DIAGNOSIS so player must have been injured first!
+		requiresFlags = { 
+			-- Will match ANY of these flags
+		},
+		
 		eligibility = function(state)
 			local flags = state.Flags or {}
-			-- Check if player had any event that could cause a broken bone
+			-- CRITICAL: Check if player had any event that could cause a broken bone
+			-- Be VERY strict - only allow this event if player definitely had an injury
 			local hadInjuryEvent = flags.car_accident or flags.car_crash or flags.was_in_accident
 				or flags.got_in_fight or flags.fight or flags.lost_fight or flags.attacked
 				or flags.fell or flags.slipped or flags.tripped or flags.fell_down
@@ -1724,12 +1731,23 @@ HealthEvents.events = {
 				or flags.bike_accident or flags.skateboard_accident
 				or flags.hospitalized or flags.emergency_room
 				or flags.physical_altercation or flags.assault_victim
-			-- Also check if went to doctor after feeling pain
-			local wentToDoctor = flags.went_to_doctor or flags.doctor_checkup
-			local hasPain = flags.severe_pain or flags.limping or flags.cant_walk
+				or flags.mugged or flags.beaten_up or flags.combat_injury
+				or flags.gym_injury or flags.exercise_injury or flags.running_injury
 			
-			if not hadInjuryEvent and not (wentToDoctor and hasPain) then
-				return false
+			-- Also allow if player is in active sports/military where injuries are common
+			local riskyActivity = flags.pro_athlete or flags.nfl_player or flags.nba_player
+				or flags.enlisted or flags.military or flags.soldier
+				or flags.combat_veteran or flags.deployed
+				or flags.boxing or flags.mma or flags.martial_arts
+			
+			-- Random injury chance only for risky activities (10% chance)
+			if riskyActivity and math.random() < 0.10 then
+				return true
+			end
+			
+			-- Otherwise, MUST have a prior injury event
+			if not hadInjuryEvent then
+				return false, "No prior injury to diagnose"
 			end
 			return true
 		end,

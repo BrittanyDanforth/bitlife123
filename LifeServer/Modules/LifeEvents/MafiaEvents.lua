@@ -87,6 +87,10 @@ MafiaEvents.LifeEvents = {
 	-- 2. Added blockedFlags for approached_by_mob to prevent repeat approaches
 	-- 3. Added maxOccurrences = 1 as safety
 	-- 4. Set approached_by_mob flag on ALL choices
+	-- 
+	-- CRITICAL FIX: This event is ONLY for mafia gamepass owners!
+	-- The "family" reference is MAFIA-SPECIFIC - requires the premium gamepass
+	-- Non-owners get the "shady_opportunity" event instead (regular crime, not mafia)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "mafia_approach",
@@ -130,6 +134,92 @@ MafiaEvents.LifeEvents = {
 				effects = { Happiness = -10 },
 				setFlags = { mob_enemy = true, police_informant = true, approached_by_mob = true },
 				feed = "You've made dangerous enemies...",
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- SHADY OPPORTUNITY EVENT - For NON-gamepass owners!
+	-- This is regular crime stuff, NOT mafia - no "family" references
+	-- Offers chance to purchase mafia gamepass OR do regular crime
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "shady_opportunity",
+		title = "💰 Shady Opportunity",
+		emoji = "💰",
+		text = "Someone offers you a chance to make quick money through... questionable means. They're looking for people who aren't afraid to bend the rules.",
+		question = "This could be risky. What do you do?",
+		minAge = 18,
+		maxAge = 50,
+		oneTime = true,
+		maxOccurrences = 1,
+		cooldown = 20,
+		baseChance = 0.35,
+		-- CRITICAL: Only show if player does NOT have mafia gamepass
+		-- This is the NON-premium alternative to mafia_approach
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Don't show if player has mafia gamepass (they get mafia_approach instead)
+			if flags.mafia_gamepass then
+				return false, "Has mafia gamepass - use mafia_approach instead"
+			end
+			-- Don't show if already approached by any shady character
+			if flags.approached_by_mob or flags.shady_offer_received then
+				return false, "Already received shady offer"
+			end
+			return true
+		end,
+		blockedByFlags = { in_prison = true, in_mob = true, police_officer = true, fbi_agent = true },
+		
+		choices = {
+			{
+				text = "Accept - easy money sounds good",
+				effects = { Happiness = 3 },
+				setFlags = { shady_offer_received = true, did_petty_crime = true },
+				feedText = "💰 You did a small job. Quick $500 cash, no questions asked.",
+				onResolve = function(state)
+					local roll = math.random(100)
+					if roll <= 70 then
+						-- Success
+						state.Money = (state.Money or 0) + 500
+						state:AddFeed("💰 Made $500 doing... something. Don't ask questions.")
+					else
+						-- Got caught - minor trouble
+						state:ModifyStat("Happiness", -10)
+						state.Flags = state.Flags or {}
+						state.Flags.minor_criminal_record = true
+						state:AddFeed("💰 Got caught! Had to pay a $200 fine and now have a record.")
+						state.Money = (state.Money or 0) - 200
+					end
+				end,
+			},
+			{
+				text = "Interested in something bigger... 🔫 (Premium)",
+				effects = {},
+				setFlags = { shady_offer_received = true, interested_in_mafia = true, prompt_mafia_purchase = true },
+				feedText = "💰 They give you a number to call. 'Big leagues require commitment.'",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.prompt_mafia_purchase = true -- Client will pick this up
+					state:AddFeed("🔫 For the REAL opportunity, you'll need the Mafia gamepass!")
+				end,
+			},
+			{
+				text = "No thanks - I'm not a criminal",
+				effects = { Happiness = 5, Smarts = 2 },
+				setFlags = { shady_offer_received = true, rejected_crime = true, law_abiding = true },
+				feedText = "💰 You walk away. Some opportunities aren't worth the risk.",
+			},
+			{
+				text = "Report them to the police",
+				effects = { Happiness = 3 },
+				setFlags = { shady_offer_received = true, good_citizen = true },
+				feedText = "💰 You did the right thing. The police appreciated the tip.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.police_informant = true
+					state:AddFeed("🚔 You reported the suspicious activity. Good citizen!")
+				end,
 			},
 		},
 	},

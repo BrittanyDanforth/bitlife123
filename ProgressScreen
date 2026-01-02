@@ -434,73 +434,13 @@ function ProgressScreen:buildPastLivesTab()
 	container.ZIndex = 81
 	container.Parent = self.contentContainer
 	
-	-- Stats card
-	local statsCard = Instance.new("Frame")
-	statsCard.Size = UDim2.new(1, -20, 0, 80)
-	statsCard.Position = UDim2.new(0, 10, 0, 10)
-	statsCard.BackgroundColor3 = C.BluePale
-	statsCard.ZIndex = 82
-	statsCard.Parent = container
-	UI.corner(statsCard, 12)
-	
-	local statsTitle = Instance.new("TextLabel")
-	statsTitle.Size = UDim2.new(1, 0, 0, 24)
-	statsTitle.Position = UDim2.new(0, 0, 0, 4)
-	statsTitle.BackgroundTransparency = 1
-	statsTitle.Font = F.Bold
-	statsTitle.TextSize = 14
-	statsTitle.TextColor3 = C.BlueDark
-	statsTitle.Text = "📊 Lifetime Stats"
-	statsTitle.ZIndex = 83
-	statsTitle.Parent = statsCard
-	
-	-- Stats row
-	local statsRow = Instance.new("Frame")
-	statsRow.Size = UDim2.new(1, -12, 0, 48)
-	statsRow.Position = UDim2.new(0, 6, 0, 28)
-	statsRow.BackgroundTransparency = 1
-	statsRow.ZIndex = 83
-	statsRow.Parent = statsCard
-	
-	local statsLayout = Instance.new("UIListLayout")
-	statsLayout.FillDirection = Enum.FillDirection.Horizontal
-	statsLayout.Padding = UDim.new(0, 4)
-	statsLayout.Parent = statsRow
-	
-	local function createStat(text, order)
-		local box = Instance.new("Frame")
-		box.Size = UDim2.new(0.25, -3, 1, 0)
-		box.BackgroundColor3 = C.White
-		box.BackgroundTransparency = 0.4
-		box.LayoutOrder = order
-		box.ZIndex = 84
-		box.Parent = statsRow
-		UI.corner(box, 6)
-		
-		local lbl = Instance.new("TextLabel")
-		lbl.Size = UDim2.fromScale(1, 1)
-		lbl.BackgroundTransparency = 1
-		lbl.Font = F.Bold
-		lbl.TextSize = IS_TINY_PHONE and 10 or 11
-		lbl.TextColor3 = C.Blue
-		lbl.Text = text
-		lbl.TextWrapped = true
-		lbl.ZIndex = 85
-		lbl.Parent = box
-		return lbl
-	end
-	
-	self.pastLivesStats = {
-		totalLives = createStat("Lives\n1", 1),
-		totalYears = createStat("Years\n0", 2),
-		longestLife = createStat("Best\n0 yrs", 3),
-		richestLife = createStat("Rich\n$0", 4),
-	}
+	-- REMOVED: Lifetime Stats card - user requested removal
+	-- Now just showing past lives grid directly
 	
 	-- Lives scroll - 2x2 grid layout for square cards!
 	self.pastLivesScroll = Instance.new("ScrollingFrame")
-	self.pastLivesScroll.Size = UDim2.new(1, -20, 1, -105)
-	self.pastLivesScroll.Position = UDim2.new(0, 10, 0, 98)
+	self.pastLivesScroll.Size = UDim2.new(1, -20, 1, -20)
+	self.pastLivesScroll.Position = UDim2.new(0, 10, 0, 10)
 	self.pastLivesScroll.BackgroundTransparency = 1
 	self.pastLivesScroll.ScrollBarThickness = 6
 	self.pastLivesScroll.ScrollBarImageColor3 = C.Gray300
@@ -1128,8 +1068,21 @@ end
 function ProgressScreen:refreshAwards()
 	local state = self:getState()
 	
+	-- Get persistent unlocked awards (survives across lives)
+	local unlockedAwards = state and state.UnlockedAwards or {}
+	
 	for id, itemData in pairs(self.awardItems) do
-		local unlocked = itemData.award.check(state)
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX #AWARDS-PERSIST: Check BOTH persistent awards AND current state!
+		-- User complaint: "ENSURE AWARDS DONT KEEP RESETTING EVERY TIME I DIE AND START NEW LIFE"
+		-- 1. Check if award was already unlocked in a previous life (persistent)
+		-- 2. Check if award condition is currently met in this life (real-time)
+		-- This ensures awards persist AND can be unlocked during gameplay!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local unlockedPersistent = unlockedAwards[id] ~= nil
+		local unlockedCurrentLife = itemData.award.check(state)
+		local unlocked = unlockedPersistent or unlockedCurrentLife
+		
 		itemData.card.BackgroundColor3 = unlocked and C.AmberPale or C.White
 		itemData.iconCircle.BackgroundColor3 = unlocked and C.Amber or C.Gray100
 		itemData.icon.Text = unlocked and itemData.award.icon or "🔒"
@@ -1149,23 +1102,8 @@ function ProgressScreen:refreshPastLives()
 	self.pastLivesCards = {}
 	
 	local pastLives = state and state.PastLives or {}
-	local currentAge = state and state.Age or 0
-	local currentMoney = state and state.Money or 0
 	
-	local totalYears = currentAge
-	local longest = currentAge
-	local richest = currentMoney
-	
-	for _, life in ipairs(pastLives) do
-		totalYears = totalYears + (life.age or 0)
-		longest = math.max(longest, life.age or 0)
-		richest = math.max(richest, life.netWorth or 0)
-	end
-	
-	self.pastLivesStats.totalLives.Text = "Lives\n" .. (#pastLives + 1)
-	self.pastLivesStats.totalYears.Text = "Years\n" .. totalYears
-	self.pastLivesStats.longestLife.Text = "Best\n" .. longest .. " yrs"
-	self.pastLivesStats.richestLife.Text = "Rich\n" .. formatMoney(richest)
+	-- REMOVED: Lifetime stats display - user requested removal
 	
 	self.noLivesLabel.Visible = #pastLives == 0
 	
@@ -1182,9 +1120,13 @@ function ProgressScreen:refreshPastLives()
 end
 
 function ProgressScreen:refreshLeaderboards()
-	local state = self:getState()
-	local pastLives = state and state.PastLives or {}
-
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- GLOBAL LEADERBOARD FIX: Fetch GLOBAL leaderboard data from server!
+	-- User complaint: "leaderboard... ITS FOR EVERYBODY WHO PLAYS GAME ETC BRUH 
+	-- THE RICHEST SOME1 GOT BRUH?? AND OLDEST"
+	-- This now shows ALL players' records, not just local past lives!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
 	-- Clear both columns (destroy ALL children except UIListLayout)
 	for _, scroll in ipairs({ self.richestScroll, self.oldestScroll }) do
 		for _, c in ipairs(scroll:GetChildren()) do
@@ -1193,8 +1135,128 @@ function ProgressScreen:refreshLeaderboards()
 			end
 		end
 	end
+	
+	-- Show loading message
+	local function createLoadingMessage(scroll)
+		local msg = Instance.new("TextLabel")
+		msg.Name = "LoadingMessage"
+		msg.Size = UDim2.new(1, -10, 0, 60)
+		msg.BackgroundTransparency = 1
+		msg.Font = F.Medium
+		msg.TextSize = 11
+		msg.TextColor3 = C.Gray400
+		msg.TextWrapped = true
+		msg.Text = "⏳ Loading global records..."
+		msg.ZIndex = 86
+		msg.Parent = scroll
+	end
+	createLoadingMessage(self.richestScroll)
+	createLoadingMessage(self.oldestScroll)
+	
+	-- Get the remote function
+	local remotesFolder = ReplicatedStorage:FindFirstChild("LifeRemotes")
+	local getLeaderboard = remotesFolder and remotesFolder:FindFirstChild("GetGlobalLeaderboard")
+	
+	if not getLeaderboard then
+		-- Fallback to local data if remote not available
+		warn("[ProgressScreen] GetGlobalLeaderboard remote not found, using local data")
+		self:refreshLeaderboardsLocal()
+		return
+	end
+	
+	-- Fetch both leaderboards asynchronously
+	task.spawn(function()
+		-- Fetch richest leaderboard
+		local richestSuccess, richestData = pcall(function()
+			return getLeaderboard:InvokeServer("richest")
+		end)
+		
+		-- Clear loading message
+		local richestLoading = self.richestScroll:FindFirstChild("LoadingMessage")
+		if richestLoading then richestLoading:Destroy() end
+		
+		if richestSuccess and richestData and #richestData > 0 then
+			local currentPlayer = Players.LocalPlayer
+			for _, entry in ipairs(richestData) do
+				local isCurrentPlayer = entry.userId == currentPlayer.UserId
+				local leaderboardEntry = self:createLeaderboardEntry(
+					entry.rank, 
+					entry.playerName, 
+					entry.value, 
+					"money", 
+					isCurrentPlayer
+				)
+				leaderboardEntry.Parent = self.richestScroll
+			end
+			self.richestScroll.CanvasSize = UDim2.new(0, 0, 0, math.max(50, #richestData * 52))
+		else
+			local msg = Instance.new("TextLabel")
+			msg.Size = UDim2.new(1, -10, 0, 60)
+			msg.BackgroundTransparency = 1
+			msg.Font = F.Medium
+			msg.TextSize = 11
+			msg.TextColor3 = C.Gray400
+			msg.TextWrapped = true
+			msg.Text = "🌱 No records yet!\nBe the first to make history!"
+			msg.ZIndex = 86
+			msg.Parent = self.richestScroll
+		end
+	end)
+	
+	task.spawn(function()
+		-- Fetch oldest leaderboard
+		local oldestSuccess, oldestData = pcall(function()
+			return getLeaderboard:InvokeServer("oldest")
+		end)
+		
+		-- Clear loading message
+		local oldestLoading = self.oldestScroll:FindFirstChild("LoadingMessage")
+		if oldestLoading then oldestLoading:Destroy() end
+		
+		if oldestSuccess and oldestData and #oldestData > 0 then
+			local currentPlayer = Players.LocalPlayer
+			for _, entry in ipairs(oldestData) do
+				local isCurrentPlayer = entry.userId == currentPlayer.UserId
+				local leaderboardEntry = self:createLeaderboardEntry(
+					entry.rank, 
+					entry.playerName, 
+					entry.value, 
+					"age", 
+					isCurrentPlayer
+				)
+				leaderboardEntry.Parent = self.oldestScroll
+			end
+			self.oldestScroll.CanvasSize = UDim2.new(0, 0, 0, math.max(50, #oldestData * 52))
+		else
+			local msg = Instance.new("TextLabel")
+			msg.Size = UDim2.new(1, -10, 0, 60)
+			msg.BackgroundTransparency = 1
+			msg.Font = F.Medium
+			msg.TextSize = 11
+			msg.TextColor3 = C.Gray400
+			msg.TextWrapped = true
+			msg.Text = "🌱 No records yet!\nBe the first to make history!"
+			msg.ZIndex = 86
+			msg.Parent = self.oldestScroll
+		end
+	end)
+end
 
-	-- Build records
+-- Fallback function for local leaderboard if global fetch fails
+function ProgressScreen:refreshLeaderboardsLocal()
+	local state = self:getState()
+	local pastLives = state and state.PastLives or {}
+
+	-- Clear both columns
+	for _, scroll in ipairs({ self.richestScroll, self.oldestScroll }) do
+		for _, c in ipairs(scroll:GetChildren()) do
+			if c:IsA("Frame") or c:IsA("TextLabel") then 
+				c:Destroy() 
+			end
+		end
+	end
+
+	-- Build records from local data
 	local richest = {}
 	local oldest = {}
 
@@ -1224,11 +1286,10 @@ function ProgressScreen:refreshLeaderboards()
 		entry.Parent = self.oldestScroll
 	end
 
-	-- Canvas sizes (48px entry + 4px padding = 52px per row)
+	-- Canvas sizes
 	self.richestScroll.CanvasSize = UDim2.new(0, 0, 0, math.max(50, math.min(10, #richest) * 52))
 	self.oldestScroll.CanvasSize  = UDim2.new(0, 0, 0, math.max(50, math.min(10, #oldest) * 52))
 	
-	-- If no past lives yet, show a message
 	if #pastLives == 0 then
 		local function createEmptyMessage(scroll, text)
 			local msg = Instance.new("TextLabel")
