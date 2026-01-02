@@ -1923,6 +1923,32 @@ function OccupationScreen:isEnrolled()
 	return false
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Get the specific program the player is currently enrolled in
+-- Used to check "Already Enrolled" per-program instead of globally
+-- ═══════════════════════════════════════════════════════════════════════════════
+function OccupationScreen:getCurrentEnrolledProgram()
+	local state = self.playerState
+	if not state then return nil end
+	
+	-- Check EducationData first (most reliable source)
+	if state.EducationData and state.EducationData.Status == "enrolled" then
+		return state.EducationData.Level or state.EducationData.Institution or state.EducationData.Program
+	end
+	
+	-- Check Career education tracking
+	if state.Career and state.Career.enrolled and state.Career.educationProgram then
+		return state.Career.educationProgram
+	end
+	
+	-- Check direct Enrolled field with program info
+	if state.Enrolled and state.EnrolledProgram then
+		return state.EnrolledProgram
+	end
+	
+	return nil
+end
+
 function OccupationScreen:fetchCareerInfo()
 	if not GetCareerInfo then
 		log("GetCareerInfo remote not available")
@@ -6016,10 +6042,19 @@ function OccupationScreen:populateEducation()
 	badgeLabel.ZIndex = 85
 	badgeLabel.Parent = badge
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Check enrollment per-program, not globally!
+	-- Bug report: "all of them say 'Already Enrolled'" when scrolling down
+	-- Fix: Only show "Already Enrolled" for the SPECIFIC program they're in
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local currentProgram = self:getCurrentEnrolledProgram()
+	
 	-- Add education options
 	local order = 1
 	for _, edu in ipairs(Education) do
-		self:createEducationCard(section, edu, order, age, money, eduLevel, enrolled)
+		-- Check if player is enrolled in THIS SPECIFIC program
+		local enrolledInThis = enrolled and (currentProgram == edu.id or currentProgram == edu.name)
+		self:createEducationCard(section, edu, order, age, money, eduLevel, enrolledInThis)
 		order = order + 1
 	end
 end

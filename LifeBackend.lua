@@ -5751,6 +5751,62 @@ local ActivityCatalog = {
 	},
 	
 	-- ═══════════════════════════════════════════════════════════════════════════
+	-- SCHOOL ACTIVITIES (for current students) - BitLife style!
+	-- ═══════════════════════════════════════════════════════════════════════════
+	do_homework = { 
+		stats = { Smarts = 4 }, 
+		feed = "did your homework", 
+		cost = 0,
+		requiresAge = 5,
+		maxAge = 22,
+	},
+	study_hard = { 
+		stats = { Smarts = 6, Happiness = -1 }, 
+		feed = "studied really hard", 
+		cost = 0,
+		requiresAge = 5,
+		maxAge = 22,
+	},
+	join_club = { 
+		stats = { Happiness = 3, Smarts = 2 }, 
+		feed = "joined a school club!", 
+		cost = 0,
+		requiresAge = 10,
+		maxAge = 22,
+		setFlags = { in_club = true },
+	},
+	sports_tryout = { 
+		stats = { Health = 4, Happiness = 2 }, 
+		feed = "tried out for a sports team!", 
+		cost = 0,
+		requiresAge = 10,
+		maxAge = 22,
+		setFlags = { tried_sports = true },
+	},
+	school_play = { 
+		stats = { Happiness = 4, Looks = 2 }, 
+		feed = "joined the school play!", 
+		cost = 0,
+		requiresAge = 8,
+		maxAge = 18,
+		setFlags = { in_theater = true },
+	},
+	ask_teacher_help = { 
+		stats = { Smarts = 5 }, 
+		feed = "asked a teacher for extra help", 
+		cost = 0,
+		requiresAge = 5,
+		maxAge = 22,
+	},
+	library_time = { 
+		stats = { Smarts = 4, Happiness = 1 }, 
+		feed = "spent time at the library", 
+		cost = 0,
+		requiresAge = 5,
+		maxAge = 22,
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════
 	-- EDUCATION ACTIVITIES (Like BitLife!) - Go back to school, get GED, etc.
 	-- ═══════════════════════════════════════════════════════════════════════════
 	get_ged = {
@@ -10839,6 +10895,20 @@ function LifeBackend:updateEducationProgress(state)
 				state.Education = eduData.Level
 				
 				-- ═══════════════════════════════════════════════════════════════════════════════
+				-- CRITICAL FIX: FREEZE GPA on graduation!
+				-- Bug report: "GPA still changes after graduating"
+				-- Store the final GPA so it never recalculates from smarts after graduation
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				local smarts = state.Stats and state.Stats.Smarts or 50
+				local finalGPA = eduData.GPA or math.floor((smarts / 25) * 100) / 100
+				eduData.FinalGPA = finalGPA
+				eduData.GraduationGPA = finalGPA
+				-- Also set eduData.GPA explicitly so it's always used
+				if not eduData.GPA then
+					eduData.GPA = finalGPA
+				end
+				
+				-- ═══════════════════════════════════════════════════════════════════════════════
 				-- CRITICAL FIX (deep-2): Store degrees earned in a dedicated list
 				-- This ensures all degrees persist and are accessible for job applications
 				-- ═══════════════════════════════════════════════════════════════════════════════
@@ -10852,7 +10922,7 @@ function LifeBackend:updateEducationProgress(state)
 						institution = institutionName,
 						year = state.Year,
 						level = eduData.Level,
-						gpa = eduData.GPA,
+						gpa = finalGPA,
 					})
 					state.Flags.has_degree = true
 					state.Flags.highest_degree = degreeName
@@ -19550,10 +19620,23 @@ function LifeBackend:getEducationInfo(player)
 	local edu = state.EducationData or { Status = "none" }
 	state.Stats = state.Stats or {}
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: GPA should be FROZEN after graduation!
+	-- Bug report: "Even after graduating from higher education, your GPA still changes"
+	-- Solution: Once status is "completed" (graduated), use stored GPA, don't recalculate
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	local rawGPA
+	local isGraduated = edu.Status == "completed" or edu.Status == "graduated"
+	
 	if edu.GPA ~= nil then
+		-- Always use explicit GPA if set (including frozen graduation GPA)
 		rawGPA = edu.GPA
+	elseif isGraduated then
+		-- If graduated but no GPA stored, use a default (shouldn't happen normally)
+		-- This preserves the graduation GPA instead of recalculating from current smarts
+		rawGPA = edu.FinalGPA or edu.GraduationGPA or 3.0 -- Default to B average
 	else
+		-- Only calculate from smarts for ACTIVE students
 		local smarts = state.Stats.Smarts or 0
 		rawGPA = math.floor((smarts / 25) * 100) / 100
 	end
