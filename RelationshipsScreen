@@ -573,6 +573,110 @@ local EnemyActions = {
 	{ id = "ignore",  name = "Ignore",  emoji = "Ignore",effect = "Nothing", minAge = 5 },
 }
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- BITLIFE-STYLE ACTIVITY CHOICES
+-- Define sub-choices for each interaction type (BitLife style!)
+-- ═══════════════════════════════════════════════════════════════════════════════
+local ActivityChoices = {
+	hangout = {
+		title = "Hang Out",
+		emoji = "👥",
+		question = "What do you want to do together?",
+		choices = {
+			{ id = "movie", text = "🎬 Watch a movie", effect = "+Happiness +Relationship" },
+			{ id = "games", text = "🎮 Play video games", effect = "+Happiness +Relationship" },
+			{ id = "coffee", text = "☕ Get coffee", effect = "+Relationship" },
+			{ id = "shopping", text = "🛒 Go shopping", effect = "+Happiness" },
+			{ id = "walk", text = "🚶 Take a walk", effect = "+Health +Relationship" },
+			{ id = "surprise", text = "✨ Surprise me!", effect = "Random!" },
+		},
+	},
+	party = {
+		title = "Party Together",
+		emoji = "🎉",
+		question = "What kind of party?",
+		choices = {
+			{ id = "house", text = "🏠 House party", effect = "+Fun +Relationship" },
+			{ id = "club", text = "🕺 Hit the club", effect = "+Happiness -Health" },
+			{ id = "chill", text = "😎 Chill hangout", effect = "+Relationship" },
+			{ id = "wild", text = "🤪 Go wild!", effect = "High Risk!" },
+			{ id = "surprise", text = "✨ Surprise me!", effect = "Random!" },
+		},
+	},
+	date = {
+		title = "Go on a Date",
+		emoji = "❤️",
+		question = "Where do you want to go?",
+		choices = {
+			{ id = "dinner", text = "🍽️ Fancy dinner", effect = "+Romance" },
+			{ id = "movies", text = "🎬 Movie date", effect = "+Happiness" },
+			{ id = "romantic", text = "🌹 Romantic walk", effect = "+Romance +Health" },
+			{ id = "adventure", text = "🎢 Adventure date", effect = "+Happiness +Excitement" },
+			{ id = "casual", text = "☕ Casual coffee", effect = "+Relationship" },
+			{ id = "surprise", text = "✨ Surprise me!", effect = "Random!" },
+		},
+	},
+	gift = {
+		title = "Give a Gift",
+		emoji = "🎁",
+		question = "What kind of gift?",
+		choices = {
+			{ id = "thoughtful", text = "💝 Something thoughtful", effect = "+Relationship" },
+			{ id = "expensive", text = "💎 Something expensive", effect = "+Relationship (costs more)" },
+			{ id = "handmade", text = "✂️ Handmade gift", effect = "+Relationship +Personal" },
+			{ id = "funny", text = "😂 Gag gift", effect = "+Happiness" },
+			{ id = "surprise", text = "✨ Random gift", effect = "Random!" },
+		},
+	},
+	support = {
+		title = "Support Them",
+		emoji = "🤗",
+		question = "How do you want to support them?",
+		choices = {
+			{ id = "listen", text = "👂 Be a good listener", effect = "+Relationship" },
+			{ id = "advice", text = "💡 Give advice", effect = "+Relationship +Wisdom" },
+			{ id = "help", text = "🙌 Offer to help", effect = "+Relationship" },
+			{ id = "cheer", text = "📣 Cheer them up", effect = "+Happiness" },
+			{ id = "surprise", text = "✨ Just be there", effect = "Random!" },
+		},
+	},
+	talk = {
+		title = "Have a Talk",
+		emoji = "💬",
+		question = "What do you want to talk about?",
+		choices = {
+			{ id = "life", text = "🌟 Life updates", effect = "+Relationship" },
+			{ id = "memories", text = "📸 Old memories", effect = "+Happiness +Nostalgia" },
+			{ id = "advice", text = "💡 Ask for advice", effect = "+Smarts" },
+			{ id = "deep", text = "🧠 Deep conversation", effect = "+Relationship +Bond" },
+			{ id = "surprise", text = "✨ Random topic", effect = "Random!" },
+		},
+	},
+	kiss = {
+		title = "Kiss",
+		emoji = "💋",
+		question = "What kind of kiss?",
+		choices = {
+			{ id = "peck", text = "😘 Quick peck", effect = "+Relationship" },
+			{ id = "romantic", text = "💕 Romantic kiss", effect = "+Romance +Happiness" },
+			{ id = "passionate", text = "🔥 Passionate kiss", effect = "+Romance!" },
+			{ id = "forehead", text = "😊 Forehead kiss", effect = "+Sweet +Relationship" },
+			{ id = "surprise", text = "✨ Spontaneous!", effect = "Random!" },
+		},
+	},
+	hug = {
+		title = "Give a Hug",
+		emoji = "🤗",
+		question = "What kind of hug?",
+		choices = {
+			{ id = "warm", text = "🤗 Warm embrace", effect = "+Relationship" },
+			{ id = "tight", text = "💪 Big bear hug", effect = "+Happiness" },
+			{ id = "comfort", text = "💕 Comforting hug", effect = "+Relationship +Support" },
+			{ id = "surprise", text = "✨ Just hug them!", effect = "Random!" },
+		},
+	},
+}
+
 local function getActionDisplayName(actionId, relType)
 	local list
 	if relType == "family" then
@@ -3272,101 +3376,6 @@ function RelationshipsScreen:hideResultModal()
 		UI.hideModal(self.resultModal)
 	end
 end
-
--- ═══════════════════════════════════════════════════════════════════════════════
--- BITLIFE-STYLE ACTIVITY CHOICE CARD
--- When user clicks "Hang Out", "Date", etc., show choices for WHAT they want to do!
--- ═══════════════════════════════════════════════════════════════════════════════
-
--- Define sub-choices for each interaction type (BitLife style!)
-local ActivityChoices = {
-	hangout = {
-		title = "Hang Out",
-		emoji = "👥",
-		question = "What do you want to do together?",
-		choices = {
-			{ id = "movie", text = "🎬 Watch a movie", effect = "+Happiness +Relationship" },
-			{ id = "games", text = "🎮 Play video games", effect = "+Happiness +Relationship" },
-			{ id = "coffee", text = "☕ Get coffee", effect = "+Relationship" },
-			{ id = "shopping", text = "🛒 Go shopping", effect = "+Happiness" },
-			{ id = "walk", text = "🚶 Take a walk", effect = "+Health +Relationship" },
-			{ id = "surprise", text = "✨ Surprise me!", effect = "Random!" },
-		},
-	},
-	party = {
-		title = "Party Together",
-		emoji = "🎉",
-		question = "What kind of party?",
-		choices = {
-			{ id = "house", text = "🏠 House party", effect = "+Fun +Relationship" },
-			{ id = "club", text = "🕺 Hit the club", effect = "+Happiness -Health" },
-			{ id = "chill", text = "😎 Chill hangout", effect = "+Relationship" },
-			{ id = "wild", text = "🤪 Go wild!", effect = "High Risk!" },
-			{ id = "surprise", text = "✨ Surprise me!", effect = "Random!" },
-		},
-	},
-	date = {
-		title = "Go on a Date",
-		emoji = "❤️",
-		question = "Where do you want to go?",
-		choices = {
-			{ id = "dinner", text = "🍽️ Fancy dinner", effect = "+Romance" },
-			{ id = "movies", text = "🎬 Movie date", effect = "+Happiness" },
-			{ id = "romantic", text = "🌹 Romantic walk", effect = "+Romance +Health" },
-			{ id = "adventure", text = "🎢 Adventure date", effect = "+Happiness +Excitement" },
-			{ id = "casual", text = "☕ Casual coffee", effect = "+Relationship" },
-			{ id = "surprise", text = "✨ Surprise me!", effect = "Random!" },
-		},
-	},
-	gift = {
-		title = "Give a Gift",
-		emoji = "🎁",
-		question = "What kind of gift?",
-		choices = {
-			{ id = "thoughtful", text = "💝 Something thoughtful", effect = "+Relationship" },
-			{ id = "expensive", text = "💎 Something expensive", effect = "+Relationship (costs more)" },
-			{ id = "handmade", text = "✂️ Handmade gift", effect = "+Relationship +Personal" },
-			{ id = "funny", text = "😂 Gag gift", effect = "+Happiness" },
-			{ id = "surprise", text = "✨ Random gift", effect = "Random!" },
-		},
-	},
-	support = {
-		title = "Support Them",
-		emoji = "🤗",
-		question = "How do you want to support them?",
-		choices = {
-			{ id = "listen", text = "👂 Be a good listener", effect = "+Relationship" },
-			{ id = "advice", text = "💡 Give advice", effect = "+Relationship +Wisdom" },
-			{ id = "help", text = "🙌 Offer to help", effect = "+Relationship" },
-			{ id = "cheer", text = "📣 Cheer them up", effect = "+Happiness" },
-			{ id = "surprise", text = "✨ Just be there", effect = "Random!" },
-		},
-	},
-	talk = {
-		title = "Have a Talk",
-		emoji = "💬",
-		question = "What do you want to talk about?",
-		choices = {
-			{ id = "life", text = "🌟 Life updates", effect = "+Relationship" },
-			{ id = "memories", text = "📸 Old memories", effect = "+Happiness +Nostalgia" },
-			{ id = "advice", text = "💡 Ask for advice", effect = "+Smarts" },
-			{ id = "deep", text = "🧠 Deep conversation", effect = "+Relationship +Bond" },
-			{ id = "surprise", text = "✨ Random topic", effect = "Random!" },
-		},
-	},
-	kiss = {
-		title = "Kiss",
-		emoji = "💋",
-		question = "What kind of kiss?",
-		choices = {
-			{ id = "peck", text = "😘 Quick peck", effect = "+Relationship" },
-			{ id = "romantic", text = "💕 Romantic kiss", effect = "+Romance +Happiness" },
-			{ id = "passionate", text = "🔥 Passionate kiss", effect = "+Romance!" },
-			{ id = "forehead", text = "😊 Forehead kiss", effect = "+Sweet +Relationship" },
-			{ id = "surprise", text = "✨ Spontaneous!", effect = "Random!" },
-		},
-	},
-}
 
 function RelationshipsScreen:createActivityChoiceCard()
 	if self.activityChoiceCard then return end
