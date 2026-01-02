@@ -425,23 +425,40 @@ function LifeBackend:savePlayerData(player)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local success, err = pcall(function()
 		store:UpdateAsync(key, function(oldData)
-			-- If no old data or new data is newer, use new data
-			-- This prevents overwriting newer saves with older data
+			-- If no old data, use new data
 			if not oldData then
 				return serialized
 			end
 			
-			-- Compare ages - only save if newer
+			-- Compare ages and timestamps
 			local oldAge = oldData.Age or 0
 			local newAge = serialized.Age or 0
+			local oldTime = oldData._savedAt or 0
+			local newTime = serialized._savedAt or os.time()
 			
-			-- If new data is older (somehow), keep old data
-			if newAge < oldAge then
-				warn("[LifeBackend] ⚠️ Skipping save - old data is newer!")
-				return nil -- Return nil to abort the update
+			-- If same age, use timestamp to decide
+			if newAge == oldAge then
+				if newTime >= oldTime then
+					return serialized -- Newer or same time, save it
+				else
+					-- Silently skip - this is expected during rapid syncs
+					return nil
+				end
 			end
 			
-			return serialized
+			-- If new age is higher, always save
+			if newAge > oldAge then
+				return serialized
+			end
+			
+			-- If new age is lower but it's a new life (age 0), always save
+			if newAge == 0 and oldAge > 0 then
+				-- Player started a new life, save it
+				return serialized
+			end
+			
+			-- Otherwise, silently skip (avoid warn spam)
+			return nil
 		end)
 	end)
 
@@ -1175,7 +1192,7 @@ function LifeBackend:validatePremiumFlags(state)
 		end
 		
 		if not hasValidFameSource then
-			warn("[RVS] Ghost fame flag: No valid fame source - clearing")
+			-- Ghost fame flag silently cleared to prevent spam
 			flags.is_famous = nil
 			flags.fame_career = nil
 			flags.celebrity = nil
@@ -1304,16 +1321,20 @@ function LifeBackend:validateEventChains(state)
 	
 	-- ═══════════════════════════════════════════════════════════════════════
 	-- ENGAGEMENT WITHOUT MARRIAGE VALIDATION
-	-- If engaged but never married after 3+ years
+	-- If engaged but never married after many years - extend to 10 years for realism
+	-- Some real couples stay engaged for many years!
 	-- ═══════════════════════════════════════════════════════════════════════
 	if flags.engaged and not flags.married then
 		local engagedAge = flags.engaged_at_age or (age - 3)
 		local yearsEngaged = age - engagedAge
 		
-		if yearsEngaged >= 5 then
-			warn("[RVS] Stale engagement: 5+ years engaged without marriage - ending")
+		-- Only end after 10+ years and only once (not spam)
+		if yearsEngaged >= 10 and not flags._engagement_timeout_applied then
+			flags._engagement_timeout_applied = true
 			flags.engaged = nil
 			flags.engaged_at_age = nil
+			-- Set a flag so events can reference this
+			flags.engagement_ended_naturally = true
 			fixes = fixes + 1
 		end
 	end
@@ -1966,7 +1987,10 @@ function LifeBackend:cleanDuplicateAssets(state)
 	local hasProperty = state.Assets.Properties and #state.Assets.Properties > 0
 	
 	if flags.owns_property and not hasProperty then
-		warn("[RVS] Ghost owns_property flag - clearing")
+		-- Only warn once to prevent spam
+		if not flags._ghost_property_warned then
+			flags._ghost_property_warned = true
+		end
 		flags.owns_property = nil
 		fixes = fixes + 1
 	end

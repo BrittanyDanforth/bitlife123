@@ -986,6 +986,19 @@ local function safeSetTextSize(textElement, size)
 		safeSize = 100
 	end
 	
+	-- CRITICAL FIX: Check for and fix any UITextSizeConstraint issues first
+	local constraint = textElement:FindFirstChildOfClass("UITextSizeConstraint")
+	if constraint then
+		-- Ensure MinTextSize is never greater than the size we're setting
+		if constraint.MinTextSize > safeSize then
+			constraint.MinTextSize = math.max(6, safeSize - 2)
+		end
+		-- Ensure MaxTextSize is always >= MinTextSize
+		if constraint.MaxTextSize < constraint.MinTextSize then
+			constraint.MaxTextSize = constraint.MinTextSize + 10
+		end
+	end
+	
 	-- Try to set text size, catch any constraint errors
 	local success, err = pcall(function()
 		textElement.TextSize = safeSize
@@ -996,9 +1009,19 @@ local function safeSetTextSize(textElement, size)
 		pcall(function()
 			textElement.TextSize = 14
 		end)
-		-- Suppress the warning to avoid spamming console
-		-- warn("[LifeClient] TextSize assignment failed, used fallback:", err)
 	end
+end
+
+-- CRITICAL FIX: Safe constraint creation to prevent MaxTextSize < MinTextSize errors
+local function safeTextConstraint(parent, minSize, maxSize)
+	local constraint = Instance.new("UITextSizeConstraint")
+	-- Ensure max >= min
+	local safeMin = math.max(6, minSize or 8)
+	local safeMax = math.max(safeMin + 1, maxSize or 20)
+	constraint.MinTextSize = safeMin
+	constraint.MaxTextSize = safeMax
+	constraint.Parent = parent
+	return constraint
 end
 
 -- Get responsive padding - more compact on tiny phones
@@ -5533,11 +5556,8 @@ IntroUI.genderTitle.LayoutOrder = 1
 IntroUI.genderTitle.ZIndex = 72
 IntroUI.genderTitle.Parent = IntroUI.content
 
--- Constrain title text scaling
-IntroUI.genderTitleConstraint = Instance.new("UITextSizeConstraint")
-IntroUI.genderTitleConstraint.MaxTextSize = 20
-IntroUI.genderTitleConstraint.MinTextSize = 12
-IntroUI.genderTitleConstraint.Parent = IntroUI.genderTitle
+-- Constrain title text scaling - using safe constraint helper
+IntroUI.genderTitleConstraint = safeTextConstraint(IntroUI.genderTitle, 12, 20)
 
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- BONUS INCOME DISPLAY - "Join our group & like for 25% extra income!"
@@ -5574,11 +5594,8 @@ IntroUI.bonusPromptText.TextScaled = true
 IntroUI.bonusPromptText.ZIndex = 73
 IntroUI.bonusPromptText.Parent = IntroUI.bonusPrompt
 
--- Constrain text scaling
-IntroUI.bonusPromptTextConstraint = Instance.new("UITextSizeConstraint")
-IntroUI.bonusPromptTextConstraint.MaxTextSize = 12
-IntroUI.bonusPromptTextConstraint.MinTextSize = 8
-IntroUI.bonusPromptTextConstraint.Parent = IntroUI.bonusPromptText
+-- Constrain text scaling - using safe constraint helper
+IntroUI.bonusPromptTextConstraint = safeTextConstraint(IntroUI.bonusPromptText, 8, 12)
 
 -- Add padding to the text
 IntroUI.bonusPromptPadding = Instance.new("UIPadding")
@@ -6570,11 +6587,8 @@ for _, g in ipairs(genderData) do
 	pill(btn)
 	stroke(btn, 2, 0.5, C.White)
 	
-	-- Text size constraint for mobile
-	local textConstraint = Instance.new("UITextSizeConstraint")
-	textConstraint.MaxTextSize = 20
-	textConstraint.MinTextSize = 12
-	textConstraint.Parent = btn
+	-- Text size constraint for mobile - using safe constraint
+	local textConstraint = safeTextConstraint(btn, 12, 20)
 
 	btn.MouseEnter:Connect(function()
 		tween(btn, TweenInfo.new(0.1), { Size = UDim2.new(0.88, 0, 0, 52) })
@@ -6639,11 +6653,8 @@ do
 	pill(customizeGenderBtn)
 	stroke(customizeGenderBtn, 2, 0, Color3.fromRGB(217, 119, 6))
 	
-	-- Text size constraint for mobile
-	local customizeTextConstraint = Instance.new("UITextSizeConstraint")
-	customizeTextConstraint.MaxTextSize = 16
-	customizeTextConstraint.MinTextSize = 10
-	customizeTextConstraint.Parent = customizeGenderBtn
+	-- Text size constraint for mobile - using safe constraint
+	local customizeTextConstraint = safeTextConstraint(customizeGenderBtn, 10, 16)
 	
 	IntroUI.customizeGenderBtn = customizeGenderBtn
 	
@@ -6773,11 +6784,8 @@ do
 	pill(royaltyBtn)
 	stroke(royaltyBtn, 2, 0, Color3.fromRGB(180, 140, 0))
 	
-	-- Text size constraint for mobile
-	local royaltyTextConstraint = Instance.new("UITextSizeConstraint")
-	royaltyTextConstraint.MaxTextSize = 16
-	royaltyTextConstraint.MinTextSize = 10
-	royaltyTextConstraint.Parent = royaltyBtn
+	-- Text size constraint for mobile - using safe constraint
+	local royaltyTextConstraint = safeTextConstraint(royaltyBtn, 10, 16)
 	
 	IntroUI.royaltyGenderBtn = royaltyBtn
 	

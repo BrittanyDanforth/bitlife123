@@ -2322,7 +2322,14 @@ end
 
 local function calculateEventWeight(event, state)
 	local history = getEventHistory(state)
-	local baseWeight = event.weight or 10
+	-- CRITICAL FIX: Handle weight being a function (some events calculate weight dynamically)
+	local baseWeight = event.weight
+	if type(baseWeight) == "function" then
+		local ok, result = pcall(baseWeight, state)
+		baseWeight = (ok and type(result) == "number") and result or 10
+	elseif type(baseWeight) ~= "number" then
+		baseWeight = 10
+	end
 	local weight = baseWeight
 	local age = state.Age or 0
 	
@@ -5071,17 +5078,19 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 		(state.GamepassOwnership and state.GamepassOwnership.GOD_MODE)
 	
 	-- Check if player just became royalty through this event
+	-- CRITICAL FIX: Only run conflict resolution ONCE per state change to prevent spam
 	if flags.is_royalty or flags.royal_by_marriage then
 		-- CRITICAL FIX: God Mode players can be BOTH royalty AND mafia - skip conflict clearing!
-		if not hasGodMode and (flags.in_mob or state.MobState) then
-			warn("[EventEngine] CONFLICT: Player became royalty but had mafia state - clearing mafia (no God Mode)")
+		if not hasGodMode and (flags.in_mob or state.MobState) and not flags._royalty_conflict_resolved then
+			-- Only warn once
+			flags._royalty_conflict_resolved = true
 			flags.in_mob = nil
 			flags.mafia_member = nil
 			flags.chose_mafia_path = nil
 			state.MobState = nil
-		elseif hasGodMode and (flags.in_mob or state.MobState) then
-			-- God Mode: Allow both! Just log for debugging
-			print("[EventEngine] GOD MODE: Player is BOTH royalty AND mafia - allowed!")
+		elseif hasGodMode and (flags.in_mob or state.MobState) and not flags._godmode_dual_logged then
+			-- God Mode: Allow both! Just log once for debugging
+			flags._godmode_dual_logged = true
 		end
 		-- Ensure primary_wish_type is correct
 		if flags.primary_wish_type ~= "royalty" then
@@ -5103,21 +5112,21 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 	-- Check if player just joined mafia through this event
 	if flags.in_mob or (state.MobState and state.MobState.inMob) then
 		-- CRITICAL FIX: God Mode players can be BOTH royalty AND mafia - skip conflict clearing!
-		if not hasGodMode and (flags.is_royalty or state.RoyalState) then
-			warn("[EventEngine] CONFLICT: Player joined mafia but had royalty state - clearing royalty (no God Mode)")
+		-- CRITICAL FIX: Only run conflict resolution ONCE to prevent warn spam
+		if not hasGodMode and (flags.is_royalty or state.RoyalState) and not flags._mafia_conflict_resolved then
+			flags._mafia_conflict_resolved = true
 			flags.is_royalty = nil
 			flags.royal_birth = nil
 			flags.dating_royalty = nil
 			flags.chose_royalty_path = nil
 			state.RoyalState = nil
-		elseif hasGodMode and (flags.is_royalty or state.RoyalState) then
-			-- God Mode: Allow both! Just log for debugging
-			print("[EventEngine] GOD MODE: Player is BOTH mafia AND royalty - allowed!")
+		elseif hasGodMode and (flags.is_royalty or state.RoyalState) and not flags._godmode_dual_logged then
+			flags._godmode_dual_logged = true
 		end
-		-- Clear conflicting celebrity state
-		if flags.fame_career and not flags.mob_fame then
-			-- Keep fame if it was gained through mob activities, otherwise clear
+		-- Clear conflicting celebrity state (only once)
+		if flags.fame_career and not flags.mob_fame and not flags._mafia_fame_conflict_resolved then
 			if not (state.FameState and state.FameState.careerPath == "crime_boss") then
+				flags._mafia_fame_conflict_resolved = true
 				flags.fame_career = nil
 				flags.is_famous = nil
 			end
@@ -5135,18 +5144,18 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 		if not existingWish then
 			flags.primary_wish_type = "celebrity"
 		end
-		-- Clear conflicting mafia state (unless fame is from mob activities)
-		if flags.in_mob and not flags.mob_fame then
+		-- Clear conflicting mafia state (unless fame is from mob activities) - ONLY ONCE
+		if flags.in_mob and not flags.mob_fame and not flags._fame_mafia_conflict_resolved then
 			if state.FameState and state.FameState.careerPath ~= "crime_boss" then
-				warn("[EventEngine] CONFLICT: Player became famous but had mafia state - clearing mafia")
+				flags._fame_mafia_conflict_resolved = true
 				flags.in_mob = nil
 				flags.mafia_member = nil
 				state.MobState = nil
 			end
 		end
-		-- Clear conflicting royalty state
-		if flags.is_royalty and not flags.royal_fame then
-			warn("[EventEngine] CONFLICT: Player became famous but had royalty state - clearing royalty")
+		-- Clear conflicting royalty state - ONLY ONCE
+		if flags.is_royalty and not flags.royal_fame and not flags._fame_royalty_conflict_resolved then
+			flags._fame_royalty_conflict_resolved = true
 			flags.is_royalty = nil
 			state.RoyalState = nil
 		end
