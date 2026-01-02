@@ -297,6 +297,108 @@ NFLCareerEvents.events = {
 		},
 	},
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- INTERMEDIATE STEP: Offseason training (required for varsity success)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "football_offseason_training",
+		title = "🏋️ Offseason Football Training",
+		emoji = "🏋️",
+		text = "The serious football players train year-round. There's an offseason strength and conditioning program starting. It's brutal but essential for making varsity.",
+		category = "career_nfl",
+		weight = 15,
+		minAge = 12, maxAge = 16,
+		baseChance = 0.35,
+		cooldown = 2,
+		eligibility = function(state)
+			if not isEligibleForNFL(state) then return false end
+			return state.Flags and state.Flags.plays_football and not state.Flags.offseason_trained
+		end,
+		
+		choices = {
+			{
+				text = "🏋️ Commit to the grind!",
+				effects = { Health = 5, Happiness = -3 },
+				feedText = "Training hard!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					local roll = RANDOM:NextInteger(1, 100)
+					if roll <= 70 then
+						state.Flags.offseason_trained = true
+						state.Flags.football_dedicated = true
+						state:ModifyStat("Health", 8)
+						state:AddFeed("🏋️ Crushed the offseason! You're stronger, faster, and ready for varsity!")
+					else
+						state:ModifyStat("Health", 3)
+						state:AddFeed("🏋️ Tough training but you stuck with it. Getting better every day!")
+					end
+				end,
+			},
+			{
+				text = "Skip it - too much work",
+				effects = { Happiness = 5 },
+				feedText = "Taking it easy.",
+				onResolve = function(state)
+					state:AddFeed("🏋️ Skipped offseason training. Hope natural talent is enough...")
+				end,
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- INTERMEDIATE STEP: Summer football camp (builds skills)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "football_summer_camp",
+		title = "🏈 Elite Football Camp",
+		emoji = "🏈",
+		text = "An elite summer football camp is coming to town! College coaches and NFL scouts sometimes attend. It costs money but could be career-changing.",
+		category = "career_nfl",
+		weight = 12,
+		minAge = 13, maxAge = 17,
+		baseChance = 0.25,
+		cooldown = 2,
+		eligibility = function(state)
+			if not isEligibleForNFL(state) then return false end
+			return state.Flags and state.Flags.plays_football
+		end,
+		
+		choices = {
+			{
+				text = "🏈 Sign up! ($500)",
+				effects = { Money = -500, Health = 3 },
+				feedText = "Camp time!",
+				eligibility = function(state) return (state.Money or 0) >= 500 or (state.ParentMoney or 0) >= 500 end,
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					local roll = RANDOM:NextInteger(1, 100)
+					local bonus = 0
+					if state.Flags.offseason_trained then bonus = 20 end
+					if state.Flags.football_position then bonus = bonus + 10 end
+					
+					if roll + bonus >= 70 then
+						state.Flags.camp_standout = true
+						state.Flags.football_star = true
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("🏈 DOMINATED the camp! Coaches are taking notice! You're on the radar!")
+					elseif roll + bonus >= 40 then
+						state.Flags.camp_participant = true
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🏈 Good showing at camp! Learned a lot and made connections!")
+					else
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🏈 Camp was humbling. The competition is tough at this level.")
+					end
+				end,
+			},
+			{
+				text = "Too expensive",
+				effects = {},
+				feedText = "Can't afford it.",
+			},
+		},
+	},
+	
 	{
 		id = "football_varsity_tryout",
 		title = "🏈 Varsity Tryouts!",
@@ -305,10 +407,11 @@ NFLCareerEvents.events = {
 		category = "career_nfl",
 		weight = 14,
 		minAge = 14, maxAge = 16,
-		baseChance = 0.30,
+		baseChance = 0.28, -- Slightly reduced
 		oneTime = true,
 		eligibility = function(state)
 			if not isEligibleForNFL(state) then return false end
+			-- Need to have played football before trying for varsity
 			return state.Flags and state.Flags.plays_football
 		end,
 		
@@ -702,18 +805,24 @@ NFLCareerEvents.events = {
 		id = "nfl_draft_declaration",
 		title = "🏈 Declare for NFL Draft?",
 		emoji = "🏈",
-		text = "NFL scouts have been watching you closely. Your agent believes you could be drafted. This decision will change your LIFE!",
+		text = "NFL scouts have been watching you closely. Your agent believes you could be drafted. This decision will change your LIFE! But the odds are long - only the BEST make it.",
 		question = "Do you declare for the NFL Draft?",
 		category = "career_nfl",
-		weight = 15,
+		weight = 12, -- REDUCED weight - less common
 		minAge = 21, maxAge = 24,
-		baseChance = 0.35,
+		baseChance = 0.20, -- REDUCED from 0.35 - harder to get this event
 		oneTime = true,
 		eligibility = function(state)
 			if not isEligibleForNFL(state) then return false end
 			if not state.Flags then return false end
 			if state.Flags.nfl_declared or state.Flags.nfl_player then return false end
-			return state.Flags.college_football or (state.Flags.plays_football and state.Flags.varsity_athlete)
+			-- CRITICAL: Must have STRONG football background to even get the chance
+			-- Requires college football + at least one standout achievement
+			local hasCollegeFootball = state.Flags.college_football
+			local hasStandoutAchievement = state.Flags.varsity_athlete or state.Flags.football_star 
+				or state.Flags.state_champion or state.Flags.bowl_game_mvp or state.Flags.heisman_winner
+				or state.Flags.combine_standout
+			return hasCollegeFootball and hasStandoutAchievement
 		end,
 		blockedByFlags = { in_prison = true, injured = true, nfl_declared = true, nfl_player = true },
 		
@@ -730,11 +839,12 @@ NFLCareerEvents.events = {
 					local roll = RANDOM:NextInteger(1, 100)
 					local bonus = getDraftBonus(state)
 					
-					if roll + bonus >= 80 then
-						-- TOP 10 PICK!
+					-- CRITICAL FIX: MUCH harder thresholds - NFL is elite, most don't make it
+					if roll + bonus >= 95 then
+						-- TOP 10 PICK! - Extremely rare (need ~95+ with bonuses)
 						local pickNum = RANDOM:NextInteger(1, 10)
-						local signBonus = RANDOM:NextInteger(20000000, 45000000)
-						local salary = RANDOM:NextInteger(8000000, 15000000)
+						local signBonus = RANDOM:NextInteger(5000000, 15000000) -- REDUCED from 20-45M
+						local salary = RANDOM:NextInteger(2000000, 5000000) -- REDUCED from 8-15M
 						
 						state.Money = (state.Money or 0) + signBonus
 						state.Fame = math.min(100, (state.Fame or 0) + 55)
@@ -754,11 +864,11 @@ NFLCareerEvents.events = {
 						
 						state:AddFeed(string.format("🏈 TOP %d PICK!!! %s guaranteed! FRANCHISE PLAYER! Welcome to the NFL!", pickNum, formatMoney(signBonus)))
 						
-					elseif roll + bonus >= 60 then
-						-- First round (non top-10)
+					elseif roll + bonus >= 80 then
+						-- First round (non top-10) - Very hard
 						local pickNum = RANDOM:NextInteger(11, 32)
-						local signBonus = RANDOM:NextInteger(8000000, 20000000)
-						local salary = RANDOM:NextInteger(3000000, 8000000)
+						local signBonus = RANDOM:NextInteger(2000000, 6000000) -- REDUCED from 8-20M
+						local salary = RANDOM:NextInteger(1000000, 3000000) -- REDUCED from 3-8M
 						
 						state.Money = (state.Money or 0) + signBonus
 						state.Fame = math.min(100, (state.Fame or 0) + 40)
@@ -777,12 +887,12 @@ NFLCareerEvents.events = {
 						
 						state:AddFeed(string.format("🏈 FIRST ROUND #%d! %s bonus! You're in the NFL!", pickNum, formatMoney(signBonus)))
 						
-					elseif roll + bonus >= 40 then
-						-- Day 2 pick (rounds 2-3)
+					elseif roll + bonus >= 60 then
+						-- Day 2 pick (rounds 2-3) - Hard but achievable
 						local round = RANDOM:NextInteger(2, 3)
 						local pickNum = RANDOM:NextInteger(33, 100)
-						local signBonus = RANDOM:NextInteger(500000, 5000000)
-						local salary = RANDOM:NextInteger(1000000, 2500000)
+						local signBonus = RANDOM:NextInteger(200000, 1500000) -- REDUCED from 500K-5M
+						local salary = RANDOM:NextInteger(500000, 1200000) -- REDUCED from 1-2.5M
 						
 						state.Money = (state.Money or 0) + signBonus
 						state.Fame = math.min(100, (state.Fame or 0) + 20)
@@ -801,10 +911,10 @@ NFLCareerEvents.events = {
 						
 						state:AddFeed(string.format("🏈 Round %d pick! %s bonus! Time to prove yourself!", round, formatMoney(signBonus)))
 						
-					elseif roll + bonus >= 20 then
-						-- Late round pick
+					elseif roll + bonus >= 40 then
+						-- Late round pick - Reasonable chance
 						local round = RANDOM:NextInteger(4, 7)
-						local salary = RANDOM:NextInteger(700000, 1200000)
+						local salary = RANDOM:NextInteger(500000, 750000) -- REDUCED from 700K-1.2M
 						
 						state.Flags.nfl_player = true
 						state.Flags.nfl_late_round = true
@@ -821,32 +931,31 @@ NFLCareerEvents.events = {
 						
 						state:AddFeed(string.format("🏈 Round %d pick! Long odds but you're IN! Time to be a steal!", round))
 						
+					elseif roll + bonus >= 25 then
+						-- Undrafted but signed
+						state.Flags.nfl_player = true
+						state.Flags.nfl_udfa = true
+						state:ModifyStat("Happiness", 8)
+						
+						state.CurrentJob = {
+							id = "nfl_player",
+							name = "NFL Player (UDFA)",
+							company = "NFL Team",
+							salary = 500000, -- Minimum salary
+							category = "sports",
+						}
+						
+						state:AddFeed("🏈 Undrafted but signed as UDFA! Many legends started here! PROVE THEM WRONG!")
 					else
-						-- Undrafted
-						if RANDOM:NextInteger(1, 100) <= 60 then
-							state.Flags.nfl_player = true
-							state.Flags.nfl_udfa = true
-							state:ModifyStat("Happiness", 8)
-							
-							state.CurrentJob = {
-								id = "nfl_player",
-								name = "NFL Player (UDFA)",
-								company = "NFL Team",
-								salary = 660000,
-								category = "sports",
-							}
-							
-							state:AddFeed("🏈 Undrafted but signed as UDFA! Many legends started here! PROVE THEM WRONG!")
-						else
-							state:ModifyStat("Happiness", -20)
-							state.Flags.nfl_dream_crushed = true
-							state:AddFeed("🏈 Went undrafted and unsigned. Heartbreaking. Maybe CFL or XFL?")
-						end
+						-- MOST COMMON OUTCOME: Didn't make it
+						state:ModifyStat("Happiness", -20)
+						state.Flags.nfl_dream_crushed = true
+						state:AddFeed("🏈 Went undrafted and unsigned. Heartbreaking. The NFL dream is over. Maybe coaching?")
 					end
 				end,
 			},
 			{
-				text = "📚 Stay in college - finish my degree",
+				text = "📚 Stay in college - not ready yet",
 				effects = { Smarts = 5, Happiness = 5 },
 				feedText = "Education first...",
 				onResolve = function(state)
@@ -1421,29 +1530,38 @@ NFLCareerEvents.events = {
 		
 		choices = {
 			{
-				text = "One more ride!",
+				text = "🏈 Play one more year (don't retire)",
 				effects = { Health = -10 },
 				feedText = "Not done yet!",
 				onResolve = function(state)
 					if RANDOM:NextInteger(1, 100) <= 40 then
 						state:ModifyStat("Happiness", 10)
-						state:AddFeed("🏈 Still got it! Proved the doubters wrong!")
+						state:AddFeed("🏈 Still got it! Proved the doubters wrong! Playing another season.")
 					else
 						state:ModifyStat("Health", -10)
 						state:ModifyStat("Happiness", -10)
-						state:AddFeed("🏈 The body is failing. This might really be the end...")
+						state:AddFeed("🏈 The body is failing. Playing through pain for one more year...")
 					end
 				end,
 			},
 			{
-				text = "🎤 Retire as a warrior",
+				text = "🎤 RETIRE - End my NFL career",
 				effects = { Happiness = 25 },
 				feedText = "Legendary career!",
 				onResolve = function(state)
 					state.Flags = state.Flags or {}
 					state.Flags.nfl_retired = true
 					state.Flags.retired_athlete = true
+					-- CRITICAL FIX: Also set generic retired flag so main system recognizes retirement
+					state.Flags.retired = true
+					state.Flags.happily_retired = true
 					state.Fame = math.min(100, (state.Fame or 0) + 25)
+					
+					-- Calculate and store pension based on NFL career earnings
+					local lastSalary = state.CurrentJob and state.CurrentJob.salary or 750000
+					local yearsPlayed = state.Flags.nfl_draft_age and ((state.Age or 30) - state.Flags.nfl_draft_age) or 8
+					local pensionPercent = math.min(0.50, 0.25 + (yearsPlayed * 0.02)) -- 25-50% based on years
+					state.Flags.pension_amount = math.floor(lastSalary * pensionPercent)
 					
 					local rings = state.Flags.super_bowl_rings or 0
 					local mvps = state.Flags.nfl_mvp_count or 0
@@ -1452,18 +1570,21 @@ NFLCareerEvents.events = {
 					if rings >= 3 or mvps >= 2 then
 						state.Flags.nfl_goat = true
 						state.Flags.hall_of_fame_lock = true
-						state:AddFeed(string.format("🏈 GOAT CAREER! %d rings, %dx MVP, %dx Pro Bowl! First-ballot Hall of Fame!", rings, mvps, probowls))
+						state:AddFeed(string.format("🏈 GOAT CAREER! %d rings, %dx MVP, %dx Pro Bowl! First-ballot Hall of Fame! Pension: $%s/year", rings, mvps, probowls, formatMoney(state.Flags.pension_amount)))
 					elseif rings >= 1 or mvps >= 1 or probowls >= 5 then
 						state.Flags.hall_of_fame_lock = true
-						state:AddFeed(string.format("🏈 LEGENDARY! %d ring(s), %dx MVP, %dx Pro Bowl! Canton bound!", rings, mvps, probowls))
+						state:AddFeed(string.format("🏈 LEGENDARY! %d ring(s), %dx MVP, %dx Pro Bowl! Canton bound! Pension: $%s/year", rings, mvps, probowls, formatMoney(state.Flags.pension_amount)))
 					elseif probowls >= 3 then
 						state.Flags.hall_of_fame_consideration = true
-						state:AddFeed(string.format("🏈 Great career! %dx Pro Bowl. HOF consideration!", probowls))
+						state:AddFeed(string.format("🏈 Great career! %dx Pro Bowl. HOF consideration! Pension: $%s/year", probowls, formatMoney(state.Flags.pension_amount)))
 					else
-						state:AddFeed(string.format("🏈 Solid NFL career. Made it longer than most! Respect earned."))
+						state:AddFeed(string.format("🏈 Solid NFL career. Made it longer than most! Pension: $%s/year", formatMoney(state.Flags.pension_amount)))
 					end
 					
+					-- CRITICAL: Clear current job to stop salary payments
 					state.CurrentJob = nil
+					state.Flags.employed = nil
+					state.Flags.has_job = nil
 					state:ModifyStat("Happiness", 30)
 				end,
 			},

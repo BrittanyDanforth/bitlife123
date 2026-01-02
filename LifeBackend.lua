@@ -11097,9 +11097,11 @@ function LifeBackend:updateEducationProgress(state)
 end
 
 function LifeBackend:tickCareer(state)
-	-- CRITICAL: Don't tick career for retired players
-	if state.Flags and state.Flags.retired then
-		return
+	-- CRITICAL: Don't tick career for retired players (generic or sport-specific)
+	if state.Flags then
+		if state.Flags.retired or state.Flags.nfl_retired or state.Flags.nba_retired then
+			return
+		end
 	end
 	
 	-- CRITICAL FIX: Don't tick career while in jail - player loses their job progression

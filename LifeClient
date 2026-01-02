@@ -3301,20 +3301,20 @@ local function buildEventModal()
 	
 	if Device.IS_TINY_PHONE then
 		-- ULTRA COMPACT: Tiny phones (iPhone 6: 667x375, iPhone SE: 568x320)
-		-- CRITICAL FIX: Increased max height to prevent button cutoff
+		-- CRITICAL FIX: Use nearly full safe height to prevent button cutoff
 		eventWidth = math.min(screenWidth - 12, 280)
-		maxEventHeight = math.min(safeHeight, 550) -- Increased from 480
+		maxEventHeight = math.min(safeHeight - 10, 650) -- Nearly full safe height
 	elseif Device.IS_SMALL_PHONE then
 		-- Small phones (under 750px height)
-		-- CRITICAL FIX: Increased max height to prevent button cutoff
+		-- CRITICAL FIX: Use nearly full safe height to prevent button cutoff  
 		eventWidth = math.min(screenWidth - 16, 310)
-		maxEventHeight = math.min(safeHeight, 600) -- Increased from 520
+		maxEventHeight = math.min(safeHeight - 10, 720) -- Nearly full safe height
 	elseif Device.IS_MOBILE then
 		eventWidth = modalWidth(330)
-		maxEventHeight = math.min(safeHeight, 680) -- Increased from 580
+		maxEventHeight = math.min(safeHeight - 10, 800) -- Nearly full safe height
 	else
 		eventWidth = modalWidth(360)
-		maxEventHeight = math.min(safeHeight, 750) -- Increased from 650
+		maxEventHeight = math.min(safeHeight - 10, 900) -- Nearly full safe height
 	end
 	
 	-- Calculate responsive corner radii and margins (slightly larger for cleaner look)
@@ -3347,8 +3347,9 @@ local function buildEventModal()
 	EventUI.shell.Name = "EventShell"
 	EventUI.shell.Size = UDim2.new(1, -shellMargin, 0, 0)
 	EventUI.shell.AutomaticSize = Enum.AutomaticSize.Y
-	-- Keep clipping for clean edges
-	EventUI.shell.ClipsDescendants = true
+	-- CRITICAL FIX: Don't clip descendants - let content overflow visually if needed
+	-- The parent shadowFrame handles size constraints, not clipping
+	EventUI.shell.ClipsDescendants = false
 	EventUI.shell.Position = UDim2.new(0, shellMargin/2, 0, shellMargin/2)
 	EventUI.shell.BackgroundColor3 = C.Red
 	EventUI.shell.ZIndex = 62
@@ -3368,7 +3369,8 @@ local function buildEventModal()
 	EventUI.card.Position = UDim2.new(0, cardMargin/2, 0, cardMargin/2)
 	EventUI.card.BackgroundColor3 = C.White
 	EventUI.card.ZIndex = 63
-	EventUI.card.ClipsDescendants = true  -- Safety clip to prevent visual leaks
+	-- CRITICAL FIX: Don't clip - parent handles size, buttons must always be visible!
+	EventUI.card.ClipsDescendants = false
 	EventUI.card.Parent = EventUI.shell
 	corner(EventUI.card, Device.IS_TINY_PHONE and 10 or (Device.IS_SMALL_PHONE and 14 or px(20)))
 

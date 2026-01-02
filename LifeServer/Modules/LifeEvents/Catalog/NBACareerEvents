@@ -514,20 +514,24 @@ NBACareerEvents.events = {
 		id = "nba_draft_declaration",
 		title = "🏀 Declare for NBA Draft?",
 		emoji = "🏀",
-		text = "NBA scouts have been watching you closely. Your agent thinks you could get drafted. This is a LIFE-CHANGING decision!",
+		text = "NBA scouts have been watching you closely. Your agent thinks you could get drafted. But the odds are LONG - only the elite make it. This is a LIFE-CHANGING decision!",
 		question = "Do you declare for the NBA Draft?",
 		category = "career_nba",
-		weight = 15,
+		weight = 12, -- REDUCED weight
 		minAge = 19, maxAge = 22,
-		baseChance = 0.30,
+		baseChance = 0.18, -- REDUCED from 0.30
 		oneTime = true,
 		eligibility = function(state)
 			if not isEligibleForNBA(state) then return false end
 			if not state.Flags then return false end
 			if state.Flags.nba_declared or state.Flags.nba_player then return false end
-			-- MUST have real basketball background
-			return state.Flags.college_basketball or state.Flags.basketball_prodigy or 
-				(state.Flags.plays_basketball and state.Flags.varsity_athlete)
+			-- CRITICAL: Must have STRONG basketball background
+			-- Requires college basketball + at least one standout achievement
+			local hasCollegeBasketball = state.Flags.college_basketball
+			local hasStandoutAchievement = state.Flags.basketball_prodigy or state.Flags.varsity_athlete
+				or state.Flags.state_champion or state.Flags.march_madness_star or state.Flags.college_poy
+				or state.Flags.aau_player
+			return hasCollegeBasketball and hasStandoutAchievement
 		end,
 		blockedByFlags = { in_prison = true, injured = true, nba_declared = true, nba_player = true },
 		
@@ -544,11 +548,12 @@ NBACareerEvents.events = {
 					local roll = RANDOM:NextInteger(1, 100)
 					local bonus = getDraftBonus(state)
 					
-					if roll + bonus >= 75 then
-						-- LOTTERY PICK!
+					-- CRITICAL FIX: MUCH harder thresholds - NBA is elite, most don't make it
+					if roll + bonus >= 90 then
+						-- LOTTERY PICK! - Very rare
 						local pickNum = RANDOM:NextInteger(1, 14)
-						local signBonus = RANDOM:NextInteger(8000000, 20000000)
-						local salary = RANDOM:NextInteger(5000000, 12000000)
+						local signBonus = RANDOM:NextInteger(2000000, 8000000) -- REDUCED from 8-20M
+						local salary = RANDOM:NextInteger(1500000, 4000000) -- REDUCED from 5-12M
 						
 						state.Money = (state.Money or 0) + signBonus
 						state.Fame = math.min(100, (state.Fame or 0) + 50)
@@ -568,11 +573,11 @@ NBACareerEvents.events = {
 						
 						state:AddFeed(string.format("🏀 LOTTERY PICK #%d!!! %s signing bonus! %s/year! YOU'RE AN NBA PLAYER!!!", pickNum, formatMoney(signBonus), formatMoney(salary)))
 						
-					elseif roll + bonus >= 55 then
-						-- First round (non-lottery)
+					elseif roll + bonus >= 75 then
+						-- First round (non-lottery) - Hard
 						local pickNum = RANDOM:NextInteger(15, 30)
-						local signBonus = RANDOM:NextInteger(2000000, 6000000)
-						local salary = RANDOM:NextInteger(2000000, 4000000)
+						local signBonus = RANDOM:NextInteger(800000, 2500000) -- REDUCED from 2-6M
+						local salary = RANDOM:NextInteger(800000, 2000000) -- REDUCED from 2-4M
 						
 						state.Money = (state.Money or 0) + signBonus
 						state.Fame = math.min(100, (state.Fame or 0) + 30)
@@ -591,11 +596,11 @@ NBACareerEvents.events = {
 						
 						state:AddFeed(string.format("🏀 FIRST ROUND PICK #%d! %s bonus! You're in the NBA!", pickNum, formatMoney(signBonus)))
 						
-					elseif roll + bonus >= 35 then
-						-- Second round
+					elseif roll + bonus >= 55 then
+						-- Second round - Achievable
 						local pickNum = RANDOM:NextInteger(31, 60)
-						local signBonus = RANDOM:NextInteger(200000, 1000000)
-						local salary = RANDOM:NextInteger(800000, 1500000)
+						local signBonus = RANDOM:NextInteger(50000, 400000) -- REDUCED from 200K-1M
+						local salary = RANDOM:NextInteger(500000, 900000) -- REDUCED from 800K-1.5M
 						
 						state.Money = (state.Money or 0) + signBonus
 						state.Fame = math.min(100, (state.Fame or 0) + 15)
@@ -614,8 +619,8 @@ NBACareerEvents.events = {
 						
 						state:AddFeed(string.format("🏀 Second round #%d! Not lottery but YOU'RE IN THE NBA! Prove yourself!", pickNum))
 						
-					elseif roll + bonus >= 15 then
-						-- Undrafted but signed
+					elseif roll + bonus >= 35 then
+						-- Undrafted but signed two-way
 						state.Flags.nba_player = true
 						state.Flags.nba_undrafted = true
 						state:ModifyStat("Happiness", 10)
@@ -625,21 +630,21 @@ NBACareerEvents.events = {
 							id = "nba_player",
 							name = "NBA Player (Two-Way)",
 							company = "NBA Team",
-							salary = 500000,
+							salary = 400000, -- Reduced minimum
 							category = "sports",
 						}
 						
 						state:AddFeed("🏀 Undrafted but signed a two-way contract! Long shot but you're in!")
 					else
-						-- Not drafted, G-League option
+						-- MOST COMMON: Not drafted - NBA dream over
 						state:ModifyStat("Happiness", -15)
 						state.Flags.nba_dream_setback = true
-						state:AddFeed("🏀 Went undrafted. Heartbreaking. Maybe G-League or overseas?")
+						state:AddFeed("🏀 Went undrafted. Heartbreaking. The NBA dream is over. Maybe G-League or coaching?")
 					end
 				end,
 			},
 			{
-				text = "📚 Stay in college another year",
+				text = "📚 Stay in college - not ready yet",
 				effects = { Smarts = 5, Happiness = 5 },
 				feedText = "More development time...",
 				onResolve = function(state)
@@ -655,7 +660,7 @@ NBACareerEvents.events = {
 				onResolve = function(state)
 					state.Flags = state.Flags or {}
 					state.Flags.overseas_basketball = true
-					local salary = RANDOM:NextInteger(150000, 600000)
+					local salary = RANDOM:NextInteger(100000, 400000) -- Reduced
 					state.CurrentJob = {
 						id = "overseas_basketball",
 						name = "International Basketball Player",
@@ -1268,30 +1273,39 @@ NBACareerEvents.events = {
 		
 		choices = {
 			{
-				text = "One more year!",
+				text = "🏀 Play one more year (don't retire)",
 				effects = { Health = -8 },
 				feedText = "Not done yet!",
 				onResolve = function(state)
 					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 40 then
 						state:ModifyStat("Happiness", 10)
-						state:AddFeed("🏀 Still competitive! Proved the doubters wrong again!")
+						state:AddFeed("🏀 Still competitive! Proved the doubters wrong! Playing another season.")
 					else
 						state:ModifyStat("Health", -10)
 						state:ModifyStat("Happiness", -5)
-						state:AddFeed("🏀 The body is betraying you. This might really be the end...")
+						state:AddFeed("🏀 The body is betraying you. Playing through pain for one more year...")
 					end
 				end,
 			},
 			{
-				text = "🎤 Retire as a legend",
+				text = "🎤 RETIRE - End my NBA career",
 				effects = { Happiness = 20 },
 				feedText = "What a career!",
 				onResolve = function(state)
 					state.Flags = state.Flags or {}
 					state.Flags.nba_retired = true
 					state.Flags.retired_athlete = true
+					-- CRITICAL FIX: Also set generic retired flag so main system recognizes retirement
+					state.Flags.retired = true
+					state.Flags.happily_retired = true
 					state.Fame = math.min(100, (state.Fame or 0) + 25)
+					
+					-- Calculate and store pension based on NBA career earnings
+					local lastSalary = state.CurrentJob and state.CurrentJob.salary or 2000000
+					local yearsPlayed = state.Flags.nba_draft_age and ((state.Age or 30) - state.Flags.nba_draft_age) or 10
+					local pensionPercent = math.min(0.50, 0.25 + (yearsPlayed * 0.02)) -- 25-50% based on years
+					state.Flags.pension_amount = math.floor(lastSalary * pensionPercent)
 					
 					local rings = state.Flags.nba_rings or 0
 					local mvps = state.Flags.nba_mvp_count or 0
@@ -1300,17 +1314,20 @@ NBACareerEvents.events = {
 					if rings >= 4 or mvps >= 3 then
 						state.Flags.nba_goat = true
 						state.Flags.hall_of_fame_lock = true
-						state:AddFeed(string.format("🏀 LEGENDARY CAREER! %d rings, %dx MVP, %dx All-Star! GOAT STATUS! First-ballot Hall of Fame!", rings, mvps, allstars))
+						state:AddFeed(string.format("🏀 LEGENDARY CAREER! %d rings, %dx MVP, %dx All-Star! GOAT STATUS! Pension: $%s/year", rings, mvps, allstars, formatMoney(state.Flags.pension_amount)))
 					elseif rings >= 2 or mvps >= 1 or allstars >= 5 then
 						state.Flags.hall_of_fame_lock = true
-						state:AddFeed(string.format("🏀 AMAZING CAREER! %d ring(s), %dx MVP, %dx All-Star! Hall of Fame LOCK! Jersey retired!", rings, mvps, allstars))
+						state:AddFeed(string.format("🏀 AMAZING CAREER! %d ring(s), %dx MVP, %dx All-Star! Hall of Fame LOCK! Pension: $%s/year", rings, mvps, allstars, formatMoney(state.Flags.pension_amount)))
 					elseif rings >= 1 or allstars >= 3 then
-						state:AddFeed(string.format("🏀 Great career! %d ring(s), %dx All-Star! You left your mark on the league!", rings, allstars))
+						state:AddFeed(string.format("🏀 Great career! %d ring(s), %dx All-Star! Pension: $%s/year", rings, allstars, formatMoney(state.Flags.pension_amount)))
 					else
-						state:AddFeed("🏀 Solid NBA career. You made it! That's more than 99.9% of players can say!")
+						state:AddFeed(string.format("🏀 Solid NBA career. You made it! Pension: $%s/year", formatMoney(state.Flags.pension_amount)))
 					end
 					
+					-- CRITICAL: Clear current job to stop salary payments
 					state.CurrentJob = nil
+					state.Flags.employed = nil
+					state.Flags.has_job = nil
 					state:ModifyStat("Happiness", 30)
 				end,
 			},
