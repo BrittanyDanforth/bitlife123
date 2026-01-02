@@ -516,95 +516,177 @@ function ProgressScreen:buildPastLivesTab()
 end
 
 function ProgressScreen:createPastLifeCard(lifeData, index)
+	-- Determine gender from saved data or fallback to name heuristic
+	local name = lifeData.name or "Unknown"
+	local isFemale = false
+	
+	-- First check if gender was saved
+	if lifeData.gender then
+		isFemale = lifeData.gender == "Female"
+	else
+		-- Fallback: determine from name
+		local femaleNames = {"Grace", "Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn", "Abigail", "Emily", "Elizabeth", "Sofia", "Ella", "Madison", "Scarlett", "Victoria", "Aria", "Luna", "Chloe", "Penelope", "Layla", "Riley", "Zoey", "Nora", "Lily", "Eleanor", "Hannah", "Lillian", "Addison", "Aubrey", "Ellie", "Stella", "Natalie", "Zoe", "Leah", "Hazel", "Violet", "Aurora", "Savannah", "Audrey", "Brooklyn", "Bella", "Claire", "Skylar", "Lucy", "Paisley", "Anna", "Caroline", "Sarah", "Maria"}
+		for _, fn in ipairs(femaleNames) do
+			if name:find(fn) then
+				isFemale = true
+				break
+			end
+		end
+	end
+	local genderEmoji = isFemale and "👩" or "👨"
+	
+	-- Card container (proper card size, not too wide)
 	local card = Instance.new("Frame")
 	card.Name = "Life_" .. index
-	card.Size = UDim2.new(1, 0, 0, 90)
+	card.Size = UDim2.new(1, 0, 0, 110)
 	card.BackgroundColor3 = C.White
 	card.LayoutOrder = index
 	card.ZIndex = 83
 	card.Parent = self.pastLivesScroll
-	UI.corner(card, 12)
+	UI.corner(card, 14)
+	
+	-- Card shadow
+	local shadow = Instance.new("Frame")
+	shadow.Size = UDim2.new(1, 4, 1, 4)
+	shadow.Position = UDim2.new(0, 2, 0, 2)
+	shadow.BackgroundColor3 = C.Black
+	shadow.BackgroundTransparency = 0.94
+	shadow.ZIndex = 82
+	shadow.Parent = card
+	UI.corner(shadow, 16)
 	
 	-- Border color based on success
 	local borderColor = C.Gray200
+	local bgColor = C.White
 	if (lifeData.netWorth or 0) >= 1000000 then
 		borderColor = C.Gold
+		bgColor = Color3.fromRGB(255, 251, 235)
 	elseif (lifeData.age or 0) >= 80 then
 		borderColor = C.Green
+		bgColor = Color3.fromRGB(240, 253, 244)
 	end
+	card.BackgroundColor3 = bgColor
 	
 	local border = Instance.new("UIStroke")
 	border.Color = borderColor
 	border.Thickness = 2
 	border.Parent = card
 	
-	-- Life number
+	-- Avatar circle with gender emoji
+	local avatarCircle = Instance.new("Frame")
+	avatarCircle.Size = UDim2.new(0, 50, 0, 50)
+	avatarCircle.Position = UDim2.new(0, 12, 0, 12)
+	avatarCircle.BackgroundColor3 = isFemale and Color3.fromRGB(252, 231, 243) or Color3.fromRGB(219, 234, 254)
+	avatarCircle.ZIndex = 84
+	avatarCircle.Parent = card
+	UI.corner(avatarCircle, 25)
+	
+	local avatarEmoji = Instance.new("TextLabel")
+	avatarEmoji.Size = UDim2.fromScale(1, 1)
+	avatarEmoji.BackgroundTransparency = 1
+	avatarEmoji.Font = F.Body
+	avatarEmoji.TextSize = 28
+	avatarEmoji.Text = genderEmoji
+	avatarEmoji.ZIndex = 85
+	avatarEmoji.Parent = avatarCircle
+	
+	-- Life number badge (small, top-right of avatar)
 	local numBadge = Instance.new("Frame")
-	numBadge.Size = UDim2.new(0, 32, 0, 32)
-	numBadge.Position = UDim2.new(0, 8, 0, 8)
+	numBadge.Size = UDim2.new(0, 22, 0, 22)
+	numBadge.Position = UDim2.new(0, 48, 0, 8)
 	numBadge.BackgroundColor3 = C.Purple
-	numBadge.ZIndex = 84
+	numBadge.ZIndex = 86
 	numBadge.Parent = card
-	UI.corner(numBadge, 16)
+	UI.corner(numBadge, 11)
 	
 	local numLbl = Instance.new("TextLabel")
 	numLbl.Size = UDim2.fromScale(1, 1)
 	numLbl.BackgroundTransparency = 1
 	numLbl.Font = F.Bold
-	numLbl.TextSize = 12
+	numLbl.TextSize = 10
 	numLbl.TextColor3 = C.White
-	numLbl.Text = "#" .. index
-	numLbl.ZIndex = 85
+	numLbl.Text = tostring(index)
+	numLbl.ZIndex = 87
 	numLbl.Parent = numBadge
 	
 	-- Name
 	local nameLbl = Instance.new("TextLabel")
-	nameLbl.Size = UDim2.new(1, -55, 0, 20)
-	nameLbl.Position = UDim2.new(0, 48, 0, 6)
+	nameLbl.Size = UDim2.new(1, -80, 0, 22)
+	nameLbl.Position = UDim2.new(0, 70, 0, 10)
 	nameLbl.BackgroundTransparency = 1
 	nameLbl.Font = F.Bold
-	nameLbl.TextSize = 14
+	nameLbl.TextSize = 15
 	nameLbl.TextColor3 = C.Gray800
 	nameLbl.TextXAlignment = Enum.TextXAlignment.Left
-	nameLbl.Text = lifeData.name or "Unknown"
+	nameLbl.Text = name
 	nameLbl.ZIndex = 84
 	nameLbl.Parent = card
 	
-	-- Age
+	-- Lifespan
 	local ageLbl = Instance.new("TextLabel")
-	ageLbl.Size = UDim2.new(1, -55, 0, 16)
-	ageLbl.Position = UDim2.new(0, 48, 0, 26)
+	ageLbl.Size = UDim2.new(1, -80, 0, 16)
+	ageLbl.Position = UDim2.new(0, 70, 0, 32)
 	ageLbl.BackgroundTransparency = 1
 	ageLbl.Font = F.Medium
 	ageLbl.TextSize = 12
 	ageLbl.TextColor3 = C.Gray500
 	ageLbl.TextXAlignment = Enum.TextXAlignment.Left
-	ageLbl.Text = "Lived " .. (lifeData.age or 0) .. " years"
+	ageLbl.Text = "📅 Lived " .. (lifeData.age or 0) .. " years"
 	ageLbl.ZIndex = 84
 	ageLbl.Parent = card
 	
+	-- Stats row
+	local statsRow = Instance.new("Frame")
+	statsRow.Size = UDim2.new(1, -24, 0, 24)
+	statsRow.Position = UDim2.new(0, 12, 0, 55)
+	statsRow.BackgroundTransparency = 1
+	statsRow.ZIndex = 84
+	statsRow.Parent = card
+	
 	-- Money
 	local moneyLbl = Instance.new("TextLabel")
-	moneyLbl.Size = UDim2.new(0.5, -10, 0, 20)
-	moneyLbl.Position = UDim2.new(0, 8, 0, 48)
+	moneyLbl.Size = UDim2.new(0.5, 0, 1, 0)
 	moneyLbl.BackgroundTransparency = 1
 	moneyLbl.Font = F.Bold
 	moneyLbl.TextSize = 13
 	moneyLbl.TextColor3 = C.Green
 	moneyLbl.TextXAlignment = Enum.TextXAlignment.Left
 	moneyLbl.Text = "💰 " .. formatMoney(lifeData.netWorth or 0)
-	moneyLbl.ZIndex = 84
-	moneyLbl.Parent = card
+	moneyLbl.ZIndex = 85
+	moneyLbl.Parent = statsRow
 	
-	-- Cause
+	-- Achievement badges
+	local badges = ""
+	if (lifeData.netWorth or 0) >= 1000000000 then badges = badges .. "🤑"
+	elseif (lifeData.netWorth or 0) >= 1000000 then badges = badges .. "💎" end
+	if (lifeData.age or 0) >= 100 then badges = badges .. "💯"
+	elseif (lifeData.age or 0) >= 80 then badges = badges .. "👴" end
+	if lifeData.famous then badges = badges .. "⭐" end
+	if lifeData.married then badges = badges .. "💒" end
+	
+	if badges ~= "" then
+		local badgeLbl = Instance.new("TextLabel")
+		badgeLbl.Size = UDim2.new(0.5, 0, 1, 0)
+		badgeLbl.Position = UDim2.new(0.5, 0, 0, 0)
+		badgeLbl.BackgroundTransparency = 1
+		badgeLbl.Font = F.Body
+		badgeLbl.TextSize = 16
+		badgeLbl.TextXAlignment = Enum.TextXAlignment.Right
+		badgeLbl.Text = badges
+		badgeLbl.ZIndex = 85
+		badgeLbl.Parent = statsRow
+	end
+	
+	-- Cause of death
 	local causeLbl = Instance.new("TextLabel")
-	causeLbl.Size = UDim2.new(1, -16, 0, 18)
-	causeLbl.Position = UDim2.new(0, 8, 0, 68)
+	causeLbl.Size = UDim2.new(1, -24, 0, 18)
+	causeLbl.Position = UDim2.new(0, 12, 0, 85)
 	causeLbl.BackgroundTransparency = 1
 	causeLbl.Font = F.Body
 	causeLbl.TextSize = 11
-	causeLbl.TextColor3 = C.Gray500
+	causeLbl.TextColor3 = C.Gray400
 	causeLbl.TextXAlignment = Enum.TextXAlignment.Left
+	causeLbl.TextTruncate = Enum.TextTruncate.AtEnd
 	causeLbl.Text = "☠️ " .. (lifeData.cause or "Natural causes")
 	causeLbl.ZIndex = 84
 	causeLbl.Parent = card
@@ -913,7 +995,7 @@ function ProgressScreen:refreshPastLives()
 		table.insert(self.pastLivesCards, card)
 	end
 	
-	self.pastLivesScroll.CanvasSize = UDim2.new(0, 0, 0, math.max(80, #pastLives * 100 + 20))
+	self.pastLivesScroll.CanvasSize = UDim2.new(0, 0, 0, math.max(80, #pastLives * 120 + 20))
 end
 
 function ProgressScreen:refreshLeaderboards()

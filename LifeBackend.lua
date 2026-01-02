@@ -9272,7 +9272,7 @@ function LifeBackend:setupRemotes()
 		state.Feed = state.Feed or {}
 		table.insert(state.Feed, "☠️ You gave up on life at age " .. (state.Age or 0) .. "...")
 		
-		-- Save past life data
+		-- Save past life data with full details
 		state.PastLives = state.PastLives or {}
 		table.insert(state.PastLives, {
 			name = state.Name or "Unknown",
@@ -9280,15 +9280,19 @@ function LifeBackend:setupRemotes()
 			netWorth = state.Money or 0,
 			cause = "Gave Up",
 			timestamp = os.time(),
+			gender = state.Gender or "Male",
+			famous = (state.Fame or 0) >= 50,
+			married = state.Flags and state.Flags.married or false,
 		})
 		
 		print("[LifeBackend] Death state set (Health=0), pushing to client...")
 		
 		-- Push the death state to client with death info
 		-- The client checks for Health <= 0 to show death screen
+		-- CRITICAL: Use descriptive cause text matching other death screens
 		self:pushState(player, "☠️ You gave up on life...", {
 			fatal = true,
-			cause = "Gave Up"
+			cause = "You decided to give up on life. Sometimes the weight of existence becomes too much to bear."
 		})
 		
 		print("[LifeBackend] ========== GIVE UP COMPLETE ==========")
@@ -13344,6 +13348,7 @@ function LifeBackend:processDeathCleanup(state)
 	if not alreadyRecorded then
 		table.insert(state.PastLives, {
 			name = state.Name or "Unknown",
+			gender = state.Gender or "Male",
 			age = state.Age or 0,
 			netWorth = state.Money or 0,
 			cause = state.Flags.cause_of_death or state.CauseOfDeath or state.DeathReason or "Natural causes",
