@@ -16420,6 +16420,18 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 			end
 		end
 	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Set visited_doctor flag for medical activities!
+	-- User bug: "TREATMENT FOLLOW-UP but I never went to doctor!"
+	-- This flag is required for health_treatment_checkup event to trigger
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if activity.isMedical or activityId == "doctor" or activityId == "doctor_visit" 
+		or activityId == "hospital_treatment" or activityId == "get_surgery" then
+		state.Flags = state.Flags or {}
+		state.Flags.visited_doctor = true
+		state.Flags.last_doctor_visit_age = state.Age or 0
+	end
 
 	local deltas = shallowCopy(activity.stats or {})
 	if bonus then
@@ -20604,18 +20616,203 @@ end
 
 local InteractionEffects = {
 	family = {
-		hug = { delta = 6, cost = 0, message = "You hugged them tightly." },
-		talk = { delta = 4, message = "You caught up on life." },
-		gift = { delta = 5, cost = 100, message = "You bought them a thoughtful gift." },
-		argue = { delta = -8, message = "You argued and tensions rose." },
-		money = { delta = -2, message = "You asked them for money.", grant = function(state) state.Money = (state.Money or 0) + RANDOM:NextInteger(100, 500) end },
+		hug = { 
+			delta = 6, 
+			cost = 0, 
+			showResult = true,
+			message = function(state, relationship)
+				local familyName = (relationship and relationship.name) or "your family member"
+				local role = (relationship and relationship.role) or "family"
+				local outcomes = {
+					{ text = "🤗 " .. familyName .. " hugged you back tightly. \"I love you!\"", delta = 10, happiness = 10 },
+					{ text = "💕 Warm hug with " .. familyName .. ". You feel safe and loved.", delta = 8, happiness = 8 },
+					{ text = "👨‍👩‍👧 " .. familyName .. " smiled. \"Come here!\" Big family embrace!", delta = 9, happiness = 9 },
+					{ text = "🥰 " .. familyName .. " held on extra long. They needed that.", delta = 8, happiness = 7 },
+				}
+				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
+				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
+				if relationship and outcome.delta then 
+					relationship.relationship = math.min(100, (relationship.relationship or 50) + outcome.delta)
+				end
+				return outcome.text
+			end,
+		},
+		talk = { 
+			delta = 4, 
+			showResult = true,
+			message = function(state, relationship)
+				local familyName = (relationship and relationship.name) or "your family member"
+				local outcomes = {
+					{ text = "💬 Deep conversation with " .. familyName .. ". You learned something new about them!", delta = 8, happiness = 7 },
+					{ text = "📞 Caught up with " .. familyName .. " about life. Good to stay connected!", delta = 6, happiness = 5 },
+					{ text = "☕ Had a nice chat with " .. familyName .. " over coffee. Quality time!", delta = 7, happiness = 6 },
+					{ text = "🗣️ " .. familyName .. " gave you some advice. They always know what to say.", delta = 5, smarts = 2, happiness = 4 },
+					{ text = "💭 Talked with " .. familyName .. " about old memories. Nostalgic but nice.", delta = 6, happiness = 6 },
+				}
+				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
+				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
+				if outcome.smarts and state.ModifyStat then state:ModifyStat("Smarts", outcome.smarts) end
+				if relationship and outcome.delta then 
+					relationship.relationship = math.min(100, (relationship.relationship or 50) + outcome.delta)
+				end
+				return outcome.text
+			end,
+		},
+		gift = { 
+			delta = 5, 
+			cost = 100, 
+			showResult = true,
+			message = function(state, relationship)
+				local familyName = (relationship and relationship.name) or "your family member"
+				local outcomes = {
+					{ text = "🎁 " .. familyName .. " loved the gift! \"You didn't have to do this!\" 💕", delta = 10, happiness = 10 },
+					{ text = "🎀 " .. familyName .. " was so touched. They'll treasure this.", delta = 8, happiness = 8 },
+					{ text = "🛍️ \"Thank you so much!\" " .. familyName .. " gave you a big hug!", delta = 9, happiness = 9 },
+					{ text = "💝 " .. familyName .. " was surprised! \"How did you know I wanted this?\"", delta = 10, happiness = 9 },
+				}
+				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
+				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
+				if relationship and outcome.delta then 
+					relationship.relationship = math.min(100, (relationship.relationship or 50) + outcome.delta)
+				end
+				return outcome.text
+			end,
+		},
+		argue = { 
+			delta = -8, 
+			showResult = true,
+			message = function(state, relationship)
+				local familyName = (relationship and relationship.name) or "your family member"
+				local outcomes = {
+					{ text = "😤 Big argument with " .. familyName .. ". Doors slammed. Tension is high.", delta = -12, happiness = -10 },
+					{ text = "🗣️ You and " .. familyName .. " got into it. Some things were said...", delta = -10, happiness = -8 },
+					{ text = "😠 Disagreement with " .. familyName .. " escalated. Neither of you budged.", delta = -8, happiness = -6 },
+					{ text = "💢 Heated exchange with " .. familyName .. ". You both need to cool off.", delta = -9, happiness = -7 },
+				}
+				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
+				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
+				if relationship and outcome.delta then 
+					relationship.relationship = math.max(-100, (relationship.relationship or 50) + outcome.delta)
+				end
+				return outcome.text
+			end,
+		},
+		money = { 
+			delta = -2, 
+			showResult = true,
+			message = function(state, relationship)
+				local familyName = (relationship and relationship.name) or "your family member"
+				local amount = RANDOM:NextInteger(100, 500)
+				state.Money = (state.Money or 0) + amount
+				local outcomes = {
+					{ text = "💰 " .. familyName .. " gave you $" .. amount .. "! \"Here, you need this more than me.\"", delta = 3, happiness = 8 },
+					{ text = "💵 \"Don't mention it.\" " .. familyName .. " handed you $" .. amount .. ".", delta = 0, happiness = 6 },
+					{ text = "💸 " .. familyName .. " reluctantly helped with $" .. amount .. ". \"Pay me back, okay?\"", delta = -3, happiness = 4 },
+					{ text = "🙏 " .. familyName .. " came through! $" .. amount .. " to help you out!", delta = 2, happiness = 7 },
+				}
+				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
+				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
+				if relationship and outcome.delta then 
+					relationship.relationship = math.min(100, math.max(-100, (relationship.relationship or 50) + outcome.delta))
+				end
+				return outcome.text
+			end,
+		},
 		vacation = { delta = 10, cost = 2000, message = "You took them on a vacation." },
-		apologize = { delta = 7, message = "You apologized for past mistakes." },
+		apologize = { 
+			delta = 7, 
+			showResult = true,
+			message = function(state, relationship)
+				local familyName = (relationship and relationship.name) or "your family member"
+				local outcomes = {
+					{ text = "🙏 " .. familyName .. " accepted your apology! \"Water under the bridge.\" 💕", delta = 12, happiness = 10 },
+					{ text = "😊 \"I appreciate you saying that.\" " .. familyName .. " forgave you!", delta = 10, happiness = 8 },
+					{ text = "🤝 Cleared the air with " .. familyName .. ". Relief washes over you.", delta = 8, happiness = 7 },
+					{ text = "😌 " .. familyName .. " heard you out. Things aren't perfect, but it's a start.", delta = 5, happiness = 5 },
+				}
+				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
+				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
+				if relationship and outcome.delta then 
+					relationship.relationship = math.min(100, (relationship.relationship or 50) + outcome.delta)
+				end
+				return outcome.text
+			end,
+		},
 	},
 	romance = {
-		date = { delta = 8, cost = 100, message = "You went on a romantic date." },
-		gift = { delta = 9, cost = 200, message = "You surprised them with a gift." },
-		kiss = { delta = 5, message = "You shared a kiss." },
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: BitLife-style dates with random events and outcomes!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		date = { 
+			delta = 8, 
+			cost = 100, 
+			showResult = true,
+			message = function(state, relationship)
+				local partnerName = (relationship and relationship.name) or "your partner"
+				local outcomes = {
+					{ text = "💑 Perfect date with " .. partnerName .. "! Candlelight dinner, deep conversations, and romance!", delta = 15, happiness = 15 },
+					{ text = "❤️ Amazing time with " .. partnerName .. "! You couldn't stop laughing together!", delta = 12, happiness = 12 },
+					{ text = "🌹 " .. partnerName .. " loved the date spot you picked! You're getting good at this!", delta = 10, happiness = 10 },
+					{ text = "🎬 Movie date with " .. partnerName .. ". Cuddled the whole time! 💕", delta = 10, happiness = 9 },
+					{ text = "🍽️ Nice dinner date with " .. partnerName .. ". Good food, good company!", delta = 8, happiness = 8 },
+					{ text = "🚶 Romantic walk with " .. partnerName .. " under the stars!", delta = 11, happiness = 11 },
+					{ text = "🎭 You surprised " .. partnerName .. " with concert tickets! Best date ever!", delta = 14, happiness = 14 },
+					{ text = "🏖️ Beach date with " .. partnerName .. ". Perfect sunset together!", delta = 12, happiness = 12 },
+					-- Some less perfect outcomes for variety
+					{ text = "😅 Date with " .. partnerName .. " had some awkward moments but ended well.", delta = 5, happiness = 4 },
+					{ text = "📱 " .. partnerName .. " seemed distracted on the date. Hope everything's okay.", delta = 3, happiness = 2 },
+					{ text = "🌧️ Date got rained out, but you and " .. partnerName .. " made the best of it!", delta = 7, happiness = 6 },
+				}
+				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
+				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
+				if relationship and outcome.delta then 
+					relationship.relationship = math.min(100, (relationship.relationship or 50) + outcome.delta)
+				end
+				return outcome.text
+			end,
+		},
+		gift = { 
+			delta = 9, 
+			cost = 200, 
+			showResult = true,
+			message = function(state, relationship)
+				local partnerName = (relationship and relationship.name) or "your partner"
+				local outcomes = {
+					{ text = "💝 " .. partnerName .. " was SPEECHLESS! The perfect gift! They jumped into your arms!", delta = 15, happiness = 15 },
+					{ text = "🎁 " .. partnerName .. " loved it so much they teared up! \"You know me so well!\"", delta = 12, happiness = 12 },
+					{ text = "💎 " .. partnerName .. "'s eyes sparkled when they saw the gift. Big smile!", delta = 10, happiness = 10 },
+					{ text = "🌹 \"That's so sweet!\" " .. partnerName .. " gave you a big kiss!", delta = 9, happiness = 9 },
+					{ text = "🎀 " .. partnerName .. " smiled and said thanks. They seemed to like it!", delta = 7, happiness = 6 },
+					{ text = "😬 " .. partnerName .. " politely thanked you... but you're not sure they loved it.", delta = 4, happiness = 3 },
+				}
+				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
+				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
+				if relationship and outcome.delta then 
+					relationship.relationship = math.min(100, (relationship.relationship or 50) + outcome.delta)
+				end
+				return outcome.text
+			end,
+		},
+		kiss = { 
+			delta = 5, 
+			showResult = true,
+			message = function(state, relationship)
+				local partnerName = (relationship and relationship.name) or "your partner"
+				local outcomes = {
+					{ text = "💋 Fireworks! That kiss with " .. partnerName .. " was magical! 💕", delta = 10, happiness = 12 },
+					{ text = "😘 Sweet kiss with " .. partnerName .. ". Your heart skips a beat!", delta = 8, happiness = 8 },
+					{ text = "💕 " .. partnerName .. " kissed you back passionately!", delta = 7, happiness = 7 },
+					{ text = "😊 Cute little peck with " .. partnerName .. ". Simple but sweet!", delta = 5, happiness = 5 },
+					{ text = "😅 Awkward timing! " .. partnerName .. " wasn't expecting that kiss.", delta = 2, happiness = 2 },
+				}
+				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
+				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
+				if relationship and outcome.delta then 
+					relationship.relationship = math.min(100, (relationship.relationship or 50) + outcome.delta)
+				end
+				return outcome.text
+			end,
+		},
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		-- CRITICAL FIX: "Get Married" action for engaged couples!
 		-- After proposing and getting engaged, players need to actually get married!
@@ -20860,10 +21057,102 @@ local InteractionEffects = {
 		},
 	},
 	friend = {
-		hangout = { delta = 6, message = "You hung out together." },
-		gift = { delta = 4, cost = 50, message = "You gave them a small gift." },
-		support = { delta = 5, message = "You supported them through a tough time." },
-		party = { delta = 7, message = "You partied together." },
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: BitLife-style hangout with random events and outcomes!
+		-- User feedback: "HUNG OUT WOULD POPUP A CARD EVENT AND COULD CHOOSE WHAT WE DID"
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		hangout = { 
+			delta = 6, 
+			showResult = true,
+			message = function(state, relationship)
+				local friendName = (relationship and relationship.name) or "your friend"
+				local outcomes = {
+					{ text = "🎬 You watched movies together and had a great time with " .. friendName .. "!", happiness = 8, delta = 8 },
+					{ text = "🎮 You played video games with " .. friendName .. ". Epic gaming session!", happiness = 10, delta = 7 },
+					{ text = "🍕 You grabbed pizza with " .. friendName .. " and talked for hours!", happiness = 9, delta = 9 },
+					{ text = "☕ Coffee hangout with " .. friendName .. " turned into deep conversations!", happiness = 7, delta = 10 },
+					{ text = "🏀 You and " .. friendName .. " shot some hoops. Good exercise!", happiness = 8, health = 3, delta = 6 },
+					{ text = "🎤 Karaoke night with " .. friendName .. "! You both sounded terrible but had fun!", happiness = 12, delta = 8 },
+					{ text = "🛒 Shopping trip with " .. friendName .. "! You helped each other pick outfits!", happiness = 7, looks = 2, delta = 7 },
+					{ text = "🎲 Board game night with " .. friendName .. "! They beat you at everything but you still had fun!", happiness = 6, delta = 6 },
+					{ text = "🚶 Long walk in the park with " .. friendName .. ". Great heart-to-heart conversation!", happiness = 9, health = 2, delta = 9 },
+					{ text = "🎪 You and " .. friendName .. " went to a local event. Made some memories!", happiness = 11, delta = 8 },
+					-- Some less positive outcomes for variety
+					{ text = "😐 Hangout with " .. friendName .. " was kinda awkward. Not much to talk about today.", happiness = 2, delta = 2 },
+					{ text = "📱 You and " .. friendName .. " spent most of the time on your phones. Not the best hangout.", happiness = 3, delta = 3 },
+				}
+				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
+				-- Apply effects
+				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
+				if outcome.health and state.ModifyStat then state:ModifyStat("Health", outcome.health) end
+				if outcome.looks and state.ModifyStat then state:ModifyStat("Looks", outcome.looks) end
+				if relationship and outcome.delta then 
+					relationship.relationship = math.min(100, (relationship.relationship or 50) + outcome.delta)
+				end
+				return outcome.text
+			end,
+		},
+		gift = { 
+			delta = 4, 
+			cost = 50, 
+			showResult = true,
+			message = function(state, relationship)
+				local friendName = (relationship and relationship.name) or "your friend"
+				local outcomes = {
+					{ text = "🎁 " .. friendName .. " LOVED the gift! Their face lit up with joy!", delta = 10, happiness = 8 },
+					{ text = "🎁 " .. friendName .. " really appreciated the thoughtful gesture! +Friendship!", delta = 8, happiness = 6 },
+					{ text = "🎁 " .. friendName .. " said thanks for the gift. They seemed to like it.", delta = 5, happiness = 4 },
+					{ text = "🎁 Hmm, " .. friendName .. " already had that. But it's the thought that counts!", delta = 3, happiness = 2 },
+				}
+				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
+				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
+				if relationship and outcome.delta then 
+					relationship.relationship = math.min(100, (relationship.relationship or 50) + outcome.delta)
+				end
+				return outcome.text
+			end,
+		},
+		support = { 
+			delta = 5, 
+			showResult = true,
+			message = function(state, relationship)
+				local friendName = (relationship and relationship.name) or "your friend"
+				local outcomes = {
+					{ text = "💪 " .. friendName .. " really needed your support. You made a real difference in their life!", delta = 12, happiness = 10 },
+					{ text = "🤗 You were there for " .. friendName .. " during a tough time. They won't forget it.", delta = 10, happiness = 8 },
+					{ text = "💕 " .. friendName .. " opened up to you. Your friendship is stronger than ever.", delta = 9, happiness = 7 },
+					{ text = "📞 You called " .. friendName .. " to check in. They appreciated you reaching out.", delta = 6, happiness = 5 },
+				}
+				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
+				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
+				if relationship and outcome.delta then 
+					relationship.relationship = math.min(100, (relationship.relationship or 50) + outcome.delta)
+				end
+				return outcome.text
+			end,
+		},
+		party = { 
+			delta = 7, 
+			showResult = true,
+			message = function(state, relationship)
+				local friendName = (relationship and relationship.name) or "your friend"
+				local outcomes = {
+					{ text = "🎉 EPIC party with " .. friendName .. "! Dancing, drinks, and unforgettable memories!", delta = 12, happiness = 15, health = -2 },
+					{ text = "🥳 Great party! You and " .. friendName .. " were the life of it!", delta = 10, happiness = 12 },
+					{ text = "🎊 Fun night out with " .. friendName .. "! Met some cool people too!", delta = 8, happiness = 10 },
+					{ text = "🍻 The party was okay. You and " .. friendName .. " left early.", delta = 5, happiness = 5 },
+					{ text = "😬 The party got a bit wild. You and " .. friendName .. " escaped before things got crazy.", delta = 6, happiness = 6 },
+					{ text = "🚔 Oops! Party got busted. You and " .. friendName .. " ran for it! Bonding experience.", delta = 9, happiness = 8 },
+				}
+				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
+				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
+				if outcome.health and state.ModifyStat then state:ModifyStat("Health", outcome.health) end
+				if relationship and outcome.delta then 
+					relationship.relationship = math.min(100, (relationship.relationship or 50) + outcome.delta)
+				end
+				return outcome.text
+			end,
+		},
 		betray = { delta = -15, message = "You betrayed their trust." },
 		ghost = { delta = -999, message = "You ghosted them.", remove = true },
 		make_friend = {

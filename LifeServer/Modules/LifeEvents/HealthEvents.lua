@@ -2169,11 +2169,18 @@ HealthEvents.events[#HealthEvents.events + 1] = {
 	category = "health",
 	tags = { "treatment", "doctor", "chronic" },
 	
-	-- Only trigger for people with chronic conditions
+	-- CRITICAL FIX: Only trigger for people with chronic conditions AND who have visited a doctor!
+	-- User bug: "I DONT REMEMBER GOING TO A DOCTOR APPOINTMENT"
+	-- The event should only show if they have an active diagnosis/treatment
 	eligibility = function(state)
 		local flags = state.Flags or {}
-		return flags.chronic_illness or flags.diabetes or flags.heart_disease 
+		-- Must have a diagnosed condition
+		local hasDiagnosis = flags.chronic_illness or flags.diabetes or flags.heart_disease 
 			or flags.chronic_condition or flags.hypertension or flags.high_cholesterol
+		-- Must have actually been to a doctor for treatment (not just random diagnosis)
+		local isUnderTreatment = flags.under_treatment or flags.on_medication 
+			or flags.visited_doctor or flags.getting_treatment or flags.has_doctor
+		return hasDiagnosis and isUnderTreatment
 	end,
 	
 	choices = {
