@@ -731,19 +731,20 @@ function ProgressScreen:buildLeaderboardsTab()
 	self.leaderboardSubTabs = {}
 	self.currentLeaderboardCategory = "richest"
 	
+	-- CRITICAL FIX: Only Richest and Oldest - Fame is a gamepass feature
 	local categories = {
 		{ id = "richest", name = "💰 Richest", color = C.Green },
 		{ id = "oldest", name = "📅 Oldest", color = C.Blue },
-		{ id = "fame", name = "⭐ Fame", color = C.Purple },
 	}
 	
 	for i, cat in ipairs(categories) do
 		local btn = Instance.new("TextButton")
 		btn.Name = "SubTab_" .. cat.id
-		btn.Size = UDim2.new(0, 95, 0, 36)
+		-- Make buttons wider since there's only 2 now
+		btn.Size = UDim2.new(0, 130, 0, 36)
 		btn.BackgroundColor3 = i == 1 and cat.color or C.White
 		btn.Font = F.Bold
-		btn.TextSize = IS_TINY_PHONE and 11 or 13
+		btn.TextSize = IS_TINY_PHONE and 12 or 14
 		btn.TextColor3 = i == 1 and C.White or C.Gray600
 		btn.Text = cat.name
 		btn.AutoButtonColor = false
@@ -774,6 +775,9 @@ function ProgressScreen:buildLeaderboardsTab()
 	local scrollLayout = Instance.new("UIListLayout")
 	scrollLayout.Padding = UDim.new(0, 6)
 	scrollLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	-- CRITICAL FIX: Sort by LayoutOrder (numeric), NOT by Name (alphabetic string)!
+	-- This fixes the bug where 1, 10, 11, 12... 19, 2, 20... was showing
+	scrollLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	scrollLayout.Parent = self.leaderboardScroll
 	
 	local scrollPad = Instance.new("UIPadding")
