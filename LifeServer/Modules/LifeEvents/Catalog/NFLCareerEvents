@@ -114,6 +114,86 @@ end
 
 NFLCareerEvents.events = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: FOOTBALL INTEREST DISCOVERY EVENT
+	-- This event SETS the likes_sports flag - it's an entry point for NFL path!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "nfl_interest_discovery",
+		title = "🏈 Football Looks AWESOME!",
+		emoji = "🏈",
+		text = "You're watching some bigger kids play football at the park. They're throwing long passes and making amazing catches! One kid throws a spiral right past you!",
+		category = "career_nfl",
+		weight = 25, -- HIGH weight to ensure this triggers!
+		minAge = 6, maxAge = 11,
+		baseChance = 0.55, -- HIGH chance - critical for career path
+		oneTime = true,
+		eligibility = function(state)
+			if not isEligibleForNFL(state) then return false end
+			-- NO FLAGS REQUIRED - This is a discovery event!
+			return true
+		end,
+		
+		choices = {
+			{
+				text = "🏈 Can I play too?!",
+				effects = { Health = 3, Happiness = 5 },
+				feedText = "You join the game...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.likes_sports = true
+					state.Flags.athletic_focus = true
+					
+					local roll = RANDOM:NextInteger(1, 100)
+					if roll <= 35 then
+						state.Flags.plays_football = true
+						state.Flags.football_star = true
+						state:ModifyStat("Health", 7)
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("🏈 You caught a TOUCHDOWN pass! They say you're a natural!")
+					elseif roll <= 70 then
+						state.Flags.plays_football = true
+						state:ModifyStat("Health", 5)
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🏈 You LOVE football! The tackling, the throwing - it's all amazing!")
+					else
+						state:ModifyStat("Health", 3)
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🏈 Got tackled pretty hard but it was exciting! Football is cool!")
+					end
+				end,
+			},
+			{
+				text = "🏈 Throw me the ball!",
+				effects = { Health = 2, Happiness = 4 },
+				feedText = "You ask to catch...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.likes_sports = true
+					
+					local roll = RANDOM:NextInteger(1, 100)
+					if roll <= 50 then
+						state.Flags.plays_football = true
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🏈 CAUGHT IT! You've got good hands! Football is fun!")
+					else
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("🏈 Dropped it but who cares - football is exciting!")
+					end
+				end,
+			},
+			{
+				text = "Just watch from the sidelines",
+				effects = { Happiness = 2 },
+				feedText = "You watch the action...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.likes_sports = true
+					state:AddFeed("🏈 Football looks intense! Maybe you'll play someday!")
+				end,
+			},
+		},
+	},
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- YOUTH/HIGH SCHOOL FOOTBALL EVENTS
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
@@ -122,13 +202,16 @@ NFLCareerEvents.events = {
 		emoji = "🏈",
 		text = "The local youth football league is accepting players! It's a great way to learn the game and make friends.",
 		category = "career_nfl",
-		weight = 15,
-		minAge = 8, maxAge = 12,
-		baseChance = 0.30,
+		weight = 22, -- CRITICAL FIX: Increased weight
+		minAge = 7, maxAge = 12, -- CRITICAL FIX: Start younger!
+		baseChance = 0.45, -- CRITICAL FIX: Increased chance
 		oneTime = true,
 		eligibility = function(state)
 			if not isEligibleForNFL(state) then return false end
-			return true -- Anyone can try youth football
+			-- CRITICAL FIX: No strict flag requirements - anyone can try youth football!
+			-- Only block if they've explicitly rejected sports
+			if state.Flags and state.Flags.hates_sports then return false end
+			return true
 		end,
 		
 		choices = {

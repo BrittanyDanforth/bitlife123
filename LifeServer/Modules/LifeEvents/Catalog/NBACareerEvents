@@ -112,21 +112,85 @@ NBACareerEvents.events = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- YOUTH/HIGH SCHOOL BASKETBALL EVENTS
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: SPORTS INTEREST DISCOVERY EVENT
+	-- This event SETS the likes_sports flag - it's an entry point!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "nba_interest_discovery",
+		title = "🏀 Basketball Catches Your Eye!",
+		emoji = "🏀",
+		text = "You see some kids playing basketball at the park. The game looks exciting! The ball swishes through the net - nothing but net!",
+		category = "career_nba",
+		weight = 25, -- HIGH weight to ensure this triggers!
+		minAge = 6, maxAge = 11,
+		baseChance = 0.55, -- HIGH chance - this is critical for career path
+		oneTime = true,
+		eligibility = function(state)
+			if not isEligibleForNBA(state) then return false end
+			-- CRITICAL: No flags required! This is a DISCOVERY event!
+			return true
+		end,
+		
+		choices = {
+			{
+				text = "🏀 I want to try!",
+				effects = { Health = 3, Happiness = 5 },
+				feedText = "You grab the ball...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.likes_sports = true
+					state.Flags.athletic_focus = true
+					
+					local roll = RANDOM:NextInteger(1, 100)
+					if roll <= 35 then
+						state.Flags.plays_basketball = true
+						state.Flags.basketball_talent = true
+						state:ModifyStat("Health", 7)
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("🏀 NATURAL TALENT! Your first shot went in! The older kids are impressed!")
+					elseif roll <= 70 then
+						state.Flags.plays_basketball = true
+						state:ModifyStat("Health", 5)
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🏀 You're hooked! Basketball is SO FUN! You want to play every day!")
+					else
+						state:ModifyStat("Health", 3)
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🏀 It's harder than it looks but you want to get better!")
+					end
+				end,
+			},
+			{
+				text = "Just watch for now",
+				effects = { Happiness = 2 },
+				feedText = "You watch the game...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.likes_sports = true
+					state:AddFeed("🏀 Basketball looks cool! Maybe you'll try it someday!")
+				end,
+			},
+		},
+	},
 	{
 		id = "youth_basketball_camp",
 		title = "🏀 Basketball Camp Opportunity",
 		emoji = "🏀",
 		text = "There's an elite basketball camp this summer. Top college and even NBA scouts attend! It costs money but could be life-changing.",
 		category = "career_nba",
-		weight = 15,
-		minAge = 12, maxAge = 16,
-		baseChance = 0.30,
+		weight = 20, -- CRITICAL FIX: Increased weight
+		minAge = 10, maxAge = 16, -- CRITICAL FIX: Start younger!
+		baseChance = 0.40, -- CRITICAL FIX: Increased chance
 		oneTime = true,
 		eligibility = function(state)
 			if not isEligibleForNBA(state) then return false end
-			if not state.Flags then return false end
-			-- Must show some basketball interest
-			return state.Flags.likes_sports or state.Flags.plays_basketball or state.Flags.athletic_focus
+			-- CRITICAL FIX: Relaxed eligibility - OR condition with NO required flags as fallback
+			if not state.Flags then return true end -- No flags = fresh player, let them discover!
+			-- Trigger if ANY sports interest OR if player has no sports flags yet
+			local hasInterest = state.Flags.likes_sports or state.Flags.plays_basketball or state.Flags.athletic_focus
+			local noSportsDecisionYet = not state.Flags.chose_academics_over_basketball and not state.Flags.hates_sports
+			return hasInterest or noSportsDecisionYet
 		end,
 		
 		choices = {

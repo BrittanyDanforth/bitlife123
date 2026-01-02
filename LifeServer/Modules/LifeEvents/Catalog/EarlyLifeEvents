@@ -838,10 +838,13 @@ EarlyLifeEvents.events = {
 					roll = roll - bonus
 					
 					state.Flags = state.Flags or {}
+					-- CRITICAL FIX: Always set likes_sports when trying out - even if you don't make it!
+					state.Flags.likes_sports = true
 					if roll <= 35 then
 						state:ModifyStat("Happiness", 10)
 						state:ModifyStat("Health", 5)
 						state.Flags.school_athlete = true
+						state.Flags.athletic_focus = true
 						state:AddFeed("⚽ You made the team! Coach was impressed!")
 					elseif roll <= 65 then
 						state:ModifyStat("Happiness", 5)
@@ -866,6 +869,723 @@ EarlyLifeEvents.events = {
 						state:ModifyStat("Happiness", -2)
 						state:AddFeed("⚽ You kind of regret not trying. What if you would've made it?")
 					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: SPORTS DISCOVERY EVENTS
+	-- These events set the likes_sports flag which is REQUIRED for NBA/NFL career paths!
+	-- Without these events, youth_basketball_camp and similar events NEVER trigger!
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "child_sports_discovery",
+		title = "🏀 Sports Day at School!",
+		emoji = "🏀",
+		text = "Your school is having a sports day! There's basketball, football, soccer, and more! What catches your eye?",
+		question = "Which sport do you want to try?",
+		minAge = 5, maxAge = 10,
+		baseChance = 0.65, -- HIGH chance - this is a critical flag-setting event!
+		cooldown = 5,
+		oneTime = true,
+		category = "childhood",
+		weight = 20, -- CRITICAL: High weight to ensure it triggers
+		tags = { "sports", "discovery", "childhood" },
+		
+		choices = {
+			{
+				text = "🏀 Basketball! Shooting hoops looks fun!",
+				effects = { Health = 3, Happiness = 5 },
+				feedText = "You grab a basketball...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					state.Flags.likes_sports = true
+					state.Flags.athletic_focus = true
+					
+					if roll <= 40 then
+						state.Flags.plays_basketball = true
+						state.Flags.basketball_talent = true
+						state:ModifyStat("Health", 5)
+						state:AddFeed("🏀 You're a NATURAL! You made every shot! Coach noticed you!")
+					elseif roll <= 75 then
+						state.Flags.plays_basketball = true
+						state:ModifyStat("Health", 3)
+						state:AddFeed("🏀 So fun! You love dribbling and shooting! This could be your thing!")
+					else
+						state:ModifyStat("Health", 2)
+						state:AddFeed("🏀 Basketball is harder than it looks, but you had fun trying!")
+					end
+				end,
+			},
+			{
+				text = "🏈 Football! I want to throw the ball!",
+				effects = { Health = 3, Happiness = 5 },
+				feedText = "You pick up a football...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					state.Flags.likes_sports = true
+					state.Flags.athletic_focus = true
+					
+					if roll <= 40 then
+						state.Flags.plays_football = true
+						state.Flags.football_star = true
+						state:ModifyStat("Health", 5)
+						state:AddFeed("🏈 You threw a PERFECT spiral! Everyone was impressed!")
+					elseif roll <= 75 then
+						state.Flags.plays_football = true
+						state:ModifyStat("Health", 3)
+						state:AddFeed("🏈 Touchdown! You love catching and throwing! Football is awesome!")
+					else
+						state:ModifyStat("Health", 2)
+						state:AddFeed("🏈 Football is rough but exciting! You want to play more!")
+					end
+				end,
+			},
+			{
+				text = "⚽ Soccer! I love running!",
+				effects = { Health = 4, Happiness = 4 },
+				feedText = "You kick the soccer ball...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.likes_sports = true
+					state.Flags.athletic_focus = true
+					state:ModifyStat("Health", 4)
+					state:AddFeed("⚽ You're fast! Soccer is perfect for you! GOOOOAL!")
+				end,
+			},
+			{
+				text = "Not really into sports...",
+				effects = {},
+				feedText = "You watch from the sidelines...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state:ModifyStat("Smarts", 2)
+						state:AddFeed("📚 You read a book instead. Different interests!")
+					else
+						state:AddFeed("😊 Sports aren't your thing. That's okay!")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "child_recess_basketball",
+		title = "🏀 Recess Basketball Game",
+		emoji = "🏀",
+		text = "Some kids are playing basketball at recess! They need one more player. Want to join?",
+		question = "Do you play?",
+		minAge = 6, maxAge = 12,
+		baseChance = 0.55,
+		cooldown = 4,
+		category = "childhood",
+		weight = 18,
+		tags = { "sports", "basketball", "recess" },
+		
+		choices = {
+			{
+				text = "🏀 Yeah! I'll play!",
+				effects = { Health = 3 },
+				feedText = "You join the game...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					state.Flags.likes_sports = true
+					
+					if roll <= 35 then
+						state.Flags.plays_basketball = true
+						state.Flags.basketball_talent = true
+						state:ModifyStat("Happiness", 10)
+						state:ModifyStat("Health", 5)
+						state:AddFeed("🏀 You scored the winning basket! Everyone wants you on their team now!")
+					elseif roll <= 70 then
+						state.Flags.plays_basketball = true
+						state:ModifyStat("Happiness", 6)
+						state:ModifyStat("Health", 3)
+						state:AddFeed("🏀 Great game! You're getting better at basketball!")
+					else
+						state:ModifyStat("Happiness", 3)
+						state:ModifyStat("Health", 2)
+						state:AddFeed("🏀 You got outplayed but it was still fun! Practice makes perfect!")
+					end
+				end,
+			},
+			{
+				text = "Nah, I'll just watch",
+				effects = {},
+				feedText = "You watch from the bench...",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 1)
+					state:AddFeed("🏀 Fun to watch! Maybe you'll play next time.")
+				end,
+			},
+		},
+	},
+	{
+		id = "child_recess_football",
+		title = "🏈 Recess Football Game",
+		emoji = "🏈",
+		text = "Some kids are playing football at recess! They're picking teams. Want to play?",
+		question = "Do you join?",
+		minAge = 6, maxAge = 12,
+		baseChance = 0.55,
+		cooldown = 4,
+		category = "childhood",
+		weight = 18,
+		tags = { "sports", "football", "recess" },
+		
+		choices = {
+			{
+				text = "🏈 Pick me! I want to play!",
+				effects = { Health = 3 },
+				feedText = "You run onto the field...",
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					state.Flags.likes_sports = true
+					
+					if roll <= 35 then
+						state.Flags.plays_football = true
+						state.Flags.football_star = true
+						state:ModifyStat("Happiness", 10)
+						state:ModifyStat("Health", 5)
+						state:AddFeed("🏈 TOUCHDOWN! You're the recess football star! Everyone cheers!")
+					elseif roll <= 70 then
+						state.Flags.plays_football = true
+						state:ModifyStat("Happiness", 6)
+						state:ModifyStat("Health", 3)
+						state:AddFeed("🏈 Great catch! You're pretty good at football!")
+					else
+						state:ModifyStat("Happiness", 3)
+						state:ModifyStat("Health", 2)
+						state:AddFeed("🏈 Got tackled pretty hard but it was exciting!")
+					end
+				end,
+			},
+			{
+				text = "I'll sit this one out",
+				effects = {},
+				feedText = "You find something else to do...",
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 1)
+					state:AddFeed("🏈 Football looks rough. Probably a smart choice!")
+				end,
+			},
+		},
+	},
+	{
+		id = "child_watch_nba_game",
+		title = "🏀 Watching NBA on TV",
+		emoji = "🏀",
+		text = "Your family is watching an NBA game on TV! The players are AMAZING!",
+		question = "What do you think?",
+		minAge = 5, maxAge = 12,
+		baseChance = 0.50,
+		cooldown = 5,
+		category = "childhood",
+		weight = 15,
+		tags = { "sports", "nba", "tv" },
+		
+		choices = {
+			{
+				text = "🏀 I want to be like them someday!",
+				effects = { Happiness = 5 },
+				feedText = "You're inspired!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.likes_sports = true
+					state.Flags.dreams_of_nba = true
+					state.Flags.athletic_focus = true
+					state:ModifyStat("Happiness", 8)
+					state:AddFeed("🏀 You're OBSESSED with basketball now! You practice every day!")
+					
+					-- Small chance they also start playing
+					if math.random(1, 100) <= 40 then
+						state.Flags.plays_basketball = true
+						state:AddFeed("🏀 You started practicing with a hoop in the driveway!")
+					end
+				end,
+			},
+			{
+				text = "🏀 This is pretty cool",
+				effects = { Happiness = 3 },
+				feedText = "You enjoy the game...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.likes_sports = true
+					state:ModifyStat("Happiness", 4)
+					state:AddFeed("🏀 Basketball is entertaining! You might watch more games!")
+				end,
+			},
+			{
+				text = "This is boring...",
+				effects = {},
+				feedText = "Sports aren't your thing...",
+				onResolve = function(state)
+					state:AddFeed("🏀 You'd rather do something else. That's fine!")
+				end,
+			},
+		},
+	},
+	{
+		id = "child_watch_nfl_game",
+		title = "🏈 Watching NFL on TV",
+		emoji = "🏈",
+		text = "It's Sunday and your family is watching football! The crowd is going CRAZY!",
+		question = "What do you think?",
+		minAge = 5, maxAge = 12,
+		baseChance = 0.50,
+		cooldown = 5,
+		category = "childhood",
+		weight = 15,
+		tags = { "sports", "nfl", "tv" },
+		
+		choices = {
+			{
+				text = "🏈 I want to play in the NFL!",
+				effects = { Happiness = 5 },
+				feedText = "Dreams of the big league!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.likes_sports = true
+					state.Flags.dreams_of_nfl = true
+					state.Flags.athletic_focus = true
+					state:ModifyStat("Happiness", 8)
+					state:AddFeed("🏈 You're now a HUGE football fan! You want to play!")
+					
+					-- Small chance they start playing
+					if math.random(1, 100) <= 40 then
+						state.Flags.plays_football = true
+						state:AddFeed("🏈 You convinced your parents to sign you up for youth football!")
+					end
+				end,
+			},
+			{
+				text = "🏈 Go team! Touchdown!",
+				effects = { Happiness = 3 },
+				feedText = "You cheer along...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.likes_sports = true
+					state:ModifyStat("Happiness", 4)
+					state:AddFeed("🏈 Football is exciting! You're hooked!")
+				end,
+			},
+			{
+				text = "Can we watch something else?",
+				effects = {},
+				feedText = "Not interested...",
+				onResolve = function(state)
+					state:AddFeed("🏈 Football isn't for everyone. You do you!")
+				end,
+			},
+		},
+	},
+	{
+		id = "child_sports_summer_camp",
+		title = "⛺ Sports Summer Camp",
+		emoji = "⛺",
+		text = "There's a sports summer camp! You could learn basketball, football, soccer, and more! It costs $500.",
+		question = "Do you want to go?",
+		minAge = 8, maxAge = 13,
+		baseChance = 0.45,
+		cooldown = 6,
+		oneTime = true,
+		category = "childhood",
+		weight = 16,
+		tags = { "sports", "camp", "summer" },
+		
+		choices = {
+			{
+				text = "🏀 Yes! Sign me up for basketball camp!",
+				effects = { Money = -500, Health = 5 },
+				feedText = "Off to basketball camp!",
+				eligibility = function(state) return (state.Money or 0) >= 500 or (state.ParentMoney or 0) >= 500 end,
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					state.Flags.likes_sports = true
+					state.Flags.plays_basketball = true
+					state.Flags.athletic_focus = true
+					state.Flags.went_to_sports_camp = true
+					
+					if roll <= 30 then
+						state.Flags.basketball_prodigy = true
+						state.Flags.camp_standout = true
+						state:ModifyStat("Health", 10)
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("🏀 You were the STAR of camp! Coaches say you have SERIOUS talent!")
+					elseif roll <= 70 then
+						state.Flags.basketball_talent = true
+						state:ModifyStat("Health", 7)
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("🏀 Great camp! You learned so much and made new friends!")
+					else
+						state:ModifyStat("Health", 5)
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🏀 Camp was tough but you improved! Keep practicing!")
+					end
+				end,
+			},
+			{
+				text = "🏈 Yes! Sign me up for football camp!",
+				effects = { Money = -500, Health = 5 },
+				feedText = "Off to football camp!",
+				eligibility = function(state) return (state.Money or 0) >= 500 or (state.ParentMoney or 0) >= 500 end,
+				onResolve = function(state)
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					state.Flags.likes_sports = true
+					state.Flags.plays_football = true
+					state.Flags.athletic_focus = true
+					state.Flags.went_to_sports_camp = true
+					
+					if roll <= 30 then
+						state.Flags.football_star = true
+						state.Flags.camp_standout = true
+						state:ModifyStat("Health", 10)
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("🏈 You DOMINATED camp! Coaches think you could go FAR!")
+					elseif roll <= 70 then
+						state.Flags.football_talent = true
+						state:ModifyStat("Health", 7)
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("🏈 Awesome camp! You're way better at football now!")
+					else
+						state:ModifyStat("Health", 5)
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🏈 Challenging camp but you learned a lot!")
+					end
+				end,
+			},
+			{
+				text = "Maybe next year",
+				effects = {},
+				feedText = "You stay home...",
+				onResolve = function(state)
+					state:AddFeed("⛺ Maybe you'll go next summer!")
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: TECH/GAMING DISCOVERY EVENTS
+	-- These events set the gamer, coder, tech_savvy flags which are REQUIRED for
+	-- esports and hacker career paths! Without these, those careers never unlock!
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "child_first_video_game",
+		title = "🎮 First Video Game!",
+		emoji = "🎮",
+		text = "You got a video game for your birthday! It's your first time really playing!",
+		question = "What happens?",
+		minAge = 5, maxAge = 10,
+		baseChance = 0.60,
+		cooldown = 5,
+		oneTime = true,
+		category = "childhood",
+		weight = 18,
+		tags = { "gaming", "tech", "discovery" },
+		
+		choices = {
+			{
+				text = "🎮 This is AMAZING!",
+				effects = { Happiness = 8 },
+				feedText = "You're hooked!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.gamer = true
+					state.Flags.loves_games = true
+					local roll = math.random(1, 100)
+					if roll <= 35 then
+						state.Flags.gaming_prodigy = true
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("🎮 You're AMAZING at this! Beat the game super fast! Natural gamer!")
+					elseif roll <= 70 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🎮 Gaming is SO FUN! You play every chance you get!")
+					else
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🎮 Games are cool! You're learning how they work!")
+					end
+				end,
+			},
+			{
+				text = "🎮 Pretty fun I guess",
+				effects = { Happiness = 3 },
+				feedText = "You try it out...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.casual_gamer = true
+					state:ModifyStat("Happiness", 4)
+					state:AddFeed("🎮 Games are fun sometimes. Not obsessed though!")
+				end,
+			},
+			{
+				text = "Not really interested",
+				effects = {},
+				feedText = "You'd rather do something else...",
+				onResolve = function(state)
+					state:AddFeed("🎮 Video games aren't your thing. That's okay!")
+				end,
+			},
+		},
+	},
+	{
+		id = "child_computer_discovery",
+		title = "💻 First Computer Experience",
+		emoji = "💻",
+		text = "You got to use a computer for the first time! The screen glows, the keyboard clicks... so many possibilities!",
+		question = "What catches your interest?",
+		minAge = 6, maxAge = 12,
+		baseChance = 0.55,
+		cooldown = 5,
+		oneTime = true,
+		category = "childhood",
+		weight = 18,
+		tags = { "tech", "computer", "discovery" },
+		
+		choices = {
+			{
+				text = "💻 I want to learn how it works!",
+				effects = { Smarts = 3 },
+				feedText = "You explore everything...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.tech_savvy = true
+					state.Flags.computer_interest = true
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state.Flags.coder = true
+						state.Flags.early_coder = true
+						state:ModifyStat("Smarts", 8)
+						state:AddFeed("💻 You started learning to CODE! You're a natural with computers!")
+					elseif roll <= 65 then
+						state:ModifyStat("Smarts", 5)
+						state:AddFeed("💻 Computers are fascinating! You love exploring how they work!")
+					else
+						state:ModifyStat("Smarts", 3)
+						state:AddFeed("💻 Tech is interesting. You'd like to learn more!")
+					end
+				end,
+			},
+			{
+				text = "🎮 Play games on it!",
+				effects = { Happiness = 5 },
+				feedText = "Gaming time!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.gamer = true
+					state.Flags.tech_savvy = true
+					state:ModifyStat("Happiness", 6)
+					state:AddFeed("💻 Computer games are awesome! Even better than console!")
+				end,
+			},
+			{
+				text = "Watch videos",
+				effects = { Happiness = 3 },
+				feedText = "YouTube time!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.tech_savvy = true
+					state:ModifyStat("Happiness", 4)
+					state:AddFeed("💻 So many videos to watch! Entertainment for hours!")
+				end,
+			},
+		},
+	},
+	{
+		id = "teen_coding_discovery",
+		title = "💻 Coding Class Available",
+		emoji = "💻",
+		text = "Your school is offering a coding class! You could learn to make websites, games, and apps!",
+		question = "Do you sign up?",
+		minAge = 12, maxAge = 17,
+		baseChance = 0.50,
+		cooldown = 5,
+		oneTime = true,
+		category = "teen",
+		weight = 16,
+		tags = { "tech", "coding", "education" },
+		
+		choices = {
+			{
+				text = "💻 Yes! I want to learn!",
+				effects = { Smarts = 5 },
+				feedText = "Time to code!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.coder = true
+					state.Flags.tech_savvy = true
+					state.Flags.programming_knowledge = true
+					local roll = math.random(1, 100)
+					if roll <= 30 then
+						state.Flags.coding_prodigy = true
+						state.Flags.hacker_interest = true
+						state:ModifyStat("Smarts", 10)
+						state:AddFeed("💻 You're a NATURAL! Already building your own programs! Future tech star!")
+					elseif roll <= 70 then
+						state:ModifyStat("Smarts", 6)
+						state:AddFeed("💻 Coding is awesome! You made your first program!")
+					else
+						state:ModifyStat("Smarts", 4)
+						state:AddFeed("💻 Coding is hard but you're learning!")
+					end
+				end,
+			},
+			{
+				text = "🎮 Only if I can make games",
+				effects = { Smarts = 3, Happiness = 3 },
+				feedText = "Game development!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.coder = true
+					state.Flags.gamer = true
+					state.Flags.tech_savvy = true
+					state:ModifyStat("Smarts", 5)
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("💻 Learning game development! Best of both worlds!")
+				end,
+			},
+			{
+				text = "Not interested in coding",
+				effects = {},
+				feedText = "Maybe later...",
+				onResolve = function(state)
+					state:AddFeed("💻 Coding isn't for everyone. Plenty of other paths!")
+				end,
+			},
+		},
+	},
+	{
+		id = "teen_hacking_curiosity",
+		title = "🔓 The Dark Side of Tech",
+		emoji = "🔓",
+		text = "You stumbled across some hacking tutorials online. The power to bypass security, access hidden information... it's intriguing.",
+		question = "What do you do?",
+		minAge = 14, maxAge = 18,
+		baseChance = 0.35,
+		cooldown = 6,
+		oneTime = true,
+		category = "teen",
+		weight = 14,
+		tags = { "hacking", "tech", "crime" },
+		eligibility = function(state)
+			if not state.Flags then return false end
+			return state.Flags.coder or state.Flags.tech_savvy or state.Flags.gamer
+		end,
+		
+		choices = {
+			{
+				text = "🔓 Learn for knowledge...",
+				effects = { Smarts = 5 },
+				feedText = "You start learning...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.hacker_interest = true
+					state.Flags.hacker_knowledge = true
+					local roll = math.random(1, 100)
+					if roll <= 25 then
+						state.Flags.script_kiddie = true
+						state:ModifyStat("Smarts", 8)
+						state:AddFeed("🔓 You're learning FAST! Already found some vulnerabilities... for educational purposes only, right?")
+					else
+						state:ModifyStat("Smarts", 5)
+						state:AddFeed("🔓 Fascinating stuff. You understand how security works now.")
+					end
+				end,
+			},
+			{
+				text = "⚠️ Try some simple hacks",
+				effects = { Smarts = 3 },
+				feedText = "You test your skills...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.hacker_interest = true
+					state.Flags.script_kiddie = true
+					local roll = math.random(1, 100)
+					if roll <= 20 then
+						state:ModifyStat("Smarts", 5)
+						state.Flags.hacker_experience = true
+						state:AddFeed("🔓 You successfully bypassed a system! The power is intoxicating...")
+					elseif roll <= 70 then
+						state:ModifyStat("Smarts", 3)
+						state:AddFeed("🔓 Small success. You're learning the ropes.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🔓 Got caught! Just a warning this time. Be more careful...")
+					end
+				end,
+			},
+			{
+				text = "This seems dangerous",
+				effects = {},
+				feedText = "You close the page...",
+				onResolve = function(state)
+					state:ModifyStat("Smarts", 2)
+					state:AddFeed("🔓 Good call. Hacking can lead to serious trouble.")
+				end,
+			},
+		},
+	},
+	{
+		id = "child_gaming_competition",
+		title = "🎮 Gaming Competition at School",
+		emoji = "🎮",
+		text = "Your school is hosting a video game tournament! Kids are signing up to compete!",
+		question = "Do you enter?",
+		minAge = 8, maxAge = 14,
+		baseChance = 0.50,
+		cooldown = 5,
+		category = "childhood",
+		weight = 15,
+		tags = { "gaming", "competition" },
+		
+		choices = {
+			{
+				text = "🎮 I'm going to WIN!",
+				effects = { Happiness = 5 },
+				feedText = "You enter the competition...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.gamer = true
+					state.Flags.competitive_gamer = true
+					local roll = math.random(1, 100)
+					if roll <= 25 then
+						state.Flags.esports_winner = true
+						state.Flags.gaming_prodigy = true
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("🎮 YOU WON THE TOURNAMENT! Everyone's talking about your skills!")
+					elseif roll <= 55 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🎮 Made it to the finals! Almost won! You've got real talent!")
+					else
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🎮 Didn't win but learned a lot! Practice makes perfect!")
+					end
+				end,
+			},
+			{
+				text = "🎮 Sure, sounds fun",
+				effects = { Happiness = 3 },
+				feedText = "You join casually...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.gamer = true
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("🎮 Fun tournament! Made some gamer friends!")
+				end,
+			},
+			{
+				text = "Not interested",
+				effects = {},
+				feedText = "Gaming competitions aren't your thing...",
+				onResolve = function(state)
+					state:AddFeed("🎮 Maybe next time!")
 				end,
 			},
 		},

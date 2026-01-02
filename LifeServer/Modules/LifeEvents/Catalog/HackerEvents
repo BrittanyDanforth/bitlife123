@@ -43,13 +43,26 @@ local events = {
 		title = "Natural Hacker",
 		text = "While messing around on the computer, you discover you have a talent for finding security flaws.",
 		category = "career_hacker",
-		weight = 15, -- CRITICAL FIX: Higher weight for discovery events
-		baseChance = 0.4, -- CRITICAL FIX: More likely to trigger
+		weight = 20, -- CRITICAL FIX: Higher weight for discovery events
+		baseChance = 0.50, -- CRITICAL FIX: More likely to trigger
 		minAge = 12,
 		maxAge = 22,
 		oneTime = true,
-		requiresStats = { Smarts = 45 }, -- CRITICAL FIX: Lower threshold for accessibility
+		-- CRITICAL FIX: Lower stat threshold OR boost if has tech flags
+		requiresStats = { Smarts = 35 }, -- Lowered from 45 for accessibility
 		blockedByFlags = { hacker_discovered = true },
+		eligibility = function(state)
+			-- CRITICAL FIX: Always allow if player has shown tech interest!
+			if state.Flags then
+				if state.Flags.coder or state.Flags.tech_savvy or state.Flags.gamer or 
+				   state.Flags.hacker_interest or state.Flags.computer_interest or
+				   state.Flags.coding_prodigy or state.Flags.script_kiddie then
+					return true -- Bypass stat check for tech-interested players!
+				end
+			end
+			-- Otherwise use standard stat check
+			return (state.Stats and state.Stats.Smarts >= 35)
+		end,
 		choices = {
 			{
 				index = 1,
@@ -274,12 +287,25 @@ local events = {
 		title = "Underground Opportunity",
 		text = "Someone on the dark web saw your coding skills. They're recruiting hackers for a criminal operation. High pay, high risk.",
 		category = "career_hacker",
-		weight = 12,
+		weight = 15, -- CRITICAL FIX: Increased weight for better triggering
 		minAge = 18,
 		maxAge = 35,
-		requiresStats = { Smarts = 55 },
+		-- CRITICAL FIX: Lower stat threshold OR has tech background
+		requiresStats = { Smarts = 45 }, -- Lowered from 55
 		blockedByFlags = { black_hat = true, white_hat = true, declined_hacking_career = true },
 		oneTime = true,
+		eligibility = function(state)
+			-- CRITICAL FIX: Allow if player has shown tech/hacking interest
+			if state.Flags then
+				if state.Flags.coder or state.Flags.tech_savvy or state.Flags.hacker_interest or
+				   state.Flags.script_kiddie or state.Flags.hacker_discovered or
+				   state.Flags.coding_prodigy or state.Flags.hacker_knowledge then
+					return true -- Bypass stat check for tech-interested players!
+				end
+			end
+			-- Otherwise use standard stat check
+			return (state.Stats and state.Stats.Smarts >= 45)
+		end,
 		choices = {
 			{
 				index = 1,

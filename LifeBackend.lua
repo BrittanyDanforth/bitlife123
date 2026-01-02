@@ -5014,6 +5014,74 @@ local JobCatalogList = {
 		requiresFlags = { "senior_coaching", "coaching_career" }, -- CRITICAL FIX: Must have senior coaching experience
 		grantsFlags = { "head_coach", "elite_coach" },
 		description = "Requires coaching experience - elite coaching position" },
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- NBA BASKETBALL CAREER PATH - CRITICAL FIX: Added missing NBA jobs!
+	-- These jobs are EVENT-DRIVEN - you get them through draft events, not direct application
+	-- Player must have proper basketball background and be drafted to access these
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{ id = "nba_g_league", name = "G-League Player", company = "NBA G-League", emoji = "🏀", salary = 45000, minAge = 19, maxAge = 28, requirement = nil, category = "sports",
+		minStats = { Health = 75 }, difficulty = 8,
+		-- CRITICAL FIX: Accept all basketball-related flags from NBA events! (OR logic - any works)
+		-- Fixed flag names: varsity_athlete (not varsity_basketball), added plays_basketball
+		requiresFlags = { "college_basketball", "basketball_prodigy", "march_madness_star", "nba_dream_setback", "basketball_talent", "camp_standout", "varsity_athlete", "plays_basketball", "aau_player" },
+		grantsFlags = { "nba_g_league_player", "pro_basketball" },
+		description = "Development league - requires strong basketball background" },
+	{ id = "nba_player", name = "NBA Player", company = "NBA Team", emoji = "🏀", salary = 925000, minAge = 19, maxAge = 38, requirement = nil, category = "sports",
+		minStats = { Health = 80 }, difficulty = 10,
+		-- Must have nba_player flag from draft events OR g-league
+		requiresFlags = { "nba_player", "nba_g_league_player" },
+		grantsFlags = { "nba_active", "pro_basketball", "professional_athlete" },
+		description = "Must be drafted to NBA or promoted from G-League" },
+	{ id = "nba_starter", name = "NBA Starter", company = "NBA Team", emoji = "🏀", salary = 8000000, minAge = 21, maxAge = 36, requirement = nil, category = "sports",
+		minStats = { Health = 85 }, difficulty = 10,
+		requiresFlags = { "nba_player", "nba_active" },
+		grantsFlags = { "nba_starter", "nba_active" },
+		description = "Starting player - must already be in NBA" },
+	{ id = "nba_allstar", name = "NBA All-Star", company = "NBA Team", emoji = "⭐🏀", salary = 35000000, minAge = 22, maxAge = 38, requirement = nil, category = "sports",
+		minStats = { Health = 90 }, difficulty = 10,
+		requiresFlags = { "nba_allstar" }, -- Must be voted All-Star through events
+		grantsFlags = { "nba_star", "basketball_elite" },
+		description = "Must be selected as All-Star through voting events" },
+	{ id = "nba_superstar", name = "NBA Superstar", company = "Championship Contender", emoji = "🏆🏀", salary = 50000000, minAge = 24, maxAge = 36, requirement = nil, category = "sports",
+		minStats = { Health = 90 }, difficulty = 10,
+		requiresFlags = { "nba_mvp", "nba_champion" }, -- Must win MVP OR championship
+		grantsFlags = { "nba_superstar", "basketball_legend" },
+		description = "Elite status - must win MVP award or championship" },
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- NFL FOOTBALL CAREER PATH - CRITICAL FIX: Added missing NFL jobs!
+	-- These jobs are EVENT-DRIVEN - you get them through draft events, not direct application
+	-- Player must have proper football background and be drafted to access these
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{ id = "nfl_practice_squad", name = "NFL Practice Squad", company = "NFL Team", emoji = "🏈", salary = 200000, minAge = 21, maxAge = 28, requirement = nil, category = "sports",
+		minStats = { Health = 80 }, difficulty = 9,
+		-- CRITICAL FIX: Accept all football-related flags from NFL events! (OR logic - any works)
+		-- Added plays_football and varsity_athlete for better compatibility with events
+		requiresFlags = { "college_football", "football_star", "bowl_game_mvp", "nfl_dream_crushed", "football_talent", "camp_standout", "varsity_football", "plays_football", "varsity_athlete" },
+		grantsFlags = { "nfl_practice_squad_player", "pro_football" },
+		description = "Practice squad - requires strong football background" },
+	{ id = "nfl_player", name = "NFL Player", company = "NFL Team", emoji = "🏈", salary = 750000, minAge = 21, maxAge = 36, requirement = nil, category = "sports",
+		minStats = { Health = 85 }, difficulty = 10,
+		-- Must have nfl_player flag from draft events OR practice squad
+		requiresFlags = { "nfl_player", "nfl_practice_squad_player" },
+		grantsFlags = { "nfl_active", "pro_football", "professional_athlete" },
+		description = "Must be drafted to NFL or promoted from practice squad" },
+	{ id = "nfl_starter", name = "NFL Starter", company = "NFL Team", emoji = "🏈", salary = 5000000, minAge = 22, maxAge = 34, requirement = nil, category = "sports",
+		minStats = { Health = 88 }, difficulty = 10,
+		requiresFlags = { "nfl_player", "nfl_active" },
+		grantsFlags = { "nfl_starter", "nfl_active" },
+		description = "Starting player - must already be in NFL" },
+	{ id = "nfl_pro_bowler", name = "NFL Pro Bowler", company = "NFL Team", emoji = "⭐🏈", salary = 20000000, minAge = 23, maxAge = 35, requirement = nil, category = "sports",
+		minStats = { Health = 90 }, difficulty = 10,
+		requiresFlags = { "nfl_pro_bowl" }, -- Must be selected Pro Bowl through events
+		grantsFlags = { "nfl_star", "football_elite" },
+		description = "Must be selected to Pro Bowl through voting events" },
+	{ id = "nfl_superstar", name = "NFL Superstar", company = "Super Bowl Contender", emoji = "🏆🏈", salary = 45000000, minAge = 24, maxAge = 34, requirement = nil, category = "sports",
+		minStats = { Health = 92 }, difficulty = 10,
+		requiresFlags = { "nfl_mvp", "super_bowl_champion" }, -- Must win MVP OR Super Bowl
+		grantsFlags = { "nfl_superstar", "football_legend" },
+		description = "Elite status - must win MVP award or Super Bowl" },
 
 	-- MILITARY - CRITICAL FIX: All military jobs now require fitness and have proper progression flags!
 	{ id = "enlisted", name = "Enlisted Soldier", company = "US Army", emoji = "🪖", salary = 35000, minAge = 18, requirement = "high_school", category = "military",
@@ -5111,10 +5179,17 @@ local JobCatalogList = {
 	-- Requires: High Smarts, tech skills
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- Entry points (shared) - These give experience flags for higher-tier jobs
+	-- CRITICAL FIX: Script kiddie is now more accessible with early-life tech flags!
 	{ id = "script_kiddie", name = "Script Kiddie", company = "The Internet", emoji = "👶💻", salary = 1500, minAge = 14, requirement = nil, category = "hacker",
-		minStats = { Smarts = 55 }, grantsFlags = { "coder", "tech_experience" }, description = "Learning to hack with pre-made tools - small side gigs" },
+		minStats = { Smarts = 45 }, -- CRITICAL FIX: Lowered from 55 for accessibility
+		-- CRITICAL FIX: Accept early-life tech discovery flags OR just high smarts
+		requiresFlags = { "tech_savvy", "coder", "hacker_interest", "computer_interest", "gamer", "coding_prodigy" },
+		grantsFlags = { "coder", "tech_experience", "script_kiddie" }, description = "Learning to hack with pre-made tools - small side gigs" },
 	{ id = "freelance_hacker", name = "Freelance Hacker", company = "Dark Web", emoji = "🖥️", salary = 60000, minAge = 18, requirement = nil, category = "hacker",
-		minStats = { Smarts = 65 }, requiresFlags = { "coder", "tech_experience" }, grantsFlags = { "hacker_experience" }, description = "Taking small hacking jobs online" },
+		minStats = { Smarts = 60 }, -- CRITICAL FIX: Lowered from 65
+		-- CRITICAL FIX: Accept early-life flags OR script kiddie experience (OR logic!)
+		requiresFlags = { "coder", "tech_experience", "script_kiddie", "hacker_interest", "coding_prodigy" }, 
+		grantsFlags = { "hacker_experience" }, description = "Taking small hacking jobs online" },
 	
 	-- White Hat Path (Legit Cybersecurity)
 	{ id = "pen_tester", name = "Penetration Tester", company = "SecureIT Solutions", emoji = "🔓", salary = 95000, minAge = 20, requirement = "high_school", category = "tech",
@@ -5141,19 +5216,23 @@ local JobCatalogList = {
 	-- Must have gamer flag from childhood/teen gaming hobby to enter this career
 	-- Can't just become a $150K pro gamer at 17 without gaming background!
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Entry-level gaming job - accepts all early-life gaming flags!
 	{ id = "casual_gamer", name = "Casual Streamer", company = "Twitch", emoji = "🎮", salary = 5000, minAge = 13, requirement = nil, category = "esports",
 		minStats = { Smarts = 40 }, difficulty = 2,
-		requiresFlags = { "gamer", "loves_games", "casual_gamer", "tech_savvy" }, -- CRITICAL FIX: Must be a gamer!
-		grantsFlags = { "streamer", "content_creator_experience", "esports_experience" },
+		-- CRITICAL FIX: Accept ANY gaming-related flag from early-life discovery events!
+		requiresFlags = { "gamer", "loves_games", "casual_gamer", "tech_savvy", "gaming_prodigy", "competitive_gamer", "esports_winner" },
+		grantsFlags = { "streamer", "content_creator_experience", "esports_experience", "gamer" },
 		description = "Stream games with a small following - requires gaming hobby" },
 	{ id = "content_creator", name = "Gaming Content Creator", company = "YouTube Gaming", emoji = "📹", salary = 25000, minAge = 16, requirement = nil, category = "esports",
 		minStats = { Smarts = 50 }, difficulty = 4,
-		requiresFlags = { "gamer", "streamer", "content_creator_experience", "esports_experience" }, -- CRITICAL FIX: Must have streaming experience
-		grantsFlags = { "youtube_gamer", "content_creator", "growing_audience" },
+		-- CRITICAL FIX: Accept streamer flag OR gaming background from early-life events
+		requiresFlags = { "gamer", "streamer", "content_creator_experience", "esports_experience", "gaming_prodigy", "competitive_gamer" },
+		grantsFlags = { "youtube_gamer", "content_creator", "growing_audience", "streamer" },
 		description = "Create gaming content with growing audience - requires streaming experience" },
 	{ id = "pro_gamer", name = "Pro Gamer", company = "Esports Organization", emoji = "🕹️", salary = 65000, minAge = 17, requirement = nil, category = "esports",
 		minStats = { Smarts = 60, Health = 50 }, difficulty = 7,
-		requiresFlags = { "youtube_gamer", "content_creator", "competitive_gamer", "esports_winner", "esports_experience" }, -- CRITICAL FIX: Need proven competitive gaming history
+		-- CRITICAL FIX: Accept competitive_gamer OR esports_winner from early-life events!
+		requiresFlags = { "youtube_gamer", "content_creator", "competitive_gamer", "esports_winner", "esports_experience", "gaming_prodigy" },
 		grantsFlags = { "pro_gamer", "esports_pro", "signed_gamer" },
 		description = "Compete professionally in esports - requires competitive gaming history" },
 	{ id = "esports_champion", name = "Esports Champion", company = "World Champions", emoji = "🏆", salary = 350000, minAge = 18, requirement = nil, category = "esports",

@@ -2619,10 +2619,13 @@ function LifeEvents.buildYearQueue(state, options)
 	-- BUG: GamerCareerEvents NEVER triggered because career_gaming category wasn't injected!
 	-- User complaint: "GAMER CAREER DOESN'T EVEN CALL SOMETIMES AND ISN'T LINKED NICELY"
 	-- FIX: Check for gaming job or gamer flags and inject career_gaming category
+	-- CRITICAL FIX: Also check for early-life gamer flags from EarlyLifeEvents!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local isGamerFlags = state.Flags and (
 		state.Flags.pro_gamer or state.Flags.esports_player or state.Flags.gaming_streamer or
-		state.Flags.signed_to_org or state.Flags.competitive_player or state.Flags.tournament_champion
+		state.Flags.signed_to_org or state.Flags.competitive_player or state.Flags.tournament_champion or
+		state.Flags.gamer or state.Flags.competitive_gamer or state.Flags.gaming_prodigy or
+		state.Flags.loves_games or state.Flags.esports_winner or state.Flags.casual_gamer
 	)
 	local hasGamerJob = state.CurrentJob and (
 		(state.CurrentJob.id or ""):lower():find("gamer") or
@@ -2640,6 +2643,35 @@ function LifeEvents.buildYearQueue(state, options)
 		if not hasGamerCat then
 			table.insert(categories, "career_gaming")
 			table.insert(categories, "career_esports")
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #HACKER-1: ADD HACKER CAREER CATEGORY INJECTION!
+	-- BUG: HackerEvents not triggering for players with tech interest from early life!
+	-- FIX: Check for tech flags from EarlyLifeEvents and inject career_hacker category
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isHackerFlags = state.Flags and (
+		state.Flags.hacker_discovered or state.Flags.hacker_interest or state.Flags.hacker_knowledge or
+		state.Flags.tech_savvy or state.Flags.coder or state.Flags.coding_prodigy or
+		state.Flags.script_kiddie or state.Flags.black_hat or state.Flags.white_hat or
+		state.Flags.computer_interest or state.Flags.early_coder or state.Flags.programming_knowledge
+	)
+	local hasHackerJob = state.CurrentJob and (
+		(state.CurrentJob.id or ""):lower():find("hacker") or
+		(state.CurrentJob.id or ""):lower():find("security") or
+		(state.CurrentJob.id or ""):lower():find("cyber") or
+		(state.CurrentJob.category or ""):lower() == "hacker" or
+		(state.CurrentJob.category or ""):lower() == "tech"
+	)
+	
+	if isHackerFlags or hasHackerJob then
+		local hasHackerCat = false
+		for _, cat in ipairs(categories) do
+			if cat == "career_hacker" then hasHackerCat = true break end
+		end
+		if not hasHackerCat then
+			table.insert(categories, "career_hacker")
 		end
 	end
 	
