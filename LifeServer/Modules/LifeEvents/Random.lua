@@ -4,6 +4,11 @@
 	These add variety but aren't tied to specific life stages
 ]]
 
+-- CRITICAL FIX #RANDOM-1: Add RANDOM definition for consistent random number generation
+-- Note: Many events in this file still use math.random() for legacy compatibility
+-- New events should use RANDOM:NextInteger() or RANDOM:NextNumber()
+local RANDOM = Random.new()
+
 local Random = {}
 
 Random.events = {

@@ -13,6 +13,9 @@
     - End-of-life planning
 ]]
 
+-- CRITICAL FIX #SENIOR-1: Add RANDOM definition for consistent random number generation
+local RANDOM = Random.new()
+
 local Senior = {}
 
 local STAGE = "senior"

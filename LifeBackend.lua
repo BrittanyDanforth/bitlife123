@@ -11099,7 +11099,8 @@ end
 function LifeBackend:tickCareer(state)
 	-- CRITICAL: Don't tick career for retired players (generic or sport-specific)
 	if state.Flags then
-		if state.Flags.retired or state.Flags.nfl_retired or state.Flags.nba_retired then
+		if state.Flags.retired or state.Flags.nfl_retired or state.Flags.nba_retired or 
+		   state.Flags.retired_racer or state.Flags.retired_athlete or state.Flags.happily_retired then
 			return
 		end
 	end
@@ -11457,6 +11458,94 @@ function LifeBackend:collectPropertyIncome(state)
 			emoji = "🏠",
 			text = string.format("Collected $%s in property rental income", formatMoney(totalIncome)),
 			amount = totalIncome,
+		})
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #PENSION-1: Pension Collection for Retired Athletes
+-- NFL/NBA/Racing/Generic retired players should receive pension income annually
+-- Without this, retired athletes get no income after ending their career!
+-- User complaint: "I retired from the NFL and now I have no income???"
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:collectPensionIncome(state)
+	-- Only collect pension if retired
+	if not state.Flags then return end
+	
+	local isRetired = state.Flags.retired or state.Flags.nfl_retired or 
+		state.Flags.nba_retired or state.Flags.retired_athlete or
+		state.Flags.happily_retired or state.Flags.semi_retired
+	
+	if not isRetired then return end
+	
+	-- Get pension amount from flags (set during retirement event)
+	local pensionAmount = state.Flags.pension_amount or 0
+	
+	-- If no explicit pension but they're retired from a high-paying career, calculate one
+	if pensionAmount == 0 then
+		-- Check for various career-specific retirement flags
+		if state.Flags.nfl_retired or state.Flags.retired_athlete then
+			-- NFL average pension is ~$43K/year for 10+ years
+			local yearsPlayed = state.Flags.nfl_draft_age and ((state.Age or 30) - (state.Flags.nfl_draft_age or 22)) or 8
+			pensionAmount = math.min(200000, 30000 + (yearsPlayed * 3000))
+			
+			-- Bonus for achievements
+			if state.Flags.super_bowl_champion then pensionAmount = pensionAmount + 25000 end
+			if state.Flags.nfl_pro_bowl then pensionAmount = pensionAmount + 15000 end
+			if state.Flags.nfl_mvp then pensionAmount = pensionAmount + 50000 end
+			
+		elseif state.Flags.nba_retired then
+			-- NBA pension starts at ~$22K/year for 3+ years
+			local yearsPlayed = state.Flags.nba_draft_age and ((state.Age or 30) - (state.Flags.nba_draft_age or 21)) or 10
+			pensionAmount = math.min(250000, 22000 + (yearsPlayed * 5600))
+			
+			-- Bonus for achievements  
+			if state.Flags.nba_champion then pensionAmount = pensionAmount + 30000 end
+			if state.Flags.nba_allstar then pensionAmount = pensionAmount + 20000 end
+			if state.Flags.nba_mvp then pensionAmount = pensionAmount + 60000 end
+			
+		elseif state.Flags.racing_legend_status or state.Flags.retired_racer then
+			-- Racing doesn't have standard pensions but legends get sponsorship residuals
+			local championships = state.Flags.championships_won or 0
+			pensionAmount = 50000 + (championships * 25000)
+			
+		elseif state.Flags.hall_of_famer or state.Flags.hall_of_fame_inducted then
+			-- Hall of Famers get appearance fees and legacy income
+			pensionAmount = 100000
+		end
+		
+		-- Store calculated pension for future years
+		if pensionAmount > 0 then
+			state.Flags.pension_amount = pensionAmount
+		end
+	end
+	
+	-- If still no pension but generically retired with high career earnings, small pension
+	if pensionAmount == 0 and state.Flags.retired then
+		-- Generic retiree gets Social Security-like income
+		local ssIncome = RANDOM:NextInteger(18000, 45000)
+		pensionAmount = ssIncome
+	end
+	
+	-- Apply pension income
+	if pensionAmount > 0 then
+		self:addMoney(state, pensionAmount)
+		
+		state.YearLog = state.YearLog or {}
+		
+		-- Determine pension type for message
+		local pensionType = "retirement"
+		if state.Flags.nfl_retired then pensionType = "NFL pension"
+		elseif state.Flags.nba_retired then pensionType = "NBA pension"
+		elseif state.Flags.retired_racer then pensionType = "racing royalties"
+		elseif state.Flags.hall_of_famer then pensionType = "Hall of Fame stipend"
+		end
+		
+		table.insert(state.YearLog, {
+			type = "pension_income",
+			emoji = "🏆",
+			text = string.format("Received %s from %s", formatMoney(pensionAmount), pensionType),
+			amount = pensionAmount,
 		})
 	end
 end
@@ -14504,6 +14593,7 @@ function LifeBackend:handleAgeUp(player)
 	self:updateEducationProgress(state)
 	self:tickCareer(state)
 	self:collectPropertyIncome(state) -- CRITICAL FIX: Collect passive income from owned properties
+	self:collectPensionIncome(state) -- CRITICAL FIX #PENSION-1: Retired athletes get annual pension
 	self:collectSpouseIncome(state) -- CRITICAL FIX (deep-11): Spouse contributes to household income
 	self:tickVehicleDepreciation(state) -- CRITICAL FIX #10: Vehicles lose value over time
 	self:tickInvestments(state) -- CRITICAL FIX #11: Investments fluctuate in value

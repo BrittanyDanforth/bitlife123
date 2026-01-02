@@ -4,6 +4,9 @@
     All events use randomized outcomes - NO god mode
 ]]
 
+-- CRITICAL FIX #HEALTH-1: Add RANDOM definition for consistent random number generation
+local RANDOM = Random.new()
+
 local HealthEvents = {}
 
 local STAGE = "random"

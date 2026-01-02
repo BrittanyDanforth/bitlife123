@@ -3,6 +3,9 @@
 	High school, identity, relationships, early choices
 ]]
 
+-- CRITICAL FIX #TEEN-1: Add RANDOM definition for consistent random number generation
+local RANDOM = Random.new()
+
 local Teen = {}
 
 Teen.events = {

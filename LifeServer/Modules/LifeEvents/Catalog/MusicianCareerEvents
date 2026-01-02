@@ -14,6 +14,10 @@
 	CRITICAL FIX #RVS-6: Premium path blocking for royalty/mafia players
 ]]
 
+-- CRITICAL FIX #MUSIC-1: Add RANDOM definition for consistent random number generation
+-- Using math.random() directly can cause issues on Roblox - use Random.new() instead
+local RANDOM = Random.new()
+
 local MusicianCareerEvents = {}
 
 -- ═════════════════════════════════════════════════════════════════════════════════════
@@ -126,9 +130,9 @@ MusicianCareerEvents.events = {
 				effects = { Health = -3 },
 				feedText = "Going live at midnight...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 40 then
-						local sales = math.random(500000, 2000000)
+						local sales = RANDOM:NextInteger(500000, 2000000)
 						state.Money = (state.Money or 0) + sales
 						state:ModifyStat("Happiness", 25)
 						state.Fame = math.min(100, (state.Fame or 0) + 50) -- CRITICAL FIX: Cap fame at 100
@@ -136,7 +140,7 @@ MusicianCareerEvents.events = {
 						state.Flags.platinum_album = true
 						state:AddFeed(string.format("🎵 PLATINUM ALBUM! %d streams in first week! You're a superstar!", sales * 100))
 					elseif roll <= 70 then
-						local sales = math.random(100000, 400000)
+						local sales = RANDOM:NextInteger(100000, 400000)
 						state.Money = (state.Money or 0) + sales
 						state:ModifyStat("Happiness", 10)
 						state.Fame = math.min(100, (state.Fame or 0) + 15) -- CRITICAL FIX: Cap fame at 100
@@ -153,15 +157,15 @@ MusicianCareerEvents.events = {
 				effects = { Happiness = 3 },
 				feedText = "Real ones know...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 30 then
-						local sales = math.random(300000, 1000000)
+						local sales = RANDOM:NextInteger(300000, 1000000)
 						state.Money = (state.Money or 0) + sales
 						state:ModifyStat("Happiness", 20)
 						state.Fame = math.min(100, (state.Fame or 0) + 30) -- CRITICAL FIX: Cap fame at 100
 						state:AddFeed("🎵 Word of mouth went CRAZY! Album is a sleeper hit!")
 					elseif roll <= 65 then
-						local sales = math.random(50000, 200000)
+						local sales = RANDOM:NextInteger(50000, 200000)
 						state.Money = (state.Money or 0) + sales
 						state:ModifyStat("Happiness", 5)
 						state:AddFeed("🎵 Modest sales. Core fans appreciate it. Not mainstream though.")
@@ -217,9 +221,9 @@ MusicianCareerEvents.events = {
 				effects = { Happiness = -5 },
 				feedText = "It's just one song...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 55 then
-						local money = math.random(100000, 500000)
+						local money = RANDOM:NextInteger(100000, 500000)
 						state.Money = (state.Money or 0) + money
 						state:ModifyStat("Happiness", 15)
 						state.Fame = math.min(100, (state.Fame or 0) + 25) -- CRITICAL FIX: Cap fame at 100
@@ -235,9 +239,9 @@ MusicianCareerEvents.events = {
 				effects = { Smarts = 3 },
 				feedText = "My music, my way!",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 35 then
-						local money = math.random(200000, 800000)
+						local money = RANDOM:NextInteger(200000, 800000)
 						state.Money = (state.Money or 0) + money
 						state:ModifyStat("Happiness", 20)
 						state.Fame = math.min(100, (state.Fame or 0) + 35) -- CRITICAL FIX: Cap fame at 100
@@ -280,9 +284,9 @@ MusicianCareerEvents.events = {
 				effects = { Happiness = 10 },
 				feedText = "I want to thank...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 40 then
-						state.Money = (state.Money or 0) + math.random(200000, 1000000)
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(200000, 1000000)
 						state:ModifyStat("Happiness", 30)
 						state.Fame = math.min(100, (state.Fame or 0) + 70) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
@@ -300,9 +304,9 @@ MusicianCareerEvents.events = {
 				effects = { Happiness = 5 },
 				feedText = "Managing expectations...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 30 then
-						state.Money = (state.Money or 0) + math.random(150000, 500000)
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(150000, 500000)
 						state:ModifyStat("Happiness", 25)
 						state.Fame = math.min(100, (state.Fame or 0) + 60) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
@@ -338,9 +342,9 @@ MusicianCareerEvents.events = {
 				effects = { Health = -10, Happiness = 5 },
 				feedText = "Life on the road!",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 55 then
-						local tourMoney = math.random(500000, 3000000)
+						local tourMoney = RANDOM:NextInteger(500000, 3000000)
 						state.Money = (state.Money or 0) + tourMoney
 						state:ModifyStat("Happiness", 20)
 						state.Fame = math.min(100, (state.Fame or 0) + 40) -- CRITICAL FIX: Cap fame at 100
@@ -348,7 +352,7 @@ MusicianCareerEvents.events = {
 						state.Flags.world_toured = true
 						state:AddFeed(string.format("🌍 Tour was LEGENDARY! $%s grossed! Memories for life!", tourMoney))
 					elseif roll <= 80 then
-						local tourMoney = math.random(100000, 400000)
+						local tourMoney = RANDOM:NextInteger(100000, 400000)
 						state.Money = (state.Money or 0) + tourMoney
 						state:ModifyStat("Happiness", 8)
 						state:AddFeed(string.format("🌍 Tour was good but exhausting. $%s earned.", tourMoney))
@@ -366,7 +370,7 @@ MusicianCareerEvents.events = {
 				effects = { Health = -3, Happiness = 3 },
 				feedText = "Quality over quantity...",
 				onResolve = function(state)
-					local tourMoney = math.random(50000, 200000)
+					local tourMoney = RANDOM:NextInteger(50000, 200000)
 					state.Money = (state.Money or 0) + tourMoney
 					state:ModifyStat("Happiness", 10)
 					state.Fame = math.min(100, (state.Fame or 0) + 15) -- CRITICAL FIX: Cap fame at 100
@@ -402,9 +406,9 @@ MusicianCareerEvents.events = {
 			feedText = "See you in court!",
 			eligibility = function(state) return (state.Money or 0) >= 20000, "💸 Need $20K for legal fees" end,
 			onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 40 then
-						local settlement = math.random(200000, 1000000)
+						local settlement = RANDOM:NextInteger(200000, 1000000)
 						state.Money = (state.Money or 0) + settlement
 						state:ModifyStat("Happiness", 15)
 						state.Fame = math.min(100, (state.Fame or 0) + 20) -- CRITICAL FIX: Cap fame at 100
@@ -425,7 +429,7 @@ MusicianCareerEvents.events = {
 				effects = {},
 				feedText = "Everyone needs to know!",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 45 then
 						state:ModifyStat("Happiness", 10)
 						state.Fame = math.min(100, (state.Fame or 0) + 15) -- CRITICAL FIX: Cap fame at 100
@@ -469,9 +473,9 @@ MusicianCareerEvents.events = {
 				effects = { Happiness = 20 },
 				feedText = "Dreams do come true!",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 60 then
-						state.Money = (state.Money or 0) + math.random(100000, 500000)
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(100000, 500000)
 						state.Fame = math.min(100, (state.Fame or 0) + 35) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.legendary_collab = true
@@ -488,9 +492,9 @@ MusicianCareerEvents.events = {
 				effects = {},
 				feedText = "Making sure it's fair...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 50 then
-						state.Money = (state.Money or 0) + math.random(150000, 600000)
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(150000, 600000)
 						state:ModifyStat("Happiness", 18)
 						state.Fame = math.min(100, (state.Fame or 0) + 40) -- CRITICAL FIX: Cap fame at 100
 						state:AddFeed("🤝 Equal billing! Song was a smash! They respect your hustle!")
@@ -523,7 +527,7 @@ MusicianCareerEvents.events = {
 				effects = { Health = 10, Happiness = -5 },
 				feedText = "Voice is everything...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 80 then
 						state:ModifyStat("Happiness", 10)
 						state:AddFeed("🎤 Voice recovered fully! Ready to sing again!")
@@ -538,9 +542,9 @@ MusicianCareerEvents.events = {
 				effects = { Health = -5 },
 				feedText = "Can't let fans down...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 30 then
-						state.Money = (state.Money or 0) + math.random(50000, 150000)
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(50000, 150000)
 						state:ModifyStat("Happiness", 8)
 						state:AddFeed("🎤 Pushed through! Voice held up somehow!")
 					else
@@ -575,9 +579,9 @@ MusicianCareerEvents.events = {
 				effects = { Smarts = 3 },
 				feedText = "New era, new me!",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 40 then
-						state.Money = (state.Money or 0) + math.random(200000, 700000)
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(200000, 700000)
 						state:ModifyStat("Happiness", 20)
 						state.Fame = math.min(100, (state.Fame or 0) + 30) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
@@ -598,9 +602,9 @@ MusicianCareerEvents.events = {
 				effects = {},
 				feedText = "Give the people what they want!",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 35 then
-						state.Money = (state.Money or 0) + math.random(100000, 400000)
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(100000, 400000)
 						state:ModifyStat("Happiness", 15)
 						state:AddFeed("😰 Formula still works! Another hit! Not a one-hit wonder!")
 					else
@@ -639,9 +643,9 @@ MusicianCareerEvents.events = {
 				effects = { Happiness = -5 },
 				feedText = "Perfectionism mode engaged...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 50 then
-						local earnings = math.random(800000, 2500000)
+						local earnings = RANDOM:NextInteger(800000, 2500000)
 						state.Money = (state.Money or 0) + earnings
 						state:ModifyStat("Happiness", 30)
 						state.Fame = math.min(100, (state.Fame or 0) + 60) -- CRITICAL FIX: Cap fame at 100
@@ -660,9 +664,9 @@ MusicianCareerEvents.events = {
 				effects = {},
 				feedText = "Strike while the iron is hot!",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 30 then
-						state.Money = (state.Money or 0) + math.random(300000, 700000)
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(300000, 700000)
 						state:ModifyStat("Happiness", 12)
 						state:AddFeed("🎵 Quick turnaround worked! Another hit in the making!")
 					else
@@ -719,9 +723,9 @@ MusicianCareerEvents.events = {
 				effects = { Health = -20, Happiness = -5 },
 				feedText = "Can't let fans down...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 30 then
-						state.Money = (state.Money or 0) + math.random(100000, 300000)
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(100000, 300000)
 						state:AddFeed("🏥 Somehow finished the tour. You're a warrior! (But please rest now)")
 					else
 						state:ModifyStat("Health", -15)
@@ -757,7 +761,7 @@ MusicianCareerEvents.events = {
 				effects = { Happiness = 25 },
 				feedText = "Giving credit...",
 				onResolve = function(state)
-					state.Money = (state.Money or 0) + math.random(500000, 1500000)
+					state.Money = (state.Money or 0) + RANDOM:NextInteger(500000, 1500000)
 					state.Fame = math.min(100, (state.Fame or 0) + 80) -- CRITICAL FIX: Cap fame at 100
 					state.Flags = state.Flags or {}
 					state.Flags.grammy_winner = true
@@ -770,9 +774,9 @@ MusicianCareerEvents.events = {
 				effects = { Happiness = 15 },
 				feedText = "Sweet vindication...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 60 then
-						state.Money = (state.Money or 0) + math.random(400000, 1000000)
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(400000, 1000000)
 						state.Fame = math.min(100, (state.Fame or 0) + 50) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.grammy_winner = true
@@ -808,7 +812,7 @@ MusicianCareerEvents.events = {
 				effects = { Happiness = 10 },
 				feedText = "Freedom has a price...",
 				onResolve = function(state)
-					local buyout = math.random(500000, 2000000)
+					local buyout = RANDOM:NextInteger(500000, 2000000)
 					if (state.Money or 0) >= buyout then
 						-- CRITICAL FIX: Prevent negative money
 						state.Money = math.max(0, (state.Money or 0) - buyout)
@@ -828,14 +832,14 @@ MusicianCareerEvents.events = {
 				effects = { Happiness = 5 },
 				feedText = "Fans need to hear this...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 40 then
 						state.Fame = math.min(100, (state.Fame or 0) + 40) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.cult_following = true
 						state:AddFeed("💔 Leaked it! Went viral! Fans LOVE you for the rebellion! Label can't contain it!")
 					else
-						state.Money = math.max(0, (state.Money or 0) - math.random(200000, 800000))
+						state.Money = math.max(0, (state.Money or 0) - RANDOM:NextInteger(200000, 800000))
 						state:ModifyStat("Happiness", -15)
 						state:AddFeed("💔 Sued for breach of contract. Massive legal fees. Was it worth it?")
 					end
@@ -846,7 +850,7 @@ MusicianCareerEvents.events = {
 				effects = { Happiness = -15 },
 				feedText = "Swallowing pride...",
 				onResolve = function(state)
-					state.Money = (state.Money or 0) + math.random(50000, 150000)
+					state.Money = (state.Money or 0) + RANDOM:NextInteger(50000, 150000)
 					state.Flags = state.Flags or {}
 					state.Flags.label_conflict = nil
 					state.Flags.sellout = true
@@ -876,11 +880,11 @@ MusicianCareerEvents.events = {
 				effects = { Happiness = 8 },
 				feedText = "Catching lightning in a bottle...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 55 then
 						state.Flags = state.Flags or {}
 						state.Flags.hit_song_recorded = true
-						state.Money = (state.Money or 0) + math.random(50000, 200000)
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(50000, 200000)
 						state:AddFeed("🎙️ Recorded something SPECIAL! This track could be THE ONE!")
 					else
 						state:ModifyStat("Happiness", 5)
@@ -894,9 +898,9 @@ MusicianCareerEvents.events = {
 			feedText = "Calling in a favor...",
 			eligibility = function(state) return (state.Money or 0) >= 20000, "💸 Need $20K for guest feature" end,
 			onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 60 then
-						state.Money = (state.Money or 0) + math.random(100000, 400000)
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(100000, 400000)
 						state.Fame = math.min(100, (state.Fame or 0) + 25) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.collab_success = true
@@ -930,7 +934,7 @@ MusicianCareerEvents.events = {
 				effects = { Happiness = 10 },
 				feedText = "They seem harmless...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 75 then
 						state.Fame = math.min(100, (state.Fame or 0) + 15) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
@@ -957,7 +961,7 @@ MusicianCareerEvents.events = {
 				effects = { Happiness = -3 },
 				feedText = "Safety first...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 50 then
 						state:AddFeed("👥 They understood. No drama. Good call.")
 					else
@@ -989,9 +993,9 @@ MusicianCareerEvents.events = {
 				effects = { Happiness = 5 },
 				feedText = "All about connections...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 50 then
-						state.Money = (state.Money or 0) + math.random(10000, 50000)
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(10000, 50000)
 						state.Fame = math.min(100, (state.Fame or 0) + 20) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.industry_connections = true
@@ -1007,7 +1011,7 @@ MusicianCareerEvents.events = {
 				effects = { Happiness = 8, Health = -2 },
 				feedText = "YOLO!",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 60 then
 						state.Fame = math.min(100, (state.Fame or 0) + 15) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
@@ -1052,9 +1056,9 @@ MusicianCareerEvents.events = {
 				effects = { Happiness = 5 },
 				feedText = "Trust the artist...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 55 then
-						state.Money = (state.Money or 0) + math.random(80000, 300000)
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(80000, 300000)
 						state.Fame = math.min(100, (state.Fame or 0) + 25) -- CRITICAL FIX: Cap fame at 100
 						state:AddFeed("🔊 The remix is FIRE! Charting globally! Playing in every club!")
 					else
@@ -1068,9 +1072,9 @@ MusicianCareerEvents.events = {
 				effects = { Smarts = 3 },
 				feedText = "Quality control...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 65 then
-						state.Money = (state.Money or 0) + math.random(100000, 250000)
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(100000, 250000)
 						state.Fame = math.min(100, (state.Fame or 0) + 20) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.remix_success = true
@@ -1114,10 +1118,10 @@ MusicianCareerEvents.events = {
 				effects = { Happiness = 8 },
 				feedText = "Riding the wave...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 50 then
 						state.Fame = math.min(100, (state.Fame or 0) + 40) -- CRITICAL FIX: Cap fame at 100
-						state.Money = (state.Money or 0) + math.random(50000, 200000)
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(50000, 200000)
 						state.Flags = state.Flags or {}
 						state.Flags.social_media_star = true
 						state:AddFeed("📱 Embraced the meme! New fans pouring in! Streams through the ROOF!")
@@ -1140,7 +1144,7 @@ MusicianCareerEvents.events = {
 				effects = { Happiness = -5 },
 				feedText = "Damage control...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 30 then
 						state:AddFeed("📱 They removed it. Crisis averted maybe?")
 					else
@@ -1175,16 +1179,16 @@ MusicianCareerEvents.events = {
 				effects = { Happiness = 10 },
 				feedText = "Reinvention time!",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 45 then
-						state.Money = (state.Money or 0) + math.random(200000, 800000)
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(200000, 800000)
 						state.Fame = math.min(100, (state.Fame or 0) + 45) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.comeback_king = true
 						state.Flags.voice_damage = nil -- Recovery!
 						state:AddFeed("🔥 LEGENDARY COMEBACK! Critics are calling it a 'career resurrection'!")
 					elseif roll <= 75 then
-						state.Money = (state.Money or 0) + math.random(50000, 150000)
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(50000, 150000)
 						state.Fame = math.min(100, (state.Fame or 0) + 15) -- CRITICAL FIX: Cap fame at 100
 						state:AddFeed("🔥 Decent comeback! Not chart-topping but respectable return!")
 					else
@@ -1198,7 +1202,7 @@ MusicianCareerEvents.events = {
 				effects = { Happiness = 6 },
 				feedText = "Play the hits...",
 				onResolve = function(state)
-					state.Money = (state.Money or 0) + math.random(80000, 250000)
+					state.Money = (state.Money or 0) + RANDOM:NextInteger(80000, 250000)
 					state.Fame = math.min(100, (state.Fame or 0) + 20) -- CRITICAL FIX: Cap fame at 100
 					state:AddFeed("🔥 'Greatest Hits Reimagined' album! Fans love the nostalgia!")
 				end,
@@ -1227,9 +1231,9 @@ MusicianCareerEvents.events = {
 				effects = { Happiness = -5 },
 				feedText = "Vulnerable but authentic...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 55 then
-						state.Money = (state.Money or 0) + math.random(300000, 1000000)
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(300000, 1000000)
 						state.Fame = math.min(100, (state.Fame or 0) + 50) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.documentary_star = true

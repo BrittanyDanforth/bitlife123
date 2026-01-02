@@ -8,6 +8,9 @@
     - soft tagging via `stage`, `ageBand`, `category`, `tags`
 ]]
 
+-- CRITICAL FIX #CHILDHOOD-1: Add RANDOM definition for consistent random number generation
+local RANDOM = Random.new()
+
 local Childhood = {}
 
 local STAGE = "childhood"
