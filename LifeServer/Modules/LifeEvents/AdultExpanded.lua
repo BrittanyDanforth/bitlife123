@@ -2288,6 +2288,279 @@ AdultExpanded.events = {
 		},
 	},
 },
+-- ══════════════════════════════════════════════════════════════════════════════
+-- COMPREHENSIVE HOUSING SITUATION EVENT
+-- User request: "ensure living situation updates very nicely with lots of options"
+-- ══════════════════════════════════════════════════════════════════════════════
+{
+	id = "housing_situation_review",
+	title = "Housing Check-In",
+	emoji = "🏠",
+	text = "Time to think about your living situation. Are you happy where you are?",
+	textVariants = {
+		"Your lease is coming up for renewal. Time to decide what's next.",
+		"You've been thinking about your living situation lately.",
+		"Friends keep talking about moving. Should you consider it?",
+		"Real estate prices are changing. Time to review your options.",
+		"You wonder if it's time for a change in your living situation.",
+	},
+	question = "What's your housing plan?",
+	minAge = 20, maxAge = 70,
+	baseChance = 0.25,
+	cooldown = 6,
+	stage = "adult",
+	category = "housing",
+	tags = { "housing", "living", "decisions" },
+	blockedByFlags = { in_prison = true, homeless = true },
+	
+	choices = {
+		{
+			text = "🏠 Stay where I am - it's fine",
+			effects = { Happiness = 2 },
+			feedText = "🏠 Stability is underrated. You know your neighbors, your commute, your spots.",
+		},
+		{
+			text = "🏢 Upgrade to a nicer apartment ($800/mo more)",
+			effects = { Happiness = 8 },
+			feedText = "Moving up...",
+			eligibility = function(state)
+				local monthly = (state.CurrentJob and state.CurrentJob.salary or 0) / 12
+				if monthly < 2500 then return false, "💸 Need higher income for this upgrade" end
+				return true
+			end,
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags.upgraded_apartment = true
+				state.Flags.nicer_home = true
+				state.HousingState = state.HousingState or {}
+				state.HousingState.quality = "nice"
+				state:AddFeed("🏢 UPGRADED! Nicer place, better neighborhood. Worth every penny!")
+			end,
+		},
+		{
+			text = "🏡 Save for a house down payment",
+			effects = { Happiness = 3, Smarts = 2 },
+			feedText = "🏡 Homeownership is the goal! Cutting back to save that down payment.",
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags.saving_for_house = true
+				state.Flags.financially_responsible = true
+			end,
+		},
+		{
+			text = "📉 Downsize to save money",
+			effects = { Happiness = -3, Money = 400 },
+			feedText = "📉 Smaller space but bigger savings. Sometimes you gotta sacrifice.",
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags.downsized = true
+				state.HousingState = state.HousingState or {}
+				state.HousingState.quality = "basic"
+			end,
+		},
+		{
+			text = "👥 Get a roommate to split costs",
+			effects = { Money = 350 },
+			feedText = "Finding a roommate...",
+			onResolve = function(state)
+				local roll = math.random()
+				state.Flags = state.Flags or {}
+				state.Flags.has_roommates = true
+				if roll < 0.4 then
+					state:ModifyStat("Happiness", 5)
+					state.Flags.good_roommates = true
+					state:AddFeed("👥 Got a great roommate! They're clean, quiet, and actually fun!")
+				elseif roll < 0.75 then
+					state:ModifyStat("Happiness", 1)
+					state:AddFeed("👥 Roommate is... okay. Some issues but saving money.")
+				else
+					state:ModifyStat("Happiness", -8)
+					state.Flags.bad_roommates = true
+					state:AddFeed("👥 NIGHTMARE roommate! Dishes everywhere. Loud at 3AM. Send help.")
+				end
+			end,
+		},
+		{
+			text = "🌆 Move to a new city for adventure!",
+			effects = { Happiness = 5 },
+			feedText = "New city, who dis...",
+			eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2000 for moving costs" end,
+			onResolve = function(state)
+				state.Money = (state.Money or 0) - 2000
+				state.Flags = state.Flags or {}
+				state.Flags.city_mover = true
+				state.Flags.adventurous = true
+				local roll = math.random()
+				if roll < 0.5 then
+					state:ModifyStat("Happiness", 15)
+					state:AddFeed("🌆 Best decision ever! New city, new opportunities, new YOU!")
+				else
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("🌆 Adjusting to the new city. It's different but exciting!")
+				end
+			end,
+		},
+		{
+			text = "🏚️ Move in with family to save money",
+			effects = { Money = 600, Happiness = -5 },
+			feedText = "🏚️ Swallowing pride and moving back home. Money saved, dignity... uncertain.",
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags.living_with_family = true
+				state.Flags.moved_back_home = true
+			end,
+		},
+		{
+			text = "🚐 Van life! Live on the road!",
+			effects = { Money = 400, Health = -3 },
+			feedText = "🚐 You bought a van and hit the road! #VanLife",
+			eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5000 for a van" end,
+			onResolve = function(state)
+				state.Money = (state.Money or 0) - 5000
+				state.Flags = state.Flags or {}
+				state.Flags.van_life = true
+				state.Flags.nomad = true
+				state.Flags.adventurous = true
+				local roll = math.random()
+				if roll < 0.4 then
+					state:ModifyStat("Happiness", 20)
+					state:AddFeed("🚐 FREEDOM! Waking up in new places every day! This is living!")
+				else
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("🚐 Van life has challenges but the freedom is worth it!")
+				end
+			end,
+		},
+	},
+},
+-- ══════════════════════════════════════════════════════════════════════════════
+-- MORE VARIETY EVENTS - DAILY LIFE STUFF
+-- ══════════════════════════════════════════════════════════════════════════════
+{
+	id = "hobby_discovery_adult",
+	title = "New Hobby?",
+	emoji = "🎯",
+	text = "You've been thinking about picking up a new hobby.",
+	textVariants = {
+		"Everyone keeps talking about their hobbies. Maybe you should get one?",
+		"You have some free time lately. What should you do with it?",
+		"Your friend started something new and loves it. Maybe you should try something too?",
+		"Scrolling social media, you see everyone doing cool stuff. Time to start something?",
+	},
+	question = "What catches your interest?",
+	minAge = 18, maxAge = 80,
+	baseChance = 0.20,
+	cooldown = 8,
+	stage = "adult",
+	category = "hobbies",
+	tags = { "hobby", "growth", "variety" },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "🎸 Learn an instrument",
+			effects = { Happiness = 6, Smarts = 3 },
+			setFlags = { learning_music = true, musician_hobbyist = true },
+			feedText = "🎸 Starting music lessons! Your neighbors may not appreciate the practice...",
+		},
+		{
+			text = "🏋️ Start working out seriously",
+			effects = { Health = 8, Happiness = 4, Looks = 2 },
+			setFlags = { gym_rat = true, fitness_focused = true },
+			feedText = "🏋️ Gym membership activated! Time to get SHREDDED!",
+		},
+		{
+			text = "🎨 Take up painting/art",
+			effects = { Happiness = 7, Smarts = 2 },
+			setFlags = { artist_hobbyist = true, creative_outlet = true },
+			feedText = "🎨 Art supplies purchased! Time to unleash your inner artist!",
+		},
+		{
+			text = "👨‍🍳 Learn to cook properly",
+			effects = { Health = 3, Smarts = 3, Happiness = 5 },
+			setFlags = { learning_cooking = true, home_chef = true },
+			feedText = "👨‍🍳 Cookbooks and YouTube tutorials! You're gonna be a home chef!",
+		},
+		{
+			text = "📚 Join a book club",
+			effects = { Smarts = 5, Happiness = 4 },
+			setFlags = { book_club_member = true, avid_reader = true },
+			feedText = "📚 Reading is cool again! Joining intellectual discussions!",
+		},
+		{
+			text = "🎮 Get into competitive gaming",
+			effects = { Happiness = 6, Smarts = 2, Health = -2 },
+			setFlags = { competitive_gamer = true, gaming_serious = true },
+			feedText = "🎮 Going competitive! Ranked mode, here you come!",
+		},
+		{
+			text = "🌱 Start gardening",
+			effects = { Happiness = 5, Health = 3 },
+			setFlags = { gardener = true, green_thumb = true },
+			feedText = "🌱 Plants are peaceful. Your first seedlings are sprouting!",
+		},
+		{
+			text = "📸 Photography adventures",
+			effects = { Happiness = 6, Looks = 2 },
+			setFlags = { photographer_hobbyist = true },
+			feedText = "📸 Camera purchased! Seeing the world through a new lens!",
+		},
+	},
+},
+{
+	id = "weekend_decision",
+	title = "Weekend Plans",
+	emoji = "🗓️",
+	text = "The weekend is here! What are you doing?",
+	textVariants = {
+		"Friday evening! The whole weekend stretches ahead. What's the plan?",
+		"You actually have nothing planned this weekend. Freedom!",
+		"Friends are texting about plans. What sounds good?",
+		"Another week survived! How are you celebrating?",
+	},
+	question = "How do you spend your weekend?",
+	minAge = 18, maxAge = 70,
+	baseChance = 0.30,
+	cooldown = 3,
+	stage = "adult",
+	category = "lifestyle",
+	tags = { "weekend", "social", "variety" },
+	blockedByFlags = { in_prison = true },
+	
+	choices = {
+		{
+			text = "🎉 Party time!",
+			effects = { Happiness = 10, Health = -3, Money = -50 },
+			feedText = "🎉 WHAT A NIGHT! You'll recover... eventually.",
+		},
+		{
+			text = "🛋️ Couch and Netflix",
+			effects = { Happiness = 5, Health = 2 },
+			feedText = "🛋️ Self-care is staying in. Recharged and ready for Monday.",
+		},
+		{
+			text = "🏃 Adventure outdoors",
+			effects = { Happiness = 8, Health = 6 },
+			feedText = "🏃 Hiking, biking, exploring! Fresh air hits different!",
+		},
+		{
+			text = "💼 Work on side projects",
+			effects = { Smarts = 5, Happiness = 3, Money = 100 },
+			feedText = "💼 Grinding on the weekend! Future you will thank present you.",
+		},
+		{
+			text = "👨‍👩‍👧‍👦 Quality time with family/friends",
+			effects = { Happiness = 8 },
+			feedText = "👨‍👩‍👧‍👦 Nothing beats good company. Memories made!",
+		},
+		{
+			text = "🧹 Adulting: chores and errands",
+			effects = { Happiness = 2, Smarts = 1 },
+			setFlags = { responsible_adult = true },
+			feedText = "🧹 Boring but necessary. At least your place is clean now.",
+		},
+	},
+},
 }
 
 return AdultExpanded

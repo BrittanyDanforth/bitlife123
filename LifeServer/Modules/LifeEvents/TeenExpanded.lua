@@ -1568,7 +1568,7 @@ TeenExpanded.events = {
 		question = "What was your independent moment?",
 		minAge = 15, maxAge = 17,
 		baseChance = 0.55,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		cooldown = 4,
 		stage = STAGE,
 		ageBand = "teen",
 		category = "growth",
@@ -1579,6 +1579,264 @@ TeenExpanded.events = {
 			{ text = "Handled a problem without parents", effects = { Smarts = 4, Happiness = 5 }, setFlags = { problem_solver = true }, feedText = "Fixed it yourself. Didn't need mom or dad. Growth!" },
 			{ text = "Made a major decision yourself", effects = { Smarts = 3, Happiness = 4 }, setFlags = { decisive = true }, feedText = "Your choice, your consequences. That's adulthood." },
 			{ text = "Organized something important", effects = { Smarts = 4, Happiness = 4 }, setFlags = { organizer = true }, feedText = "Event, trip, project - you made it happen!" },
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- PASSION-BASED EVENTS - Triggered by childhood passion discovery!
+	-- These reward players who followed their passion with extra opportunities
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "teen_coding_project",
+		title = "Your First App!",
+		emoji = "💻",
+		text = "You've been coding for years now. Time to build something REAL!",
+		textVariants = {
+			"All those hours learning to code are paying off. You have an idea for an app!",
+			"You've been dreaming about this app for months. Time to build it!",
+			"Your coding skills have gotten good. Really good. Build something epic?",
+		},
+		question = "What do you create?",
+		minAge = 14, maxAge = 17,
+		baseChance = 0.6,
+		cooldown = 5,
+		oneTime = true,
+		stage = STAGE,
+		category = "hobbies",
+		tags = { "coding", "tech", "passion" },
+		-- Only for those who discovered coding as their passion!
+		requiresFlags = { passionate_coder = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "🎮 A simple game",
+				effects = { Smarts = 8, Happiness = 10 },
+				setFlags = { made_first_game = true, game_developer = true },
+				feedText = "💻 You made a GAME! Friends are playing it! This is incredible!",
+			},
+			{
+				text = "📱 A useful app",
+				effects = { Smarts = 10, Happiness = 8, Money = 100 },
+				setFlags = { made_first_app = true, app_developer = true },
+				feedText = "💻 Your app works! People are downloading it! You're a real dev!",
+			},
+			{
+				text = "🌐 A cool website",
+				effects = { Smarts = 7, Happiness = 6 },
+				setFlags = { made_first_website = true, web_developer = true },
+				feedText = "💻 Your website is LIVE! You built this from scratch!",
+			},
+			{
+				text = "🤖 A Discord bot",
+				effects = { Smarts = 6, Happiness = 8 },
+				setFlags = { made_first_bot = true, bot_developer = true },
+				feedText = "💻 Your bot is running on servers! People love it!",
+			},
+		},
+	},
+	{
+		id = "teen_gaming_tournament",
+		title = "Gaming Tournament!",
+		emoji = "🎮",
+		text = "There's a gaming tournament with a CASH PRIZE. You've been training for this!",
+		textVariants = {
+			"An esports tournament is happening. Your chance to prove yourself!",
+			"Friends want you on their team for the gaming competition!",
+			"Your gaming skills are legendary in your friend group. Time to go big?",
+		},
+		question = "Do you compete?",
+		minAge = 13, maxAge = 17,
+		baseChance = 0.5,
+		cooldown = 4,
+		stage = STAGE,
+		category = "hobbies",
+		tags = { "gaming", "competition", "passion" },
+		requiresFlags = { passionate_gamer = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "⚡ Go for the WIN!",
+				effects = {},
+				feedText = "Tournament time...",
+				triggerMinigame = "mash",
+				onResolve = function(state, minigameResult)
+					local won = minigameResult and (minigameResult.success or minigameResult.won)
+					state.Flags = state.Flags or {}
+					if won then
+						state.Money = (state.Money or 0) + math.random(200, 500)
+						state:ModifyStat("Happiness", 20)
+						state.Flags.tournament_winner = true
+						state.Flags.esports_potential = true
+						state:AddFeed("🎮🏆 TOURNAMENT CHAMPION! You WON! Prize money AND fame!")
+					else
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🎮 Didn't win but gained experience. Next time!")
+					end
+				end,
+			},
+			{
+				text = "Watch and learn",
+				effects = { Smarts = 3, Happiness = 3 },
+				feedText = "Studying the pros. Taking notes. Getting better.",
+			},
+		},
+	},
+	{
+		id = "teen_art_showcase",
+		title = "Art Show Opportunity!",
+		emoji = "🎨",
+		text = "A local gallery wants to display student art. Your work is GOOD enough!",
+		textVariants = {
+			"Your art teacher nominated you for the student showcase!",
+			"People keep saying your art is amazing. Time to show the world?",
+			"An art competition has prizes. Your style is unique enough to win!",
+		},
+		question = "Do you submit your work?",
+		minAge = 13, maxAge = 17,
+		baseChance = 0.5,
+		cooldown = 5,
+		stage = STAGE,
+		category = "hobbies",
+		tags = { "art", "creative", "passion" },
+		requiresFlags = { passionate_artist = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "🖼️ Submit my best piece!",
+				effects = {},
+				feedText = "Your art is on display...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					if roll < 0.4 then
+						state:ModifyStat("Happiness", 20)
+						state:ModifyStat("Looks", 2)
+						state.Money = (state.Money or 0) + 150
+						state.Flags.art_award_winner = true
+						state:AddFeed("🎨🏆 YOUR ART WON! People are buying prints! You're a real artist!")
+					elseif roll < 0.8 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags.exhibited_artist = true
+						state:AddFeed("🎨 People loved your work! Great feedback! Keep creating!")
+					else
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🎨 Didn't win but your art was SEEN. That's what matters!")
+					end
+				end,
+			},
+			{
+				text = "Too nervous to share",
+				effects = { Happiness = -3 },
+				setFlags = { stage_fright = true },
+				feedText = "Maybe next time. Your art stays private for now.",
+			},
+		},
+	},
+	{
+		id = "teen_music_performance",
+		title = "Your First Gig!",
+		emoji = "🎵",
+		text = "You've been practicing music for years. Someone wants you to PERFORM!",
+		textVariants = {
+			"The school talent show is coming. Your musical skills could shine!",
+			"A local coffee shop has open mic night. Your chance to perform!",
+			"Your band got asked to play at a party. Real audience!",
+		},
+		question = "Do you perform?",
+		minAge = 13, maxAge = 17,
+		baseChance = 0.5,
+		cooldown = 5,
+		stage = STAGE,
+		category = "hobbies",
+		tags = { "music", "performance", "passion" },
+		requiresFlags = { passionate_performer = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "🎤 Take the stage!",
+				effects = {},
+				feedText = "The spotlight is on you...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					if roll < 0.5 then
+						state:ModifyStat("Happiness", 25)
+						state:ModifyStat("Looks", 3)
+						state.Flags.stage_performer = true
+						state.Flags.crowd_pleaser = true
+						state:AddFeed("🎵🌟 AMAZING! The crowd went WILD! You were BORN for this!")
+					elseif roll < 0.85 then
+						state:ModifyStat("Happiness", 10)
+						state.Flags.stage_performer = true
+						state:AddFeed("🎵 Good performance! Some mistakes but the crowd loved it!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state.Flags.stage_fright = true
+						state:AddFeed("🎵 Froze on stage... embarrassing but you learned from it.")
+					end
+				end,
+			},
+			{
+				text = "Not ready yet",
+				effects = { Happiness = -2 },
+				feedText = "Practice more. Next time will be YOUR time.",
+			},
+		},
+	},
+	{
+		id = "teen_writing_published",
+		title = "Your Story Got Noticed!",
+		emoji = "📝",
+		text = "You've been writing stories for years. Someone wants to PUBLISH your work!",
+		textVariants = {
+			"A teen writing contest is accepting submissions. You've got a killer story!",
+			"Your creative writing teacher wants to submit your work to a magazine!",
+			"You posted a story online and it's getting THOUSANDS of reads!",
+		},
+		question = "What do you do?",
+		minAge = 13, maxAge = 17,
+		baseChance = 0.5,
+		cooldown = 5,
+		stage = STAGE,
+		category = "hobbies",
+		tags = { "writing", "creative", "passion" },
+		requiresFlags = { passionate_writer = true },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "📖 Submit for publication!",
+				effects = {},
+				feedText = "Your words are out there...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					if roll < 0.35 then
+						state:ModifyStat("Happiness", 25)
+						state:ModifyStat("Smarts", 5)
+						state.Money = (state.Money or 0) + 200
+						state.Flags.published_author = true
+						state:AddFeed("📝🏆 PUBLISHED! Your story is IN PRINT! You're an AUTHOR!")
+					elseif roll < 0.75 then
+						state:ModifyStat("Happiness", 12)
+						state:ModifyStat("Smarts", 3)
+						state.Flags.recognized_writer = true
+						state:AddFeed("📝 Honorable mention! Editors loved your voice! Keep writing!")
+					else
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("📝 Rejected this time. Every famous writer got rejected. Keep going!")
+					end
+				end,
+			},
+			{
+				text = "Keep it private for now",
+				effects = { Happiness = 1 },
+				feedText = "Your stories are just for you. Maybe someday...",
+			},
 		},
 	},
 }

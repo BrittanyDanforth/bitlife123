@@ -384,18 +384,30 @@ Teen.events = {
 		title = "Side Hustle",
 		emoji = "💡",
 		text = "You have an idea for making money on your own.",
+		-- CRITICAL FIX: Added text variations!
+		textVariants = {
+			"You've been watching entrepreneurs online. Maybe YOU could start something!",
+			"Your friends are all broke but you have IDEAS. Time to make money!",
+			"Why work for someone else when you could be your own boss?",
+			"You spotted a gap in the market. Time to fill it!",
+			"Everyone keeps asking you to do this for them. Why not charge?",
+		},
 		question = "What's your business?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.4, -- CRITICAL FIX: Reduced
-		cooldown = 5, -- CRITICAL FIX: Increased
-		category = "teen", -- CRITICAL FIX: Proper category
+		baseChance = 0.4,
+		cooldown = 5,
+		category = "teen",
 		tags = { "business", "money", "teen" },
-		blockedByFlags = { in_prison = true, entrepreneur = true }, -- CRITICAL FIX: Don't repeat if already entrepreneur
+		blockedByFlags = { in_prison = true, entrepreneur = true },
 		choices = {
-			{ text = "Lawn care / yard work", effects = { Money = 150, Health = 3 }, setFlags = { entrepreneur = true }, hintCareer = "business", feedText = "You started a lawn care service!" },
-			{ text = "Selling crafts online", effects = { Money = 100, Happiness = 3 }, setFlags = { entrepreneur = true, creative_business = true }, hintCareer = "creative", feedText = "You're selling your creations online!" },
-			{ text = "Tech support for neighbors", effects = { Money = 120, Smarts = 3 }, setFlags = { entrepreneur = true, tech_savvy = true }, hintCareer = "tech", feedText = "You're the neighborhood tech expert!" },
-			{ text = "Social media management", effects = { Money = 130, Smarts = 2 }, setFlags = { entrepreneur = true, social_media_savvy = true }, hintCareer = "marketing", feedText = "You're managing social media for local businesses!" },
+			{ text = "🌿 Lawn care / yard work", effects = { Money = 150, Health = 3 }, setFlags = { entrepreneur = true }, hintCareer = "business", feedText = "You started a lawn care service! Neighbors love you!" },
+			{ text = "🎨 Selling crafts online", effects = { Money = 100, Happiness = 3 }, setFlags = { entrepreneur = true, creative_business = true }, hintCareer = "creative", feedText = "Your Etsy shop is up! Creativity pays!" },
+			{ text = "💻 Tech support for neighbors", effects = { Money = 120, Smarts = 3 }, setFlags = { entrepreneur = true, tech_savvy = true }, hintCareer = "tech", feedText = "You're the neighborhood IT person! 'Have you tried turning it off?'" },
+			{ text = "📱 Social media management", effects = { Money = 130, Smarts = 2 }, setFlags = { entrepreneur = true, social_media_savvy = true }, hintCareer = "marketing", feedText = "Local businesses hire you for their social media!" },
+			{ text = "🎮 Streaming/content creation", effects = { Money = 80, Happiness = 5 }, setFlags = { entrepreneur = true, content_creator = true, future_streamer = true }, hintCareer = "entertainment", feedText = "You started streaming! First followers coming in!" },
+			{ text = "🐕 Pet sitting / dog walking", effects = { Money = 110, Health = 2, Happiness = 3 }, setFlags = { entrepreneur = true, animal_lover = true }, feedText = "You're the neighborhood pet sitter! Puppy cuddles AND money!" },
+			{ text = "📚 Tutoring classmates", effects = { Money = 140, Smarts = 4 }, setFlags = { entrepreneur = true, tutoring_business = true }, hintCareer = "education", feedText = "Kids pay you to help them pass! Easy money!" },
+			{ text = "🚗 Car washing", effects = { Money = 160, Health = 2 }, setFlags = { entrepreneur = true }, feedText = "You wash cars on weekends! $20 per car adds up!" },
 		},
 	},
 

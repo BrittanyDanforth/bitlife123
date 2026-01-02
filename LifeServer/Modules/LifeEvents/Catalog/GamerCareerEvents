@@ -52,11 +52,15 @@ local function hasGamingJob(state)
 	
 	-- CRITICAL FIX #GAMER-3: Also check for gaming FLAGS even without a formal job!
 	-- This lets players who are pursuing gaming get events before landing a job
+	-- CRITICAL FIX: Added childhood passion flags for personalization!
 	if state.Flags then
 		local flags = state.Flags
 		if flags.pro_gamer or flags.esports_player or flags.gaming_streamer or
 		   flags.signed_to_org or flags.competitive_player or flags.tournament_champion or
-		   flags.pursuing_esports or flags.gamer_career then
+		   flags.pursuing_esports or flags.gamer_career or
+		   -- NEW: Childhood passion flags that lead to gaming career!
+		   flags.passionate_gamer or flags.gaming_interest or flags.esports_potential or
+		   flags.future_streamer or flags.likes_gaming then
 			return true
 		end
 	end

@@ -602,6 +602,14 @@ SpecialMoments.events = {
 		title = "Discovered Your Passion",
 		emoji = "❤️‍🔥",
 		text = "You discovered something you're truly passionate about!",
+		-- CRITICAL FIX: Added text variations for more variety!
+		textVariants = {
+			"Something just CLICKED. You can't stop thinking about this!",
+			"You found it! The thing that makes you feel ALIVE!",
+			"Hours fly by when you do this. You've found your calling!",
+			"Everyone notices how happy you are when doing this!",
+			"This isn't just a hobby - it's who you ARE!",
+		},
 		question = "What's your new passion?",
 		minAge = 10, maxAge = 90,
 		baseChance = 0.1,
@@ -612,10 +620,14 @@ SpecialMoments.events = {
 		tags = { "passion", "discovery", "purpose" },
 		
 		choices = {
-			{ text = "Creative pursuit", effects = { Happiness = 15, Smarts = 3 }, setFlags = { found_creative_passion = true }, feedText = "❤️‍🔥 Art/music/writing! Something clicks! This is it!" },
-			{ text = "Cause/advocacy", effects = { Happiness = 12, Smarts = 4 }, setFlags = { found_cause = true }, feedText = "❤️‍🔥 Found something worth fighting for! Purpose!" },
-			{ text = "Hobby/activity", effects = { Happiness = 12, Health = 3 }, setFlags = { found_hobby_passion = true }, feedText = "❤️‍🔥 This is what I want to do! Joy found!" },
-			{ text = "Career calling", effects = { Happiness = 14, Smarts = 5, Money = 100 }, setFlags = { found_calling = true }, feedText = "❤️‍🔥 This is what I'm meant to do! Career clarity!" },
+			{ text = "💻 Coding and technology!", effects = { Happiness = 15, Smarts = 5 }, setFlags = { found_tech_passion = true, loves_coding = true }, feedText = "❤️‍🔥 CODE IS POETRY! You see solutions everywhere!" },
+			{ text = "🎨 Creating art and design!", effects = { Happiness = 15, Smarts = 3, Looks = 2 }, setFlags = { found_creative_passion = true, loves_art = true }, feedText = "❤️‍🔥 You see beauty in everything! Art is LIFE!" },
+			{ text = "🎮 Gaming and streaming!", effects = { Happiness = 14, Smarts = 2 }, setFlags = { found_gaming_passion = true, loves_gaming = true }, feedText = "❤️‍🔥 Gaming is more than fun - it's your IDENTITY!" },
+			{ text = "📝 Writing stories!", effects = { Happiness = 13, Smarts = 5 }, setFlags = { found_writing_passion = true, loves_writing = true }, feedText = "❤️‍🔥 Words flow from you! Stories are your superpower!" },
+			{ text = "💪 Fitness and health!", effects = { Happiness = 12, Health = 8 }, setFlags = { found_fitness_passion = true, fitness_focused = true }, feedText = "❤️‍🔥 Your body is a temple! Fitness is freedom!" },
+			{ text = "🎵 Music and performing!", effects = { Happiness = 15, Looks = 3 }, setFlags = { found_music_passion = true, loves_music = true }, feedText = "❤️‍🔥 Music is your LANGUAGE! The stage awaits!" },
+			{ text = "📸 Photography/videography!", effects = { Happiness = 13, Smarts = 3 }, setFlags = { found_visual_passion = true, loves_photography = true }, feedText = "❤️‍🔥 You capture moments others miss! Visual genius!" },
+			{ text = "🌍 Helping my community!", effects = { Happiness = 12, Smarts = 4 }, setFlags = { found_cause = true, community_focused = true }, feedText = "❤️‍🔥 Making a DIFFERENCE is your purpose!" },
 		},
 	},
 	{

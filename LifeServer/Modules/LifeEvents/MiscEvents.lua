@@ -557,12 +557,10 @@ MiscEvents.events = {
 						state:AddFeed("💡 Few hours in the dark. Candles and board games!")
 					elseif roll < 0.90 then
 						if state.ModifyStat then state:ModifyStat("Happiness", -6) end
-						-- CRITICAL FIX: Prevent negative money
 						state.Money = math.max(0, (state.Money or 0) - 100)
 						if state.AddFeed then state:AddFeed("💡 Long outage! Lost food in fridge! Miserable!") end
 					else
 						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
-						-- CRITICAL FIX: Prevent negative money
 						state.Money = math.max(0, (state.Money or 0) - 300)
 						state.Flags = state.Flags or {}
 						state.Flags.survived_blackout = true
@@ -571,6 +569,242 @@ MiscEvents.events = {
 				end,
 			},
 			{ text = "Go somewhere with power ($30)", effects = { Money = -30, Happiness = 3 }, feedText = "💡 Found a cafe/friend's place. Charged devices. Survived!", eligibility = function(state) return (state.Money or 0) >= 30, "💸 Need $30 for cafe" end },
+		},
+	},
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- EXPANDED MISC EVENTS - More variety for every playthrough!
+	-- ══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "misc_random_act_kindness",
+		title = "Random Act of Kindness",
+		emoji = "💝",
+		text = "Someone did something unexpectedly kind for you!",
+		textVariants = {
+			"A stranger paid for your coffee in the drive-thru!",
+			"Someone held the door and complimented your outfit!",
+			"A person helped you when you dropped your groceries!",
+			"Someone gave up their seat for you on the bus!",
+		},
+		question = "How do you respond?",
+		minAge = 8, maxAge = 100,
+		baseChance = 0.15,
+		cooldown = 5,
+		stage = STAGE,
+		category = "social",
+		tags = { "kindness", "strangers", "positive" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "💖 Pay it forward!",
+				effects = { Happiness = 10, Money = -10 },
+				setFlags = { pays_it_forward = true },
+				feedText = "💝 You did something kind for someone else! The kindness chain continues!",
+			},
+			{ text = "😊 Thank them warmly", effects = { Happiness = 8 }, feedText = "💝 Made eye contact, smiled, said thank you. Simple but meaningful." },
+			{ text = "Barely notice", effects = { Happiness = 3 }, feedText = "💝 Didn't fully appreciate it in the moment. Reflected on it later." },
+		},
+	},
+	{
+		id = "misc_phone_died",
+		title = "Phone Died!",
+		emoji = "📱",
+		text = "Your phone just died at the WORST possible time!",
+		textVariants = {
+			"0% battery. No charger. Lost without your phone.",
+			"Phone screen goes black. Can't call anyone!",
+			"Should've charged it. Phone is completely dead.",
+		},
+		question = "How do you cope?",
+		minAge = 12, maxAge = 80,
+		baseChance = 0.20,
+		cooldown = 4,
+		stage = STAGE,
+		category = "inconvenience",
+		tags = { "phone", "technology", "frustration" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{
+				text = "😤 This is a DISASTER!",
+				effects = { Happiness = -8 },
+				feedText = "📱 Completely lost without your phone. Modern life is hard.",
+			},
+			{
+				text = "🙄 Annoying but manageable",
+				effects = { Happiness = -3 },
+				feedText = "📱 Inconvenient but you figured it out. Remember physical maps?",
+			},
+			{
+				text = "🧘 Actually kind of freeing!",
+				effects = { Happiness = 5 },
+				setFlags = { phone_detox = true },
+				feedText = "📱 Disconnected from screens. Noticed things you usually miss!",
+			},
+		},
+	},
+	{
+		id = "misc_perfect_parking",
+		title = "Perfect Parking Spot!",
+		emoji = "🅿️",
+		text = "You found the PERFECT parking spot right in front!",
+		textVariants = {
+			"Someone pulled out just as you arrived. Prime spot!",
+			"Right in front of the store. No walking required!",
+			"The universe blessed you with parking today!",
+		},
+		question = "How lucky do you feel?",
+		minAge = 16, maxAge = 100,
+		baseChance = 0.12,
+		cooldown = 5,
+		stage = STAGE,
+		category = "luck",
+		tags = { "parking", "driving", "lucky" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{ text = "🙌 YES! Today is my day!", effects = { Happiness = 8 }, setFlags = { lucky_parker = true }, feedText = "🅿️ Perfect parking energy! Everything's going your way!" },
+			{ text = "Nice, saved some walking", effects = { Happiness = 4 }, feedText = "🅿️ Convenient! Quick errand time." },
+		},
+	},
+	{
+		id = "misc_nostalgia_moment",
+		title = "Nostalgia Hit",
+		emoji = "🥹",
+		text = "Something triggered a powerful wave of nostalgia!",
+		textVariants = {
+			"A song from your childhood started playing. Instant time travel.",
+			"You smelled something that transported you to the past.",
+			"Found an old photo. The memories came flooding back.",
+			"Revisited a place from your childhood. Smaller than you remember.",
+		},
+		question = "How do you feel?",
+		minAge = 15, maxAge = 100,
+		baseChance = 0.15,
+		cooldown = 4,
+		stage = STAGE,
+		category = "emotional",
+		tags = { "nostalgia", "memories", "emotions" },
+		
+		choices = {
+			{
+				text = "😢 Bittersweet tears",
+				effects = { Happiness = 5 },
+				setFlags = { nostalgic_soul = true },
+				feedText = "🥹 Good memories mixed with longing for simpler times. Crying a little.",
+			},
+			{
+				text = "😊 Warm fuzzy feelings",
+				effects = { Happiness = 10 },
+				feedText = "🥹 What a beautiful trip down memory lane! Grateful for the past!",
+			},
+			{
+				text = "😐 Try not to dwell",
+				effects = { Happiness = 2, Smarts = 2 },
+				feedText = "🥹 Nice memories but living in the present is important.",
+			},
+		},
+	},
+	{
+		id = "misc_long_line",
+		title = "Endless Line!",
+		emoji = "🚶",
+		text = "You're stuck in the LONGEST line ever!",
+		textVariants = {
+			"The line wraps around the building. This is going to take forever.",
+			"Who ARE all these people?! The wait is ridiculous!",
+			"You've been standing here for 20 minutes. Barely moved.",
+		},
+		question = "How do you handle it?",
+		minAge = 8, maxAge = 100,
+		baseChance = 0.18,
+		cooldown = 4,
+		stage = STAGE,
+		category = "inconvenience",
+		tags = { "waiting", "patience", "frustration" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{ text = "😤 Get visibly frustrated", effects = { Happiness = -5, Health = -2 }, feedText = "🚶 Blood pressure rising. This is UNACCEPTABLE!" },
+			{ text = "📱 Phone time!", effects = { Happiness = 2 }, feedText = "🚶 Scrolled through everything. Time flew by actually." },
+			{ text = "💬 Chat with others in line", effects = { Happiness = 6 }, setFlags = { friendly_stranger = true }, feedText = "🚶 Made a new friend! The line brought you together!" },
+			{ text = "🚶 Leave. Not worth it.", effects = { Happiness = 3 }, feedText = "🚶 Nope. You'll come back another day. Time is valuable." },
+		},
+	},
+	{
+		id = "misc_perfect_weather",
+		title = "Perfect Weather Day!",
+		emoji = "☀️",
+		text = "The weather today is absolutely PERFECT!",
+		textVariants = {
+			"Clear skies, perfect temperature, light breeze. Chef's kiss!",
+			"This is the kind of day people write songs about!",
+			"Everyone's outside enjoying this incredible weather!",
+		},
+		question = "How do you spend this beautiful day?",
+		minAge = 5, maxAge = 100,
+		baseChance = 0.12,
+		cooldown = 6,
+		stage = STAGE,
+		category = "positive",
+		tags = { "weather", "outdoors", "happiness" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{ text = "☀️ Spend ALL day outside!", effects = { Happiness = 12, Health = 5 }, feedText = "☀️ Soaked in every minute of this perfect day! Recharged!" },
+			{ text = "🏠 Stay inside anyway", effects = { Happiness = -3 }, feedText = "☀️ Looked out the window. Should've gone outside. Regrets." },
+			{ text = "📸 Take pictures!", effects = { Happiness = 8 }, feedText = "☀️ Captured the beauty! Great content for memories!" },
+		},
+	},
+	{
+		id = "misc_weird_dream",
+		title = "Bizarre Dream!",
+		emoji = "💭",
+		text = "You had the WEIRDEST dream last night!",
+		textVariants = {
+			"You dreamed you could fly but kept forgetting how!",
+			"Everyone in your dream had the wrong face!",
+			"You were late for something but the location kept changing!",
+			"Teeth falling out, being chased, showing up naked - classic stress dream!",
+		},
+		question = "What do you make of it?",
+		minAge = 8, maxAge = 100,
+		baseChance = 0.15,
+		cooldown = 5,
+		stage = STAGE,
+		category = "experience",
+		tags = { "dreams", "sleep", "weird" },
+		
+		choices = {
+			{ text = "🔮 Must mean something!", effects = { Happiness = 2 }, setFlags = { believes_in_dreams = true }, feedText = "💭 Looked up dream meanings. Apparently teeth = anxiety!" },
+			{ text = "🧠 Just random brain stuff", effects = { Smarts = 2 }, feedText = "💭 Dreams are just your brain processing the day. Interesting though!" },
+			{ text = "📓 Write it down!", effects = { Smarts = 3, Happiness = 3 }, setFlags = { dream_journaler = true }, feedText = "💭 Started a dream journal! Fascinating patterns emerging!" },
+		},
+	},
+	{
+		id = "misc_unexpected_compliment",
+		title = "Unexpected Compliment!",
+		emoji = "✨",
+		text = "A stranger just gave you a genuine compliment!",
+		textVariants = {
+			"'Excuse me, I just had to say - you have great style!'",
+			"Someone stopped to tell you that you have a nice smile!",
+			"'Hey, you look really confident. Keep it up!'",
+			"A stranger complimented your hair/outfit/energy!",
+		},
+		question = "How does it make you feel?",
+		minAge = 10, maxAge = 100,
+		baseChance = 0.12,
+		cooldown = 5,
+		stage = STAGE,
+		category = "social",
+		tags = { "compliment", "confidence", "social" },
+		blockedByFlags = { in_prison = true },
+		
+		choices = {
+			{ text = "😊 My whole day is made!", effects = { Happiness = 12, Looks = 2 }, feedText = "✨ Walking on air! Confidence boosted! GLOWING!" },
+			{ text = "😳 Awkward but nice", effects = { Happiness = 6 }, feedText = "✨ Didn't know how to respond but appreciated it!" },
+			{ text = "🤔 Were they being genuine?", effects = { Happiness = 3 }, feedText = "✨ Skeptical at first but... probably genuine. Nice." },
 		},
 	},
 }

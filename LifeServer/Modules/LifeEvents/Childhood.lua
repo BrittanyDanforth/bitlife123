@@ -434,6 +434,14 @@ Childhood.events = {
 		title = "Finding Your Passion",
 		emoji = "⭐",
 		text = "Something really captured your interest and imagination! This could shape your future!",
+		-- CRITICAL FIX: Added text variations for more personalized experience!
+		textVariants = {
+			"You stayed up way too late doing something you love. This might be your thing!",
+			"Your teacher noticed you're really good at something. They think you have talent!",
+			"You can't stop thinking about this one thing. It makes you SO happy!",
+			"Everyone notices how focused you get when doing this. It's like magic!",
+			"You found something that makes time fly by. Hours feel like minutes!",
+		},
 		question = "What got you excited?",
 		minAge = 6, maxAge = 12,
 		oneTime = true,
@@ -445,25 +453,26 @@ Childhood.events = {
 		category = "identity",
 		milestoneKey = "CHILD_DISCOVERED_PASSION",
 		tags = { "core", "identity", "talent" },
-		careerTags = { "sports", "creative", "science", "tech", "medical", "entertainment" },
+		careerTags = { "sports", "creative", "science", "tech", "medical", "entertainment", "gaming", "writing" },
 
 		choices = {
 			{ 
-				text = "Sports and athletics", 
-				effects = { Health = 10, Happiness = 8 },  -- BIGGER stat bonuses!
+				-- CRITICAL FIX: More specific and exciting choice text!
+				text = "⚽ I LOVE playing sports!", 
+				effects = { Health = 10, Happiness = 8 },
 				setFlags = { 
 					passionate_athlete = true, 
 					discovered_passion = true,
 					athletic_talent = true,
 					sports_interest = true,
-					-- These flags unlock sports career paths later!
 					likes_sports = true,
 				}, 
 				hintCareer = "sports", 
-				feedText = "⭐ Sports became your passion! You'll get more athletic opportunities!",
+				feedText = "⭐ YES! Sports is YOUR thing! You feel alive on the field!",
 			},
 			{ 
-				text = "Art and creativity", 
+				-- CRITICAL FIX: Specific creative options!
+				text = "🎨 I love drawing and making art!", 
 				effects = { Happiness = 10, Looks = 5, Smarts = 3 }, 
 				setFlags = { 
 					passionate_artist = true,
@@ -473,51 +482,54 @@ Childhood.events = {
 					likes_art = true,
 				}, 
 				hintCareer = "creative", 
-				feedText = "⭐ Art ignited your soul! You'll get more creative opportunities!",
+				feedText = "⭐ Art is YOUR superpower! You see the world differently!",
 			},
 			{ 
-				text = "Science and discovery", 
+				-- CRITICAL FIX: Coding specific!
+				text = "💻 I love coding and computers!", 
+				effects = { Smarts = 12, Happiness = 6 }, 
+				setFlags = { 
+					passionate_coder = true,
+					discovered_passion = true,
+					tech_talent = true,
+					coding_interest = true,
+					likes_tech = true,
+					problem_solver = true,
+					future_developer = true,
+				}, 
+				hintCareer = "tech", 
+				feedText = "⭐ CODING is your jam! You speak computer! Future tech genius!",
+			},
+			{ 
+				text = "🔬 I love science experiments!", 
 				effects = { Smarts = 12, Happiness = 5 }, 
-				-- CRITICAL FIX #1002: Added math_science_talent for consequence events!
 				setFlags = { 
 					passionate_scientist = true,
 					discovered_passion = true,
 					science_talent = true,
-					math_science_talent = true,  -- Links to "Your Old Report Cards" consequence event!
+					math_science_talent = true,
 					curious_mind = true,
 					likes_science = true,
 				}, 
 				hintCareer = "science", 
-				feedText = "⭐ Science captured your imagination! Research opportunities await!",
+				feedText = "⭐ Science is AMAZING! You want to discover how everything works!",
 			},
 			{ 
-				text = "Building and creating things", 
-				effects = { Smarts = 8, Happiness = 6 }, 
+				text = "🎮 I love video games!", 
+				effects = { Happiness = 10, Smarts = 4 }, 
 				setFlags = { 
-					passionate_builder = true,
+					passionate_gamer = true,
 					discovered_passion = true,
-					tech_talent = true,
-					problem_solver = true,
-					likes_tech = true,
+					gaming_interest = true,
+					likes_gaming = true,
+					competitive = true,
+					future_streamer = true,
 				}, 
-				hintCareer = "tech", 
-				feedText = "⭐ You love building things! Tech and engineering paths open up!",
+				hintCareer = "gaming", 
+				feedText = "⭐ Gaming is your LIFE! Maybe you'll be a streamer or game dev!",
 			},
 			{ 
-				text = "Helping and caring for others", 
-				effects = { Happiness = 10, Health = 3 }, 
-				setFlags = { 
-					passionate_helper = true,
-					discovered_passion = true,
-					empathetic = true,
-					caring_nature = true,
-					likes_helping = true,
-				}, 
-				hintCareer = "medical", 
-				feedText = "⭐ Helping others is your calling! Healthcare paths await!",
-			},
-			{ 
-				text = "Music and performance", 
+				text = "🎵 I love music and singing!", 
 				effects = { Happiness = 12, Looks = 4 }, 
 				setFlags = { 
 					passionate_performer = true,
@@ -528,7 +540,35 @@ Childhood.events = {
 					likes_performing = true,
 				}, 
 				hintCareer = "entertainment", 
-				feedText = "⭐ The stage is calling! Entertainment opportunities await!",
+				feedText = "⭐ Music moves your SOUL! The stage is calling your name!",
+			},
+			{ 
+				text = "📚 I love reading and writing stories!", 
+				effects = { Smarts = 10, Happiness = 6 }, 
+				setFlags = { 
+					passionate_writer = true,
+					discovered_passion = true,
+					creative_talent = true,
+					storyteller = true,
+					likes_writing = true,
+					bookworm = true,
+				}, 
+				hintCareer = "creative", 
+				feedText = "⭐ Words are your magic! You're a natural storyteller!",
+			},
+			{ 
+				text = "🏥 I want to help sick people!", 
+				effects = { Happiness = 10, Health = 3 }, 
+				setFlags = { 
+					passionate_helper = true,
+					discovered_passion = true,
+					empathetic = true,
+					caring_nature = true,
+					likes_helping = true,
+					future_doctor = true,
+				}, 
+				hintCareer = "medical", 
+				feedText = "⭐ You have a healer's heart! Helping others is your calling!",
 			},
 		},
 	},
