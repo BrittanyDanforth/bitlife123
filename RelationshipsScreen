@@ -715,7 +715,7 @@ end
 
 -- Constructor ------------------------------------------------------------------
 
-function RelationshipsScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, playerState)
+function RelationshipsScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, playerState, onShowEventCardCallback)
 	log("=== CREATING RelationshipsScreen ===")
 	local self = setmetatable({}, RelationshipsScreen)
 
@@ -725,6 +725,12 @@ function RelationshipsScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurF
 	self.hideBlur     = hideBlurFunc
 	self.isVisible    = false
 	self.currentTab   = "family"
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Store the event card callback from LifeClient!
+	-- This allows us to show proper BitLife-style event cards in main UI
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	self.onShowEventCard = onShowEventCardCallback
 
 	log("Initial state - Age:", self:getAge(), "Money:", self:getMoney())
 	self:createUI()
@@ -3048,25 +3054,21 @@ function RelationshipsScreen:createActionButton(action, order, accentColor, pale
 			local accentColor    = getAccentForType(relType)
 			
 			-- ═══════════════════════════════════════════════════════════════════════════════
-			-- CRITICAL FIX: BitLife-style activity choices!
-			-- Show choice card FIRST for interactions with choices (hangout, date, party, etc.)
+			-- CRITICAL FIX: BitLife-style activity choices via LifeClient's event cards!
+			-- Uses the SAME event card system as main life events for proper styling
+			-- User feedback: "use max brain thinking, copy LifeClient code"
 			-- ═══════════════════════════════════════════════════════════════════════════════
 			local hasChoices = ActivityChoices[action.id] ~= nil
 			
-			if hasChoices then
-				-- Hide interaction modal first
-				if self.interactOverlay and self.interactOverlay.Visible then
-					self:hideInteractionModal()
-				end
-				
-				-- Show choice card
-				self:showActivityChoiceCard(action.id, explicitPerson, relType, accentColor, function(subChoice)
+			if hasChoices and self.onShowEventCard then
+				-- Use LifeClient's proper event card system for choices
+				self:showRelationshipChoiceEvent(action.id, explicitPerson, relType, function(subChoice)
 					-- User picked a choice (or nil if no choice card)
 					-- Pass sub-choice to server in the interaction
 					self:doInteraction(action.id, relType, explicitPerson, cost, subChoice)
 				end)
 			else
-				-- No choices, do interaction directly
+				-- No choices or no event card callback, do interaction directly
 				self:doInteraction(action.id, relType, explicitPerson, cost, nil)
 			end
 		end)
@@ -3377,189 +3379,12 @@ function RelationshipsScreen:hideResultModal()
 	end
 end
 
-function RelationshipsScreen:createActivityChoiceCard()
-	if self.activityChoiceCard then return end
-	
-	self.activityChoiceCard = {}
-	
-	-- Overlay
-	local overlay = Instance.new("TextButton")
-	overlay.Name = "ActivityChoiceOverlay"
-	overlay.Size = UDim2.fromScale(1, 1)
-	overlay.BackgroundColor3 = C.Black
-	overlay.BackgroundTransparency = 0.4
-	overlay.Text = ""
-	overlay.AutoButtonColor = false
-	overlay.ZIndex = 95
-	overlay.Visible = false
-	overlay.Parent = self.screenGui
-	self.activityChoiceCard.overlay = overlay
-	
-	-- Card container
-	local cardWidth = IS_TINY_PHONE and 300 or 360
-	local container = Instance.new("Frame")
-	container.Name = "ActivityChoiceCard"
-	container.Size = UDim2.new(0, cardWidth, 0, 0)
-	container.AutomaticSize = Enum.AutomaticSize.Y
-	container.AnchorPoint = Vector2.new(0.5, 0.5)
-	container.Position = UDim2.fromScale(0.5, 0.5)
-	container.BackgroundColor3 = C.White
-	container.ZIndex = 96
-	container.Parent = overlay
-	UI.corner(container, 20)
-	
-	-- Shadow
-	local shadow = Instance.new("Frame")
-	shadow.Size = UDim2.new(1, 8, 1, 8)
-	shadow.Position = UDim2.new(0, 4, 0, 4)
-	shadow.BackgroundColor3 = C.Black
-	shadow.BackgroundTransparency = 0.85
-	shadow.ZIndex = 95
-	shadow.Parent = container
-	UI.corner(shadow, 22)
-	
-	local cardLayout = Instance.new("UIListLayout")
-	cardLayout.Padding = UDim.new(0, 0)
-	cardLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	cardLayout.Parent = container
-	
-	-- Header (colored)
-	local header = Instance.new("Frame")
-	header.Name = "Header"
-	header.Size = UDim2.new(1, 0, 0, IS_TINY_PHONE and 60 or 80)
-	header.BackgroundColor3 = C.Purple
-	header.LayoutOrder = 1
-	header.ZIndex = 97
-	header.Parent = container
-	UI.corner(header, 20)
-	
-	-- Header bottom cover (to round only top corners)
-	local headerCover = Instance.new("Frame")
-	headerCover.Size = UDim2.new(1, 0, 0, 20)
-	headerCover.Position = UDim2.new(0, 0, 1, -20)
-	headerCover.BackgroundColor3 = C.Purple
-	headerCover.ZIndex = 97
-	headerCover.Parent = header
-	
-	-- Emoji
-	local emojiLabel = Instance.new("TextLabel")
-	emojiLabel.Size = UDim2.new(0, 50, 0, 50)
-	emojiLabel.Position = UDim2.new(0, 15, 0.5, -25)
-	emojiLabel.BackgroundTransparency = 1
-	emojiLabel.Font = F.Body
-	emojiLabel.TextSize = IS_TINY_PHONE and 32 or 40
-	emojiLabel.Text = "👥"
-	emojiLabel.ZIndex = 98
-	emojiLabel.Parent = header
-	self.activityChoiceCard.emoji = emojiLabel
-	
-	-- Title
-	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(1, -80, 0, 30)
-	titleLabel.Position = UDim2.new(0, 70, 0, IS_TINY_PHONE and 10 or 15)
-	titleLabel.BackgroundTransparency = 1
-	titleLabel.Font = F.Title
-	titleLabel.TextSize = IS_TINY_PHONE and 18 or 22
-	titleLabel.TextColor3 = C.White
-	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-	titleLabel.Text = "Hang Out"
-	titleLabel.ZIndex = 98
-	titleLabel.Parent = header
-	self.activityChoiceCard.title = titleLabel
-	
-	-- Person name
-	local personLabel = Instance.new("TextLabel")
-	personLabel.Size = UDim2.new(1, -80, 0, 20)
-	personLabel.Position = UDim2.new(0, 70, 0, IS_TINY_PHONE and 35 or 42)
-	personLabel.BackgroundTransparency = 1
-	personLabel.Font = F.Medium
-	personLabel.TextSize = IS_TINY_PHONE and 12 or 14
-	personLabel.TextColor3 = Color3.fromRGB(220, 220, 255)
-	personLabel.TextXAlignment = Enum.TextXAlignment.Left
-	personLabel.Text = "with Friend"
-	personLabel.ZIndex = 98
-	personLabel.Parent = header
-	self.activityChoiceCard.personLabel = personLabel
-	
-	-- Question section
-	local questionSection = Instance.new("Frame")
-	questionSection.Size = UDim2.new(1, 0, 0, IS_TINY_PHONE and 45 or 55)
-	questionSection.BackgroundTransparency = 1
-	questionSection.LayoutOrder = 2
-	questionSection.ZIndex = 97
-	questionSection.Parent = container
-	UI.pad(questionSection, 15, 15, 12, 8)
-	
-	local questionLabel = Instance.new("TextLabel")
-	questionLabel.Size = UDim2.new(1, 0, 1, 0)
-	questionLabel.BackgroundTransparency = 1
-	questionLabel.Font = F.Medium
-	questionLabel.TextSize = IS_TINY_PHONE and 14 or 16
-	questionLabel.TextColor3 = C.Gray700
-	questionLabel.Text = "What do you want to do together?"
-	questionLabel.TextWrapped = true
-	questionLabel.ZIndex = 98
-	questionLabel.Parent = questionSection
-	self.activityChoiceCard.question = questionLabel
-	
-	-- Choices section
-	local choicesSection = Instance.new("Frame")
-	choicesSection.Name = "ChoicesSection"
-	choicesSection.Size = UDim2.new(1, 0, 0, 0)
-	choicesSection.AutomaticSize = Enum.AutomaticSize.Y
-	choicesSection.BackgroundTransparency = 1
-	choicesSection.LayoutOrder = 3
-	choicesSection.ZIndex = 97
-	choicesSection.Parent = container
-	UI.pad(choicesSection, 12, 12, 0, 15)
-	
-	local choicesLayout = Instance.new("UIListLayout")
-	choicesLayout.Padding = UDim.new(0, 8)
-	choicesLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	choicesLayout.Parent = choicesSection
-	
-	self.activityChoiceCard.choicesSection = choicesSection
-	self.activityChoiceCard.choiceButtons = {}
-	
-	-- Cancel button area at bottom
-	local cancelSection = Instance.new("Frame")
-	cancelSection.Size = UDim2.new(1, 0, 0, 50)
-	cancelSection.BackgroundTransparency = 1
-	cancelSection.LayoutOrder = 4
-	cancelSection.ZIndex = 97
-	cancelSection.Parent = container
-	
-	local cancelBtn = Instance.new("TextButton")
-	cancelBtn.Size = UDim2.new(0.5, 0, 0, 32)
-	cancelBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-	cancelBtn.Position = UDim2.fromScale(0.5, 0.5)
-	cancelBtn.BackgroundColor3 = C.Gray200
-	cancelBtn.Font = F.Medium
-	cancelBtn.TextSize = 13
-	cancelBtn.TextColor3 = C.Gray600
-	cancelBtn.Text = "Cancel"
-	cancelBtn.AutoButtonColor = false
-	cancelBtn.ZIndex = 98
-	cancelBtn.Parent = cancelSection
-	UI.corner(cancelBtn, 8)
-	
-	cancelBtn.MouseButton1Click:Connect(function()
-		self:hideActivityChoiceCard()
-	end)
-	
-	overlay.MouseButton1Click:Connect(function()
-		self:hideActivityChoiceCard()
-	end)
-	
-	self.activityChoiceCard.container = container
-	self.activityChoiceCard.header = header
-end
-
-function RelationshipsScreen:showActivityChoiceCard(actionId, person, relType, accentColor, onChoiceSelected)
-	if not self.activityChoiceCard then
-		self:createActivityChoiceCard()
-	end
-	
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Use LifeClient's proper event card system!
+-- This shows BitLife-style event cards using the same UI as main life events
+-- User feedback: "copy the LifeClient code how cards are created"
+-- ═══════════════════════════════════════════════════════════════════════════════
+function RelationshipsScreen:showRelationshipChoiceEvent(actionId, person, relType, onChoiceSelected)
 	local activityData = ActivityChoices[actionId]
 	if not activityData then
 		-- No choices defined, just do the interaction directly
@@ -3567,95 +3392,62 @@ function RelationshipsScreen:showActivityChoiceCard(actionId, person, relType, a
 		return
 	end
 	
-	-- Set colors
-	local color = accentColor or C.Purple
-	self.activityChoiceCard.header.BackgroundColor3 = color
-	local headerCover = self.activityChoiceCard.header:FindFirstChild("Frame")
-	if headerCover then headerCover.BackgroundColor3 = color end
-	
-	-- Set content
-	self.activityChoiceCard.emoji.Text = activityData.emoji or "👥"
-	self.activityChoiceCard.title.Text = activityData.title or "Activity"
-	self.activityChoiceCard.personLabel.Text = "with " .. (person and person.name or "Friend")
-	self.activityChoiceCard.question.Text = activityData.question or "What do you want to do?"
-	
-	-- Clear old choices
-	for _, btn in ipairs(self.activityChoiceCard.choiceButtons) do
-		btn:Destroy()
-	end
-	self.activityChoiceCard.choiceButtons = {}
-	
-	-- Create choice buttons
-	for i, choice in ipairs(activityData.choices) do
-		local choiceBtn = Instance.new("TextButton")
-		choiceBtn.Size = UDim2.new(1, 0, 0, IS_TINY_PHONE and 44 or 50)
-		choiceBtn.BackgroundColor3 = C.Gray50
-		choiceBtn.Font = F.Medium
-		choiceBtn.TextSize = IS_TINY_PHONE and 14 or 16
-		choiceBtn.TextColor3 = C.Gray800
-		choiceBtn.Text = choice.text
-		choiceBtn.AutoButtonColor = false
-		choiceBtn.LayoutOrder = i
-		choiceBtn.ZIndex = 98
-		choiceBtn.Parent = self.activityChoiceCard.choicesSection
-		UI.corner(choiceBtn, 12)
-		UI.stroke(choiceBtn, 1, 0.8, C.Gray200)
-		
-		-- Effect label
-		local effectLabel = Instance.new("TextLabel")
-		effectLabel.Size = UDim2.new(0.35, 0, 1, 0)
-		effectLabel.Position = UDim2.new(0.65, 0, 0, 0)
-		effectLabel.BackgroundTransparency = 1
-		effectLabel.Font = F.Body
-		effectLabel.TextSize = IS_TINY_PHONE and 10 or 11
-		effectLabel.TextColor3 = C.Gray400
-		effectLabel.TextXAlignment = Enum.TextXAlignment.Right
-		effectLabel.Text = choice.effect or ""
-		effectLabel.ZIndex = 99
-		effectLabel.Parent = choiceBtn
-		UI.pad(effectLabel, 8, 8, 0, 0)
-		
-		-- Hover effect
-		choiceBtn.MouseEnter:Connect(function()
-			UI.tween(choiceBtn, TweenInfo.new(0.1), { BackgroundColor3 = color:Lerp(C.White, 0.85) })
-		end)
-		choiceBtn.MouseLeave:Connect(function()
-			UI.tween(choiceBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.Gray50 })
-		end)
-		
-		choiceBtn.MouseButton1Click:Connect(function()
-			self:hideActivityChoiceCard()
-			onChoiceSelected(choice.id)
-		end)
-		
-		table.insert(self.activityChoiceCard.choiceButtons, choiceBtn)
-	end
-	
-	-- Show with animation
-	self.activityChoiceCard.overlay.Visible = true
-	self.activityChoiceCard.overlay.BackgroundTransparency = 1
-	self.activityChoiceCard.container.Position = UDim2.new(0.5, 0, 0.5, 40)
-	
-	UI.tween(self.activityChoiceCard.overlay, TweenInfo.new(0.2), { BackgroundTransparency = 0.4 })
-	UI.tween(self.activityChoiceCard.container, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-		Position = UDim2.fromScale(0.5, 0.5)
-	})
-end
-
-function RelationshipsScreen:hideActivityChoiceCard()
-	if not self.activityChoiceCard or not self.activityChoiceCard.overlay.Visible then
+	-- Check if we have the LifeClient event card callback
+	if not self.onShowEventCard then
+		-- Fallback: No event card callback, do interaction directly
+		log("WARNING: No onShowEventCard callback, doing interaction directly")
+		onChoiceSelected(nil)
 		return
 	end
 	
-	UI.tween(self.activityChoiceCard.overlay, TweenInfo.new(0.15), { BackgroundTransparency = 1 })
-	UI.tween(self.activityChoiceCard.container, TweenInfo.new(0.15), {
-		Position = UDim2.new(0.5, 0, 0.5, 30)
-	})
+	-- Build the event card data for LifeClient's showEvent system
+	local personName = person and person.name or "them"
+	local eventText = activityData.question .. "\n\nYou're spending time with " .. personName .. "."
 	
-	task.delay(0.15, function()
-		if self.activityChoiceCard then
-			self.activityChoiceCard.overlay.Visible = false
+	-- Convert our choices to LifeClient's event choice format
+	local eventChoices = {}
+	for i, choice in ipairs(activityData.choices) do
+		table.insert(eventChoices, {
+			text = choice.text,
+			index = i,
+			-- Store the choice id so we can retrieve it in the callback
+			choiceId = choice.id,
+			effect = choice.effect,
+		})
+	end
+	
+	-- Create the event card payload
+	local eventCard = {
+		id = "relationship_" .. actionId .. "_" .. math.random(10000),
+		title = activityData.emoji .. " " .. activityData.title,
+		emoji = activityData.emoji or "👥",
+		text = eventText,
+		question = "What will you do?",
+		choices = eventChoices,
+		category = "relationship",
+	}
+	
+	-- Hide interaction modal first
+	if self.interactOverlay and self.interactOverlay.Visible then
+		self:hideInteractionModal()
+	end
+	
+	-- Use LifeClient's showEvent to display the proper BitLife-style card!
+	self.onShowEventCard(eventCard, function(choiceIndex, choiceData)
+		-- User made a choice on the event card
+		local selectedChoiceId = nil
+		
+		-- Find the choiceId from the choice data
+		if choiceData and choiceData.choiceId then
+			selectedChoiceId = choiceData.choiceId
+		elseif choiceIndex and eventChoices[choiceIndex] then
+			selectedChoiceId = eventChoices[choiceIndex].choiceId
 		end
+		
+		log("Relationship event choice made:", choiceIndex, "choiceId:", selectedChoiceId)
+		
+		-- Call the callback with the selected sub-choice
+		onChoiceSelected(selectedChoiceId)
 	end)
 end
 

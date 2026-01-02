@@ -8198,9 +8198,38 @@ end
 
 ScreenInstances.occupation   = safeNew(OccupationScreen,    "OccupationScreen",    screenGui, blurOverlay, showBlur, hideBlur, currentState)
 ScreenInstances.assets       = safeNew(AssetsScreen,        "AssetsScreen",        screenGui, blurOverlay, showBlur, hideBlur, currentState)
-ScreenInstances.relationships= safeNew(RelationshipsScreen, "RelationshipsScreen", screenGui, blurOverlay, showBlur, hideBlur, currentState)
 ScreenInstances.storypaths   = safeNew(StoryPathsScreen,    "StoryPathsScreen",    screenGui, currentState)
 ScreenInstances.progress     = safeNew(ProgressScreen,      "ProgressScreen",      screenGui, blurOverlay, showBlur, hideBlur, currentState)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Create RelationshipsScreen with onShowEventCard callback
+-- This allows relationship interactions to show proper BitLife-style event cards!
+-- User feedback: "I want actual card thingy like activities do"
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function onRelationshipShowEventCard(eventCard, onChoiceCallback)
+	-- Hide the RelationshipsScreen first
+	if ScreenInstances.relationships and ScreenInstances.relationships.hide then
+		ScreenInstances.relationships:hide()
+	end
+	hideBlur()
+	
+	-- Show the event card on the main UI using LifeClient's proper event system!
+	if showEvent then
+		showEvent({
+			id = eventCard.id or "relationship_event",
+			title = eventCard.title or "💕 Relationship",
+			emoji = eventCard.emoji or "💕",
+			text = eventCard.text or "Something happened...",
+			question = eventCard.question or "What will you do?",
+			choices = eventCard.choices or {{text = "Continue", index = 1}},
+			category = eventCard.category,
+			isActivityEvent = true, -- Use activity event handler for callbacks
+			onActivityChoice = onChoiceCallback,
+		})
+	end
+end
+
+ScreenInstances.relationships= safeNew(RelationshipsScreen, "RelationshipsScreen", screenGui, blurOverlay, showBlur, hideBlur, currentState, onRelationshipShowEventCard)
 
 -- CRITICAL FIX: Create ActivitiesScreen with onShowEventCard callback
 -- This allows activities to show proper BitLife-style event cards in the main UI
