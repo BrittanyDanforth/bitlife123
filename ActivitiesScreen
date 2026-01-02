@@ -282,8 +282,8 @@ local Social = {
 	{ id = "speed_dating", name = "Speed Dating", emoji = "⏱️", effect = "+4 Happiness", minAge = 18, cost = 50, requiresSingle = true },
 	{ id = "go_on_date", name = "Go on a Date", emoji = "💑", effect = "+8 Happiness +Relationship", minAge = 16, cost = 50, requiresPartner = true },
 	{ id = "romantic_dinner", name = "Romantic Dinner", emoji = "🍷", effect = "+10 Happiness +Relationship", minAge = 18, cost = 150, requiresPartner = true },
-	{ id = "spend_time_partner", name = "Spend Time Together", emoji = "💞", effect = "+6 Happiness +Relationship", minAge = 14, cost = 0, requiresPartner = true },
-	{ id = "flirt", name = "Flirt", emoji = "😉", effect = "+4 Happiness", minAge = 14, cost = 0, requiresSingle = true },
+	{ id = "spend_time_partner", name = "Spend Time Together", emoji = "💞", effect = "+6 Happiness +Relationship", minAge = 16, cost = 0, requiresPartner = true },
+	{ id = "flirt", name = "Flirt", emoji = "😉", effect = "+4 Happiness", minAge = 16, cost = 0, requiresSingle = true },
 	{ id = "propose", name = "Propose", emoji = "💍", effect = "+15 Happiness 💍", minAge = 18, cost = 500, requiresPartner = true },
 	{ id = "plan_wedding", name = "Plan Wedding", emoji = "💒", effect = "+20 Happiness 💒", minAge = 18, cost = 5000, requiresEngaged = true },
 	-- ═══════════════════════════════════════════════════════════════════════════════

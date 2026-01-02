@@ -533,10 +533,17 @@ local FamilyActions = {
 	{ id = "apologize", name = "Apologize",     emoji = "Sorry", effect = "+Relationship", minAge = 4 },
 }
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Romance tab requires age 16, so ALL romance actions must be 16+
+-- This ensures consistency - user can't access romance tab until 16 anyway
+-- ═══════════════════════════════════════════════════════════════════════════════
 local RomanceActions = {
-	{ id = "date",       name = "Go on Date",   emoji = "Date",  effect = "+Relationship", cost = 100, minAge = 14 },
-	{ id = "gift",       name = "Give Gift",    emoji = "Gift",  effect = "+Relationship", cost = 200, minAge = 12 },
-	{ id = "kiss",       name = "Kiss",         emoji = "Kiss",  effect = "+Relationship", minAge = 13 },
+	{ id = "date",       name = "Go on Date",   emoji = "Date",  effect = "+Relationship", cost = 100, minAge = 16 },
+	{ id = "gift",       name = "Give Gift",    emoji = "Gift",  effect = "+Relationship", cost = 200, minAge = 16 },
+	{ id = "kiss",       name = "Kiss",         emoji = "Kiss",  effect = "+Relationship", minAge = 16 },
+	{ id = "spend_time", name = "Spend Time",   emoji = "Time",  effect = "+Relationship", minAge = 16 },
+	{ id = "compliment", name = "Compliment",   emoji = "Nice",  effect = "+Relationship", minAge = 16 },
+	{ id = "flirt",      name = "Flirt",        emoji = "Flirt", effect = "+Relationship", minAge = 16 },
 	{ id = "propose",    name = "Propose",      emoji = "Ring",  effect = "Engagement", cost = 5000, minAge = 18 },
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Added "Get Married" option for engaged couples!
@@ -549,9 +556,7 @@ local RomanceActions = {
 	-- Partner can accept or decline, then you have a baby!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{ id = "try_baby",   name = "Have a Kid",   emoji = "Baby",  effect = "Maybe Baby!", minAge = 18 },
-	{ id = "breakup",    name = "Break Up",     emoji = "Break", effect = "End Relationship", minAge = 12 },
-	{ id = "flirt",      name = "Flirt",        emoji = "Flirt", effect = "+Relationship", minAge = 12 },
-	{ id = "compliment", name = "Compliment",   emoji = "Nice",  effect = "+Relationship", minAge = 8 },
+	{ id = "breakup",    name = "Break Up",     emoji = "Break", effect = "End Relationship", minAge = 16 },
 	-- Targetless romance action exists as "Find" card: meet_someone
 }
 
@@ -673,6 +678,187 @@ local ActivityChoices = {
 			{ id = "tight", text = "💪 Big bear hug", effect = "+Happiness" },
 			{ id = "comfort", text = "💕 Comforting hug", effect = "+Relationship +Support" },
 			{ id = "surprise", text = "✨ Just hug them!", effect = "Random!" },
+		},
+	},
+	argue = {
+		title = "Argue",
+		emoji = "😤",
+		question = "What do you want to argue about?",
+		choices = {
+			{ id = "calmly", text = "😌 Express concerns calmly", effect = "May improve things" },
+			{ id = "heated", text = "🔥 Get heated", effect = "-Relationship" },
+			{ id = "yell", text = "😡 Yell at them", effect = "-Relationship -Happiness" },
+			{ id = "silent", text = "😶 Give silent treatment", effect = "-Relationship" },
+			{ id = "walk_away", text = "🚶 Walk away", effect = "Avoid conflict" },
+			{ id = "surprise", text = "✨ Let it play out", effect = "Random!" },
+		},
+	},
+	insult = {
+		title = "Insult",
+		emoji = "😠",
+		question = "How harsh do you want to be?",
+		choices = {
+			{ id = "mild", text = "😏 Light teasing", effect = "-Relationship (mild)" },
+			{ id = "mean", text = "😤 Mean comment", effect = "-Relationship" },
+			{ id = "harsh", text = "😡 Harsh insult", effect = "-Relationship!" },
+			{ id = "devastating", text = "💀 Devastating burn", effect = "-Relationship!!" },
+			{ id = "surprise", text = "✨ Say whatever", effect = "Random!" },
+		},
+	},
+	compliment = {
+		title = "Compliment",
+		emoji = "😊",
+		question = "What do you want to compliment?",
+		choices = {
+			{ id = "appearance", text = "✨ Their appearance", effect = "+Relationship" },
+			{ id = "personality", text = "💫 Their personality", effect = "+Relationship" },
+			{ id = "achievement", text = "🏆 Their achievements", effect = "+Relationship +Happiness" },
+			{ id = "genuine", text = "💕 Something genuine", effect = "+Relationship!" },
+			{ id = "surprise", text = "✨ Random compliment", effect = "Random!" },
+		},
+	},
+	money = {
+		title = "Ask for Money",
+		emoji = "💰",
+		question = "How do you want to ask?",
+		choices = {
+			{ id = "politely", text = "🙏 Ask politely", effect = "Better chance" },
+			{ id = "desperate", text = "😢 Explain you're desperate", effect = "May work" },
+			{ id = "demand", text = "😤 Demand it", effect = "-Relationship but direct" },
+			{ id = "guilt", text = "😥 Guilt trip them", effect = "Risky..." },
+			{ id = "surprise", text = "✨ Just ask", effect = "Random!" },
+		},
+	},
+	apologize = {
+		title = "Apologize",
+		emoji = "🙏",
+		question = "How do you want to apologize?",
+		choices = {
+			{ id = "sincere", text = "💕 Sincere apology", effect = "+Relationship" },
+			{ id = "gift", text = "🎁 Apologize with a gift", effect = "+Relationship!" },
+			{ id = "explain", text = "💬 Explain yourself", effect = "May help" },
+			{ id = "grovel", text = "😭 Grovel", effect = "+Relationship if they're mad" },
+			{ id = "surprise", text = "✨ Just say sorry", effect = "Random!" },
+		},
+	},
+	spend_time = {
+		title = "Spend Time",
+		emoji = "⏰",
+		question = "What do you want to do together?",
+		choices = {
+			{ id = "quality", text = "💕 Quality time", effect = "+Relationship" },
+			{ id = "activity", text = "🎮 Do an activity", effect = "+Happiness" },
+			{ id = "talk", text = "💬 Just talk", effect = "+Relationship" },
+			{ id = "relax", text = "😌 Relax together", effect = "+Happiness +Relationship" },
+			{ id = "surprise", text = "✨ Anything!", effect = "Random!" },
+		},
+	},
+	betray = {
+		title = "Betray",
+		emoji = "🗡️",
+		question = "How do you want to betray them?",
+		choices = {
+			{ id = "secret", text = "🤫 Spread their secrets", effect = "-Relationship!!" },
+			{ id = "backstab", text = "🔪 Talk behind their back", effect = "-Relationship!" },
+			{ id = "sabotage", text = "💣 Sabotage something", effect = "-Relationship!!" },
+			{ id = "steal", text = "💰 Steal from them", effect = "-Relationship!! Risky!" },
+			{ id = "surprise", text = "✨ Whatever feels right", effect = "Random!" },
+		},
+	},
+	ghost = {
+		title = "Ghost",
+		emoji = "👻",
+		question = "How do you want to end it?",
+		choices = {
+			{ id = "slow", text = "📵 Slowly stop replying", effect = "Gradual end" },
+			{ id = "block", text = "🚫 Block them everywhere", effect = "Instant end" },
+			{ id = "ignore", text = "🙈 Just ignore them", effect = "They might try harder" },
+			{ id = "disappear", text = "💨 Completely vanish", effect = "Clean break" },
+			{ id = "surprise", text = "✨ However it happens", effect = "Random!" },
+		},
+	},
+	fight = {
+		title = "Fight",
+		emoji = "👊",
+		question = "How aggressive do you want to be?",
+		choices = {
+			{ id = "push", text = "🤚 Just push them", effect = "Mild physical" },
+			{ id = "punch", text = "👊 Throw a punch", effect = "Risky!" },
+			{ id = "brawl", text = "💢 Full brawl", effect = "Very risky!!" },
+			{ id = "defend", text = "🛡️ Defensive stance", effect = "Safer" },
+			{ id = "surprise", text = "✨ Let it happen", effect = "Random!" },
+		},
+	},
+	vacation = {
+		title = "Vacation",
+		emoji = "✈️",
+		question = "Where do you want to go?",
+		choices = {
+			{ id = "beach", text = "🏖️ Beach resort", effect = "+Happiness +Relationship" },
+			{ id = "city", text = "🏙️ City trip", effect = "+Happiness" },
+			{ id = "adventure", text = "🏔️ Adventure trip", effect = "+Health +Relationship" },
+			{ id = "relaxing", text = "🧘 Spa retreat", effect = "+Health +Happiness" },
+			{ id = "surprise", text = "✨ Surprise destination", effect = "Random!" },
+		},
+	},
+	forgive = {
+		title = "Forgive",
+		emoji = "🕊️",
+		question = "How do you want to make peace?",
+		choices = {
+			{ id = "talk", text = "💬 Have a conversation", effect = "May work" },
+			{ id = "hug", text = "🤗 Offer a hug", effect = "+Relationship" },
+			{ id = "forget", text = "🤷 Just forget it", effect = "Move on" },
+			{ id = "conditional", text = "⚠️ Forgive with conditions", effect = "Sets boundaries" },
+			{ id = "surprise", text = "✨ See how it goes", effect = "Random!" },
+		},
+	},
+	prank = {
+		title = "Prank",
+		emoji = "🃏",
+		question = "What kind of prank?",
+		choices = {
+			{ id = "harmless", text = "😄 Harmless joke", effect = "Might laugh" },
+			{ id = "embarrassing", text = "😳 Embarrassing prank", effect = "-Relationship" },
+			{ id = "elaborate", text = "🎭 Elaborate scheme", effect = "Big reaction!" },
+			{ id = "mean", text = "😈 Mean-spirited", effect = "-Relationship!" },
+			{ id = "surprise", text = "✨ Random prank", effect = "Random!" },
+		},
+	},
+	breakup = {
+		title = "Break Up",
+		emoji = "💔",
+		question = "How do you want to end it?",
+		choices = {
+			{ id = "gentle", text = "😢 Let them down gently", effect = "Less drama" },
+			{ id = "honest", text = "💬 Be honest about why", effect = "Closure" },
+			{ id = "blame", text = "😤 Blame them", effect = "Drama!" },
+			{ id = "text", text = "📱 Text breakup", effect = "Cold..." },
+			{ id = "surprise", text = "✨ Just end it", effect = "Random!" },
+		},
+	},
+	flirt = {
+		title = "Flirt",
+		emoji = "😘",
+		question = "How do you want to flirt?",
+		choices = {
+			{ id = "subtle", text = "😏 Subtle hints", effect = "+Attraction" },
+			{ id = "bold", text = "😎 Bold moves", effect = "High risk high reward" },
+			{ id = "funny", text = "😄 Funny approach", effect = "+Happiness" },
+			{ id = "romantic", text = "🌹 Romantic gestures", effect = "+Romance" },
+			{ id = "surprise", text = "✨ Be yourself", effect = "Random!" },
+		},
+	},
+	propose = {
+		title = "Propose",
+		emoji = "💍",
+		question = "How do you want to propose?",
+		choices = {
+			{ id = "romantic", text = "🌹 Romantic dinner", effect = "Classic!" },
+			{ id = "public", text = "🎉 Public proposal", effect = "Pressure..." },
+			{ id = "simple", text = "💕 Simple & private", effect = "Intimate" },
+			{ id = "elaborate", text = "✨ Elaborate surprise", effect = "Impressive!" },
+			{ id = "surprise", text = "✨ Wing it!", effect = "Random!" },
 		},
 	},
 }
@@ -3540,17 +3726,19 @@ function RelationshipsScreen:doInteraction(actionId, relTypeOverride, personOver
 			self:updateState(newState)
 		end
 
-		-- CRITICAL FIX: Update info bar BEFORE showing modal so stats refresh
+		-- CRITICAL FIX: Update info bar BEFORE showing result so stats refresh
 		self:updateInfoBar()
 
 		if message then
-			local accent = getAccentForType(relType)
-			local title  = getActionDisplayName(actionId, relType)
+			local title = getActionDisplayName(actionId, relType)
 			
-			-- CRITICAL FIX: Show result modal AFTER a brief delay so the UI feels snappy
-			-- This gives the interaction modal time to fully close before result pops up
-			task.delay(0.2, function()
-				self:showResultModal(title, message, accent)
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX: Use LifeClient's event card for results!
+			-- User feedback: "it's using custom result not same as LifeClient"
+			-- Show proper BitLife-style result card via LifeClient's showEvent
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			task.delay(0.15, function()
+				self:showRelationshipResultCard(actionId, title, message, successFlag, relType, person)
 			end)
 		else
 			-- No message = just refresh the tab
@@ -3565,6 +3753,55 @@ function RelationshipsScreen:doInteraction(actionId, relTypeOverride, personOver
 			self:switchTab(self.currentTab)
 		end
 	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Show relationship result using LifeClient's proper event card!
+-- User feedback: "use same resultCard as LifeClient when picking a choice"
+-- ═══════════════════════════════════════════════════════════════════════════════
+function RelationshipsScreen:showRelationshipResultCard(actionId, title, message, success, relType, person)
+	-- Check if we have the LifeClient event card callback
+	if not self.onShowEventCard then
+		-- Fallback to old modal if no callback
+		log("WARNING: No onShowEventCard callback, using fallback modal")
+		local accent = getAccentForType(relType)
+		self:showResultModal(title, message, accent)
+		return
+	end
+	
+	-- Get emoji for the action
+	local actionData = ActivityChoices[actionId]
+	local emoji = "💕"
+	if actionData then
+		emoji = actionData.emoji or "💕"
+	elseif relType == "family" then
+		emoji = "👨‍👩‍👧"
+	elseif relType == "friend" then
+		emoji = "👥"
+	elseif relType == "romance" then
+		emoji = "❤️"
+	elseif relType == "enemy" then
+		emoji = "😠"
+	end
+	
+	-- Build result event card
+	local eventCard = {
+		id = "relationship_result_" .. actionId .. "_" .. math.random(10000),
+		title = emoji .. " " .. title,
+		emoji = success and "✅" or "😔",
+		text = message,
+		question = success and "Nice!" or "What now?",
+		choices = {
+			{ text = success and "👍 Okay!" or "😔 Oh well...", index = 1 },
+		},
+		category = "relationship_result",
+	}
+	
+	-- Show via LifeClient's event card system!
+	self.onShowEventCard(eventCard, function(choiceIndex, choiceData)
+		-- Result acknowledged, nothing more to do
+		log("Relationship result acknowledged")
+	end)
 end
 
 -- PUBLIC API -------------------------------------------------------------------

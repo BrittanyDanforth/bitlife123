@@ -20714,12 +20714,49 @@ local InteractionEffects = {
 			showResult = true,
 			message = function(state, relationship, payload)
 				local familyName = (relationship and relationship.name) or "your family member"
-				local outcomes = {
-					{ text = "😤 Big argument with " .. familyName .. ". Doors slammed. Tension is high.", delta = -12, happiness = -10 },
-					{ text = "🗣️ You and " .. familyName .. " got into it. Some things were said...", delta = -10, happiness = -8 },
-					{ text = "😠 Disagreement with " .. familyName .. " escalated. Neither of you budged.", delta = -8, happiness = -6 },
-					{ text = "💢 Heated exchange with " .. familyName .. ". You both need to cool off.", delta = -9, happiness = -7 },
+				local subChoice = payload and payload.subChoice or "surprise"
+				
+				local outcomesByChoice = {
+					calmly = {
+						{ text = "😌 You calmly explained your feelings to " .. familyName .. ". They actually listened!", delta = 2, happiness = 3 },
+						{ text = "💬 Mature conversation with " .. familyName .. ". You worked through it together.", delta = 5, happiness = 5 },
+						{ text = "🤝 " .. familyName .. " appreciated your calm approach. Crisis averted!", delta = 4, happiness = 4 },
+					},
+					heated = {
+						{ text = "🔥 Things got heated with " .. familyName .. "! Voices were raised!", delta = -10, happiness = -8 },
+						{ text = "😤 You and " .. familyName .. " really went at it. Tension is HIGH.", delta = -12, happiness = -10 },
+						{ text = "💢 Heated argument with " .. familyName .. ". Some harsh truths came out.", delta = -8, happiness = -6 },
+					},
+					yell = {
+						{ text = "😡 You YELLED at " .. familyName .. "! They looked hurt...", delta = -15, happiness = -12 },
+						{ text = "🗯️ Screaming match with " .. familyName .. "! The whole house heard!", delta = -18, happiness = -15 },
+						{ text = "😠 You lost your temper at " .. familyName .. ". They won't forget this.", delta = -14, happiness = -10 },
+					},
+					silent = {
+						{ text = "😶 You gave " .. familyName .. " the silent treatment. Cold...", delta = -6, happiness = -3 },
+						{ text = "🙄 " .. familyName .. " tried to talk but you ignored them.", delta = -8, happiness = -4 },
+						{ text = "😑 Silent standoff with " .. familyName .. ". The tension is palpable.", delta = -5, happiness = -2 },
+					},
+					walk_away = {
+						{ text = "🚶 You walked away from " .. familyName .. ". Sometimes that's best.", delta = -3, happiness = 0 },
+						{ text = "🚪 You left to cool down. Smart move with " .. familyName .. ".", delta = -2, happiness = 1 },
+						{ text = "😤 You removed yourself from the situation with " .. familyName .. ".", delta = -4, happiness = -1 },
+					},
 				}
+				
+				local outcomes
+				if subChoice == "surprise" or not outcomesByChoice[subChoice] then
+					local allOutcomes = {}
+					for _, choiceOutcomes in pairs(outcomesByChoice) do
+						for _, outcome in ipairs(choiceOutcomes) do
+							table.insert(allOutcomes, outcome)
+						end
+					end
+					outcomes = allOutcomes
+				else
+					outcomes = outcomesByChoice[subChoice]
+				end
+				
 				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
 				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
 				if relationship and outcome.delta then 
@@ -20733,15 +20770,48 @@ local InteractionEffects = {
 			showResult = true,
 			message = function(state, relationship, payload)
 				local familyName = (relationship and relationship.name) or "your family member"
-				local amount = RANDOM:NextInteger(100, 500)
-				state.Money = (state.Money or 0) + amount
-				local outcomes = {
-					{ text = "💰 " .. familyName .. " gave you $" .. amount .. "! \"Here, you need this more than me.\"", delta = 3, happiness = 8 },
-					{ text = "💵 \"Don't mention it.\" " .. familyName .. " handed you $" .. amount .. ".", delta = 0, happiness = 6 },
-					{ text = "💸 " .. familyName .. " reluctantly helped with $" .. amount .. ". \"Pay me back, okay?\"", delta = -3, happiness = 4 },
-					{ text = "🙏 " .. familyName .. " came through! $" .. amount .. " to help you out!", delta = 2, happiness = 7 },
+				local subChoice = payload and payload.subChoice or "surprise"
+				local baseAmount = RANDOM:NextInteger(100, 500)
+				
+				local outcomesByChoice = {
+					politely = {
+						{ text = "💰 " .. familyName .. " appreciated your polite request! Here's $" .. baseAmount .. "!", delta = 3, happiness = 8, amount = baseAmount },
+						{ text = "😊 \"Of course!\" " .. familyName .. " handed you $" .. (baseAmount + 100) .. " willingly.", delta = 5, happiness = 9, amount = baseAmount + 100 },
+						{ text = "🙏 Your respectful approach worked! " .. familyName .. " gave you $" .. baseAmount .. ".", delta = 2, happiness = 7, amount = baseAmount },
+					},
+					desperate = {
+						{ text = "😢 " .. familyName .. " felt bad and gave you $" .. (baseAmount + 200) .. "! They're worried about you.", delta = 0, happiness = 5, amount = baseAmount + 200 },
+						{ text = "😟 \"Are you okay?\" " .. familyName .. " helped with $" .. (baseAmount + 150) .. ".", delta = -2, happiness = 4, amount = baseAmount + 150 },
+						{ text = "💸 " .. familyName .. " seemed concerned but gave you $" .. baseAmount .. ".", delta = -3, happiness = 3, amount = baseAmount },
+					},
+					demand = {
+						{ text = "😤 You demanded money from " .. familyName .. ". They reluctantly gave $" .. (baseAmount - 50) .. ".", delta = -8, happiness = 2, amount = math.max(50, baseAmount - 50) },
+						{ text = "😠 " .. familyName .. " was offended but handed over $" .. baseAmount .. ".", delta = -10, happiness = 3, amount = baseAmount },
+						{ text = "💢 \"Fine!\" " .. familyName .. " gave you $" .. (baseAmount - 100) .. " angrily.", delta = -12, happiness = 1, amount = math.max(50, baseAmount - 100) },
+					},
+					guilt = {
+						{ text = "😥 Your guilt trip worked... " .. familyName .. " gave $" .. (baseAmount + 100) .. " but feels used.", delta = -5, happiness = 4, amount = baseAmount + 100 },
+						{ text = "😔 " .. familyName .. " sighed and handed over $" .. baseAmount .. ". They know what you did.", delta = -6, happiness = 3, amount = baseAmount },
+						{ text = "😬 Manipulative but effective! $" .. (baseAmount + 50) .. " from " .. familyName .. ".", delta = -7, happiness = 2, amount = baseAmount + 50 },
+					},
 				}
+				
+				local outcomes
+				if subChoice == "surprise" or not outcomesByChoice[subChoice] then
+					local allOutcomes = {}
+					for _, choiceOutcomes in pairs(outcomesByChoice) do
+						for _, outcome in ipairs(choiceOutcomes) do
+							table.insert(allOutcomes, outcome)
+						end
+					end
+					outcomes = allOutcomes
+				else
+					outcomes = outcomesByChoice[subChoice]
+				end
+				
 				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
+				local actualAmount = outcome.amount or baseAmount
+				state.Money = (state.Money or 0) + actualAmount
 				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
 				if relationship and outcome.delta then 
 					relationship.relationship = math.min(100, math.max(-100, (relationship.relationship or 50) + outcome.delta))
@@ -20755,12 +20825,44 @@ local InteractionEffects = {
 			showResult = true,
 			message = function(state, relationship, payload)
 				local familyName = (relationship and relationship.name) or "your family member"
-				local outcomes = {
-					{ text = "🙏 " .. familyName .. " accepted your apology! \"Water under the bridge.\" 💕", delta = 12, happiness = 10 },
-					{ text = "😊 \"I appreciate you saying that.\" " .. familyName .. " forgave you!", delta = 10, happiness = 8 },
-					{ text = "🤝 Cleared the air with " .. familyName .. ". Relief washes over you.", delta = 8, happiness = 7 },
-					{ text = "😌 " .. familyName .. " heard you out. Things aren't perfect, but it's a start.", delta = 5, happiness = 5 },
+				local subChoice = payload and payload.subChoice or "surprise"
+				
+				local outcomesByChoice = {
+					sincere = {
+						{ text = "💕 Your heartfelt apology moved " .. familyName .. "! They hugged you tight!", delta = 15, happiness = 12 },
+						{ text = "🙏 " .. familyName .. " could tell you meant it. Fully forgiven!", delta = 12, happiness = 10 },
+						{ text = "😊 \"I appreciate your honesty.\" " .. familyName .. " smiled warmly.", delta = 10, happiness = 9 },
+					},
+					gift = {
+						{ text = "🎁 Apology AND a gift? " .. familyName .. " was touched! \"You didn't have to!\"", delta = 18, happiness = 14 },
+						{ text = "🎀 " .. familyName .. " loved the gift! All is forgiven!", delta = 16, happiness = 12 },
+						{ text = "💝 \"Aww!\" The gift sealed the deal. " .. familyName .. " forgave you completely!", delta = 14, happiness = 11 },
+					},
+					explain = {
+						{ text = "💬 " .. familyName .. " understood after you explained. Things are better now.", delta = 8, happiness = 6 },
+						{ text = "🗣️ After hearing your side, " .. familyName .. " seemed to get it.", delta = 7, happiness = 5 },
+						{ text = "😌 You explained yourself. " .. familyName .. " still seems a bit hurt, but it helped.", delta = 5, happiness = 4 },
+					},
+					grovel = {
+						{ text = "😭 Your groveling worked! " .. familyName .. " couldn't stay mad!", delta = 12, happiness = 8 },
+						{ text = "🥺 " .. familyName .. " felt bad seeing you grovel. \"Okay, okay, I forgive you!\"", delta = 10, happiness = 7 },
+						{ text = "😅 Maybe a bit much, but " .. familyName .. " appreciated the effort!", delta = 9, happiness = 6 },
+					},
 				}
+				
+				local outcomes
+				if subChoice == "surprise" or not outcomesByChoice[subChoice] then
+					local allOutcomes = {}
+					for _, choiceOutcomes in pairs(outcomesByChoice) do
+						for _, outcome in ipairs(choiceOutcomes) do
+							table.insert(allOutcomes, outcome)
+						end
+					end
+					outcomes = allOutcomes
+				else
+					outcomes = outcomesByChoice[subChoice]
+				end
+				
 				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
 				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
 				if relationship and outcome.delta then 
@@ -21412,8 +21514,106 @@ local InteractionEffects = {
 				return outcome.text
 			end,
 		},
-		betray = { delta = -15, message = "You betrayed their trust." },
-		ghost = { delta = -999, message = "You ghosted them.", remove = true },
+		betray = { 
+			delta = -15, 
+			showResult = true,
+			message = function(state, relationship, payload)
+				local friendName = (relationship and relationship.name) or "your friend"
+				local subChoice = payload and payload.subChoice or "surprise"
+				
+				local outcomesByChoice = {
+					secret = {
+						{ text = "🤫 You told everyone " .. friendName .. "'s deepest secrets! They'll never forgive you!", delta = -20, happiness = -5 },
+						{ text = "🗣️ " .. friendName .. "'s secrets spread like wildfire. They're devastated.", delta = -18, happiness = -3 },
+						{ text = "💔 " .. friendName .. " found out you told their secrets. Trust: destroyed.", delta = -22, happiness = -6 },
+					},
+					backstab = {
+						{ text = "🔪 You talked trash about " .. friendName .. " to everyone. Word got back to them.", delta = -15, happiness = -2 },
+						{ text = "😈 " .. friendName .. " heard what you said behind their back. Friendship over.", delta = -17, happiness = -4 },
+						{ text = "💢 People told " .. friendName .. " everything you said. They're furious!", delta = -16, happiness = -3 },
+					},
+					sabotage = {
+						{ text = "💣 You sabotaged " .. friendName .. "'s plans! They're shocked you'd do this!", delta = -20, happiness = -5 },
+						{ text = "😱 " .. friendName .. " discovered your sabotage. They can't believe it!", delta = -22, happiness = -6 },
+						{ text = "🔥 Your sabotage worked but " .. friendName .. " knows it was you!", delta = -19, happiness = -4 },
+					},
+					steal = {
+						{ text = "💰 You stole from " .. friendName .. "! They caught you! This is BAD.", delta = -25, happiness = -8 },
+						{ text = "😤 " .. friendName .. " confronted you about the theft. Friendship is OVER.", delta = -30, happiness = -10 },
+						{ text = "🚔 " .. friendName .. " noticed something was missing. They suspect you...", delta = -20, happiness = -5 },
+					},
+				}
+				
+				local outcomes
+				if subChoice == "surprise" or not outcomesByChoice[subChoice] then
+					local allOutcomes = {}
+					for _, choiceOutcomes in pairs(outcomesByChoice) do
+						for _, outcome in ipairs(choiceOutcomes) do
+							table.insert(allOutcomes, outcome)
+						end
+					end
+					outcomes = allOutcomes
+				else
+					outcomes = outcomesByChoice[subChoice]
+				end
+				
+				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
+				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
+				if relationship and outcome.delta then 
+					relationship.relationship = math.max(-100, (relationship.relationship or 50) + outcome.delta)
+				end
+				return outcome.text
+			end,
+		},
+		ghost = { 
+			delta = -999, 
+			remove = true,
+			showResult = true,
+			message = function(state, relationship, payload)
+				local friendName = (relationship and relationship.name) or "your friend"
+				local subChoice = payload and payload.subChoice or "surprise"
+				
+				local outcomesByChoice = {
+					slow = {
+						{ text = "📵 You slowly stopped replying to " .. friendName .. ". They eventually got the hint.", happiness = -2 },
+						{ text = "😶 " .. friendName .. " kept trying to reach you. You just... faded away.", happiness = -3 },
+						{ text = "📱 Messages from " .. friendName .. " went unanswered. Eventually they stopped.", happiness = -2 },
+					},
+					block = {
+						{ text = "🚫 BLOCKED. " .. friendName .. " is gone from your life completely.", happiness = -1 },
+						{ text = "🔇 You blocked " .. friendName .. " everywhere. Clean break.", happiness = 0 },
+						{ text = "❌ " .. friendName .. " is blocked. They'll never reach you again.", happiness = -2 },
+					},
+					ignore = {
+						{ text = "🙈 " .. friendName .. " kept trying. You kept ignoring. Eventually... silence.", happiness = -3 },
+						{ text = "😤 " .. friendName .. " is confused and hurt by your silence. But that's their problem.", happiness = -2 },
+						{ text = "🤷 You just ignore " .. friendName .. " until they give up.", happiness = -1 },
+					},
+					disappear = {
+						{ text = "💨 You vanished from " .. friendName .. "'s life. Like you never existed.", happiness = 0 },
+						{ text = "👻 Total ghost mode on " .. friendName .. ". They have no idea what happened.", happiness = -1 },
+						{ text = "🌫️ You simply... disappeared from " .. friendName .. "'s world.", happiness = -2 },
+					},
+				}
+				
+				local outcomes
+				if subChoice == "surprise" or not outcomesByChoice[subChoice] then
+					local allOutcomes = {}
+					for _, choiceOutcomes in pairs(outcomesByChoice) do
+						for _, outcome in ipairs(choiceOutcomes) do
+							table.insert(allOutcomes, outcome)
+						end
+					end
+					outcomes = allOutcomes
+				else
+					outcomes = outcomesByChoice[subChoice]
+				end
+				
+				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
+				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
+				return outcome.text
+			end,
+		},
 		make_friend = {
 			forceNewRelationship = true,
 			delta = 12,
@@ -21424,10 +21624,199 @@ local InteractionEffects = {
 		},
 	},
 	enemy = {
-		insult = { delta = -6, message = "You insulted them." },
-		fight = { delta = -10, message = "You got into a fight.", stats = { Health = -5 } },
-		forgive = { delta = 10, message = "You forgave them.", convert = "friend" },
-		prank = { delta = -4, message = "You pulled a prank on them." },
+		insult = { 
+			delta = -6, 
+			showResult = true,
+			message = function(state, relationship, payload)
+				local enemyName = (relationship and relationship.name) or "your enemy"
+				local subChoice = payload and payload.subChoice or "surprise"
+				
+				local outcomesByChoice = {
+					mild = {
+						{ text = "😏 You teased " .. enemyName .. " lightly. They rolled their eyes.", delta = -4, happiness = 3 },
+						{ text = "🙄 Slight dig at " .. enemyName .. ". They barely reacted.", delta = -3, happiness = 2 },
+					},
+					mean = {
+						{ text = "😤 You said something really mean to " .. enemyName .. ". They're pissed!", delta = -8, happiness = 4 },
+						{ text = "💢 Mean comment to " .. enemyName .. "! They fired back equally hard.", delta = -7, happiness = 2 },
+					},
+					harsh = {
+						{ text = "😡 You went OFF on " .. enemyName .. "! Everyone heard that!", delta = -12, happiness = 5 },
+						{ text = "🔥 Harsh words to " .. enemyName .. "! They're FURIOUS!", delta = -14, happiness = 3 },
+					},
+					devastating = {
+						{ text = "💀 BRUTAL insult to " .. enemyName .. "! They looked genuinely hurt.", delta = -20, happiness = 6 },
+						{ text = "☠️ You destroyed " .. enemyName .. " verbally. That was... savage.", delta = -22, happiness = 5 },
+					},
+				}
+				
+				local outcomes
+				if subChoice == "surprise" or not outcomesByChoice[subChoice] then
+					local allOutcomes = {}
+					for _, choiceOutcomes in pairs(outcomesByChoice) do
+						for _, outcome in ipairs(choiceOutcomes) do
+							table.insert(allOutcomes, outcome)
+						end
+					end
+					outcomes = allOutcomes
+				else
+					outcomes = outcomesByChoice[subChoice]
+				end
+				
+				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
+				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
+				if relationship and outcome.delta then 
+					relationship.relationship = math.max(-100, (relationship.relationship or 50) + outcome.delta)
+				end
+				return outcome.text
+			end,
+		},
+		fight = { 
+			delta = -10, 
+			showResult = true,
+			message = function(state, relationship, payload)
+				local enemyName = (relationship and relationship.name) or "your enemy"
+				local subChoice = payload and payload.subChoice or "surprise"
+				
+				local outcomesByChoice = {
+					push = {
+						{ text = "🤚 You pushed " .. enemyName .. "! They stumbled back, shocked!", delta = -6, happiness = 3, health = -2 },
+						{ text = "💥 Quick shove to " .. enemyName .. ". \"Watch it!\" they shouted.", delta = -5, happiness = 2, health = -1 },
+					},
+					punch = {
+						{ text = "👊 You threw a punch at " .. enemyName .. "! Direct hit!", delta = -12, happiness = 5, health = -5 },
+						{ text = "💢 Fist connected with " .. enemyName .. "'s face! They're down!", delta = -15, happiness = 6, health = -8 },
+						{ text = "😤 You swung at " .. enemyName .. " but they dodged!", delta = -8, happiness = -2, health = -3 },
+					},
+					brawl = {
+						{ text = "💢 Full brawl with " .. enemyName .. "! You're both bruised and bleeding!", delta = -20, happiness = 3, health = -15 },
+						{ text = "🔥 Massive fight! You and " .. enemyName .. " went ALL OUT!", delta = -25, happiness = 4, health = -20 },
+						{ text = "⚠️ Someone called the cops! You and " .. enemyName .. " scattered!", delta = -18, happiness = -5, health = -12 },
+					},
+					defend = {
+						{ text = "🛡️ You stayed defensive. " .. enemyName .. " got tired and backed off.", delta = -4, happiness = 4, health = -3 },
+						{ text = "😤 You blocked " .. enemyName .. "'s swings. They couldn't touch you!", delta = -5, happiness = 6, health = -2 },
+					},
+				}
+				
+				local outcomes
+				if subChoice == "surprise" or not outcomesByChoice[subChoice] then
+					local allOutcomes = {}
+					for _, choiceOutcomes in pairs(outcomesByChoice) do
+						for _, outcome in ipairs(choiceOutcomes) do
+							table.insert(allOutcomes, outcome)
+						end
+					end
+					outcomes = allOutcomes
+				else
+					outcomes = outcomesByChoice[subChoice]
+				end
+				
+				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
+				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
+				if outcome.health and state.ModifyStat then state:ModifyStat("Health", outcome.health) end
+				if relationship and outcome.delta then 
+					relationship.relationship = math.max(-100, (relationship.relationship or 50) + outcome.delta)
+				end
+				return outcome.text
+			end,
+		},
+		forgive = { 
+			delta = 10, 
+			convert = "friend",
+			showResult = true,
+			message = function(state, relationship, payload)
+				local enemyName = (relationship and relationship.name) or "your enemy"
+				local subChoice = payload and payload.subChoice or "surprise"
+				
+				local outcomesByChoice = {
+					talk = {
+						{ text = "💬 You talked it out with " .. enemyName .. ". You both realized it was silly!", delta = 15, happiness = 10 },
+						{ text = "🗣️ Heart-to-heart with " .. enemyName .. ". They apologized too!", delta = 18, happiness = 12 },
+						{ text = "😌 Mature conversation with " .. enemyName .. ". Tension is gone.", delta = 12, happiness = 8 },
+					},
+					hug = {
+						{ text = "🤗 You hugged it out with " .. enemyName .. "! All is forgiven!", delta = 20, happiness = 14 },
+						{ text = "💕 A hug sealed the deal. You and " .. enemyName .. " are friends now!", delta = 22, happiness = 15 },
+					},
+					forget = {
+						{ text = "🤷 You just let it go. Life's too short to hold grudges against " .. enemyName .. ".", delta = 10, happiness = 8 },
+						{ text = "😌 You decided to move on. No more beef with " .. enemyName .. ".", delta = 8, happiness = 7 },
+					},
+					conditional = {
+						{ text = "⚠️ You forgave " .. enemyName .. " but set clear boundaries.", delta = 8, happiness = 5 },
+						{ text = "🤝 Peace with " .. enemyName .. " but they know not to cross you again.", delta = 10, happiness = 6 },
+					},
+				}
+				
+				local outcomes
+				if subChoice == "surprise" or not outcomesByChoice[subChoice] then
+					local allOutcomes = {}
+					for _, choiceOutcomes in pairs(outcomesByChoice) do
+						for _, outcome in ipairs(choiceOutcomes) do
+							table.insert(allOutcomes, outcome)
+						end
+					end
+					outcomes = allOutcomes
+				else
+					outcomes = outcomesByChoice[subChoice]
+				end
+				
+				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
+				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
+				if relationship and outcome.delta then 
+					relationship.relationship = math.min(100, (relationship.relationship or 50) + outcome.delta)
+				end
+				return outcome.text
+			end,
+		},
+		prank = { 
+			delta = -4, 
+			showResult = true,
+			message = function(state, relationship, payload)
+				local enemyName = (relationship and relationship.name) or "your enemy"
+				local subChoice = payload and payload.subChoice or "surprise"
+				
+				local outcomesByChoice = {
+					harmless = {
+						{ text = "😄 Harmless prank on " .. enemyName .. "! Even they laughed a little!", delta = -2, happiness = 8 },
+						{ text = "😂 Silly prank! " .. enemyName .. " actually took it well.", delta = 0, happiness = 10 },
+					},
+					embarrassing = {
+						{ text = "😳 " .. enemyName .. " was SO embarrassed! Everyone saw!", delta = -6, happiness = 10 },
+						{ text = "🤣 Embarrassing prank on " .. enemyName .. "! The look on their face!", delta = -8, happiness = 12 },
+					},
+					elaborate = {
+						{ text = "🎭 Your elaborate scheme worked PERFECTLY on " .. enemyName .. "!", delta = -10, happiness = 15 },
+						{ text = "🎪 Epic prank! " .. enemyName .. " didn't see ANY of it coming!", delta = -12, happiness = 16 },
+					},
+					mean = {
+						{ text = "😈 Mean prank on " .. enemyName .. "! They're FURIOUS!", delta = -14, happiness = 8 },
+						{ text = "💢 That prank was harsh! " .. enemyName .. " wants revenge!", delta = -16, happiness = 6 },
+					},
+				}
+				
+				local outcomes
+				if subChoice == "surprise" or not outcomesByChoice[subChoice] then
+					local allOutcomes = {}
+					for _, choiceOutcomes in pairs(outcomesByChoice) do
+						for _, outcome in ipairs(choiceOutcomes) do
+							table.insert(allOutcomes, outcome)
+						end
+					end
+					outcomes = allOutcomes
+				else
+					outcomes = outcomesByChoice[subChoice]
+				end
+				
+				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
+				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
+				if relationship and outcome.delta then 
+					relationship.relationship = math.max(-100, (relationship.relationship or 50) + outcome.delta)
+				end
+				return outcome.text
+			end,
+		},
 		ignore = { delta = 0, message = "You ignored them." },
 	},
 }
