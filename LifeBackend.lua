@@ -5731,11 +5731,13 @@ local ActivityCatalog = {
 	walk = { stats = { Health = 4, Happiness = 3 }, feed = "went for a walk", cost = 0 },
 	arcade = { stats = { Happiness = 5, Smarts = 2 }, feed = "played arcade games", cost = 30 },
 	karaoke = { stats = { Happiness = 6, Looks = 1 }, feed = "sang karaoke", cost = 20 },
-	doctor = { stats = { Health = 8 }, feed = "visited the doctor", cost = 100, usesInsurance = true },
-	dentist = { stats = { Health = 3, Looks = 2 }, feed = "visited the dentist", cost = 150, usesInsurance = true },
-	therapist = { stats = { Happiness = 8, Health = 2 }, feed = "saw a therapist", cost = 200, usesInsurance = true },
-	chiropractor = { stats = { Health = 5, Happiness = 2 }, feed = "saw the chiropractor", cost = 100, usesInsurance = true },
-	acupuncture = { stats = { Health = 4, Happiness = 3 }, feed = "tried acupuncture", cost = 100 },
+	-- CRITICAL FIX: Medical activities now set visited_doctor flag for treatment checkup events
+	-- User bug: "treatment follow-up showed but I don't remember going to doctor"
+	doctor = { stats = { Health = 8 }, feed = "visited the doctor", cost = 100, usesInsurance = true, setFlags = { visited_doctor = true, has_doctor = true } },
+	dentist = { stats = { Health = 3, Looks = 2 }, feed = "visited the dentist", cost = 150, usesInsurance = true, setFlags = { visited_doctor = true, visited_dentist = true } },
+	therapist = { stats = { Happiness = 8, Health = 2 }, feed = "saw a therapist", cost = 200, usesInsurance = true, setFlags = { visited_doctor = true, has_therapist = true } },
+	chiropractor = { stats = { Health = 5, Happiness = 2 }, feed = "saw the chiropractor", cost = 100, usesInsurance = true, setFlags = { visited_doctor = true } },
+	acupuncture = { stats = { Health = 4, Happiness = 3 }, feed = "tried acupuncture", cost = 100, setFlags = { visited_doctor = true } },
 	diet = { stats = { Health = 5, Looks = 3 }, feed = "went on a diet", cost = 0 },
 	quit_smoking = { stats = { Health = 10, Happiness = -5 }, feed = "quit smoking!", cost = 0, setFlags = { smoker = nil, quit_smoking = true } },
 	quit_drinking = { stats = { Health = 8, Happiness = -3 }, feed = "quit drinking!", cost = 0, setFlags = { drinker = nil, quit_drinking = true } },

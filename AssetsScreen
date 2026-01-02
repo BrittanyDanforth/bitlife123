@@ -1377,42 +1377,12 @@ function AssetsScreen:populateProperty()
 		local rent = housingState.rent or 900 -- Default $900 if not set
 		livingDetail = "Monthly rent: $" .. self:formatMoney(rent)
 		statusColor = C.Blue
-	-- PRIORITY 4: Actual homeless states (no property, no rental)
-	-- CRITICAL FIX: Also check for stale renting flags that contradict homeless status
-	elseif flags.homeless or housingStatus == "homeless" then
-		livingEmoji = "🏕️"
-		livingStatus = "Homeless"
-		livingDetail = "Living on the streets"
-		statusColor = C.Red
-	elseif flags.living_in_car then
-		livingEmoji = "🚗"
-		livingStatus = "Living in Car"
-		livingDetail = "No permanent address"
-		statusColor = C.Amber
-	elseif flags.couch_surfing then
-		livingEmoji = "🛋️"
-		livingStatus = "Couch Surfing"
-		livingDetail = "Staying with friends temporarily"
-		statusColor = C.Amber
-	elseif flags.using_shelter then
-		livingEmoji = "🏨"
-		livingStatus = "Homeless Shelter"
-		livingDetail = "Temporary shelter housing"
-		statusColor = C.Amber
-	elseif flags.in_transitional_housing then
-		livingEmoji = "🏢"
-		livingStatus = "Transitional Housing"
-		livingDetail = "Program housing - rebuilding"
-		statusColor = C.Blue
-	elseif flags.living_with_family then
-		livingEmoji = "👨‍👩‍👧"
-		livingStatus = "With Family"
-		livingDetail = "Living with family members"
-		statusColor = C.Green
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- PRIORITY 4: With Spouse - Check BEFORE homeless states!
+	-- CRITICAL FIX: User complaint "moved in with partner and it said homeless"
+	-- Marriage/partner states should OVERRIDE homeless flags that weren't cleared properly
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	elseif flags.married or flags.has_spouse or isSpouseFromRelationships then
-		-- CRITICAL FIX: Show married status in housing
-		-- User complaint: "Doesn't show if I'm living with my girl/wife/husband"
-		-- CRITICAL FIX #2: Also check Relationships table for spouse
 		livingEmoji = "💑"
 		livingStatus = "With Spouse"
 		if partnerNameFromRelationships then
@@ -1432,10 +1402,9 @@ function AssetsScreen:populateProperty()
 		else
 			statusColor = C.Pink or C.Purple
 		end
-	elseif flags.lives_with_partner or flags.cohabiting or (flags.has_partner and flags.moved_out) then
-		-- Living with boyfriend/girlfriend
-		-- CRITICAL FIX: Check lives_with_partner flag (set when moving in together)
-		-- CRITICAL FIX #2: Also check Relationships table for partner
+	-- PRIORITY 5: With Partner - Check BEFORE homeless states!
+	-- CRITICAL FIX: HousingState.status == "with_partner" should also trigger this
+	elseif flags.lives_with_partner or flags.cohabiting or housingStatus == "with_partner" or (flags.has_partner and flags.moved_out) then
 		livingEmoji = "💕"
 		livingStatus = "With Partner"
 		if partnerNameFromRelationships then
@@ -1444,6 +1413,45 @@ function AssetsScreen:populateProperty()
 			livingDetail = "Living with your significant other"
 		end
 		statusColor = C.Pink or C.Purple
+	-- PRIORITY 6: Couch Surfing - Check BEFORE generic homeless!
+	-- CRITICAL FIX: User complaint "living situation didn't update when couch surfing"
+	-- Also check HousingState.status == "couch_surfing"
+	elseif flags.couch_surfing or housingStatus == "couch_surfing" then
+		livingEmoji = "🛋️"
+		livingStatus = "Couch Surfing"
+		livingDetail = "Staying with friends temporarily"
+		statusColor = C.Amber
+	-- PRIORITY 7: Living in car
+	elseif flags.living_in_car or housingStatus == "living_in_car" then
+		livingEmoji = "🚗"
+		livingStatus = "Living in Car"
+		livingDetail = "No permanent address"
+		statusColor = C.Amber
+	-- PRIORITY 8: Homeless shelter
+	elseif flags.using_shelter or housingStatus == "shelter" then
+		livingEmoji = "🏨"
+		livingStatus = "Homeless Shelter"
+		livingDetail = "Temporary shelter housing"
+		statusColor = C.Amber
+	-- PRIORITY 9: Transitional housing
+	elseif flags.in_transitional_housing or housingStatus == "transitional" then
+		livingEmoji = "🏢"
+		livingStatus = "Transitional Housing"
+		livingDetail = "Program housing - rebuilding"
+		statusColor = C.Blue
+	-- PRIORITY 10: Living with family
+	elseif flags.living_with_family then
+		livingEmoji = "👨‍👩‍👧"
+		livingStatus = "With Family"
+		livingDetail = "Living with family members"
+		statusColor = C.Green
+	-- PRIORITY 11: Generic homeless (streets) - This is the FALLBACK
+	-- Only show if no other housing situation applies
+	elseif flags.homeless or housingStatus == "homeless" then
+		livingEmoji = "🏕️"
+		livingStatus = "Homeless"
+		livingDetail = "Living on the streets"
+		statusColor = C.Red
 	elseif flags.has_own_place or flags.moved_out then
 		-- Has own place but not specifically apartment/house flagged
 		livingEmoji = "🏠"

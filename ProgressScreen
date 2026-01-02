@@ -277,7 +277,7 @@ function ProgressScreen:createTabBar()
 	local tabs = {
 		{ id = "awards", name = "Awards", icon = "🏆", color = C.Amber },
 		{ id = "pastlives", name = "Lives", icon = "📜", color = C.Blue },
-		{ id = "leaderboards", name = "Boards", icon = "🏅", color = C.Green },
+		{ id = "leaderboards", name = "Leaderboard", icon = "🏅", color = C.Green },
 		{ id = "giveup", name = "Give Up", icon = "☠️", color = C.Red },
 	}
 	
@@ -706,9 +706,9 @@ function ProgressScreen:buildLeaderboardsTab()
 	container.ZIndex = 81
 	container.Parent = self.contentContainer
 	
-	-- Your Stats Card
+	-- Your Stats Card - Cleaner design
 	local yourCard = Instance.new("Frame")
-	yourCard.Size = UDim2.new(1, -20, 0, 70)
+	yourCard.Size = UDim2.new(1, -20, 0, 100)
 	yourCard.Position = UDim2.new(0, 10, 0, 10)
 	yourCard.BackgroundColor3 = C.GreenPale
 	yourCard.ZIndex = 82
@@ -716,62 +716,78 @@ function ProgressScreen:buildLeaderboardsTab()
 	UI.corner(yourCard, 12)
 	
 	local yourTitle = Instance.new("TextLabel")
-	yourTitle.Size = UDim2.new(1, 0, 0, 22)
-	yourTitle.Position = UDim2.new(0, 0, 0, 4)
+	yourTitle.Size = UDim2.new(1, 0, 0, 26)
+	yourTitle.Position = UDim2.new(0, 0, 0, 6)
 	yourTitle.BackgroundTransparency = 1
 	yourTitle.Font = F.Bold
-	yourTitle.TextSize = 13
+	yourTitle.TextSize = 15
 	yourTitle.TextColor3 = C.GreenDark
-	yourTitle.Text = "📊 Leaderboard Stats"
+	yourTitle.Text = "🏅 Your Stats"
 	yourTitle.ZIndex = 83
 	yourTitle.Parent = yourCard
 	
-	-- Stats row
+	-- Stats row - 3 boxes evenly spaced
 	local yourRow = Instance.new("Frame")
-	yourRow.Size = UDim2.new(1, -12, 0, 40)
-	yourRow.Position = UDim2.new(0, 6, 0, 26)
+	yourRow.Size = UDim2.new(1, -16, 0, 60)
+	yourRow.Position = UDim2.new(0, 8, 0, 34)
 	yourRow.BackgroundTransparency = 1
 	yourRow.ZIndex = 83
 	yourRow.Parent = yourCard
 	
 	local yourLayout = Instance.new("UIListLayout")
 	yourLayout.FillDirection = Enum.FillDirection.Horizontal
-	yourLayout.Padding = UDim.new(0, 6)
+	yourLayout.Padding = UDim.new(0, 8)
 	yourLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	yourLayout.Parent = yourRow
 	
-	local function createYourStat(icon, text, order)
+	local function createStatBox(icon, labelText, valueText, color, order)
 		local box = Instance.new("Frame")
-		box.Size = UDim2.new(0, 90, 1, 0)
+		box.Size = UDim2.new(0, 95, 1, 0)
 		box.BackgroundColor3 = C.White
-		box.BackgroundTransparency = 0.4
+		box.BackgroundTransparency = 0.3
 		box.LayoutOrder = order
 		box.ZIndex = 84
 		box.Parent = yourRow
-		UI.corner(box, 6)
+		UI.corner(box, 8)
 		
-		local lbl = Instance.new("TextLabel")
-		lbl.Size = UDim2.fromScale(1, 1)
-		lbl.BackgroundTransparency = 1
-		lbl.Font = F.Bold
-		lbl.TextSize = 12
-		lbl.TextColor3 = C.Gray700
-		lbl.Text = icon .. " " .. text
-		lbl.ZIndex = 85
-		lbl.Parent = box
-		return lbl
+		-- Icon + Label at top
+		local topLabel = Instance.new("TextLabel")
+		topLabel.Size = UDim2.new(1, 0, 0, 20)
+		topLabel.Position = UDim2.new(0, 0, 0, 4)
+		topLabel.BackgroundTransparency = 1
+		topLabel.Font = F.Medium
+		topLabel.TextSize = 11
+		topLabel.TextColor3 = C.Gray500
+		topLabel.Text = icon .. " " .. labelText
+		topLabel.ZIndex = 85
+		topLabel.Parent = box
+		
+		-- Value at bottom (larger)
+		local valueLabel = Instance.new("TextLabel")
+		valueLabel.Name = "Value"
+		valueLabel.Size = UDim2.new(1, 0, 0, 28)
+		valueLabel.Position = UDim2.new(0, 0, 0, 26)
+		valueLabel.BackgroundTransparency = 1
+		valueLabel.Font = F.Bold
+		valueLabel.TextSize = 16
+		valueLabel.TextColor3 = color or C.Gray800
+		valueLabel.Text = valueText
+		valueLabel.ZIndex = 85
+		valueLabel.Parent = box
+		
+		return valueLabel
 	end
 	
 	self.yourStats = {
-		money = createYourStat("💰", "Money\n$0", 1),
-		age = createYourStat("📅", "Age\n0", 2),
-		fame = createYourStat("⭐", "Fame\n0", 3),
+		money = createStatBox("💰", "Cash", "$0", C.Green, 1),
+		age = createStatBox("📅", "Age", "0", C.Blue, 2),
+		fame = createStatBox("⭐", "Fame", "0", C.Purple, 3),
 	}
 	
-	-- Info text
+	-- Info text - positioned below stats card
 	local infoLbl = Instance.new("TextLabel")
 	infoLbl.Size = UDim2.new(1, -20, 0, 50)
-	infoLbl.Position = UDim2.new(0, 10, 0, 90)
+	infoLbl.Position = UDim2.new(0, 10, 0, 120)
 	infoLbl.BackgroundTransparency = 1
 	infoLbl.Font = F.Medium
 	infoLbl.TextSize = 13
@@ -1000,12 +1016,12 @@ end
 
 function ProgressScreen:refreshLeaderboards()
 	local state = self:getState()
-	local playerName = Players.LocalPlayer and Players.LocalPlayer.Name or "You"
 	
 	if self.yourStats then
-		self.yourStats.money.Text = "💰 Money\n" .. formatMoney(state and state.Money or 0)
-		self.yourStats.age.Text = "📅 Age\n" .. (state and state.Age or 0)
-		self.yourStats.fame.Text = "⭐ Fame\n" .. (state and state.Fame or 0)
+		-- Update just the values (the labels are static now)
+		self.yourStats.money.Text = formatMoney(state and state.Money or 0)
+		self.yourStats.age.Text = tostring(state and state.Age or 0)
+		self.yourStats.fame.Text = tostring(state and state.Fame or 0)
 	end
 end
 
