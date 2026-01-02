@@ -549,26 +549,32 @@ local Jobs = {
 	{ id = "senior_coach", name = "Senior Coach", company = "Pro Team", emoji = "📋", salary = 85000, minAge = 30, requirement = "bachelor", category = "sports", difficulty = 5, requiresExp = "Coaching experience required" },
 	
 	-- ════════════════════════════════════════════════════════════════
-	-- NBA BASKETBALL CAREER PATH - CRITICAL: Early life choices make this EASIER!
-	-- Flags that help: plays_basketball, varsity_athlete, state_champion, college_basketball
+	-- NBA BASKETBALL CAREER PATH
+	-- NOTE: College basketball is EVENT-BASED (scholarships), not a job you apply for!
+	-- You MUST have nba_player flag from draft events to access these jobs
+	-- The progression: Play basketball in school -> Get scholarship -> Get drafted -> NBA career
 	-- ════════════════════════════════════════════════════════════════
-	{ id = "college_basketball_player", name = "College Basketball (Walk-On)", company = "State University", emoji = "🏀", salary = 0, minAge = 18, maxAge = 22, requirement = nil, category = "sports", difficulty = 6, minStats = { Health = 65 }, requiresExp = "High school basketball experience helps a lot!" },
-	{ id = "nba_g_league", name = "G-League Player", company = "NBA G-League", emoji = "🏀", salary = 45000, minAge = 19, maxAge = 28, requirement = nil, category = "sports", difficulty = 7, minStats = { Health = 75 }, requiresExp = "College basketball or tryout required" },
-	{ id = "nba_player", name = "NBA Player (Bench)", company = "NBA Team", emoji = "🏀", salary = 925000, minAge = 19, maxAge = 35, requirement = nil, category = "sports", difficulty = 9, minStats = { Health = 80 }, requiresExp = "Draft pick or G-League standout" },
-	{ id = "nba_starter", name = "NBA Starter", company = "NBA Team", emoji = "🏀", salary = 8000000, minAge = 21, maxAge = 36, requirement = nil, category = "sports", difficulty = 9, minStats = { Health = 85 }, requiresExp = "Proven NBA player" },
-	{ id = "nba_allstar", name = "NBA All-Star", company = "NBA Team", emoji = "⭐🏀", salary = 35000000, minAge = 22, maxAge = 38, requirement = nil, category = "sports", difficulty = 10, minStats = { Health = 90 }, requiresExp = "Elite performance required" },
-	{ id = "nba_superstar", name = "NBA Superstar/MVP", company = "Championship Contender", emoji = "🏆🏀", salary = 50000000, minAge = 24, maxAge = 36, requirement = nil, category = "sports", difficulty = 10, minStats = { Health = 90 }, requiresExp = "All-Star level + championships" },
+	-- G-League is the entry point for those who went undrafted but still want to try
+	{ id = "nba_g_league", name = "G-League Player", company = "NBA G-League", emoji = "🏀", salary = 45000, minAge = 19, maxAge = 28, requirement = nil, category = "sports", difficulty = 8, minStats = { Health = 75 }, requiresFlags = { "college_basketball" }, requiresExp = "Must have played college basketball" },
+	-- These jobs are ONLY accessible after being drafted/signed (nba_player flag)
+	{ id = "nba_player", name = "NBA Player", company = "NBA Team", emoji = "🏀", salary = 925000, minAge = 19, maxAge = 35, requirement = nil, category = "sports", difficulty = 10, minStats = { Health = 80 }, requiresFlags = { "nba_player" }, requiresExp = "Must be drafted or signed to NBA" },
+	{ id = "nba_starter", name = "NBA Starter", company = "NBA Team", emoji = "🏀", salary = 8000000, minAge = 21, maxAge = 36, requirement = nil, category = "sports", difficulty = 10, minStats = { Health = 85 }, requiresFlags = { "nba_player" }, requiresExp = "Must already be in NBA" },
+	{ id = "nba_allstar", name = "NBA All-Star", company = "NBA Team", emoji = "⭐🏀", salary = 35000000, minAge = 22, maxAge = 38, requirement = nil, category = "sports", difficulty = 10, minStats = { Health = 90 }, requiresFlags = { "nba_allstar" }, requiresExp = "Must be selected as All-Star" },
+	{ id = "nba_superstar", name = "NBA Superstar", company = "Championship Contender", emoji = "🏆🏀", salary = 50000000, minAge = 24, maxAge = 36, requirement = nil, category = "sports", difficulty = 10, minStats = { Health = 90 }, requiresFlags = { "nba_mvp" }, requiresExp = "Must win MVP award" },
 	
 	-- ════════════════════════════════════════════════════════════════
-	-- NFL FOOTBALL CAREER PATH - CRITICAL: Early life choices make this EASIER!
-	-- Flags that help: plays_football, varsity_athlete, state_champion, college_football, heisman_winner
+	-- NFL FOOTBALL CAREER PATH
+	-- NOTE: College football is EVENT-BASED (scholarships), not a job you apply for!
+	-- You MUST have nfl_player flag from draft events to access these jobs
+	-- The progression: Play football in school -> Get scholarship -> Get drafted -> NFL career
 	-- ════════════════════════════════════════════════════════════════
-	{ id = "college_football_player", name = "College Football (Walk-On)", company = "State University", emoji = "🏈", salary = 0, minAge = 18, maxAge = 22, requirement = nil, category = "sports", difficulty = 6, minStats = { Health = 65 }, requiresExp = "High school football experience helps a lot!" },
-	{ id = "nfl_practice_squad", name = "NFL Practice Squad", company = "NFL Team", emoji = "🏈", salary = 200000, minAge = 21, maxAge = 28, requirement = nil, category = "sports", difficulty = 8, minStats = { Health = 80 }, requiresExp = "College football or UDFA signing" },
-	{ id = "nfl_player", name = "NFL Player (Backup)", company = "NFL Team", emoji = "🏈", salary = 750000, minAge = 21, maxAge = 35, requirement = nil, category = "sports", difficulty = 9, minStats = { Health = 85 }, requiresExp = "Draft pick or proven practice squad" },
-	{ id = "nfl_starter", name = "NFL Starter", company = "NFL Team", emoji = "🏈", salary = 5000000, minAge = 22, maxAge = 34, requirement = nil, category = "sports", difficulty = 9, minStats = { Health = 88 }, requiresExp = "Proven NFL player" },
-	{ id = "nfl_pro_bowler", name = "NFL Pro Bowler", company = "NFL Team", emoji = "⭐🏈", salary = 20000000, minAge = 23, maxAge = 35, requirement = nil, category = "sports", difficulty = 10, minStats = { Health = 90 }, requiresExp = "Elite NFL performance" },
-	{ id = "nfl_superstar", name = "NFL Superstar/MVP", company = "Super Bowl Contender", emoji = "🏆🏈", salary = 45000000, minAge = 24, maxAge = 34, requirement = nil, category = "sports", difficulty = 10, minStats = { Health = 92 }, requiresExp = "Pro Bowl + All-Pro selections" },
+	-- Practice squad is entry point for undrafted players with college football
+	{ id = "nfl_practice_squad", name = "NFL Practice Squad", company = "NFL Team", emoji = "🏈", salary = 200000, minAge = 21, maxAge = 28, requirement = nil, category = "sports", difficulty = 9, minStats = { Health = 80 }, requiresFlags = { "college_football" }, requiresExp = "Must have played college football" },
+	-- These jobs are ONLY accessible after being drafted/signed (nfl_player flag)
+	{ id = "nfl_player", name = "NFL Player", company = "NFL Team", emoji = "🏈", salary = 750000, minAge = 21, maxAge = 35, requirement = nil, category = "sports", difficulty = 10, minStats = { Health = 85 }, requiresFlags = { "nfl_player" }, requiresExp = "Must be drafted or signed to NFL" },
+	{ id = "nfl_starter", name = "NFL Starter", company = "NFL Team", emoji = "🏈", salary = 5000000, minAge = 22, maxAge = 34, requirement = nil, category = "sports", difficulty = 10, minStats = { Health = 88 }, requiresFlags = { "nfl_player" }, requiresExp = "Must already be in NFL" },
+	{ id = "nfl_pro_bowler", name = "NFL Pro Bowler", company = "NFL Team", emoji = "⭐🏈", salary = 20000000, minAge = 23, maxAge = 35, requirement = nil, category = "sports", difficulty = 10, minStats = { Health = 90 }, requiresFlags = { "nfl_pro_bowl" }, requiresExp = "Must be selected to Pro Bowl" },
+	{ id = "nfl_superstar", name = "NFL Superstar", company = "Super Bowl Contender", emoji = "🏆🏈", salary = 45000000, minAge = 24, maxAge = 34, requirement = nil, category = "sports", difficulty = 10, minStats = { Health = 92 }, requiresFlags = { "nfl_mvp" }, requiresExp = "Must win MVP award" },
 
 	-- ════════════════════════════════════════════════════════════════
 	-- MILITARY - CRITICAL FIX: Added difficulty & minStats (Health REQUIRED!)

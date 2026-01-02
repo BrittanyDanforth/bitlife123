@@ -1658,12 +1658,22 @@ MilitaryCareerEvents.events = {
 						state:ModifyStat("Health", -20)
 						state:ModifyStat("Happiness", -15)
 						state:AddFeed("⚔️ Battle was brutal. You took a hit but survived. Purple Heart.")
-					else
+					elseif roll + bonus >= 8 then
 						-- Seriously wounded
 						state.Flags.severely_wounded = true
 						state:ModifyStat("Health", -35)
 						state:ModifyStat("Happiness", -25)
 						state:AddFeed("⚔️ Critically wounded. Medevac'd out. Long recovery ahead...")
+					else
+						-- KILLED IN ACTION - Only happens with very bad rolls!
+						state.Flags = state.Flags or {}
+						state.Flags.killed_in_action = true
+						state.Flags.combat_veteran = true
+						state.Flags.veteran = true
+						state.Flags.dead = true
+						state.Health = 0
+						state.DeathReason = "⚔️ Killed in Action serving their country. A true hero. 🇺🇸"
+						state:AddFeed("⚔️ KILLED IN ACTION. Died a hero on the battlefield. Your sacrifice will never be forgotten.")
 					end
 				end,
 			},
@@ -1714,26 +1724,39 @@ MilitaryCareerEvents.events = {
 					state.Flags = state.Flags or {}
 					local roll = math.random(1, 100)
 					
-					if roll <= 60 then
+					if roll <= 55 then
 						-- Saved them!
 						state.Flags.saved_comrade = true
 						state.Flags.hero = true
 						state.Fame = math.min(100, (state.Fame or 0) + 15)
 						state:ModifyStat("Happiness", 25)
 						state:AddFeed("🩸 YOU SAVED THEM! Dragged your squadmate to safety under fire! HERO!")
-					elseif roll <= 85 then
+					elseif roll <= 80 then
 						-- Saved but got wounded
 						state.Flags.saved_comrade = true
 						state.Flags.wounded_in_action = true
 						state:ModifyStat("Health", -20)
 						state:ModifyStat("Happiness", 10)
 						state:AddFeed("🩸 Saved your friend but took rounds doing it. Worth it. Both alive.")
-					else
+					elseif roll <= 95 then
 						-- Both wounded
 						state.Flags.wounded_in_action = true
 						state:ModifyStat("Health", -25)
 						state:ModifyStat("Happiness", -20)
 						state:AddFeed("🩸 You tried. Both of you got hit. Medevac'd out together. At least they lived.")
+					else
+						-- KILLED saving a comrade - ultimate sacrifice
+						state.Flags = state.Flags or {}
+						state.Flags.killed_in_action = true
+						state.Flags.died_saving_comrade = true
+						state.Flags.combat_veteran = true
+						state.Flags.veteran = true
+						state.Flags.hero = true
+						state.Flags.dead = true
+						state.Health = 0
+						state.Fame = 100
+						state.DeathReason = "🩸 Killed in Action while saving a fellow soldier. Died a true hero. 🇺🇸"
+						state:AddFeed("🩸 You gave your life to save your squadmate. They'll never forget your sacrifice.")
 					end
 				end,
 			},

@@ -3046,6 +3046,95 @@ function LifeEvents.buildYearQueue(state, options)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #WAR-1: Military players AT WAR get military events FREQUENTLY
+	-- When deployed or at war, normal life events should be rare - war takes priority!
+	-- This makes the war experience feel immersive and realistic
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isAtWar = flags.at_war == true
+	local isDeployed = flags.deployed == true
+	local isMilitary = state.CurrentJob and (state.CurrentJob.category or ""):lower() == "military"
+	
+	-- 80% chance to get military event when at war or deployed
+	if (isAtWar or isDeployed) and isMilitary and RANDOM_LOCAL:NextNumber() < 0.80 then
+		local militaryEvents = EventsByCategory["career_military"] or {}
+		local eligibleMilitaryEvents = {}
+		
+		for _, event in ipairs(militaryEvents) do
+			if canEventTrigger(event, state) then
+				local occurCount = (history.occurrences[event.id] or 0)
+				if occurCount == 0 or not event.oneTime then
+					table.insert(eligibleMilitaryEvents, event)
+				end
+			end
+		end
+		
+		if #eligibleMilitaryEvents > 0 then
+			local chosenEvent = eligibleMilitaryEvents[RANDOM_LOCAL:NextInteger(1, #eligibleMilitaryEvents)]
+			table.insert(selectedEvents, chosenEvent)
+			recordEventShown(state, chosenEvent)
+			return selectedEvents -- Military event takes priority when at war!
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #NBA-2: NBA players get NBA career events frequently
+	-- When you're in the NBA, your career should be the focus of your life!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isNBAPlayer = flags.nba_player == true
+	local hasNBAJob = state.CurrentJob and (state.CurrentJob.id or ""):lower():find("nba")
+	
+	-- 50% chance to get NBA event when you're an NBA player
+	if (isNBAPlayer or hasNBAJob) and RANDOM_LOCAL:NextNumber() < 0.50 then
+		local nbaEvents = EventsByCategory["career_nba"] or {}
+		local eligibleNBAEvents = {}
+		
+		for _, event in ipairs(nbaEvents) do
+			if canEventTrigger(event, state) then
+				local occurCount = (history.occurrences[event.id] or 0)
+				if occurCount == 0 or not event.oneTime then
+					table.insert(eligibleNBAEvents, event)
+				end
+			end
+		end
+		
+		if #eligibleNBAEvents > 0 then
+			local chosenEvent = eligibleNBAEvents[RANDOM_LOCAL:NextInteger(1, #eligibleNBAEvents)]
+			table.insert(selectedEvents, chosenEvent)
+			recordEventShown(state, chosenEvent)
+			return selectedEvents
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #NFL-2: NFL players get NFL career events frequently
+	-- When you're in the NFL, your career should be the focus of your life!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isNFLPlayer = flags.nfl_player == true
+	local hasNFLJob = state.CurrentJob and (state.CurrentJob.id or ""):lower():find("nfl")
+	
+	-- 50% chance to get NFL event when you're an NFL player
+	if (isNFLPlayer or hasNFLJob) and RANDOM_LOCAL:NextNumber() < 0.50 then
+		local nflEvents = EventsByCategory["career_nfl"] or {}
+		local eligibleNFLEvents = {}
+		
+		for _, event in ipairs(nflEvents) do
+			if canEventTrigger(event, state) then
+				local occurCount = (history.occurrences[event.id] or 0)
+				if occurCount == 0 or not event.oneTime then
+					table.insert(eligibleNFLEvents, event)
+				end
+			end
+		end
+		
+		if #eligibleNFLEvents > 0 then
+			local chosenEvent = eligibleNFLEvents[RANDOM_LOCAL:NextInteger(1, #eligibleNFLEvents)]
+			table.insert(selectedEvents, chosenEvent)
+			recordEventShown(state, chosenEvent)
+			return selectedEvents
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #602: Mafia event selection requires STRICT in_mob verification
 	-- User complaint: "IT SAID I WAS IN MAFIA BUT IM NOT IN MAFIA"
 	-- This ensures mafia events ONLY trigger for actual mafia members

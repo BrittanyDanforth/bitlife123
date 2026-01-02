@@ -138,6 +138,16 @@ local AWARDS = {
 	{ id = "athlete", icon = "🏅", name = "Pro Athlete", desc = "Become a professional athlete", check = function(state) return state and state.Flags and state.Flags.signed_athlete end },
 	{ id = "actor", icon = "🎬", name = "Movie Star", desc = "Win an Oscar", check = function(state) return state and state.Flags and state.Flags.oscar_winner end },
 	{ id = "musician", icon = "🎵", name = "Music Legend", desc = "Win a Grammy", check = function(state) return state and state.Flags and state.Flags.grammy_winner end },
+	-- Military & War achievements
+	{ id = "veteran", icon = "🎖️", name = "Veteran", desc = "Serve in the military", check = function(state) return state and state.Flags and (state.Flags.veteran or state.Flags.combat_veteran) end },
+	{ id = "war_hero", icon = "🇺🇸", name = "War Hero", desc = "Become a decorated war hero", check = function(state) return state and state.Flags and state.Flags.war_hero end },
+	{ id = "medal_of_honor", icon = "🏅", name = "Medal of Honor", desc = "Receive the Medal of Honor", check = function(state) return state and state.Flags and state.Flags.medal_of_honor end },
+	-- Sports achievements
+	{ id = "nba_champion", icon = "🏀", name = "NBA Champion", desc = "Win an NBA Championship", check = function(state) return state and state.Flags and state.Flags.nba_champion end },
+	{ id = "nfl_champion", icon = "🏈", name = "Super Bowl Champion", desc = "Win a Super Bowl", check = function(state) return state and state.Flags and state.Flags.super_bowl_champion end },
+	{ id = "nba_mvp", icon = "🏀⭐", name = "NBA MVP", desc = "Win NBA MVP Award", check = function(state) return state and state.Flags and state.Flags.nba_mvp end },
+	{ id = "nfl_mvp", icon = "🏈⭐", name = "NFL MVP", desc = "Win NFL MVP Award", check = function(state) return state and state.Flags and state.Flags.nfl_mvp end },
+	{ id = "heisman", icon = "🏆", name = "Heisman Winner", desc = "Win the Heisman Trophy", check = function(state) return state and state.Flags and state.Flags.heisman_winner end },
 }
 
 print("[ProgressScreen] About to define .new function")
