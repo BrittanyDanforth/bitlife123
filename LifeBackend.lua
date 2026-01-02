@@ -19996,7 +19996,7 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 			state.Flags.yacht_party_ready = true
 			state.Flags.can_host_yacht_party = true
 			-- Yacht gives fame boost
-			state.Fame = (state.Fame or 0) + 20
+			state.Fame = math.min(100, (state.Fame or 0) + 20) -- CRITICAL FIX: Cap fame at 100
 		else
 			feed = "🛥️ Added another yacht to your fleet. You're building a navy!"
 		end
@@ -20022,7 +20022,7 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 			}
 			state.Flags.first_supercar_celebrated = true
 			state.Flags.supercar_owner = true
-			state.Fame = (state.Fame or 0) + 10
+			state.Fame = math.min(100, (state.Fame or 0) + 10) -- CRITICAL FIX: Cap fame at 100
 		else
 			feed = string.format("🏎️ Another supercar: %s! Your garage is STACKED!", asset.name)
 		end
@@ -20082,7 +20082,7 @@ function LifeBackend:handleAssetPurchase(player, assetType, catalog, assetId)
 				wasSuccess = true,
 			}
 			state.Flags.luxury_home_celebrated = true
-			state.Fame = (state.Fame or 0) + 15
+			state.Fame = math.min(100, (state.Fame or 0) + 15) -- CRITICAL FIX: Cap fame at 100
 		else
 			feed = string.format("🏰 Another luxury property: %s! Real estate mogul!", asset.name)
 		end
