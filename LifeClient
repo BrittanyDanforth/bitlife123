@@ -2914,6 +2914,1049 @@ createNavButton({ icon = "📖", text = "Story",   screen = "storypaths"   }, na
 end)() -- End Nav Bar IIFE
 
 ----------------------------------------------------------------
+-- SECONDARY MENU BAR - Awards, Past Lives, Leaderboards, Give Up
+-- User request: "IMPLIMENT A NEW BUTTON AT BOTTOM"
+----------------------------------------------------------------
+
+-- Secondary menu bar state
+local SecondaryMenuUI = {
+	isVisible = false,
+	overlay = nil,
+	menuContainer = nil,
+}
+
+-- Awards/Achievement tracking
+local AwardsUI = {
+	overlay = nil,
+	isVisible = false,
+}
+
+-- Past Lives tracking
+local PastLivesUI = {
+	overlay = nil,
+	isVisible = false,
+}
+
+-- Leaderboards
+local LeaderboardsUI = {
+	overlay = nil,
+	isVisible = false,
+}
+
+-- Give Up confirmation
+local GiveUpUI = {
+	overlay = nil,
+	isVisible = false,
+}
+
+;(function()
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- SECONDARY MENU BUTTON (☰ More) - Opens Awards/PastLives/Leaderboards/GiveUp
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local moreButtonSize = Device.IS_TINY_PHONE and 36 or (Device.IS_SMALL_PHONE and 42 or px(48))
+local moreButton = Instance.new("TextButton")
+moreButton.Name = "MoreButton"
+moreButton.Size = UDim2.new(0, moreButtonSize, 0, moreButtonSize)
+moreButton.AnchorPoint = Vector2.new(1, 1)
+moreButton.Position = UDim2.new(1, Device.IS_TINY_PHONE and -8 or -12, 1, -(navBarHeight + (Device.IS_TINY_PHONE and 8 or 12)))
+moreButton.BackgroundColor3 = C.Purple
+moreButton.AutoButtonColor = false
+moreButton.Text = ""
+moreButton.ZIndex = 20
+moreButton.Parent = mainContainer
+corner(moreButton, moreButtonSize / 2)
+
+local moreGrad = Instance.new("UIGradient")
+moreGrad.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(168, 85, 247)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(139, 69, 201)),
+})
+moreGrad.Rotation = 90
+moreGrad.Parent = moreButton
+
+local moreIcon = Instance.new("TextLabel")
+moreIcon.Size = UDim2.fromScale(1, 1)
+moreIcon.BackgroundTransparency = 1
+moreIcon.Font = F.Bold
+moreIcon.TextSize = Device.IS_TINY_PHONE and 18 or 24
+moreIcon.TextColor3 = C.White
+moreIcon.Text = "☰"
+moreIcon.ZIndex = 21
+moreIcon.Parent = moreButton
+
+-- Hover effect
+moreButton.MouseEnter:Connect(function()
+	tween(moreButton, TweenInfo.new(0.12), { Size = UDim2.new(0, moreButtonSize + 4, 0, moreButtonSize + 4) })
+end)
+moreButton.MouseLeave:Connect(function()
+	tween(moreButton, TweenInfo.new(0.12), { Size = UDim2.new(0, moreButtonSize, 0, moreButtonSize) })
+end)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- SECONDARY MENU POPUP
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local function buildSecondaryMenu()
+	-- Overlay
+	SecondaryMenuUI.overlay = Instance.new("Frame")
+	SecondaryMenuUI.overlay.Name = "SecondaryMenuOverlay"
+	SecondaryMenuUI.overlay.Size = UDim2.fromScale(1, 1)
+	SecondaryMenuUI.overlay.BackgroundColor3 = C.Black
+	SecondaryMenuUI.overlay.BackgroundTransparency = 0.5
+	SecondaryMenuUI.overlay.Visible = false
+	SecondaryMenuUI.overlay.ZIndex = 90
+	SecondaryMenuUI.overlay.Parent = screenGui
+	
+	-- Close on overlay click
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Size = UDim2.fromScale(1, 1)
+	closeBtn.BackgroundTransparency = 1
+	closeBtn.Text = ""
+	closeBtn.ZIndex = 91
+	closeBtn.Parent = SecondaryMenuUI.overlay
+	closeBtn.MouseButton1Click:Connect(function()
+		SecondaryMenuUI.isVisible = false
+		tween(SecondaryMenuUI.overlay, TweenInfo.new(0.15), { BackgroundTransparency = 1 })
+		tween(SecondaryMenuUI.menuContainer, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+			Position = UDim2.new(1, 20, 1, -(navBarHeight + 80)),
+			Size = UDim2.new(0, 0, 0, 0)
+		})
+		task.delay(0.15, function()
+			SecondaryMenuUI.overlay.Visible = false
+		end)
+	end)
+	
+	-- Menu container
+	local menuWidth = Device.IS_TINY_PHONE and 200 or 240
+	local menuHeight = Device.IS_TINY_PHONE and 200 or 240
+	SecondaryMenuUI.menuContainer = Instance.new("Frame")
+	SecondaryMenuUI.menuContainer.Name = "MenuContainer"
+	SecondaryMenuUI.menuContainer.Size = UDim2.new(0, menuWidth, 0, menuHeight)
+	SecondaryMenuUI.menuContainer.AnchorPoint = Vector2.new(1, 1)
+	SecondaryMenuUI.menuContainer.Position = UDim2.new(1, -12, 1, -(navBarHeight + 60))
+	SecondaryMenuUI.menuContainer.BackgroundColor3 = C.White
+	SecondaryMenuUI.menuContainer.ZIndex = 92
+	SecondaryMenuUI.menuContainer.Parent = SecondaryMenuUI.overlay
+	corner(SecondaryMenuUI.menuContainer, 16)
+	
+	-- Shadow
+	local menuShadow = Instance.new("Frame")
+	menuShadow.Size = UDim2.new(1, 8, 1, 8)
+	menuShadow.AnchorPoint = Vector2.new(0.5, 0.5)
+	menuShadow.Position = UDim2.new(0.5, 2, 0.5, 4)
+	menuShadow.BackgroundColor3 = C.Black
+	menuShadow.BackgroundTransparency = 0.85
+	menuShadow.ZIndex = 91
+	menuShadow.Parent = SecondaryMenuUI.menuContainer
+	corner(menuShadow, 18)
+	
+	-- Menu title
+	local menuTitle = Instance.new("TextLabel")
+	menuTitle.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 36 or 44)
+	menuTitle.BackgroundColor3 = C.Purple
+	menuTitle.Font = F.Bold
+	menuTitle.TextSize = Device.IS_TINY_PHONE and 14 or 16
+	menuTitle.TextColor3 = C.White
+	menuTitle.Text = "📊 Progress & More"
+	menuTitle.ZIndex = 93
+	menuTitle.Parent = SecondaryMenuUI.menuContainer
+	corner(menuTitle, 16)
+	
+	-- Fix corner to only round top
+	local titleCornerFix = Instance.new("Frame")
+	titleCornerFix.Size = UDim2.new(1, 0, 0.5, 0)
+	titleCornerFix.Position = UDim2.new(0, 0, 0.5, 0)
+	titleCornerFix.BackgroundColor3 = C.Purple
+	titleCornerFix.BorderSizePixel = 0
+	titleCornerFix.ZIndex = 93
+	titleCornerFix.Parent = menuTitle
+	
+	-- Menu buttons container
+	local buttonsContainer = Instance.new("Frame")
+	buttonsContainer.Size = UDim2.new(1, -16, 1, -(Device.IS_TINY_PHONE and 44 or 52))
+	buttonsContainer.Position = UDim2.new(0, 8, 0, Device.IS_TINY_PHONE and 40 or 48)
+	buttonsContainer.BackgroundTransparency = 1
+	buttonsContainer.ZIndex = 93
+	buttonsContainer.Parent = SecondaryMenuUI.menuContainer
+	
+	local btnLayout = Instance.new("UIListLayout")
+	btnLayout.Padding = UDim.new(0, 6)
+	btnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	btnLayout.Parent = buttonsContainer
+	
+	-- Menu button creator
+	local function createMenuButton(icon, text, color, order, callback)
+		local btn = Instance.new("TextButton")
+		btn.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 36 or 42)
+		btn.BackgroundColor3 = color
+		btn.AutoButtonColor = false
+		btn.Text = ""
+		btn.LayoutOrder = order
+		btn.ZIndex = 94
+		btn.Parent = buttonsContainer
+		corner(btn, 10)
+		
+		local btnText = Instance.new("TextLabel")
+		btnText.Size = UDim2.fromScale(1, 1)
+		btnText.BackgroundTransparency = 1
+		btnText.Font = F.Medium
+		btnText.TextSize = Device.IS_TINY_PHONE and 13 or 15
+		btnText.TextColor3 = C.White
+		btnText.Text = icon .. "  " .. text
+		btnText.ZIndex = 95
+		btnText.Parent = btn
+		
+		btn.MouseEnter:Connect(function()
+			tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = color:Lerp(C.Black, 0.15) })
+		end)
+		btn.MouseLeave:Connect(function()
+			tween(btn, TweenInfo.new(0.1), { BackgroundColor3 = color })
+		end)
+		btn.MouseButton1Click:Connect(function()
+			-- Close menu first
+			closeBtn.MouseButton1Click:Fire()
+			task.delay(0.2, callback)
+		end)
+		
+		return btn
+	end
+	
+	-- Create menu buttons
+	createMenuButton("🏆", "Awards", C.Amber, 1, function()
+		if AwardsUI.show then AwardsUI.show() end
+	end)
+	
+	createMenuButton("📜", "Past Lives", C.Blue, 2, function()
+		if PastLivesUI.show then PastLivesUI.show() end
+	end)
+	
+	createMenuButton("🏅", "Leaderboards", C.Green, 3, function()
+		if LeaderboardsUI.show then LeaderboardsUI.show() end
+	end)
+	
+	createMenuButton("☠️", "Give Up", C.Red, 4, function()
+		if GiveUpUI.show then GiveUpUI.show() end
+	end)
+end
+
+-- Build menu on first use
+local menuBuilt = false
+local function showSecondaryMenu()
+	if not menuBuilt then
+		buildSecondaryMenu()
+		menuBuilt = true
+	end
+	
+	SecondaryMenuUI.isVisible = true
+	SecondaryMenuUI.overlay.Visible = true
+	SecondaryMenuUI.overlay.BackgroundTransparency = 1
+	SecondaryMenuUI.menuContainer.Size = UDim2.new(0, 0, 0, 0)
+	SecondaryMenuUI.menuContainer.Position = UDim2.new(1, 20, 1, -(navBarHeight + 80))
+	
+	tween(SecondaryMenuUI.overlay, TweenInfo.new(0.2), { BackgroundTransparency = 0.5 })
+	tween(SecondaryMenuUI.menuContainer, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+		Position = UDim2.new(1, -12, 1, -(navBarHeight + 60)),
+		Size = UDim2.new(0, Device.IS_TINY_PHONE and 200 or 240, 0, Device.IS_TINY_PHONE and 200 or 240)
+	})
+end
+
+moreButton.MouseButton1Click:Connect(function()
+	-- Block if event is showing
+	if awaitingEvent or (EventUI and EventUI.overlay and EventUI.overlay.Visible) then
+		return
+	end
+	showSecondaryMenu()
+end)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- AWARDS SCREEN - Track achievements and milestones
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local function buildAwardsUI()
+	AwardsUI.overlay = Instance.new("Frame")
+	AwardsUI.overlay.Name = "AwardsOverlay"
+	AwardsUI.overlay.Size = UDim2.fromScale(1, 1)
+	AwardsUI.overlay.BackgroundColor3 = C.Black
+	AwardsUI.overlay.BackgroundTransparency = 0.4
+	AwardsUI.overlay.Visible = false
+	AwardsUI.overlay.ZIndex = 100
+	AwardsUI.overlay.Parent = screenGui
+	
+	-- Main card
+	local cardWidth = Device.IS_TINY_PHONE and 300 or 360
+	local cardHeight = Device.IS_TINY_PHONE and 450 or 520
+	local card = Instance.new("Frame")
+	card.Name = "AwardsCard"
+	card.Size = UDim2.new(0, cardWidth, 0, cardHeight)
+	card.AnchorPoint = Vector2.new(0.5, 0.5)
+	card.Position = UDim2.fromScale(0.5, 0.5)
+	card.BackgroundColor3 = C.White
+	card.ZIndex = 101
+	card.Parent = AwardsUI.overlay
+	corner(card, 20)
+	
+	-- Header
+	local header = Instance.new("Frame")
+	header.Size = UDim2.new(1, 0, 0, 60)
+	header.BackgroundColor3 = C.Amber
+	header.ZIndex = 102
+	header.Parent = card
+	corner(header, 20)
+	
+	local headerFix = Instance.new("Frame")
+	headerFix.Size = UDim2.new(1, 0, 0.5, 0)
+	headerFix.Position = UDim2.new(0, 0, 0.5, 0)
+	headerFix.BackgroundColor3 = C.Amber
+	headerFix.BorderSizePixel = 0
+	headerFix.ZIndex = 102
+	headerFix.Parent = header
+	
+	local headerText = Instance.new("TextLabel")
+	headerText.Size = UDim2.fromScale(1, 1)
+	headerText.BackgroundTransparency = 1
+	headerText.Font = F.Bold
+	headerText.TextSize = Device.IS_TINY_PHONE and 18 or 22
+	headerText.TextColor3 = C.White
+	headerText.Text = "🏆 Awards & Achievements"
+	headerText.ZIndex = 103
+	headerText.Parent = header
+	
+	-- Close button
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Size = UDim2.new(0, 36, 0, 36)
+	closeBtn.Position = UDim2.new(1, -44, 0, 12)
+	closeBtn.BackgroundColor3 = C.White
+	closeBtn.BackgroundTransparency = 0.2
+	closeBtn.Font = F.Bold
+	closeBtn.TextSize = 20
+	closeBtn.TextColor3 = C.Amber
+	closeBtn.Text = "X"
+	closeBtn.AutoButtonColor = false
+	closeBtn.ZIndex = 104
+	closeBtn.Parent = card
+	corner(closeBtn, 18)
+	
+	closeBtn.MouseButton1Click:Connect(function()
+		AwardsUI.isVisible = false
+		tween(AwardsUI.overlay, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
+		tween(card, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+			Size = UDim2.new(0, cardWidth * 0.9, 0, cardHeight * 0.9)
+		})
+		task.delay(0.2, function()
+			AwardsUI.overlay.Visible = false
+		end)
+	end)
+	
+	-- Scrolling content
+	local scroll = Instance.new("ScrollingFrame")
+	scroll.Size = UDim2.new(1, -20, 1, -80)
+	scroll.Position = UDim2.new(0, 10, 0, 70)
+	scroll.BackgroundTransparency = 1
+	scroll.ScrollBarThickness = 4
+	scroll.ScrollBarImageColor3 = C.Gray400
+	scroll.CanvasSize = UDim2.new(0, 0, 0, 800)
+	scroll.ZIndex = 102
+	scroll.Parent = card
+	
+	local scrollLayout = Instance.new("UIListLayout")
+	scrollLayout.Padding = UDim.new(0, 8)
+	scrollLayout.Parent = scroll
+	
+	AwardsUI.scrollFrame = scroll
+	
+	-- Award definitions
+	local awards = {
+		{ id = "first_life", icon = "👶", name = "First Life", desc = "Start your first life", check = function() return true end },
+		{ id = "centenarian", icon = "💯", name = "Centenarian", desc = "Live to 100 years old", check = function() return currentState and (currentState.Age or 0) >= 100 end },
+		{ id = "millionaire", icon = "💰", name = "Millionaire", desc = "Have $1,000,000+", check = function() return currentState and (currentState.Money or 0) >= 1000000 end },
+		{ id = "billionaire", icon = "🤑", name = "Billionaire", desc = "Have $1,000,000,000+", check = function() return currentState and (currentState.Money or 0) >= 1000000000 end },
+		{ id = "perfect_stats", icon = "⭐", name = "Perfect Life", desc = "Max all stats (100)", check = function() 
+			if not currentState then return false end
+			return (currentState.Happiness or 0) >= 100 and (currentState.Health or 0) >= 100 and (currentState.Smarts or 0) >= 100 and (currentState.Looks or 0) >= 100
+		end },
+		{ id = "famous", icon = "🌟", name = "Famous", desc = "Reach 100 Fame", check = function() return currentState and (currentState.Fame or 0) >= 100 end },
+		{ id = "married", icon = "💒", name = "Married", desc = "Get married", check = function() return currentState and currentState.Flags and currentState.Flags.married end },
+		{ id = "royalty", icon = "👑", name = "Royal Blood", desc = "Become royalty", check = function() return currentState and currentState.Flags and (currentState.Flags.is_royalty or currentState.Flags.royal_birth) end },
+		{ id = "mafia_boss", icon = "🔫", name = "Crime Boss", desc = "Become a mafia boss", check = function() return currentState and currentState.MobState and currentState.MobState.rank == "Boss" end },
+		{ id = "athlete", icon = "🏅", name = "Pro Athlete", desc = "Become a professional athlete", check = function() return currentState and currentState.Flags and currentState.Flags.signed_athlete end },
+		{ id = "actor", icon = "🎬", name = "Movie Star", desc = "Win an Oscar", check = function() return currentState and currentState.Flags and currentState.Flags.oscar_winner end },
+		{ id = "musician", icon = "🎵", name = "Music Legend", desc = "Win a Grammy", check = function() return currentState and currentState.Flags and currentState.Flags.grammy_winner end },
+	}
+	
+	-- Create award items
+	for i, award in ipairs(awards) do
+		local unlocked = award.check()
+		
+		local item = Instance.new("Frame")
+		item.Size = UDim2.new(1, -10, 0, 60)
+		item.BackgroundColor3 = unlocked and C.GreenPale or C.Gray100
+		item.LayoutOrder = i
+		item.ZIndex = 103
+		item.Parent = scroll
+		corner(item, 10)
+		
+		local icon = Instance.new("TextLabel")
+		icon.Size = UDim2.new(0, 50, 1, 0)
+		icon.BackgroundTransparency = 1
+		icon.Font = F.Body
+		icon.TextSize = 28
+		icon.Text = unlocked and award.icon or "🔒"
+		icon.ZIndex = 104
+		icon.Parent = item
+		
+		local name = Instance.new("TextLabel")
+		name.Size = UDim2.new(1, -60, 0, 24)
+		name.Position = UDim2.new(0, 50, 0, 8)
+		name.BackgroundTransparency = 1
+		name.Font = F.Bold
+		name.TextSize = 14
+		name.TextColor3 = unlocked and C.Green or C.Gray500
+		name.TextXAlignment = Enum.TextXAlignment.Left
+		name.Text = award.name
+		name.ZIndex = 104
+		name.Parent = item
+		
+		local desc = Instance.new("TextLabel")
+		desc.Size = UDim2.new(1, -60, 0, 20)
+		desc.Position = UDim2.new(0, 50, 0, 32)
+		desc.BackgroundTransparency = 1
+		desc.Font = F.Body
+		desc.TextSize = 12
+		desc.TextColor3 = C.Gray500
+		desc.TextXAlignment = Enum.TextXAlignment.Left
+		desc.Text = award.desc
+		desc.ZIndex = 104
+		desc.Parent = item
+	end
+	
+	AwardsUI.card = card
+end
+
+AwardsUI.show = function()
+	if not AwardsUI.overlay then
+		buildAwardsUI()
+	end
+	
+	AwardsUI.isVisible = true
+	AwardsUI.overlay.Visible = true
+	AwardsUI.overlay.BackgroundTransparency = 1
+	AwardsUI.card.Size = UDim2.new(0, (Device.IS_TINY_PHONE and 300 or 360) * 0.8, 0, (Device.IS_TINY_PHONE and 450 or 520) * 0.8)
+	
+	tween(AwardsUI.overlay, TweenInfo.new(0.2), { BackgroundTransparency = 0.4 })
+	tween(AwardsUI.card, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+		Size = UDim2.new(0, Device.IS_TINY_PHONE and 300 or 360, 0, Device.IS_TINY_PHONE and 450 or 520)
+	})
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- PAST LIVES SCREEN - Track previous lives and progress
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local function buildPastLivesUI()
+	PastLivesUI.overlay = Instance.new("Frame")
+	PastLivesUI.overlay.Name = "PastLivesOverlay"
+	PastLivesUI.overlay.Size = UDim2.fromScale(1, 1)
+	PastLivesUI.overlay.BackgroundColor3 = C.Black
+	PastLivesUI.overlay.BackgroundTransparency = 0.4
+	PastLivesUI.overlay.Visible = false
+	PastLivesUI.overlay.ZIndex = 100
+	PastLivesUI.overlay.Parent = screenGui
+	
+	local cardWidth = Device.IS_TINY_PHONE and 300 or 360
+	local cardHeight = Device.IS_TINY_PHONE and 450 or 520
+	local card = Instance.new("Frame")
+	card.Name = "PastLivesCard"
+	card.Size = UDim2.new(0, cardWidth, 0, cardHeight)
+	card.AnchorPoint = Vector2.new(0.5, 0.5)
+	card.Position = UDim2.fromScale(0.5, 0.5)
+	card.BackgroundColor3 = C.White
+	card.ZIndex = 101
+	card.Parent = PastLivesUI.overlay
+	corner(card, 20)
+	
+	-- Header
+	local header = Instance.new("Frame")
+	header.Size = UDim2.new(1, 0, 0, 60)
+	header.BackgroundColor3 = C.Blue
+	header.ZIndex = 102
+	header.Parent = card
+	corner(header, 20)
+	
+	local headerFix = Instance.new("Frame")
+	headerFix.Size = UDim2.new(1, 0, 0.5, 0)
+	headerFix.Position = UDim2.new(0, 0, 0.5, 0)
+	headerFix.BackgroundColor3 = C.Blue
+	headerFix.BorderSizePixel = 0
+	headerFix.ZIndex = 102
+	headerFix.Parent = header
+	
+	local headerText = Instance.new("TextLabel")
+	headerText.Size = UDim2.fromScale(1, 1)
+	headerText.BackgroundTransparency = 1
+	headerText.Font = F.Bold
+	headerText.TextSize = Device.IS_TINY_PHONE and 18 or 22
+	headerText.TextColor3 = C.White
+	headerText.Text = "📜 Past Lives"
+	headerText.ZIndex = 103
+	headerText.Parent = header
+	
+	-- Close button
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Size = UDim2.new(0, 36, 0, 36)
+	closeBtn.Position = UDim2.new(1, -44, 0, 12)
+	closeBtn.BackgroundColor3 = C.White
+	closeBtn.BackgroundTransparency = 0.2
+	closeBtn.Font = F.Bold
+	closeBtn.TextSize = 20
+	closeBtn.TextColor3 = C.Blue
+	closeBtn.Text = "X"
+	closeBtn.AutoButtonColor = false
+	closeBtn.ZIndex = 104
+	closeBtn.Parent = card
+	corner(closeBtn, 18)
+	
+	closeBtn.MouseButton1Click:Connect(function()
+		PastLivesUI.isVisible = false
+		tween(PastLivesUI.overlay, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
+		tween(card, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+			Size = UDim2.new(0, cardWidth * 0.9, 0, cardHeight * 0.9)
+		})
+		task.delay(0.2, function()
+			PastLivesUI.overlay.Visible = false
+		end)
+	end)
+	
+	-- Stats summary
+	local statsFrame = Instance.new("Frame")
+	statsFrame.Size = UDim2.new(1, -20, 0, 80)
+	statsFrame.Position = UDim2.new(0, 10, 0, 70)
+	statsFrame.BackgroundColor3 = C.BluePale
+	statsFrame.ZIndex = 102
+	statsFrame.Parent = card
+	corner(statsFrame, 12)
+	
+	local totalLives = Instance.new("TextLabel")
+	totalLives.Size = UDim2.new(0.5, 0, 0.5, 0)
+	totalLives.Position = UDim2.new(0, 0, 0, 0)
+	totalLives.BackgroundTransparency = 1
+	totalLives.Font = F.Bold
+	totalLives.TextSize = 14
+	totalLives.TextColor3 = C.Blue
+	totalLives.Text = "Total Lives: 0"
+	totalLives.ZIndex = 103
+	totalLives.Parent = statsFrame
+	PastLivesUI.totalLivesLabel = totalLives
+	
+	local totalYears = Instance.new("TextLabel")
+	totalYears.Size = UDim2.new(0.5, 0, 0.5, 0)
+	totalYears.Position = UDim2.new(0.5, 0, 0, 0)
+	totalYears.BackgroundTransparency = 1
+	totalYears.Font = F.Bold
+	totalYears.TextSize = 14
+	totalYears.TextColor3 = C.Blue
+	totalYears.Text = "Total Years: 0"
+	totalYears.ZIndex = 103
+	totalYears.Parent = statsFrame
+	PastLivesUI.totalYearsLabel = totalYears
+	
+	local longestLife = Instance.new("TextLabel")
+	longestLife.Size = UDim2.new(0.5, 0, 0.5, 0)
+	longestLife.Position = UDim2.new(0, 0, 0.5, 0)
+	longestLife.BackgroundTransparency = 1
+	longestLife.Font = F.Bold
+	longestLife.TextSize = 14
+	longestLife.TextColor3 = C.Blue
+	longestLife.Text = "Longest: 0 yrs"
+	longestLife.ZIndex = 103
+	longestLife.Parent = statsFrame
+	PastLivesUI.longestLifeLabel = longestLife
+	
+	local richestLife = Instance.new("TextLabel")
+	richestLife.Size = UDim2.new(0.5, 0, 0.5, 0)
+	richestLife.Position = UDim2.new(0.5, 0, 0.5, 0)
+	richestLife.BackgroundTransparency = 1
+	richestLife.Font = F.Bold
+	richestLife.TextSize = 14
+	richestLife.TextColor3 = C.Blue
+	richestLife.Text = "Richest: $0"
+	richestLife.ZIndex = 103
+	richestLife.Parent = statsFrame
+	PastLivesUI.richestLifeLabel = richestLife
+	
+	-- Lives scroll list
+	local scroll = Instance.new("ScrollingFrame")
+	scroll.Size = UDim2.new(1, -20, 1, -170)
+	scroll.Position = UDim2.new(0, 10, 0, 160)
+	scroll.BackgroundTransparency = 1
+	scroll.ScrollBarThickness = 4
+	scroll.ScrollBarImageColor3 = C.Gray400
+	scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+	scroll.ZIndex = 102
+	scroll.Parent = card
+	
+	local scrollLayout = Instance.new("UIListLayout")
+	scrollLayout.Padding = UDim.new(0, 6)
+	scrollLayout.Parent = scroll
+	
+	PastLivesUI.scrollFrame = scroll
+	PastLivesUI.card = card
+end
+
+PastLivesUI.show = function()
+	if not PastLivesUI.overlay then
+		buildPastLivesUI()
+	end
+	
+	-- Update stats from current state (past lives would be stored server-side)
+	-- For now, show placeholder data
+	if currentState and currentState.PastLives then
+		local lives = currentState.PastLives
+		local totalYears = 0
+		local longest = 0
+		local richest = 0
+		
+		for _, life in ipairs(lives) do
+			totalYears = totalYears + (life.age or 0)
+			longest = math.max(longest, life.age or 0)
+			richest = math.max(richest, life.netWorth or 0)
+		end
+		
+		PastLivesUI.totalLivesLabel.Text = "Total Lives: " .. #lives
+		PastLivesUI.totalYearsLabel.Text = "Total Years: " .. totalYears
+		PastLivesUI.longestLifeLabel.Text = "Longest: " .. longest .. " yrs"
+		PastLivesUI.richestLifeLabel.Text = "Richest: $" .. tostring(richest)
+	else
+		PastLivesUI.totalLivesLabel.Text = "Total Lives: 1"
+		PastLivesUI.totalYearsLabel.Text = "Total Years: " .. (currentState and currentState.Age or 0)
+		PastLivesUI.longestLifeLabel.Text = "Longest: " .. (currentState and currentState.Age or 0) .. " yrs"
+		PastLivesUI.richestLifeLabel.Text = "Richest: $" .. (currentState and currentState.Money or 0)
+	end
+	
+	PastLivesUI.isVisible = true
+	PastLivesUI.overlay.Visible = true
+	PastLivesUI.overlay.BackgroundTransparency = 1
+	PastLivesUI.card.Size = UDim2.new(0, (Device.IS_TINY_PHONE and 300 or 360) * 0.8, 0, (Device.IS_TINY_PHONE and 450 or 520) * 0.8)
+	
+	tween(PastLivesUI.overlay, TweenInfo.new(0.2), { BackgroundTransparency = 0.4 })
+	tween(PastLivesUI.card, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+		Size = UDim2.new(0, Device.IS_TINY_PHONE and 300 or 360, 0, Device.IS_TINY_PHONE and 450 or 520)
+	})
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- LEADERBOARDS SCREEN
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local function buildLeaderboardsUI()
+	LeaderboardsUI.overlay = Instance.new("Frame")
+	LeaderboardsUI.overlay.Name = "LeaderboardsOverlay"
+	LeaderboardsUI.overlay.Size = UDim2.fromScale(1, 1)
+	LeaderboardsUI.overlay.BackgroundColor3 = C.Black
+	LeaderboardsUI.overlay.BackgroundTransparency = 0.4
+	LeaderboardsUI.overlay.Visible = false
+	LeaderboardsUI.overlay.ZIndex = 100
+	LeaderboardsUI.overlay.Parent = screenGui
+	
+	local cardWidth = Device.IS_TINY_PHONE and 300 or 360
+	local cardHeight = Device.IS_TINY_PHONE and 450 or 520
+	local card = Instance.new("Frame")
+	card.Name = "LeaderboardsCard"
+	card.Size = UDim2.new(0, cardWidth, 0, cardHeight)
+	card.AnchorPoint = Vector2.new(0.5, 0.5)
+	card.Position = UDim2.fromScale(0.5, 0.5)
+	card.BackgroundColor3 = C.White
+	card.ZIndex = 101
+	card.Parent = LeaderboardsUI.overlay
+	corner(card, 20)
+	
+	-- Header
+	local header = Instance.new("Frame")
+	header.Size = UDim2.new(1, 0, 0, 60)
+	header.BackgroundColor3 = C.Green
+	header.ZIndex = 102
+	header.Parent = card
+	corner(header, 20)
+	
+	local headerFix = Instance.new("Frame")
+	headerFix.Size = UDim2.new(1, 0, 0.5, 0)
+	headerFix.Position = UDim2.new(0, 0, 0.5, 0)
+	headerFix.BackgroundColor3 = C.Green
+	headerFix.BorderSizePixel = 0
+	headerFix.ZIndex = 102
+	headerFix.Parent = header
+	
+	local headerText = Instance.new("TextLabel")
+	headerText.Size = UDim2.fromScale(1, 1)
+	headerText.BackgroundTransparency = 1
+	headerText.Font = F.Bold
+	headerText.TextSize = Device.IS_TINY_PHONE and 18 or 22
+	headerText.TextColor3 = C.White
+	headerText.Text = "🏅 Leaderboards"
+	headerText.ZIndex = 103
+	headerText.Parent = header
+	
+	-- Close button
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Size = UDim2.new(0, 36, 0, 36)
+	closeBtn.Position = UDim2.new(1, -44, 0, 12)
+	closeBtn.BackgroundColor3 = C.White
+	closeBtn.BackgroundTransparency = 0.2
+	closeBtn.Font = F.Bold
+	closeBtn.TextSize = 20
+	closeBtn.TextColor3 = C.Green
+	closeBtn.Text = "X"
+	closeBtn.AutoButtonColor = false
+	closeBtn.ZIndex = 104
+	closeBtn.Parent = card
+	corner(closeBtn, 18)
+	
+	closeBtn.MouseButton1Click:Connect(function()
+		LeaderboardsUI.isVisible = false
+		tween(LeaderboardsUI.overlay, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
+		tween(card, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+			Size = UDim2.new(0, cardWidth * 0.9, 0, cardHeight * 0.9)
+		})
+		task.delay(0.2, function()
+			LeaderboardsUI.overlay.Visible = false
+		end)
+	end)
+	
+	-- Tab buttons
+	local tabContainer = Instance.new("Frame")
+	tabContainer.Size = UDim2.new(1, -20, 0, 40)
+	tabContainer.Position = UDim2.new(0, 10, 0, 70)
+	tabContainer.BackgroundTransparency = 1
+	tabContainer.ZIndex = 102
+	tabContainer.Parent = card
+	
+	local tabLayout = Instance.new("UIListLayout")
+	tabLayout.FillDirection = Enum.FillDirection.Horizontal
+	tabLayout.Padding = UDim.new(0, 6)
+	tabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	tabLayout.Parent = tabContainer
+	
+	local tabs = { "💰 Richest", "📅 Oldest", "⭐ Fame" }
+	local currentTab = 1
+	local tabButtons = {}
+	
+	for i, tabName in ipairs(tabs) do
+		local tabBtn = Instance.new("TextButton")
+		tabBtn.Size = UDim2.new(0, 90, 0, 36)
+		tabBtn.BackgroundColor3 = i == 1 and C.Green or C.Gray200
+		tabBtn.Font = F.Medium
+		tabBtn.TextSize = 12
+		tabBtn.TextColor3 = i == 1 and C.White or C.Gray600
+		tabBtn.Text = tabName
+		tabBtn.AutoButtonColor = false
+		tabBtn.LayoutOrder = i
+		tabBtn.ZIndex = 103
+		tabBtn.Parent = tabContainer
+		corner(tabBtn, 8)
+		
+		tabButtons[i] = tabBtn
+		
+		tabBtn.MouseButton1Click:Connect(function()
+			currentTab = i
+			for j, btn in ipairs(tabButtons) do
+				btn.BackgroundColor3 = j == i and C.Green or C.Gray200
+				btn.TextColor3 = j == i and C.White or C.Gray600
+			end
+			-- Refresh leaderboard data based on tab
+		end)
+	end
+	
+	-- Leaderboard scroll
+	local scroll = Instance.new("ScrollingFrame")
+	scroll.Size = UDim2.new(1, -20, 1, -130)
+	scroll.Position = UDim2.new(0, 10, 0, 120)
+	scroll.BackgroundTransparency = 1
+	scroll.ScrollBarThickness = 4
+	scroll.ScrollBarImageColor3 = C.Gray400
+	scroll.CanvasSize = UDim2.new(0, 0, 0, 600)
+	scroll.ZIndex = 102
+	scroll.Parent = card
+	
+	local scrollLayout = Instance.new("UIListLayout")
+	scrollLayout.Padding = UDim.new(0, 4)
+	scrollLayout.Parent = scroll
+	
+	-- Sample leaderboard entries (would be fetched from server)
+	local leaderboardData = {
+		{ rank = 1, name = "Player1", value = "$1.2B", icon = "🥇" },
+		{ rank = 2, name = "Player2", value = "$800M", icon = "🥈" },
+		{ rank = 3, name = "Player3", value = "$500M", icon = "🥉" },
+		{ rank = 4, name = "Player4", value = "$200M", icon = "4" },
+		{ rank = 5, name = "Player5", value = "$100M", icon = "5" },
+		{ rank = 6, name = "Player6", value = "$50M", icon = "6" },
+		{ rank = 7, name = "Player7", value = "$25M", icon = "7" },
+		{ rank = 8, name = "Player8", value = "$10M", icon = "8" },
+		{ rank = 9, name = "Player9", value = "$5M", icon = "9" },
+		{ rank = 10, name = "Player10", value = "$1M", icon = "10" },
+	}
+	
+	for _, entry in ipairs(leaderboardData) do
+		local item = Instance.new("Frame")
+		item.Size = UDim2.new(1, -10, 0, 50)
+		item.BackgroundColor3 = entry.rank <= 3 and C.GreenPale or C.Gray50
+		item.LayoutOrder = entry.rank
+		item.ZIndex = 103
+		item.Parent = scroll
+		corner(item, 10)
+		
+		local rankLabel = Instance.new("TextLabel")
+		rankLabel.Size = UDim2.new(0, 40, 1, 0)
+		rankLabel.BackgroundTransparency = 1
+		rankLabel.Font = F.Bold
+		rankLabel.TextSize = entry.rank <= 3 and 22 or 16
+		rankLabel.TextColor3 = entry.rank <= 3 and C.Amber or C.Gray600
+		rankLabel.Text = entry.icon
+		rankLabel.ZIndex = 104
+		rankLabel.Parent = item
+		
+		local nameLabel = Instance.new("TextLabel")
+		nameLabel.Size = UDim2.new(0.5, -20, 1, 0)
+		nameLabel.Position = UDim2.new(0, 45, 0, 0)
+		nameLabel.BackgroundTransparency = 1
+		nameLabel.Font = F.Medium
+		nameLabel.TextSize = 14
+		nameLabel.TextColor3 = C.Gray800
+		nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+		nameLabel.Text = entry.name
+		nameLabel.ZIndex = 104
+		nameLabel.Parent = item
+		
+		local valueLabel = Instance.new("TextLabel")
+		valueLabel.Size = UDim2.new(0.4, 0, 1, 0)
+		valueLabel.Position = UDim2.new(0.6, 0, 0, 0)
+		valueLabel.BackgroundTransparency = 1
+		valueLabel.Font = F.Bold
+		valueLabel.TextSize = 14
+		valueLabel.TextColor3 = C.Green
+		valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+		valueLabel.Text = entry.value
+		valueLabel.ZIndex = 104
+		valueLabel.Parent = item
+	end
+	
+	LeaderboardsUI.card = card
+end
+
+LeaderboardsUI.show = function()
+	if not LeaderboardsUI.overlay then
+		buildLeaderboardsUI()
+	end
+	
+	LeaderboardsUI.isVisible = true
+	LeaderboardsUI.overlay.Visible = true
+	LeaderboardsUI.overlay.BackgroundTransparency = 1
+	LeaderboardsUI.card.Size = UDim2.new(0, (Device.IS_TINY_PHONE and 300 or 360) * 0.8, 0, (Device.IS_TINY_PHONE and 450 or 520) * 0.8)
+	
+	tween(LeaderboardsUI.overlay, TweenInfo.new(0.2), { BackgroundTransparency = 0.4 })
+	tween(LeaderboardsUI.card, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+		Size = UDim2.new(0, Device.IS_TINY_PHONE and 300 or 360, 0, Device.IS_TINY_PHONE and 450 or 520)
+	})
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- GIVE UP SCREEN - Surrender current life
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local function buildGiveUpUI()
+	GiveUpUI.overlay = Instance.new("Frame")
+	GiveUpUI.overlay.Name = "GiveUpOverlay"
+	GiveUpUI.overlay.Size = UDim2.fromScale(1, 1)
+	GiveUpUI.overlay.BackgroundColor3 = C.Black
+	GiveUpUI.overlay.BackgroundTransparency = 0.4
+	GiveUpUI.overlay.Visible = false
+	GiveUpUI.overlay.ZIndex = 100
+	GiveUpUI.overlay.Parent = screenGui
+	
+	local cardWidth = Device.IS_TINY_PHONE and 280 or 320
+	local cardHeight = Device.IS_TINY_PHONE and 280 or 320
+	local card = Instance.new("Frame")
+	card.Name = "GiveUpCard"
+	card.Size = UDim2.new(0, cardWidth, 0, cardHeight)
+	card.AnchorPoint = Vector2.new(0.5, 0.5)
+	card.Position = UDim2.fromScale(0.5, 0.5)
+	card.BackgroundColor3 = C.White
+	card.ZIndex = 101
+	card.Parent = GiveUpUI.overlay
+	corner(card, 20)
+	
+	-- Header
+	local header = Instance.new("Frame")
+	header.Size = UDim2.new(1, 0, 0, 60)
+	header.BackgroundColor3 = C.Red
+	header.ZIndex = 102
+	header.Parent = card
+	corner(header, 20)
+	
+	local headerFix = Instance.new("Frame")
+	headerFix.Size = UDim2.new(1, 0, 0.5, 0)
+	headerFix.Position = UDim2.new(0, 0, 0.5, 0)
+	headerFix.BackgroundColor3 = C.Red
+	headerFix.BorderSizePixel = 0
+	headerFix.ZIndex = 102
+	headerFix.Parent = header
+	
+	local headerText = Instance.new("TextLabel")
+	headerText.Size = UDim2.fromScale(1, 1)
+	headerText.BackgroundTransparency = 1
+	headerText.Font = F.Bold
+	headerText.TextSize = Device.IS_TINY_PHONE and 18 or 22
+	headerText.TextColor3 = C.White
+	headerText.Text = "☠️ Give Up"
+	headerText.ZIndex = 103
+	headerText.Parent = header
+	
+	-- Warning icon
+	local warnIcon = Instance.new("TextLabel")
+	warnIcon.Size = UDim2.new(1, 0, 0, 60)
+	warnIcon.Position = UDim2.new(0, 0, 0, 70)
+	warnIcon.BackgroundTransparency = 1
+	warnIcon.Font = F.Body
+	warnIcon.TextSize = 48
+	warnIcon.Text = "⚠️"
+	warnIcon.ZIndex = 103
+	warnIcon.Parent = card
+	
+	-- Warning text
+	local warnText = Instance.new("TextLabel")
+	warnText.Size = UDim2.new(1, -20, 0, 60)
+	warnText.Position = UDim2.new(0, 10, 0, 130)
+	warnText.BackgroundTransparency = 1
+	warnText.Font = F.Medium
+	warnText.TextSize = 14
+	warnText.TextColor3 = C.Gray700
+	warnText.TextWrapped = true
+	warnText.Text = "Are you sure you want to end this life? All progress will be lost and you'll start a new life."
+	warnText.ZIndex = 103
+	warnText.Parent = card
+	
+	-- Buttons container
+	local btnContainer = Instance.new("Frame")
+	btnContainer.Size = UDim2.new(1, -20, 0, 50)
+	btnContainer.Position = UDim2.new(0, 10, 1, -70)
+	btnContainer.BackgroundTransparency = 1
+	btnContainer.ZIndex = 102
+	btnContainer.Parent = card
+	
+	local btnLayout = Instance.new("UIListLayout")
+	btnLayout.FillDirection = Enum.FillDirection.Horizontal
+	btnLayout.Padding = UDim.new(0, 10)
+	btnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	btnLayout.Parent = btnContainer
+	
+	-- Cancel button
+	local cancelBtn = Instance.new("TextButton")
+	cancelBtn.Size = UDim2.new(0, 120, 0, 44)
+	cancelBtn.BackgroundColor3 = C.Gray300
+	cancelBtn.Font = F.Bold
+	cancelBtn.TextSize = 14
+	cancelBtn.TextColor3 = C.Gray700
+	cancelBtn.Text = "Cancel"
+	cancelBtn.AutoButtonColor = false
+	cancelBtn.LayoutOrder = 1
+	cancelBtn.ZIndex = 103
+	cancelBtn.Parent = btnContainer
+	corner(cancelBtn, 10)
+	
+	cancelBtn.MouseButton1Click:Connect(function()
+		GiveUpUI.isVisible = false
+		tween(GiveUpUI.overlay, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
+		tween(card, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+			Size = UDim2.new(0, cardWidth * 0.9, 0, cardHeight * 0.9)
+		})
+		task.delay(0.2, function()
+			GiveUpUI.overlay.Visible = false
+		end)
+	end)
+	
+	-- Confirm button
+	local confirmBtn = Instance.new("TextButton")
+	confirmBtn.Size = UDim2.new(0, 120, 0, 44)
+	confirmBtn.BackgroundColor3 = C.Red
+	confirmBtn.Font = F.Bold
+	confirmBtn.TextSize = 14
+	confirmBtn.TextColor3 = C.White
+	confirmBtn.Text = "☠️ Give Up"
+	confirmBtn.AutoButtonColor = false
+	confirmBtn.LayoutOrder = 2
+	confirmBtn.ZIndex = 103
+	confirmBtn.Parent = btnContainer
+	corner(confirmBtn, 10)
+	
+	confirmBtn.MouseEnter:Connect(function()
+		tween(confirmBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.RedDark })
+	end)
+	confirmBtn.MouseLeave:Connect(function()
+		tween(confirmBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.Red })
+	end)
+	
+	confirmBtn.MouseButton1Click:Connect(function()
+		-- Close the modal
+		GiveUpUI.isVisible = false
+		tween(GiveUpUI.overlay, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
+		tween(card, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+			Size = UDim2.new(0, cardWidth * 0.9, 0, cardHeight * 0.9)
+		})
+		task.delay(0.2, function()
+			GiveUpUI.overlay.Visible = false
+		end)
+		
+		-- Trigger death/surrender
+		-- This calls the server to end the current life
+		if currentState then
+			currentState.Health = 0
+			currentState.Flags = currentState.Flags or {}
+			currentState.Flags.surrendered = true
+			
+			-- Trigger death overlay with surrender message
+			if showDeathOverlay then
+				showDeathOverlay("Gave Up on Life", currentState.Age or 0)
+			end
+			
+			-- Notify server
+			local GiveUpRemote = getRemote("GiveUp")
+			if GiveUpRemote then
+				pcall(function()
+					GiveUpRemote:FireServer()
+				end)
+			else
+				-- Fallback: Use RequestAgeUp with death flag
+				local SyncState = getRemote("SyncState")
+				if SyncState then
+					pcall(function()
+						SyncState:FireServer({ action = "give_up" })
+					end)
+				end
+			end
+		end
+	end)
+	
+	GiveUpUI.card = card
+end
+
+GiveUpUI.show = function()
+	if not GiveUpUI.overlay then
+		buildGiveUpUI()
+	end
+	
+	GiveUpUI.isVisible = true
+	GiveUpUI.overlay.Visible = true
+	GiveUpUI.overlay.BackgroundTransparency = 1
+	GiveUpUI.card.Size = UDim2.new(0, (Device.IS_TINY_PHONE and 280 or 320) * 0.8, 0, (Device.IS_TINY_PHONE and 280 or 320) * 0.8)
+	
+	tween(GiveUpUI.overlay, TweenInfo.new(0.2), { BackgroundTransparency = 0.4 })
+	tween(GiveUpUI.card, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+		Size = UDim2.new(0, Device.IS_TINY_PHONE and 280 or 320, 0, Device.IS_TINY_PHONE and 280 or 320)
+	})
+end
+
+end)() -- End Secondary Menu IIFE
+
+----------------------------------------------------------------
 -- AGE BUTTON - TINY PHONE FIX: More compact
 -- CRITICAL FIX: Wrapped in IIFE to reduce local register usage
 ----------------------------------------------------------------

@@ -9080,6 +9080,8 @@ function LifeBackend:setupRemotes()
 	self.remotes.StartPath = self:createRemote("StartPath", "RemoteFunction")
 	self.remotes.DoPathAction = self:createRemote("DoPathAction", "RemoteFunction")
 	self.remotes.ResetLife = self:createRemote("ResetLife", "RemoteEvent")
+	-- CRITICAL FEATURE: Give Up on current life (surrender)
+	self.remotes.GiveUp = self:createRemote("GiveUp", "RemoteEvent")
 	-- CRITICAL FEATURE: Continue as your kid on death
 	self.remotes.ContinueAsKid = self:createRemote("ContinueAsKid", "RemoteFunction")
 	
@@ -9238,6 +9240,39 @@ function LifeBackend:setupRemotes()
 
 	self.remotes.ResetLife.OnServerEvent:Connect(function(player)
 		self:resetLife(player)
+	end)
+	
+	-- CRITICAL FEATURE: GiveUp handler - Player surrenders current life
+	self.remotes.GiveUp.OnServerEvent:Connect(function(player)
+		local state = self.playerStates[player.UserId]
+		if not state then return end
+		
+		-- Log the surrender
+		print("[LifeBackend] Player", player.Name, "gave up at age", state.Age or 0)
+		
+		-- Set death flags
+		state.Health = 0
+		state.Flags = state.Flags or {}
+		state.Flags.surrendered = true
+		state.Flags.dead = true
+		state.Flags.cause_of_death = "Gave Up on Life"
+		
+		-- Add to feed
+		state.Feed = state.Feed or {}
+		table.insert(state.Feed, "☠️ You gave up on life at age " .. (state.Age or 0) .. "...")
+		
+		-- Save past life data (for tracking)
+		state.PastLives = state.PastLives or {}
+		table.insert(state.PastLives, {
+			name = state.Name or "Unknown",
+			age = state.Age or 0,
+			netWorth = state.Money or 0,
+			cause = "Gave Up",
+			timestamp = os.time()
+		})
+		
+		-- Push the death state to client
+		self:pushState(player, state)
 	end)
 	
 	-- PREMIUM FEATURES: Organized Crime handlers
