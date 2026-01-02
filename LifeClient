@@ -150,16 +150,21 @@ local function getRemote(name, timeout)
 	return remote
 end
 
-local RequestAgeUp     = getRemote("RequestAgeUp")
-local PresentEvent     = getRemote("PresentEvent")
-local SubmitChoice     = getRemote("SubmitChoice")
-local SyncState        = getRemote("SyncState")
-local SetLifeInfo      = getRemote("SetLifeInfo")
-local MinigameResult   = getRemote("MinigameResult", 2)
-local MinigameStart    = getRemote("MinigameStart", 2)
-local CheckGamepass    = getRemote("CheckGamepass", 2)
-local PromptGamepass   = getRemote("PromptGamepass", 2)
-local GodModeEdit      = getRemote("GodModeEdit", 2)
+-- CRITICAL FIX: Consolidate remotes into table to reduce local register usage (was causing 200 register limit error)
+local Remotes = {
+	RequestAgeUp   = getRemote("RequestAgeUp"),
+	PresentEvent   = getRemote("PresentEvent"),
+	SubmitChoice   = getRemote("SubmitChoice"),
+	SyncState      = getRemote("SyncState"),
+	SetLifeInfo    = getRemote("SetLifeInfo"),
+	MinigameResult = getRemote("MinigameResult", 2),
+	MinigameStart  = getRemote("MinigameStart", 2),
+	CheckGamepass  = getRemote("CheckGamepass", 2),
+	PromptGamepass = getRemote("PromptGamepass", 2),
+	GodModeEdit    = getRemote("GodModeEdit", 2),
+}
+local RequestAgeUp, PresentEvent, SubmitChoice, SyncState, SetLifeInfo, MinigameResult, MinigameStart, CheckGamepass, PromptGamepass, GodModeEdit =
+	Remotes.RequestAgeUp, Remotes.PresentEvent, Remotes.SubmitChoice, Remotes.SyncState, Remotes.SetLifeInfo, Remotes.MinigameResult, Remotes.MinigameStart, Remotes.CheckGamepass, Remotes.PromptGamepass, Remotes.GodModeEdit
 
 ----------------------------------------------------------------
 -- STATE
@@ -178,10 +183,7 @@ local currentState = {
 	Flags = {},
 }
 
-local awaitingEvent          = false
-local hasShownAgeHint        = false
-local introComplete          = false
-local selectedGender         = nil
+local awaitingEvent, hasShownAgeHint, introComplete, selectedGender = false, false, false, nil
 
 local ScreenInstances = {
 	occupation = nil,
@@ -191,60 +193,51 @@ local ScreenInstances = {
 	storypaths = nil,
 	mafia = nil,
 }
-local minigamesInstance
-local pendingMinigameEventId     = nil
-local pendingMinigameChoiceIndex = nil
+local minigamesInstance, pendingMinigameEventId, pendingMinigameChoiceIndex
 -- CRITICAL FIX #421: Cache ALL gamepass statuses to prevent reset on purchase
--- These are set to true immediately when purchased and NEVER set back to false
-local hasGodMode = false
-local hasRoyalty = false
-local hasMafia = false
-local hasCelebrity = false
-local hasTimeMachine = false
-local godModeOverlay = nil
-local godModeButton = nil
-local destroyGodModeModal
-local showGodModeModal
-local updateGodModeButtonAppearance
+-- CRITICAL FIX: Consolidated into table to reduce local register usage
+local GamepassCache = { godMode = false, royalty = false, mafia = false, celebrity = false, timeMachine = false }
+local GodModeUI = {} -- overlay, button, modal stored here
+local destroyGodModeModal, showGodModeModal, updateGodModeButtonAppearance
 
 -- CRITICAL FIX #419: These refresh functions must NEVER downgrade true to false!
--- When a gamepass is purchased, we set hasGodMode = true immediately.
+-- When a gamepass is purchased, we set GamepassCache.godMode = true immediately.
 -- But the server might still return false due to caching delays.
 -- So we ONLY update if the server says true (upgrading false to true).
--- We NEVER set hasGodMode = false if it's already true!
+-- We NEVER set GamepassCache.godMode = false if it's already true!
 local function refreshGodModeStatus()
 	-- If already true, don't even check - can't lose a purchased gamepass
-	if hasGodMode then
+	if GamepassCache.godMode then
 		return true
 	end
 	if not CheckGamepass then
-		return hasGodMode
+		return GamepassCache.godMode
 	end
 	local success, owns = pcall(function()
 		return CheckGamepass:InvokeServer("GOD_MODE")
 	end)
 	if success and owns == true then
-		hasGodMode = true  -- ONLY upgrade to true, never downgrade
+		GamepassCache.godMode = true  -- ONLY upgrade to true, never downgrade
 	end
-	return hasGodMode
+	return GamepassCache.godMode
 end
 
 -- CRITICAL FIX #420: Same logic for Royalty - NEVER downgrade true to false!
 local function refreshRoyaltyStatus()
 	-- If already true, don't even check - can't lose a purchased gamepass
-	if hasRoyalty then
+	if GamepassCache.royalty then
 		return true
 	end
 	if not CheckGamepass then
-		return hasRoyalty
+		return GamepassCache.royalty
 	end
 	local success, owns = pcall(function()
 		return CheckGamepass:InvokeServer("ROYALTY")
 	end)
 	if success and owns == true then
-		hasRoyalty = true  -- ONLY upgrade to true, never downgrade
+		GamepassCache.royalty = true  -- ONLY upgrade to true, never downgrade
 	end
-	return hasRoyalty
+	return GamepassCache.royalty
 end
 
 refreshGodModeStatus()
@@ -276,19 +269,19 @@ local function promptGamepassDirect(gamepassKey)
 	end
 	
 	-- Check if already owned (from cache)
-	if gamepassKey == "GOD_MODE" and hasGodMode then
+	if gamepassKey == "GOD_MODE" and GamepassCache.godMode then
 		print("[LifeClient] Already owns GOD_MODE")
 		return false
-	elseif gamepassKey == "ROYALTY" and hasRoyalty then
+	elseif gamepassKey == "ROYALTY" and GamepassCache.royalty then
 		print("[LifeClient] Already owns ROYALTY")
 		return false
-	elseif gamepassKey == "MAFIA" and hasMafia then
+	elseif gamepassKey == "MAFIA" and GamepassCache.mafia then
 		print("[LifeClient] Already owns MAFIA")
 		return false
-	elseif gamepassKey == "CELEBRITY" and hasCelebrity then
+	elseif gamepassKey == "CELEBRITY" and GamepassCache.celebrity then
 		print("[LifeClient] Already owns CELEBRITY")
 		return false
-	elseif gamepassKey == "TIME_MACHINE" and hasTimeMachine then
+	elseif gamepassKey == "TIME_MACHINE" and GamepassCache.timeMachine then
 		print("[LifeClient] Already owns TIME_MACHINE")
 		return false
 	end
@@ -324,19 +317,19 @@ local function onGamepassPurchaseFinished(plr, gamePassId, wasPurchased)
 	-- This bypasses any caching delays from the server
 	-- These values are NEVER set back to false once true!
 	if gamePassId == GAMEPASS_IDS.GOD_MODE then
-		hasGodMode = true
+		GamepassCache.godMode = true
 		print("[LifeClient] God Mode gamepass purchased - immediately enabling!")
 	elseif gamePassId == GAMEPASS_IDS.ROYALTY then
-		hasRoyalty = true
+		GamepassCache.royalty = true
 		print("[LifeClient] Royalty gamepass purchased - immediately enabling!")
 	elseif gamePassId == GAMEPASS_IDS.MAFIA then
-		hasMafia = true
+		GamepassCache.mafia = true
 		print("[LifeClient] Mafia gamepass purchased - immediately enabling!")
 	elseif gamePassId == GAMEPASS_IDS.CELEBRITY then
-		hasCelebrity = true
+		GamepassCache.celebrity = true
 		print("[LifeClient] Celebrity gamepass purchased - immediately enabling!")
 	elseif gamePassId == GAMEPASS_IDS.TIME_MACHINE then
-		hasTimeMachine = true
+		GamepassCache.timeMachine = true
 		print("[LifeClient] Time Machine gamepass purchased - immediately enabling!")
 	end
 	
@@ -397,15 +390,15 @@ if GamepassPurchased then
 		-- CRITICAL FIX #423: Immediately set gamepass flags based on server confirmation
 		-- These are PERMANENT - never set back to false!
 		if gamepassKey == "GOD_MODE" then
-			hasGodMode = true
+			GamepassCache.godMode = true
 		elseif gamepassKey == "ROYALTY" then
-			hasRoyalty = true
+			GamepassCache.royalty = true
 		elseif gamepassKey == "MAFIA" then
-			hasMafia = true
+			GamepassCache.mafia = true
 		elseif gamepassKey == "CELEBRITY" then
-			hasCelebrity = true
+			GamepassCache.celebrity = true
 		elseif gamepassKey == "TIME_MACHINE" then
-			hasTimeMachine = true
+			GamepassCache.timeMachine = true
 		end
 		
 		-- CRITICAL FIX #409: Update client state GamepassOwnership immediately
@@ -493,12 +486,9 @@ MarketplaceService.PromptProductPurchaseFinished:Connect(function(userId, produc
 end)
 
 -- Forward declarations
-local showEvent, hideEvent
-local showIntro, hideIntro
-local showTutorial, hideTutorial
-local showDeathOverlay, hideDeathOverlay
-local updateNameButtons
-local updateFromState
+-- CRITICAL FIX: Consolidated forward declarations to reduce local register usage
+local UIFuncs = {} -- showEvent, hideEvent, showIntro, hideIntro, showTutorial, hideTutorial, showDeathOverlay, hideDeathOverlay, updateNameButtons, updateFromState
+local showEvent, hideEvent, showIntro, hideIntro, showTutorial, hideTutorial, showDeathOverlay, hideDeathOverlay, updateNameButtons, updateFromState
 
 -- Helper: Calculate current year from age
 local function getCurrentYear(age)
@@ -782,8 +772,8 @@ end
 -- This enhanced system waits for viewport to STABILIZE (same size 3 consecutive checks)
 -- before initializing UI, preventing sizing issues
 -- ═══════════════════════════════════════════════════════════════════════════════
-local viewportStabilized = false
-local viewportStabilizeAttempts = 0
+local ViewportState = { stabilized = false, stabilizeAttempts = 0 }
+local viewportStabilized, viewportStabilizeAttempts = false, 0 -- aliases for backwards compat
 
 local function waitForValidViewport()
 	local attempts = 0
@@ -1721,213 +1711,184 @@ local function showResultPopup(data, callback)
 end
 
 ----------------------------------------------------------------
--- BABY NAMING MODAL
+-- BABY NAMING MODAL (wrapped in IIFE to reduce register count)
 -- User review: "we should be able to choose our children's names"
 ----------------------------------------------------------------
 
 local BabyNamingUI = {}
-local babyNamingVisible = false
-local pendingBabyId = nil
+local showBabyNamingPopup -- Forward declaration
 
-local function createBabyNamingPopup()
-	-- Main overlay
-	BabyNamingUI.overlay = Instance.new("Frame")
-	BabyNamingUI.overlay.Name = "BabyNamingOverlay"
-	BabyNamingUI.overlay.Size = UDim2.fromScale(1, 1)
-	BabyNamingUI.overlay.BackgroundColor3 = C.Black
-	BabyNamingUI.overlay.BackgroundTransparency = 0.5
-	BabyNamingUI.overlay.ZIndex = 100
-	BabyNamingUI.overlay.Visible = false
-	BabyNamingUI.overlay.Parent = mainContainer
-	
-	-- Card
-	local cardWidth = Device.IS_TINY_PHONE and 280 or 340
-	local cardHeight = Device.IS_TINY_PHONE and 260 or 300
-	BabyNamingUI.card = Instance.new("Frame")
-	BabyNamingUI.card.Name = "BabyNamingCard"
-	BabyNamingUI.card.Size = UDim2.new(0, cardWidth, 0, cardHeight)
-	BabyNamingUI.card.Position = UDim2.new(0.5, -cardWidth/2, 0.5, -cardHeight/2)
-	BabyNamingUI.card.BackgroundColor3 = C.White
-	BabyNamingUI.card.ZIndex = 101
-	BabyNamingUI.card.Parent = BabyNamingUI.overlay
-	corner(BabyNamingUI.card, 16)
-	stroke(BabyNamingUI.card, 3, 0.9, C.Pink or Color3.fromRGB(255, 192, 203))
-	
-	-- Title
-	BabyNamingUI.title = Instance.new("TextLabel")
-	BabyNamingUI.title.Size = UDim2.new(1, -20, 0, 50)
-	BabyNamingUI.title.Position = UDim2.new(0, 10, 0, 10)
-	BabyNamingUI.title.BackgroundTransparency = 1
-	BabyNamingUI.title.Font = F.Title
-	BabyNamingUI.title.TextSize = Device.IS_TINY_PHONE and 18 or 22
-	BabyNamingUI.title.TextColor3 = C.Gray900
-	BabyNamingUI.title.Text = "👶 Name Your Baby!"
-	BabyNamingUI.title.ZIndex = 102
-	BabyNamingUI.title.Parent = BabyNamingUI.card
-	
-	-- Subtitle
-	BabyNamingUI.subtitle = Instance.new("TextLabel")
-	BabyNamingUI.subtitle.Size = UDim2.new(1, -20, 0, 30)
-	BabyNamingUI.subtitle.Position = UDim2.new(0, 10, 0, 55)
-	BabyNamingUI.subtitle.BackgroundTransparency = 1
-	BabyNamingUI.subtitle.Font = F.Medium
-	BabyNamingUI.subtitle.TextSize = Device.IS_TINY_PHONE and 12 or 14
-	BabyNamingUI.subtitle.TextColor3 = C.Gray500
-	BabyNamingUI.subtitle.Text = "Choose a name for your newborn!"
-	BabyNamingUI.subtitle.ZIndex = 102
-	BabyNamingUI.subtitle.Parent = BabyNamingUI.card
-	
-	-- Name input
-	BabyNamingUI.nameInput = Instance.new("TextBox")
-	BabyNamingUI.nameInput.Size = UDim2.new(1, -40, 0, 45)
-	BabyNamingUI.nameInput.Position = UDim2.new(0, 20, 0, 95)
-	BabyNamingUI.nameInput.BackgroundColor3 = C.Gray100
-	BabyNamingUI.nameInput.Text = ""
-	BabyNamingUI.nameInput.PlaceholderText = "Enter baby's name..."
-	BabyNamingUI.nameInput.TextColor3 = C.Gray900
-	BabyNamingUI.nameInput.PlaceholderColor3 = C.Gray400
-	BabyNamingUI.nameInput.TextSize = Device.IS_TINY_PHONE and 16 or 18
-	BabyNamingUI.nameInput.Font = F.Medium
-	BabyNamingUI.nameInput.ClearTextOnFocus = false
-	BabyNamingUI.nameInput.ZIndex = 103
-	BabyNamingUI.nameInput.Parent = BabyNamingUI.card
-	corner(BabyNamingUI.nameInput, 10)
-	
-	-- Error message
-	BabyNamingUI.errorLabel = Instance.new("TextLabel")
-	BabyNamingUI.errorLabel.Size = UDim2.new(1, -40, 0, 25)
-	BabyNamingUI.errorLabel.Position = UDim2.new(0, 20, 0, 145)
-	BabyNamingUI.errorLabel.BackgroundTransparency = 1
-	BabyNamingUI.errorLabel.Font = F.Medium
-	BabyNamingUI.errorLabel.TextSize = 12
-	BabyNamingUI.errorLabel.TextColor3 = C.Red
-	BabyNamingUI.errorLabel.Text = ""
-	BabyNamingUI.errorLabel.ZIndex = 102
-	BabyNamingUI.errorLabel.Parent = BabyNamingUI.card
-	
-	-- Confirm button
-	BabyNamingUI.confirmBtn = Instance.new("TextButton")
-	BabyNamingUI.confirmBtn.Size = UDim2.new(1, -40, 0, 45)
-	BabyNamingUI.confirmBtn.Position = UDim2.new(0, 20, 0, 180)
-	BabyNamingUI.confirmBtn.BackgroundColor3 = C.Green
-	BabyNamingUI.confirmBtn.Font = F.Button
-	BabyNamingUI.confirmBtn.TextSize = Device.IS_TINY_PHONE and 14 or 16
-	BabyNamingUI.confirmBtn.TextColor3 = C.White
-	BabyNamingUI.confirmBtn.Text = "✓ Confirm Name"
-	BabyNamingUI.confirmBtn.ZIndex = 103
-	BabyNamingUI.confirmBtn.Parent = BabyNamingUI.card
-	corner(BabyNamingUI.confirmBtn, 10)
-	
-	-- Random name button
-	BabyNamingUI.randomBtn = Instance.new("TextButton")
-	BabyNamingUI.randomBtn.Size = UDim2.new(1, -40, 0, 35)
-	BabyNamingUI.randomBtn.Position = UDim2.new(0, 20, 0, 235)
-	BabyNamingUI.randomBtn.BackgroundColor3 = C.Gray200
-	BabyNamingUI.randomBtn.Font = F.Medium
-	BabyNamingUI.randomBtn.TextSize = Device.IS_TINY_PHONE and 12 or 14
-	BabyNamingUI.randomBtn.TextColor3 = C.Gray700
-	BabyNamingUI.randomBtn.Text = "🎲 Random Name"
-	BabyNamingUI.randomBtn.ZIndex = 103
-	BabyNamingUI.randomBtn.Parent = BabyNamingUI.card
-	corner(BabyNamingUI.randomBtn, 8)
-	
-	-- Random name lists
-	local randomBoyNames = {"Liam", "Noah", "Oliver", "James", "Elijah", "William", "Henry", "Lucas", "Benjamin", "Theodore", "Jack", "Levi", "Alexander", "Mason", "Ethan", "Sebastian", "Daniel", "Matthew", "Owen", "Aiden"}
-	local randomGirlNames = {"Olivia", "Emma", "Charlotte", "Amelia", "Sophia", "Mia", "Isabella", "Ava", "Evelyn", "Luna", "Harper", "Sofia", "Camila", "Aria", "Scarlett", "Penelope", "Layla", "Chloe", "Victoria", "Madison"}
-	
-	-- Random button click
-	BabyNamingUI.randomBtn.MouseButton1Click:Connect(function()
-		local isBoy = currentState and currentState.Flags and currentState.Flags.pending_baby_gender == "male"
-		local names = isBoy and randomBoyNames or randomGirlNames
-		BabyNamingUI.nameInput.Text = names[math.random(1, #names)]
-		BabyNamingUI.errorLabel.Text = ""
-	end)
-	
-	-- Confirm button click
-	BabyNamingUI.confirmBtn.MouseButton1Click:Connect(function()
-		local name = BabyNamingUI.nameInput.Text:gsub("^%s+", ""):gsub("%s+$", "")
+;(function()
+	local babyNamingVisible = false
+	local pendingBabyId = nil
+	local pendingBabyGender = nil
+
+	local function createBabyNamingPopup()
+		local ov = Instance.new("Frame")
+		ov.Name = "BabyNamingOverlay"
+		ov.Size = UDim2.fromScale(1, 1)
+		ov.BackgroundColor3 = C.Black
+		ov.BackgroundTransparency = 0.5
+		ov.ZIndex = 100
+		ov.Visible = false
+		ov.Parent = mainContainer
+		BabyNamingUI.overlay = ov
 		
-		if #name < 2 then
-			BabyNamingUI.errorLabel.Text = "❌ Name too short!"
-			return
-		end
+		local cw = Device.IS_TINY_PHONE and 280 or 340
+		local ch = Device.IS_TINY_PHONE and 260 or 300
+		local card = Instance.new("Frame")
+		card.Size = UDim2.new(0, cw, 0, ch)
+		card.Position = UDim2.new(0.5, -cw/2, 0.5, -ch/2)
+		card.BackgroundColor3 = C.White
+		card.ZIndex = 101
+		card.Parent = ov
+		corner(card, 16)
+		stroke(card, 3, 0.9, Color3.fromRGB(255, 192, 203))
+		BabyNamingUI.card = card
 		
-		if #name > 20 then
-			BabyNamingUI.errorLabel.Text = "❌ Name too long!"
-			return
-		end
+		local title = Instance.new("TextLabel")
+		title.Size = UDim2.new(1, -20, 0, 50)
+		title.Position = UDim2.new(0, 10, 0, 10)
+		title.BackgroundTransparency = 1
+		title.Font = F.Title
+		title.TextSize = Device.IS_TINY_PHONE and 18 or 22
+		title.TextColor3 = C.Gray900
+		title.Text = "👶 Name Your Baby!"
+		title.ZIndex = 102
+		title.Parent = card
+		BabyNamingUI.title = title
 		
-		-- Disable button while processing
-		BabyNamingUI.confirmBtn.Text = "⏳ Checking..."
-		BabyNamingUI.confirmBtn.BackgroundColor3 = C.Gray400
+		local sub = Instance.new("TextLabel")
+		sub.Size = UDim2.new(1, -20, 0, 30)
+		sub.Position = UDim2.new(0, 10, 0, 55)
+		sub.BackgroundTransparency = 1
+		sub.Font = F.Medium
+		sub.TextSize = Device.IS_TINY_PHONE and 12 or 14
+		sub.TextColor3 = C.Gray500
+		sub.Text = "Choose a name for your newborn!"
+		sub.ZIndex = 102
+		sub.Parent = card
+		BabyNamingUI.subtitle = sub
 		
-		-- Call server to validate and apply name
-		local remotesFolder = ReplicatedStorage:FindFirstChild("LifeRemotes")
-		local nameBabyRemote = remotesFolder and remotesFolder:FindFirstChild("NameBaby")
+		local inp = Instance.new("TextBox")
+		inp.Size = UDim2.new(1, -40, 0, 45)
+		inp.Position = UDim2.new(0, 20, 0, 95)
+		inp.BackgroundColor3 = C.Gray100
+		inp.Text = ""
+		inp.PlaceholderText = "Enter baby's name..."
+		inp.TextColor3 = C.Gray900
+		inp.PlaceholderColor3 = C.Gray400
+		inp.TextSize = Device.IS_TINY_PHONE and 16 or 18
+		inp.Font = F.Medium
+		inp.ClearTextOnFocus = false
+		inp.ZIndex = 103
+		inp.Parent = card
+		corner(inp, 10)
+		BabyNamingUI.nameInput = inp
 		
-		if nameBabyRemote then
-			local success, result = pcall(function()
-				return nameBabyRemote:InvokeServer(pendingBabyId, name)
-			end)
+		local err = Instance.new("TextLabel")
+		err.Size = UDim2.new(1, -40, 0, 25)
+		err.Position = UDim2.new(0, 20, 0, 145)
+		err.BackgroundTransparency = 1
+		err.Font = F.Medium
+		err.TextSize = 12
+		err.TextColor3 = C.Red
+		err.Text = ""
+		err.ZIndex = 102
+		err.Parent = card
+		BabyNamingUI.errorLabel = err
+		
+		local confBtn = Instance.new("TextButton")
+		confBtn.Size = UDim2.new(1, -40, 0, 45)
+		confBtn.Position = UDim2.new(0, 20, 0, 180)
+		confBtn.BackgroundColor3 = C.Green
+		confBtn.Font = F.Button
+		confBtn.TextSize = Device.IS_TINY_PHONE and 14 or 16
+		confBtn.TextColor3 = C.White
+		confBtn.Text = "✓ Confirm Name"
+		confBtn.ZIndex = 103
+		confBtn.Parent = card
+		corner(confBtn, 10)
+		BabyNamingUI.confirmBtn = confBtn
+		
+		local randBtn = Instance.new("TextButton")
+		randBtn.Size = UDim2.new(1, -40, 0, 35)
+		randBtn.Position = UDim2.new(0, 20, 0, 235)
+		randBtn.BackgroundColor3 = C.Gray200
+		randBtn.Font = F.Medium
+		randBtn.TextSize = Device.IS_TINY_PHONE and 12 or 14
+		randBtn.TextColor3 = C.Gray700
+		randBtn.Text = "🎲 Random Name"
+		randBtn.ZIndex = 103
+		randBtn.Parent = card
+		corner(randBtn, 8)
+		
+		local boyNames = {"Liam", "Noah", "Oliver", "James", "William", "Henry", "Lucas", "Benjamin", "Theodore", "Jack", "Alexander", "Mason", "Ethan", "Daniel", "Matthew", "Owen", "Aiden", "Sebastian", "Leo", "Caleb"}
+		local girlNames = {"Olivia", "Emma", "Charlotte", "Amelia", "Sophia", "Mia", "Isabella", "Ava", "Evelyn", "Luna", "Harper", "Sofia", "Aria", "Scarlett", "Penelope", "Layla", "Chloe", "Victoria", "Madison", "Grace"}
+		
+		randBtn.MouseButton1Click:Connect(function()
+			local names = (pendingBabyGender == "male") and boyNames or girlNames
+			inp.Text = names[math.random(1, #names)]
+			err.Text = ""
+		end)
+		
+		confBtn.MouseButton1Click:Connect(function()
+			local name = inp.Text:gsub("^%s+", ""):gsub("%s+$", "")
+			if #name < 2 then err.Text = "❌ Name too short!" return end
+			if #name > 20 then err.Text = "❌ Name too long!" return end
 			
-			if success and result then
-				if result.success then
-					-- Success! Close the modal
-					BabyNamingUI.overlay.Visible = false
+			confBtn.Text = "⏳ Checking..."
+			confBtn.BackgroundColor3 = C.Gray400
+			
+			local rf = ReplicatedStorage:FindFirstChild("LifeRemotes")
+			local remote = rf and rf:FindFirstChild("NameBaby")
+			
+			if remote then
+				local ok, res = pcall(function() return remote:InvokeServer(pendingBabyId, name) end)
+				if ok and res and res.success then
+					ov.Visible = false
 					babyNamingVisible = false
-					BabyNamingUI.nameInput.Text = ""
-					BabyNamingUI.errorLabel.Text = ""
-					
-					-- Show success message
-					addFeedEntry("👶 Welcome " .. (result.name or name) .. " to the family! 🎉")
+					inp.Text = ""
+					err.Text = ""
+					addFeedEntry("👶 Welcome " .. (res.name or name) .. " to the family! 🎉")
 				else
-					-- Show error
-					BabyNamingUI.errorLabel.Text = "❌ " .. (result.message or "Try again!")
+					err.Text = "❌ " .. ((res and res.message) or "Try again!")
 				end
 			else
-				BabyNamingUI.errorLabel.Text = "❌ Connection error. Try again!"
+				ov.Visible = false
+				babyNamingVisible = false
 			end
+			
+			confBtn.Text = "✓ Confirm Name"
+			confBtn.BackgroundColor3 = C.Green
+		end)
+	end
+
+	showBabyNamingPopup = function(babyId, babyGender)
+		if not BabyNamingUI.overlay then createBabyNamingPopup() end
+		pendingBabyId = babyId
+		pendingBabyGender = babyGender
+		BabyNamingUI.nameInput.Text = ""
+		BabyNamingUI.errorLabel.Text = ""
+		
+		if babyGender == "male" then
+			BabyNamingUI.title.Text = "👶 Name Your Baby Boy!"
+			BabyNamingUI.subtitle.Text = "Choose a name for your son!"
+		elseif babyGender == "female" then
+			BabyNamingUI.title.Text = "👶 Name Your Baby Girl!"
+			BabyNamingUI.subtitle.Text = "Choose a name for your daughter!"
 		else
-			-- Fallback: just close and use the name locally
-			BabyNamingUI.overlay.Visible = false
-			babyNamingVisible = false
+			BabyNamingUI.title.Text = "👶 Name Your Baby!"
+			BabyNamingUI.subtitle.Text = "Choose a name for your newborn!"
 		end
 		
-		-- Re-enable button
-		BabyNamingUI.confirmBtn.Text = "✓ Confirm Name"
-		BabyNamingUI.confirmBtn.BackgroundColor3 = C.Green
-	end)
-end
-
-local function showBabyNamingPopup(babyId, babyGender)
-	if not BabyNamingUI.overlay then createBabyNamingPopup() end
-	
-	pendingBabyId = babyId
-	BabyNamingUI.nameInput.Text = ""
-	BabyNamingUI.errorLabel.Text = ""
-	
-	-- Update title based on gender
-	if babyGender == "male" then
-		BabyNamingUI.title.Text = "👶 Name Your Baby Boy!"
-		BabyNamingUI.subtitle.Text = "Choose a name for your son!"
-	elseif babyGender == "female" then
-		BabyNamingUI.title.Text = "👶 Name Your Baby Girl!"
-		BabyNamingUI.subtitle.Text = "Choose a name for your daughter!"
-	else
-		BabyNamingUI.title.Text = "👶 Name Your Baby!"
-		BabyNamingUI.subtitle.Text = "Choose a name for your newborn!"
+		BabyNamingUI.overlay.Visible = true
+		babyNamingVisible = true
+		task.delay(0.1, function()
+			if BabyNamingUI.nameInput then BabyNamingUI.nameInput:CaptureFocus() end
+		end)
 	end
-	
-	BabyNamingUI.overlay.Visible = true
-	babyNamingVisible = true
-	
-	-- Focus the input
-	task.delay(0.1, function()
-		if BabyNamingUI.nameInput then
-			BabyNamingUI.nameInput:CaptureFocus()
-		end
-	end)
-end
+end)()
 
 ----------------------------------------------------------------
 -- HEADER BAR (Offset to avoid Roblox logo)
@@ -2289,48 +2250,48 @@ createStatCard({ key = "Looks",     icon = "💄", col = C.Pink   }, statsRight,
 
 ;(function()
 -- God Mode overlay for in-game editing
-godModeOverlay = Instance.new("Frame")
-godModeOverlay.Name = "GodModeOverlay"
-godModeOverlay.Size = UDim2.fromScale(1, 1)
-godModeOverlay.BackgroundColor3 = Color3.new(0, 0, 0)
-godModeOverlay.BackgroundTransparency = 0.35
-godModeOverlay.Visible = false
-godModeOverlay.ZIndex = 150
-godModeOverlay.Parent = mainContainer
+GodModeUI.overlay = Instance.new("Frame")
+GodModeUI.overlay.Name = "GodModeOverlay"
+GodModeUI.overlay.Size = UDim2.fromScale(1, 1)
+GodModeUI.overlay.BackgroundColor3 = Color3.new(0, 0, 0)
+GodModeUI.overlay.BackgroundTransparency = 0.35
+GodModeUI.overlay.Visible = false
+GodModeUI.overlay.ZIndex = 150
+GodModeUI.overlay.Parent = mainContainer
 
 -- CRITICAL FIX #163 & #275: Create God Mode Button in header area
 -- CRITICAL FIX #275: Better mobile positioning - centered in header right side
 -- CRITICAL FIX #317: Moved button LEFT to avoid overlapping cash display
 local godModeBtnSize = Device.IS_TINY_PHONE and 28 or (Device.IS_SMALL_PHONE and 30 or 34)
-godModeButton = Instance.new("TextButton")
-godModeButton.Name = "GodModeBtn"
-godModeButton.Size = UDim2.new(0, godModeBtnSize, 0, godModeBtnSize)
+GodModeUI.button = Instance.new("TextButton")
+GodModeUI.button.Name = "GodModeBtn"
+GodModeUI.button.Size = UDim2.new(0, godModeBtnSize, 0, godModeBtnSize)
 -- Position: More to the left to avoid cash overlap - increased offset significantly
 local godModeBtnOffset = Device.IS_TINY_PHONE and 95 or (Device.IS_SMALL_PHONE and 110 or 140)
-godModeButton.Position = UDim2.new(1, -(godModeBtnSize + godModeBtnOffset), 0.5, 0)
-godModeButton.AnchorPoint = Vector2.new(0, 0.5) -- Center vertically
-godModeButton.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
-godModeButton.Text = "⚡"
-godModeButton.TextSize = Device.IS_TINY_PHONE and 16 or 18
-godModeButton.ZIndex = 8
-godModeButton.Visible = false -- Hidden by default, shown if hasGodMode
-godModeButton.Parent = headerBar
-corner(godModeButton, godModeBtnSize/2)
-stroke(godModeButton, 2, 0, Color3.fromRGB(217, 119, 6))
+GodModeUI.button.Position = UDim2.new(1, -(godModeBtnSize + godModeBtnOffset), 0.5, 0)
+GodModeUI.button.AnchorPoint = Vector2.new(0, 0.5) -- Center vertically
+GodModeUI.button.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
+GodModeUI.button.Text = "⚡"
+GodModeUI.button.TextSize = Device.IS_TINY_PHONE and 16 or 18
+GodModeUI.button.ZIndex = 8
+GodModeUI.button.Visible = false -- Hidden by default, shown if GamepassCache.godMode
+GodModeUI.button.Parent = headerBar
+corner(GodModeUI.button, godModeBtnSize/2)
+stroke(GodModeUI.button, 2, 0, Color3.fromRGB(217, 119, 6))
 
 -- God Mode button hover effect
-godModeButton.MouseEnter:Connect(function()
-	godModeButton.BackgroundColor3 = Color3.fromRGB(252, 211, 77)
+GodModeUI.button.MouseEnter:Connect(function()
+	GodModeUI.button.BackgroundColor3 = Color3.fromRGB(252, 211, 77)
 end)
-godModeButton.MouseLeave:Connect(function()
-	godModeButton.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
+GodModeUI.button.MouseLeave:Connect(function()
+	GodModeUI.button.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
 end)
 
 -- Update God Mode button visibility
 updateGodModeButtonAppearance = function()
 	refreshGodModeStatus()
-	if godModeButton then
-		godModeButton.Visible = hasGodMode
+	if GodModeUI.button then
+		GodModeUI.button.Visible = GamepassCache.godMode
 	end
 end
 
@@ -2344,7 +2305,7 @@ godModeModal.AnchorPoint = Vector2.new(0.5, 0.5)
 godModeModal.Position = UDim2.new(0.5, 0, 0.5, 0)
 godModeModal.BackgroundColor3 = C.White
 godModeModal.ZIndex = 151
-godModeModal.Parent = godModeOverlay
+godModeModal.Parent = GodModeUI.overlay
 corner(godModeModal, 16)
 stroke(godModeModal, 1, 0.85, C.Gray200)
 
@@ -2701,12 +2662,12 @@ stroke(applyBtn, 2, 0, Color3.fromRGB(217, 119, 6))
 
 -- Hide/Show functions
 destroyGodModeModal = function()
-	godModeOverlay.Visible = false
+	GodModeUI.overlay.Visible = false
 end
 
 showGodModeModal = function()
 	refreshGodModeStatus()
-	if not hasGodMode then
+	if not GamepassCache.godMode then
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		-- CRITICAL FIX #513: Use direct client-side prompt instead of server!
 		-- ═══════════════════════════════════════════════════════════════════════════════
@@ -2724,12 +2685,12 @@ showGodModeModal = function()
 	end
 	
 	errorLabel.Text = ""
-	godModeOverlay.Visible = true
+	GodModeUI.overlay.Visible = true
 end
 
 -- Connect buttons
 closeBtn.MouseButton1Click:Connect(destroyGodModeModal)
-godModeButton.MouseButton1Click:Connect(showGodModeModal)
+GodModeUI.button.MouseButton1Click:Connect(showGodModeModal)
 
 -- Connect quick action buttons
 for actionId, btn in pairs(godModeActionBtns) do
@@ -2791,7 +2752,7 @@ applyBtn.MouseButton1Click:Connect(function()
 end)
 
 -- Background click to close
-godModeOverlay.InputBegan:Connect(function(input)
+GodModeUI.overlay.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		local pos = input.Position
 		local modalPos = godModeModal.AbsolutePosition
@@ -2810,276 +2771,8 @@ task.spawn(function()
 end)
 end)() -- End God Mode In-Game Editor IIFE
 
--- LEGACY CODE BELOW (disabled)
-if false then -- Disabled: Old modal code kept for reference
-	godModeOverlay = Instance.new("Frame")
-	godModeOverlay.Name = "GodModeOverlay"
-	godModeOverlay.Size = UDim2.fromScale(1, 1)
-	godModeOverlay.BackgroundColor3 = Color3.new(0, 0, 0)
-	godModeOverlay.BackgroundTransparency = 0.35
-	godModeOverlay.ZIndex = 150
-	godModeOverlay.Parent = mainContainer
-
-	local modal = Instance.new("Frame")
-	modal.Name = "GodModeModal"
-	modal.Size = UDim2.new(0, Device.IS_TINY_PHONE and 280 or 360, 0, 0)
-	modal.AutomaticSize = Enum.AutomaticSize.Y
-	modal.AnchorPoint = Vector2.new(0.5, 0.5)
-	modal.Position = UDim2.new(0.5, 0, 0.5, 0)
-	modal.BackgroundColor3 = C.White
-	modal.ZIndex = 151
-	modal.Parent = godModeOverlay
-	corner(modal, 16)
-	stroke(modal, 1, 0.85, C.Gray200)
-	pad(modal, 14, 14, 14, 14)
-
-	local modalLayout = Instance.new("UIListLayout")
-	modalLayout.FillDirection = Enum.FillDirection.Vertical
-	modalLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-	modalLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-	modalLayout.Padding = UDim.new(0, 8)
-	modalLayout.Parent = modal
-
-	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(1, 0, 0, textSize(18) + 6)
-	titleLabel.BackgroundTransparency = 1
-	titleLabel.Font = F.Title
-	titleLabel.TextSize = textSize(18)
-	titleLabel.TextColor3 = C.Gray800
-	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-	titleLabel.Text = "God Mode Editor"
-	titleLabel.ZIndex = 152
-	titleLabel.Parent = modal
-
-	local subtitleLabel = Instance.new("TextLabel")
-	subtitleLabel.Size = UDim2.new(1, 0, 0, textSize(11) + 6)
-	subtitleLabel.BackgroundTransparency = 1
-	subtitleLabel.Font = F.Body
-	subtitleLabel.TextSize = textSize(11)
-	subtitleLabel.TextColor3 = C.Gray500
-	subtitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-	subtitleLabel.TextWrapped = true
-	subtitleLabel.Text = "Edit your stats, name, and job instantly. Values are clamped between 0 and 100."
-	subtitleLabel.ZIndex = 152
-	subtitleLabel.Parent = modal
-
-	local function createInputRow(labelText, defaultText, placeholder, numeric)
-		local row = Instance.new("Frame")
-		row.Size = UDim2.new(1, 0, 0, 0)
-		row.AutomaticSize = Enum.AutomaticSize.Y
-		row.BackgroundTransparency = 1
-		row.ZIndex = 152
-
-		local label = Instance.new("TextLabel")
-		label.Size = UDim2.new(1, 0, 0, textSize(11) + 4)
-		label.BackgroundTransparency = 1
-		label.Font = F.Medium
-		label.TextSize = textSize(11)
-		label.TextColor3 = C.Gray600
-		label.TextXAlignment = Enum.TextXAlignment.Left
-		label.Text = labelText
-		label.Parent = row
-
-		local input = Instance.new("TextBox")
-		input.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 26 or 32)
-		input.BackgroundColor3 = Color3.fromRGB(248, 250, 252)
-		input.Font = F.Body
-		input.TextSize = textSize(12)
-		input.TextColor3 = C.Gray800
-		input.ClearTextOnFocus = false
-		input.Text = defaultText or ""
-		input.PlaceholderText = placeholder or ""
-		input.TextXAlignment = Enum.TextXAlignment.Left
-		input.Parent = row
-		corner(input, 8)
-		stroke(input, 1, 0.9, C.Gray200)
-		pad(input, 8, 8, 4, 4)
-
-		if numeric then
-			input.Text = tostring(defaultText or 0)
-		end
-
-		return row, input
-	end
-
-	local currentName = currentState.Name or player.Name or ""
-	local nameRow, nameInput = createInputRow("Name", currentName, "Enter a new name")
-	nameRow.Parent = modal
-
-	local statsGrid = Instance.new("Frame")
-	statsGrid.Name = "StatsGrid"
-	statsGrid.Size = UDim2.new(1, 0, 0, 0)
-	statsGrid.AutomaticSize = Enum.AutomaticSize.Y
-	statsGrid.BackgroundTransparency = 1
-	statsGrid.ZIndex = 152
-	statsGrid.Parent = modal
-
-	local gridLayout = Instance.new("UIGridLayout")
-	gridLayout.CellPadding = UDim2.new(0, 8, 0, 8)
-	gridLayout.CellSize = UDim2.new(0.5, -4, 0, Device.IS_TINY_PHONE and 60 or 70)
-	gridLayout.Parent = statsGrid
-
-	local statInputs = {}
-	local statList = {
-		{ label = "Happiness", key = "Happiness", value = currentState.Happiness or 50 },
-		{ label = "Health", key = "Health", value = currentState.Health or 100 },
-		{ label = "Smarts", key = "Smarts", value = currentState.Smarts or 50 },
-		{ label = "Looks", key = "Looks", value = currentState.Looks or 50 },
-	}
-
-	for _, stat in ipairs(statList) do
-		local card = Instance.new("Frame")
-		card.BackgroundColor3 = Color3.fromRGB(248, 250, 252)
-		card.ZIndex = 153
-		card.Parent = statsGrid
-		corner(card, 10)
-		stroke(card, 1, 0.9, C.Gray200)
-		pad(card, 8, 8, 6, 6)
-
-		local title = Instance.new("TextLabel")
-		title.Size = UDim2.new(1, 0, 0, textSize(11) + 2)
-		title.BackgroundTransparency = 1
-		title.Font = F.Medium
-		title.TextSize = textSize(11)
-		title.TextColor3 = C.Gray600
-		title.TextXAlignment = Enum.TextXAlignment.Left
-		title.Text = stat.label
-		title.Parent = card
-
-		local input = Instance.new("TextBox")
-		input.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 24 or 28)
-		input.Position = UDim2.new(0, 0, 0, textSize(11) + 6)
-		input.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-		input.Font = F.Body
-		input.TextSize = textSize(12)
-		input.TextColor3 = C.Gray800
-		input.TextXAlignment = Enum.TextXAlignment.Left
-		input.ClearTextOnFocus = false
-		input.Text = tostring(stat.value)
-		input.Parent = card
-		corner(input, 6)
-		stroke(input, 1, 0.9, C.Gray200)
-		pad(input, 6, 6, 2, 2)
-
-		statInputs[stat.key] = input
-	end
-
-	local careerRow, careerInput = createInputRow("Career (ID or name)", "", "e.g. police_officer or clear")
-	careerRow.Parent = modal
-
-	local moneyRow, moneyInput = createInputRow("Money", tostring(currentState.Money or 0), "Optional", true)
-	moneyRow.Parent = modal
-
-	local errorLabel = Instance.new("TextLabel")
-	errorLabel.Size = UDim2.new(1, 0, 0, textSize(11) + 4)
-	errorLabel.BackgroundTransparency = 1
-	errorLabel.Font = F.Body
-	errorLabel.TextSize = textSize(11)
-	errorLabel.TextColor3 = C.Red
-	errorLabel.TextXAlignment = Enum.TextXAlignment.Left
-	errorLabel.Text = ""
-	errorLabel.ZIndex = 152
-	errorLabel.Parent = modal
-
-	local buttonBar = Instance.new("Frame")
-	buttonBar.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 32 or 40)
-	buttonBar.BackgroundTransparency = 1
-	buttonBar.ZIndex = 152
-	buttonBar.Parent = modal
-
-	local buttonLayout = Instance.new("UIListLayout")
-	buttonLayout.FillDirection = Enum.FillDirection.Horizontal
-	buttonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-	buttonLayout.Padding = UDim.new(0, 8)
-	buttonLayout.Parent = buttonBar
-
-	local closeBtn = Instance.new("TextButton")
-	closeBtn.Size = UDim2.new(0, Device.IS_TINY_PHONE and 70 or 90, 1, 0)
-	closeBtn.BackgroundColor3 = C.Gray200
-	closeBtn.Font = F.Button
-	closeBtn.TextSize = textSize(12)
-	closeBtn.TextColor3 = C.Gray700
-	closeBtn.Text = "Cancel"
-	closeBtn.AutoButtonColor = false
-	closeBtn.Parent = buttonBar
-	corner(closeBtn, 8)
-
-	local applyBtn = Instance.new("TextButton")
-	applyBtn.Size = UDim2.new(0, Device.IS_TINY_PHONE and 120 or 150, 1, 0)
-	applyBtn.BackgroundColor3 = Color3.fromRGB(249, 200, 10)
-	applyBtn.Font = F.Button
-	applyBtn.TextSize = textSize(13)
-	applyBtn.TextColor3 = C.Black
-	applyBtn.Text = "Apply Changes"
-	applyBtn.AutoButtonColor = false
-	applyBtn.Parent = buttonBar
-	corner(applyBtn, 8)
-
-	closeBtn.MouseButton1Click:Connect(destroyGodModeModal)
-
-	applyBtn.MouseButton1Click:Connect(function()
-		errorLabel.Text = ""
-		local payload = { stats = {} }
-		local trimmedName = nameInput.Text and nameInput.Text:gsub("^%s+", ""):gsub("%s+$", "") or ""
-		if trimmedName ~= "" and trimmedName ~= (currentState.Name or "") then
-			payload.name = trimmedName
-		end
-
-		for key, input in pairs(statInputs) do
-			local value = tonumber(input.Text)
-			if value then
-				payload.stats[key] = value
-			end
-		end
-
-		local moneyValue = tonumber(moneyInput.Text)
-		if moneyValue then
-			payload.money = moneyValue
-		end
-
-		local careerText = careerInput.Text and careerInput.Text:gsub("^%s+", ""):gsub("%s+$", "") or ""
-		if careerText ~= "" then
-			if careerText:lower() == "clear" or careerText:lower() == "none" then
-				payload.clearCareer = true
-			else
-				payload.careerId = careerText
-			end
-		end
-
-		local hasChanges = payload.name or payload.money or payload.careerId or payload.clearCareer
-		if payload.stats and next(payload.stats) ~= nil then
-			hasChanges = true
-		else
-			payload.stats = nil
-		end
-
-		if not hasChanges then
-			errorLabel.Text = "Enter at least one change."
-			return
-		end
-
-		if not GodModeEdit then
-			errorLabel.Text = "Server not ready for God Mode edits."
-			return
-		end
-
-		applyBtn.Text = "Saving..."
-		applyBtn.AutoButtonColor = false
-
-		local ok, result = pcall(function()
-			return GodModeEdit:InvokeServer(payload)
-		end)
-
-		if ok and result and result.success then
-			-- CRITICAL FIX: Don't add feed here - pushState on server already sends it!
-			-- Adding it here was causing the message to appear TWICE
-			destroyGodModeModal()
-		else
-			errorLabel.Text = (result and result.message) or "Unable to apply changes."
-			applyBtn.Text = "Apply Changes"
-		end
-	end)
-end
+-- Legacy God Mode modal code removed to reduce local register count
+-- (Dead code was still parsed by Lua and consuming registers)
 
 ----------------------------------------------------------------
 -- NAV BAR - TINY PHONE FIX: More compact
@@ -4113,10 +3806,10 @@ local function buildDeathUI()
 	DeathUI.buttonSection.Parent = DeathUI.scroll
 	
 	-- TIME MACHINE SECTION (BitLife-style premium feature)
-	-- CRITICAL FIX #424: Use global hasTimeMachine cache, never downgrade true to false
+	-- CRITICAL FIX #424: Use global GamepassCache.timeMachine cache, never downgrade true to false
 	local function checkTimeMachineGamepass()
 		-- If already true, don't even check - can't lose a purchased gamepass
-		if hasTimeMachine then
+		if GamepassCache.timeMachine then
 			return true
 		end
 		if CheckGamepass then
@@ -4124,10 +3817,10 @@ local function buildDeathUI()
 				return CheckGamepass:InvokeServer("TIME_MACHINE")
 			end)
 			if success and owns == true then
-				hasTimeMachine = true  -- ONLY upgrade to true, never downgrade
+				GamepassCache.timeMachine = true  -- ONLY upgrade to true, never downgrade
 			end
 		end
-		return hasTimeMachine
+		return GamepassCache.timeMachine
 	end
 	
 	local tmTitle = Instance.new("TextLabel")
@@ -4274,20 +3967,20 @@ local function buildDeathUI()
 	end
 	
 	-- CRITICAL FIX #425: Function to update Time Machine UI based on gamepass ownership
-	-- Uses global hasTimeMachine cache that NEVER downgrades true to false
+	-- Uses global GamepassCache.timeMachine cache that NEVER downgrades true to false
 	DeathUI.updateTimeMachineUI = function()
 		-- Check if already true (purchased this session), if so don't even call server
-		if not hasTimeMachine then
+		if not GamepassCache.timeMachine then
 			-- Only call server if we don't already know they own it
 			if CheckGamepass then
 				local ok, owns = pcall(function() return CheckGamepass:InvokeServer("TIME_MACHINE") end)
 				if ok and owns == true then
-					hasTimeMachine = true  -- ONLY upgrade to true
+					GamepassCache.timeMachine = true  -- ONLY upgrade to true
 				end
 			end
 		end
 		
-		if hasTimeMachine then
+		if GamepassCache.timeMachine then
 			-- User owns gamepass - show full time machine UI with UNLIMITED badge
 			tmContainer.Visible = true
 			tmPromoContainer.Visible = false
@@ -5438,11 +5131,11 @@ showEvent = function(payload)
 			if isPremiumChoice then
 				local ownsPass = false
 				local gp = choice.requiresGamepass
-				if gp == "GOD_MODE" then ownsPass = hasGodMode
-				elseif gp == "MAFIA" then ownsPass = hasMafia
-				elseif gp == "CELEBRITY" then ownsPass = hasCelebrity
-				elseif gp == "ROYALTY" then ownsPass = hasRoyalty
-				elseif gp == "TIME_MACHINE" then ownsPass = hasTimeMachine
+				if gp == "GOD_MODE" then ownsPass = GamepassCache.godMode
+				elseif gp == "MAFIA" then ownsPass = GamepassCache.mafia
+				elseif gp == "CELEBRITY" then ownsPass = GamepassCache.celebrity
+				elseif gp == "ROYALTY" then ownsPass = GamepassCache.royalty
+				elseif gp == "TIME_MACHINE" then ownsPass = GamepassCache.timeMachine
 				end
 				
 				if not ownsPass then
@@ -5509,15 +5202,15 @@ showEvent = function(payload)
 					
 					-- Check ownership based on gamepass key
 					if gamepassKey == "GOD_MODE" then
-						ownsPass = hasGodMode
+						ownsPass = GamepassCache.godMode
 					elseif gamepassKey == "MAFIA" then
-						ownsPass = hasMafia
+						ownsPass = GamepassCache.mafia
 					elseif gamepassKey == "CELEBRITY" then
-						ownsPass = hasCelebrity
+						ownsPass = GamepassCache.celebrity
 					elseif gamepassKey == "ROYALTY" then
-						ownsPass = hasRoyalty
+						ownsPass = GamepassCache.royalty
 					elseif gamepassKey == "TIME_MACHINE" then
-						ownsPass = hasTimeMachine
+						ownsPass = GamepassCache.timeMachine
 					end
 					
 					if not ownsPass then
@@ -6325,9 +6018,9 @@ end)()
 		}
 		
 		-- CRITICAL FIX #415: Helper to check Royalty gamepass ownership (uses cached value)
-		local function hasRoyaltyGamepass()
+		local function GamepassCache.royaltyGamepass()
 			-- First check cached value (set immediately on purchase)
-			if hasRoyalty then
+			if GamepassCache.royalty then
 				return true
 			end
 			-- Then verify with server (updates cache)
@@ -6336,7 +6029,7 @@ end)()
 					return CheckGamepass:InvokeServer("ROYALTY")
 				end)
 				if success and owns == true then
-					hasRoyalty = true
+					GamepassCache.royalty = true
 					return true
 				end
 			end
@@ -6416,7 +6109,7 @@ end)()
 		
 		-- Create wealth buttons using helper function
 		for i, w in ipairs(wOpts) do
-			createWealthBtn(ws, w, i + 1, hasRoyaltyGamepass)
+			createWealthBtn(ws, w, i + 1, GamepassCache.royaltyGamepass)
 		end
 end)()
 
@@ -6651,7 +6344,7 @@ local function showGodModeIntroCustomize()
 	-- Refresh God Mode status
 	refreshGodModeStatus()
 	
-	if not hasGodMode then
+	if not GamepassCache.godMode then
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		-- CRITICAL FIX #511: Use direct client-side prompt instead of server!
 		-- This bypasses the server's cooldown and ALWAYS shows the Roblox purchase popup!
@@ -6715,18 +6408,18 @@ local function showGodModeIntroCustomize()
 end
 
 -- CRITICAL FIX #416: Function to update wealth buttons after royalty gamepass purchase
--- Note: Uses hasRoyalty cache directly since checkRoyaltyGamepass may not be defined yet
+-- Note: Uses GamepassCache.royalty cache directly since checkRoyaltyGamepass may not be defined yet
 IntroUI.updateWealthButtons = function()
 	if IntroUI.wealthBtns and IntroUI.wealthBtns["Royal"] then
 		local royalData = IntroUI.wealthBtns["Royal"]
 		-- Use cached value first, then try to refresh if needed
-		local hasRoyal = hasRoyalty
+		local hasRoyal = GamepassCache.royalty
 		if not hasRoyal and CheckGamepass then
 			local success, owns = pcall(function()
 				return CheckGamepass:InvokeServer("ROYALTY")
 			end)
 			if success and owns == true then
-				hasRoyalty = true
+				GamepassCache.royalty = true
 				hasRoyal = true
 			end
 		end
@@ -6964,7 +6657,7 @@ do
 	customizeGenderBtn.MouseButton1Click:Connect(function()
 		-- Check for God Mode ownership
 		refreshGodModeStatus()
-		if hasGodMode then
+		if GamepassCache.godMode then
 			showGodModeIntroCustomize()
 		else
 			-- ═══════════════════════════════════════════════════════════════════════════════
@@ -6978,7 +6671,7 @@ do
 	-- Update button appearance based on God Mode status
 	local function updateCustomizeGenderBtn()
 		refreshGodModeStatus()
-		if hasGodMode then
+		if GamepassCache.godMode then
 			-- CRITICAL FIX: Show unlocked gold color when gamepass owned
 			customizeGenderBtn.Text = "⚡ Customize Character"
 			customizeGenderBtn.BackgroundColor3 = Color3.fromRGB(253, 230, 138)
@@ -7039,10 +6732,10 @@ IntroUI.EthnicityOptions = {
 }
 
 -- Helper to check Royalty gamepass ownership (module level)
--- CRITICAL FIX #413: Use cached hasRoyalty for immediate response after purchase
+-- CRITICAL FIX #413: Use cached GamepassCache.royalty for immediate response after purchase
 local function checkRoyaltyGamepass()
 	-- First check cached value (set immediately on purchase)
-	if hasRoyalty then
+	if GamepassCache.royalty then
 		return true
 	end
 	-- Then verify with server (updates cache)
@@ -7051,7 +6744,7 @@ local function checkRoyaltyGamepass()
 			return CheckGamepass:InvokeServer("ROYALTY")
 		end)
 		if success and owns == true then
-			hasRoyalty = true
+			GamepassCache.royalty = true
 			return true
 		end
 	end
@@ -8063,19 +7756,19 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 		-- CRITICAL FIX #430: Initialize gamepass caches from server state
 		-- This ensures gamepasses are recognized even on new life
 		if state.GamepassOwnership then
-			if state.GamepassOwnership.godMode then hasGodMode = true end
-			if state.GamepassOwnership.royalty then hasRoyalty = true end
-			if state.GamepassOwnership.mafia then hasMafia = true end
-			if state.GamepassOwnership.celebrity then hasCelebrity = true end
-			if state.GamepassOwnership.timeMachine then hasTimeMachine = true end
+			if state.GamepassOwnership.godMode then GamepassCache.godMode = true end
+			if state.GamepassOwnership.royalty then GamepassCache.royalty = true end
+			if state.GamepassOwnership.mafia then GamepassCache.mafia = true end
+			if state.GamepassOwnership.celebrity then GamepassCache.celebrity = true end
+			if state.GamepassOwnership.timeMachine then GamepassCache.timeMachine = true end
 		end
 		-- Also check Flags as fallback
 		if state.Flags then
-			if state.Flags.god_mode_gamepass then hasGodMode = true end
-			if state.Flags.royalty_gamepass then hasRoyalty = true end
-			if state.Flags.mafia_gamepass then hasMafia = true end
-			if state.Flags.celebrity_gamepass then hasCelebrity = true end
-			if state.Flags.time_machine_gamepass then hasTimeMachine = true end
+			if state.Flags.god_mode_gamepass then GamepassCache.godMode = true end
+			if state.Flags.royalty_gamepass then GamepassCache.royalty = true end
+			if state.Flags.mafia_gamepass then GamepassCache.mafia = true end
+			if state.Flags.celebrity_gamepass then GamepassCache.celebrity = true end
+			if state.Flags.time_machine_gamepass then GamepassCache.timeMachine = true end
 		end
 
 		-- Reset header UI
@@ -8246,18 +7939,18 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 	-- CRITICAL FIX #431: Update gamepass caches from server state on every sync
 	-- ONLY upgrade to true, never downgrade (server might have stale data)
 	if state.GamepassOwnership then
-		if state.GamepassOwnership.godMode then hasGodMode = true end
-		if state.GamepassOwnership.royalty then hasRoyalty = true end
-		if state.GamepassOwnership.mafia then hasMafia = true end
-		if state.GamepassOwnership.celebrity then hasCelebrity = true end
-		if state.GamepassOwnership.timeMachine then hasTimeMachine = true end
+		if state.GamepassOwnership.godMode then GamepassCache.godMode = true end
+		if state.GamepassOwnership.royalty then GamepassCache.royalty = true end
+		if state.GamepassOwnership.mafia then GamepassCache.mafia = true end
+		if state.GamepassOwnership.celebrity then GamepassCache.celebrity = true end
+		if state.GamepassOwnership.timeMachine then GamepassCache.timeMachine = true end
 	end
 	if state.Flags then
-		if state.Flags.god_mode_gamepass then hasGodMode = true end
-		if state.Flags.royalty_gamepass then hasRoyalty = true end
-		if state.Flags.mafia_gamepass then hasMafia = true end
-		if state.Flags.celebrity_gamepass then hasCelebrity = true end
-		if state.Flags.time_machine_gamepass then hasTimeMachine = true end
+		if state.Flags.god_mode_gamepass then GamepassCache.godMode = true end
+		if state.Flags.royalty_gamepass then GamepassCache.royalty = true end
+		if state.Flags.mafia_gamepass then GamepassCache.mafia = true end
+		if state.Flags.celebrity_gamepass then GamepassCache.celebrity = true end
+		if state.Flags.time_machine_gamepass then GamepassCache.timeMachine = true end
 	end
 
 	-- Update all screen instances with latest state
@@ -8607,18 +8300,16 @@ ScreenInstances.storypaths   = safeNew(StoryPathsScreen,    "StoryPathsScreen", 
 ScreenInstances.progress     = safeNew(ProgressScreen,      "ProgressScreen",      screenGui, blurOverlay, showBlur, hideBlur, currentState)
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- CRITICAL FIX: Create RelationshipsScreen with onShowEventCard callback
--- This allows relationship interactions to show proper BitLife-style event cards!
--- User feedback: "I want actual card thingy like activities do"
+-- CRITICAL FIX: All screen callbacks consolidated into table to reduce local register usage
+-- The LifeClient file was exceeding Lua's 200 local register limit
 -- ═══════════════════════════════════════════════════════════════════════════════
-local function onRelationshipShowEventCard(eventCard, onChoiceCallback)
-	-- Hide the RelationshipsScreen first
+ScreenInstances.callbacks = ScreenInstances.callbacks or {}
+
+ScreenInstances.callbacks.onRelationshipShowEventCard = function(eventCard, onChoiceCallback)
 	if ScreenInstances.relationships and ScreenInstances.relationships.hide then
 		ScreenInstances.relationships:hide()
 	end
 	hideBlur()
-	
-	-- Show the event card on the main UI using LifeClient's proper event system!
 	if showEvent then
 		showEvent({
 			id = eventCard.id or "relationship_event",
@@ -8628,24 +8319,19 @@ local function onRelationshipShowEventCard(eventCard, onChoiceCallback)
 			question = eventCard.question or "What will you do?",
 			choices = eventCard.choices or {{text = "Continue", index = 1}},
 			category = eventCard.category,
-			isActivityEvent = true, -- Use activity event handler for callbacks
+			isActivityEvent = true,
 			onActivityChoice = onChoiceCallback,
 		})
 	end
 end
 
-ScreenInstances.relationships= safeNew(RelationshipsScreen, "RelationshipsScreen", screenGui, blurOverlay, showBlur, hideBlur, currentState, onRelationshipShowEventCard)
+ScreenInstances.relationships= safeNew(RelationshipsScreen, "RelationshipsScreen", screenGui, blurOverlay, showBlur, hideBlur, currentState, ScreenInstances.callbacks.onRelationshipShowEventCard)
 
--- CRITICAL FIX: Create ActivitiesScreen with onShowEventCard callback
--- This allows activities to show proper BitLife-style event cards in the main UI
-local function onActivityShowEventCard(eventCard, onChoiceCallback)
-	-- Hide the ActivitiesScreen first
+ScreenInstances.callbacks.onActivityShowEventCard = function(eventCard, onChoiceCallback)
 	if ScreenInstances.activities and ScreenInstances.activities.hide then
 		ScreenInstances.activities:hide()
 	end
 	hideBlur()
-	
-	-- Show the event card on the main UI
 	if showEvent then
 		showEvent({
 			id = eventCard.id or "activity_event",
@@ -8660,25 +8346,19 @@ local function onActivityShowEventCard(eventCard, onChoiceCallback)
 		})
 	end
 end
--- CRITICAL FIX: Callback to refresh main UI stats after activities change stats locally
--- User bug: "stats don't change after I complete activities"
--- This is called by ActivitiesScreen after applying stat changes to currentState
-local function onActivityStatsChanged()
+
+ScreenInstances.callbacks.onActivityStatsChanged = function()
 	updateFromState()
 end
 
-ScreenInstances.activities   = safeNew(ActivitiesScreen,    "ActivitiesScreen",    screenGui, blurOverlay, showBlur, hideBlur, currentState, onActivityShowEventCard, onActivityStatsChanged)
+ScreenInstances.activities   = safeNew(ActivitiesScreen,    "ActivitiesScreen",    screenGui, blurOverlay, showBlur, hideBlur, currentState, ScreenInstances.callbacks.onActivityShowEventCard, ScreenInstances.callbacks.onActivityStatsChanged)
 
--- CRITICAL FIX #443: Create MafiaScreen with onShowEventCard callback
--- This allows mafia operations to close the MafiaScreen and show an event card in main UI
-local function onMafiaShowEventCard(eventCard, onChoiceCallback)
-	-- Hide the MafiaScreen first
+-- CRITICAL FIX #443: Mafia callback also moved to table to reduce register usage
+ScreenInstances.callbacks.onMafiaShowEventCard = function(eventCard, onChoiceCallback)
 	if ScreenInstances.mafia and ScreenInstances.mafia.hide then
 		ScreenInstances.mafia:hide()
 	end
 	hideBlur()
-	
-	-- Show the event card on the main UI
 	if showEvent then
 		showEvent({
 			id = eventCard.id or "mafia_operation",
@@ -8692,7 +8372,7 @@ local function onMafiaShowEventCard(eventCard, onChoiceCallback)
 		})
 	end
 end
-ScreenInstances.mafia        = safeNew(MafiaScreen,         "MafiaScreen",         screenGui, blurOverlay, showBlur, hideBlur, currentState, onMafiaShowEventCard)
+ScreenInstances.mafia        = safeNew(MafiaScreen,         "MafiaScreen",         screenGui, blurOverlay, showBlur, hideBlur, currentState, ScreenInstances.callbacks.onMafiaShowEventCard)
 
 if MinigamesModule then
 	local ok, mg = pcall(function() return MinigamesModule.new(screenGui) end)
