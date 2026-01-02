@@ -15,6 +15,10 @@
 	CRITICAL FIX #RVS-7: Premium path blocking for royalty/mafia players
 ]]
 
+-- CRITICAL FIX #ATHLETE-1: Add RANDOM definition for consistent random number generation
+-- Using math.random() directly can cause issues on Roblox - use Random.new() instead
+local RANDOM = Random.new()
+
 local AthleteCareerEvents = {}
 
 -- ═════════════════════════════════════════════════════════════════════════════════════
@@ -125,11 +129,11 @@ AthleteCareerEvents.events = {
 				triggerMinigame = "mash",
 				minigameOptions = { difficulty = "hard" },
 				onResolve = function(state, minigameResult)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					local bonus = (minigameResult and minigameResult.success) and 25 or 0
 					
 					if roll + bonus >= 55 then
-						local prize = math.random(500000, 3000000)
+						local prize = RANDOM:NextInteger(500000, 3000000)
 						state.Money = (state.Money or 0) + prize
 						state:ModifyStat("Happiness", 30)
 						state.Fame = math.min(100, (state.Fame or 0) + 60) -- CRITICAL FIX: Cap fame at 100
@@ -137,7 +141,7 @@ AthleteCareerEvents.events = {
 						state.Flags.champion_athlete = true
 						state:AddFeed(string.format("🏆 CHAMPIONS! MVP PERFORMANCE! $%s bonus! Parades in your honor!", prize))
 					elseif roll + bonus >= 30 then
-						local prize = math.random(100000, 400000)
+						local prize = RANDOM:NextInteger(100000, 400000)
 						state.Money = (state.Money or 0) + prize
 						state:ModifyStat("Happiness", 10)
 						state.Fame = math.min(100, (state.Fame or 0) + 20) -- CRITICAL FIX: Cap fame at 100
@@ -154,9 +158,9 @@ AthleteCareerEvents.events = {
 				effects = { Health = 3 },
 				feedText = "Career longevity matters...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 40 then
-						local prize = math.random(200000, 600000)
+						local prize = RANDOM:NextInteger(200000, 600000)
 						state.Money = (state.Money or 0) + prize
 						state:ModifyStat("Happiness", 15)
 						state.Fame = math.min(100, (state.Fame or 0) + 25) -- CRITICAL FIX: Cap fame at 100
@@ -191,7 +195,7 @@ AthleteCareerEvents.events = {
 			feedText = "Health comes first...",
 			eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5K for medical workup" end,
 			onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 40 then
 						state:ModifyStat("Happiness", 10)
 						state:AddFeed("🏥 Just a strain! Rest for a week and you're good. Huge relief!")
@@ -215,7 +219,7 @@ AthleteCareerEvents.events = {
 				effects = { Happiness = -3 },
 				feedText = "Can't let the team down...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 30 then
 						state:ModifyStat("Happiness", 8)
 						state:AddFeed("🏥 It was nothing! Played great and showed mental toughness!")
@@ -255,9 +259,9 @@ AthleteCareerEvents.events = {
 				effects = {},
 				feedText = "I know my worth!",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 40 then
-						local contract = math.random(10000000, 50000000)
+						local contract = RANDOM:NextInteger(10000000, 50000000)
 						state.Money = (state.Money or 0) + contract
 						state:ModifyStat("Happiness", 25)
 						state.Fame = math.min(100, (state.Fame or 0) + 15) -- CRITICAL FIX: Cap fame at 100
@@ -265,7 +269,7 @@ AthleteCareerEvents.events = {
 						state.Flags.max_contract = true
 						state:AddFeed(string.format("💰 GOT THE MAX! $%s contract! Set for life!", contract))
 					elseif roll <= 70 then
-						local contract = math.random(3000000, 8000000)
+						local contract = RANDOM:NextInteger(3000000, 8000000)
 						state.Money = (state.Money or 0) + contract
 						state:ModifyStat("Happiness", 10)
 						state:AddFeed(string.format("💰 Didn't get max, but $%s is still great!", contract))
@@ -280,7 +284,7 @@ AthleteCareerEvents.events = {
 				effects = { Happiness = 5 },
 				feedText = "Want to stay with this team...",
 				onResolve = function(state)
-					local contract = math.random(2000000, 6000000)
+					local contract = RANDOM:NextInteger(2000000, 6000000)
 					state.Money = (state.Money or 0) + contract
 					state:ModifyStat("Happiness", 12)
 					state.Flags = state.Flags or {}
@@ -293,15 +297,15 @@ AthleteCareerEvents.events = {
 				effects = { Happiness = -5 },
 				feedText = "See what's out there...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 35 then
-						local contract = math.random(15000000, 60000000)
+						local contract = RANDOM:NextInteger(15000000, 60000000)
 						state.Money = (state.Money or 0) + contract
 						state:ModifyStat("Happiness", 25)
 						state.Fame = math.min(100, (state.Fame or 0) + 10) -- CRITICAL FIX: Cap fame at 100
 						state:AddFeed(string.format("💰 Bidding war! Got $%s from a new team!", contract))
 					elseif roll <= 65 then
-						local contract = math.random(5000000, 12000000)
+						local contract = RANDOM:NextInteger(5000000, 12000000)
 						state.Money = (state.Money or 0) + contract
 						state:ModifyStat("Happiness", 8)
 						state:AddFeed(string.format("💰 Found a new home. $%s contract with a contender.", contract))
@@ -334,11 +338,11 @@ AthleteCareerEvents.events = {
 				effects = { Health = -3 },
 				feedText = "Leveling the playing field...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 35 then
 						state:ModifyStat("Happiness", 15)
 						state:ModifyStat("Health", 5)
-						state.Money = (state.Money or 0) + math.random(500000, 2000000)
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(500000, 2000000)
 						state.Flags = state.Flags or {}
 						state.Flags.enhanced_athlete = true
 						state:AddFeed("💊 Performance through the roof! Best season ever! Nobody suspects.")
@@ -370,7 +374,7 @@ AthleteCareerEvents.events = {
 				effects = { Smarts = 2 },
 				feedText = "This needs to stop...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 40 then
 						state:ModifyStat("Happiness", 10)
 						state:AddFeed("💊 Investigation launched! You're protected as a whistleblower.")
@@ -405,7 +409,7 @@ AthleteCareerEvents.events = {
 				effects = { Happiness = 15 },
 				feedText = "Time to cash in on fame!",
 				onResolve = function(state)
-					local deal = math.random(500000, 5000000)
+					local deal = RANDOM:NextInteger(500000, 5000000)
 					state.Money = (state.Money or 0) + deal
 					state.Fame = math.min(100, (state.Fame or 0) + 20) -- CRITICAL FIX: Cap fame at 100
 					state.Flags = state.Flags or {}
@@ -418,15 +422,15 @@ AthleteCareerEvents.events = {
 				effects = {},
 				feedText = "My image is worth more...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 35 then
-						local deal = math.random(3000000, 15000000)
+						local deal = RANDOM:NextInteger(3000000, 15000000)
 						state.Money = (state.Money or 0) + deal
 						state:ModifyStat("Happiness", 20)
 						state.Fame = math.min(100, (state.Fame or 0) + 25) -- CRITICAL FIX: Cap fame at 100
 						state:AddFeed(string.format("📸 They REALLY wanted you! $%s mega-deal!", deal))
 					elseif roll <= 70 then
-						local deal = math.random(800000, 4000000)
+						local deal = RANDOM:NextInteger(800000, 4000000)
 						state.Money = (state.Money or 0) + deal
 						state:ModifyStat("Happiness", 12)
 						state:AddFeed(string.format("📸 Got a bit more. $%s. Not bad.", deal))
@@ -459,10 +463,10 @@ AthleteCareerEvents.events = {
 				effects = { Happiness = -5 },
 				feedText = "Want to win a championship...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 50 then
 						state:ModifyStat("Happiness", 15)
-						state.Money = (state.Money or 0) + math.random(100000, 500000)
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(100000, 500000)
 						state.Flags = state.Flags or {}
 						state.Flags.traded_to_contender = true
 						state:AddFeed("📰 Trade granted! Going to a championship team! Ring time!")
@@ -477,7 +481,7 @@ AthleteCareerEvents.events = {
 				effects = { Happiness = 5 },
 				feedText = "This is home...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 60 then
 						state:ModifyStat("Happiness", 10)
 						state.Flags = state.Flags or {}
@@ -522,9 +526,9 @@ AthleteCareerEvents.events = {
 				effects = { Health = -5 },
 				feedText = "Not ready to give this up...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 35 then
-						state.Money = (state.Money or 0) + math.random(1000000, 5000000)
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(1000000, 5000000)
 						state:ModifyStat("Happiness", 15)
 						state:AddFeed("🎽 One more GREAT year! Perfect ending! Retire on top!")
 					elseif roll <= 70 then
@@ -565,7 +569,7 @@ AthleteCareerEvents.events = {
 				effects = { Happiness = 5 },
 				feedText = "The ultimate honor...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 60 then
 						state:ModifyStat("Happiness", 30)
 						state.Fame = math.min(100, (state.Fame or 0) + 100) -- CRITICAL FIX: Cap fame at 100
@@ -609,7 +613,7 @@ AthleteCareerEvents.events = {
 				feedText = "Pay your dues...",
 				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5K to cover rookie expenses" end,
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 70 then
 						state:ModifyStat("Happiness", 10)
 						state.Flags = state.Flags or {}
@@ -625,7 +629,7 @@ AthleteCareerEvents.events = {
 				effects = { Smarts = 2 },
 				feedText = "I'm a professional, not a punching bag.",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 40 then
 						state:ModifyStat("Happiness", 8)
 						state:AddFeed("😤 Vets respected your boundaries. Times are changing!")
@@ -666,7 +670,7 @@ AthleteCareerEvents.events = {
 				effects = {},
 				feedText = "Here's what I really think...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 35 then
 						state.Fame = math.min(100, (state.Fame or 0) + 25) -- CRITICAL FIX: Cap fame at 100
 						state:ModifyStat("Happiness", 15)
@@ -694,7 +698,7 @@ AthleteCareerEvents.events = {
 				effects = { Happiness = -3 },
 				feedText = "Not dealing with this...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 50 then
 						state.Fame = math.min(100, (state.Fame or 0) + 10) -- CRITICAL FIX: Cap fame at 100
 						state:AddFeed("🎤 The walkout became a meme! Actually kind of cool now!")
@@ -727,10 +731,10 @@ AthleteCareerEvents.events = {
 				effects = { Health = -5, Happiness = -3 },
 				feedText = "Grind through this...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 60 then
 						state:ModifyStat("Happiness", 18)
-						state.Money = (state.Money or 0) + math.random(50000, 200000)
+						state.Money = (state.Money or 0) + RANDOM:NextInteger(50000, 200000)
 						state:AddFeed("📉 BROKE OUT OF IT! Big game performance! Redemption story!")
 					else
 						state:ModifyStat("Happiness", -8)
@@ -746,7 +750,7 @@ AthleteCareerEvents.events = {
 				-- CRITICAL FIX #7: Add eligibility check!
 				eligibility = function(state) return (state.Money or 0) >= 3000, "💸 Need $3,000 for psychologist" end,
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 70 then
 						state:ModifyStat("Happiness", 15)
 						state.Flags = state.Flags or {}
@@ -762,7 +766,7 @@ AthleteCareerEvents.events = {
 				effects = { Happiness = 5, Health = -3 },
 				feedText = "Need to clear my head...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 40 then
 						state:ModifyStat("Happiness", 10)
 						state:AddFeed("📉 Actually helped! Came back refreshed and played great!")
@@ -818,7 +822,7 @@ AthleteCareerEvents.events = {
 				effects = { Health = 5 },
 				feedText = "Body needs recovery time.",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 50 then
 						state:AddFeed("❤️ Understood. Used the time to recover well.")
 					else
@@ -850,7 +854,7 @@ AthleteCareerEvents.events = {
 				effects = { Smarts = 3 },
 				feedText = "Team first...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 55 then
 						state:ModifyStat("Happiness", 15)
 						state.Flags = state.Flags or {}
@@ -867,7 +871,7 @@ AthleteCareerEvents.events = {
 				effects = {},
 				feedText = "Pick a side...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 40 then
 						state:ModifyStat("Happiness", 10)
 						state:AddFeed("🤝 Your guy won the power struggle! You're in the inner circle!")
@@ -908,9 +912,9 @@ AthleteCareerEvents.events = {
 				effects = { Health = -3 },
 				feedText = "Give the fans a show!",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 30 then
-						local bonus = math.random(100000, 500000)
+						local bonus = RANDOM:NextInteger(100000, 500000)
 						state.Money = (state.Money or 0) + bonus
 						state.Fame = math.min(100, (state.Fame or 0) + 40) -- CRITICAL FIX: Cap fame at 100
 						state:ModifyStat("Happiness", 25)
@@ -938,7 +942,7 @@ AthleteCareerEvents.events = {
 				effects = { Health = 5 },
 				feedText = "Not worth the risk...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 50 then
 						state:AddFeed("⭐ Good call. Your body needed the rest for the stretch run.")
 					else
@@ -970,7 +974,7 @@ AthleteCareerEvents.events = {
 				effects = { Happiness = 5 },
 				feedText = "Let's go...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 50 then
 						state.Fame = math.min(100, (state.Fame or 0) + 20) -- CRITICAL FIX: Cap fame at 100
 						state:ModifyStat("Happiness", 15)
@@ -987,7 +991,7 @@ AthleteCareerEvents.events = {
 				effects = { Smarts = 3 },
 				feedText = "I'll see you on the field/court.",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 60 then
 						state.Fame = math.min(100, (state.Fame or 0) + 25) -- CRITICAL FIX: Cap fame at 100
 						state:ModifyStat("Happiness", 18)
@@ -1031,11 +1035,11 @@ AthleteCareerEvents.events = {
 				triggerMinigame = "mash",
 				minigameOptions = { difficulty = "hard" },
 				onResolve = function(state, minigameResult)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					local bonus = (minigameResult and minigameResult.success) and 25 or 0
 					
 					if roll + bonus >= 50 then
-						local bonus_money = math.random(1000000, 5000000)
+						local bonus_money = RANDOM:NextInteger(1000000, 5000000)
 						state.Money = (state.Money or 0) + bonus_money
 						state.Fame = math.min(100, (state.Fame or 0) + 80) -- CRITICAL FIX: Cap fame at 100
 						state:ModifyStat("Happiness", 30)
@@ -1054,9 +1058,9 @@ AthleteCareerEvents.events = {
 				effects = { Smarts = 3 },
 				feedText = "One game at a time...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 40 then
-						local bonus_money = math.random(500000, 2000000)
+						local bonus_money = RANDOM:NextInteger(500000, 2000000)
 						state.Money = (state.Money or 0) + bonus_money
 						state.Fame = math.min(100, (state.Fame or 0) + 60) -- CRITICAL FIX: Cap fame at 100
 						state:ModifyStat("Happiness", 25)
@@ -1092,7 +1096,7 @@ AthleteCareerEvents.events = {
 				effects = { Smarts = 2 },
 				feedText = "We need to talk...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 55 then
 						state:ModifyStat("Happiness", 12)
 						state:AddFeed("😡 Cleared the air! Coach apologized. Respect earned!")
@@ -1107,7 +1111,7 @@ AthleteCareerEvents.events = {
 				effects = {},
 				feedText = "Let the public know my side...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 35 then
 						state.Fame = math.min(100, (state.Fame or 0) + 15) -- CRITICAL FIX: Cap fame at 100
 						state:ModifyStat("Happiness", 10)
@@ -1160,16 +1164,16 @@ AthleteCareerEvents.events = {
 			onResolve = function(state)
 				-- CRITICAL FIX: Prevent negative money
 				state.Money = math.max(0, (state.Money or 0) - 100000)
-				local roll = math.random(1, 100)
+				local roll = RANDOM:NextInteger(1, 100)
 				if roll <= 30 then
-					local returns = math.random(500000, 2000000)
+					local returns = RANDOM:NextInteger(500000, 2000000)
 					state.Money = (state.Money or 0) + returns
 					state:ModifyStat("Happiness", 25)
 					state.Flags = state.Flags or {}
 					state.Flags.smart_investor = true
 					state:AddFeed(string.format("💼 JACKPOT! Investment returned $%d! Business genius!", returns))
 				elseif roll <= 60 then
-					local returns = math.random(80000, 150000)
+					local returns = RANDOM:NextInteger(80000, 150000)
 					state.Money = (state.Money or 0) + returns
 					state:ModifyStat("Happiness", 5)
 					state:AddFeed(string.format("💼 Decent returns. Got $%d back. Not bad!", returns))
@@ -1184,7 +1188,7 @@ AthleteCareerEvents.events = {
 				effects = { Smarts = 2 },
 				feedText = "I'm an athlete, not a businessman.",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 40 then
 						state:ModifyStat("Happiness", -5)
 						state:AddFeed("💼 That business blew up huge. Massive FOMO...")
@@ -1218,9 +1222,9 @@ AthleteCareerEvents.events = {
 				effects = { Health = -5, Happiness = 8 },
 				feedText = "Redemption time!",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 50 then
-						local bonus = math.random(500000, 2000000)
+						local bonus = RANDOM:NextInteger(500000, 2000000)
 						state.Money = (state.Money or 0) + bonus
 						state.Fame = math.min(100, (state.Fame or 0) + 40) -- CRITICAL FIX: Cap fame at 100
 						state:ModifyStat("Happiness", 25)
@@ -1240,7 +1244,7 @@ AthleteCareerEvents.events = {
 				effects = { Health = 3, Smarts = 2 },
 				feedText = "Smart and steady...",
 				onResolve = function(state)
-					local roll = math.random(1, 100)
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 60 then
 						state:ModifyStat("Happiness", 15)
 						state.Flags = state.Flags or {}

@@ -11,6 +11,10 @@
 	═══════════════════════════════════════════════════════════════════════════════
 ]]
 
+-- CRITICAL FIX #RACING-1: Add RANDOM definition for consistent random number generation
+-- Using math.random() directly can cause issues on Roblox - use Random.new() instead
+local RANDOM = Random.new()
+
 local events = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- ENTRY INTO RACING
@@ -183,7 +187,8 @@ local events = {
 				effects = { Happiness = 8 },
 				feedText = "Trying to get a better deal...",
 				onResolve = function(state, minigameResult)
-					local roll = math.random(1, 100)
+					-- CRITICAL FIX: Use RANDOM:NextInteger instead of math.random
+					local roll = RANDOM:NextInteger(1, 100)
 					if roll <= 60 then
 						state.Money = (state.Money or 0) + 15000
 						state.Flags = state.Flags or {}
@@ -608,7 +613,8 @@ local events = {
 						end
 					else
 						-- Career-ending injury scenario
-						local outcomeRoll = math.random(1, 100)
+						-- CRITICAL FIX: Use RANDOM:NextInteger instead of math.random
+						local outcomeRoll = RANDOM:NextInteger(1, 100)
 						state.Stats = state.Stats or {}
 						if outcomeRoll <= 15 then
 							-- Severe injury, ends racing career
@@ -894,7 +900,8 @@ local events = {
 						end
 					else
 						-- FATAL CRASH or CAREER ENDING
-						local deathRoll = math.random(1, 100)
+						-- CRITICAL FIX: Use RANDOM:NextInteger instead of math.random
+						local deathRoll = RANDOM:NextInteger(1, 100)
 						if deathRoll <= 25 then
 							-- ACTUAL DEATH - 25% chance of dying on failure
 							state.Flags = state.Flags or {}
@@ -902,6 +909,8 @@ local events = {
 							state.Flags.cause_of_death = "Racing Accident"
 							state.Stats = state.Stats or {}
 							state.Stats.Health = 0
+							state.Health = 0
+							state.DeathReason = "🏎️ Fatal racing accident. Died doing what you loved. 🏁"
 							if state.AddFeed then
 								state:AddFeed("☠️ FATAL CRASH. You died doing what you loved, but you died.")
 							end
@@ -912,7 +921,8 @@ local events = {
 							state.Flags = state.Flags or {}
 							state.Flags.career_ended = true
 							state.Flags.hospitalized = true
-							state.Flags.paralyzed = math.random() < 0.3 -- 30% chance of paralysis
+							-- CRITICAL FIX: Use RANDOM:NextNumber instead of math.random
+						state.Flags.paralyzed = RANDOM:NextNumber() < 0.3 -- 30% chance of paralysis
 							state.CurrentJob = nil
 							state.Flags.employed = nil
 							state.Flags.has_job = nil
@@ -934,7 +944,8 @@ local events = {
 				feedText = "You close your eyes...",
 				onResolve = function(state)
 					-- Without trying, higher death chance
-					local deathRoll = math.random(1, 100)
+					-- CRITICAL FIX: Use RANDOM:NextInteger instead of math.random
+					local deathRoll = RANDOM:NextInteger(1, 100)
 					if deathRoll <= 50 then
 						-- 50% death when not trying
 						state.Flags = state.Flags or {}
@@ -942,6 +953,8 @@ local events = {
 						state.Flags.cause_of_death = "Racing Accident"
 						state.Stats = state.Stats or {}
 						state.Stats.Health = 0
+						state.Health = 0
+						state.DeathReason = "🏎️ Fatal racing crash. Died on the track. 🏁"
 						if state.AddFeed then
 							state:AddFeed("☠️ You didn't fight. The crash was fatal.")
 						end

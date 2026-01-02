@@ -1414,4 +1414,259 @@ events[#events + 1] = {
 	},
 }
 
+-- ════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: NEW EARLY CHILDHOOD EVENTS FOR VARIETY
+-- User complaint: "first age 1-10 most stuff is always the same"
+-- Adding more unique personality-forming events
+-- ════════════════════════════════════════════════════════════════════════════
+
+events[#events + 1] = {
+	id = "toddler_first_drawing",
+	title = "Your First Masterpiece!",
+	emoji = "🎨",
+	textVariants = {
+		"You drew your first real picture today!",
+		"You made art that your parents actually recognized!",
+		"Your crayon creation is going on the fridge!",
+	},
+	text = "You drew your first real picture today!",
+	question = "What did you draw?",
+	minAge = 3, maxAge = 5,
+	baseChance = 0.35,
+	cooldown = 6,
+	oneTime = true,
+	category = "childhood",
+
+	choices = {
+		{
+			text = "My family",
+			effects = { Happiness = 8 },
+			setFlags = { family_oriented = true, draws_family = true },
+			feedText = "🎨 Mom and Dad loved it! It's going on the fridge!",
+		},
+		{
+			text = "A dinosaur/monster",
+			effects = { Happiness = 6, Smarts = 2 },
+			setFlags = { creative_imagination = true },
+			feedText = "🎨 Your imagination is WILD! What a creative kid!",
+		},
+		{
+			text = "A superhero (me!)",
+			effects = { Happiness = 7 },
+			setFlags = { confident_kid = true, hero_complex = true },
+			feedText = "🎨 You're the HERO of your own story!",
+		},
+		{
+			text = "Just scribbles (abstract art)",
+			effects = { Happiness = 4, Smarts = 3 },
+			setFlags = { abstract_thinker = true },
+			feedText = "🎨 'It's ABSTRACT!' you insist. Future artist?",
+		},
+	},
+}
+
+events[#events + 1] = {
+	id = "toddler_favorite_food",
+	title = "Food Discovery!",
+	emoji = "🍕",
+	textVariants = {
+		"You discovered a new favorite food!",
+		"You found the BEST food EVER (in your opinion)!",
+		"This is now the only thing you want to eat!",
+	},
+	text = "You discovered a new favorite food!",
+	question = "What became your favorite?",
+	minAge = 2, maxAge = 5,
+	baseChance = 0.4,
+	cooldown = 5,
+	oneTime = true,
+	category = "childhood",
+
+	choices = {
+		{
+			text = "Pizza - the perfect food!",
+			effects = { Happiness = 6 },
+			setFlags = { pizza_lover = true },
+			feedText = "🍕 Pizza is now requested at EVERY meal!",
+		},
+		{
+			text = "Chicken nuggets ONLY",
+			effects = { Happiness = 5 },
+			setFlags = { nugget_kid = true, picky_eater = true },
+			feedText = "🍗 If it's not shaped like a nugget, you won't eat it!",
+		},
+		{
+			text = "Healthy veggies (surprising everyone!)",
+			effects = { Happiness = 4, Health = 3 },
+			setFlags = { veggie_kid = true, healthy_eater = true },
+			feedText = "🥦 You actually LIKE vegetables! Parents are thrilled!",
+		},
+		{
+			text = "Sweet treats and desserts",
+			effects = { Happiness = 7 },
+			setFlags = { sweet_tooth = true },
+			feedText = "🍭 Anything sweet is your jam! Sugar rush incoming!",
+		},
+	},
+}
+
+events[#events + 1] = {
+	id = "toddler_animal_encounter",
+	title = "Meeting an Animal!",
+	emoji = "🐕",
+	textVariants = {
+		"You met a friendly dog at the park!",
+		"A cat wandered up to you!",
+		"You saw a cool animal up close!",
+	},
+	text = "You met a friendly animal today!",
+	question = "How did you react?",
+	minAge = 2, maxAge = 5,
+	baseChance = 0.45,
+	cooldown = 4,
+	category = "childhood",
+
+	choices = {
+		{
+			text = "I LOVED it! New best friend!",
+			effects = { Happiness = 10 },
+			setFlags = { animal_lover = true, wants_pet = true },
+			feedText = "🐕 You begged your parents for a pet the whole way home!",
+		},
+		{
+			text = "Curious but careful",
+			effects = { Happiness = 5, Smarts = 2 },
+			setFlags = { cautious_kid = true },
+			feedText = "🐕 You watched from a safe distance. Smart kid!",
+		},
+		{
+			text = "SCARED! Too big/fast/loud!",
+			effects = { Happiness = -3 },
+			setFlags = { afraid_of_animals = true },
+			feedText = "😨 You hid behind your parent's legs. Maybe next time!",
+		},
+	},
+}
+
+events[#events + 1] = {
+	id = "toddler_first_music",
+	title = "Musical Discovery!",
+	emoji = "🎵",
+	text = "You discovered you really like music!",
+	question = "What kind of music moves you?",
+	minAge = 3, maxAge = 6,
+	baseChance = 0.35,
+	cooldown = 8,
+	oneTime = true,
+	category = "childhood",
+
+	choices = {
+		{
+			text = "Dancing music - can't sit still!",
+			effects = { Happiness = 8, Health = 2 },
+			-- CRITICAL FIX: This sets flags for future entertainment career!
+			setFlags = { loves_dancing = true, musical_kid = true, natural_dancer = true },
+			feedText = "🎵 You dance whenever music plays! Future star?",
+		},
+		{
+			text = "Singing along - learning all the words!",
+			effects = { Happiness = 7 },
+			setFlags = { loves_singing = true, musical_kid = true, gifted_voice = true },
+			feedText = "🎵 You memorize every song! Your voice is getting noticed!",
+		},
+		{
+			text = "Making noise on pots and pans - DRUMS!",
+			effects = { Happiness = 6 },
+			setFlags = { loves_drums = true, musical_kid = true, loud_kid = true },
+			feedText = "🥁 BANG BANG BANG! Future drummer (parents' eardrums: RIP)!",
+		},
+		{
+			text = "Quiet music - it helps me think",
+			effects = { Happiness = 4, Smarts = 3 },
+			setFlags = { calm_listener = true, thoughtful_kid = true },
+			feedText = "🎵 You like peaceful music. An old soul in a young body!",
+		},
+	},
+}
+
+events[#events + 1] = {
+	id = "child_building_blocks",
+	title = "Master Builder!",
+	emoji = "🧱",
+	text = "You love building things with blocks, LEGO, or anything stackable!",
+	question = "What do you build?",
+	minAge = 3, maxAge = 7,
+	baseChance = 0.4,
+	cooldown = 6,
+	category = "childhood",
+
+	choices = {
+		{
+			text = "The BIGGEST tower ever!",
+			effects = { Happiness = 7 },
+			setFlags = { competitive_builder = true },
+			feedText = "🧱 You built it SO tall! Then... CRASH! Build again!",
+		},
+		{
+			text = "A house for my toys",
+			effects = { Happiness = 6, Smarts = 2 },
+			-- CRITICAL FIX: Wire to future architecture/construction interest!
+			setFlags = { architect_interest = true, creative_builder = true, likes_building = true },
+			feedText = "🧱 Your toys have the nicest house! Future architect?",
+		},
+		{
+			text = "A spaceship to fly away!",
+			effects = { Happiness = 7, Smarts = 3 },
+			setFlags = { space_dreamer = true, science_interest = true },
+			feedText = "🚀 Ready for liftoff! Your imagination is out of this world!",
+		},
+		{
+			text = "Following the instructions perfectly",
+			effects = { Smarts = 5 },
+			setFlags = { detail_oriented = true, follows_rules = true },
+			feedText = "🧱 You followed EVERY step! Precision is your thing!",
+		},
+	},
+}
+
+events[#events + 1] = {
+	id = "child_role_playing",
+	title = "Playing Pretend!",
+	emoji = "🎭",
+	text = "You love playing pretend and acting out stories!",
+	question = "What do you pretend to be?",
+	minAge = 3, maxAge = 7,
+	baseChance = 0.45,
+	cooldown = 5,
+	category = "childhood",
+
+	choices = {
+		{
+			text = "A doctor helping sick patients",
+			effects = { Happiness = 6, Smarts = 2 },
+			-- CRITICAL FIX: Wire to future medical career interest!
+			setFlags = { plays_doctor = true, medical_interest = true, empathetic = true, caring_nature = true },
+			feedText = "🩺 'The doctor will see you now!' You bandaged all your stuffed animals!",
+		},
+		{
+			text = "A superhero saving the day!",
+			effects = { Happiness = 8, Health = 2 },
+			setFlags = { hero_complex = true, brave = true, active_imagination = true },
+			feedText = "🦸 Cape on! Bad guys beware! You saved the world (living room)!",
+		},
+		{
+			text = "A teacher with stuffed animal students",
+			effects = { Happiness = 5, Smarts = 4 },
+			setFlags = { plays_teacher = true, leadership_interest = true, likes_learning = true },
+			feedText = "📚 Class is in session! Your teddy bears are learning so much!",
+		},
+		{
+			text = "A chef cooking delicious food",
+			effects = { Happiness = 6 },
+			setFlags = { plays_chef = true, cooking_interest = true },
+			feedText = "👨‍🍳 'Order up!' Your mud pies and leaf salads are 5-star!",
+		},
+	},
+}
+
 return events

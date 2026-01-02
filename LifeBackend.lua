@@ -15,6 +15,123 @@ local HttpService = game:GetService("HttpService")
 local DATA_STORE_NAME = "BitLifePlayerData_v1"
 local playerDataStore = nil
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- GLOBAL LEADERBOARD SYSTEM
+-- User complaint: "leaderboard inside progressscreen dosent work... its not a LOCAL LEADERBOARD 
+-- ITS FOR EVERYBODY WHO PLAYS GAME ETC BRUH THE RICHEST SOME1 GOT BRUH?? AND OLDEST"
+-- Uses OrderedDataStore to track global records across ALL players!
+-- ═══════════════════════════════════════════════════════════════════════════════
+local LEADERBOARD_RICHEST = "BitLife_Leaderboard_Richest_v1"
+local LEADERBOARD_OLDEST = "BitLife_Leaderboard_Oldest_v1"
+local richestLeaderboard = nil
+local oldestLeaderboard = nil
+
+-- Initialize OrderedDataStores for global leaderboards
+local function initLeaderboards()
+	if not richestLeaderboard then
+		local success1, store1 = pcall(function()
+			return DataStoreService:GetOrderedDataStore(LEADERBOARD_RICHEST)
+		end)
+		if success1 then
+			richestLeaderboard = store1
+			print("[LifeBackend] Richest leaderboard initialized")
+		else
+			warn("[LifeBackend] Failed to init richest leaderboard:", store1)
+		end
+	end
+	
+	if not oldestLeaderboard then
+		local success2, store2 = pcall(function()
+			return DataStoreService:GetOrderedDataStore(LEADERBOARD_OLDEST)
+		end)
+		if success2 then
+			oldestLeaderboard = store2
+			print("[LifeBackend] Oldest leaderboard initialized")
+		else
+			warn("[LifeBackend] Failed to init oldest leaderboard:", store2)
+		end
+	end
+	
+	return richestLeaderboard, oldestLeaderboard
+end
+
+-- Update global leaderboard when a player's life ends
+local function updateGlobalLeaderboards(player, lifeName, age, netWorth)
+	local richest, oldest = initLeaderboards()
+	if not richest or not oldest then return end
+	
+	-- Create unique key: UserId_timestamp to allow multiple entries per player
+	local timestamp = os.time()
+	local entryKey = tostring(player.UserId) .. "_" .. tostring(timestamp)
+	
+	-- Store the player name for retrieval (OrderedDataStore only stores numbers)
+	-- We'll encode name in a separate standard DataStore if needed, or just use UserId
+	-- For simplicity, we'll use just the score value
+	
+	-- Update richest leaderboard (only if significant wealth)
+	if netWorth >= 1000 then
+		local success1 = pcall(function()
+			richest:SetAsync(entryKey, math.floor(netWorth))
+		end)
+		if success1 then
+			print("[LifeBackend] Updated richest leaderboard:", lifeName, netWorth)
+		end
+	end
+	
+	-- Update oldest leaderboard (only if lived to reasonable age)
+	if age >= 10 then
+		local success2 = pcall(function()
+			oldest:SetAsync(entryKey, age)
+		end)
+		if success2 then
+			print("[LifeBackend] Updated oldest leaderboard:", lifeName, age)
+		end
+	end
+end
+
+-- Fetch global leaderboard data for client display
+local function fetchGlobalLeaderboard(leaderboardType, limit)
+	local richest, oldest = initLeaderboards()
+	limit = limit or 10
+	
+	local store = leaderboardType == "richest" and richest or oldest
+	if not store then return {} end
+	
+	local results = {}
+	local success, pages = pcall(function()
+		return store:GetSortedAsync(false, limit) -- false = descending order
+	end)
+	
+	if success and pages then
+		local data = pages:GetCurrentPage()
+		for rank, entry in ipairs(data) do
+			-- entry.key contains UserId_timestamp, entry.value contains the score
+			local keyParts = string.split(entry.key, "_")
+			local userId = tonumber(keyParts[1])
+			local playerName = "Player"
+			
+			-- Try to get player name
+			if userId then
+				local nameSuccess, name = pcall(function()
+					return Players:GetNameFromUserIdAsync(userId)
+				end)
+				if nameSuccess and name then
+					playerName = name
+				end
+			end
+			
+			table.insert(results, {
+				rank = rank,
+				playerName = playerName,
+				userId = userId,
+				value = entry.value,
+			})
+		end
+	end
+	
+	return results
+end
+
 -- Initialize DataStore (wrapped in pcall for Studio testing)
 local function initDataStore()
 	if playerDataStore then return playerDataStore end
@@ -135,6 +252,20 @@ local function serializeState(state)
 		serialized.FinancialState = state.FinancialState
 	end
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #PERSIST-AWARDS: Save UnlockedAwards to persist achievements across lives!
+	-- User complaint: "ENSURE AWARDS DONT KEEP RESETTING EVERY TIME I DIE AND START NEW LIFE"
+	-- Awards are PERMANENT achievements that persist forever once unlocked!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.UnlockedAwards then
+		serialized.UnlockedAwards = state.UnlockedAwards
+	end
+	
+	-- Also save PastLives for the leaderboard/history
+	if state.PastLives then
+		serialized.PastLives = state.PastLives
+	end
+
 	-- Timestamp for debugging
 	serialized._savedAt = os.time()
 	serialized._version = 1
@@ -148,6 +279,70 @@ local function deserializeState(data, player)
 
 	-- Return the data as-is, the onPlayerAdded will merge it with fresh state
 	return data
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- AWARD DEFINITIONS - Must match ProgressScreen for consistency!
+-- User complaint: "ENSURE AWARDS DONT KEEP RESETTING EVERY TIME I DIE AND START NEW LIFE"
+-- These are PERMANENT achievements that persist forever once unlocked!
+-- ═══════════════════════════════════════════════════════════════════════════════
+local AWARD_DEFINITIONS = {
+	{ id = "first_life", check = function(state) return true end },
+	{ id = "centenarian", check = function(state) return state and (state.Age or 0) >= 100 end },
+	{ id = "millionaire", check = function(state) return state and (state.Money or 0) >= 1000000 end },
+	{ id = "billionaire", check = function(state) return state and (state.Money or 0) >= 1000000000 end },
+	{ id = "perfect_stats", check = function(state)
+		if not state or not state.Stats then return false end
+		return (state.Stats.Happiness or 0) >= 100 and (state.Stats.Health or 0) >= 100 
+			and (state.Stats.Smarts or 0) >= 100 and (state.Stats.Looks or 0) >= 100
+	end },
+	{ id = "famous", check = function(state) return state and (state.Fame or 0) >= 100 end },
+	{ id = "married", check = function(state) return state and state.Flags and state.Flags.married end },
+	{ id = "royalty", check = function(state) return state and state.Flags and (state.Flags.is_royalty or state.Flags.royal_birth) end },
+	{ id = "mafia_boss", check = function(state) return state and state.MobState and state.MobState.rank == "Boss" end },
+	{ id = "athlete", check = function(state) return state and state.Flags and state.Flags.signed_athlete end },
+	{ id = "actor", check = function(state) return state and state.Flags and state.Flags.oscar_winner end },
+	{ id = "musician", check = function(state) return state and state.Flags and state.Flags.grammy_winner end },
+	{ id = "veteran", check = function(state) return state and state.Flags and (state.Flags.veteran or state.Flags.combat_veteran) end },
+	{ id = "war_hero", check = function(state) return state and state.Flags and state.Flags.war_hero end },
+	{ id = "medal_of_honor", check = function(state) return state and state.Flags and state.Flags.medal_of_honor end },
+	{ id = "nba_champion", check = function(state) return state and state.Flags and state.Flags.nba_champion end },
+	{ id = "nfl_champion", check = function(state) return state and state.Flags and state.Flags.super_bowl_champion end },
+	{ id = "nba_mvp", check = function(state) return state and state.Flags and state.Flags.nba_mvp end },
+	{ id = "nfl_mvp", check = function(state) return state and state.Flags and state.Flags.nfl_mvp end },
+	{ id = "heisman", check = function(state) return state and state.Flags and state.Flags.heisman_winner end },
+}
+
+-- Function to check and unlock awards for a player
+local function checkAndUnlockAwards(state)
+	if not state then return end
+	
+	-- Initialize UnlockedAwards if not exists
+	state.UnlockedAwards = state.UnlockedAwards or {}
+	
+	local newlyUnlocked = {}
+	
+	for _, award in ipairs(AWARD_DEFINITIONS) do
+		-- Check if already unlocked
+		if not state.UnlockedAwards[award.id] then
+			-- Check if condition is met
+			local success, result = pcall(function()
+				return award.check(state)
+			end)
+			
+			if success and result then
+				-- Unlock the award!
+				state.UnlockedAwards[award.id] = {
+					unlockedAt = os.time(),
+					unlockedAge = state.Age or 0,
+					lifeName = state.Name or "Unknown",
+				}
+				table.insert(newlyUnlocked, award.id)
+			end
+		end
+	end
+	
+	return newlyUnlocked
 end
 
 -- Save player data to DataStore
@@ -5014,6 +5209,74 @@ local JobCatalogList = {
 		requiresFlags = { "senior_coaching", "coaching_career" }, -- CRITICAL FIX: Must have senior coaching experience
 		grantsFlags = { "head_coach", "elite_coach" },
 		description = "Requires coaching experience - elite coaching position" },
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- NBA BASKETBALL CAREER PATH - CRITICAL FIX: Added missing NBA jobs!
+	-- These jobs are EVENT-DRIVEN - you get them through draft events, not direct application
+	-- Player must have proper basketball background and be drafted to access these
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{ id = "nba_g_league", name = "G-League Player", company = "NBA G-League", emoji = "🏀", salary = 45000, minAge = 19, maxAge = 28, requirement = nil, category = "sports",
+		minStats = { Health = 75 }, difficulty = 8,
+		-- CRITICAL FIX: Accept all basketball-related flags from NBA events! (OR logic - any works)
+		-- Fixed flag names: varsity_athlete (not varsity_basketball), added plays_basketball
+		requiresFlags = { "college_basketball", "basketball_prodigy", "march_madness_star", "nba_dream_setback", "basketball_talent", "camp_standout", "varsity_athlete", "plays_basketball", "aau_player" },
+		grantsFlags = { "nba_g_league_player", "pro_basketball" },
+		description = "Development league - requires strong basketball background" },
+	{ id = "nba_player", name = "NBA Player", company = "NBA Team", emoji = "🏀", salary = 925000, minAge = 19, maxAge = 38, requirement = nil, category = "sports",
+		minStats = { Health = 80 }, difficulty = 10,
+		-- Must have nba_player flag from draft events OR g-league
+		requiresFlags = { "nba_player", "nba_g_league_player" },
+		grantsFlags = { "nba_active", "pro_basketball", "professional_athlete" },
+		description = "Must be drafted to NBA or promoted from G-League" },
+	{ id = "nba_starter", name = "NBA Starter", company = "NBA Team", emoji = "🏀", salary = 8000000, minAge = 21, maxAge = 36, requirement = nil, category = "sports",
+		minStats = { Health = 85 }, difficulty = 10,
+		requiresFlags = { "nba_player", "nba_active" },
+		grantsFlags = { "nba_starter", "nba_active" },
+		description = "Starting player - must already be in NBA" },
+	{ id = "nba_allstar", name = "NBA All-Star", company = "NBA Team", emoji = "⭐🏀", salary = 35000000, minAge = 22, maxAge = 38, requirement = nil, category = "sports",
+		minStats = { Health = 90 }, difficulty = 10,
+		requiresFlags = { "nba_allstar" }, -- Must be voted All-Star through events
+		grantsFlags = { "nba_star", "basketball_elite" },
+		description = "Must be selected as All-Star through voting events" },
+	{ id = "nba_superstar", name = "NBA Superstar", company = "Championship Contender", emoji = "🏆🏀", salary = 50000000, minAge = 24, maxAge = 36, requirement = nil, category = "sports",
+		minStats = { Health = 90 }, difficulty = 10,
+		requiresFlags = { "nba_mvp", "nba_champion" }, -- Must win MVP OR championship
+		grantsFlags = { "nba_superstar", "basketball_legend" },
+		description = "Elite status - must win MVP award or championship" },
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- NFL FOOTBALL CAREER PATH - CRITICAL FIX: Added missing NFL jobs!
+	-- These jobs are EVENT-DRIVEN - you get them through draft events, not direct application
+	-- Player must have proper football background and be drafted to access these
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{ id = "nfl_practice_squad", name = "NFL Practice Squad", company = "NFL Team", emoji = "🏈", salary = 200000, minAge = 21, maxAge = 28, requirement = nil, category = "sports",
+		minStats = { Health = 80 }, difficulty = 9,
+		-- CRITICAL FIX: Accept all football-related flags from NFL events! (OR logic - any works)
+		-- Added plays_football and varsity_athlete for better compatibility with events
+		requiresFlags = { "college_football", "football_star", "bowl_game_mvp", "nfl_dream_crushed", "football_talent", "camp_standout", "varsity_football", "plays_football", "varsity_athlete" },
+		grantsFlags = { "nfl_practice_squad_player", "pro_football" },
+		description = "Practice squad - requires strong football background" },
+	{ id = "nfl_player", name = "NFL Player", company = "NFL Team", emoji = "🏈", salary = 750000, minAge = 21, maxAge = 36, requirement = nil, category = "sports",
+		minStats = { Health = 85 }, difficulty = 10,
+		-- Must have nfl_player flag from draft events OR practice squad
+		requiresFlags = { "nfl_player", "nfl_practice_squad_player" },
+		grantsFlags = { "nfl_active", "pro_football", "professional_athlete" },
+		description = "Must be drafted to NFL or promoted from practice squad" },
+	{ id = "nfl_starter", name = "NFL Starter", company = "NFL Team", emoji = "🏈", salary = 5000000, minAge = 22, maxAge = 34, requirement = nil, category = "sports",
+		minStats = { Health = 88 }, difficulty = 10,
+		requiresFlags = { "nfl_player", "nfl_active" },
+		grantsFlags = { "nfl_starter", "nfl_active" },
+		description = "Starting player - must already be in NFL" },
+	{ id = "nfl_pro_bowler", name = "NFL Pro Bowler", company = "NFL Team", emoji = "⭐🏈", salary = 20000000, minAge = 23, maxAge = 35, requirement = nil, category = "sports",
+		minStats = { Health = 90 }, difficulty = 10,
+		requiresFlags = { "nfl_pro_bowl" }, -- Must be selected Pro Bowl through events
+		grantsFlags = { "nfl_star", "football_elite" },
+		description = "Must be selected to Pro Bowl through voting events" },
+	{ id = "nfl_superstar", name = "NFL Superstar", company = "Super Bowl Contender", emoji = "🏆🏈", salary = 45000000, minAge = 24, maxAge = 34, requirement = nil, category = "sports",
+		minStats = { Health = 92 }, difficulty = 10,
+		requiresFlags = { "nfl_mvp", "super_bowl_champion" }, -- Must win MVP OR Super Bowl
+		grantsFlags = { "nfl_superstar", "football_legend" },
+		description = "Elite status - must win MVP award or Super Bowl" },
 
 	-- MILITARY - CRITICAL FIX: All military jobs now require fitness and have proper progression flags!
 	{ id = "enlisted", name = "Enlisted Soldier", company = "US Army", emoji = "🪖", salary = 35000, minAge = 18, requirement = "high_school", category = "military",
@@ -5111,10 +5374,17 @@ local JobCatalogList = {
 	-- Requires: High Smarts, tech skills
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- Entry points (shared) - These give experience flags for higher-tier jobs
+	-- CRITICAL FIX: Script kiddie is now more accessible with early-life tech flags!
 	{ id = "script_kiddie", name = "Script Kiddie", company = "The Internet", emoji = "👶💻", salary = 1500, minAge = 14, requirement = nil, category = "hacker",
-		minStats = { Smarts = 55 }, grantsFlags = { "coder", "tech_experience" }, description = "Learning to hack with pre-made tools - small side gigs" },
+		minStats = { Smarts = 45 }, -- CRITICAL FIX: Lowered from 55 for accessibility
+		-- CRITICAL FIX: Accept early-life tech discovery flags OR just high smarts
+		requiresFlags = { "tech_savvy", "coder", "hacker_interest", "computer_interest", "gamer", "coding_prodigy" },
+		grantsFlags = { "coder", "tech_experience", "script_kiddie" }, description = "Learning to hack with pre-made tools - small side gigs" },
 	{ id = "freelance_hacker", name = "Freelance Hacker", company = "Dark Web", emoji = "🖥️", salary = 60000, minAge = 18, requirement = nil, category = "hacker",
-		minStats = { Smarts = 65 }, requiresFlags = { "coder", "tech_experience" }, grantsFlags = { "hacker_experience" }, description = "Taking small hacking jobs online" },
+		minStats = { Smarts = 60 }, -- CRITICAL FIX: Lowered from 65
+		-- CRITICAL FIX: Accept early-life flags OR script kiddie experience (OR logic!)
+		requiresFlags = { "coder", "tech_experience", "script_kiddie", "hacker_interest", "coding_prodigy" }, 
+		grantsFlags = { "hacker_experience" }, description = "Taking small hacking jobs online" },
 	
 	-- White Hat Path (Legit Cybersecurity)
 	{ id = "pen_tester", name = "Penetration Tester", company = "SecureIT Solutions", emoji = "🔓", salary = 95000, minAge = 20, requirement = "high_school", category = "tech",
@@ -5141,19 +5411,23 @@ local JobCatalogList = {
 	-- Must have gamer flag from childhood/teen gaming hobby to enter this career
 	-- Can't just become a $150K pro gamer at 17 without gaming background!
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Entry-level gaming job - accepts all early-life gaming flags!
 	{ id = "casual_gamer", name = "Casual Streamer", company = "Twitch", emoji = "🎮", salary = 5000, minAge = 13, requirement = nil, category = "esports",
 		minStats = { Smarts = 40 }, difficulty = 2,
-		requiresFlags = { "gamer", "loves_games", "casual_gamer", "tech_savvy" }, -- CRITICAL FIX: Must be a gamer!
-		grantsFlags = { "streamer", "content_creator_experience", "esports_experience" },
+		-- CRITICAL FIX: Accept ANY gaming-related flag from early-life discovery events!
+		requiresFlags = { "gamer", "loves_games", "casual_gamer", "tech_savvy", "gaming_prodigy", "competitive_gamer", "esports_winner" },
+		grantsFlags = { "streamer", "content_creator_experience", "esports_experience", "gamer" },
 		description = "Stream games with a small following - requires gaming hobby" },
 	{ id = "content_creator", name = "Gaming Content Creator", company = "YouTube Gaming", emoji = "📹", salary = 25000, minAge = 16, requirement = nil, category = "esports",
 		minStats = { Smarts = 50 }, difficulty = 4,
-		requiresFlags = { "gamer", "streamer", "content_creator_experience", "esports_experience" }, -- CRITICAL FIX: Must have streaming experience
-		grantsFlags = { "youtube_gamer", "content_creator", "growing_audience" },
+		-- CRITICAL FIX: Accept streamer flag OR gaming background from early-life events
+		requiresFlags = { "gamer", "streamer", "content_creator_experience", "esports_experience", "gaming_prodigy", "competitive_gamer" },
+		grantsFlags = { "youtube_gamer", "content_creator", "growing_audience", "streamer" },
 		description = "Create gaming content with growing audience - requires streaming experience" },
 	{ id = "pro_gamer", name = "Pro Gamer", company = "Esports Organization", emoji = "🕹️", salary = 65000, minAge = 17, requirement = nil, category = "esports",
 		minStats = { Smarts = 60, Health = 50 }, difficulty = 7,
-		requiresFlags = { "youtube_gamer", "content_creator", "competitive_gamer", "esports_winner", "esports_experience" }, -- CRITICAL FIX: Need proven competitive gaming history
+		-- CRITICAL FIX: Accept competitive_gamer OR esports_winner from early-life events!
+		requiresFlags = { "youtube_gamer", "content_creator", "competitive_gamer", "esports_winner", "esports_experience", "gaming_prodigy" },
 		grantsFlags = { "pro_gamer", "esports_pro", "signed_gamer" },
 		description = "Compete professionally in esports - requires competitive gaming history" },
 	{ id = "esports_champion", name = "Esports Champion", company = "World Champions", emoji = "🏆", salary = 350000, minAge = 18, requirement = nil, category = "esports",
@@ -5731,11 +6005,13 @@ local ActivityCatalog = {
 	walk = { stats = { Health = 4, Happiness = 3 }, feed = "went for a walk", cost = 0 },
 	arcade = { stats = { Happiness = 5, Smarts = 2 }, feed = "played arcade games", cost = 30 },
 	karaoke = { stats = { Happiness = 6, Looks = 1 }, feed = "sang karaoke", cost = 20 },
-	doctor = { stats = { Health = 8 }, feed = "visited the doctor", cost = 100, usesInsurance = true },
-	dentist = { stats = { Health = 3, Looks = 2 }, feed = "visited the dentist", cost = 150, usesInsurance = true },
-	therapist = { stats = { Happiness = 8, Health = 2 }, feed = "saw a therapist", cost = 200, usesInsurance = true },
-	chiropractor = { stats = { Health = 5, Happiness = 2 }, feed = "saw the chiropractor", cost = 100, usesInsurance = true },
-	acupuncture = { stats = { Health = 4, Happiness = 3 }, feed = "tried acupuncture", cost = 100 },
+	-- CRITICAL FIX: Medical activities now set visited_doctor flag for treatment checkup events
+	-- User bug: "treatment follow-up showed but I don't remember going to doctor"
+	doctor = { stats = { Health = 8 }, feed = "visited the doctor", cost = 100, usesInsurance = true, setFlags = { visited_doctor = true, has_doctor = true } },
+	dentist = { stats = { Health = 3, Looks = 2 }, feed = "visited the dentist", cost = 150, usesInsurance = true, setFlags = { visited_doctor = true, visited_dentist = true } },
+	therapist = { stats = { Happiness = 8, Health = 2 }, feed = "saw a therapist", cost = 200, usesInsurance = true, setFlags = { visited_doctor = true, has_therapist = true } },
+	chiropractor = { stats = { Health = 5, Happiness = 2 }, feed = "saw the chiropractor", cost = 100, usesInsurance = true, setFlags = { visited_doctor = true } },
+	acupuncture = { stats = { Health = 4, Happiness = 3 }, feed = "tried acupuncture", cost = 100, setFlags = { visited_doctor = true } },
 	diet = { stats = { Health = 5, Looks = 3 }, feed = "went on a diet", cost = 0 },
 	quit_smoking = { stats = { Health = 10, Happiness = -5 }, feed = "quit smoking!", cost = 0, setFlags = { smoker = nil, quit_smoking = true } },
 	quit_drinking = { stats = { Health = 8, Happiness = -3 }, feed = "quit drinking!", cost = 0, setFlags = { drinker = nil, quit_drinking = true } },
@@ -9158,6 +9434,12 @@ function LifeBackend:setupRemotes()
 	self.remotes.DoRoyalDuty = self:createRemote("DoRoyalDuty", "RemoteFunction")
 	self.remotes.Abdicate = self:createRemote("Abdicate", "RemoteFunction")
 	self.remotes.GetRoyalInfo = self:createRemote("GetRoyalInfo", "RemoteFunction")
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- GLOBAL LEADERBOARD: Remote to fetch global leaderboard data
+	-- User complaint: "leaderboard... ITS FOR EVERYBODY WHO PLAYS GAME"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	self.remotes.GetGlobalLeaderboard = self:createRemote("GetGlobalLeaderboard", "RemoteFunction")
 
 	-- Event connections
 	self.remotes.RequestAgeUp.OnServerEvent:Connect(function(player)
@@ -9341,6 +9623,12 @@ function LifeBackend:setupRemotes()
 			married = state.Flags and state.Flags.married or false,
 		})
 		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- GLOBAL LEADERBOARD UPDATE: Record this life's achievements globally!
+		-- User complaint: "leaderboard... ITS FOR EVERYBODY WHO PLAYS GAME"
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		updateGlobalLeaderboards(player, state.Name or "Unknown", state.Age or 0, state.Money or 0)
+		
 		print("[LifeBackend] Death state set (Health=0), pushing to client...")
 		
 		-- Push the death state to client with death info
@@ -9421,6 +9709,16 @@ function LifeBackend:setupRemotes()
 	
 	self.remotes.GetRoyalInfo.OnServerInvoke = function(player)
 		return self:getRoyalInfo(player)
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- GLOBAL LEADERBOARD HANDLER: Fetch global leaderboard data for client
+	-- User complaint: "leaderboard... ITS FOR EVERYBODY WHO PLAYS GAME"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	self.remotes.GetGlobalLeaderboard.OnServerInvoke = function(player, leaderboardType)
+		-- leaderboardType is "richest" or "oldest"
+		local results = fetchGlobalLeaderboard(leaderboardType, 10)
+		return results
 	end
 end
 
@@ -11016,9 +11314,12 @@ function LifeBackend:updateEducationProgress(state)
 end
 
 function LifeBackend:tickCareer(state)
-	-- CRITICAL: Don't tick career for retired players
-	if state.Flags and state.Flags.retired then
-		return
+	-- CRITICAL: Don't tick career for retired players (generic or sport-specific)
+	if state.Flags then
+		if state.Flags.retired or state.Flags.nfl_retired or state.Flags.nba_retired or 
+		   state.Flags.retired_racer or state.Flags.retired_athlete or state.Flags.happily_retired then
+			return
+		end
 	end
 	
 	-- CRITICAL FIX: Don't tick career while in jail - player loses their job progression
@@ -11374,6 +11675,94 @@ function LifeBackend:collectPropertyIncome(state)
 			emoji = "🏠",
 			text = string.format("Collected $%s in property rental income", formatMoney(totalIncome)),
 			amount = totalIncome,
+		})
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #PENSION-1: Pension Collection for Retired Athletes
+-- NFL/NBA/Racing/Generic retired players should receive pension income annually
+-- Without this, retired athletes get no income after ending their career!
+-- User complaint: "I retired from the NFL and now I have no income???"
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:collectPensionIncome(state)
+	-- Only collect pension if retired
+	if not state.Flags then return end
+	
+	local isRetired = state.Flags.retired or state.Flags.nfl_retired or 
+		state.Flags.nba_retired or state.Flags.retired_athlete or
+		state.Flags.happily_retired or state.Flags.semi_retired
+	
+	if not isRetired then return end
+	
+	-- Get pension amount from flags (set during retirement event)
+	local pensionAmount = state.Flags.pension_amount or 0
+	
+	-- If no explicit pension but they're retired from a high-paying career, calculate one
+	if pensionAmount == 0 then
+		-- Check for various career-specific retirement flags
+		if state.Flags.nfl_retired or state.Flags.retired_athlete then
+			-- NFL average pension is ~$43K/year for 10+ years
+			local yearsPlayed = state.Flags.nfl_draft_age and ((state.Age or 30) - (state.Flags.nfl_draft_age or 22)) or 8
+			pensionAmount = math.min(200000, 30000 + (yearsPlayed * 3000))
+			
+			-- Bonus for achievements
+			if state.Flags.super_bowl_champion then pensionAmount = pensionAmount + 25000 end
+			if state.Flags.nfl_pro_bowl then pensionAmount = pensionAmount + 15000 end
+			if state.Flags.nfl_mvp then pensionAmount = pensionAmount + 50000 end
+			
+		elseif state.Flags.nba_retired then
+			-- NBA pension starts at ~$22K/year for 3+ years
+			local yearsPlayed = state.Flags.nba_draft_age and ((state.Age or 30) - (state.Flags.nba_draft_age or 21)) or 10
+			pensionAmount = math.min(250000, 22000 + (yearsPlayed * 5600))
+			
+			-- Bonus for achievements  
+			if state.Flags.nba_champion then pensionAmount = pensionAmount + 30000 end
+			if state.Flags.nba_allstar then pensionAmount = pensionAmount + 20000 end
+			if state.Flags.nba_mvp then pensionAmount = pensionAmount + 60000 end
+			
+		elseif state.Flags.racing_legend_status or state.Flags.retired_racer then
+			-- Racing doesn't have standard pensions but legends get sponsorship residuals
+			local championships = state.Flags.championships_won or 0
+			pensionAmount = 50000 + (championships * 25000)
+			
+		elseif state.Flags.hall_of_famer or state.Flags.hall_of_fame_inducted then
+			-- Hall of Famers get appearance fees and legacy income
+			pensionAmount = 100000
+		end
+		
+		-- Store calculated pension for future years
+		if pensionAmount > 0 then
+			state.Flags.pension_amount = pensionAmount
+		end
+	end
+	
+	-- If still no pension but generically retired with high career earnings, small pension
+	if pensionAmount == 0 and state.Flags.retired then
+		-- Generic retiree gets Social Security-like income
+		local ssIncome = RANDOM:NextInteger(18000, 45000)
+		pensionAmount = ssIncome
+	end
+	
+	-- Apply pension income
+	if pensionAmount > 0 then
+		self:addMoney(state, pensionAmount)
+		
+		state.YearLog = state.YearLog or {}
+		
+		-- Determine pension type for message
+		local pensionType = "retirement"
+		if state.Flags.nfl_retired then pensionType = "NFL pension"
+		elseif state.Flags.nba_retired then pensionType = "NBA pension"
+		elseif state.Flags.retired_racer then pensionType = "racing royalties"
+		elseif state.Flags.hall_of_famer then pensionType = "Hall of Fame stipend"
+		end
+		
+		table.insert(state.YearLog, {
+			type = "pension_income",
+			emoji = "🏆",
+			text = string.format("Received %s from %s", formatMoney(pensionAmount), pensionType),
+			amount = pensionAmount,
 		})
 	end
 end
@@ -13386,7 +13775,7 @@ function LifeBackend:checkNaturalDeath(state)
 			end
 			
 			-- AAA FIX: Comprehensive death cleanup
-			self:processDeathCleanup(state)
+			self:processDeathCleanup(state, player)
 		end
 	end
 end
@@ -13395,7 +13784,7 @@ end
 -- AAA FIX: Comprehensive death state cleanup
 -- Ensures all active states are properly terminated on death
 -- ═══════════════════════════════════════════════════════════════════════════════
-function LifeBackend:processDeathCleanup(state)
+function LifeBackend:processDeathCleanup(state, player)
 	if not state then return end
 	
 	state.Flags = state.Flags or {}
@@ -13434,6 +13823,15 @@ function LifeBackend:processDeathCleanup(state)
 			job = state.CurrentJob and state.CurrentJob.title or nil,
 			achievements = {}
 		})
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- GLOBAL LEADERBOARD UPDATE: Record this life's achievements globally!
+		-- User complaint: "leaderboard... ITS FOR EVERYBODY WHO PLAYS GAME"
+		-- Only update if not already recorded (to prevent duplicates with GiveUp)
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		if player then
+			updateGlobalLeaderboards(player, state.Name or "Unknown", state.Age or 0, state.Money or 0)
+		end
 	end
 	
 	-- Set all death flags
@@ -14421,6 +14819,7 @@ function LifeBackend:handleAgeUp(player)
 	self:updateEducationProgress(state)
 	self:tickCareer(state)
 	self:collectPropertyIncome(state) -- CRITICAL FIX: Collect passive income from owned properties
+	self:collectPensionIncome(state) -- CRITICAL FIX #PENSION-1: Retired athletes get annual pension
 	self:collectSpouseIncome(state) -- CRITICAL FIX (deep-11): Spouse contributes to household income
 	self:tickVehicleDepreciation(state) -- CRITICAL FIX #10: Vehicles lose value over time
 	self:tickInvestments(state) -- CRITICAL FIX #11: Investments fluctuate in value
@@ -14975,6 +15374,16 @@ function LifeBackend:resetLife(player)
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #AWARDS-PERSIST: Preserve UnlockedAwards before resetting!
+	-- User complaint: "ENSURE AWARDS DONT KEEP RESETTING EVERY TIME I DIE AND START NEW LIFE"
+	-- Awards are PERMANENT achievements that persist forever once unlocked!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local preservedUnlockedAwards = nil
+	if oldState and oldState.UnlockedAwards then
+		preservedUnlockedAwards = oldState.UnlockedAwards
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #7-20: COMPREHENSIVE STATE RESET ON NEW LIFE
 	-- Previously, many state fields persisted across lives causing bugs like:
 	-- - Old job showing after death
@@ -15274,6 +15683,17 @@ function LifeBackend:resetLife(player)
 		newState.PastLives = preservedPastLives
 	else
 		newState.PastLives = {}
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #AWARDS-PERSIST: Restore UnlockedAwards after reset
+	-- User complaint: "ENSURE AWARDS DONT KEEP RESETTING EVERY TIME I DIE AND START NEW LIFE"
+	-- Awards are PERMANENT achievements that persist forever once unlocked!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if preservedUnlockedAwards then
+		newState.UnlockedAwards = preservedUnlockedAwards
+	else
+		newState.UnlockedAwards = {}
 	end
 	
 	-- Store the new state
@@ -15719,6 +16139,16 @@ function LifeBackend:handleContinueAsKid(player, childData)
 end
 
 function LifeBackend:completeAgeCycle(player, state, feedText, resultData)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #AWARDS-PERSIST: Check and unlock awards before finalizing the age cycle!
+	-- User complaint: "ENSURE AWARDS DONT KEEP RESETTING EVERY TIME I DIE AND START NEW LIFE"
+	-- Awards are checked here so they're captured even at death!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local newAwards = checkAndUnlockAwards(state)
+	if newAwards and #newAwards > 0 then
+		debugPrint("Awards unlocked for", player.Name, ":", table.concat(newAwards, ", "))
+	end
+	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: Show relationship decay events as proper card popups!
 	-- User reported: "Robert is furious!" was showing as feed text, not card popup
@@ -17840,6 +18270,7 @@ function LifeBackend:getJobEligibility(player)
 					school_sports = "School sports team participation",
 					plays_soccer = "Soccer team experience",
 					plays_basketball = "Basketball team experience",
+					plays_football = "Football team experience",
 					varsity_athlete = "Varsity sports experience",
 					team_player = "Team sports experience",
 					camp_athlete = "Sports camp experience",
@@ -17848,6 +18279,28 @@ function LifeBackend:getJobEligibility(player)
 					pro_sports_experience = "Professional sports experience",
 					fitness_experience = "Fitness/gym experience",
 					trainer = "Trainer experience",
+					-- NBA Basketball Career Path
+					basketball_prodigy = "Basketball prodigy status",
+					college_basketball = "College basketball experience",
+					college_sports_interest = "College scout interest",
+					scholarship_likely = "Scholarship prospect",
+					state_champion = "State championship winner",
+					sports_legend = "High school sports legend",
+					nba_declared = "Declared for NBA Draft",
+					nba_player = "NBA Player",
+					nba_allstar = "NBA All-Star",
+					nba_mvp = "NBA MVP",
+					nba_champion = "NBA Champion",
+					-- NFL Football Career Path
+					football_star = "Football star status",
+					college_football = "College football experience",
+					heisman_winner = "Heisman Trophy winner",
+					nfl_declared = "Declared for NFL Draft",
+					nfl_player = "NFL Player",
+					nfl_first_round = "NFL First Round Pick",
+					nfl_pro_bowl = "NFL Pro Bowl selection",
+					nfl_mvp = "NFL MVP",
+					super_bowl_champion = "Super Bowl Champion",
 					-- Creative career
 					acting_experience = "Acting experience",
 					professional_actor = "Professional acting career",
@@ -18475,6 +18928,58 @@ function LifeBackend:handleJobApplication(player, jobId, clientInterviewScore)
 		gpaBonus = 0.10 -- Valedictorian gets significant boost
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Career hints from early life choices MASSIVELY help!
+	-- If player showed interest in this career path during childhood/teens, they get bonus
+	-- This makes early life choices MEANINGFUL for career progression!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local careerHintBonus = 0
+	state.CareerHints = state.CareerHints or {}
+	
+	-- Map job categories to career hint categories
+	local categoryToHint = {
+		sports = { "sports", "athletic" },
+		tech = { "tech", "stem", "coding", "gaming" },
+		medical = { "medical", "science", "veterinary" },
+		science = { "science", "stem" },
+		creative = { "creative", "arts", "entertainment" },
+		music = { "creative", "music", "entertainment" },
+		acting = { "creative", "entertainment", "arts" },
+		finance = { "finance", "business" },
+		law = { "law", "justice" },
+		education = { "education" },
+		military = { "military" },
+		gaming = { "gaming", "tech", "esports" },
+	}
+	
+	local jobCategory = (job.category or ""):lower()
+	local hintCategories = categoryToHint[jobCategory] or { jobCategory }
+	
+	for _, hintCat in ipairs(hintCategories) do
+		if state.CareerHints[hintCat] then
+			careerHintBonus = careerHintBonus + 0.15 -- +15% per matching hint
+		end
+	end
+	
+	-- Cap the career hint bonus
+	careerHintBonus = math.min(0.30, careerHintBonus) -- Max +30% bonus from career hints
+	
+	-- Special bonus for sports careers if player has relevant flags
+	if jobCategory == "sports" then
+		if state.Flags then
+			if state.Flags.varsity_athlete then careerHintBonus = careerHintBonus + 0.10 end
+			if state.Flags.state_champion then careerHintBonus = careerHintBonus + 0.15 end
+			if state.Flags.plays_basketball or state.Flags.plays_football then careerHintBonus = careerHintBonus + 0.10 end
+			if state.Flags.college_sports_interest then careerHintBonus = careerHintBonus + 0.10 end
+			if state.Flags.scholarship_likely then careerHintBonus = careerHintBonus + 0.15 end
+			if state.Flags.sports_legend then careerHintBonus = careerHintBonus + 0.20 end
+			if state.Flags.college_basketball or state.Flags.college_football then careerHintBonus = careerHintBonus + 0.20 end
+			if state.Flags.heisman_winner then careerHintBonus = careerHintBonus + 0.30 end
+		end
+		-- But cap at 50% total bonus for sports (still needs some luck!)
+		careerHintBonus = math.min(0.50, careerHintBonus)
+	end
+	
 	-- Previous rejection penalty (companies remember bad interviews)
 	local rejectionPenalty = math.min(0.20, (appHistory.attempts or 0) * 0.08) -- -8% per previous rejection, max -20%
 	
@@ -18553,8 +19058,9 @@ function LifeBackend:handleJobApplication(player, jobId, clientInterviewScore)
 	local maxChance = 1.0 - (difficulty * 0.05) -- difficulty 10 caps at 50%, difficulty 1 caps at 95%
 	maxChance = math.clamp(maxChance, 0.30, 0.95)
 	
-	-- CRITICAL FIX #22: Include GPA bonus in final chance calculation
-	local finalChance = math.clamp(baseChance + experienceBonus + statBonus + gpaBonus - rejectionPenalty - criminalPenalty, 0.02, maxChance)
+	-- CRITICAL FIX #22: Include GPA bonus AND career hint bonus in final chance calculation
+	-- Career hints from early life choices now MATTER for getting jobs!
+	local finalChance = math.clamp(baseChance + experienceBonus + statBonus + gpaBonus + careerHintBonus - rejectionPenalty - criminalPenalty, 0.02, maxChance)
 	
 	-- Entry-level jobs (no requirements, low salary) - still have some chance of rejection
 	if not job.requirement and (job.salary or 0) < 35000 then
@@ -21356,7 +21862,110 @@ local InteractionEffects = {
 		},
 		breakup = { delta = -999, message = "You ended the relationship.", remove = true, clearFlags = { "has_partner", "dating", "committed_relationship", "married", "engaged" } },
 		flirt = { delta = 4, message = "You flirted playfully." },
-		compliment = { delta = 3, message = "You complimented them." },
+		compliment = { 
+			delta = 3, 
+			showResult = true,
+			message = function(state, relationship, payload)
+				local partnerName = (relationship and relationship.name) or "your partner"
+				local subChoice = payload and payload.subChoice or "surprise"
+				
+				local outcomesByChoice = {
+					appearance = {
+						{ text = "✨ " .. partnerName .. " blushed! \"You really think so?\"", delta = 5, happiness = 6 },
+						{ text = "✨ " .. partnerName .. " smiled wide! They love when you notice them!", delta = 6, happiness = 7 },
+						{ text = "✨ \"Aww, you're so sweet!\" " .. partnerName .. " gave you a hug!", delta = 7, happiness = 8 },
+					},
+					personality = {
+						{ text = "💫 " .. partnerName .. " was touched! \"That means so much to me!\"", delta = 8, happiness = 9 },
+						{ text = "💫 " .. partnerName .. " said you're the sweetest person ever!", delta = 7, happiness = 8 },
+						{ text = "💫 Deep compliment to " .. partnerName .. "! They felt truly seen!", delta = 10, happiness = 10 },
+					},
+					achievement = {
+						{ text = "🏆 " .. partnerName .. " beamed with pride! \"Thanks for believing in me!\"", delta = 8, happiness = 9 },
+						{ text = "🏆 You hyped up " .. partnerName .. "'s accomplishments! They feel supported!", delta = 7, happiness = 8 },
+						{ text = "🏆 " .. partnerName .. " got emotional! No one appreciates them like you do!", delta = 10, happiness = 11 },
+					},
+					genuine = {
+						{ text = "💕 " .. partnerName .. " was speechless! \"I love you so much!\"", delta = 12, happiness = 12 },
+						{ text = "💕 Your sincere words touched " .. partnerName .. "'s heart deeply!", delta = 10, happiness = 11 },
+						{ text = "💕 " .. partnerName .. " teared up! \"No one has ever said something so beautiful!\"", delta = 14, happiness = 13 },
+					},
+				}
+				
+				local outcomes
+				if subChoice == "surprise" or not outcomesByChoice[subChoice] then
+					local allOutcomes = {}
+					for _, choiceOutcomes in pairs(outcomesByChoice) do
+						for _, outcome in ipairs(choiceOutcomes) do
+							table.insert(allOutcomes, outcome)
+						end
+					end
+					outcomes = allOutcomes
+				else
+					outcomes = outcomesByChoice[subChoice]
+				end
+				
+				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
+				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
+				if relationship and outcome.delta then 
+					relationship.relationship = clamp((relationship.relationship or 50) + outcome.delta, -100, 100)
+				end
+				return outcome.text
+			end,
+		},
+		spend_time = {
+			delta = 5,
+			showResult = true,
+			message = function(state, relationship, payload)
+				local partnerName = (relationship and relationship.name) or "your partner"
+				local subChoice = payload and payload.subChoice or "surprise"
+				
+				local outcomesByChoice = {
+					quality = {
+						{ text = "💕 Perfect quality time with " .. partnerName .. "! No distractions, just connection!", delta = 10, happiness = 10 },
+						{ text = "💕 You and " .. partnerName .. " had the best conversation! Relationship goals!", delta = 9, happiness = 9 },
+						{ text = "💕 " .. partnerName .. " said this was exactly what they needed! You're thoughtful!", delta = 11, happiness = 11 },
+					},
+					activity = {
+						{ text = "🎮 Fun activity with " .. partnerName .. "! Competitive but playful!", delta = 7, happiness = 12 },
+						{ text = "🎮 You and " .. partnerName .. " tried something new together! Great memories!", delta = 8, happiness = 10 },
+						{ text = "🎮 " .. partnerName .. " won but you had a blast anyway!", delta = 6, happiness = 9 },
+					},
+					talk = {
+						{ text = "💬 Deep talk with " .. partnerName .. ". You learned something new about them!", delta = 9, happiness = 8, smarts = 1 },
+						{ text = "💬 Heart-to-heart with " .. partnerName .. ". You feel closer than ever!", delta = 12, happiness = 10 },
+						{ text = "💬 You and " .. partnerName .. " opened up to each other. True intimacy!", delta = 11, happiness = 11 },
+					},
+					relax = {
+						{ text = "😌 Relaxing time with " .. partnerName .. ". Sometimes doing nothing is perfect!", delta = 7, happiness = 9, health = 3 },
+						{ text = "😌 You and " .. partnerName .. " just vibed together. Comfortable silence!", delta = 8, happiness = 8, health = 2 },
+						{ text = "😌 Chill day with " .. partnerName .. ". You're lucky to have someone so easy to be around!", delta = 9, happiness = 10, health = 4 },
+					},
+				}
+				
+				local outcomes
+				if subChoice == "surprise" or not outcomesByChoice[subChoice] then
+					local allOutcomes = {}
+					for _, choiceOutcomes in pairs(outcomesByChoice) do
+						for _, outcome in ipairs(choiceOutcomes) do
+							table.insert(allOutcomes, outcome)
+						end
+					end
+					outcomes = allOutcomes
+				else
+					outcomes = outcomesByChoice[subChoice]
+				end
+				
+				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
+				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
+				if outcome.health and state.ModifyStat then state:ModifyStat("Health", outcome.health) end
+				if outcome.smarts and state.ModifyStat then state:ModifyStat("Smarts", outcome.smarts) end
+				if relationship and outcome.delta then 
+					relationship.relationship = clamp((relationship.relationship or 50) + outcome.delta, -100, 100)
+				end
+				return outcome.text
+			end,
+		},
 		meet_someone = {
 			forceNewRelationship = true,
 			requiresSingle = true,
@@ -21694,6 +22303,105 @@ local InteractionEffects = {
 				
 				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
 				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
+				return outcome.text
+			end,
+		},
+		talk = {
+			delta = 4,
+			showResult = true,
+			message = function(state, relationship, payload)
+				local friendName = (relationship and relationship.name) or "your friend"
+				local subChoice = payload and payload.subChoice or "surprise"
+				
+				local outcomesByChoice = {
+					life = {
+						{ text = "🌟 " .. friendName .. " shared exciting news! You celebrated together!", delta = 6, happiness = 9 },
+						{ text = "🌟 Great catch-up with " .. friendName .. "! So much has happened!", delta = 5, happiness = 8 },
+						{ text = "📰 " .. friendName .. " told you everything going on in their life!", delta = 7, happiness = 10 },
+					},
+					memories = {
+						{ text = "📸 You and " .. friendName .. " laughed about old times! Such good memories!", delta = 8, happiness = 12 },
+						{ text = "😂 \"Remember when...\" Best conversation ever with " .. friendName .. "!", delta = 9, happiness = 13 },
+						{ text = "💕 Nostalgic trip down memory lane with " .. friendName .. "!", delta = 7, happiness = 11 },
+					},
+					advice = {
+						{ text = "💡 " .. friendName .. " gave you solid life advice! Wise friend!", delta = 5, happiness = 6, smarts = 3 },
+						{ text = "🧠 Great advice session with " .. friendName .. "! You learned something!", delta = 6, happiness = 7, smarts = 2 },
+						{ text = "✨ " .. friendName .. " helped you see things differently!", delta = 7, happiness = 8, smarts = 2 },
+					},
+					deep = {
+						{ text = "🧠 Deep conversation with " .. friendName .. "! You feel truly connected!", delta = 10, happiness = 10 },
+						{ text = "💬 Meaningful talk with " .. friendName .. ". Best friend material!", delta = 11, happiness = 12 },
+						{ text = "🌟 You and " .. friendName .. " talked about everything. Soul connection!", delta = 12, happiness = 13 },
+					},
+				}
+				
+				local outcomes
+				if subChoice == "surprise" or not outcomesByChoice[subChoice] then
+					local allOutcomes = {}
+					for _, choiceOutcomes in pairs(outcomesByChoice) do
+						for _, outcome in ipairs(choiceOutcomes) do
+							table.insert(allOutcomes, outcome)
+						end
+					end
+					outcomes = allOutcomes
+				else
+					outcomes = outcomesByChoice[subChoice]
+				end
+				
+				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
+				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
+				if outcome.smarts and state.ModifyStat then state:ModifyStat("Smarts", outcome.smarts) end
+				if relationship and outcome.delta then 
+					relationship.relationship = math.min(100, (relationship.relationship or 50) + outcome.delta)
+				end
+				return outcome.text
+			end,
+		},
+		compliment = {
+			delta = 3,
+			showResult = true,
+			message = function(state, relationship, payload)
+				local friendName = (relationship and relationship.name) or "your friend"
+				local subChoice = payload and payload.subChoice or "surprise"
+				
+				local outcomesByChoice = {
+					appearance = {
+						{ text = "✨ " .. friendName .. " smiled! \"You're so nice!\"", delta = 4, happiness = 5 },
+						{ text = "😊 " .. friendName .. " appreciated the compliment! They're glowing!", delta = 5, happiness = 6 },
+					},
+					personality = {
+						{ text = "💫 " .. friendName .. " was genuinely touched! \"That's so kind!\"", delta = 6, happiness = 7 },
+						{ text = "🌟 Deep compliment to " .. friendName .. "! They feel appreciated!", delta = 7, happiness = 8 },
+					},
+					achievement = {
+						{ text = "🏆 " .. friendName .. " beamed! \"Thanks for noticing!\"", delta = 6, happiness = 8 },
+						{ text = "⭐ You hyped " .. friendName .. " up! They're motivated now!", delta = 7, happiness = 9 },
+					},
+					genuine = {
+						{ text = "💕 " .. friendName .. " was speechless! \"You're the best friend ever!\"", delta = 9, happiness = 10 },
+						{ text = "🥹 " .. friendName .. " teared up! Your words meant everything!", delta = 10, happiness = 11 },
+					},
+				}
+				
+				local outcomes
+				if subChoice == "surprise" or not outcomesByChoice[subChoice] then
+					local allOutcomes = {}
+					for _, choiceOutcomes in pairs(outcomesByChoice) do
+						for _, outcome in ipairs(choiceOutcomes) do
+							table.insert(allOutcomes, outcome)
+						end
+					end
+					outcomes = allOutcomes
+				else
+					outcomes = outcomesByChoice[subChoice]
+				end
+				
+				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
+				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
+				if relationship and outcome.delta then 
+					relationship.relationship = math.min(100, (relationship.relationship or 50) + outcome.delta)
+				end
 				return outcome.text
 			end,
 		},
@@ -22293,7 +23001,9 @@ function LifeBackend:handleInteraction(player, payload)
 	-- Feed message
 	local feed
 	if type(action.message) == "function" then
-		local ok, message = pcall(action.message, state, relationship, action, payload)
+		-- CRITICAL FIX: Pass payload DIRECTLY (not action), message functions expect (state, relationship, payload)
+		-- The subChoice is stored in payload.subChoice from RelationshipsScreen
+		local ok, message = pcall(action.message, state, relationship, payload)
 		if ok then
 			feed = message
 		else

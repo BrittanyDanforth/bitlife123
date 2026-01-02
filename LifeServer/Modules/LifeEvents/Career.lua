@@ -103,18 +103,21 @@ Career.events = {
 		text = "A promotion opportunity has opened up at work.",
 		question = "Do you go for it?",
 		minAge = 20, maxAge = 60,
-		baseChance = 0.25, -- CRITICAL FIX: Reduced from 0.4 - too many promotion events combined!
-		cooldown = 6, -- CRITICAL FIX: Increased from 3 - combine with major_promotion/big_promotion
-		maxOccurrences = 4, -- CRITICAL FIX: Limit total promotions
+		baseChance = 0.20, -- CRITICAL FIX: Further reduced to prevent promotion spam
+		cooldown = 8, -- CRITICAL FIX: Increased cooldown
+		maxOccurrences = 3, -- CRITICAL FIX: Reduced max occurrences
 		requiresJob = true,
 		-- CRITICAL FIX: Only for formal jobs with promotion structures - NOT entertainment
 		eligibility = hasFormalWorkplaceJob,
+		-- CRITICAL FIX: Block if recently promoted from ANY promotion event!
 		blockedByFlags = { 
 			in_prison = true, 
 			street_hustler = true, 
 			dealer = true, 
 			criminal_career = true,
 			self_employed = true,
+			recently_promoted = true, -- Block if recently promoted
+			just_got_raise = true, -- Block if just got a raise
 		},
 
 		-- META

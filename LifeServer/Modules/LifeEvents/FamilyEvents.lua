@@ -990,17 +990,183 @@ FamilyEvents.events = {
 					state:AddFeed("👻 Time to make some changes. For them. For you.")
 				end,
 			},
-			{
-				text = "I've failed them completely",
-				effects = { Happiness = -10 },
-				feedText = "👻 Rock bottom. They would be disappointed. But disappointment comes from love.",
-				eligibility = function(state)
-					local happy = (state.Stats and state.Stats.Happiness) or 50
-					return happy < 30 or state.Flags.homeless or state.Flags.in_prison or state.Flags.addicted
-				end,
-			},
+		{
+			text = "I've failed them completely",
+			effects = { Happiness = -10 },
+			feedText = "👻 Rock bottom. They would be disappointed. But disappointment comes from love.",
+			eligibility = function(state)
+				local happy = (state.Stats and state.Stats.Happiness) or 50
+				return happy < 30 or state.Flags.homeless or state.Flags.in_prison or state.Flags.addicted
+			end,
 		},
 	},
+},
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- PARTNER DEATH DEPRESSION EVENT - Like BitLife!
+-- Triggers after partner/spouse passes away, can diagnose depression
+-- ═══════════════════════════════════════════════════════════════════════════════
+{
+	id = "grief_depression_diagnosis",
+	title = "💔 Diagnosis: Depression",
+	emoji = "💔",
+	text = "Since losing your partner, you've been struggling. The doctor says you're showing signs of clinical depression.",
+	question = "The doctor recommends treatment. What do you do?",
+	minAge = 20, maxAge = 100,
+	baseChance = 0.65, -- High chance - grief often leads to depression
+	cooldown = 99, -- Only once
+	oneTime = true,
+	stage = STAGE,
+	ageBand = "any",
+	category = "health",
+	tags = { "grief", "depression", "mental_health", "loss" },
+	
+	-- CRITICAL: Only show if player recently lost partner/spouse!
+	eligibility = function(state)
+		local flags = state.Flags or {}
+		-- Must be widowed AND recently bereaved
+		if not flags.widowed and not flags.lost_spouse and not flags.recently_bereaved then
+			return false, "Haven't lost a partner"
+		end
+		-- Don't show if already diagnosed with depression
+		if flags.diagnosed_depression or flags.grief_depression then
+			return false, "Already diagnosed"
+		end
+		return true
+	end,
+	blockedByFlags = { diagnosed_depression = true, grief_depression = true },
+	
+	choices = {
+		{
+			text = "Accept treatment (therapy + medication - $500)",
+			effects = { Happiness = 5, Health = 3, Money = -500 },
+			setFlags = { grief_depression = true, in_therapy = true, on_medication = true },
+			feedText = "💔 Getting help for your grief. The road to healing begins.",
+			eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for treatment" end,
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags.diagnosed_depression = true
+				state.Flags.seeking_help = true
+				state:AddFeed("💔 You've been diagnosed with depression following your loss. Treatment started.")
+			end,
+		},
+		{
+			text = "Try therapy only ($200)",
+			effects = { Happiness = 3, Money = -200 },
+			setFlags = { grief_depression = true, in_therapy = true },
+			feedText = "💔 Talking through the grief. Slow but steady progress.",
+			eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200 for therapy" end,
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags.diagnosed_depression = true
+				state:AddFeed("💔 Grief counseling started. Learning to process the loss.")
+			end,
+		},
+		{
+			text = "Refuse treatment - I can handle this alone",
+			effects = { Happiness = -10, Health = -5 },
+			setFlags = { grief_depression = true, untreated_depression = true },
+			feedText = "💔 You're struggling alone. The depression deepens.",
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags.diagnosed_depression = true
+				state.Flags.isolating = true
+				state:AddFeed("💔 Diagnosed with depression but refusing help. The darkness grows.")
+			end,
+		},
+		{
+			text = "Lean on family and friends instead",
+			effects = { Happiness = 2 },
+			setFlags = { grief_depression = true, family_support = true },
+			feedText = "💔 Your support network helps you through the darkest times.",
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags.diagnosed_depression = true
+				state.Flags.has_support_system = true
+				state:AddFeed("💔 Depression diagnosed, but loved ones are there for you. Not alone.")
+			end,
+		},
+	},
+},
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- GRIEF RECOVERY EVENT - Follow-up for those dealing with partner loss
+-- ═══════════════════════════════════════════════════════════════════════════════
+{
+	id = "grief_recovery_progress",
+	title = "💜 Grief Recovery",
+	emoji = "💜",
+	text = "It's been a while since you lost your partner. How are you doing?",
+	question = "Where are you in the grief process?",
+	minAge = 20, maxAge = 100,
+	baseChance = 0.5,
+	cooldown = 3,
+	stage = STAGE,
+	ageBand = "any",
+	category = "health",
+	tags = { "grief", "recovery", "healing", "mental_health" },
+	
+	-- Show only if widowed
+	eligibility = function(state)
+		local flags = state.Flags or {}
+		return flags.widowed or flags.lost_spouse, "Haven't lost a partner"
+	end,
+	
+	choices = {
+		{
+			text = "Getting better slowly",
+			effects = { Happiness = 8, Health = 3 },
+			feedText = "💜 Each day gets a little easier. You're healing.",
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags.grief_healing = true
+				-- Remove acute grief flags
+				state.Flags.recently_bereaved = nil
+				state:AddFeed("💜 The grief is still there, but you're learning to carry it.")
+			end,
+		},
+		{
+			text = "Still struggling every day",
+			effects = { Happiness = -5, Health = -2 },
+			feedText = "💜 The pain is still raw. Some days are unbearable.",
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags.prolonged_grief = true
+				state:AddFeed("💜 Time doesn't heal all wounds. You miss them terribly.")
+			end,
+		},
+		{
+			text = "Found peace and acceptance",
+			effects = { Happiness = 12, Health = 5 },
+			setFlags = { grief_accepted = true },
+			feedText = "💜 You've made peace with the loss. They live on in your heart.",
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags.grief_healing = true
+				state.Flags.emotionally_resilient = true
+				-- Clear depression if in therapy
+				if state.Flags.in_therapy then
+					state.Flags.diagnosed_depression = nil
+					state.Flags.grief_depression = nil
+					state:AddFeed("💜 Through therapy and time, you've found acceptance. Healing complete.")
+				else
+					state:AddFeed("💜 You've found peace. They would want you to be happy.")
+				end
+			end,
+		},
+		{
+			text = "Considering dating again",
+			effects = { Happiness = 3 },
+			setFlags = { ready_to_date_again = true },
+			feedText = "💜 Thinking about opening your heart again someday.",
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags.open_to_love = true
+				state:AddFeed("💜 Your late partner would want you to find happiness. Taking it slow.")
+			end,
+		},
+	},
+},
 }
 
 return FamilyEvents

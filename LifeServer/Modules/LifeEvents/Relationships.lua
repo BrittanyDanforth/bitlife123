@@ -1476,8 +1476,7 @@ Relationships.events = {
 		id = "toxic_friendship",
 		title = "Toxic Friend Behavior",
 		emoji = "☢️",
-		-- PERSONALIZATION: Now uses actual friend name via template
-		text = "{{FRIEND_NAME}} has been acting really poorly lately - gossiping, being negative, or taking advantage of you.",
+		text = "A friend has been acting really poorly lately.",
 		question = "What do you do about this friendship?",
 		minAge = 15, maxAge = 60,
 		baseChance = 0.45,
@@ -1495,11 +1494,124 @@ Relationships.events = {
 			return false, "No friends to have drama with"
 		end,
 		blockedByFlags = { in_prison = true },
+		
+		-- CRITICAL FIX: Personalized toxic behavior based on player's life!
+		onInit = function(event, state)
+			-- Find a random friend to make toxic
+			local friends = {}
+			local rels = state.Relationships or {}
+			for id, rel in pairs(rels) do
+				if rel.type == "friend" and rel.alive ~= false then
+					table.insert(friends, { id = id, name = rel.name or "Your friend" })
+				end
+			end
+			
+			if #friends > 0 then
+				local toxicFriend = friends[math.random(1, #friends)]
+				event._toxicFriendName = toxicFriend.name
+				event._toxicFriendId = toxicFriend.id
+			else
+				event._toxicFriendName = "Your friend"
+			end
+			
+			-- Personalized toxic behaviors based on player's context
+			local behaviors = {}
+			local flags = state.Flags or {}
+			
+			-- Context-aware toxic behaviors
+			if state.CurrentJob then
+				table.insert(behaviors, "constantly putting down your job as a " .. (state.CurrentJob.name or "worker"))
+				table.insert(behaviors, "telling everyone your salary is embarrassing")
+			end
+			if flags.married or flags.in_relationship then
+				table.insert(behaviors, "flirting with your partner behind your back")
+				table.insert(behaviors, "making passive-aggressive comments about your relationship")
+			end
+			if (state.Money or 0) > 100000 then
+				table.insert(behaviors, "always asking to borrow money and never paying back")
+				table.insert(behaviors, "expecting you to pay for everything")
+			elseif (state.Money or 0) < 1000 then
+				table.insert(behaviors, "mocking you for being broke")
+			end
+			if flags.fitness_enthusiast or flags.gym_member then
+				table.insert(behaviors, "making fun of your gym routine")
+			end
+			if flags.famous or flags.celebrity then
+				table.insert(behaviors, "trying to use you for clout")
+				table.insert(behaviors, "leaking your personal info to tabloids")
+			end
+			
+			-- Default behaviors if no context matches
+			if #behaviors == 0 then
+				behaviors = {
+					"gossiping about you behind your back",
+					"canceling plans at the last minute constantly",
+					"only reaching out when they need something",
+					"being overly negative about everything",
+					"making everything about themselves",
+					"belittling your achievements",
+					"spreading rumors about you",
+				}
+			end
+			
+			local behavior = behaviors[math.random(1, #behaviors)]
+			event.text = event._toxicFriendName .. " has been " .. behavior .. "."
+			
+			return event
+		end,
+		
 		choices = {
-			{ text = "Cut them off completely", effects = { Happiness = 5, Health = 3 }, setFlags = { ended_toxic_friendship = true }, feedText = "You're free from that negativity!" },
-			{ text = "Distance yourself gradually", effects = { Happiness = 3 }, feedText = "You're slowly pulling away." },
-			{ text = "Have an honest conversation", effects = { Happiness = 2, Smarts = 2 }, feedText = "You talked it out. Time will tell if things improve." },
-			{ text = "Keep putting up with it", effects = { Happiness = -8, Health = -3 }, feedText = "This friendship is draining you." },
+			{ 
+				text = "Cut them off completely", 
+				effects = { Happiness = 5, Health = 3 }, 
+				setFlags = { ended_toxic_friendship = true }, 
+				feedText = "You're free from that negativity!",
+				onResolve = function(state, _, event)
+					if event._toxicFriendId and state.Relationships and state.Relationships[event._toxicFriendId] then
+						state.Relationships[event._toxicFriendId].relationship = math.max(0, (state.Relationships[event._toxicFriendId].relationship or 50) - 80)
+						state.Relationships[event._toxicFriendId].cut_off = true
+					end
+					state:AddFeed("☢️ You cut " .. (event._toxicFriendName or "them") .. " out of your life. Fresh start!")
+				end,
+			},
+			{ 
+				text = "Distance yourself gradually", 
+				effects = { Happiness = 3 }, 
+				feedText = "You're slowly pulling away.",
+				onResolve = function(state, _, event)
+					if event._toxicFriendId and state.Relationships and state.Relationships[event._toxicFriendId] then
+						state.Relationships[event._toxicFriendId].relationship = math.max(0, (state.Relationships[event._toxicFriendId].relationship or 50) - 30)
+					end
+					state:AddFeed("☢️ You're creating distance from " .. (event._toxicFriendName or "them") .. ". Taking care of yourself.")
+				end,
+			},
+			{ 
+				text = "Have an honest conversation", 
+				effects = { Happiness = 2, Smarts = 2 }, 
+				feedText = "You talked it out.",
+				onResolve = function(state, _, event)
+					local roll = math.random()
+					if roll < 0.4 then
+						-- Conversation went well
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("☢️ " .. (event._toxicFriendName or "They") .. " apologized! Maybe they'll change.")
+					else
+						-- Didn't go well
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("☢️ " .. (event._toxicFriendName or "They") .. " got defensive. Time will tell if things improve.")
+					end
+				end,
+			},
+			{ 
+				text = "Keep putting up with it", 
+				effects = { Happiness = -8, Health = -3 }, 
+				feedText = "This friendship is draining you.",
+				onResolve = function(state, _, event)
+					state.Flags = state.Flags or {}
+					state.Flags.tolerating_toxic_friend = true
+					state:AddFeed("☢️ You keep making excuses for " .. (event._toxicFriendName or "their") .. " behavior. It's exhausting.")
+				end,
+			},
 		},
 	},
 	{

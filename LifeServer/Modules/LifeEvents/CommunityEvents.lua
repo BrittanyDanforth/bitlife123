@@ -187,107 +187,207 @@ CommunityEvents.events = {
 			{ text = "Stay inside", effects = { Happiness = 2 }, feedText = "🎊 Crowds aren't your thing. That's okay." },
 		},
 	},
+	-- ══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Completely rewritten! Crime HAPPENS to player - they don't CHOOSE it!
+	-- In BitLife, the game tells you what happened, you choose how to respond
+	-- ══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "community_crime_incident",
-		title = "Neighborhood Crime",
+		title = "🚔 Neighborhood Crime!",
 		emoji = "🚔",
-		text = "Something happened in your neighborhood!",
-		question = "What was the incident?",
+		-- Dynamic text set by onInit based on what crime type was selected
+		text = "There's been criminal activity in your neighborhood!",
+		question = "What do you do?",
 		minAge = 12, maxAge = 90,
-		baseChance = 0.4,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.35,
+		cooldown = 5,
 		stage = STAGE,
 		ageBand = "any",
 		category = "crime",
 		tags = { "crime", "neighborhood", "safety" },
-		-- CRITICAL FIX: Can't have neighborhood crime while YOU are in prison!
-		blockedByFlags = { in_prison = true, incarcerated = true },
-		
-		-- CRITICAL FIX: Block this entire event for homeless players! 
-		-- They don't have a "neighborhood" to have crime in
 		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true, living_in_car = true },
 		
-		-- CRITICAL FIX: Also need to have housing for this event to make sense!
 		eligibility = function(state)
 			local flags = state.Flags or {}
-			local housing = state.HousingState or {}
-			-- Need SOME form of housing
 			if flags.homeless or flags.living_in_car or flags.couch_surfing then
-				return false, "No neighborhood when homeless"
+				return false
 			end
 			return true
 		end,
 		
+		-- CRITICAL: onInit determines WHAT crime happened RANDOMLY based on player state
+		onInit = function(event, state)
+			local possibleCrimes = {}
+			local flags = state.Flags or {}
+			local hasCar = flags.has_car or flags.owns_vehicle or (state.Assets and state.Assets.Vehicles and #state.Assets.Vehicles > 0)
+			local hasHome = not flags.homeless and not flags.living_in_car
+			
+			-- Build list of possible crimes based on player's assets
+			table.insert(possibleCrimes, { type = "suspicious_person", text = "A suspicious person has been spotted lurking around your neighborhood. Neighbors are worried.", severity = 1 })
+			table.insert(possibleCrimes, { type = "loud_disturbance", text = "There was a loud disturbance late last night - shouting and commotion down the street.", severity = 1 })
+			
+			if hasHome then
+				table.insert(possibleCrimes, { type = "break_in_neighbor", text = "Your neighbor's house was broken into last night! Police are investigating.", severity = 2 })
+				table.insert(possibleCrimes, { type = "break_in_yours", text = "🚨 YOUR HOME WAS BROKEN INTO! You come home to find the door smashed and things missing!", severity = 4 })
+				table.insert(possibleCrimes, { type = "package_theft", text = "Porch pirates have been stealing packages in your area. Your latest delivery never arrived.", severity = 2 })
+			end
+			
+			if hasCar then
+				table.insert(possibleCrimes, { type = "car_keyed", text = "🚗 Someone KEYED YOUR CAR! There's a long scratch down the entire side!", severity = 3 })
+				table.insert(possibleCrimes, { type = "car_break_in", text = "🚗 Your car window was SMASHED! Someone broke into your vehicle!", severity = 3 })
+			end
+			
+			-- Randomly select a crime (weighted by severity - worse crimes are rarer)
+			local totalWeight = 0
+			for _, crime in ipairs(possibleCrimes) do
+				crime.weight = 5 - crime.severity -- Lower severity = higher chance
+				totalWeight = totalWeight + crime.weight
+			end
+			
+			local roll = math.random() * totalWeight
+			local cumulative = 0
+			local selectedCrime = possibleCrimes[1]
+			for _, crime in ipairs(possibleCrimes) do
+				cumulative = cumulative + crime.weight
+				if roll <= cumulative then
+					selectedCrime = crime
+					break
+				end
+			end
+			
+			-- Store the crime type in event metadata
+			event._crimeType = selectedCrime.type
+			event._crimeSeverity = selectedCrime.severity
+			event.text = selectedCrime.text
+			event.title = "🚔 " .. (selectedCrime.severity >= 3 and "CRIME ALERT!" or "Neighborhood Crime")
+			
+			return event
+		end,
+		
 		choices = {
 			{
-				text = "Break-in nearby",
+				text = "🚔 Call the police",
 				effects = {},
-				feedText = "Police in the neighborhood...",
-				-- CRITICAL FIX: Break-in requires having a home!
-				eligibility = function(state)
-					local flags = state.Flags or {}
-					local housing = state.HousingState or {}
-					if flags.homeless or housing.status == "homeless" then
-						return false, "No home to break into"
-					end
-					return true
-				end,
-				onResolve = function(state)
-					local roll = math.random()
-					if roll < 0.20 then
-						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
-						-- CRITICAL FIX: Don't go negative - ensure numbers for math.min
+				feedText = "Reporting to authorities...",
+				onResolve = function(state, _, event)
+					local crimeType = event._crimeType or "suspicious_person"
+					local severity = event._crimeSeverity or 1
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					
+					if crimeType == "break_in_yours" then
+						-- Your home was burglarized - suffer loss
 						local currentMoney = tonumber(state.Money) or 0
-						local loss = math.min(500, currentMoney)
+						local loss = math.min(math.random(200, 800), currentMoney)
+						state.Money = math.max(0, currentMoney - loss)
+						state.Flags.home_burglarized = true
+						if state.ModifyStat then state:ModifyStat("Happiness", -15) end
+						if roll <= 30 then
+							if state.AddFeed then state:AddFeed(string.format("🚔 Police caught the burglar! You recovered some items but lost $%d. Traumatic.", loss)) end
+						else
+							if state.AddFeed then state:AddFeed(string.format("🚔 Filed a report. Lost $%d. Police have no leads. You feel violated.", loss)) end
+						end
+					elseif crimeType == "car_keyed" or crimeType == "car_break_in" then
+						state.Flags.car_vandalized = true
+						if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+						local repairCost = crimeType == "car_keyed" and math.random(200, 600) or math.random(300, 800)
+						if state.AddFeed then state:AddFeed(string.format("🚔 Filed a police report. Repair will cost ~$%d. So frustrating!", repairCost)) end
+					elseif crimeType == "package_theft" then
+						state.Flags.package_stolen = true
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then state:AddFeed("🚔 Filed a report. Requested replacement from the seller. What a hassle.") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then state:AddFeed("🚔 Reported to police. They'll increase patrols. Neighborhood on alert.") end
+					end
+				end,
+			},
+			{
+				text = "🔒 Upgrade your security",
+				effects = { Money = -150 },
+				feedText = "Installing better locks and cameras...",
+				eligibility = function(state) return (state.Money or 0) >= 150, "💸 Need $150 for security" end,
+				onResolve = function(state, _, event)
+					local crimeType = event._crimeType or "suspicious_person"
+					state.Flags = state.Flags or {}
+					state.Flags.has_security_system = true
+					
+					if crimeType == "break_in_yours" then
+						local currentMoney = tonumber(state.Money) or 0
+						local loss = math.min(math.random(200, 600), currentMoney)
+						state.Money = math.max(0, currentMoney - loss)
+						state.Flags.home_burglarized = true
+						if state.ModifyStat then state:ModifyStat("Happiness", -12) end
+						if state.AddFeed then state:AddFeed(string.format("🔒 Lost $%d in the break-in, but now you have cameras and better locks. Won't happen again.", loss)) end
+					elseif crimeType == "car_keyed" or crimeType == "car_break_in" then
+						state.Flags.car_vandalized = true
+						if state.ModifyStat then state:ModifyStat("Happiness", -6) end
+						if state.AddFeed then state:AddFeed("🔒 Installed a dash cam and parking alarm. Next time you'll catch them!") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then state:AddFeed("🔒 Better safe than sorry. New cameras and smart locks installed.") end
+					end
+				end,
+			},
+			{
+				text = "😟 Check on neighbors",
+				effects = {},
+				feedText = "Seeing if everyone's okay...",
+				onResolve = function(state, _, event)
+					local crimeType = event._crimeType or "suspicious_person"
+					local roll = math.random(1, 100)
+					state.Flags = state.Flags or {}
+					
+					if crimeType == "break_in_yours" then
+						local currentMoney = tonumber(state.Money) or 0
+						local loss = math.min(math.random(300, 900), currentMoney)
+						state.Money = math.max(0, currentMoney - loss)
+						state.Flags.home_burglarized = true
+						if state.ModifyStat then state:ModifyStat("Happiness", -18) end
+						if state.AddFeed then state:AddFeed(string.format("😟 While you were out checking on neighbors... they took MORE stuff! Lost $%d total!", loss)) end
+					elseif roll <= 40 then
+						if state.ModifyStat then 
+							state:ModifyStat("Happiness", 5)
+						end
+						state.Flags.good_neighbor = true
+						if state.AddFeed then state:AddFeed("😟 Everyone appreciated you checking in. Neighborhood watch forming! Feel safer together.") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", -3) end
+						if state.AddFeed then state:AddFeed("😟 Neighbors are shaken. Community feels less safe now.") end
+					end
+				end,
+			},
+			{
+				text = "🤷 It's not my problem",
+				effects = {},
+				feedText = "Staying out of it...",
+				onResolve = function(state, _, event)
+					local crimeType = event._crimeType or "suspicious_person"
+					
+					if crimeType == "break_in_yours" then
+						local currentMoney = tonumber(state.Money) or 0
+						local loss = math.min(math.random(400, 1000), currentMoney)
 						state.Money = math.max(0, currentMoney - loss)
 						state.Flags = state.Flags or {}
 						state.Flags.home_burglarized = true
-						if state.AddFeed then 
-							if loss > 0 then
-								state:AddFeed(string.format("🚔 YOUR place was hit. Violated. Lost $%d in valuables.", loss))
-							else
-								state:AddFeed("🚔 YOUR place was hit. Luckily nothing valuable was taken.")
-							end
-						end
+						if state.ModifyStat then state:ModifyStat("Happiness", -20) end
+						if state.AddFeed then state:AddFeed(string.format("🤷 BUT IT WAS YOUR PROBLEM! Lost $%d in the break-in! Should have taken action!", loss)) end
+					elseif crimeType == "car_keyed" or crimeType == "car_break_in" then
+						state.Flags = state.Flags or {}
+						state.Flags.car_vandalized = true
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						if state.AddFeed then state:AddFeed("🤷 Now you have to pay for repairs out of pocket. Should have reported it.") end
+					elseif crimeType == "package_theft" then
+						state.Flags = state.Flags or {}
+						state.Flags.package_stolen = true
+						if state.ModifyStat then state:ModifyStat("Happiness", -5) end
+						if state.AddFeed then state:AddFeed("🤷 Package is gone. No report filed. No replacement coming.") end
 					else
-						if state.ModifyStat then state:ModifyStat("Happiness", -4) end
-						if state.AddFeed then state:AddFeed("🚔 Neighbor got hit. Scary. Upgrading security.") end
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then state:AddFeed("🤷 Minded your own business. Crime continues in the area.") end
 					end
 				end,
 			},
-			-- CRITICAL FIX: Car vandalized choice must check if player HAS a car!
-			-- User bug: "IT SAID SOMEBODY KEYED YOUR CAR WHY?! BUT I DONT HAVE A CAR"
-			{ 
-				text = "Car vandalized", 
-				effects = { Happiness = -6 }, 
-				feedText = "🚔 Someone keyed your car. Why?!",
-				eligibility = function(state)
-					local flags = state.Flags or {}
-					-- CRITICAL FIX: Also check Assets.Vehicles
-					if flags.has_car or flags.owns_vehicle or flags.owns_car then
-						return true
-					end
-					if state.Assets and state.Assets.Vehicles and #state.Assets.Vehicles > 0 then
-						return true
-					end
-					return false, "No car to vandalize"
-				end,
-			},
-			-- CRITICAL FIX: Package theft requires having a home/address!
-			{ 
-				text = "Package theft", 
-				effects = { Happiness = -4 }, 
-				setFlags = { package_stolen = true }, 
-				feedText = "🚔 Porch pirates took your delivery. Frustrating.",
-				eligibility = function(state)
-					local flags = state.Flags or {}
-					if flags.homeless or flags.living_in_car then
-						return false, "No address for packages"
-					end
-					return true
-				end,
-			},
-			{ text = "Suspicious person reported", effects = { Happiness = -2 }, feedText = "🚔 Neighborhood on alert. Staying vigilant." },
 		},
 	},
 	

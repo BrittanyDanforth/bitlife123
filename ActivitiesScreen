@@ -3208,8 +3208,9 @@ function ActivitiesScreen:doMischief(item)
 	-- CRITICAL FIX: Use event card system for mischief activities!
 	-- User request: "have trouble do cardresult popups too and can get u introuble"
 	-- Show proper BitLife-style event cards with choices and consequences!
+	-- CRITICAL FIX: Check if FULL_EVENT_ACTIVITIES exists (defined later in file)
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	if FULL_EVENT_ACTIVITIES[item.id] and self.onShowEventCard then
+	if FULL_EVENT_ACTIVITIES and FULL_EVENT_ACTIVITIES[item.id] and self.onShowEventCard then
 		-- Use the full event card system for this mischief activity
 		self:showMischiefEventCard(item)
 		return

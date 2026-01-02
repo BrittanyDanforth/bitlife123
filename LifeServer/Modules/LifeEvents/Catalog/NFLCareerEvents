@@ -1,0 +1,1655 @@
+--[[
+	NFL Professional Football Career Events
+	AAA-quality events for football career progression
+	
+	Career Path:
+	1. Youth football (likes_sports flag from childhood)
+	2. High school varsity (plays_football, varsity_athlete flags)
+	3. College football (college_football flag via scholarship event)
+	4. NFL Draft (nfl_declared -> nfl_player flags)
+	5. NFL Rookie → Starter → Star → Superstar → Legend
+	
+	CRITICAL: Easier path if player made good early life choices!
+	Early flags that help: plays_football, varsity_athlete, state_champion,
+	football_star, college_football, heisman_winner
+]]
+
+local NFLCareerEvents = {}
+
+local RANDOM = Random.new()
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- HELPER FUNCTIONS
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local function hasFootballBackground(state)
+	if not state or not state.Flags then return false end
+	local f = state.Flags
+	return f.plays_football or f.varsity_athlete or f.football_star
+		or f.college_football or f.school_athlete or f.likes_sports
+end
+
+local function isActiveNFLPlayer(state)
+	if not state then return false end
+	if state.Flags and state.Flags.nfl_retired then return false end
+	if not state.CurrentJob then return false end
+	local jobId = (state.CurrentJob.id or ""):lower()
+	local hasNFLJob = jobId:find("nfl") or jobId:find("football")
+	local hasFlag = state.Flags and state.Flags.nfl_player
+	return hasNFLJob or hasFlag
+end
+
+local function isNFLStar(state)
+	if not state or not state.Flags then return false end
+	return state.Flags.nfl_pro_bowl or state.Flags.nfl_mvp or state.Flags.super_bowl_champion
+end
+
+local function getNFLYearsPlayed(state)
+	if not state or not state.Flags then return 0 end
+	local draftAge = state.Flags.nfl_draft_age or 22
+	return math.max(0, (state.Age or 0) - draftAge)
+end
+
+local function getDraftBonus(state)
+	local bonus = 0
+	if not state or not state.Flags then return bonus end
+	local f = state.Flags
+	
+	-- Early life football choices
+	if f.plays_football then bonus = bonus + 20 end
+	if f.varsity_athlete then bonus = bonus + 15 end
+	if f.state_champion then bonus = bonus + 20 end
+	if f.football_star then bonus = bonus + 30 end
+	if f.college_football then bonus = bonus + 25 end
+	if f.heisman_winner then bonus = bonus + 40 end
+	if f.heisman_finalist then bonus = bonus + 20 end
+	if f.bowl_game_mvp then bonus = bonus + 20 end
+	if f.college_national_champion then bonus = bonus + 25 end
+	if f.combine_standout then bonus = bonus + 20 end
+	
+	-- Health matters for athletes
+	if (state.Health or 0) >= 90 then bonus = bonus + 15
+	elseif (state.Health or 0) >= 80 then bonus = bonus + 10
+	elseif (state.Health or 0) >= 70 then bonus = bonus + 5
+	elseif (state.Health or 0) < 60 then bonus = bonus - 25 end
+	
+	-- Penalty for late starters
+	if (state.Age or 22) > 24 and not hasFootballBackground(state) then
+		bonus = bonus - 60
+	end
+	
+	return bonus
+end
+
+-- Block conflicting career paths
+local function isEligibleForNFL(state)
+	if not state then return false end
+	local f = state.Flags or {}
+	
+	if f.is_royalty or f.in_mob then return false end
+	if state.RoyalState and state.RoyalState.isRoyal then return false end
+	if state.MobState and state.MobState.inMob then return false end
+	if f.in_prison or state.InJail then return false end
+	
+	return true
+end
+
+-- Format large money values
+local function formatMoney(amount)
+	if amount >= 1000000000 then
+		return string.format("$%.1fB", amount / 1000000000)
+	elseif amount >= 1000000 then
+		return string.format("$%.1fM", amount / 1000000)
+	elseif amount >= 1000 then
+		return string.format("$%.0fK", amount / 1000)
+	end
+	return "$" .. tostring(amount)
+end
+
+-- Get random position
+local function getRandomPosition()
+	local positions = { "QB", "RB", "WR", "TE", "OL", "DL", "LB", "CB", "S", "K" }
+	return positions[RANDOM:NextInteger(1, #positions)]
+end
+
+NFLCareerEvents.events = {
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: FOOTBALL INTEREST DISCOVERY EVENT
+	-- This event SETS the likes_sports flag - it's an entry point for NFL path!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "nfl_interest_discovery",
+		title = "🏈 Football Looks AWESOME!",
+		emoji = "🏈",
+		text = "You're watching some bigger kids play football at the park. They're throwing long passes and making amazing catches! One kid throws a spiral right past you!",
+		category = "career_nfl",
+		weight = 25, -- HIGH weight to ensure this triggers!
+		minAge = 6, maxAge = 11,
+		baseChance = 0.55, -- HIGH chance - critical for career path
+		oneTime = true,
+		eligibility = function(state)
+			if not isEligibleForNFL(state) then return false end
+			-- NO FLAGS REQUIRED - This is a discovery event!
+			return true
+		end,
+		
+		choices = {
+			{
+				text = "🏈 Can I play too?!",
+				effects = { Health = 3, Happiness = 5 },
+				feedText = "You join the game...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.likes_sports = true
+					state.Flags.athletic_focus = true
+					
+					local roll = RANDOM:NextInteger(1, 100)
+					if roll <= 35 then
+						state.Flags.plays_football = true
+						state.Flags.football_star = true
+						state:ModifyStat("Health", 7)
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("🏈 You caught a TOUCHDOWN pass! They say you're a natural!")
+					elseif roll <= 70 then
+						state.Flags.plays_football = true
+						state:ModifyStat("Health", 5)
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🏈 You LOVE football! The tackling, the throwing - it's all amazing!")
+					else
+						state:ModifyStat("Health", 3)
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🏈 Got tackled pretty hard but it was exciting! Football is cool!")
+					end
+				end,
+			},
+			{
+				text = "🏈 Throw me the ball!",
+				effects = { Health = 2, Happiness = 4 },
+				feedText = "You ask to catch...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.likes_sports = true
+					
+					local roll = RANDOM:NextInteger(1, 100)
+					if roll <= 50 then
+						state.Flags.plays_football = true
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🏈 CAUGHT IT! You've got good hands! Football is fun!")
+					else
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("🏈 Dropped it but who cares - football is exciting!")
+					end
+				end,
+			},
+			{
+				text = "Just watch from the sidelines",
+				effects = { Happiness = 2 },
+				feedText = "You watch the action...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.likes_sports = true
+					state:AddFeed("🏈 Football looks intense! Maybe you'll play someday!")
+				end,
+			},
+		},
+	},
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- YOUTH/HIGH SCHOOL FOOTBALL EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "youth_football_league",
+		title = "🏈 Youth Football Signup",
+		emoji = "🏈",
+		text = "The local youth football league is accepting players! It's a great way to learn the game and make friends.",
+		category = "career_nfl",
+		weight = 22, -- CRITICAL FIX: Increased weight
+		minAge = 7, maxAge = 12, -- CRITICAL FIX: Start younger!
+		baseChance = 0.45, -- CRITICAL FIX: Increased chance
+		oneTime = true,
+		eligibility = function(state)
+			if not isEligibleForNFL(state) then return false end
+			-- CRITICAL FIX: No strict flag requirements - anyone can try youth football!
+			-- Only block if they've explicitly rejected sports
+			if state.Flags and state.Flags.hates_sports then return false end
+			return true
+		end,
+		
+		choices = {
+			{
+				text = "🏈 Sign up! ($200)",
+				effects = { Money = -200, Health = 5 },
+				feedText = "Learning the game!",
+				eligibility = function(state) return (state.Money or 0) >= 200 or (state.ParentMoney or 0) >= 200 end,
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.plays_football = true
+					state.Flags.likes_sports = true
+					state:ModifyStat("Health", 5)
+					state:ModifyStat("Happiness", 10)
+					state:AddFeed("🏈 Joined youth football! Learning tackling, catching, and teamwork!")
+				end,
+			},
+			{
+				text = "Not interested in football",
+				effects = {},
+				feedText = "Football isn't for me.",
+			},
+		},
+	},
+	
+	{
+		id = "football_position_discovery",
+		title = "🏈 Position Assignment",
+		emoji = "🏈",
+		text = "Your coach is evaluating players for different positions. Based on your size and skills, what position fits you?",
+		category = "career_nfl",
+		weight = 12,
+		minAge = 10, maxAge = 15,
+		baseChance = 0.25,
+		oneTime = true,
+		eligibility = function(state)
+			return state.Flags and state.Flags.plays_football and not state.Flags.football_position
+		end,
+		
+		choices = {
+			{
+				text = "🎯 Quarterback - I want to lead!",
+				effects = { Happiness = 10 },
+				feedText = "Signal caller!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.football_position = "QB"
+					state.Flags.team_leader = true
+					state:AddFeed("🏈 You're the QUARTERBACK! All eyes on you - leader of the offense!")
+				end,
+			},
+			{
+				text = "💨 Running Back - I'm FAST!",
+				effects = { Health = 5 },
+				feedText = "Speed demon!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.football_position = "RB"
+					state:AddFeed("🏈 Running Back! Juking defenders and finding holes!")
+				end,
+			},
+			{
+				text = "🎣 Wide Receiver - Catch everything!",
+				effects = { Health = 3 },
+				feedText = "Hands of glue!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.football_position = "WR"
+					state:AddFeed("🏈 Wide Receiver! Making spectacular catches!")
+				end,
+			},
+			{
+				text = "💪 Defense - I hit HARD!",
+				effects = { Health = 5 },
+				feedText = "Defensive beast!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.football_position = "DEF"
+					state.Flags.hard_hitter = true
+					state:AddFeed("🏈 Defense! Making tackles and stopping the run!")
+				end,
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- INTERMEDIATE STEP: Offseason training (required for varsity success)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "football_offseason_training",
+		title = "🏋️ Offseason Football Training",
+		emoji = "🏋️",
+		text = "The serious football players train year-round. There's an offseason strength and conditioning program starting. It's brutal but essential for making varsity.",
+		category = "career_nfl",
+		weight = 15,
+		minAge = 12, maxAge = 16,
+		baseChance = 0.35,
+		cooldown = 2,
+		eligibility = function(state)
+			if not isEligibleForNFL(state) then return false end
+			return state.Flags and state.Flags.plays_football and not state.Flags.offseason_trained
+		end,
+		
+		choices = {
+			{
+				text = "🏋️ Commit to the grind!",
+				effects = { Health = 5, Happiness = -3 },
+				feedText = "Training hard!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					local roll = RANDOM:NextInteger(1, 100)
+					if roll <= 70 then
+						state.Flags.offseason_trained = true
+						state.Flags.football_dedicated = true
+						state:ModifyStat("Health", 8)
+						state:AddFeed("🏋️ Crushed the offseason! You're stronger, faster, and ready for varsity!")
+					else
+						state:ModifyStat("Health", 3)
+						state:AddFeed("🏋️ Tough training but you stuck with it. Getting better every day!")
+					end
+				end,
+			},
+			{
+				text = "Skip it - too much work",
+				effects = { Happiness = 5 },
+				feedText = "Taking it easy.",
+				onResolve = function(state)
+					state:AddFeed("🏋️ Skipped offseason training. Hope natural talent is enough...")
+				end,
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- INTERMEDIATE STEP: Summer football camp (builds skills)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "football_summer_camp",
+		title = "🏈 Elite Football Camp",
+		emoji = "🏈",
+		text = "An elite summer football camp is coming to town! College coaches and NFL scouts sometimes attend. It costs money but could be career-changing.",
+		category = "career_nfl",
+		weight = 12,
+		minAge = 13, maxAge = 17,
+		baseChance = 0.25,
+		cooldown = 2,
+		eligibility = function(state)
+			if not isEligibleForNFL(state) then return false end
+			return state.Flags and state.Flags.plays_football
+		end,
+		
+		choices = {
+			{
+				text = "🏈 Sign up! ($500)",
+				effects = { Money = -500, Health = 3 },
+				feedText = "Camp time!",
+				eligibility = function(state) return (state.Money or 0) >= 500 or (state.ParentMoney or 0) >= 500 end,
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					local roll = RANDOM:NextInteger(1, 100)
+					local bonus = 0
+					if state.Flags.offseason_trained then bonus = 20 end
+					if state.Flags.football_position then bonus = bonus + 10 end
+					
+					if roll + bonus >= 70 then
+						state.Flags.camp_standout = true
+						state.Flags.football_star = true
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("🏈 DOMINATED the camp! Coaches are taking notice! You're on the radar!")
+					elseif roll + bonus >= 40 then
+						state.Flags.camp_participant = true
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🏈 Good showing at camp! Learned a lot and made connections!")
+					else
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🏈 Camp was humbling. The competition is tough at this level.")
+					end
+				end,
+			},
+			{
+				text = "Too expensive",
+				effects = {},
+				feedText = "Can't afford it.",
+			},
+		},
+	},
+	
+	{
+		id = "football_varsity_tryout",
+		title = "🏈 Varsity Tryouts!",
+		emoji = "🏈",
+		text = "High school varsity football tryouts are here! The competition is FIERCE. Only the best make the team.",
+		category = "career_nfl",
+		weight = 14,
+		minAge = 14, maxAge = 16,
+		baseChance = 0.28, -- Slightly reduced
+		oneTime = true,
+		eligibility = function(state)
+			if not isEligibleForNFL(state) then return false end
+			-- Need to have played football before trying for varsity
+			return state.Flags and state.Flags.plays_football
+		end,
+		
+		choices = {
+			{
+				text = "🔥 Give it EVERYTHING!",
+				effects = { Health = -3 },
+				feedText = "Leaving it all on the field!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					local roll = RANDOM:NextInteger(1, 100)
+					local bonus = 0
+					if state.Flags.football_star then bonus = 30 end
+					if state.Flags.plays_football then bonus = bonus + 20 end
+					if (state.Health or 0) >= 70 then bonus = bonus + 15 end
+					
+					if roll + bonus >= 45 then
+						state.Flags.varsity_athlete = true
+						state.Flags.varsity_football = true
+						state.Fame = math.min(100, (state.Fame or 0) + 5)
+						state:ModifyStat("Happiness", 20)
+						state:AddFeed("🏈 MADE VARSITY! You're playing Friday Night Lights! Scouts take notice!")
+					else
+						state.Flags.jv_football = true
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🏈 Made JV team. Keep working - varsity next year!")
+					end
+				end,
+			},
+			{
+				text = "Just do my best",
+				effects = {},
+				feedText = "Stay calm...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					local roll = RANDOM:NextInteger(1, 100)
+					if roll <= 35 then
+						state.Flags.varsity_athlete = true
+						state:AddFeed("🏈 Made the varsity team! Solid tryout!")
+						state:ModifyStat("Happiness", 15)
+					else
+						state.Flags.jv_football = true
+						state:AddFeed("🏈 JV for now. Keep grinding!")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "football_state_championship",
+		title = "🏆 State Championship Game!",
+		emoji = "🏆",
+		text = "Your high school football team made it to the STATE CHAMPIONSHIP! Friday night, packed stadium, scouts everywhere!",
+		category = "career_nfl",
+		weight = 12,
+		minAge = 15, maxAge = 18,
+		baseChance = 0.20,
+		cooldown = 2,
+		eligibility = function(state)
+			return state.Flags and state.Flags.varsity_football
+		end,
+		
+		choices = {
+			{
+				text = "🔥 Lead the team to GLORY!",
+				effects = { Health = -5 },
+				feedText = "Under the lights!",
+				triggerMinigame = "mash",
+				onResolve = function(state, minigameResult)
+					state.Flags = state.Flags or {}
+					local roll = RANDOM:NextInteger(1, 100)
+					local bonus = (minigameResult and minigameResult.success) and 35 or 0
+					if state.Flags.football_star then bonus = bonus + 25 end
+					
+					if roll + bonus >= 50 then
+						state.Flags.state_champion = true
+						state.Flags.football_legend = true
+						state.Flags.scholarship_likely = true
+						state.Fame = math.min(100, (state.Fame or 0) + 25)
+						state:ModifyStat("Happiness", 35)
+						
+						if state.Flags.football_position == "QB" then
+							state:AddFeed("🏆 STATE CHAMPIONS!!! You threw 4 TDs! Scouts are SWARMING! D1 offers incoming!")
+						else
+							state:AddFeed("🏆 STATE CHAMPIONS!!! Dominant performance! College recruiters are calling!")
+						end
+					else
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("🏆 Lost in the championship. Heart-wrenching. You left everything on the field.")
+					end
+				end,
+			},
+			{
+				text = "Trust my teammates",
+				effects = {},
+				feedText = "Team effort...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					if RANDOM:NextInteger(1, 100) <= 40 then
+						state.Flags.state_champion = true
+						state:ModifyStat("Happiness", 25)
+						state:AddFeed("🏆 STATE CHAMPIONS! Team effort! This town will remember forever!")
+					else
+						state:AddFeed("🏆 Tough loss but you played hard. Character-building moment.")
+					end
+				end,
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- COLLEGE FOOTBALL EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "college_football_scholarship",
+		title = "🎓 College Football Scholarship!",
+		emoji = "🎓",
+		text = "A D1 college football program wants YOU! Full ride scholarship plus NIL deals! Your path to the NFL!",
+		category = "career_nfl",
+		weight = 14,
+		minAge = 17, maxAge = 18,
+		baseChance = 0.35,
+		oneTime = true,
+		eligibility = function(state)
+			if not isEligibleForNFL(state) then return false end
+			if state.Flags and state.Flags.college_football then return false end
+			if not state.Flags then return false end
+			return state.Flags.varsity_football or state.Flags.plays_football or state.Flags.varsity_athlete
+		end,
+		blockedByFlags = { college_football = true },
+		
+		choices = {
+			{
+				text = "🏈 LETS GO! Time to ball out!",
+				effects = { Happiness = 25, Health = 5 },
+				feedText = "College football here I come!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.college_football = true
+					state.Flags.college_athlete = true
+					state.Flags.scholarship_athlete = true
+					state.Flags.nfl_draft_age = (state.Age or 18) + 4 -- Draft age estimate
+					state.Education = "University (Athletic Scholarship)"
+					
+					-- School tier based on credentials
+					local schools = { "State University", "Tech University", "Central College" }
+					if state.Flags.state_champion or state.Flags.football_star then
+						schools = { "Alabama", "Georgia", "Ohio State", "Clemson", "Texas" }
+					end
+					local school = schools[RANDOM:NextInteger(1, #schools)]
+					state.Flags.college_name = school
+					
+					-- NIL deal
+					local nilMoney = RANDOM:NextInteger(50000, 800000)
+					state.Money = (state.Money or 0) + nilMoney
+					
+					state:AddFeed(string.format("🎓 Full scholarship to %s! %s NIL deal! On the path to the NFL!", school, formatMoney(nilMoney)))
+				end,
+			},
+			{
+				text = "📚 Focus on academics",
+				effects = { Smarts = 10 },
+				feedText = "Different path...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.chose_academics_over_football = true
+					state:AddFeed("📚 Passed on football scholarship. Pursuing a different dream!")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "college_bowl_game",
+		title = "🏈 Bowl Game!",
+		emoji = "🏈",
+		text = "Your college team is playing in a major BOWL GAME! National TV, huge exposure, NFL scouts in every section!",
+		category = "career_nfl",
+		weight = 12,
+		minAge = 18, maxAge = 22,
+		baseChance = 0.25,
+		cooldown = 1,
+		eligibility = function(state)
+			return state.Flags and state.Flags.college_football
+		end,
+		
+		choices = {
+			{
+				text = "🔥 PUT ON A SHOW!",
+				effects = { Health = -5 },
+				feedText = "Bowl game performance!",
+				triggerMinigame = "mash",
+				onResolve = function(state, minigameResult)
+					state.Flags = state.Flags or {}
+					local roll = RANDOM:NextInteger(1, 100)
+					local bonus = (minigameResult and minigameResult.success) and 30 or 0
+					if state.Flags.football_star then bonus = bonus + 20 end
+					
+					if roll + bonus >= 65 then
+						state.Flags.bowl_game_mvp = true
+						state.Fame = math.min(100, (state.Fame or 0) + 20)
+						state:ModifyStat("Happiness", 25)
+						
+						local mvpBonus = RANDOM:NextInteger(50000, 200000)
+						state.Money = (state.Money or 0) + mvpBonus
+						state:AddFeed(string.format("🏈 BOWL GAME MVP!!! %s bonus! Draft stock SOARING!", formatMoney(mvpBonus)))
+					elseif roll + bonus >= 40 then
+						state.Fame = math.min(100, (state.Fame or 0) + 10)
+						state:AddFeed("🏈 Won the bowl game! Solid performance on national TV!")
+						state:ModifyStat("Happiness", 15)
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🏈 Lost the bowl game. Disappointing end to the season.")
+					end
+				end,
+			},
+			{
+				text = "Play smart, avoid mistakes",
+				effects = {},
+				feedText = "Execute the game plan...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					if RANDOM:NextInteger(1, 100) <= 50 then
+						state:AddFeed("🏈 Bowl game WIN! Good team victory!")
+						state:ModifyStat("Happiness", 15)
+					else
+						state:AddFeed("🏈 Tough bowl loss. Next year!")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "college_national_championship",
+		title = "🏆 NATIONAL CHAMPIONSHIP!",
+		emoji = "🏆",
+		text = "Your college team is playing for the NATIONAL CHAMPIONSHIP! The biggest game in college football!",
+		category = "career_nfl",
+		weight = 8,
+		minAge = 19, maxAge = 23,
+		baseChance = 0.12,
+		cooldown = 2,
+		eligibility = function(state)
+			if not state.Flags or not state.Flags.college_football then return false end
+			return state.Flags.bowl_game_mvp or state.Flags.football_star or (state.Fame or 0) >= 40
+		end,
+		
+		choices = {
+			{
+				text = "🔥 DESTINY AWAITS!",
+				effects = { Health = -5 },
+				feedText = "Championship moment!",
+				triggerMinigame = "mash",
+				onResolve = function(state, minigameResult)
+					state.Flags = state.Flags or {}
+					local roll = RANDOM:NextInteger(1, 100)
+					local bonus = (minigameResult and minigameResult.success) and 35 or 0
+					
+					if roll + bonus >= 50 then
+						state.Flags.college_national_champion = true
+						state.Fame = math.min(100, (state.Fame or 0) + 35)
+						state:ModifyStat("Happiness", 40)
+						
+						local mvpBonus = RANDOM:NextInteger(200000, 1000000)
+						state.Money = (state.Money or 0) + mvpBonus
+						state:AddFeed(string.format("🏆 NATIONAL CHAMPIONS!!! %s NIL bonus! First round draft pick GUARANTEED!", formatMoney(mvpBonus)))
+					else
+						state:ModifyStat("Happiness", -20)
+						state:AddFeed("🏆 Lost the national championship. Devastating. So close to immortality.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "college_heisman_race",
+		title = "🏆 Heisman Trophy Race!",
+		emoji = "🏆",
+		text = "You're a finalist for the HEISMAN TROPHY! The most prestigious award in college football!",
+		category = "career_nfl",
+		weight = 8,
+		minAge = 20, maxAge = 23,
+		baseChance = 0.10,
+		oneTime = true,
+		eligibility = function(state)
+			if not state.Flags or not state.Flags.college_football then return false end
+			if state.Flags.heisman_winner then return false end
+			return (state.Fame or 0) >= 35 or state.Flags.bowl_game_mvp or state.Flags.college_national_champion
+		end,
+		blockedByFlags = { heisman_winner = true },
+		
+		choices = {
+			{
+				text = "This is my DREAM!",
+				effects = {},
+				feedText = "Heisman ceremony...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					local roll = RANDOM:NextInteger(1, 100)
+					local bonus = 0
+					if state.Flags.college_national_champion then bonus = 30 end
+					if state.Flags.bowl_game_mvp then bonus = bonus + 20 end
+					if state.Flags.football_position == "QB" then bonus = bonus + 15 end
+					
+					if roll + bonus >= 55 then
+						state.Flags.heisman_winner = true
+						state.Fame = math.min(100, (state.Fame or 0) + 45)
+						state:ModifyStat("Happiness", 40)
+						
+						local nilBonus = RANDOM:NextInteger(1000000, 5000000)
+						state.Money = (state.Money or 0) + nilBonus
+						state:AddFeed(string.format("🏆 HEISMAN TROPHY WINNER!!! College football IMMORTAL! %s NIL bonus!", formatMoney(nilBonus)))
+					else
+						state.Flags.heisman_finalist = true
+						state.Fame = math.min(100, (state.Fame or 0) + 20)
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("🏆 Heisman finalist! Top 3 in voting! Elite company! NFL awaits!")
+					end
+				end,
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- NFL COMBINE & DRAFT
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "nfl_combine_invite",
+		title = "🏈 NFL Combine Invite!",
+		emoji = "🏈",
+		text = "You've been invited to the NFL COMBINE! This is where you show scouts what you're made of!",
+		category = "career_nfl",
+		weight = 12,
+		minAge = 21, maxAge = 24,
+		baseChance = 0.30,
+		oneTime = true,
+		eligibility = function(state)
+			if not isEligibleForNFL(state) then return false end
+			if not state.Flags or not state.Flags.college_football then return false end
+			return not state.Flags.combine_done
+		end,
+		
+		choices = {
+			{
+				text = "🔥 Time to DOMINATE!",
+				effects = { Health = -3 },
+				feedText = "Combine performance!",
+				triggerMinigame = "mash",
+				onResolve = function(state, minigameResult)
+					state.Flags = state.Flags or {}
+					state.Flags.combine_done = true
+					
+					local roll = RANDOM:NextInteger(1, 100)
+					local bonus = (minigameResult and minigameResult.success) and 35 or 0
+					if (state.Health or 0) >= 80 then bonus = bonus + 15 end
+					
+					if roll + bonus >= 70 then
+						state.Flags.combine_standout = true
+						state.Fame = math.min(100, (state.Fame or 0) + 20)
+						state:ModifyStat("Happiness", 25)
+						state:AddFeed("🏈 COMBINE STANDOUT! Blazing 40 time! Position drills PERFECT! Draft stock SKYROCKETING!")
+					elseif roll + bonus >= 40 then
+						state.Flags.combine_solid = true
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("🏈 Solid combine performance. Confirmed your draft position!")
+					else
+						state.Flags.combine_disappointing = true
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🏈 Combine didn't go as planned. Some questions about your athleticism now...")
+					end
+				end,
+			},
+			{
+				text = "Stay relaxed, run my best",
+				effects = {},
+				feedText = "Just be yourself...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.combine_done = true
+					state.Flags.combine_solid = true
+					state:AddFeed("🏈 Good combine showing. No red flags. Scouts like what they saw!")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "nfl_draft_declaration",
+		title = "🏈 Declare for NFL Draft?",
+		emoji = "🏈",
+		text = "NFL scouts have been watching you closely. Your agent believes you could be drafted. This decision will change your LIFE! But the odds are long - only the BEST make it.",
+		question = "Do you declare for the NFL Draft?",
+		category = "career_nfl",
+		weight = 12, -- REDUCED weight - less common
+		minAge = 21, maxAge = 24,
+		baseChance = 0.20, -- REDUCED from 0.35 - harder to get this event
+		oneTime = true,
+		eligibility = function(state)
+			if not isEligibleForNFL(state) then return false end
+			if not state.Flags then return false end
+			if state.Flags.nfl_declared or state.Flags.nfl_player then return false end
+			-- CRITICAL: Must have STRONG football background to even get the chance
+			-- Requires college football + at least one standout achievement
+			local hasCollegeFootball = state.Flags.college_football
+			local hasStandoutAchievement = state.Flags.varsity_athlete or state.Flags.football_star 
+				or state.Flags.state_champion or state.Flags.bowl_game_mvp or state.Flags.heisman_winner
+				or state.Flags.combine_standout
+			return hasCollegeFootball and hasStandoutAchievement
+		end,
+		blockedByFlags = { in_prison = true, injured = true, nfl_declared = true, nfl_player = true },
+		
+		choices = {
+			{
+				text = "🏈 YES! I'm ready for Sundays!",
+				effects = { Happiness = 15 },
+				feedText = "Declaring for the draft!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.nfl_declared = true
+					state.Flags.nfl_draft_age = state.Age or 22
+					
+					local roll = RANDOM:NextInteger(1, 100)
+					local bonus = getDraftBonus(state)
+					
+					-- CRITICAL FIX: MUCH harder thresholds - NFL is elite, most don't make it
+					if roll + bonus >= 95 then
+						-- TOP 10 PICK! - Extremely rare (need ~95+ with bonuses)
+						local pickNum = RANDOM:NextInteger(1, 10)
+						local signBonus = RANDOM:NextInteger(5000000, 15000000) -- REDUCED from 20-45M
+						local salary = RANDOM:NextInteger(2000000, 5000000) -- REDUCED from 8-15M
+						
+						state.Money = (state.Money or 0) + signBonus
+						state.Fame = math.min(100, (state.Fame or 0) + 55)
+						state:ModifyStat("Happiness", 45)
+						state.Flags.nfl_player = true
+						state.Flags.nfl_first_round = true
+						state.Flags.nfl_top_10 = true
+						state.Flags.nfl_draft_pick = pickNum
+						
+						state.CurrentJob = {
+							id = "nfl_player",
+							name = "NFL Player",
+							company = "NFL Team",
+							salary = salary,
+							category = "sports",
+						}
+						
+						state:AddFeed(string.format("🏈 TOP %d PICK!!! %s guaranteed! FRANCHISE PLAYER! Welcome to the NFL!", pickNum, formatMoney(signBonus)))
+						
+					elseif roll + bonus >= 80 then
+						-- First round (non top-10) - Very hard
+						local pickNum = RANDOM:NextInteger(11, 32)
+						local signBonus = RANDOM:NextInteger(2000000, 6000000) -- REDUCED from 8-20M
+						local salary = RANDOM:NextInteger(1000000, 3000000) -- REDUCED from 3-8M
+						
+						state.Money = (state.Money or 0) + signBonus
+						state.Fame = math.min(100, (state.Fame or 0) + 40)
+						state:ModifyStat("Happiness", 35)
+						state.Flags.nfl_player = true
+						state.Flags.nfl_first_round = true
+						state.Flags.nfl_draft_pick = pickNum
+						
+						state.CurrentJob = {
+							id = "nfl_player",
+							name = "NFL Player",
+							company = "NFL Team",
+							salary = salary,
+							category = "sports",
+						}
+						
+						state:AddFeed(string.format("🏈 FIRST ROUND #%d! %s bonus! You're in the NFL!", pickNum, formatMoney(signBonus)))
+						
+					elseif roll + bonus >= 60 then
+						-- Day 2 pick (rounds 2-3) - Hard but achievable
+						local round = RANDOM:NextInteger(2, 3)
+						local pickNum = RANDOM:NextInteger(33, 100)
+						local signBonus = RANDOM:NextInteger(200000, 1500000) -- REDUCED from 500K-5M
+						local salary = RANDOM:NextInteger(500000, 1200000) -- REDUCED from 1-2.5M
+						
+						state.Money = (state.Money or 0) + signBonus
+						state.Fame = math.min(100, (state.Fame or 0) + 20)
+						state:ModifyStat("Happiness", 25)
+						state.Flags.nfl_player = true
+						state.Flags.nfl_day_2 = true
+						state.Flags.nfl_draft_round = round
+						
+						state.CurrentJob = {
+							id = "nfl_player",
+							name = "NFL Player",
+							company = "NFL Team",
+							salary = salary,
+							category = "sports",
+						}
+						
+						state:AddFeed(string.format("🏈 Round %d pick! %s bonus! Time to prove yourself!", round, formatMoney(signBonus)))
+						
+					elseif roll + bonus >= 40 then
+						-- Late round pick - Reasonable chance
+						local round = RANDOM:NextInteger(4, 7)
+						local salary = RANDOM:NextInteger(500000, 750000) -- REDUCED from 700K-1.2M
+						
+						state.Flags.nfl_player = true
+						state.Flags.nfl_late_round = true
+						state.Flags.nfl_draft_round = round
+						state:ModifyStat("Happiness", 15)
+						
+						state.CurrentJob = {
+							id = "nfl_player",
+							name = "NFL Player",
+							company = "NFL Team",
+							salary = salary,
+							category = "sports",
+						}
+						
+						state:AddFeed(string.format("🏈 Round %d pick! Long odds but you're IN! Time to be a steal!", round))
+						
+					elseif roll + bonus >= 25 then
+						-- Undrafted but signed
+						state.Flags.nfl_player = true
+						state.Flags.nfl_udfa = true
+						state:ModifyStat("Happiness", 8)
+						
+						state.CurrentJob = {
+							id = "nfl_player",
+							name = "NFL Player (UDFA)",
+							company = "NFL Team",
+							salary = 500000, -- Minimum salary
+							category = "sports",
+						}
+						
+						state:AddFeed("🏈 Undrafted but signed as UDFA! Many legends started here! PROVE THEM WRONG!")
+					else
+						-- MOST COMMON OUTCOME: Didn't make it
+						state:ModifyStat("Happiness", -20)
+						state.Flags.nfl_dream_crushed = true
+						state:AddFeed("🏈 Went undrafted and unsigned. Heartbreaking. The NFL dream is over. Maybe coaching?")
+					end
+				end,
+			},
+			{
+				text = "📚 Stay in college - not ready yet",
+				effects = { Smarts = 5, Happiness = 5 },
+				feedText = "Education first...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.stayed_college_football = true
+					state:AddFeed("📚 Another year of college. More film, more development, better draft stock!")
+				end,
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- NFL ROOKIE EVENTS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "nfl_rookie_of_year",
+		title = "🌟 Offensive/Defensive ROY Race!",
+		emoji = "🌟",
+		text = "Your rookie season has been INCREDIBLE! You're in the running for Rookie of the Year!",
+		category = "career_nfl",
+		weight = 10,
+		minAge = 21, maxAge = 25,
+		baseChance = 0.15,
+		oneTime = true,
+		eligibility = function(state)
+			if not isActiveNFLPlayer(state) then return false end
+			local yearsPlayed = getNFLYearsPlayed(state)
+			return yearsPlayed <= 1 and not state.Flags.nfl_roy
+		end,
+		
+		choices = {
+			{
+				text = "Check the results!",
+				effects = {},
+				feedText = "Award announcement...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					local roll = RANDOM:NextInteger(1, 100)
+					local bonus = 0
+					if state.Flags.nfl_first_round then bonus = 30 end
+					if state.Flags.heisman_winner then bonus = bonus + 25 end
+					
+					if roll + bonus >= 50 then
+						state.Flags.nfl_roy = true
+						state.Fame = math.min(100, (state.Fame or 0) + 30)
+						local royBonus = RANDOM:NextInteger(500000, 2000000)
+						state.Money = (state.Money or 0) + royBonus
+						state:ModifyStat("Happiness", 30)
+						state:AddFeed(string.format("🌟 ROOKIE OF THE YEAR!!! Best newcomer in the NFL! %s endorsement bonus!", formatMoney(royBonus)))
+					else
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("🌟 Top 3 in ROY voting! Great rookie campaign! Future is BRIGHT!")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "nfl_rookie_struggles",
+		title = "😰 NFL Learning Curve",
+		emoji = "😰",
+		text = "The NFL is BRUTAL. The speed, the complexity, the hits... you're struggling to adjust to the professional level.",
+		category = "career_nfl",
+		weight = 12,
+		minAge = 21, maxAge = 26,
+		baseChance = 0.25,
+		cooldown = 3,
+		eligibility = function(state)
+			if not isActiveNFLPlayer(state) then return false end
+			return getNFLYearsPlayed(state) <= 2
+		end,
+		
+		choices = {
+			{
+				text = "💪 Study more film, work harder",
+				effects = { Health = -5 },
+				feedText = "Extra effort!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					if RANDOM:NextInteger(1, 100) <= 70 then
+						state.Flags.film_junkie = true
+						state.Flags.hard_worker = true
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("💪 The extra work is paying off! You're reading plays faster!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("💪 Progress is slow but you're not giving up!")
+					end
+				end,
+			},
+			{
+				text = "Trust the process",
+				effects = {},
+				feedText = "Stay patient...",
+				onResolve = function(state)
+					state:AddFeed("🏈 Learning every day. Experience is the best teacher.")
+				end,
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- NFL CAREER EVENTS (CORE)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "nfl_playoffs",
+		title = "🏆 NFL PLAYOFFS!",
+		emoji = "🏆",
+		text = "Your team made the PLAYOFFS! Win or go home. Every game matters now!",
+		category = "career_nfl",
+		weight = 12,
+		minAge = 22, maxAge = 40,
+		baseChance = 0.18,
+		cooldown = 2,
+		eligibility = function(state)
+			if not isActiveNFLPlayer(state) then return false end
+			return state.Flags and state.Flags.nfl_player
+		end,
+		blockedByFlags = { injured = true, nfl_retired = true },
+		
+		choices = {
+			{
+				text = "🔥 PLAYOFF MODE!",
+				effects = { Health = -5 },
+				feedText = "Postseason time!",
+				triggerMinigame = "mash",
+				onResolve = function(state, minigameResult)
+					state.Flags = state.Flags or {}
+					local roll = RANDOM:NextInteger(1, 100)
+					local bonus = (minigameResult and minigameResult.success) and 25 or 0
+					if state.Flags.nfl_pro_bowl then bonus = bonus + 20 end
+					
+					if roll + bonus >= 70 then
+						state.Flags.super_bowl_appearance = true
+						state:ModifyStat("Happiness", 25)
+						state:AddFeed("🏆 SUPER BOWL BOUND!!! Your team is playing for it ALL!")
+						-- Super Bowl result handled by separate event
+					elseif roll + bonus >= 45 then
+						state.Flags.conference_championship = true
+						state:AddFeed("🏆 Conference Championship game! One win from the Super Bowl!")
+						state:ModifyStat("Happiness", 15)
+					else
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🏆 Playoff loss. Disappointing end. Next year!")
+					end
+				end,
+			},
+			{
+				text = "Execute the game plan",
+				effects = {},
+				feedText = "Trust the system...",
+				onResolve = function(state)
+					if RANDOM:NextInteger(1, 100) <= 35 then
+						state:AddFeed("🏆 Deep playoff run! Conference Championship!")
+						state:ModifyStat("Happiness", 15)
+					else
+						state:AddFeed("🏆 Early playoff exit. Tough loss.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "nfl_super_bowl",
+		title = "🏆 SUPER BOWL!!!",
+		emoji = "🏆",
+		text = "YOUR TEAM IS IN THE SUPER BOWL! The biggest game in sports! Over 100 MILLION people watching! THIS IS IT!",
+		category = "career_nfl",
+		weight = 8,
+		minAge = 22, maxAge = 40,
+		baseChance = 0.10,
+		cooldown = 3,
+		eligibility = function(state)
+			if not isActiveNFLPlayer(state) then return false end
+			return state.Flags and state.Flags.nfl_player
+		end,
+		blockedByFlags = { injured = true, nfl_retired = true },
+		
+		choices = {
+			{
+				text = "🔥 SUPER BOWL OR BUST!",
+				effects = { Health = -5 },
+				feedText = "The biggest stage!",
+				triggerMinigame = "mash",
+				minigameOptions = { difficulty = "hard" },
+				onResolve = function(state, minigameResult)
+					state.Flags = state.Flags or {}
+					local roll = RANDOM:NextInteger(1, 100)
+					local bonus = (minigameResult and minigameResult.success) and 30 or 0
+					if state.Flags.nfl_pro_bowl then bonus = bonus + 20 end
+					if state.Flags.nfl_first_round then bonus = bonus + 10 end
+					
+					if roll + bonus >= 50 then
+						local prize = RANDOM:NextInteger(5000000, 20000000)
+						state.Money = (state.Money or 0) + prize
+						state.Fame = 100
+						state:ModifyStat("Happiness", 50)
+						state.Flags.super_bowl_champion = true
+						state.Flags.super_bowl_rings = (state.Flags.super_bowl_rings or 0) + 1
+						
+						local rings = state.Flags.super_bowl_rings
+						local mvpRoll = RANDOM:NextInteger(1, 100)
+						
+						if mvpRoll + bonus >= 70 then
+							state.Flags.super_bowl_mvp = true
+							state:AddFeed(string.format("🏆 SUPER BOWL CHAMPION + MVP!!! Ring #%d! %s! DISNEY WORLD! LEGEND!", rings, formatMoney(prize)))
+						else
+							state:AddFeed(string.format("🏆 SUPER BOWL CHAMPION!!! Ring #%d! %s! CONFETTI RAINING! CHAMPIONS!", rings, formatMoney(prize)))
+						end
+					else
+						state:ModifyStat("Happiness", -25)
+						state:AddFeed("🏆 Lost the Super Bowl. Devastating. The pain will fuel you.")
+					end
+				end,
+			},
+			{
+				text = "Stay focused, play my role",
+				effects = {},
+				feedText = "Trust the team...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					if RANDOM:NextInteger(1, 100) <= 45 then
+						local prize = RANDOM:NextInteger(3000000, 10000000)
+						state.Money = (state.Money or 0) + prize
+						state.Fame = math.min(100, (state.Fame or 0) + 40)
+						state.Flags.super_bowl_champion = true
+						state.Flags.super_bowl_rings = (state.Flags.super_bowl_rings or 0) + 1
+						state:ModifyStat("Happiness", 40)
+						state:AddFeed(string.format("🏆 SUPER BOWL CHAMPION! %s bonus! Dreams come true!", formatMoney(prize)))
+					else
+						state:ModifyStat("Happiness", -20)
+						state:AddFeed("🏆 Lost a heartbreaker. So close to glory.")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "nfl_pro_bowl",
+		title = "⭐ Pro Bowl Voting!",
+		emoji = "⭐",
+		text = "Pro Bowl voting has concluded. Your season performance is being evaluated by fans, coaches, and players...",
+		category = "career_nfl",
+		weight = 10,
+		minAge = 23, maxAge = 38,
+		baseChance = 0.15,
+		cooldown = 2,
+		eligibility = function(state)
+			if not isActiveNFLPlayer(state) then return false end
+			local yearsPlayed = getNFLYearsPlayed(state)
+			return yearsPlayed >= 1 and state.Flags and state.Flags.nfl_player
+		end,
+		blockedByFlags = { injured = true, nfl_retired = true },
+		
+		choices = {
+			{
+				text = "Check the results...",
+				effects = {},
+				feedText = "Pro Bowl announcement...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					local roll = RANDOM:NextInteger(1, 100)
+					local bonus = 0
+					if state.Flags.nfl_first_round then bonus = 25 end
+					if (state.Fame or 0) >= 60 then bonus = bonus + 20 end
+					if state.Flags.nfl_pro_bowl then bonus = bonus + 25 end
+					
+					if roll + bonus >= 50 then
+						state.Flags.nfl_pro_bowl = true
+						state.Flags.nfl_pro_bowl_count = (state.Flags.nfl_pro_bowl_count or 0) + 1
+						state.Fame = math.min(100, (state.Fame or 0) + 15)
+						local bonusMoney = RANDOM:NextInteger(80000, 200000)
+						state.Money = (state.Money or 0) + bonusMoney
+						
+						local count = state.Flags.nfl_pro_bowl_count
+						if count >= 10 then
+							state.Flags.nfl_legend = true
+							state:AddFeed(string.format("⭐ %dx PRO BOWLER!!! Hall of Fame LOCK! %s bonus!", count, formatMoney(bonusMoney)))
+						else
+							state:AddFeed(string.format("⭐ PRO BOWL #%d! Among the NFL's elite! %s bonus!", count, formatMoney(bonusMoney)))
+						end
+						state:ModifyStat("Happiness", 25)
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("⭐ Didn't make Pro Bowl this year. Solid season though!")
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "nfl_mvp_race",
+		title = "🏅 NFL MVP Voting!",
+		emoji = "🏅",
+		text = "You're in the running for NFL MVP! Your season has been HISTORIC. The whole league is watching!",
+		category = "career_nfl",
+		weight = 6,
+		minAge = 24, maxAge = 38,
+		baseChance = 0.06,
+		cooldown = 2,
+		eligibility = function(state)
+			if not isActiveNFLPlayer(state) then return false end
+			if not state.Flags or not state.Flags.nfl_player then return false end
+			return state.Flags.nfl_pro_bowl or (state.Flags.nfl_first_round and (state.Fame or 0) >= 60)
+		end,
+		blockedByFlags = { injured = true, nfl_retired = true },
+		
+		choices = {
+			{
+				text = "My stats speak for themselves",
+				effects = {},
+				feedText = "Awaiting results...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					local roll = RANDOM:NextInteger(1, 100)
+					local bonus = 0
+					if state.Flags.nfl_pro_bowl then bonus = 25 end
+					if state.Flags.nfl_top_10 then bonus = bonus + 15 end
+					if (state.Fame or 0) >= 80 then bonus = bonus + 20 end
+					
+					if roll + bonus >= 60 then
+						state.Flags.nfl_mvp = true
+						state.Flags.nfl_mvp_count = (state.Flags.nfl_mvp_count or 0) + 1
+						state.Fame = 100
+						local mvpBonus = RANDOM:NextInteger(5000000, 15000000)
+						state.Money = (state.Money or 0) + mvpBonus
+						state:ModifyStat("Happiness", 40)
+						
+						local count = state.Flags.nfl_mvp_count
+						if count >= 3 then
+							state.Flags.nfl_goat = true
+							state:AddFeed(string.format("🏅 %dx NFL MVP!!! GOAT CONVERSATION! %s bonus!", count, formatMoney(mvpBonus)))
+						else
+							state:AddFeed(string.format("🏅 NFL MVP!!! Most Valuable Player! %s bonus!", formatMoney(mvpBonus)))
+						end
+					else
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🏅 Top 5 in MVP voting. Elite season!")
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- NFL CONTRACTS & BUSINESS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "nfl_contract_negotiation",
+		title = "💰 Contract Negotiation!",
+		emoji = "💰",
+		text = "Your contract is up. Teams are evaluating your worth. Time to GET PAID!",
+		category = "career_nfl",
+		weight = 12,
+		minAge = 24, maxAge = 34,
+		baseChance = 0.20,
+		cooldown = 4,
+		eligibility = function(state)
+			if not isActiveNFLPlayer(state) then return false end
+			return state.Flags and state.Flags.nfl_player
+		end,
+		blockedByFlags = { nfl_retired = true },
+		
+		choices = {
+			{
+				text = "💰 PAY ME! I'm a STAR!",
+				effects = {},
+				feedText = "Show me the money!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					local roll = RANDOM:NextInteger(1, 100)
+					local bonus = 0
+					if state.Flags.nfl_pro_bowl then bonus = 40 end
+					if state.Flags.nfl_mvp then bonus = bonus + 60 end
+					if state.Flags.super_bowl_champion then bonus = bonus + 30 end
+					if state.Flags.nfl_first_round then bonus = bonus + 20 end
+					
+					local years = RANDOM:NextInteger(3, 6)
+					local totalValue, guaranteed
+					
+					if roll + bonus >= 75 then
+						totalValue = RANDOM:NextInteger(150000000, 300000000)
+						guaranteed = RANDOM:NextInteger(80000000, 180000000)
+						state.Flags.nfl_record_contract = true
+						state:AddFeed(string.format("💰 RECORD-BREAKING DEAL! %s total, %s GUARANTEED! GENERATIONAL WEALTH!", formatMoney(totalValue), formatMoney(guaranteed)))
+						state:ModifyStat("Happiness", 40)
+					elseif roll + bonus >= 50 then
+						totalValue = RANDOM:NextInteger(60000000, 120000000)
+						guaranteed = RANDOM:NextInteger(30000000, 70000000)
+						state:AddFeed(string.format("💰 Great contract! %s total, %s guaranteed!", formatMoney(totalValue), formatMoney(guaranteed)))
+						state:ModifyStat("Happiness", 25)
+					else
+						totalValue = RANDOM:NextInteger(20000000, 50000000)
+						guaranteed = RANDOM:NextInteger(10000000, 25000000)
+						state:AddFeed(string.format("💰 Decent deal: %s total. Prove your worth!", formatMoney(totalValue)))
+						state:ModifyStat("Happiness", 10)
+					end
+					
+					state.Money = (state.Money or 0) + guaranteed
+					local perYear = math.floor(totalValue / years)
+					if state.CurrentJob then state.CurrentJob.salary = perYear end
+				end,
+			},
+			{
+				text = "🏆 Take less to win",
+				effects = {},
+				feedText = "Championships over cash...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.team_player = true
+					local salary = RANDOM:NextInteger(12000000, 30000000)
+					state.Money = (state.Money or 0) + salary
+					if state.CurrentJob then state.CurrentJob.salary = salary end
+					state:ModifyStat("Happiness", 15)
+					state:AddFeed(string.format("💰 Took %s/year to join a contender. SUPER BOWL OR BUST!", formatMoney(salary)))
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "nfl_endorsement_deal",
+		title = "📺 Major Endorsement Offer!",
+		emoji = "📺",
+		text = "A major brand wants you as their spokesperson! Your face could be on billboards nationwide!",
+		category = "career_nfl",
+		weight = 10,
+		minAge = 22, maxAge = 40,
+		baseChance = 0.15,
+		cooldown = 3,
+		eligibility = function(state)
+			if not isActiveNFLPlayer(state) then return false end
+			return state.Flags and (state.Flags.nfl_pro_bowl or state.Flags.nfl_first_round or (state.Fame or 0) >= 50)
+		end,
+		
+		choices = {
+			{
+				text = "📺 Sign the deal!",
+				effects = { Happiness = 15 },
+				feedText = "Brand ambassador!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					local brands = { "Nike", "Gatorade", "EA Sports", "State Farm", "Subway" }
+					local brand = brands[RANDOM:NextInteger(1, #brands)]
+					local dealValue = RANDOM:NextInteger(1000000, 10000000)
+					if state.Flags.nfl_pro_bowl then dealValue = dealValue * 2 end
+					if state.Flags.nfl_mvp then dealValue = dealValue * 3 end
+					
+					state.Money = (state.Money or 0) + dealValue
+					state.Flags.major_endorsement = true
+					state.Fame = math.min(100, (state.Fame or 0) + 15)
+					state:AddFeed(string.format("📺 %s endorsement deal! %s! Your face is EVERYWHERE!", brand, formatMoney(dealValue)))
+				end,
+			},
+			{
+				text = "Decline for now",
+				effects = {},
+				feedText = "Not the right fit...",
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- NFL INJURIES & SETBACKS
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "nfl_injury_scare",
+		title = "🏥 Injury Scare!",
+		emoji = "🏥",
+		text = "You went down on a routine play. The trainers are rushing out. This doesn't look good...",
+		category = "career_nfl",
+		weight = 10,
+		minAge = 22, maxAge = 40,
+		baseChance = 0.18,
+		cooldown = 3,
+		eligibility = function(state)
+			if not isActiveNFLPlayer(state) then return false end
+			return state.Flags and state.Flags.nfl_player
+		end,
+		blockedByFlags = { nfl_retired = true },
+		
+		choices = {
+			{
+				text = "Stay positive, await MRI",
+				effects = {},
+				feedText = "Praying for good news...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					local roll = RANDOM:NextInteger(1, 100)
+					
+					if roll <= 45 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🏥 Just a minor sprain! Week-to-week. Dodged a bullet!")
+					elseif roll <= 75 then
+						state.Flags.injured = true
+						state.Flags.missed_games = RANDOM:NextInteger(4, 10)
+						state:ModifyStat("Health", -15)
+						state:ModifyStat("Happiness", -15)
+						state:AddFeed("🏥 Significant injury. Out 1-2 months. Rehab time!")
+					else
+						state.Flags.injured = true
+						state.Flags.major_injury = true
+						state:ModifyStat("Health", -30)
+						state:ModifyStat("Happiness", -25)
+						
+						local injuries = { "torn ACL", "torn Achilles", "broken leg" }
+						local injury = injuries[RANDOM:NextInteger(1, #injuries)]
+						state:AddFeed(string.format("🏥 %s! Season-ending injury. Long road ahead...", injury:upper()))
+					end
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "nfl_comeback_game",
+		title = "💪 Comeback Game!",
+		emoji = "💪",
+		text = "You've been grinding through rehab. Tonight is your COMEBACK! The crowd is going CRAZY for you!",
+		category = "career_nfl",
+		weight = 10,
+		minAge = 22, maxAge = 40,
+		baseChance = 0.30,
+		cooldown = 3,
+		eligibility = function(state)
+			if not isActiveNFLPlayer(state) then return false end
+			return state.Flags and (state.Flags.injured or state.Flags.major_injury)
+		end,
+		
+		choices = {
+			{
+				text = "🔥 Show them I'm BACK!",
+				effects = { Health = 5 },
+				feedText = "Comeback kid!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.injured = nil
+					state.Flags.major_injury = nil
+					state.Flags.overcame_injury = true
+					state.Flags.comeback_player = true
+					state:ModifyStat("Happiness", 25)
+					state:ModifyStat("Health", 15)
+					state.Fame = math.min(100, (state.Fame or 0) + 10)
+					state:AddFeed("💪 COMEBACK GAME! 150+ yards! Standing ovation! YOU'RE BACK!")
+				end,
+			},
+		},
+	},
+
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- NFL RETIREMENT & LEGACY
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{
+		id = "nfl_retirement_decision",
+		title = "🏈 Time to Hang It Up?",
+		emoji = "🏈",
+		text = "Your body has taken a BEATING. Every hit hurts more. The game is passing you by. Is it time?",
+		category = "career_nfl",
+		weight = 12,
+		minAge = 32, maxAge = 42,
+		baseChance = 0.30,
+		cooldown = 2,
+		eligibility = function(state)
+			if not isActiveNFLPlayer(state) then return false end
+			return state.Flags and state.Flags.nfl_player and not state.Flags.nfl_retired
+		end,
+		blockedByFlags = { nfl_retired = true },
+		
+		choices = {
+			{
+				text = "🏈 Play one more year (don't retire)",
+				effects = { Health = -10 },
+				feedText = "Not done yet!",
+				onResolve = function(state)
+					if RANDOM:NextInteger(1, 100) <= 40 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("🏈 Still got it! Proved the doubters wrong! Playing another season.")
+					else
+						state:ModifyStat("Health", -10)
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("🏈 The body is failing. Playing through pain for one more year...")
+					end
+				end,
+			},
+			{
+				text = "🎤 RETIRE - End my NFL career",
+				effects = { Happiness = 25 },
+				feedText = "Legendary career!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.nfl_retired = true
+					state.Flags.retired_athlete = true
+					-- CRITICAL FIX: Also set generic retired flag so main system recognizes retirement
+					state.Flags.retired = true
+					state.Flags.happily_retired = true
+					state.Fame = math.min(100, (state.Fame or 0) + 25)
+					
+					-- Calculate and store pension based on NFL career earnings
+					local lastSalary = state.CurrentJob and state.CurrentJob.salary or 750000
+					local yearsPlayed = state.Flags.nfl_draft_age and ((state.Age or 30) - state.Flags.nfl_draft_age) or 8
+					local pensionPercent = math.min(0.50, 0.25 + (yearsPlayed * 0.02)) -- 25-50% based on years
+					state.Flags.pension_amount = math.floor(lastSalary * pensionPercent)
+					
+					local rings = state.Flags.super_bowl_rings or 0
+					local mvps = state.Flags.nfl_mvp_count or 0
+					local probowls = state.Flags.nfl_pro_bowl_count or 0
+					
+					if rings >= 3 or mvps >= 2 then
+						state.Flags.nfl_goat = true
+						state.Flags.hall_of_fame_lock = true
+						state:AddFeed(string.format("🏈 GOAT CAREER! %d rings, %dx MVP, %dx Pro Bowl! First-ballot Hall of Fame! Pension: $%s/year", rings, mvps, probowls, formatMoney(state.Flags.pension_amount)))
+					elseif rings >= 1 or mvps >= 1 or probowls >= 5 then
+						state.Flags.hall_of_fame_lock = true
+						state:AddFeed(string.format("🏈 LEGENDARY! %d ring(s), %dx MVP, %dx Pro Bowl! Canton bound! Pension: $%s/year", rings, mvps, probowls, formatMoney(state.Flags.pension_amount)))
+					elseif probowls >= 3 then
+						state.Flags.hall_of_fame_consideration = true
+						state:AddFeed(string.format("🏈 Great career! %dx Pro Bowl. HOF consideration! Pension: $%s/year", probowls, formatMoney(state.Flags.pension_amount)))
+					else
+						state:AddFeed(string.format("🏈 Solid NFL career. Made it longer than most! Pension: $%s/year", formatMoney(state.Flags.pension_amount)))
+					end
+					
+					-- CRITICAL: Clear current job to stop salary payments
+					state.CurrentJob = nil
+					state.Flags.employed = nil
+					state.Flags.has_job = nil
+					state:ModifyStat("Happiness", 30)
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "nfl_hall_of_fame",
+		title = "🏆 Hall of Fame Induction!",
+		emoji = "🏆",
+		text = "You've been selected for the PRO FOOTBALL HALL OF FAME! The ultimate honor for any football player!",
+		category = "career_nfl",
+		weight = 8,
+		minAge = 36, maxAge = 70,
+		baseChance = 0.25,
+		oneTime = true,
+		eligibility = function(state)
+			if not state.Flags then return false end
+			return state.Flags.nfl_retired and state.Flags.hall_of_fame_lock and not state.Flags.hall_of_fame_inducted
+		end,
+		
+		choices = {
+			{
+				text = "🎤 Give an emotional speech",
+				effects = { Happiness = 35 },
+				feedText = "Canton, Ohio!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.hall_of_fame_inducted = true
+					state.Fame = 100
+					state:AddFeed("🏆 PRO FOOTBALL HALL OF FAME!!! Your gold jacket awaits! IMMORTAL!")
+				end,
+			},
+		},
+	},
+	
+	{
+		id = "nfl_jersey_retirement",
+		title = "🎽 Jersey Retirement!",
+		emoji = "🎽",
+		text = "Your former team wants to retire your number! It will hang in the stadium FOREVER!",
+		category = "career_nfl",
+		weight = 8,
+		minAge = 35, maxAge = 70,
+		baseChance = 0.30,
+		oneTime = true,
+		eligibility = function(state)
+			if not state.Flags then return false end
+			return state.Flags.nfl_retired and (state.Flags.nfl_pro_bowl or state.Flags.super_bowl_champion) and not state.Flags.jersey_retired
+		end,
+		
+		choices = {
+			{
+				text = "Attend the ceremony",
+				effects = { Happiness = 25 },
+				feedText = "Forever honored!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.jersey_retired = true
+					state.Fame = math.min(100, (state.Fame or 0) + 20)
+					state:AddFeed("🎽 JERSEY RETIRED! Your number will never be worn again! Standing ovation!")
+				end,
+			},
+		},
+	},
+}
+
+return NFLCareerEvents

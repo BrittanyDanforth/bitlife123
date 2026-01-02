@@ -59,7 +59,7 @@ local events = {
 						-- CRITICAL FIX #57: Assign a proper entry-level job that's in CareerTracks
 						-- Use entry_career which progresses to office_assistant -> admin_assistant -> etc.
 						-- ═══════════════════════════════════════════════════════════════════════════════
-						local salary = 42000 + math.random(0, 10) * 1000 -- 42k-52k (better for acing it!)
+						local salary = 42000 + RANDOM:NextInteger(0, 10) * 1000 -- 42k-52k (better for acing it!)
 						if state.SetCareer then
 							state:SetCareer({
 								id = "entry_career", -- CRITICAL: This ID is now in CareerTracks.entry
@@ -102,7 +102,7 @@ local events = {
 					-- ═══════════════════════════════════════════════════════════════════════════════
 					-- CRITICAL FIX #58: Assign proper entry-level job that's in CareerTracks
 					-- ═══════════════════════════════════════════════════════════════════════════════
-					local salary = 38000 + math.random(0, 10) * 1000 -- 38k-48k
+					local salary = 38000 + RANDOM:NextInteger(0, 10) * 1000 -- 38k-48k
 					if state.SetCareer then
 						state:SetCareer({
 							id = "entry_career", -- CRITICAL: This ID is now in CareerTracks.entry
@@ -715,7 +715,7 @@ local events = {
 				effects = { Happiness = -3, Smarts = 3 },
 				feedText = "You took responsibility...",
 				onResolve = function(state)
-					if math.random() < 0.7 then
+					if RANDOM:NextNumber() < 0.7 then
 						state.Flags = state.Flags or {}
 						state.Flags.honest_worker = true
 						if state.AddFeed then
@@ -734,7 +734,7 @@ local events = {
 				effects = { Happiness = 2 },
 				feedText = "You tried to fix your mistake quietly...",
 				onResolve = function(state)
-					if math.random() < 0.5 then
+					if RANDOM:NextNumber() < 0.5 then
 						if state.AddFeed then
 							state:AddFeed("🔧 You fixed it! Crisis averted.")
 						end
@@ -754,7 +754,7 @@ local events = {
 				setFlags = { blame_shifter = true },
 				feedText = "You tried to shift blame...",
 				onResolve = function(state)
-					if math.random() < 0.4 then
+					if RANDOM:NextNumber() < 0.4 then
 						if state.AddFeed then
 							state:AddFeed("😈 They bought it. But you know what you did...")
 						end
@@ -796,7 +796,7 @@ local events = {
 					local smarts = (state.Stats and state.Stats.Smarts) or 50
 					local passChance = 0.5 + (smarts / 200)
 					
-					if math.random() < passChance then
+					if RANDOM:NextNumber() < passChance then
 						state.Flags = state.Flags or {}
 						state.Flags.master_certified = true
 						if state.CurrentJob then
@@ -846,7 +846,7 @@ local events = {
 				effects = { Happiness = 5, Health = -3 },
 				feedText = "You handled the emergency professionally...",
 				onResolve = function(state)
-					local outcome = math.random()
+					local outcome = RANDOM:NextNumber()
 					if outcome < 0.7 then
 						state.Flags = state.Flags or {}
 						state.Flags.life_saver = true
@@ -871,7 +871,7 @@ local events = {
 				effects = { Happiness = 2 },
 				feedText = "You got help right away...",
 				onResolve = function(state)
-					if math.random() < 0.8 then
+					if RANDOM:NextNumber() < 0.8 then
 						if state.AddFeed then
 							state:AddFeed("👥 Team effort saved the day!")
 						end
@@ -922,8 +922,8 @@ local events = {
 				effects = { Happiness = 10, Health = -5 },
 				feedText = "You worked non-stop on your masterpiece...",
 				onResolve = function(state)
-					if math.random() < 0.6 then
-						local bonus = math.random(2000, 10000)
+					if RANDOM:NextNumber() < 0.6 then
+						local bonus = RANDOM:NextInteger(2000, 10000)
 						state.Money = (state.Money or 0) + bonus
 						state.Flags = state.Flags or {}
 						state.Flags.artistic_success = true
@@ -971,7 +971,7 @@ local events = {
 				effects = { Happiness = 3, Smarts = 2 },
 				feedText = "You stayed professional despite their rudeness...",
 				onResolve = function(state)
-					if math.random() < 0.6 then
+					if RANDOM:NextNumber() < 0.6 then
 						if state.AddFeed then
 							state:AddFeed("😊 They actually apologized! Kindness wins.")
 						end
@@ -994,7 +994,7 @@ local events = {
 				effects = { Happiness = 5, Health = -2 },
 				feedText = "You snapped back at them...",
 				onResolve = function(state)
-					if math.random() < 0.3 then
+					if RANDOM:NextNumber() < 0.3 then
 						state.Flags = state.Flags or {}
 						state.Flags.got_fired = true
 						state.CurrentJob = nil
@@ -1035,7 +1035,7 @@ local events = {
 				effects = { Happiness = 10 },
 				feedText = "A nice surprise!",
 				onResolve = function(state)
-					local tip = math.random(50, 200)
+					local tip = RANDOM:NextInteger(50, 200)
 					state.Money = (state.Money or 0) + tip
 					if state.AddFeed then
 						state:AddFeed(string.format("💰 $%d tip! Today was a good day.", tip))
@@ -1049,7 +1049,7 @@ local events = {
 				setFlags = { team_player = true },
 				feedText = "You shared the wealth.",
 				onResolve = function(state)
-					local tip = math.random(20, 100)
+					local tip = RANDOM:NextInteger(20, 100)
 					state.Money = (state.Money or 0) + tip
 					if state.AddFeed then
 						state:AddFeed("🤝 Split the tip! Coworkers appreciate you.")
@@ -1085,7 +1085,7 @@ local events = {
 				effects = { Happiness = -3 },
 				feedText = "You stood up for yourself...",
 				onResolve = function(state)
-					local roll = math.random()
+					local roll = RANDOM:NextNumber()
 					if roll < 0.6 then
 						if state.ModifyStat then
 							state:ModifyStat("Smarts", 4)
@@ -1112,7 +1112,7 @@ local events = {
 				effects = {},
 				feedText = "You escalated to HR...",
 				onResolve = function(state)
-					local roll = math.random()
+					local roll = RANDOM:NextNumber()
 					if roll < 0.4 then
 						if state.AddFeed then
 							state:AddFeed("✅ HR talked to the senior dev. Things got better.")
@@ -1151,7 +1151,7 @@ local events = {
 				effects = { Smarts = 5, Health = -3 },
 				feedText = "You presented at the conference...",
 				onResolve = function(state)
-					local roll = math.random()
+					local roll = RANDOM:NextNumber()
 					if roll < 0.7 then
 						state.Money = (state.Money or 0) + 2000
 						state.Flags = state.Flags or {}
@@ -1203,7 +1203,7 @@ local events = {
 				effects = { Health = -10, Happiness = -8 },
 				feedText = "You pushed through...",
 				onResolve = function(state)
-					local roll = math.random()
+					local roll = RANDOM:NextNumber()
 					if roll < 0.3 then
 						state.Money = (state.Money or 0) + 1000
 						if state.AddFeed then
@@ -1260,7 +1260,7 @@ local events = {
 				effects = {},
 				feedText = "You backed your boss...",
 				onResolve = function(state)
-					local roll = math.random()
+					local roll = RANDOM:NextNumber()
 					if roll < 0.5 then
 						state.Money = (state.Money or 0) + 500
 						if state.AddFeed then
@@ -1279,7 +1279,7 @@ local events = {
 				effects = { Smarts = 2 },
 				feedText = "You tried to play both sides...",
 				onResolve = function(state)
-					local roll = math.random()
+					local roll = RANDOM:NextNumber()
 					if roll < 0.3 then
 						if state.AddFeed then
 							state:AddFeed("🧠 Master manipulator! You came out ahead.")
@@ -1324,7 +1324,7 @@ local events = {
 				effects = { Happiness = 5 },
 				feedText = "The gossip spread...",
 				onResolve = function(state)
-					local roll = math.random()
+					local roll = RANDOM:NextNumber()
 					if roll < 0.3 then
 						state.Flags = state.Flags or {}
 						state.Flags.gossip_trouble = true
@@ -1374,7 +1374,7 @@ local events = {
 				effects = { Smarts = 4, Happiness = -5 },
 				feedText = "You documented every detail...",
 				onResolve = function(state)
-					local roll = math.random()
+					local roll = RANDOM:NextNumber()
 					if roll < 0.8 then
 						if state.AddFeed then
 							state:AddFeed("📋 Documentation saved you. Case dismissed.")
@@ -1393,7 +1393,7 @@ local events = {
 				effects = { Happiness = -3 },
 				feedText = "You spoke with the family...",
 				onResolve = function(state)
-					local roll = math.random()
+					local roll = RANDOM:NextNumber()
 					if roll < 0.7 then
 						if state.AddFeed then
 							state:AddFeed("🤝 The family calmed down. They understood.")
@@ -1436,7 +1436,7 @@ local events = {
 				effects = { Health = -3 },
 				feedText = "You fought for their life...",
 				onResolve = function(state)
-					local roll = math.random()
+					local roll = RANDOM:NextNumber()
 					if roll < 0.75 then
 						if state.ModifyStat then
 							state:ModifyStat("Happiness", 15)
@@ -1485,9 +1485,9 @@ local events = {
 				effects = {},
 				feedText = "You made the trade...",
 				onResolve = function(state)
-					local roll = math.random()
+					local roll = RANDOM:NextNumber()
 					if roll < 0.6 then
-						local profit = math.random(50000, 200000)
+						local profit = RANDOM:NextInteger(50000, 200000)
 						state.Money = (state.Money or 0) + profit
 						state.Flags = state.Flags or {}
 						state.Flags.insider_trader = true
@@ -1542,9 +1542,9 @@ local events = {
 				effects = {},
 				feedText = "You made the risky investment...",
 				onResolve = function(state)
-					local roll = math.random()
+					local roll = RANDOM:NextNumber()
 					if roll < 0.5 then
-						local bonus = math.random(10000, 50000)
+						local bonus = RANDOM:NextInteger(10000, 50000)
 						state.Money = (state.Money or 0) + bonus
 						if state.AddFeed then
 							state:AddFeed(string.format("🎰 It worked! $%d bonus! You're a genius!", bonus))
@@ -1600,7 +1600,7 @@ local events = {
 				effects = { Happiness = 5 },
 				feedText = "You showed mercy...",
 				onResolve = function(state)
-					local roll = math.random()
+					local roll = RANDOM:NextNumber()
 					if roll < 0.6 then
 						if state.AddFeed then
 							state:AddFeed("🌟 Student straightened out. They thanked you years later.")
@@ -1674,7 +1674,7 @@ local events = {
 				setFlags = { deployed = true },
 				feedText = "You deployed...",
 				onResolve = function(state)
-					local roll = math.random()
+					local roll = RANDOM:NextNumber()
 					if roll < 0.9 then
 						state.Money = (state.Money or 0) + 15000
 						if state.ModifyStat then
@@ -1733,7 +1733,7 @@ local events = {
 				effects = { Smarts = 3 },
 				feedText = "You gave a speech...",
 				onResolve = function(state)
-					local roll = math.random()
+					local roll = RANDOM:NextNumber()
 					if roll < 0.6 then
 						if state.AddFeed then
 							state:AddFeed("🔥 Your words inspired them. Morale restored!")

@@ -8,6 +8,9 @@
     - tagging via `stage`, `ageBand`, `category`, `tags`
 ]]
 
+-- CRITICAL FIX #ADULT-1: Add RANDOM definition for consistent random number generation
+local RANDOM = Random.new()
+
 local Adult = {}
 
 local STAGE = "adult"
@@ -1371,18 +1374,20 @@ Adult.events = {
 		text = "You've been offered a major promotion at {{COMPANY}}!",
 		question = "What's the catch?",
 		minAge = 28, maxAge = 55,
-		baseChance = 0.2, -- CRITICAL FIX: Reduced from 0.3 - was triggering too often with major_promotion!
-		cooldown = 8, -- CRITICAL FIX: Increased from 4 - promotions every 4 years was still too frequent!
-		maxOccurrences = 2, -- CRITICAL FIX: Maximum 2 big promotions per lifetime to prevent spam
-		requiresJob = true, -- CRITICAL FIX: Only show for employed players!
+		baseChance = 0.15, -- CRITICAL FIX: Further reduced - too many promotion events!
+		cooldown = 10, -- CRITICAL FIX: Increased to prevent spam
+		maxOccurrences = 2,
+		requiresJob = true,
+		-- CRITICAL FIX: Block if recently promoted from ANY event!
+		blockedByFlags = { recently_promoted = true, just_got_raise = true },
 
 		choices = {
 			{ 
 				text = "Step up and lead!", 
 				effects = { Happiness = 5, Health = -3 }, 
-				setFlags = { senior_position = true, promoted = true }, 
+				-- CRITICAL FIX: Add recently_promoted to prevent spam
+				setFlags = { senior_position = true, promoted = true, recently_promoted = true }, 
 				feedText = "You're moving up! The pressure is on.",
-				-- CRITICAL FIX: Actually increase salary when promoted
 				onResolve = function(state)
 					if state.CurrentJob and state.CurrentJob.salary then
 						local raiseAmount = math.floor(state.CurrentJob.salary * 0.25) -- 25% raise
@@ -1391,6 +1396,9 @@ Adult.events = {
 						state.CareerInfo = state.CareerInfo or {}
 						state.CareerInfo.promotions = (state.CareerInfo.promotions or 0) + 1
 						state.CareerInfo.raises = (state.CareerInfo.raises or 0) + 1
+						-- Set recently_promoted flag to block other promotion events
+						state.Flags = state.Flags or {}
+						state.Flags.recently_promoted = true
 						if state.AddFeed then
 							state:AddFeed(string.format("📈 PROMOTED! Salary now $%d (+25%%)!", state.CurrentJob.salary or 0))
 						end
@@ -1400,7 +1408,7 @@ Adult.events = {
 			{ 
 				text = "Take it - requires relocating", 
 				effects = { Happiness = -3 }, 
-				setFlags = { relocated = true, promoted = true }, 
+				setFlags = { relocated = true, promoted = true, recently_promoted = true }, 
 				feedText = "You moved for the job. Big change.",
 				onResolve = function(state)
 					if state.CurrentJob and state.CurrentJob.salary then
@@ -2943,10 +2951,20 @@ Adult.events = {
 		question = "Where do you go?",
 		minAge = 22, maxAge = 70,
 		baseChance = 0.5,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		cooldown = 4,
 		blockedByFlags = { in_prison = true, homeless = true },
-		-- CRITICAL FIX: Removed money check - event has free "Just relax at home" option
+		-- CRITICAL FIX: Block for military - they have different leave system!
 		eligibility = function(state)
+			-- Military personnel don't get "vacation planning" - they have military leave
+			if state.CurrentJob and state.CurrentJob.category == "military" then
+				return false
+			end
+			if state.Flags then
+				if state.Flags.military or state.Flags.enlisted or state.Flags.soldier or
+				   state.Flags.army or state.Flags.navy or state.Flags.air_force or state.Flags.marines then
+					return false
+				end
+			end
 			return true
 		end,
 		

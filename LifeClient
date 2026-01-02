@@ -773,23 +773,76 @@ local function detectMobile()
 	return hasTouch and not hasMouse
 end
 
--- CRITICAL FIX: Wait for viewport to have valid dimensions before initializing Device
--- This prevents the rare "UI completely broken" issue on slow mobile connections
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: ROBUST VIEWPORT STABILIZATION SYSTEM
+-- User complaint: "THE LIFECLIENT ISNT LOADING NOW CORRECTLY LIKE NORMALLY"
+-- "ITS LOADING ITS SIZING WEIRD IDK SOMETIMES"
+-- 
+-- The viewport can report incorrect sizes initially on some devices/connections
+-- This enhanced system waits for viewport to STABILIZE (same size 3 consecutive checks)
+-- before initializing UI, preventing sizing issues
+-- ═══════════════════════════════════════════════════════════════════════════════
+local viewportStabilized = false
+local viewportStabilizeAttempts = 0
+
 local function waitForValidViewport()
 	local attempts = 0
-	while (Camera.ViewportSize.X < 100 or Camera.ViewportSize.Y < 100) and attempts < 30 do
+	local lastSize = Vector2.new(0, 0)
+	local stableCount = 0
+	local maxAttempts = 60 -- 3 seconds max wait
+	
+	print("[LifeClient] 🔄 Waiting for viewport to stabilize...")
+	
+	-- Wait until viewport is valid AND stable (same size for 3 consecutive checks)
+	while attempts < maxAttempts do
 		attempts = attempts + 1
-		task.wait(0.1)
+		local current = Camera.ViewportSize
+		
+		-- Check if valid (not loading state)
+		if current.X >= 100 and current.Y >= 100 then
+			-- Check if stable (same as last check within 5px tolerance)
+			if math.abs(current.X - lastSize.X) < 5 and math.abs(current.Y - lastSize.Y) < 5 then
+				stableCount = stableCount + 1
+				if stableCount >= 3 then
+					-- Viewport is valid and stable!
+					viewportStabilized = true
+					viewportStabilizeAttempts = attempts
+					print(string.format("[LifeClient] ✅ Viewport stabilized in %d attempts: %dx%d", attempts, math.floor(current.X), math.floor(current.Y)))
+					return current
+				end
+			else
+				-- Size changed, reset stable counter
+				stableCount = 0
+			end
+			lastSize = current
+		else
+			-- Invalid size, reset counters
+			stableCount = 0
+			lastSize = Vector2.new(0, 0)
+		end
+		
+		task.wait(0.05) -- Check every 50ms
 	end
-	if Camera.ViewportSize.X < 100 or Camera.ViewportSize.Y < 100 then
-		warn("[LifeClient] ⚠️ Viewport still invalid after waiting, using defaults")
-		return Vector2.new(390, 844)  -- Default to iPhone 12 size
+	
+	-- Fallback: Use whatever viewport we have now, or sensible default
+	local fallback = Camera.ViewportSize
+	if fallback.X < 100 or fallback.Y < 100 then
+		warn("[LifeClient] ⚠️ Viewport invalid after timeout, using iPhone 12 defaults")
+		fallback = Vector2.new(390, 844)
+	else
+		warn(string.format("[LifeClient] ⚠️ Viewport may be unstable, using current: %dx%d", math.floor(fallback.X), math.floor(fallback.Y)))
 	end
-	return Camera.ViewportSize
+	
+	viewportStabilized = true
+	viewportStabilizeAttempts = attempts
+	return fallback
 end
 
 local initialViewport = waitForValidViewport()
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- DEVICE DETECTION & RESPONSIVE SYSTEM
+-- ═══════════════════════════════════════════════════════════════════════════════
 local Device = {
 	ViewportSize = initialViewport,
 	IS_MOBILE = detectMobile(),
@@ -797,19 +850,85 @@ local Device = {
 	IS_SMALL_PHONE = false,
 	IS_TINY_PHONE = false,
 }
-Device.IS_TABLET = Device.IS_MOBILE and (initialViewport.X >= 768 or initialViewport.Y >= 768)
-Device.IS_SMALL_PHONE = Device.IS_MOBILE and not Device.IS_TABLET and (initialViewport.X < 450 or initialViewport.Y < 750)
-Device.IS_TINY_PHONE = Device.IS_MOBILE and not Device.IS_TABLET and (initialViewport.X <= 380 or initialViewport.Y <= 680)
 
--- Viewport tracking
-local function updateViewport()
-	Device.ViewportSize = Camera.ViewportSize
+-- Calculate device type flags
+local function updateDeviceFlags()
+	local vp = Device.ViewportSize
 	Device.IS_MOBILE = detectMobile()
-	Device.IS_TABLET = Device.IS_MOBILE and (Device.ViewportSize.X >= 768 or Device.ViewportSize.Y >= 768)
-	Device.IS_SMALL_PHONE = Device.IS_MOBILE and not Device.IS_TABLET and (Device.ViewportSize.X < 450 or Device.ViewportSize.Y < 750)
-	Device.IS_TINY_PHONE = Device.IS_MOBILE and not Device.IS_TABLET and (Device.ViewportSize.X <= 380 or Device.ViewportSize.Y <= 680)
+	Device.IS_TABLET = Device.IS_MOBILE and (vp.X >= 768 or vp.Y >= 768)
+	Device.IS_SMALL_PHONE = Device.IS_MOBILE and not Device.IS_TABLET and (vp.X < 450 or vp.Y < 750)
+	Device.IS_TINY_PHONE = Device.IS_MOBILE and not Device.IS_TABLET and (vp.X <= 380 or vp.Y <= 680)
 end
-Camera:GetPropertyChangedSignal("ViewportSize"):Connect(updateViewport)
+
+updateDeviceFlags() -- Initial calculation
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- VIEWPORT CHANGE TRACKING
+-- Monitors viewport changes after initial stabilization and updates Device flags
+-- ═══════════════════════════════════════════════════════════════════════════════
+local viewportChangeCallbacks = {}
+local lastViewportSize = initialViewport
+local viewportCheckCount = 0
+
+local function updateViewport(source)
+	local newViewport = Camera.ViewportSize
+	viewportCheckCount = viewportCheckCount + 1
+	
+	-- CRITICAL: Skip if viewport is invalid (loading state)
+	if newViewport.X < 100 or newViewport.Y < 100 then
+		return false
+	end
+	
+	-- Only process if viewport actually changed significantly (>10px difference)
+	local sizeChanged = math.abs(newViewport.X - lastViewportSize.X) > 10 or 
+	                    math.abs(newViewport.Y - lastViewportSize.Y) > 10
+	
+	-- Update Device values
+	Device.ViewportSize = newViewport
+	updateDeviceFlags() -- Use the centralized function
+	
+	-- If significant change, log and notify callbacks
+	if sizeChanged then
+		print(string.format("[LifeClient] 📐 Viewport changed (%s): %dx%d → %dx%d", 
+			source or "unknown",
+			math.floor(lastViewportSize.X), math.floor(lastViewportSize.Y),
+			math.floor(newViewport.X), math.floor(newViewport.Y)))
+		
+		lastViewportSize = newViewport
+		for _, callback in ipairs(viewportChangeCallbacks) do
+			pcall(callback, newViewport)
+		end
+		return true
+	end
+	
+	return false
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- POST-LOAD VIEWPORT STABILIZATION CHECKS
+-- Even after initial stabilization, viewport can change as Roblox fully loads
+-- These delayed checks ensure UI stays correct
+-- ═══════════════════════════════════════════════════════════════════════════════
+task.delay(0.3, function()
+	updateViewport("delayed_check_300ms")
+end)
+task.delay(0.7, function()
+	updateViewport("delayed_check_700ms")
+end)
+task.delay(1.5, function()
+	updateViewport("delayed_check_1500ms")
+end)
+task.delay(3.0, function()
+	-- Final check - if viewport changed significantly, force UI refresh
+	if updateViewport("delayed_check_3000ms") then
+		print("[LifeClient] ⚠️ Late viewport change detected - UI may need refresh")
+	end
+end)
+
+-- Connect to viewport change signal
+Camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+	updateViewport("signal")
+end)
 
 -- Responsive sizing helpers - MORE AGGRESSIVE for tiny phones
 local function getScale()
@@ -938,6 +1057,39 @@ end
 ----------------------------------------------------------------
 -- SCREEN GUI
 ----------------------------------------------------------------
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Verify viewport is stable before creating UI
+-- User complaint: "THE LIFECLIENT ISNT LOADING NOW CORRECTLY LIKE NORMALLY"
+-- This ensures we don't create UI with wrong sizes
+-- ═══════════════════════════════════════════════════════════════════════════════
+if not viewportStabilized then
+	warn("[LifeClient] ⚠️ Viewport not yet stable, waiting...")
+	local waitStart = tick()
+	while not viewportStabilized and (tick() - waitStart) < 5 do
+		task.wait(0.1)
+	end
+end
+
+-- Final viewport sanity check
+local currentVP = Camera.ViewportSize
+if currentVP.X < 100 or currentVP.Y < 100 then
+	warn("[LifeClient] ⚠️ Viewport still invalid, forcing update...")
+	Device.ViewportSize = Vector2.new(390, 844) -- Safe default
+	updateDeviceFlags()
+else
+	Device.ViewportSize = currentVP
+	updateDeviceFlags()
+end
+
+print(string.format("[LifeClient] 📱 Final Device config: %dx%d | Mobile=%s | Tablet=%s | SmallPhone=%s | TinyPhone=%s",
+	math.floor(Device.ViewportSize.X),
+	math.floor(Device.ViewportSize.Y),
+	tostring(Device.IS_MOBILE),
+	tostring(Device.IS_TABLET),
+	tostring(Device.IS_SMALL_PHONE),
+	tostring(Device.IS_TINY_PHONE)
+))
 
 -- CRITICAL FIX: Add timeout and retry for PlayerGui to prevent UI from being "completely broken"
 local playerGui = nil
@@ -3149,20 +3301,20 @@ local function buildEventModal()
 	
 	if Device.IS_TINY_PHONE then
 		-- ULTRA COMPACT: Tiny phones (iPhone 6: 667x375, iPhone SE: 568x320)
-		-- CRITICAL FIX: Increased max height to prevent button cutoff
+		-- CRITICAL FIX: Use nearly full safe height to prevent button cutoff
 		eventWidth = math.min(screenWidth - 12, 280)
-		maxEventHeight = math.min(safeHeight, 550) -- Increased from 480
+		maxEventHeight = math.min(safeHeight - 10, 650) -- Nearly full safe height
 	elseif Device.IS_SMALL_PHONE then
 		-- Small phones (under 750px height)
-		-- CRITICAL FIX: Increased max height to prevent button cutoff
+		-- CRITICAL FIX: Use nearly full safe height to prevent button cutoff  
 		eventWidth = math.min(screenWidth - 16, 310)
-		maxEventHeight = math.min(safeHeight, 600) -- Increased from 520
+		maxEventHeight = math.min(safeHeight - 10, 720) -- Nearly full safe height
 	elseif Device.IS_MOBILE then
 		eventWidth = modalWidth(330)
-		maxEventHeight = math.min(safeHeight, 680) -- Increased from 580
+		maxEventHeight = math.min(safeHeight - 10, 800) -- Nearly full safe height
 	else
 		eventWidth = modalWidth(360)
-		maxEventHeight = math.min(safeHeight, 750) -- Increased from 650
+		maxEventHeight = math.min(safeHeight - 10, 900) -- Nearly full safe height
 	end
 	
 	-- Calculate responsive corner radii and margins (slightly larger for cleaner look)
@@ -3195,8 +3347,9 @@ local function buildEventModal()
 	EventUI.shell.Name = "EventShell"
 	EventUI.shell.Size = UDim2.new(1, -shellMargin, 0, 0)
 	EventUI.shell.AutomaticSize = Enum.AutomaticSize.Y
-	-- Keep clipping for clean edges
-	EventUI.shell.ClipsDescendants = true
+	-- CRITICAL FIX: Don't clip descendants - let content overflow visually if needed
+	-- The parent shadowFrame handles size constraints, not clipping
+	EventUI.shell.ClipsDescendants = false
 	EventUI.shell.Position = UDim2.new(0, shellMargin/2, 0, shellMargin/2)
 	EventUI.shell.BackgroundColor3 = C.Red
 	EventUI.shell.ZIndex = 62
@@ -3216,7 +3369,8 @@ local function buildEventModal()
 	EventUI.card.Position = UDim2.new(0, cardMargin/2, 0, cardMargin/2)
 	EventUI.card.BackgroundColor3 = C.White
 	EventUI.card.ZIndex = 63
-	EventUI.card.ClipsDescendants = true  -- Safety clip to prevent visual leaks
+	-- CRITICAL FIX: Don't clip - parent handles size, buttons must always be visible!
+	EventUI.card.ClipsDescendants = false
 	EventUI.card.Parent = EventUI.shell
 	corner(EventUI.card, Device.IS_TINY_PHONE and 10 or (Device.IS_SMALL_PHONE and 14 or px(20)))
 
@@ -7734,6 +7888,14 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 		end
 		hideTutorial()
 		hideDeathOverlay()
+		
+		-- CRITICAL FIX: Hide ALL screens when starting new life!
+		-- This prevents screens like ProgressScreen from staying visible after death
+		for screenName, screenInstance in pairs(ScreenInstances) do
+			if screenInstance and screenInstance.hide then
+				pcall(function() screenInstance:hide() end)
+			end
+		end
 
 		-- Update all screen instances with the new state (even during reset)
 		-- This ensures screens have proper initial state

@@ -43,13 +43,26 @@ local events = {
 		title = "Natural Hacker",
 		text = "While messing around on the computer, you discover you have a talent for finding security flaws.",
 		category = "career_hacker",
-		weight = 15, -- CRITICAL FIX: Higher weight for discovery events
-		baseChance = 0.4, -- CRITICAL FIX: More likely to trigger
+		weight = 20, -- CRITICAL FIX: Higher weight for discovery events
+		baseChance = 0.50, -- CRITICAL FIX: More likely to trigger
 		minAge = 12,
 		maxAge = 22,
 		oneTime = true,
-		requiresStats = { Smarts = 45 }, -- CRITICAL FIX: Lower threshold for accessibility
+		-- CRITICAL FIX: Lower stat threshold OR boost if has tech flags
+		requiresStats = { Smarts = 35 }, -- Lowered from 45 for accessibility
 		blockedByFlags = { hacker_discovered = true },
+		eligibility = function(state)
+			-- CRITICAL FIX: Always allow if player has shown tech interest!
+			if state.Flags then
+				if state.Flags.coder or state.Flags.tech_savvy or state.Flags.gamer or 
+				   state.Flags.hacker_interest or state.Flags.computer_interest or
+				   state.Flags.coding_prodigy or state.Flags.script_kiddie then
+					return true -- Bypass stat check for tech-interested players!
+				end
+			end
+			-- Otherwise use standard stat check
+			return (state.Stats and state.Stats.Smarts >= 35)
+		end,
 		choices = {
 			{
 				index = 1,
@@ -146,6 +159,23 @@ local events = {
 		requiresFlags = { first_hack_done = true },
 		blockedByFlags = { path_chosen = true },
 		requiresStats = { Smarts = 65 },
+		-- CRITICAL FIX: Block if already has a different career!
+		eligibility = function(state)
+			-- If already has job (not hacking), don't offer this career change
+			if state.CurrentJob then
+				local cat = state.CurrentJob.category
+				if cat ~= "hacker" and cat ~= "tech" then
+					return false -- Already in non-tech career
+				end
+			end
+			-- Block if in military/police
+			if state.Flags then
+				if state.Flags.military or state.Flags.enlisted or state.Flags.police then
+					return false
+				end
+			end
+			return true
+		end,
 		choices = {
 			{
 				index = 1,
@@ -274,12 +304,44 @@ local events = {
 		title = "Underground Opportunity",
 		text = "Someone on the dark web saw your coding skills. They're recruiting hackers for a criminal operation. High pay, high risk.",
 		category = "career_hacker",
-		weight = 12,
+		weight = 15,
 		minAge = 18,
 		maxAge = 35,
-		requiresStats = { Smarts = 55 },
-		blockedByFlags = { black_hat = true, white_hat = true, declined_hacking_career = true },
+		requiresStats = { Smarts = 45 },
+		-- CRITICAL FIX: Block if player already has ANY career!
+		blockedByFlags = { 
+			black_hat = true, white_hat = true, declined_hacking_career = true,
+			-- Block if already employed in ANY career
+			employed = true, has_job = true,
+			-- Block military personnel
+			military = true, enlisted = true, army = true, navy = true, air_force = true, marines = true,
+			-- Block police/law enforcement
+			police = true, cop = true, law_enforcement = true,
+			-- Block medical
+			doctor = true, nurse = true, medical_career = true,
+		},
 		oneTime = true,
+		eligibility = function(state)
+			-- CRITICAL FIX: NEVER fire if player already has a job/career!
+			if state.CurrentJob then
+				return false -- Already has career, don't recruit them!
+			end
+			if state.Flags and (state.Flags.employed or state.Flags.has_job) then
+				return false -- Already employed!
+			end
+			
+			-- Must have tech/coding interest OR skills
+			if state.Flags then
+				if state.Flags.coder or state.Flags.tech_savvy or state.Flags.hacker_interest or
+				   state.Flags.script_kiddie or state.Flags.hacker_discovered or
+				   state.Flags.coding_prodigy or state.Flags.hacker_knowledge or
+				   state.Flags.computers_interest or state.Flags.programming_hobby then
+					return true -- Has tech interest
+				end
+			end
+			-- Otherwise need high smarts AND no career
+			return (state.Stats and state.Stats.Smarts >= 55)
+		end,
 		choices = {
 			{
 				index = 1,

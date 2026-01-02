@@ -81,7 +81,7 @@ local events = {
                 feedText = "You showed her the receipt. Proved her wrong. She stormed out screaming about Yelp. Your coworkers slow-clapped.",
                 onResolve = function(state)
                     -- CRITICAL FIX: Added nil checks for all method calls
-                    local roll = math.random()
+                    local roll = RANDOM:NextNumber()
                     if roll < 0.3 then
                         if state.ModifyStat then state:ModifyStat("Happiness", -5) end
                         if state.AddFeed then
@@ -107,7 +107,7 @@ local events = {
                 feedText = "You finally snapped. 'MA'AM, THE ORDER IS CORRECT. READ YOUR RECEIPT.' Dead silence. She left. You felt ALIVE. For about 5 minutes...",
                 onResolve = function(state)
                     -- CRITICAL FIX: Added nil checks for all method calls
-                    local roll = math.random()
+                    local roll = RANDOM:NextNumber()
                     if roll < 0.4 then
                         -- Fired!
                         if state.ModifyStat then state:ModifyStat("Happiness", -15) end
@@ -160,7 +160,7 @@ local events = {
                 effects = { Happiness = -2 },
                 feedText = "You ran outside. 'Excuse me, I think you forgot something!' They looked confused. You stared at them. They drove off. You felt stupid.",
                 onResolve = function(state)
-                    local roll = math.random()
+                    local roll = RANDOM:NextNumber()
                     if roll < 0.3 then
                         state.Money = (state.Money or 0) + 50
                         if state.AddFeed then
@@ -276,7 +276,7 @@ local events = {
                 effects = { Happiness = -2, Smarts = 2 },
                 feedText = "You told your manager about the missing tips. They reviewed the cameras. Caught the thief! But now everyone thinks you're a snitch...",
                 onResolve = function(state)
-                    local roll = math.random()
+                    local roll = RANDOM:NextNumber()
                     if roll < 0.5 then
                         state.Flags = state.Flags or {}
                         state.Flags.snitch_reputation = true
@@ -348,7 +348,7 @@ local events = {
                 effects = { Smarts = 3 },
                 feedText = "You asked for $3/hour more. They countered with $2.50. You settled on $2.75. Nice! Negotiation skills!",
                 onResolve = function(state)
-                    local roll = math.random()
+                    local roll = RANDOM:NextNumber()
                     if roll < 0.6 then
                         state.Flags = state.Flags or {}
                         state.Flags.shift_lead = true

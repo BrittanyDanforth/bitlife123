@@ -4,6 +4,11 @@
 	These add variety but aren't tied to specific life stages
 ]]
 
+-- CRITICAL FIX #RANDOM-1: Add RANDOM definition for consistent random number generation
+-- Note: Many events in this file still use math.random() for legacy compatibility
+-- New events should use RANDOM:NextInteger() or RANDOM:NextNumber()
+local RANDOM = Random.new()
+
 local Random = {}
 
 Random.events = {
@@ -2521,77 +2526,332 @@ Random.events = {
 		},
 	},
 	{
-		-- CRITICAL FIX: Talent discovery is now RANDOM - no god mode choosing!
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Completely rewritten! Talent is determined FIRST and SHOWN to player!
+		-- Like BitLife: "Your teacher noticed you have a talent for MUSIC" - then you respond
+		-- Player must know WHAT talent before deciding if they want to pursue it!
+		-- ══════════════════════════════════════════════════════════════════════════════
 		id = "talent_discovered",
-		title = "Hidden Talent!",
+		title = "✨ Hidden Talent Discovered!",
 		emoji = "✨",
-		text = "Someone noticed you have a natural ability for something!",
-		question = "Do you want to explore this talent?",
+		text = "Someone noticed you have a natural ability!",
+		question = "Do you want to pursue this talent?",
 		minAge = 8, maxAge = 70,
-		baseChance = 0.4,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.35,
+		cooldown = 6,
+		oneTime = true, -- Each person only discovers hidden talent once
+		
+		-- CRITICAL: onInit picks the talent FIRST and shows it in the text!
+		onInit = function(event, state)
+			local talents = {
+				{ flag = "musical_talent", name = "MUSIC", emoji = "🎵", text = "Your music teacher pulled you aside: 'You have an INCREDIBLE ear for music! I've rarely seen natural talent like this. You could be a real musician!'", stat = "Smarts", bonus = 5 },
+				{ flag = "artistic_talent", name = "ART", emoji = "🎨", text = "Your art teacher was amazed: 'Your drawings are extraordinary! You have a natural gift for ART. You see the world differently - like a true artist!'", stat = "Smarts", bonus = 4 },
+				{ flag = "athletic_talent", name = "ATHLETICS", emoji = "🏃", text = "The gym teacher noticed your potential: 'Kid, you're a natural ATHLETE! Your speed, coordination, and stamina are way above average. You could go pro!'", stat = "Health", bonus = 6 },
+				{ flag = "writing_talent", name = "WRITING", emoji = "✍️", text = "Your English teacher was impressed: 'Your WRITING is exceptional! The way you use words... you have a gift. Have you thought about becoming an author?'", stat = "Smarts", bonus = 5 },
+				{ flag = "natural_leader", name = "LEADERSHIP", emoji = "👔", text = "A mentor observed: 'People naturally follow you. You have an innate LEADERSHIP quality. When you speak, others listen. That's rare.'", stat = "Smarts", bonus = 4 },
+				{ flag = "cooking_talent", name = "COOKING", emoji = "👨‍🍳", text = "After a meal you made, someone exclaimed: 'This is AMAZING! You're a natural COOK! Have you ever thought about culinary school? This is professional level!'", stat = "Happiness", bonus = 5 },
+				{ flag = "tech_talent", name = "TECHNOLOGY", emoji = "💻", text = "A tech-savvy friend noticed: 'Wow, you just GET technology! You have a natural gift for COMPUTERS and coding. Ever thought about a tech career?'", stat = "Smarts", bonus = 6, extraFlags = { "tech_savvy", "coder" } },
+				{ flag = "dancing_talent", name = "DANCING", emoji = "💃", text = "At a party, people were stunned: 'You can DANCE! Where did that come from?! You have natural rhythm and grace. You should take lessons!'", stat = "Happiness", bonus = 5 },
+				{ flag = "comedy_talent", name = "COMEDY", emoji = "😂", text = "After you made everyone laugh: 'You're HILARIOUS! Seriously, you should do stand-up! You have a natural gift for COMEDY!'", stat = "Happiness", bonus = 4 },
+			}
+			
+			-- Pick a random talent
+			local talent = talents[math.random(1, #talents)]
+			
+			-- Store talent info in event for later use
+			event._talent = talent
+			event.text = talent.text
+			event.title = talent.emoji .. " Natural Talent: " .. talent.name .. "!"
+			event.emoji = talent.emoji
+			
+			return event
+		end,
+		
 		choices = {
 			{
-				text = "Absolutely! Show me what I've got!",
-				effects = { Happiness = 10 },
-				feedText = "You're excited to discover your gift!",
-				onResolve = function(state)
-					local talents = {
-						{ flag = "musical_talent", text = "🎵 You have an amazing ear for music! You can really sing and play!", stat = "Smarts", bonus = 3 },
-						{ flag = "artistic_talent", text = "🎨 You're a natural artist! Your drawings and paintings are impressive!", stat = "Smarts", bonus = 2 },
-						{ flag = "athletic_talent", text = "🏃 You have incredible athletic potential! Fast, strong, coordinated!", stat = "Health", bonus = 5 },
-						{ flag = "writing_talent", text = "✍️ You have a gift with words! Your writing moves people!", stat = "Smarts", bonus = 4 },
-						{ flag = "natural_leader", text = "👔 People naturally follow your lead! You're a born leader!", stat = "Smarts", bonus = 3 },
-						{ flag = "cooking_talent", text = "👨‍🍳 You're an incredible cook! Everything you make tastes amazing!", stat = "Happiness", bonus = 5 },
-						{ flag = "tech_talent", text = "💻 You have a natural gift for technology! Computers make sense to you!", stat = "Smarts", bonus = 5 },
-					}
-					local talent = talents[math.random(1, #talents)]
+				text = "🌟 Yes! I want to develop this talent!",
+				effects = { Happiness = 12 },
+				feedText = "You're excited to pursue your gift!",
+				onResolve = function(state, _, event)
+					local talent = event._talent
+					if not talent then return end
+					
 					state.Flags = state.Flags or {}
 					state.Flags[talent.flag] = true
-					state:ModifyStat(talent.stat, talent.bonus)
-					if state.AddFeed then state:AddFeed(talent.text) end
+					state.Flags.talent_discovered = true
+					state.Flags.has_discovered_talent = true
+					
+					-- Grant any extra flags (like tech_savvy for tech talent)
+					if talent.extraFlags then
+						for _, flag in ipairs(talent.extraFlags) do
+							state.Flags[flag] = true
+						end
+					end
+					
+					if state.ModifyStat then state:ModifyStat(talent.stat, talent.bonus) end
+					if state.AddFeed then 
+						state:AddFeed(string.format("%s You're going to pursue your talent for %s! This could change your life!", talent.emoji, talent.name))
+					end
 				end,
 			},
 			{
-				text = "Not interested - I'm fine as I am",
+				text = "🤔 Interesting, but I'll think about it",
+				effects = { Happiness = 3, Smarts = 1 },
+				feedText = "You acknowledged it but aren't committing yet.",
+				onResolve = function(state, _, event)
+					local talent = event._talent
+					if not talent then return end
+					
+					state.Flags = state.Flags or {}
+					state.Flags["aware_of_" .. talent.flag] = true -- Remember they know about it
+					
+					if state.AddFeed then 
+						state:AddFeed(string.format("%s You noted your potential in %s. Maybe you'll pursue it someday.", talent.emoji, talent.name))
+					end
+				end,
+			},
+			{
+				text = "❌ Not interested - that's not for me",
 				effects = { Happiness = -2 },
-				feedText = "You shrugged it off. Not everyone wants to be special.",
+				feedText = "You decided not to pursue it.",
+				onResolve = function(state, _, event)
+					local talent = event._talent
+					if not talent then return end
+					
+					state.Flags = state.Flags or {}
+					state.Flags["declined_" .. talent.flag] = true
+					
+					if state.AddFeed then 
+						state:AddFeed(string.format("%s You passed on developing your %s talent. That's okay - not every gift needs to be pursued.", talent.emoji, talent.name))
+					end
+				end,
 			},
 		},
 	},
 	{
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Visitor is RANDOM - player doesn't choose who showed up!
+		-- Like BitLife: Someone shows up, you respond to who it is
+		-- ══════════════════════════════════════════════════════════════════════════════
 		id = "unexpected_visitor",
-		title = "Surprise Visit!",
+		title = "🚪 Surprise Visit!",
 		emoji = "🚪",
 		text = "Someone showed up unexpectedly at your door!",
-		question = "Who is it?",
+		question = "What do you do?",
 		minAge = 15, maxAge = 85,
-		baseChance = 0.45,
-		cooldown = 3,
+		baseChance = 0.40,
+		cooldown = 4,
+		
+		-- CRITICAL: onInit randomly picks who showed up
+		onInit = function(event, state)
+			local visitors = {
+				{ type = "old_friend", emoji = "👋", text = "Your OLD FRIEND from years ago is at the door! You haven't seen them in forever! They were in town and wanted to surprise you!" },
+				{ type = "estranged_family", emoji = "😬", text = "Your ESTRANGED FAMILY MEMBER is at the door... You haven't spoken in years. They look nervous. This is unexpected.", negative = true },
+				{ type = "scammer", emoji = "🚨", text = "Some sketchy person is at the door claiming you won a PRIZE and need to pay 'processing fees'. Looks like a SCAM.", negative = true },
+				{ type = "package", emoji = "📦", text = "A DELIVERY PERSON is at the door with a package! You don't remember ordering anything... but it has your name on it!" },
+				{ type = "neighbor", emoji = "🏠", text = "Your NEIGHBOR is at the door looking stressed. They need help with something urgent - locked out, pipe burst, or just need to talk." },
+				{ type = "charity", emoji = "💝", text = "Someone from a LOCAL CHARITY is at the door. They're collecting donations for a good cause." },
+				{ type = "ex", emoji = "💔", text = "Your EX is at the door! This is... unexpected. They want to talk. You're not sure how you feel about this.", negative = true },
+			}
+			
+			local visitor = visitors[math.random(1, #visitors)]
+			event._visitor = visitor
+			event.text = visitor.text
+			event.title = visitor.emoji .. " Someone's At The Door!"
+			
+			return event
+		end,
 
 		choices = {
-			{ text = "Old friend - great reunion!", effects = { Happiness = 12 }, feedText = "An old friend visited! So good to catch up." },
-			{ text = "Estranged family member", effects = { Happiness = -5 }, setFlags = { family_drama = true }, feedText = "Awkward... someone you hadn't seen in years." },
-			{ text = "Someone claiming you won a prize", effects = { Happiness = -3, Smarts = 2 }, feedText = "Obviously a scam. You didn't fall for it." },
-			{ text = "Package delivery - something you forgot you ordered", effects = { Happiness = 5 }, feedText = "Present from past you! Nice surprise." },
-			{ text = "Neighbor needing help", effects = { Happiness = 5 }, setFlags = { good_neighbor = true }, feedText = "You helped out your neighbor. Good karma." },
+			{ 
+				text = "😊 Welcome them warmly", 
+				effects = {},
+				feedText = "Opening the door with a smile...",
+				onResolve = function(state, _, event)
+					local visitor = event._visitor
+					if not visitor then return end
+					
+					state.Flags = state.Flags or {}
+					
+					if visitor.type == "old_friend" then
+						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
+						state.Flags.reconnected_old_friend = true
+						if state.AddFeed then state:AddFeed("👋 Amazing reunion! You talked for hours and promised to stay in touch!") end
+					elseif visitor.type == "estranged_family" then
+						local roll = math.random(1, 100)
+						if roll <= 50 then
+							if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+							state.Flags.family_reconciliation = true
+							if state.AddFeed then state:AddFeed("😬 Awkward at first, but you worked through some things. Maybe healing can begin.") end
+						else
+							if state.ModifyStat then state:ModifyStat("Happiness", -8) end
+							state.Flags.family_drama = true
+							if state.AddFeed then state:AddFeed("😬 It didn't go well. Old wounds reopened. Some things can't be fixed.") end
+						end
+					elseif visitor.type == "scammer" then
+						if state.ModifyStat then state:ModifyStat("Money", -200) end
+						if state.AddFeed then state:AddFeed("🚨 You got SCAMMED! Lost money to their fake prize scheme!") end
+					elseif visitor.type == "package" then
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						if state.AddFeed then state:AddFeed("📦 A gift from past you! Something you forgot you ordered. Nice surprise!") end
+					elseif visitor.type == "neighbor" then
+						if state.ModifyStat then state:ModifyStat("Happiness", 10) end
+						state.Flags.good_neighbor = true
+						if state.AddFeed then state:AddFeed("🏠 You helped your neighbor out. They're so grateful! Good karma.") end
+					elseif visitor.type == "charity" then
+						state.Money = math.max(0, (state.Money or 0) - 20)
+						if state.ModifyStat then state:ModifyStat("Happiness", 8) end
+						state.Flags.charitable = true
+						if state.AddFeed then state:AddFeed("💝 Donated $20 to charity. Feels good to help!") end
+					elseif visitor.type == "ex" then
+						local roll = math.random(1, 100)
+						if roll <= 30 then
+							if state.ModifyStat then state:ModifyStat("Happiness", 5) end
+							if state.AddFeed then state:AddFeed("💔 Had a civil conversation. Closure, finally.") end
+						else
+							if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+							if state.AddFeed then state:AddFeed("💔 That was a mistake. Old feelings came flooding back. Messy.") end
+						end
+					end
+				end,
+			},
+			{ 
+				text = "🤨 Be cautious / set boundaries", 
+				effects = {},
+				feedText = "Being careful...",
+				onResolve = function(state, _, event)
+					local visitor = event._visitor
+					if not visitor then return end
+					
+					if visitor.type == "scammer" then
+						if state.ModifyStat then state:ModifyStat("Smarts", 2) end
+						if state.AddFeed then state:AddFeed("🚨 Smart! You recognized the scam and closed the door. No money lost!") end
+					elseif visitor.type == "estranged_family" or visitor.type == "ex" then
+						if state.ModifyStat then state:ModifyStat("Happiness", -2) end
+						if state.AddFeed then state:AddFeed("🤨 You set boundaries. Not ready for that conversation yet.") end
+					else
+						if state.ModifyStat then state:ModifyStat("Happiness", 3) end
+						if state.AddFeed then state:AddFeed("🤨 You were appropriately cautious but it was fine.") end
+					end
+				end,
+			},
+			{ 
+				text = "🚫 Don't answer / pretend not home", 
+				effects = { Happiness = -2 },
+				feedText = "Hiding...",
+				onResolve = function(state, _, event)
+					local visitor = event._visitor
+					if not visitor then return end
+					
+					if visitor.type == "scammer" then
+						if state.AddFeed then state:AddFeed("🚫 Good call - they eventually left. Scam avoided!") end
+					elseif visitor.type == "old_friend" then
+						if state.ModifyStat then state:ModifyStat("Happiness", -10) end
+						if state.AddFeed then state:AddFeed("🚫 They left disappointed. You feel guilty about hiding.") end
+					else
+						if state.AddFeed then state:AddFeed("🚫 They eventually went away. Sometimes you just need peace.") end
+					end
+				end,
+			},
 		},
 	},
 	{
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Luck is RANDOM - player doesn't choose what luck happened!
+		-- Like BitLife: The luck happens TO you, you respond to it
+		-- ══════════════════════════════════════════════════════════════════════════════
 		id = "lucky_break",
-		title = "Lucky Break!",
+		title = "🍀 Lucky Break!",
 		emoji = "🍀",
 		text = "Something unexpectedly good happened!",
-		question = "What was your lucky break?",
+		question = "How do you react?",
 		minAge = 10, maxAge = 90,
 		baseChance = 0.1,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		cooldown = 5,
+		
+		-- CRITICAL: onInit randomly picks the luck type
+		onInit = function(event, state)
+			local luckTypes = {
+				{ type = "found_money", amount = math.random(20, 500), emoji = "💵", text = "You found $%d on the ground! Just lying there, waiting for you!" },
+				{ type = "found_valuable", amount = math.random(500, 3000), emoji = "💎", text = "You found something valuable worth about $%d! A watch? Jewelry? Whatever it is, it's yours now!" },
+				{ type = "saved_by_timing", emoji = "⏰", text = "Perfect timing saved you from disaster! You left 2 minutes early and avoided a huge accident on your normal route. Life is precious!" },
+				{ type = "random_kindness", emoji = "💕", text = "A complete stranger paid for your meal/coffee! They just smiled and walked away. Faith in humanity restored!" },
+				{ type = "chance_meeting", emoji = "🤝", text = "A chance meeting with someone turned into an amazing opportunity! Sometimes the universe just aligns!" },
+				{ type = "won_raffle", amount = math.random(50, 500), emoji = "🎟️", text = "You won a raffle you forgot you entered! $%d prize! Nice surprise!" },
+				{ type = "refund_surprise", amount = math.random(100, 800), emoji = "💰", text = "You got an unexpected refund of $%d! Overpaid taxes? Returned deposit? Who cares - free money!" },
+			}
+			
+			local luck = luckTypes[math.random(1, #luckTypes)]
+			event._luck = luck
+			
+			if luck.amount then
+				event.text = string.format(luck.text, luck.amount)
+			else
+				event.text = luck.text
+			end
+			event.title = luck.emoji .. " Lucky Break!"
+			
+			return event
+		end,
 
 		choices = {
-			{ text = "Found a valuable item", effects = { Money = 2000, Happiness = 10 }, feedText = "You found something valuable! What luck!" },
-			{ text = "Random act of generosity", effects = { Happiness = 15 }, feedText = "Someone did something incredibly kind for you!" },
-			{ text = "Perfect timing saved you", effects = { Happiness = 10, Health = 5 }, feedText = "Right place, right time. Avoided disaster." },
-			{ text = "Connection led to opportunity", effects = { Happiness = 10, Smarts = 3 }, setFlags = { lucky_network = true }, feedText = "A chance meeting opened new doors!" },
+			{ 
+				text = "🎉 Amazing! What a great day!", 
+				effects = { Happiness = 12 },
+				feedText = "Best day ever!",
+				onResolve = function(state, _, event)
+					local luck = event._luck
+					if not luck then return end
+					
+					state.Flags = state.Flags or {}
+					state.Flags.lucky_person = true
+					
+					if luck.amount and (luck.type == "found_money" or luck.type == "found_valuable" or luck.type == "won_raffle" or luck.type == "refund_surprise") then
+						state.Money = (state.Money or 0) + luck.amount
+						if state.AddFeed then state:AddFeed(string.format("%s You're $%d richer! Lucky day!", luck.emoji, luck.amount)) end
+					elseif luck.type == "chance_meeting" then
+						state.Flags.lucky_network = true
+						if state.ModifyStat then state:ModifyStat("Smarts", 3) end
+						if state.AddFeed then state:AddFeed("🤝 This connection could change your life!") end
+					else
+						if state.AddFeed then state:AddFeed(luck.emoji .. " Good things happen to good people!") end
+					end
+				end,
+			},
+			{ 
+				text = "🙏 I should pay this forward", 
+				effects = { Happiness = 15 },
+				feedText = "Spreading the good karma...",
+				onResolve = function(state, _, event)
+					local luck = event._luck
+					if not luck then return end
+					
+					state.Flags = state.Flags or {}
+					state.Flags.good_karma = true
+					state.Flags.generous_person = true
+					
+					if luck.amount then
+						-- Keep half, give half
+						local kept = math.floor(luck.amount / 2)
+						state.Money = (state.Money or 0) + kept
+						if state.AddFeed then state:AddFeed(string.format("🙏 Kept $%d, donated the rest. Good karma multiplied!", kept)) end
+					else
+						if state.AddFeed then state:AddFeed("🙏 You helped someone else today. What goes around comes around!") end
+					end
+				end,
+			},
+			{ 
+				text = "🤔 Weird... I'm not usually this lucky", 
+				effects = { Happiness = 5 },
+				feedText = "Taking it in stride...",
+				onResolve = function(state, _, event)
+					local luck = event._luck
+					if luck and luck.amount then
+						state.Money = (state.Money or 0) + luck.amount
+					end
+					if state.AddFeed then state:AddFeed("🤔 Nice, but you're waiting for the other shoe to drop...") end
+				end,
+			},
 		},
 	},
 	{
@@ -3321,46 +3581,95 @@ Random.events = {
 	},
 	
 	{
-		-- CRITICAL FIX: Random unexpected skill - completely random, no god-mode choosing
+		-- ══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Completely rewritten! Skill is determined FIRST and SHOWN to player!
+		-- Like BitLife: You try something and discover you're good at a SPECIFIC thing
+		-- Player sees WHAT skill before choosing to pursue it!
+		-- ══════════════════════════════════════════════════════════════════════════════
 		id = "random_talent_discovery",
 		emoji = "🎯",
-		title = "Unexpected Skill!",
-		text = "Someone challenged you to try something you've never done before. You surprised everyone, including yourself!",
-		question = "How do you feel about this discovery?",
+		title = "🎯 Unexpected Skill Discovery!",
+		text = "Someone challenged you to try something new...",
+		question = "Do you want to develop this new skill?",
 		category = "random",
-		weight = 4,
+		weight = 5,
 		minAge = 10,
 		maxAge = 60,
-		baseChance = 0.4,
+		baseChance = 0.35,
 		cooldown = 15,
 		oneTime = true,
+		
+		-- CRITICAL: onInit picks the skill FIRST and shows the specific discovery!
+		onInit = function(event, state)
+			local discoveries = {
+				{ flag = "singing_talent", name = "SINGING", emoji = "🎤", text = "At karaoke night, you grabbed the mic on a dare... and BLEW EVERYONE AWAY! 'You can SING?!' Your voice is incredible - you had no idea!" },
+				{ flag = "artistic_talent", name = "ART", emoji = "🎨", text = "You doodled something while bored and a friend gasped: 'That's AMAZING! You're an ARTIST!' Your casual sketch looks professional!" },
+				{ flag = "cooking_talent", name = "COOKING", emoji = "👨‍🍳", text = "You tried making dinner from scratch and it was INCREDIBLE! 'This is restaurant quality!' You're a natural CHEF!" },
+				{ flag = "athletic_talent", name = "SPORTS", emoji = "🏃", text = "You joined a pickup game and dominated! 'Where did THAT come from?!' You're a natural ATHLETE - fast, coordinated, powerful!" },
+				{ flag = "dancing_talent", name = "DANCING", emoji = "💃", text = "The music came on and you just... moved. Everyone stared. 'You can DANCE!' Your rhythm and grace shocked everyone including yourself!" },
+				{ flag = "comedy_talent", name = "COMEDY", emoji = "😂", text = "You told a story and had everyone DYING laughing! 'You should be a comedian!' You're naturally HILARIOUS!" },
+				{ flag = "mechanical_talent", name = "MECHANICS", emoji = "🔧", text = "You fixed something that was broken and it works better than new! 'You're a natural MECHANIC!' You understand how things work instinctively!" },
+				{ flag = "public_speaking_talent", name = "PUBLIC SPEAKING", emoji = "🎤", text = "You gave a presentation and captivated the room! 'You're a natural SPEAKER!' People hung on your every word!" },
+				{ flag = "gaming_talent", name = "GAMING", emoji = "🎮", text = "You picked up a game for the first time and crushed the high scores! 'You're a GAMING prodigy!' Natural hand-eye coordination!" },
+			}
+			
+			local discovery = discoveries[math.random(1, #discoveries)]
+			
+			event._discovery = discovery
+			event.text = discovery.text
+			event.title = discovery.emoji .. " You Can " .. discovery.name .. "?!"
+			event.emoji = discovery.emoji
+			
+			return event
+		end,
+		
 		choices = {
 			{
 				index = 1,
-				text = "This is amazing! I want to develop this!",
-				effects = { Happiness = 12 },
+				text = "🌟 This is amazing! I want to develop this!",
+				effects = { Happiness = 15 },
 				feedText = "You're excited about your new discovery!",
-				onResolve = function(state)
-					local talents = {
-						{ flag = "singing_talent", text = "🎤 Turns out you can SING! Voice of an angel!" },
-						{ flag = "artistic_talent", text = "🎨 You're a natural artist! Your doodles are masterpieces!" },
-						{ flag = "cooking_talent", text = "👨‍🍳 Master chef potential! Your food is incredible!" },
-						{ flag = "athletic_talent", text = "🏃 Natural athlete! Speed, agility, coordination - you've got it!" },
-						{ flag = "dancing_talent", text = "💃 You can DANCE! Natural rhythm and grace!" },
-						{ flag = "comedy_talent", text = "😂 You're hilarious! Natural comedian!" },
-						{ flag = "mechanical_talent", text = "🔧 Mechanical genius! You can fix anything!" },
-					}
-					local talent = talents[math.random(1, #talents)]
+				onResolve = function(state, _, event)
+					local discovery = event._discovery
+					if not discovery then return end
+					
 					state.Flags = state.Flags or {}
-					state.Flags[talent.flag] = true
-					if state.AddFeed then state:AddFeed(talent.text) end
+					state.Flags[discovery.flag] = true
+					state.Flags.discovered_hidden_skill = true
+					
+					if state.ModifyStat then state:ModifyStat("Smarts", 3) end
+					if state.AddFeed then 
+						state:AddFeed(string.format("%s You're going to practice your %s skills! Who knew you had this in you?!", discovery.emoji, discovery.name))
+					end
 				end,
 			},
 			{
 				index = 2,
-				text = "Cool, but I'm happy with who I am",
-				effects = { Happiness = 5 },
-				feedText = "You noted it but didn't pursue it. That's okay!",
+				text = "🤔 That was fun, but just a one-time thing",
+				effects = { Happiness = 8 },
+				feedText = "You enjoyed the moment but won't pursue it.",
+				onResolve = function(state, _, event)
+					local discovery = event._discovery
+					if not discovery then return end
+					
+					state.Flags = state.Flags or {}
+					state.Flags["tried_" .. discovery.flag] = true
+					
+					if state.AddFeed then 
+						state:AddFeed(string.format("%s Fun discovery! Your %s ability is noted but not pursued.", discovery.emoji, discovery.name))
+					end
+				end,
+			},
+			{
+				index = 3,
+				text = "😅 That was a fluke - I got lucky",
+				effects = { Happiness = 3 },
+				feedText = "You don't think it means anything.",
+				onResolve = function(state, _, event)
+					if state.AddFeed then 
+						state:AddFeed("😅 You brushed it off as beginner's luck. Maybe it was, maybe it wasn't...")
+					end
+				end,
 			},
 		},
 	},

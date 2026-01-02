@@ -2653,11 +2653,10 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- RELATIONSHIP BAR (bigger, more prominent)
+	-- CRITICAL FIX: Only show relationship bar for ALIVE people!
+	-- User complaint: "FIX RELASHONSHIPSCREEN TO STOP THE STATS % LIKE WHEN PEOPLE DIE"
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	local relPct   = math.clamp((person.relationship or 50) / 100, 0, 1)
-	local relColor = (relPct >= 0.7 and C.Green) or (relPct >= 0.4 and C.Amber) or C.Red
-
 	-- CRITICAL UI FIX: Scaled relationship bar positions
 	local relLabelY = IS_TINY_PHONE and 48 or (IS_SMALL_PHONE and 56 or 68)
 	local relBarY = IS_TINY_PHONE and 60 or (IS_SMALL_PHONE and 68 or 84)
@@ -2665,55 +2664,74 @@ function RelationshipsScreen:createPersonCard(parent, person, order, accentColor
 	local relBadgeWidth = IS_TINY_PHONE and 32 or (IS_SMALL_PHONE and 36 or 40)
 	local relBadgeHeight = IS_TINY_PHONE and 16 or (IS_SMALL_PHONE and 18 or 20)
 	local relTextSize = IS_TINY_PHONE and 8 or (IS_SMALL_PHONE and 9 or 10)
+	
+	if isAlive then
+		-- Only show relationship bar for alive people
+		local relPct   = math.clamp((person.relationship or 50) / 100, 0, 1)
+		local relColor = (relPct >= 0.7 and C.Green) or (relPct >= 0.4 and C.Amber) or C.Red
 
-	-- Relationship label - SCALED
-	local relTitleLabel = Instance.new("TextLabel")
-	relTitleLabel.Size = UDim2.new(0.2, 0, 0, IS_TINY_PHONE and 12 or 14)
-	relTitleLabel.Position = UDim2.new(0, TEXT_START, 0, relLabelY)
-	relTitleLabel.BackgroundTransparency = 1
-	relTitleLabel.Font = F.Body
-	relTitleLabel.TextSize = relTextSize
-	relTitleLabel.TextColor3 = C.Gray400
-	relTitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-	relTitleLabel.Text = IS_TINY_PHONE and "Rel." or "Relationship"
-	relTitleLabel.ZIndex = 85
-	relTitleLabel.Parent = card
+		-- Relationship label - SCALED
+		local relTitleLabel = Instance.new("TextLabel")
+		relTitleLabel.Size = UDim2.new(0.2, 0, 0, IS_TINY_PHONE and 12 or 14)
+		relTitleLabel.Position = UDim2.new(0, TEXT_START, 0, relLabelY)
+		relTitleLabel.BackgroundTransparency = 1
+		relTitleLabel.Font = F.Body
+		relTitleLabel.TextSize = relTextSize
+		relTitleLabel.TextColor3 = C.Gray400
+		relTitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+		relTitleLabel.Text = IS_TINY_PHONE and "Rel." or "Relationship"
+		relTitleLabel.ZIndex = 85
+		relTitleLabel.Parent = card
 
-	-- Relationship bar - SCALED
-	local relBarBg = Instance.new("Frame")
-	relBarBg.Size = UDim2.new(IS_TINY_PHONE and 0.25 or 0.30, 0, 0, relBarHeight)
-	relBarBg.Position = UDim2.new(0, TEXT_START, 0, relBarY)
-	relBarBg.BackgroundColor3 = C.Gray200
-	relBarBg.ZIndex = 85
-	relBarBg.Parent = card
-	UI.pill(relBarBg)
+		-- Relationship bar - SCALED
+		local relBarBg = Instance.new("Frame")
+		relBarBg.Size = UDim2.new(IS_TINY_PHONE and 0.25 or 0.30, 0, 0, relBarHeight)
+		relBarBg.Position = UDim2.new(0, TEXT_START, 0, relBarY)
+		relBarBg.BackgroundColor3 = C.Gray200
+		relBarBg.ZIndex = 85
+		relBarBg.Parent = card
+		UI.pill(relBarBg)
 
-	local relBarFill = Instance.new("Frame")
-	relBarFill.Size = UDim2.new(relPct, 0, 1, 0)
-	relBarFill.BackgroundColor3 = relColor
-	relBarFill.ZIndex = 86
-	relBarFill.Parent = relBarBg
-	UI.pill(relBarFill)
+		local relBarFill = Instance.new("Frame")
+		relBarFill.Size = UDim2.new(relPct, 0, 1, 0)
+		relBarFill.BackgroundColor3 = relColor
+		relBarFill.ZIndex = 86
+		relBarFill.Parent = relBarBg
+		UI.pill(relBarFill)
 
-	-- Percentage badge (next to bar) - SCALED
-	local relBadgeX = TEXT_START + (IS_TINY_PHONE and 75 or (IS_SMALL_PHONE and 95 or 115))
-	local relBadge = Instance.new("Frame")
-	relBadge.Size = UDim2.new(0, relBadgeWidth, 0, relBadgeHeight)
-	relBadge.Position = UDim2.new(0, relBadgeX, 0, relBarY - (IS_TINY_PHONE and 1 or 2))
-	relBadge.BackgroundColor3 = relColor:Lerp(C.White, 0.7)
-	relBadge.ZIndex = 85
-	relBadge.Parent = card
-	UI.pill(relBadge)
+		-- Percentage badge (next to bar) - SCALED
+		local relBadgeX = TEXT_START + (IS_TINY_PHONE and 75 or (IS_SMALL_PHONE and 95 or 115))
+		local relBadge = Instance.new("Frame")
+		relBadge.Size = UDim2.new(0, relBadgeWidth, 0, relBadgeHeight)
+		relBadge.Position = UDim2.new(0, relBadgeX, 0, relBarY - (IS_TINY_PHONE and 1 or 2))
+		relBadge.BackgroundColor3 = relColor:Lerp(C.White, 0.7)
+		relBadge.ZIndex = 85
+		relBadge.Parent = card
+		UI.pill(relBadge)
 
-	local relLabel = Instance.new("TextLabel")
-	relLabel.Size = UDim2.fromScale(1, 1)
-	relLabel.BackgroundTransparency = 1
-	relLabel.Font = F.Button
-	relLabel.TextSize = IS_TINY_PHONE and 9 or 11
-	relLabel.TextColor3 = relColor:Lerp(C.Black, 0.3)
-	relLabel.Text = string.format("%d%%", math.floor(person.relationship or 50))
-	relLabel.ZIndex = 86
-	relLabel.Parent = relBadge
+		local relLabel = Instance.new("TextLabel")
+		relLabel.Size = UDim2.fromScale(1, 1)
+		relLabel.BackgroundTransparency = 1
+		relLabel.Font = F.Button
+		relLabel.TextSize = IS_TINY_PHONE and 9 or 11
+		relLabel.TextColor3 = relColor:Lerp(C.Black, 0.3)
+		relLabel.Text = string.format("%d%%", math.floor(person.relationship or 50))
+		relLabel.ZIndex = 86
+		relLabel.Parent = relBadge
+	else
+		-- Deceased person - show memorial text instead of relationship bar
+		local deceasedLabel = Instance.new("TextLabel")
+		deceasedLabel.Size = UDim2.new(0.5, 0, 0, IS_TINY_PHONE and 16 or 20)
+		deceasedLabel.Position = UDim2.new(0, TEXT_START, 0, relLabelY + 4)
+		deceasedLabel.BackgroundTransparency = 1
+		deceasedLabel.Font = F.Medium
+		deceasedLabel.TextSize = relTextSize + 1
+		deceasedLabel.TextColor3 = C.Gray400
+		deceasedLabel.TextXAlignment = Enum.TextXAlignment.Left
+		deceasedLabel.Text = "✝️ Rest in Peace"
+		deceasedLabel.ZIndex = 85
+		deceasedLabel.Parent = card
+	end
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- INTERACT BUTTON (premium styling with shadow) - SCALED
@@ -3012,18 +3030,28 @@ function RelationshipsScreen:showInteractionModal(person, relType, accentColor, 
 	self.interactName.Text   = person.name or "Unknown"
 	
 	-- CRITICAL FIX: Show divorced/separated status for parents
+	-- CRITICAL FIX #2: Don't show relationship % for deceased people!
+	-- User complaint: "FIX RELASHONSHIPSCREEN TO STOP THE STATS % LIKE WHEN PEOPLE DIE"
 	local statusStr = person.role or "Person"
+	local isPersonAlive = person.alive ~= false and not person.deceased
+	
 	if person.divorced or person.maritalStatus == "Divorced" then
 		statusStr = statusStr .. " (Divorced)"
 	elseif person.status == "separated" or person.status == "divorced" then
 		statusStr = statusStr .. " (Separated)"
-	elseif person.deceased or person.alive == false then
-		statusStr = statusStr .. " (Deceased)"
+	elseif not isPersonAlive then
+		statusStr = statusStr .. " (Deceased ✝️)"
 	end
 	
-	self.interactStatus.Text = statusStr
-		.. " | "
-		.. string.format("%d%% Relationship", math.floor(person.relationship or 50))
+	-- Only show relationship % for ALIVE people
+	if isPersonAlive then
+		self.interactStatus.Text = statusStr
+			.. " | "
+			.. string.format("%d%% Relationship", math.floor(person.relationship or 50))
+	else
+		-- Deceased - don't show relationship %, show memorial message instead
+		self.interactStatus.Text = statusStr .. " | In Loving Memory"
+	end
 
 	local emoji = "👤"
 	if relType == "family" then

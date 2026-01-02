@@ -1832,4 +1832,103 @@ function FriendshipDecayEvents.processYearlyDecay(state)
 	return decayedFriends
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: PERSONALIZED FRIEND EVENTS BASED ON INTERESTS
+-- User complaint: "friends u know or ur career or just anything that u can use to personalize"
+-- These events reference the player's discovered passions and career!
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+FriendshipDecayEvents.events[#FriendshipDecayEvents.events + 1] = {
+	id = "friend_shared_interest",
+	title = "Bonding Over Shared Interests!",
+	emoji = "🤝",
+	text = "A friend discovers you both share the same passion! This brings you closer together.",
+	minAge = 10, maxAge = 60,
+	baseChance = 0.3,
+	cooldown = 5,
+	category = "friendship",
+	
+	eligibility = function(state)
+		local flags = state.Flags or {}
+		-- Only trigger if player has discovered a passion
+		return flags.passionate_athlete or flags.passionate_artist or flags.passionate_scientist or
+		       flags.musical_kid or flags.tech_talent or flags.cooking_talent
+	end,
+	
+	choices = {
+		{
+			text = "Hang out and share your passion!",
+			effects = { Happiness = 12 },
+			feedText = "What an amazing connection!",
+			onResolve = function(state)
+				local flags = state.Flags or {}
+				local friend = getRandomFriend(state)
+				local friendName = friend and friend.data and friend.data.name or "Your friend"
+				local passion = ""
+				
+				-- Pick passion based on flags
+				if flags.passionate_athlete or flags.athletic_talent then
+					passion = "sports"
+				elseif flags.passionate_artist or flags.art_talent then
+					passion = "art"
+				elseif flags.passionate_scientist or flags.tech_talent then
+					passion = "tech"
+				elseif flags.musical_kid then
+					passion = "music"
+				elseif flags.cooking_talent then
+					passion = "cooking"
+				else
+					passion = "hobbies"
+				end
+				
+				modStatIfPossible(state, "Happiness", 12)
+				flags.strong_friendship = true
+				addFeed(state, "🤝 " .. friendName .. " loves " .. passion .. " too! You spent hours talking about it!")
+			end,
+		},
+	},
+}
+
+FriendshipDecayEvents.events[#FriendshipDecayEvents.events + 1] = {
+	id = "friend_career_advice",
+	title = "Friend Asks Career Advice",
+	emoji = "💼",
+	text = "A friend is considering a career change and wants YOUR advice since you're successful in your field!",
+	minAge = 25, maxAge = 55,
+	baseChance = 0.25,
+	cooldown = 6,
+	category = "friendship",
+	requiresJob = true,
+	
+	choices = {
+		{
+			text = "Share everything you've learned",
+			effects = { Happiness = 10, Smarts = 2 },
+			feedText = "Helping a friend succeed feels great!",
+			onResolve = function(state)
+				local friend = getRandomFriend(state)
+				local friendName = friend and friend.data and friend.data.name or "Your friend"
+				local job = state.CurrentJob and state.CurrentJob.name or "your field"
+				
+				modStatIfPossible(state, "Happiness", 10)
+				modStatIfPossible(state, "Smarts", 2)
+				ensureFlags(state).mentor = true
+				addFeed(state, "💼 " .. friendName .. " was so grateful for your advice about " .. job .. "! They're applying next week!")
+			end,
+		},
+		{
+			text = "Be honest - it's harder than it looks",
+			effects = { Happiness = 5 },
+			feedText = "Honesty is the best policy.",
+			onResolve = function(state)
+				local friend = getRandomFriend(state)
+				local friendName = friend and friend.data and friend.data.name or "Your friend"
+				
+				modStatIfPossible(state, "Happiness", 5)
+				addFeed(state, "💼 " .. friendName .. " appreciated your honesty about the challenges.")
+			end,
+		},
+	},
+}
+
 return FriendshipDecayEvents
