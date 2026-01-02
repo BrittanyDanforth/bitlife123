@@ -1,0 +1,833 @@
+-- ProgressScreen.lua
+-- Premium BitLife-style Progress & Awards screen
+-- Triple AAA polished UI for tracking awards, past lives, leaderboards, and giving up
+
+local TweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local UI = require(ReplicatedStorage:WaitForChild("UIComponents"))
+local C = UI.Colors or {}
+local F = UI.Fonts or {}
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- FONT SAFETY - CRITICAL FIX
+-- ═══════════════════════════════════════════════════════════════════════════════
+local DEFAULT_FONT = Enum.Font.SourceSans
+
+F = {}
+local function tryFont(...)
+	local fonts = {...}
+	for _, fontName in ipairs(fonts) do
+		local success, font = pcall(function()
+			return Enum.Font[fontName]
+		end)
+		if success and font then
+			return font
+		end
+	end
+	return DEFAULT_FONT
+end
+
+F.Title  = tryFont("GothamBold", "GothamBlack", "SourceSansBold", "SourceSans")
+F.Body   = tryFont("Gotham", "GothamMedium", "SourceSans")
+F.Medium = tryFont("GothamMedium", "Gotham", "SourceSans")
+F.Button = tryFont("GothamBold", "GothamSemibold", "SourceSansBold", "SourceSans")
+F.Bold   = tryFont("GothamBold", "GothamBlack", "SourceSansBold", "SourceSans")
+
+for key, value in pairs(F) do
+	if not value or type(value) ~= "userdata" then
+		F[key] = DEFAULT_FONT
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- COLOR SAFETY
+-- ═══════════════════════════════════════════════════════════════════════════════
+C.Amber      = C.Amber      or Color3.fromRGB(245, 158, 11)
+C.AmberDark  = C.AmberDark  or Color3.fromRGB(217, 119, 6)
+C.AmberPale  = C.AmberPale  or Color3.fromRGB(254, 243, 199)
+C.Gold       = C.Gold       or Color3.fromRGB(251, 191, 36)
+C.Green      = C.Green      or Color3.fromRGB(34, 197, 94)
+C.GreenDark  = C.GreenDark  or Color3.fromRGB(22, 163, 74)
+C.GreenPale  = C.GreenPale  or Color3.fromRGB(220, 252, 231)
+C.Blue       = C.Blue       or Color3.fromRGB(59, 130, 246)
+C.BlueDark   = C.BlueDark   or Color3.fromRGB(29, 78, 216)
+C.BluePale   = C.BluePale   or Color3.fromRGB(219, 234, 254)
+C.Red        = C.Red        or Color3.fromRGB(239, 68, 68)
+C.RedDark    = C.RedDark    or Color3.fromRGB(185, 28, 28)
+C.RedPale    = C.RedPale    or Color3.fromRGB(254, 226, 226)
+C.Purple     = C.Purple     or Color3.fromRGB(139, 92, 246)
+C.PurpleDark = C.PurpleDark or Color3.fromRGB(109, 40, 217)
+C.White      = C.White      or Color3.fromRGB(255, 255, 255)
+C.Black      = C.Black      or Color3.fromRGB(0, 0, 0)
+C.Gray50     = C.Gray50     or Color3.fromRGB(249, 250, 251)
+C.Gray100    = C.Gray100    or Color3.fromRGB(243, 244, 246)
+C.Gray200    = C.Gray200    or Color3.fromRGB(229, 231, 235)
+C.Gray300    = C.Gray300    or Color3.fromRGB(209, 213, 219)
+C.Gray400    = C.Gray400    or Color3.fromRGB(156, 163, 175)
+C.Gray500    = C.Gray500    or Color3.fromRGB(107, 114, 128)
+C.Gray600    = C.Gray600    or Color3.fromRGB(75, 85, 99)
+C.Gray700    = C.Gray700    or Color3.fromRGB(55, 65, 81)
+C.Gray800    = C.Gray800    or Color3.fromRGB(31, 41, 55)
+C.Gray900    = C.Gray900    or Color3.fromRGB(17, 24, 39)
+C.Bg         = C.Bg         or Color3.fromRGB(246, 248, 252)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- MOBILE RESPONSIVE SYSTEM
+-- ═══════════════════════════════════════════════════════════════════════════════
+local UserInputService = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+
+local IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+local IS_TABLET = IS_MOBILE and (Camera.ViewportSize.X >= 768 or Camera.ViewportSize.Y >= 768)
+local IS_SMALL_PHONE = IS_MOBILE and not IS_TABLET and (Camera.ViewportSize.X < 400 or Camera.ViewportSize.Y < 700)
+local IS_TINY_PHONE = IS_MOBILE and not IS_TABLET and (Camera.ViewportSize.X <= 380 or Camera.ViewportSize.Y <= 680)
+local ViewportSize = Camera.ViewportSize
+
+local function getScale()
+	local minDim = math.min(ViewportSize.X, ViewportSize.Y)
+	if minDim < 350 then return 0.55 end
+	if minDim < 380 then return 0.65 end
+	if minDim < 400 then return 0.72 end
+	if minDim < 500 then return 0.85 end
+	if minDim < 768 then return 0.95 end
+	return 1.0
+end
+
+local function px(baseValue) return math.floor(baseValue * getScale()) end
+local function textSize(baseSize) 
+	local minSize = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 11 or 12)
+	return math.max(minSize, math.floor(baseSize * getScale())) 
+end
+local function padSize(base) 
+	if IS_TINY_PHONE then return math.max(4, math.floor(base * 0.6)) end
+	if IS_SMALL_PHONE then return math.max(5, math.floor(base * 0.75)) end
+	return math.floor(base * getScale())
+end
+local function btnHeight(baseHeight)
+	local scaled = math.floor(baseHeight * getScale())
+	local minTarget = IS_TINY_PHONE and 36 or (IS_SMALL_PHONE and 40 or 44)
+	return IS_MOBILE and math.max(minTarget, scaled) or scaled
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- DEBUG LOGGING
+-- ═══════════════════════════════════════════════════════════════════════════════
+local DEBUG = false
+local function log(...)
+	if DEBUG then print("[ProgressScreen]", ...) end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- MONEY FORMATTING
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function formatMoney(amount)
+	if not amount then return "$0" end
+	amount = math.floor(amount)
+	if amount >= 1000000000 then
+		return string.format("$%.1fB", amount / 1000000000)
+	elseif amount >= 1000000 then
+		return string.format("$%.1fM", amount / 1000000)
+	elseif amount >= 1000 then
+		return string.format("$%.1fK", amount / 1000)
+	else
+		return "$" .. tostring(amount)
+	end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- PROGRESS SCREEN MODULE
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local ProgressScreen = {}
+ProgressScreen.__index = ProgressScreen
+
+-- Tab definitions
+local TABS = {
+	{ id = "awards", name = "🏆 Awards", color = C.Amber },
+	{ id = "pastlives", name = "📜 Past Lives", color = C.Blue },
+	{ id = "leaderboards", name = "🏅 Leaderboards", color = C.Green },
+	{ id = "giveup", name = "☠️ Give Up", color = C.Red },
+}
+
+-- Award definitions
+local AWARDS = {
+	{ id = "first_life", icon = "👶", name = "First Life", desc = "Start your first life", check = function(state) return true end },
+	{ id = "centenarian", icon = "💯", name = "Centenarian", desc = "Live to 100 years old", check = function(state) return state and (state.Age or 0) >= 100 end },
+	{ id = "millionaire", icon = "💰", name = "Millionaire", desc = "Have $1,000,000+", check = function(state) return state and (state.Money or 0) >= 1000000 end },
+	{ id = "billionaire", icon = "🤑", name = "Billionaire", desc = "Have $1,000,000,000+", check = function(state) return state and (state.Money or 0) >= 1000000000 end },
+	{ id = "perfect_stats", icon = "⭐", name = "Perfect Life", desc = "Max all stats (100)", check = function(state) 
+		if not state then return false end
+		return (state.Happiness or 0) >= 100 and (state.Health or 0) >= 100 and (state.Smarts or 0) >= 100 and (state.Looks or 0) >= 100
+	end },
+	{ id = "famous", icon = "🌟", name = "Famous", desc = "Reach 100 Fame", check = function(state) return state and (state.Fame or 0) >= 100 end },
+	{ id = "married", icon = "💒", name = "Married", desc = "Get married", check = function(state) return state and state.Flags and state.Flags.married end },
+	{ id = "royalty", icon = "👑", name = "Royal Blood", desc = "Become royalty", check = function(state) return state and state.Flags and (state.Flags.is_royalty or state.Flags.royal_birth) end },
+	{ id = "mafia_boss", icon = "🔫", name = "Crime Boss", desc = "Become a mafia boss", check = function(state) return state and state.MobState and state.MobState.rank == "Boss" end },
+	{ id = "athlete", icon = "🏅", name = "Pro Athlete", desc = "Become a professional athlete", check = function(state) return state and state.Flags and state.Flags.signed_athlete end },
+	{ id = "actor", icon = "🎬", name = "Movie Star", desc = "Win an Oscar", check = function(state) return state and state.Flags and state.Flags.oscar_winner end },
+	{ id = "musician", icon = "🎵", name = "Music Legend", desc = "Win a Grammy", check = function(state) return state and state.Flags and state.Flags.grammy_winner end },
+	{ id = "survivor", icon = "🎯", name = "Survivor", desc = "Survive The Purge", check = function(state) return state and state.Flags and state.Flags.purge_survivor end },
+	{ id = "criminal", icon = "🦹", name = "Criminal Mastermind", desc = "Commit 10 crimes", check = function(state) return state and state.Flags and (state.Flags.crimes_committed or 0) >= 10 end },
+	{ id = "educated", icon = "🎓", name = "Educated", desc = "Graduate college", check = function(state) return state and state.Flags and state.Flags.college_graduate end },
+	{ id = "healthy", icon = "💪", name = "Peak Performance", desc = "100 Health for 10+ years", check = function(state) return state and state.Flags and state.Flags.peak_health end },
+}
+
+print("[ProgressScreen] ✓ About to define .new function")
+
+function ProgressScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, playerState)
+	print("[ProgressScreen] ✓ .new function called")
+	log("=== CREATING ProgressScreen ===")
+	local self = setmetatable({}, ProgressScreen)
+	self.screenGui = screenGui
+	self.playerState = playerState or {}
+	self.showBlur = showBlurFunc
+	self.hideBlur = hideBlurFunc
+	self.isVisible = false
+	self.currentTab = "awards"
+	self:createUI()
+	log("✅ ProgressScreen created successfully")
+	return self
+end
+
+function ProgressScreen:getState()
+	return self.playerState or {}
+end
+
+function ProgressScreen:updateState(newState)
+	self.playerState = newState or self.playerState
+end
+
+function ProgressScreen:createUI()
+	log("Creating UI...")
+	
+	-- Main overlay
+	self.overlay = Instance.new("Frame")
+	self.overlay.Name = "ProgressScreenOverlay"
+	self.overlay.Size = UDim2.fromScale(1, 1)
+	self.overlay.BackgroundColor3 = C.Bg
+	self.overlay.Visible = false
+	self.overlay.ZIndex = 80
+	self.overlay.Parent = self.screenGui
+	
+	-- Header
+	self:createHeader()
+	
+	-- Tab bar
+	self:createTabBar()
+	
+	-- Content container
+	self:createContentContainer()
+	
+	-- Build all tab content
+	self:buildAwardsTab()
+	self:buildPastLivesTab()
+	self:buildLeaderboardsTab()
+	self:buildGiveUpTab()
+	
+	log("UI created")
+end
+
+function ProgressScreen:createHeader()
+	local headerHeight = IS_TINY_PHONE and 50 or (IS_SMALL_PHONE and 56 or px(65))
+	
+	self.header = Instance.new("Frame")
+	self.header.Name = "Header"
+	self.header.Size = UDim2.new(1, 0, 0, headerHeight)
+	self.header.BackgroundColor3 = C.Amber
+	self.header.ZIndex = 81
+	self.header.Parent = self.overlay
+	
+	local headerGrad = Instance.new("UIGradient")
+	headerGrad.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, C.Amber),
+		ColorSequenceKeypoint.new(1, C.AmberDark),
+	})
+	headerGrad.Rotation = 90
+	headerGrad.Parent = self.header
+	
+	-- Title
+	local title = Instance.new("TextLabel")
+	title.Size = UDim2.new(1, -100, 1, 0)
+	title.Position = UDim2.new(0, 50, 0, 0)
+	title.BackgroundTransparency = 1
+	title.Font = F.Bold
+	title.TextSize = IS_TINY_PHONE and 18 or textSize(22)
+	title.TextColor3 = C.White
+	title.Text = "🏆 Progress"
+	title.ZIndex = 82
+	title.Parent = self.header
+	
+	-- Close button
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Size = UDim2.new(0, IS_TINY_PHONE and 36 or 44, 0, IS_TINY_PHONE and 36 or 44)
+	closeBtn.Position = UDim2.new(1, IS_TINY_PHONE and -42 or -52, 0.5, 0)
+	closeBtn.AnchorPoint = Vector2.new(0, 0.5)
+	closeBtn.BackgroundColor3 = C.White
+	closeBtn.BackgroundTransparency = 0.15
+	closeBtn.Font = F.Bold
+	closeBtn.TextSize = IS_TINY_PHONE and 18 or 22
+	closeBtn.TextColor3 = C.Amber
+	closeBtn.Text = "X"
+	closeBtn.AutoButtonColor = false
+	closeBtn.ZIndex = 82
+	closeBtn.Parent = self.header
+	UI.corner(closeBtn, IS_TINY_PHONE and 18 or 22)
+	
+	closeBtn.MouseEnter:Connect(function()
+		UI.tween(closeBtn, TweenInfo.new(0.1), { BackgroundTransparency = 0 })
+	end)
+	closeBtn.MouseLeave:Connect(function()
+		UI.tween(closeBtn, TweenInfo.new(0.1), { BackgroundTransparency = 0.15 })
+	end)
+	closeBtn.MouseButton1Click:Connect(function()
+		self:hide()
+	end)
+end
+
+function ProgressScreen:createTabBar()
+	local headerHeight = IS_TINY_PHONE and 50 or (IS_SMALL_PHONE and 56 or px(65))
+	local tabBarHeight = IS_TINY_PHONE and 44 or 52
+	
+	self.tabBar = Instance.new("Frame")
+	self.tabBar.Name = "TabBar"
+	self.tabBar.Size = UDim2.new(1, 0, 0, tabBarHeight)
+	self.tabBar.Position = UDim2.new(0, 0, 0, headerHeight)
+	self.tabBar.BackgroundColor3 = C.White
+	self.tabBar.ZIndex = 81
+	self.tabBar.Parent = self.overlay
+	
+	local tabLayout = Instance.new("UIListLayout")
+	tabLayout.FillDirection = Enum.FillDirection.Horizontal
+	tabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	tabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	tabLayout.Padding = UDim.new(0, IS_TINY_PHONE and 4 or 8)
+	tabLayout.Parent = self.tabBar
+	
+	local tabPad = Instance.new("UIPadding")
+	tabPad.PaddingLeft = UDim.new(0, IS_TINY_PHONE and 6 or 10)
+	tabPad.PaddingRight = UDim.new(0, IS_TINY_PHONE and 6 or 10)
+	tabPad.Parent = self.tabBar
+	
+	self.tabButtons = {}
+	
+	for i, tab in ipairs(TABS) do
+		local tabBtn = Instance.new("TextButton")
+		tabBtn.Name = "Tab_" .. tab.id
+		tabBtn.Size = UDim2.new(0, IS_TINY_PHONE and 70 or 85, 0, IS_TINY_PHONE and 32 or 38)
+		tabBtn.BackgroundColor3 = i == 1 and tab.color or C.Gray200
+		tabBtn.Font = F.Medium
+		tabBtn.TextSize = IS_TINY_PHONE and 10 or 12
+		tabBtn.TextColor3 = i == 1 and C.White or C.Gray600
+		tabBtn.Text = tab.name
+		tabBtn.TextScaled = IS_TINY_PHONE
+		tabBtn.AutoButtonColor = false
+		tabBtn.LayoutOrder = i
+		tabBtn.ZIndex = 82
+		tabBtn.Parent = self.tabBar
+		UI.corner(tabBtn, 8)
+		
+		self.tabButtons[tab.id] = { btn = tabBtn, color = tab.color }
+		
+		tabBtn.MouseButton1Click:Connect(function()
+			self:switchTab(tab.id)
+		end)
+	end
+end
+
+function ProgressScreen:createContentContainer()
+	local headerHeight = IS_TINY_PHONE and 50 or (IS_SMALL_PHONE and 56 or px(65))
+	local tabBarHeight = IS_TINY_PHONE and 44 or 52
+	local topOffset = headerHeight + tabBarHeight
+	
+	self.contentContainer = Instance.new("Frame")
+	self.contentContainer.Name = "ContentContainer"
+	self.contentContainer.Size = UDim2.new(1, 0, 1, -topOffset)
+	self.contentContainer.Position = UDim2.new(0, 0, 0, topOffset)
+	self.contentContainer.BackgroundColor3 = C.Bg
+	self.contentContainer.ZIndex = 80
+	self.contentContainer.Parent = self.overlay
+	
+	self.tabContents = {}
+end
+
+function ProgressScreen:buildAwardsTab()
+	local container = Instance.new("ScrollingFrame")
+	container.Name = "AwardsContent"
+	container.Size = UDim2.fromScale(1, 1)
+	container.BackgroundTransparency = 1
+	container.ScrollBarThickness = 4
+	container.ScrollBarImageColor3 = C.Gray400
+	container.CanvasSize = UDim2.new(0, 0, 0, #AWARDS * 70 + 20)
+	container.Visible = true
+	container.ZIndex = 81
+	container.Parent = self.contentContainer
+	
+	local layout = Instance.new("UIListLayout")
+	layout.Padding = UDim.new(0, 8)
+	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	layout.Parent = container
+	
+	local pad = Instance.new("UIPadding")
+	pad.PaddingTop = UDim.new(0, 10)
+	pad.PaddingLeft = UDim.new(0, 10)
+	pad.PaddingRight = UDim.new(0, 10)
+	pad.Parent = container
+	
+	self.awardItems = {}
+	
+	for i, award in ipairs(AWARDS) do
+		local item = Instance.new("Frame")
+		item.Name = "Award_" .. award.id
+		item.Size = UDim2.new(1, -10, 0, 60)
+		item.BackgroundColor3 = C.Gray100
+		item.LayoutOrder = i
+		item.ZIndex = 82
+		item.Parent = container
+		UI.corner(item, 12)
+		
+		local icon = Instance.new("TextLabel")
+		icon.Size = UDim2.new(0, 50, 1, 0)
+		icon.BackgroundTransparency = 1
+		icon.Font = F.Body
+		icon.TextSize = 28
+		icon.Text = "🔒"
+		icon.ZIndex = 83
+		icon.Parent = item
+		
+		local name = Instance.new("TextLabel")
+		name.Size = UDim2.new(1, -60, 0, 24)
+		name.Position = UDim2.new(0, 55, 0, 8)
+		name.BackgroundTransparency = 1
+		name.Font = F.Bold
+		name.TextSize = 14
+		name.TextColor3 = C.Gray500
+		name.TextXAlignment = Enum.TextXAlignment.Left
+		name.Text = award.name
+		name.ZIndex = 83
+		name.Parent = item
+		
+		local desc = Instance.new("TextLabel")
+		desc.Size = UDim2.new(1, -60, 0, 20)
+		desc.Position = UDim2.new(0, 55, 0, 32)
+		desc.BackgroundTransparency = 1
+		desc.Font = F.Body
+		desc.TextSize = 11
+		desc.TextColor3 = C.Gray400
+		desc.TextXAlignment = Enum.TextXAlignment.Left
+		desc.Text = award.desc
+		desc.ZIndex = 83
+		desc.Parent = item
+		
+		self.awardItems[award.id] = { frame = item, icon = icon, name = name, award = award }
+	end
+	
+	self.tabContents["awards"] = container
+end
+
+function ProgressScreen:buildPastLivesTab()
+	local container = Instance.new("Frame")
+	container.Name = "PastLivesContent"
+	container.Size = UDim2.fromScale(1, 1)
+	container.BackgroundTransparency = 1
+	container.Visible = false
+	container.ZIndex = 81
+	container.Parent = self.contentContainer
+	
+	-- Stats summary
+	local statsFrame = Instance.new("Frame")
+	statsFrame.Size = UDim2.new(1, -20, 0, 90)
+	statsFrame.Position = UDim2.new(0, 10, 0, 10)
+	statsFrame.BackgroundColor3 = C.BluePale
+	statsFrame.ZIndex = 82
+	statsFrame.Parent = container
+	UI.corner(statsFrame, 12)
+	
+	local statsLayout = Instance.new("UIGridLayout")
+	statsLayout.CellSize = UDim2.new(0.5, -5, 0.5, -5)
+	statsLayout.CellPadding = UDim2.new(0, 5, 0, 5)
+	statsLayout.Parent = statsFrame
+	
+	local statsPad = Instance.new("UIPadding")
+	statsPad.PaddingTop = UDim.new(0, 5)
+	statsPad.PaddingLeft = UDim.new(0, 5)
+	statsPad.PaddingRight = UDim.new(0, 5)
+	statsPad.PaddingBottom = UDim.new(0, 5)
+	statsPad.Parent = statsFrame
+	
+	local function createStatLabel(text, order)
+		local lbl = Instance.new("TextLabel")
+		lbl.BackgroundTransparency = 1
+		lbl.Font = F.Bold
+		lbl.TextSize = IS_TINY_PHONE and 12 or 14
+		lbl.TextColor3 = C.Blue
+		lbl.Text = text
+		lbl.LayoutOrder = order
+		lbl.ZIndex = 83
+		lbl.Parent = statsFrame
+		return lbl
+	end
+	
+	self.pastLivesStats = {
+		totalLives = createStatLabel("Total Lives: 1", 1),
+		totalYears = createStatLabel("Total Years: 0", 2),
+		longestLife = createStatLabel("Longest: 0 yrs", 3),
+		richestLife = createStatLabel("Richest: $0", 4),
+	}
+	
+	-- Lives scroll list
+	local scroll = Instance.new("ScrollingFrame")
+	scroll.Size = UDim2.new(1, -20, 1, -120)
+	scroll.Position = UDim2.new(0, 10, 0, 110)
+	scroll.BackgroundTransparency = 1
+	scroll.ScrollBarThickness = 4
+	scroll.ScrollBarImageColor3 = C.Gray400
+	scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+	scroll.ZIndex = 82
+	scroll.Parent = container
+	
+	local scrollLayout = Instance.new("UIListLayout")
+	scrollLayout.Padding = UDim.new(0, 6)
+	scrollLayout.Parent = scroll
+	
+	self.pastLivesScroll = scroll
+	self.tabContents["pastlives"] = container
+end
+
+function ProgressScreen:buildLeaderboardsTab()
+	local container = Instance.new("Frame")
+	container.Name = "LeaderboardsContent"
+	container.Size = UDim2.fromScale(1, 1)
+	container.BackgroundTransparency = 1
+	container.Visible = false
+	container.ZIndex = 81
+	container.Parent = self.contentContainer
+	
+	-- Leaderboard type tabs
+	local subTabBar = Instance.new("Frame")
+	subTabBar.Size = UDim2.new(1, -20, 0, 40)
+	subTabBar.Position = UDim2.new(0, 10, 0, 10)
+	subTabBar.BackgroundTransparency = 1
+	subTabBar.ZIndex = 82
+	subTabBar.Parent = container
+	
+	local subTabLayout = Instance.new("UIListLayout")
+	subTabLayout.FillDirection = Enum.FillDirection.Horizontal
+	subTabLayout.Padding = UDim.new(0, 8)
+	subTabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	subTabLayout.Parent = subTabBar
+	
+	local subTabs = { "💰 Richest", "📅 Oldest", "⭐ Fame" }
+	self.leaderboardSubTabs = {}
+	
+	for i, tabName in ipairs(subTabs) do
+		local btn = Instance.new("TextButton")
+		btn.Size = UDim2.new(0, IS_TINY_PHONE and 80 or 95, 0, 34)
+		btn.BackgroundColor3 = i == 1 and C.Green or C.Gray200
+		btn.Font = F.Medium
+		btn.TextSize = IS_TINY_PHONE and 11 or 13
+		btn.TextColor3 = i == 1 and C.White or C.Gray600
+		btn.Text = tabName
+		btn.AutoButtonColor = false
+		btn.LayoutOrder = i
+		btn.ZIndex = 83
+		btn.Parent = subTabBar
+		UI.corner(btn, 8)
+		
+		self.leaderboardSubTabs[i] = btn
+		
+		btn.MouseButton1Click:Connect(function()
+			for j, b in ipairs(self.leaderboardSubTabs) do
+				b.BackgroundColor3 = j == i and C.Green or C.Gray200
+				b.TextColor3 = j == i and C.White or C.Gray600
+			end
+		end)
+	end
+	
+	-- Leaderboard scroll
+	local scroll = Instance.new("ScrollingFrame")
+	scroll.Size = UDim2.new(1, -20, 1, -70)
+	scroll.Position = UDim2.new(0, 10, 0, 60)
+	scroll.BackgroundTransparency = 1
+	scroll.ScrollBarThickness = 4
+	scroll.ScrollBarImageColor3 = C.Gray400
+	scroll.CanvasSize = UDim2.new(0, 0, 0, 550)
+	scroll.ZIndex = 82
+	scroll.Parent = container
+	
+	local scrollLayout = Instance.new("UIListLayout")
+	scrollLayout.Padding = UDim.new(0, 4)
+	scrollLayout.Parent = scroll
+	
+	-- Sample leaderboard data
+	local sampleData = {
+		{ rank = 1, name = "Player1", value = "$1.2B", icon = "🥇" },
+		{ rank = 2, name = "Player2", value = "$800M", icon = "🥈" },
+		{ rank = 3, name = "Player3", value = "$500M", icon = "🥉" },
+		{ rank = 4, name = "Player4", value = "$200M", icon = "4" },
+		{ rank = 5, name = "Player5", value = "$100M", icon = "5" },
+		{ rank = 6, name = "Player6", value = "$50M", icon = "6" },
+		{ rank = 7, name = "Player7", value = "$25M", icon = "7" },
+		{ rank = 8, name = "Player8", value = "$10M", icon = "8" },
+		{ rank = 9, name = "Player9", value = "$5M", icon = "9" },
+		{ rank = 10, name = "Player10", value = "$1M", icon = "10" },
+	}
+	
+	for _, entry in ipairs(sampleData) do
+		local item = Instance.new("Frame")
+		item.Size = UDim2.new(1, -10, 0, 50)
+		item.BackgroundColor3 = entry.rank <= 3 and C.GreenPale or C.Gray50
+		item.LayoutOrder = entry.rank
+		item.ZIndex = 83
+		item.Parent = scroll
+		UI.corner(item, 10)
+		
+		local rankLabel = Instance.new("TextLabel")
+		rankLabel.Size = UDim2.new(0, 40, 1, 0)
+		rankLabel.BackgroundTransparency = 1
+		rankLabel.Font = F.Bold
+		rankLabel.TextSize = entry.rank <= 3 and 22 or 16
+		rankLabel.TextColor3 = entry.rank <= 3 and C.Amber or C.Gray600
+		rankLabel.Text = entry.icon
+		rankLabel.ZIndex = 84
+		rankLabel.Parent = item
+		
+		local nameLabel = Instance.new("TextLabel")
+		nameLabel.Size = UDim2.new(0.5, -20, 1, 0)
+		nameLabel.Position = UDim2.new(0, 45, 0, 0)
+		nameLabel.BackgroundTransparency = 1
+		nameLabel.Font = F.Medium
+		nameLabel.TextSize = 14
+		nameLabel.TextColor3 = C.Gray800
+		nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+		nameLabel.Text = entry.name
+		nameLabel.ZIndex = 84
+		nameLabel.Parent = item
+		
+		local valueLabel = Instance.new("TextLabel")
+		valueLabel.Size = UDim2.new(0.4, 0, 1, 0)
+		valueLabel.Position = UDim2.new(0.6, 0, 0, 0)
+		valueLabel.BackgroundTransparency = 1
+		valueLabel.Font = F.Bold
+		valueLabel.TextSize = 14
+		valueLabel.TextColor3 = C.Green
+		valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+		valueLabel.Text = entry.value
+		valueLabel.ZIndex = 84
+		valueLabel.Parent = item
+	end
+	
+	self.tabContents["leaderboards"] = container
+end
+
+function ProgressScreen:buildGiveUpTab()
+	local container = Instance.new("Frame")
+	container.Name = "GiveUpContent"
+	container.Size = UDim2.fromScale(1, 1)
+	container.BackgroundTransparency = 1
+	container.Visible = false
+	container.ZIndex = 81
+	container.Parent = self.contentContainer
+	
+	-- Warning card
+	local card = Instance.new("Frame")
+	card.Size = UDim2.new(1, -40, 0, 280)
+	card.AnchorPoint = Vector2.new(0.5, 0.5)
+	card.Position = UDim2.fromScale(0.5, 0.45)
+	card.BackgroundColor3 = C.White
+	card.ZIndex = 82
+	card.Parent = container
+	UI.corner(card, 16)
+	
+	-- Shadow
+	local shadow = Instance.new("Frame")
+	shadow.Size = UDim2.new(1, 8, 1, 8)
+	shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+	shadow.Position = UDim2.new(0.5, 2, 0.5, 4)
+	shadow.BackgroundColor3 = C.Black
+	shadow.BackgroundTransparency = 0.9
+	shadow.ZIndex = 81
+	shadow.Parent = card
+	UI.corner(shadow, 18)
+	
+	-- Warning icon
+	local warnIcon = Instance.new("TextLabel")
+	warnIcon.Size = UDim2.new(1, 0, 0, 70)
+	warnIcon.Position = UDim2.new(0, 0, 0, 20)
+	warnIcon.BackgroundTransparency = 1
+	warnIcon.Font = F.Body
+	warnIcon.TextSize = 56
+	warnIcon.Text = "⚠️"
+	warnIcon.ZIndex = 83
+	warnIcon.Parent = card
+	
+	-- Warning title
+	local warnTitle = Instance.new("TextLabel")
+	warnTitle.Size = UDim2.new(1, -20, 0, 30)
+	warnTitle.Position = UDim2.new(0, 10, 0, 95)
+	warnTitle.BackgroundTransparency = 1
+	warnTitle.Font = F.Bold
+	warnTitle.TextSize = 20
+	warnTitle.TextColor3 = C.Red
+	warnTitle.Text = "Give Up On Life?"
+	warnTitle.ZIndex = 83
+	warnTitle.Parent = card
+	
+	-- Warning text
+	local warnText = Instance.new("TextLabel")
+	warnText.Size = UDim2.new(1, -30, 0, 60)
+	warnText.Position = UDim2.new(0, 15, 0, 130)
+	warnText.BackgroundTransparency = 1
+	warnText.Font = F.Body
+	warnText.TextSize = 14
+	warnText.TextColor3 = C.Gray600
+	warnText.TextWrapped = true
+	warnText.Text = "Are you sure you want to end this life? All progress will be lost and you'll start fresh with a new life."
+	warnText.ZIndex = 83
+	warnText.Parent = card
+	
+	-- Give Up button
+	local giveUpBtn = Instance.new("TextButton")
+	giveUpBtn.Size = UDim2.new(0.7, 0, 0, 50)
+	giveUpBtn.AnchorPoint = Vector2.new(0.5, 0)
+	giveUpBtn.Position = UDim2.new(0.5, 0, 0, 200)
+	giveUpBtn.BackgroundColor3 = C.Red
+	giveUpBtn.Font = F.Bold
+	giveUpBtn.TextSize = 16
+	giveUpBtn.TextColor3 = C.White
+	giveUpBtn.Text = "☠️ Give Up"
+	giveUpBtn.AutoButtonColor = false
+	giveUpBtn.ZIndex = 84
+	giveUpBtn.Parent = card
+	UI.corner(giveUpBtn, 12)
+	
+	giveUpBtn.MouseEnter:Connect(function()
+		UI.tween(giveUpBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.RedDark })
+	end)
+	giveUpBtn.MouseLeave:Connect(function()
+		UI.tween(giveUpBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.Red })
+	end)
+	
+	giveUpBtn.MouseButton1Click:Connect(function()
+		self:handleGiveUp()
+	end)
+	
+	self.tabContents["giveup"] = container
+end
+
+function ProgressScreen:handleGiveUp()
+	log("Give Up button clicked")
+	
+	-- Close this screen first
+	self:hide()
+	
+	-- Trigger server-side give up
+	local GiveUpRemote = ReplicatedStorage:FindFirstChild("LifeRemotes")
+	if GiveUpRemote then
+		GiveUpRemote = GiveUpRemote:FindFirstChild("GiveUp")
+		if GiveUpRemote then
+			pcall(function()
+				GiveUpRemote:FireServer()
+			end)
+		end
+	end
+end
+
+function ProgressScreen:switchTab(tabId)
+	log("Switching to tab:", tabId)
+	self.currentTab = tabId
+	
+	-- Update tab button styles
+	for id, tabData in pairs(self.tabButtons) do
+		local isActive = id == tabId
+		tabData.btn.BackgroundColor3 = isActive and tabData.color or C.Gray200
+		tabData.btn.TextColor3 = isActive and C.White or C.Gray600
+	end
+	
+	-- Show/hide content
+	for id, content in pairs(self.tabContents) do
+		content.Visible = id == tabId
+	end
+	
+	-- Refresh content
+	if tabId == "awards" then
+		self:refreshAwards()
+	elseif tabId == "pastlives" then
+		self:refreshPastLives()
+	end
+end
+
+function ProgressScreen:refreshAwards()
+	local state = self:getState()
+	
+	for id, itemData in pairs(self.awardItems) do
+		local unlocked = itemData.award.check(state)
+		itemData.frame.BackgroundColor3 = unlocked and C.GreenPale or C.Gray100
+		itemData.icon.Text = unlocked and itemData.award.icon or "🔒"
+		itemData.name.TextColor3 = unlocked and C.Green or C.Gray500
+	end
+end
+
+function ProgressScreen:refreshPastLives()
+	local state = self:getState()
+	
+	if state and state.PastLives then
+		local lives = state.PastLives
+		local totalYears = 0
+		local longest = 0
+		local richest = 0
+		
+		for _, life in ipairs(lives) do
+			totalYears = totalYears + (life.age or 0)
+			longest = math.max(longest, life.age or 0)
+			richest = math.max(richest, life.netWorth or 0)
+		end
+		
+		self.pastLivesStats.totalLives.Text = "Total Lives: " .. (#lives + 1)
+		self.pastLivesStats.totalYears.Text = "Total Years: " .. (totalYears + (state.Age or 0))
+		self.pastLivesStats.longestLife.Text = "Longest: " .. math.max(longest, state.Age or 0) .. " yrs"
+		self.pastLivesStats.richestLife.Text = "Richest: " .. formatMoney(math.max(richest, state.Money or 0))
+	else
+		self.pastLivesStats.totalLives.Text = "Total Lives: 1"
+		self.pastLivesStats.totalYears.Text = "Total Years: " .. (state and state.Age or 0)
+		self.pastLivesStats.longestLife.Text = "Longest: " .. (state and state.Age or 0) .. " yrs"
+		self.pastLivesStats.richestLife.Text = "Richest: " .. formatMoney(state and state.Money or 0)
+	end
+end
+
+function ProgressScreen:show(tabId)
+	if self.isVisible then return end
+	log("Showing ProgressScreen")
+	
+	if self.showBlur then
+		pcall(self.showBlur)
+	end
+	
+	self.isVisible = true
+	self.overlay.Visible = true
+	
+	-- Animate in
+	UI.slideInScreen(self.overlay, "right")
+	
+	-- Switch to requested tab or default
+	self:switchTab(tabId or self.currentTab or "awards")
+end
+
+function ProgressScreen:hide()
+	if not self.isVisible then return end
+	log("Hiding ProgressScreen")
+	
+	-- Animate out
+	UI.slideOutScreen(self.overlay, "right", function()
+		self.overlay.Visible = false
+		if self.hideBlur then
+			pcall(self.hideBlur)
+		end
+	end)
+	
+	self.isVisible = false
+end
+
+print("[ProgressScreen] ✓ Module fully loaded, .new exists:", ProgressScreen.new ~= nil)
+
+return ProgressScreen
