@@ -3316,17 +3316,30 @@ function RelationshipsScreen:doInteraction(actionId, relTypeOverride, personOver
 			self:updateState(newState)
 		end
 
+		-- CRITICAL FIX: Update info bar BEFORE showing modal so stats refresh
+		self:updateInfoBar()
+
 		if message then
 			local accent = getAccentForType(relType)
 			local title  = getActionDisplayName(actionId, relType)
-			self:showResultModal(title, message, accent)
+			
+			-- CRITICAL FIX: Show result modal AFTER a brief delay so the UI feels snappy
+			-- This gives the interaction modal time to fully close before result pops up
+			task.delay(0.2, function()
+				self:showResultModal(title, message, accent)
+			end)
+		else
+			-- No message = just refresh the tab
+			if self.isVisible then
+				self:switchTab(self.currentTab)
+			end
 		end
-	end
-
-	-- Always refresh basic stats; if SyncState is driving state, this just keeps UI responsive
-	self:updateInfoBar()
-	if self.isVisible then
-		self:switchTab(self.currentTab)
+	else
+		-- No result table, just refresh
+		self:updateInfoBar()
+		if self.isVisible then
+			self:switchTab(self.currentTab)
+		end
 	end
 end
 
