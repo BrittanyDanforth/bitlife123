@@ -119,12 +119,29 @@ local function isHackerJob(state)
 	return false
 end
 
+-- CRITICAL FIX: Check if player has tech passion from childhood
+-- This enables tech career events for players who discovered coding as their passion
+local function hasTechPassion(state)
+	if not state.Flags then return false end
+	local flags = state.Flags
+	return flags.passionate_coder or flags.loves_coding or flags.future_developer or
+		   flags.coding_interest or flags.tech_talent or flags.passionate_builder or
+		   flags.made_first_app or flags.made_first_game or flags.app_developer or
+		   flags.game_developer or flags.web_developer or flags.bot_developer
+end
+
 local function hasTechJob(state)
-	if not state.CurrentJob then return false end
-	
 	-- CRITICAL FIX: Don't fire tech events for hacker jobs!
 	-- Hacker jobs have their own dedicated events
 	if isHackerJob(state) then return false end
+	
+	-- CRITICAL FIX: Check childhood passion flags first!
+	-- Players who discovered coding as kids should get tech events
+	if hasTechPassion(state) and (state.Age or 0) >= 16 then
+		return true -- Enable events for those with coding passion!
+	end
+	
+	if not state.CurrentJob then return false end
 	
 	local jobId = tostring(state.CurrentJob.id or ""):lower()
 	local jobCat = tostring(state.CurrentJob.category or ""):lower()

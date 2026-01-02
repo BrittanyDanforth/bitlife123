@@ -17,6 +17,15 @@ PetEvents.events = {
 		title = "Pet Adoption Urge",
 		emoji = "🐾",
 		text = "You really want a pet!",
+		-- CRITICAL FIX: Added text variations for pet adoption!
+		textVariants = {
+			"You've been watching pet videos online. The urge is STRONG.",
+			"Your friend just got a puppy. Now YOU want one too!",
+			"Walking past the pet shelter, you see those sad eyes. Must. Resist.",
+			"Your life feels like it needs a furry companion.",
+			"That cute dog at the park gave you the idea. What about YOUR pet?",
+			"The apartment feels lonely. A pet would fix that, right?",
+		},
 		question = "Do you adopt a furry friend?",
 		minAge = 18, maxAge = 90, -- CRITICAL FIX: Adults only, kids use childhood_pet_want
 		baseChance = 0.25, -- CRITICAL FIX: Reduced from 0.4 - pet urges shouldn't be constant

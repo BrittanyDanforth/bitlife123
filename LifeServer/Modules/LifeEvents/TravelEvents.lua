@@ -17,6 +17,15 @@ TravelEvents.events = {
 		title = "Beach Getaway",
 		emoji = "🏖️",
 		text = "Opportunity for a beach vacation!",
+		-- CRITICAL FIX: Added text variations for beach trip!
+		textVariants = {
+			"You've been working hard. A beach vacation sounds perfect right now.",
+			"Your friend just got back from a beach trip. Now you want one too!",
+			"Social media is full of beach pics. FOMO is hitting hard.",
+			"It's been forever since you felt sand between your toes.",
+			"You found cheap flights to a tropical destination. Book now?",
+			"Summer is here! Time to hit the beach?",
+		},
 		question = "Do you take the trip?",
 		minAge = 15, maxAge = 90,
 		baseChance = 0.4,

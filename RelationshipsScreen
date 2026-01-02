@@ -664,7 +664,7 @@ local ActivityChoices = {
 		choices = {
 			{ id = "peck", text = "😘 Quick peck", effect = "+Relationship" },
 			{ id = "romantic", text = "💕 Romantic kiss", effect = "+Romance +Happiness" },
-			{ id = "passionate", text = "🔥 Passionate kiss", effect = "+Romance!" },
+			{ id = "passionate", text = "💋 Surprise smooch", effect = "+Romance!" },
 			{ id = "forehead", text = "😊 Forehead kiss", effect = "+Sweet +Relationship" },
 			{ id = "surprise", text = "✨ Spontaneous!", effect = "Random!" },
 		},
@@ -1899,16 +1899,67 @@ function RelationshipsScreen:createPetCard(parent, pet, index)
 	infoLabel.ZIndex = 84
 	infoLabel.Parent = card
 
-	-- Heart/love indicator
-	local loveLabel = Instance.new("TextLabel")
-	loveLabel.Size = UDim2.new(0, 30, 0, 30)
-	loveLabel.Position = UDim2.new(1, -50, 0.5, -15)
-	loveLabel.BackgroundTransparency = 1
-	loveLabel.Font = F.Body
-	loveLabel.TextSize = 24
-	loveLabel.Text = "❤️"
-	loveLabel.ZIndex = 84
-	loveLabel.Parent = card
+	-- CRITICAL FIX: Added "Pet" interaction button for pets!
+	-- User request: "have PET instead of TALK how humans have"
+	local petBtn = Instance.new("TextButton")
+	petBtn.Name = "PetBtn"
+	petBtn.Size = UDim2.new(0, IS_TINY_PHONE and 50 or 70, 0, 32)
+	petBtn.AnchorPoint = Vector2.new(1, 0.5)
+	petBtn.Position = UDim2.new(1, -10, 0.5, 0)
+	petBtn.BackgroundColor3 = Color3.fromRGB(255, 180, 100) -- Warm orange
+	petBtn.Font = F.Button
+	petBtn.TextSize = IS_TINY_PHONE and 12 or 14
+	petBtn.TextColor3 = C.White
+	petBtn.Text = IS_TINY_PHONE and "🐾" or "🐾 Pet"
+	petBtn.AutoButtonColor = false
+	petBtn.ZIndex = 85
+	petBtn.Parent = card
+	UI.corner(petBtn, 10)
+	
+	-- Pet button hover effect
+	petBtn.MouseEnter:Connect(function()
+		UI.tween(petBtn, TweenInfo.new(0.12, Enum.EasingStyle.Quad), {
+			BackgroundColor3 = Color3.fromRGB(255, 150, 50)
+		})
+	end)
+	
+	petBtn.MouseLeave:Connect(function()
+		UI.tween(petBtn, TweenInfo.new(0.12), {
+			BackgroundColor3 = Color3.fromRGB(255, 180, 100)
+		})
+	end)
+	
+	-- Pet button click - interact with pet!
+	petBtn.MouseButton1Click:Connect(function()
+		petBtn.Text = "⏳..."
+		UI.tween(petBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.Gray400 })
+		
+		-- Call server to pet the animal
+		local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+		local petRemote = remotes and remotes:FindFirstChild("InteractWithPet")
+		
+		if petRemote then
+			local success, result = pcall(function()
+				return petRemote:InvokeServer(pet.id, "pet")
+			end)
+			
+			if success and result then
+				-- Show success feedback
+				petBtn.Text = "❤️"
+				petBtn.BackgroundColor3 = Color3.fromRGB(34, 197, 94)
+				task.wait(0.8)
+			end
+		else
+			-- Fallback: Just show a happy animation locally
+			petBtn.Text = "❤️"
+			petBtn.BackgroundColor3 = Color3.fromRGB(34, 197, 94)
+			task.wait(0.8)
+		end
+		
+		-- Reset button
+		petBtn.Text = IS_TINY_PHONE and "🐾" or "🐾 Pet"
+		petBtn.BackgroundColor3 = Color3.fromRGB(255, 180, 100)
+	end)
 
 	return card
 end

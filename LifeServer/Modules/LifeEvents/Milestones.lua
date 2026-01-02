@@ -40,6 +40,14 @@ Milestones.events = {
 		title = "Your Origin Story",
 		emoji = "📖",
 		text = "Your parents told you about the day you were born.",
+		-- CRITICAL FIX: Added text variations for birth story!
+		textVariants = {
+			"Your parents pull out the photo album. Time to hear about THE day.",
+			"Your mom gets teary-eyed. 'Let me tell you about when you were born...'",
+			"You asked where you came from. Time for the REAL story.",
+			"Family dinner turns into storytime about your dramatic entrance into the world.",
+			"You found your birth certificate. Questions arise. Parents explain.",
+		},
 		question = "What was special about your birth?",
 		minAge = 3, maxAge = 5,
 		oneTime = true,
@@ -64,6 +72,14 @@ Milestones.events = {
 		title = "Understanding Your Family",
 		emoji = "👨‍👩‍👧‍👦",
 		text = "You're starting to understand your family's situation.",
+		-- CRITICAL FIX: Added text variations for family background!
+		textVariants = {
+			"You're old enough now to notice things. How your family lives compared to others.",
+			"Your friend's house looks different from yours. You start asking questions.",
+			"You overhear your parents talking about money. You're starting to understand.",
+			"Looking around at other families, you realize yours is unique.",
+			"You're curious about why some kids have more toys. Parents explain your family's situation.",
+		},
 		question = "What's your family like?",
 		minAge = 4, maxAge = 6,
 		oneTime = true,

@@ -241,6 +241,15 @@ Teen.events = {
 		title = "The Big Party",
 		emoji = "🎉",
 		text = "You're invited to a party at a popular kid's house. Your parents might not approve.",
+		-- CRITICAL FIX: Added text variations for different party scenarios!
+		textVariants = {
+			"The most popular kid at school is throwing a huge party. You're somehow on the list!",
+			"Word is there's going to be an EPIC party this weekend. You got invited!",
+			"Your crush is going to be at a party this weekend. You just got the address.",
+			"End of semester party! Everyone's going, but your parents are strict about curfew.",
+			"There's a secret party happening. Parents will be gone. You got the invite.",
+			"The football team is celebrating their win with a party. You're invited as a +1.",
+		},
 		question = "What do you do?",
 		minAge = 15, maxAge = 17,
 		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7
@@ -375,18 +384,30 @@ Teen.events = {
 		title = "Side Hustle",
 		emoji = "💡",
 		text = "You have an idea for making money on your own.",
+		-- CRITICAL FIX: Added text variations!
+		textVariants = {
+			"You've been watching entrepreneurs online. Maybe YOU could start something!",
+			"Your friends are all broke but you have IDEAS. Time to make money!",
+			"Why work for someone else when you could be your own boss?",
+			"You spotted a gap in the market. Time to fill it!",
+			"Everyone keeps asking you to do this for them. Why not charge?",
+		},
 		question = "What's your business?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.4, -- CRITICAL FIX: Reduced
-		cooldown = 5, -- CRITICAL FIX: Increased
-		category = "teen", -- CRITICAL FIX: Proper category
+		baseChance = 0.4,
+		cooldown = 5,
+		category = "teen",
 		tags = { "business", "money", "teen" },
-		blockedByFlags = { in_prison = true, entrepreneur = true }, -- CRITICAL FIX: Don't repeat if already entrepreneur
+		blockedByFlags = { in_prison = true, entrepreneur = true },
 		choices = {
-			{ text = "Lawn care / yard work", effects = { Money = 150, Health = 3 }, setFlags = { entrepreneur = true }, hintCareer = "business", feedText = "You started a lawn care service!" },
-			{ text = "Selling crafts online", effects = { Money = 100, Happiness = 3 }, setFlags = { entrepreneur = true, creative_business = true }, hintCareer = "creative", feedText = "You're selling your creations online!" },
-			{ text = "Tech support for neighbors", effects = { Money = 120, Smarts = 3 }, setFlags = { entrepreneur = true, tech_savvy = true }, hintCareer = "tech", feedText = "You're the neighborhood tech expert!" },
-			{ text = "Social media management", effects = { Money = 130, Smarts = 2 }, setFlags = { entrepreneur = true, social_media_savvy = true }, hintCareer = "marketing", feedText = "You're managing social media for local businesses!" },
+			{ text = "🌿 Lawn care / yard work", effects = { Money = 150, Health = 3 }, setFlags = { entrepreneur = true }, hintCareer = "business", feedText = "You started a lawn care service! Neighbors love you!" },
+			{ text = "🎨 Selling crafts online", effects = { Money = 100, Happiness = 3 }, setFlags = { entrepreneur = true, creative_business = true }, hintCareer = "creative", feedText = "Your Etsy shop is up! Creativity pays!" },
+			{ text = "💻 Tech support for neighbors", effects = { Money = 120, Smarts = 3 }, setFlags = { entrepreneur = true, tech_savvy = true }, hintCareer = "tech", feedText = "You're the neighborhood IT person! 'Have you tried turning it off?'" },
+			{ text = "📱 Social media management", effects = { Money = 130, Smarts = 2 }, setFlags = { entrepreneur = true, social_media_savvy = true }, hintCareer = "marketing", feedText = "Local businesses hire you for their social media!" },
+			{ text = "🎮 Streaming/content creation", effects = { Money = 80, Happiness = 5 }, setFlags = { entrepreneur = true, content_creator = true, future_streamer = true }, hintCareer = "entertainment", feedText = "You started streaming! First followers coming in!" },
+			{ text = "🐕 Pet sitting / dog walking", effects = { Money = 110, Health = 2, Happiness = 3 }, setFlags = { entrepreneur = true, animal_lover = true }, feedText = "You're the neighborhood pet sitter! Puppy cuddles AND money!" },
+			{ text = "📚 Tutoring classmates", effects = { Money = 140, Smarts = 4 }, setFlags = { entrepreneur = true, tutoring_business = true }, hintCareer = "education", feedText = "Kids pay you to help them pass! Easy money!" },
+			{ text = "🚗 Car washing", effects = { Money = 160, Health = 2 }, setFlags = { entrepreneur = true }, feedText = "You wash cars on weekends! $20 per car adds up!" },
 		},
 	},
 
@@ -4596,6 +4617,765 @@ Teen.events = {
 				text = "Decide grades aren't everything",
 				effects = { Happiness = 4, Smarts = -2 },
 				feedText = "📝 School isn't the only path to success. Or is it?",
+			},
+		},
+	},
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- MASSIVE TEEN EXPANSION - 30+ NEW EVENTS
+-- More drama, more choices, more replayability!
+-- ══════════════════════════════════════════════════════════════════════════════
+
+	{
+		id = "teen_social_media_fame",
+		title = "📱 Going Viral!",
+		emoji = "📱",
+		textVariants = {
+			"One of your posts is blowing up!",
+			"Your video is getting thousands of views!",
+			"You're suddenly internet famous!",
+		},
+		text = "One of your posts is blowing up!",
+		question = "What do you do with your 15 minutes of fame?",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.25,
+		cooldown = 6,
+		category = "social",
+		tags = { "social_media", "fame", "viral" },
+		
+		choices = {
+			{
+				text = "📈 Try to build on it - make more content!",
+				effects = { Happiness = 10 },
+				feedText = "Going for fame...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					if roll < 0.3 then
+						state.Flags.social_media_famous = true
+						state.Flags.content_creator = true
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("📱 You actually did it! You're building a real following!")
+					elseif roll < 0.7 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("📱 Some new followers, but the virality faded...")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("📱 The internet moved on fast. Fame is fleeting!")
+					end
+				end,
+			},
+			{
+				text = "😎 Enjoy it but stay humble",
+				effects = { Happiness = 8 },
+				setFlags = { had_viral_moment = true, stays_humble = true },
+				feedText = "📱 Cool moment! But you know it's temporary. Back to normal life!",
+			},
+			{
+				text = "😰 Freak out - too much attention!",
+				effects = { Happiness = -5 },
+				setFlags = { avoids_spotlight = true },
+				feedText = "📱 Delete delete delete! Too many strangers looking at you!",
+			},
+		},
+	},
+
+	{
+		id = "teen_identity_crisis",
+		title = "🪞 Who Am I?",
+		emoji = "🪞",
+		textVariants = {
+			"You're questioning everything about yourself...",
+			"Who are you REALLY? The question haunts you.",
+			"You feel lost about your identity...",
+		},
+		text = "You're questioning everything about yourself...",
+		question = "How do you explore your identity?",
+		minAge = 14, maxAge = 18,
+		baseChance = 0.35,
+		cooldown = 5,
+		oneTime = true,
+		category = "personal",
+		tags = { "identity", "growing_up", "self_discovery" },
+		blockedByFlags = { identity_explored = true },
+		
+		choices = {
+			{
+				text = "🎨 Express yourself through art/music",
+				effects = { Happiness = 8, Smarts = 2 },
+				setFlags = { identity_explored = true, artistic_soul = true, expressive = true },
+				feedText = "🪞 Art helps you understand yourself. Each creation reveals something new.",
+			},
+			{
+				text = "📚 Read and learn about different perspectives",
+				effects = { Happiness = 5, Smarts = 6 },
+				setFlags = { identity_explored = true, philosophical = true, well_read = true },
+				feedText = "🪞 Books open your mind. So many ways to be in this world...",
+			},
+			{
+				text = "👥 Talk to trusted friends/family",
+				effects = { Happiness = 7 },
+				setFlags = { identity_explored = true, open_communicator = true },
+				feedText = "🪞 Opening up helps. Others have been through this too.",
+			},
+			{
+				text = "🧘 Just let it be - you'll figure it out",
+				effects = { Happiness = 4 },
+				setFlags = { identity_explored = true, patient_with_self = true },
+				feedText = "🪞 Some questions don't need immediate answers. You're growing.",
+			},
+		},
+	},
+
+	{
+		id = "teen_peer_pressure_party",
+		title = "🎉 Party Invite",
+		emoji = "🎉",
+		textVariants = {
+			"There's a party this weekend. Parents won't be home...",
+			"Everyone's talking about this party. Will you go?",
+			"The 'cool kids' invited you to their party...",
+		},
+		text = "There's a party this weekend. Parents won't be home...",
+		question = "What do you do?",
+		minAge = 14, maxAge = 18,
+		baseChance = 0.4,
+		cooldown = 4,
+		category = "social",
+		tags = { "party", "peer_pressure", "choices" },
+		
+		choices = {
+			{
+				text = "🎉 Go and have fun responsibly",
+				effects = { Happiness = 8 },
+				feedText = "Party time...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					if roll < 0.6 then
+						state.Flags.party_goer = true
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🎉 Great party! You had fun and stayed out of trouble!")
+					elseif roll < 0.85 then
+						state:AddFeed("🎉 Party was okay. A little boring honestly.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state.Flags.got_in_trouble = true
+						state:AddFeed("🎉 Things got out of hand. Someone called the cops!")
+					end
+				end,
+			},
+			{
+				text = "🚫 Skip it - not your scene",
+				effects = { Happiness = 2 },
+				setFlags = { knows_own_limits = true },
+				feedText = "🎉 You stayed home. FOMO hit, but you're okay with your choice.",
+			},
+			{
+				text = "🤔 Go but leave early",
+				effects = { Happiness = 5 },
+				setFlags = { cautious_partier = true },
+				feedText = "🎉 You showed face, then dipped. Best of both worlds!",
+			},
+		},
+	},
+
+	{
+		id = "teen_first_heartbreak",
+		title = "💔 Heartbreak",
+		emoji = "💔",
+		textVariants = {
+			"Someone you cared about really hurt you...",
+			"Your first real heartbreak has arrived...",
+			"Love didn't work out the way you hoped...",
+		},
+		text = "Someone you cared about really hurt you...",
+		question = "How do you cope?",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.35,
+		cooldown = 5,
+		oneTime = true,
+		category = "relationships",
+		tags = { "heartbreak", "love", "growing_up" },
+		requiresFlags = { has_had_crush = true },
+		blockedByFlags = { first_heartbreak_done = true },
+		
+		choices = {
+			{
+				text = "😭 Let yourself feel it all",
+				effects = { Happiness = -10 },
+				feedText = "Feeling the pain...",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.first_heartbreak_done = true
+					state.Flags.emotionally_aware = true
+					task.delay(0, function()
+						state:ModifyStat("Happiness", 8)
+					end)
+					state:AddFeed("💔 It hurts now. But feeling it is how you heal. You'll be okay.")
+				end,
+			},
+			{
+				text = "🏃 Distract yourself with activities",
+				effects = { Happiness = -3, Health = 5 },
+				setFlags = { first_heartbreak_done = true, copes_with_activity = true },
+				feedText = "💔 You threw yourself into sports/hobbies. Busy = less time to think.",
+			},
+			{
+				text = "🗣️ Talk to friends about it",
+				effects = { Happiness = -2 },
+				setFlags = { first_heartbreak_done = true, relies_on_friends = true },
+				feedText = "💔 Your friends rallied around you. They've got your back.",
+			},
+			{
+				text = "😤 Pretend you don't care",
+				effects = { Happiness = -8 },
+				setFlags = { first_heartbreak_done = true, bottles_emotions = true },
+				feedText = "💔 'I'm fine.' (You're not fine, but that's okay too.)",
+			},
+		},
+	},
+
+	{
+		id = "teen_talent_discovery",
+		title = "⭐ Hidden Talent!",
+		emoji = "⭐",
+		textVariants = {
+			"You discover you're actually GOOD at something!",
+			"A hidden talent emerges!",
+			"You surprise yourself with a new skill!",
+		},
+		text = "You discover you're actually GOOD at something!",
+		question = "What's your hidden talent?",
+		minAge = 12, maxAge = 17,
+		baseChance = 0.35,
+		cooldown = 8,
+		oneTime = true,
+		category = "personal",
+		tags = { "talent", "discovery", "skills" },
+		blockedByFlags = { hidden_talent_found = true },
+		
+		choices = {
+			{
+				text = "🎵 Musical ability",
+				effects = { Happiness = 10, Looks = 2 },
+				setFlags = { hidden_talent_found = true, musical_talent = true, natural_musician = true },
+				feedText = "⭐ You picked up an instrument and... WOW! Natural talent!",
+			},
+			{
+				text = "🎨 Artistic skill",
+				effects = { Happiness = 8, Smarts = 2 },
+				setFlags = { hidden_talent_found = true, artistic_talent = true, creative_mind = true },
+				feedText = "⭐ Your art is actually... really good?! Where did this come from?",
+			},
+			{
+				text = "🏆 Athletic prowess",
+				effects = { Happiness = 8, Health = 5 },
+				setFlags = { hidden_talent_found = true, athletic_talent = true, natural_athlete = true },
+				feedText = "⭐ You tried a sport and dominated! Natural-born athlete!",
+			},
+			{
+				text = "🧮 Academic brilliance",
+				effects = { Happiness = 6, Smarts = 8 },
+				setFlags = { hidden_talent_found = true, academic_talent = true, naturally_smart = true },
+				feedText = "⭐ School suddenly clicks. You understand things others struggle with!",
+			},
+			{
+				text = "🎭 Performance ability",
+				effects = { Happiness = 10 },
+				setFlags = { hidden_talent_found = true, performance_talent = true, natural_performer = true },
+				feedText = "⭐ You got on stage and... wow! Natural born performer!",
+			},
+		},
+	},
+
+	{
+		id = "teen_mentor_figure",
+		title = "🌟 A Mentor Appears",
+		emoji = "🌟",
+		textVariants = {
+			"An adult notices your potential and offers guidance...",
+			"Someone wants to mentor you!",
+			"A teacher/coach sees something special in you...",
+		},
+		text = "An adult notices your potential and offers guidance...",
+		question = "Do you accept their mentorship?",
+		minAge = 13, maxAge = 17,
+		baseChance = 0.3,
+		cooldown = 6,
+		oneTime = true,
+		category = "personal",
+		tags = { "mentor", "guidance", "growth" },
+		blockedByFlags = { has_mentor = true },
+		
+		choices = {
+			{
+				text = "🙏 Gratefully accept!",
+				effects = { Happiness = 10, Smarts = 5 },
+				setFlags = { has_mentor = true, mentored = true, accepts_guidance = true },
+				feedText = "🌟 Having someone believe in you changes everything! They guide your growth.",
+			},
+			{
+				text = "🤷 Accept but don't commit",
+				effects = { Happiness = 4, Smarts = 2 },
+				setFlags = { has_mentor = true, casual_mentee = true },
+				feedText = "🌟 You take their advice sometimes. It helps... when you listen.",
+			},
+			{
+				text = "🙄 Turn them down - you've got this",
+				effects = { Happiness = 2 },
+				setFlags = { rejected_mentor = true, independent_minded = true },
+				feedText = "🌟 You prefer to figure things out alone. Their offer meant well though.",
+			},
+		},
+	},
+
+	{
+		id = "teen_creative_project",
+		title = "💡 Big Project Idea",
+		emoji = "💡",
+		textVariants = {
+			"You have an idea for something amazing!",
+			"Inspiration strikes! You want to create something!",
+			"A creative vision consumes your thoughts...",
+		},
+		text = "You have an idea for something amazing!",
+		question = "What do you want to create?",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.35,
+		cooldown = 5,
+		category = "personal",
+		tags = { "creativity", "projects", "ambition" },
+		
+		choices = {
+			{
+				text = "🎬 A video/film project",
+				effects = { Happiness = 8, Smarts = 2 },
+				setFlags = { filmmaker_interest = true, creative_creator = true },
+				feedText = "🎬 Lights, camera... you're making a movie! Even if it's on your phone.",
+			},
+			{
+				text = "📖 Write a story/novel",
+				effects = { Happiness = 6, Smarts = 5 },
+				setFlags = { writer_interest = true, creative_creator = true },
+				feedText = "📖 Chapter 1... You start writing. Will you finish? Time will tell!",
+			},
+			{
+				text = "🎮 Design a game",
+				effects = { Happiness = 7, Smarts = 4 },
+				setFlags = { game_designer_interest = true, creative_creator = true },
+				feedText = "🎮 Your game idea is brilliant! Even if coding is harder than expected...",
+			},
+			{
+				text = "🎵 Compose music",
+				effects = { Happiness = 8 },
+				setFlags = { composer_interest = true, creative_creator = true },
+				feedText = "🎵 Your first original song! It's rough but it's YOURS!",
+			},
+		},
+	},
+
+	{
+		id = "teen_friendship_drama",
+		title = "😱 Friend Drama!",
+		emoji = "😱",
+		textVariants = {
+			"Your friend group is having SERIOUS drama!",
+			"Two of your friends are fighting!",
+			"There's tension in your social circle...",
+		},
+		text = "Your friend group is having SERIOUS drama!",
+		question = "What role do you play?",
+		minAge = 12, maxAge = 18,
+		baseChance = 0.45,
+		cooldown = 4,
+		category = "social",
+		tags = { "friends", "drama", "conflict" },
+		
+		choices = {
+			{
+				text = "🕊️ Try to be the peacemaker",
+				effects = { Happiness = -2, Smarts = 2 },
+				feedText = "Mediating...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					if roll < 0.5 then
+						state.Flags.good_mediator = true
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🕊️ You helped them work it out! Crisis averted!")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🕊️ You tried, but now BOTH are mad at you! Ugh!")
+					end
+				end,
+			},
+			{
+				text = "🍿 Stay out of it - not your business",
+				effects = { Happiness = 3 },
+				setFlags = { avoids_drama = true },
+				feedText = "😱 You watched from the sidelines. Smart move... maybe.",
+			},
+			{
+				text = "🗣️ Pick a side",
+				effects = {},
+				feedText = "Taking sides...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					if roll < 0.5 then
+						state.Flags.loyal_friend = true
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("😱 Your friend appreciated your loyalty! The other... not so much.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state.Flags.lost_friend = true
+						state:AddFeed("😱 You picked wrong! Now you've lost a friend!")
+					end
+				end,
+			},
+		},
+	},
+
+	{
+		id = "teen_future_dreams",
+		title = "🔮 Future Dreams",
+		emoji = "🔮",
+		textVariants = {
+			"Everyone asks 'What do you want to be when you grow up?'",
+			"You start thinking seriously about your future...",
+			"Dreams for the future fill your mind...",
+		},
+		text = "Everyone asks 'What do you want to be when you grow up?'",
+		question = "What's your dream?",
+		minAge = 14, maxAge = 17,
+		baseChance = 0.4,
+		cooldown = 6,
+		oneTime = true,
+		category = "personal",
+		tags = { "future", "dreams", "career" },
+		blockedByFlags = { future_dream_set = true },
+		
+		choices = {
+			{
+				text = "💼 Something successful and stable",
+				effects = { Happiness = 5, Smarts = 3 },
+				setFlags = { future_dream_set = true, dreams_of_success = true, practical_dreamer = true },
+				feedText = "🔮 Doctor? Lawyer? Business? Something that pays well and is respected!",
+			},
+			{
+				text = "🎨 Something creative and artistic",
+				effects = { Happiness = 8 },
+				setFlags = { future_dream_set = true, dreams_of_art = true, artistic_dreams = true },
+				feedText = "🔮 Artist? Musician? Actor? You want to CREATE for a living!",
+			},
+			{
+				text = "🌍 Something that helps others",
+				effects = { Happiness = 7 },
+				setFlags = { future_dream_set = true, dreams_of_helping = true, altruistic_dreams = true },
+				feedText = "🔮 Teacher? Doctor? Non-profit? You want to make a difference!",
+			},
+			{
+				text = "🤷 No idea yet - and that's okay",
+				effects = { Happiness = 4 },
+				setFlags = { future_dream_set = true, exploring_options = true },
+				feedText = "🔮 The future is a mystery. You'll figure it out... eventually!",
+			},
+			{
+				text = "🚀 Something extraordinary",
+				effects = { Happiness = 10 },
+				setFlags = { future_dream_set = true, big_dreams = true, ambitious = true },
+				feedText = "🔮 Astronaut? CEO? Famous? Why dream small?! Sky's the limit!",
+			},
+		},
+	},
+
+	{
+		id = "teen_volunteering",
+		title = "🤝 Volunteer Opportunity",
+		emoji = "🤝",
+		textVariants = {
+			"There's a chance to volunteer in your community!",
+			"A local organization needs help...",
+			"You could make a difference by volunteering!",
+		},
+		text = "There's a chance to volunteer in your community!",
+		question = "Do you help out?",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.35,
+		cooldown = 5,
+		category = "social",
+		tags = { "volunteering", "community", "helping" },
+		
+		choices = {
+			{
+				text = "🐾 Animal shelter",
+				effects = { Happiness = 10, Health = 2 },
+				setFlags = { volunteer = true, animal_volunteer = true, animal_lover = true },
+				feedText = "🤝 Puppies and kittens! Best volunteer gig EVER! So many cuddles!",
+			},
+			{
+				text = "🍲 Food bank",
+				effects = { Happiness = 8 },
+				setFlags = { volunteer = true, food_bank_volunteer = true, community_minded = true },
+				feedText = "🤝 Helping feed families in need. It's hard work but meaningful.",
+			},
+			{
+				text = "👴 Senior center",
+				effects = { Happiness = 7, Smarts = 2 },
+				setFlags = { volunteer = true, senior_volunteer = true, patient = true },
+				feedText = "🤝 Old folks have the BEST stories! You learn so much.",
+			},
+			{
+				text = "📚 Tutoring younger kids",
+				effects = { Happiness = 6, Smarts = 4 },
+				setFlags = { volunteer = true, tutor_volunteer = true, likes_teaching = true },
+				feedText = "🤝 Teaching others teaches you! Plus the kids look up to you.",
+			},
+			{
+				text = "⏳ Too busy right now",
+				effects = { Happiness = -2 },
+				feedText = "🤝 Life's busy. Maybe next time.",
+			},
+		},
+	},
+
+	{
+		id = "teen_embarrassing_moment",
+		title = "😳 Mortifying Moment!",
+		emoji = "😳",
+		textVariants = {
+			"Something INCREDIBLY embarrassing just happened!",
+			"You want to crawl into a hole and disappear!",
+			"Peak embarrassment achieved!",
+		},
+		text = "Something INCREDIBLY embarrassing just happened!",
+		question = "How do you react?",
+		minAge = 12, maxAge = 18,
+		baseChance = 0.4,
+		cooldown = 4,
+		category = "social",
+		tags = { "embarrassing", "social", "growing_up" },
+		
+		choices = {
+			{
+				text = "😂 Laugh it off",
+				effects = { Happiness = 5 },
+				setFlags = { good_sport = true, handles_embarrassment_well = true },
+				feedText = "😳 If you laugh first, no one can laugh AT you! Power move!",
+			},
+			{
+				text = "😭 Die inside",
+				effects = { Happiness = -8 },
+				feedText = "😳 You will remember this at 3 AM for the rest of your life.",
+			},
+			{
+				text = "🏃 Run away immediately",
+				effects = { Happiness = -5, Health = 2 },
+				feedText = "😳 You SET A RECORD getting out of there! Never speak of this again!",
+			},
+			{
+				text = "🤷 Pretend it didn't happen",
+				effects = { Happiness = -2 },
+				setFlags = { denial_mode = true },
+				feedText = "😳 Nothing happened. NOTHING. Move along. You're FINE.",
+			},
+		},
+	},
+
+	{
+		id = "teen_college_pressure",
+		title = "🎓 College Pressure",
+		emoji = "🎓",
+		textVariants = {
+			"Everyone's talking about college applications...",
+			"The college countdown has begun!",
+			"SATs, essays, applications - it's all so much!",
+		},
+		text = "Everyone's talking about college applications...",
+		question = "How do you feel about your future?",
+		minAge = 16, maxAge = 18,
+		baseChance = 0.5,
+		cooldown = 4,
+		category = "school",
+		tags = { "college", "future", "pressure" },
+		
+		choices = {
+			{
+				text = "📝 Dive in - let's do this!",
+				effects = { Happiness = 5, Smarts = 3 },
+				setFlags = { college_focused = true, organized_student = true },
+				feedText = "🎓 Applications, essays, scholarships - you're on it!",
+			},
+			{
+				text = "😰 So stressed I can't function",
+				effects = { Happiness = -10, Health = -3 },
+				setFlags = { college_anxiety = true, overwhelmed = true },
+				feedText = "🎓 The pressure is crushing. Everyone seems to have it figured out except you.",
+			},
+			{
+				text = "🤔 College isn't the only path",
+				effects = { Happiness = 3 },
+				setFlags = { alternative_path = true, independent_thinker = true },
+				feedText = "🎓 Trade school? Gap year? Starting a business? Many roads to success!",
+			},
+			{
+				text = "🙄 I'll deal with it later",
+				effects = { Happiness = 2 },
+				setFlags = { procrastinator = true },
+				feedText = "🎓 Future you's problem! (Future you will NOT be happy about this.)",
+			},
+		},
+	},
+
+	{
+		id = "teen_online_gaming",
+		title = "🎮 Gaming Life",
+		emoji = "🎮",
+		textVariants = {
+			"You've been spending a LOT of time gaming...",
+			"Your gaming skills are improving dramatically!",
+			"Games have become your main hobby...",
+		},
+		text = "You've been spending a LOT of time gaming...",
+		question = "How does gaming fit into your life?",
+		minAge = 12, maxAge = 18,
+		baseChance = 0.4,
+		cooldown = 5,
+		category = "hobbies",
+		tags = { "gaming", "hobby", "technology" },
+		
+		choices = {
+			{
+				text = "🏆 Getting seriously competitive",
+				effects = { Happiness = 8, Smarts = 2 },
+				setFlags = { competitive_gamer = true, gamer = true },
+				feedText = "🎮 Ranked matches, tournaments - you're taking this seriously!",
+			},
+			{
+				text = "👥 It's how I connect with friends",
+				effects = { Happiness = 6 },
+				setFlags = { social_gamer = true, gamer = true },
+				feedText = "🎮 Gaming with friends is the best! Your squad is unbeatable!",
+			},
+			{
+				text = "😴 Maybe playing too much...",
+				effects = { Happiness = 3, Health = -3 },
+				setFlags = { gaming_addiction = true },
+				feedText = "🎮 'Just one more game' at 3 AM... again. This might be a problem.",
+			},
+			{
+				text = "📝 Balancing it with other stuff",
+				effects = { Happiness = 5, Smarts = 2 },
+				setFlags = { balanced_gamer = true, gamer = true },
+				feedText = "🎮 Gaming is fun but you've got other things going on too! Balance!",
+			},
+		},
+	},
+
+	{
+		id = "teen_parent_conflict",
+		title = "😤 Parent Drama",
+		emoji = "😤",
+		textVariants = {
+			"You and your parents are NOT seeing eye to eye...",
+			"Another argument with the parents...",
+			"Why don't they understand you?!",
+		},
+		text = "You and your parents are NOT seeing eye to eye...",
+		question = "How do you handle the conflict?",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.45,
+		cooldown = 4,
+		category = "family",
+		tags = { "family", "conflict", "parents" },
+		
+		choices = {
+			{
+				text = "🗣️ Try to communicate calmly",
+				effects = { Happiness = 3, Smarts = 2 },
+				feedText = "Talking it out...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.6 then
+						state.Flags = state.Flags or {}
+						state.Flags.good_communicator = true
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("😤 You talked it out! They actually listened! Progress!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("😤 You tried... but they didn't get it. At least you tried.")
+					end
+				end,
+			},
+			{
+				text = "😡 Blow up and storm off",
+				effects = { Happiness = -8 },
+				setFlags = { explosive_temper = true },
+				feedText = "😤 DOOR SLAM! You're furious! They just don't GET it!",
+			},
+			{
+				text = "😶 Give them the silent treatment",
+				effects = { Happiness = -5 },
+				setFlags = { passive_aggressive = true },
+				feedText = "😤 Fine. Whatever. You're not talking to them.",
+			},
+			{
+				text = "📝 Write them a letter explaining your feelings",
+				effects = { Happiness = 4, Smarts = 2 },
+				setFlags = { written_communicator = true },
+				feedText = "😤 Sometimes it's easier to write it down. Maybe they'll understand.",
+			},
+		},
+	},
+
+	{
+		id = "teen_summer_plans",
+		title = "☀️ Summer Plans",
+		emoji = "☀️",
+		textVariants = {
+			"School's out! What are you doing this summer?",
+			"Summer break is here! The possibilities are endless!",
+			"Three months of freedom! How will you spend it?",
+		},
+		text = "School's out! What are you doing this summer?",
+		question = "What's your summer plan?",
+		minAge = 12, maxAge = 17,
+		baseChance = 0.5,
+		cooldown = 6,
+		category = "lifestyle",
+		tags = { "summer", "vacation", "plans" },
+		
+		choices = {
+			{
+				text = "💼 Get a summer job",
+				effects = { Happiness = 3, Money = 500 },
+				setFlags = { summer_job = true, work_experience = true },
+				feedText = "☀️ Work all summer! Your wallet is happy, your tan is not.",
+			},
+			{
+				text = "🏕️ Summer camp adventure",
+				effects = { Happiness = 10, Health = 3 },
+				setFlags = { camp_kid = true, outdoorsy = true },
+				feedText = "☀️ Best. Summer. EVER! Camp friends, activities, memories!",
+			},
+			{
+				text = "🏠 Stay home and chill",
+				effects = { Happiness = 6 },
+				setFlags = { lazy_summer = true },
+				feedText = "☀️ Sleep in, video games, Netflix... peak summer vibes!",
+			},
+			{
+				text = "✈️ Family vacation",
+				effects = { Happiness = 8 },
+				setFlags = { family_trip = true },
+				feedText = "☀️ Road trip or flight - family vacation time! Memories (and fights) made!",
+			},
+			{
+				text = "📚 Summer school/enrichment",
+				effects = { Happiness = 2, Smarts = 8 },
+				setFlags = { summer_school = true, dedicated_student = true },
+				feedText = "☀️ Getting ahead! While friends play, you learn. Future you says thanks.",
 			},
 		},
 	},

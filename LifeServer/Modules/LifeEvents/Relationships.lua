@@ -15,6 +15,14 @@ Relationships.events = {
 		title = "Modern Dating",
 		emoji = "📱",
 		text = "Your friend suggests you try a dating app.",
+		-- CRITICAL FIX: Added text variations for personalized experience!
+		textVariants = {
+			"Everyone's on dating apps these days. Your friend says you should try it.",
+			"You're scrolling through your phone when you see an ad for a new dating app.",
+			"'You should totally try this app!' your friend exclaims, showing you their matches.",
+			"Lonely nights got you curious about those dating apps you keep hearing about.",
+			"Your friend has been having great luck with dating apps. Maybe you should try?",
+		},
 		question = "Do you give it a shot?",
 		minAge = 18, maxAge = 45,
 		baseChance = 0.4, -- CRITICAL FIX: Reduced from 0.5
@@ -68,6 +76,15 @@ Relationships.events = {
 		title = "Love at First Sight?",
 		emoji = "💘",
 		text = "You lock eyes with a stranger. There's an instant connection.",
+		-- CRITICAL FIX: Added text variations for more immersive encounters!
+		textVariants = {
+			"At the coffee shop, your eyes meet someone beautiful. Time seems to stop.",
+			"In the grocery store, you bump carts with someone cute. There's definite chemistry.",
+			"Waiting in line, you notice someone staring at you. They smile.",
+			"At a bookstore, you reach for the same book as a stranger. Your hands touch.",
+			"Walking your dog, another dog owner catches your eye. Their smile is infectious.",
+			"At the gym, someone on the treadmill next to you keeps glancing your way.",
+		},
 		question = "What do you do?",
 		minAge = 18, maxAge = 50,
 		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.4

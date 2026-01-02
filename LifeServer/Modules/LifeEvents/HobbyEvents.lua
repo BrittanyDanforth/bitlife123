@@ -21,6 +21,15 @@ HobbyEvents.events = {
 		title = "Looking for a Hobby",
 		emoji = "🎯",
 		text = "You've got some free time and want to pick up a new hobby. What interests you?",
+		-- CRITICAL FIX: Added text variations for hobby discovery!
+		textVariants = {
+			"Life feels a bit empty. You need something fun to do with your free time.",
+			"All your friends have cool hobbies. What about you?",
+			"Weekends are boring. Time to find something interesting to do.",
+			"You've been watching videos online and got inspired to try something new.",
+			"Your therapist/parent suggests finding a hobby to help you relax.",
+			"Everyone needs a hobby, right? Time to explore your options.",
+		},
 		question = "What hobby catches your attention?",
 		minAge = 10, maxAge = 70,
 		baseChance = 0.35,

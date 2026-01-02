@@ -46,12 +46,29 @@ local function isBlockedByPremiumPath(state)
 	return false
 end
 
+-- CRITICAL FIX: Check for childhood music passion
+-- Players who discovered music as their passion get music career events earlier
+local function hasMusicPassion(state)
+	if not state.Flags then return false end
+	local flags = state.Flags
+	return flags.passionate_performer or flags.likes_music or flags.musical_talent or
+		   flags.natural_performer or flags.likes_performing or flags.stage_performer or
+		   flags.crowd_pleaser or flags.loves_music
+end
+
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- CRITICAL FIX #22: Enhanced helper functions for musician careers
 -- ═══════════════════════════════════════════════════════════════════════════════
 local function hasMusicJob(state)
 	-- CRITICAL FIX #RVS-MUSIC-2: Check premium path blocking first
 	if isBlockedByPremiumPath(state) then return false end
+	
+	-- CRITICAL FIX: Check childhood music passion first!
+	-- Players who discovered music as kids should get music events
+	if hasMusicPassion(state) and (state.Age or 0) >= 16 then
+		return true -- Enable events for those with music passion!
+	end
+	
 	if not state.CurrentJob then return false end
 	local jobId = (state.CurrentJob.id or ""):lower()
 	local jobCat = (state.CurrentJob.category or ""):lower()

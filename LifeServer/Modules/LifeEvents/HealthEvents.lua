@@ -226,6 +226,15 @@ HealthEvents.events = {
 		title = "Doctor Visit",
 		emoji = "🏥",
 		text = "Time for a health checkup!",
+		-- CRITICAL FIX: Added text variations for more realistic doctor visits!
+		textVariants = {
+			"Your annual physical is due. Time to see what the doctor finds.",
+			"You've been putting off that checkup. Finally made an appointment.",
+			"Insurance sent a reminder about preventive care. Time for a checkup.",
+			"You've been feeling 'off' lately. Decided to get checked out.",
+			"Work requires an annual physical. Here we go.",
+			"Haven't seen a doctor in a while. Probably should check in.",
+		},
 		question = "What do the results show?",
 		minAge = 18, maxAge = 100,
 		baseChance = 0.455,

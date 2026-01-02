@@ -58,44 +58,57 @@ end
 -- Update global leaderboard when a player's life ends
 local function updateGlobalLeaderboards(player, lifeName, age, netWorth)
 	local richest, oldest = initLeaderboards()
-	if not richest or not oldest then return end
+	if not richest or not oldest then 
+		warn("[LifeBackend] ❌ Leaderboard stores not initialized!")
+		return 
+	end
 	
 	-- Create unique key: UserId_timestamp to allow multiple entries per player
 	local timestamp = os.time()
 	local entryKey = tostring(player.UserId) .. "_" .. tostring(timestamp)
 	
-	-- Store the player name for retrieval (OrderedDataStore only stores numbers)
-	-- We'll encode name in a separate standard DataStore if needed, or just use UserId
-	-- For simplicity, we'll use just the score value
+	print("[LifeBackend] 📊 Updating leaderboards for", player.Name, "- Age:", age, "Money:", netWorth)
 	
-	-- Update richest leaderboard (only if significant wealth)
-	if netWorth >= 1000 then
-		local success1 = pcall(function()
+	-- Update richest leaderboard (lowered threshold to $100 so more people appear)
+	if netWorth >= 100 then
+		local success1, err1 = pcall(function()
 			richest:SetAsync(entryKey, math.floor(netWorth))
 		end)
 		if success1 then
-			print("[LifeBackend] Updated richest leaderboard:", lifeName, netWorth)
+			print("[LifeBackend] ✅ Updated richest leaderboard:", player.Name, "$" .. netWorth)
+		else
+			warn("[LifeBackend] ❌ Failed to update richest leaderboard:", err1)
 		end
+	else
+		print("[LifeBackend] ⏭️ Skipped richest (net worth < $100):", netWorth)
 	end
 	
-	-- Update oldest leaderboard (only if lived to reasonable age)
-	if age >= 10 then
-		local success2 = pcall(function()
+	-- Update oldest leaderboard (lowered threshold to age 5 so more people appear)
+	if age >= 5 then
+		local success2, err2 = pcall(function()
 			oldest:SetAsync(entryKey, age)
 		end)
 		if success2 then
-			print("[LifeBackend] Updated oldest leaderboard:", lifeName, age)
+			print("[LifeBackend] ✅ Updated oldest leaderboard:", player.Name, "age", age)
+		else
+			warn("[LifeBackend] ❌ Failed to update oldest leaderboard:", err2)
 		end
+	else
+		print("[LifeBackend] ⏭️ Skipped oldest (age < 5):", age)
 	end
 end
 
 -- Fetch global leaderboard data for client display
+-- CRITICAL FIX: Changed default from 10 to 50 for TOP 50 leaderboards!
 local function fetchGlobalLeaderboard(leaderboardType, limit)
 	local richest, oldest = initLeaderboards()
-	limit = limit or 10
+	limit = limit or 50  -- CRITICAL FIX: TOP 50 by default!
 	
 	local store = leaderboardType == "richest" and richest or oldest
-	if not store then return {} end
+	if not store then 
+		warn("[LifeBackend] ❌ Leaderboard store not found for type:", leaderboardType)
+		return {} 
+	end
 	
 	local results = {}
 	local success, pages = pcall(function()
@@ -103,32 +116,43 @@ local function fetchGlobalLeaderboard(leaderboardType, limit)
 	end)
 	
 	if success and pages then
-		local data = pages:GetCurrentPage()
-		for rank, entry in ipairs(data) do
-			-- entry.key contains UserId_timestamp, entry.value contains the score
-			local keyParts = string.split(entry.key, "_")
-			local userId = tonumber(keyParts[1])
-			local playerName = "Player"
-			
-			-- Try to get player name
-			if userId then
-				local nameSuccess, name = pcall(function()
-					return Players:GetNameFromUserIdAsync(userId)
-				end)
-				if nameSuccess and name then
-					playerName = name
+		local dataSuccess, data = pcall(function()
+			return pages:GetCurrentPage()
+		end)
+		
+		if dataSuccess and data then
+			print("[LifeBackend] 📊 Fetched", #data, "entries for", leaderboardType, "leaderboard")
+			for rank, entry in ipairs(data) do
+				-- entry.key contains UserId_timestamp, entry.value contains the score
+				local keyParts = string.split(entry.key, "_")
+				local userId = tonumber(keyParts[1])
+				local playerName = "Player"
+				
+				-- Try to get player name
+				if userId then
+					local nameSuccess, name = pcall(function()
+						return Players:GetNameFromUserIdAsync(userId)
+					end)
+					if nameSuccess and name then
+						playerName = name
+					end
 				end
+				
+				table.insert(results, {
+					rank = rank,
+					playerName = playerName,
+					userId = userId,
+					value = entry.value,
+				})
 			end
-			
-			table.insert(results, {
-				rank = rank,
-				playerName = playerName,
-				userId = userId,
-				value = entry.value,
-			})
+		else
+			warn("[LifeBackend] ❌ Failed to get current page for", leaderboardType)
 		end
+	else
+		warn("[LifeBackend] ❌ Failed to fetch leaderboard:", leaderboardType, pages)
 	end
 	
+	print("[LifeBackend] 📤 Returning", #results, "leaderboard entries for", leaderboardType)
 	return results
 end
 
@@ -184,9 +208,8 @@ local function serializeState(state)
 		end
 	end
 
-	-- CRITICAL: Add flag to indicate this is restored data (skip intro!)
-	serialized.Flags = serialized.Flags or {}
-	serialized.Flags.data_restored = true
+	-- NOTE: data_restored flag is ONLY set during actual DataStore load (line ~10882)
+	-- Do NOT set it here - serializeState is called on every sync, not just restores!
 
 	-- Career info
 	if state.CurrentJob then
@@ -264,6 +287,24 @@ local function serializeState(state)
 	-- Also save PastLives for the leaderboard/history
 	if state.PastLives then
 		serialized.PastLives = state.PastLives
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Save PetData to persist pet names and ages!
+	-- User bug: Pets losing their names/ages on rejoin
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.PetData then
+		serialized.PetData = state.PetData
+	end
+	
+	-- CRITICAL FIX: Save HousingState to persist housing information!
+	if state.HousingState then
+		serialized.HousingState = state.HousingState
+	end
+	
+	-- CRITICAL FIX: Save EducationData for education tracking!
+	if state.EducationData then
+		serialized.EducationData = state.EducationData
 	end
 
 	-- Timestamp for debugging
@@ -384,23 +425,40 @@ function LifeBackend:savePlayerData(player)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local success, err = pcall(function()
 		store:UpdateAsync(key, function(oldData)
-			-- If no old data or new data is newer, use new data
-			-- This prevents overwriting newer saves with older data
+			-- If no old data, use new data
 			if not oldData then
 				return serialized
 			end
 			
-			-- Compare ages - only save if newer
+			-- Compare ages and timestamps
 			local oldAge = oldData.Age or 0
 			local newAge = serialized.Age or 0
+			local oldTime = oldData._savedAt or 0
+			local newTime = serialized._savedAt or os.time()
 			
-			-- If new data is older (somehow), keep old data
-			if newAge < oldAge then
-				warn("[LifeBackend] ⚠️ Skipping save - old data is newer!")
-				return nil -- Return nil to abort the update
+			-- If same age, use timestamp to decide
+			if newAge == oldAge then
+				if newTime >= oldTime then
+					return serialized -- Newer or same time, save it
+				else
+					-- Silently skip - this is expected during rapid syncs
+					return nil
+				end
 			end
 			
-			return serialized
+			-- If new age is higher, always save
+			if newAge > oldAge then
+				return serialized
+			end
+			
+			-- If new age is lower but it's a new life (age 0), always save
+			if newAge == 0 and oldAge > 0 then
+				-- Player started a new life, save it
+				return serialized
+			end
+			
+			-- Otherwise, silently skip (avoid warn spam)
+			return nil
 		end)
 	end)
 
@@ -1134,7 +1192,7 @@ function LifeBackend:validatePremiumFlags(state)
 		end
 		
 		if not hasValidFameSource then
-			warn("[RVS] Ghost fame flag: No valid fame source - clearing")
+			-- Ghost fame flag silently cleared to prevent spam
 			flags.is_famous = nil
 			flags.fame_career = nil
 			flags.celebrity = nil
@@ -1263,16 +1321,20 @@ function LifeBackend:validateEventChains(state)
 	
 	-- ═══════════════════════════════════════════════════════════════════════
 	-- ENGAGEMENT WITHOUT MARRIAGE VALIDATION
-	-- If engaged but never married after 3+ years
+	-- If engaged but never married after many years - extend to 10 years for realism
+	-- Some real couples stay engaged for many years!
 	-- ═══════════════════════════════════════════════════════════════════════
 	if flags.engaged and not flags.married then
 		local engagedAge = flags.engaged_at_age or (age - 3)
 		local yearsEngaged = age - engagedAge
 		
-		if yearsEngaged >= 5 then
-			warn("[RVS] Stale engagement: 5+ years engaged without marriage - ending")
+		-- Only end after 10+ years and only once (not spam)
+		if yearsEngaged >= 10 and not flags._engagement_timeout_applied then
+			flags._engagement_timeout_applied = true
 			flags.engaged = nil
 			flags.engaged_at_age = nil
+			-- Set a flag so events can reference this
+			flags.engagement_ended_naturally = true
 			fixes = fixes + 1
 		end
 	end
@@ -1925,7 +1987,10 @@ function LifeBackend:cleanDuplicateAssets(state)
 	local hasProperty = state.Assets.Properties and #state.Assets.Properties > 0
 	
 	if flags.owns_property and not hasProperty then
-		warn("[RVS] Ghost owns_property flag - clearing")
+		-- Only warn once to prevent spam
+		if not flags._ghost_property_warned then
+			flags._ghost_property_warned = true
+		end
 		flags.owns_property = nil
 		fixes = fixes + 1
 	end
@@ -7525,6 +7590,106 @@ local Properties = {
 		effects = { Happiness = 50, Health = 10, Looks = 5 },
 		fameBonus = 25,
 	},
+	-- NEW: More property options for variety!
+	{ 
+		id = "tiny_house", 
+		name = "Tiny House", 
+		emoji = "🏡",
+		price = 45000, 
+		income = 200,
+		tier = "budget",
+		happinessBonus = 3,
+		statusBonus = 0,
+		maintenanceCost = 600,
+		resaleModifier = 0.80,
+		minAge = 18,
+		description = "Minimalist living at its finest",
+		grantsFlags = { "homeowner", "minimalist" },
+		effects = { Happiness = 4, Smarts = 2 },
+	},
+	{ 
+		id = "2br_apartment", 
+		name = "2BR Apartment", 
+		emoji = "🏢",
+		price = 125000, 
+		income = 800,
+		tier = "starter",
+		happinessBonus = 3,
+		statusBonus = 1,
+		maintenanceCost = 1800,
+		resaleModifier = 0.86,
+		minAge = 18,
+		description = "Spacious city apartment",
+		grantsFlags = { "homeowner", "has_apartment" },
+		effects = { Happiness = 4 },
+	},
+	{ 
+		id = "farmhouse", 
+		name = "Country Farmhouse", 
+		emoji = "🌾",
+		price = 450000, 
+		income = 3000,
+		tier = "comfortable",
+		happinessBonus = 8,
+		statusBonus = 2,
+		maintenanceCost = 6000,
+		resaleModifier = 0.88,
+		minAge = 18,
+		description = "Peaceful country living with land",
+		grantsFlags = { "homeowner", "farm_owner", "country_life" },
+		effects = { Happiness = 10, Health = 5 },
+	},
+	{ 
+		id = "ski_chalet", 
+		name = "Mountain Ski Chalet", 
+		emoji = "🏔️",
+		price = 950000, 
+		income = 5500,
+		tier = "luxury",
+		happinessBonus = 14,
+		statusBonus = 7,
+		maintenanceCost = 15000,
+		resaleModifier = 0.90,
+		minAge = 21,
+		description = "Slope-side luxury retreat",
+		grantsFlags = { "homeowner", "ski_chalet", "vacation_home" },
+		effects = { Happiness = 12, Health = 6 },
+		fameBonus = 4,
+	},
+	{ 
+		id = "downtown_loft", 
+		name = "Downtown Loft", 
+		emoji = "🌃",
+		price = 550000, 
+		income = 3500,
+		tier = "comfortable",
+		happinessBonus = 8,
+		statusBonus = 4,
+		maintenanceCost = 7000,
+		resaleModifier = 0.89,
+		minAge = 18,
+		description = "Trendy industrial-style living",
+		grantsFlags = { "homeowner", "loft_owner", "city_life" },
+		effects = { Happiness = 9, Looks = 2 },
+		fameBonus = 2,
+	},
+	{ 
+		id = "castle", 
+		name = "European Castle", 
+		emoji = "🏯",
+		price = 25000000, 
+		income = 75000,
+		tier = "billionaire",
+		happinessBonus = 40,
+		statusBonus = 40,
+		maintenanceCost = 300000,
+		resaleModifier = 0.95,
+		minAge = 25,
+		description = "Live like royalty in a historic castle",
+		grantsFlags = { "homeowner", "castle_owner", "aristocrat", "ultra_wealthy" },
+		effects = { Happiness = 40, Health = 5, Looks = 8 },
+		fameBonus = 20,
+	},
 }
 
 local Vehicles = {
@@ -7745,6 +7910,149 @@ local Vehicles = {
 		effects = { Happiness = 35, Health = 2 },
 		fameBonus = 20,
 		fastTravel = true,
+	},
+	-- NEW: More vehicle options for variety!
+	{ 
+		id = "suv", 
+		name = "Family SUV", 
+		emoji = "🚙",
+		price = 38000,
+		tier = "reliable",
+		happinessBonus = 4,
+		statusBonus = 1,
+		maintenanceCost = 2000,
+		depreciationRate = 0.16,
+		fuelCost = 2200,
+		resaleModifier = 0.74,
+		minAge = 16,
+		description = "Practical family transport",
+		grantsFlags = { "car_owner", "has_transport", "suv_owner" },
+		effects = { Happiness = 5 },
+		familyBonus = true,
+	},
+	{ 
+		id = "convertible", 
+		name = "Convertible", 
+		emoji = "🚗",
+		price = 42000,
+		tier = "nice",
+		happinessBonus = 6,
+		statusBonus = 2,
+		maintenanceCost = 2200,
+		depreciationRate = 0.18,
+		fuelCost = 1800,
+		resaleModifier = 0.70,
+		minAge = 18,
+		description = "Feel the wind in your hair",
+		grantsFlags = { "car_owner", "has_transport", "convertible_owner" },
+		effects = { Happiness = 8, Looks = 2 },
+	},
+	{ 
+		id = "mercedes", 
+		name = "Mercedes-Benz E-Class", 
+		emoji = "🚘",
+		price = 65000,
+		tier = "premium",
+		happinessBonus = 7,
+		statusBonus = 4,
+		maintenanceCost = 4000,
+		depreciationRate = 0.17,
+		fuelCost = 2200,
+		resaleModifier = 0.73,
+		minAge = 18,
+		description = "German engineering excellence",
+		grantsFlags = { "car_owner", "has_transport", "nice_car", "mercedes_owner" },
+		effects = { Happiness = 8, Looks = 3 },
+		fameBonus = 2,
+	},
+	{ 
+		id = "jeep", 
+		name = "Jeep Wrangler", 
+		emoji = "🚙",
+		price = 48000,
+		tier = "reliable",
+		happinessBonus = 5,
+		statusBonus = 2,
+		maintenanceCost = 2500,
+		depreciationRate = 0.10,
+		fuelCost = 2800,
+		resaleModifier = 0.85,
+		minAge = 16,
+		description = "Go anywhere adventure vehicle",
+		grantsFlags = { "car_owner", "has_transport", "jeep_owner", "adventurer" },
+		effects = { Happiness = 7, Health = 1 },
+	},
+	{ 
+		id = "mclaren", 
+		name = "McLaren 720S", 
+		emoji = "🏎️",
+		price = 280000,
+		tier = "supercar",
+		happinessBonus = 18,
+		statusBonus = 14,
+		maintenanceCost = 14000,
+		depreciationRate = 0.14,
+		fuelCost = 4500,
+		resaleModifier = 0.80,
+		minAge = 21,
+		description = "British supercar excellence",
+		grantsFlags = { "car_owner", "has_transport", "supercar_owner", "mclaren_owner" },
+		effects = { Happiness = 22, Looks = 7 },
+		fameBonus = 7,
+	},
+	{ 
+		id = "bugatti", 
+		name = "Bugatti Chiron", 
+		emoji = "🦋",
+		price = 3500000,
+		tier = "hypercar",
+		happinessBonus = 45,
+		statusBonus = 40,
+		maintenanceCost = 100000,
+		depreciationRate = 0.05,
+		fuelCost = 15000,
+		resaleModifier = 0.92,
+		minAge = 25,
+		description = "The ultimate hypercar",
+		grantsFlags = { "car_owner", "has_transport", "hypercar_owner", "bugatti_owner", "elite" },
+		effects = { Happiness = 50, Looks = 15 },
+		fameBonus = 25,
+	},
+	{ 
+		id = "vintage_car", 
+		name = "Classic Vintage Car", 
+		emoji = "🚗",
+		price = 150000,
+		tier = "luxury",
+		happinessBonus = 10,
+		statusBonus = 8,
+		maintenanceCost = 8000,
+		depreciationRate = -0.05,  -- Appreciates!
+		fuelCost = 2000,
+		resaleModifier = 1.10,
+		minAge = 21,
+		description = "Timeless automotive art",
+		grantsFlags = { "car_owner", "has_transport", "classic_car_owner", "collector" },
+		effects = { Happiness = 12, Smarts = 2 },
+		fameBonus = 5,
+	},
+	{ 
+		id = "boat", 
+		name = "Speed Boat", 
+		emoji = "🚤",
+		price = 85000,
+		tier = "nice",
+		happinessBonus = 8,
+		statusBonus = 4,
+		maintenanceCost = 5000,
+		depreciationRate = 0.12,
+		fuelCost = 3000,
+		resaleModifier = 0.75,
+		minAge = 18,
+		description = "Weekend water fun",
+		grantsFlags = { "boat_owner", "has_boat" },
+		effects = { Happiness = 10, Health = 3 },
+		fameBonus = 2,
 	},
 }
 
@@ -9408,6 +9716,10 @@ function LifeBackend:setupRemotes()
 	-- self.remotes.Gamble = self:createRemote("Gamble", "RemoteFunction")
 
 	self.remotes.DoInteraction = self:createRemote("DoInteraction", "RemoteFunction")
+	
+	-- CRITICAL FIX: Pet interaction remote for RelationshipsScreen!
+	-- User request: "have PET instead of TALK how humans have"
+	self.remotes.InteractWithPet = self:createRemote("InteractWithPet", "RemoteFunction")
 
 	self.remotes.StartPath = self:createRemote("StartPath", "RemoteFunction")
 	self.remotes.DoPathAction = self:createRemote("DoPathAction", "RemoteFunction")
@@ -9440,6 +9752,13 @@ function LifeBackend:setupRemotes()
 	-- User complaint: "leaderboard... ITS FOR EVERYBODY WHO PLAYS GAME"
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	self.remotes.GetGlobalLeaderboard = self:createRemote("GetGlobalLeaderboard", "RemoteFunction")
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- BABY NAMING SYSTEM: Allow players to name their babies
+	-- User review: "we should be able to choose our children's names"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	self.remotes.NameBaby = self:createRemote("NameBaby", "RemoteFunction")
+	self.remotes.RequestBabyNaming = self:createRemote("RequestBabyNaming", "RemoteEvent") -- Server -> Client
 
 	-- Event connections
 	self.remotes.RequestAgeUp.OnServerEvent:Connect(function(player)
@@ -9567,6 +9886,12 @@ function LifeBackend:setupRemotes()
 
 	self.remotes.DoInteraction.OnServerInvoke = safeHandler(function(self, player, payload)
 		return self:handleInteraction(player, payload)
+	end)
+	
+	-- CRITICAL FIX: Pet interaction handler!
+	-- User request: "have PET instead of TALK how humans have"
+	self.remotes.InteractWithPet.OnServerInvoke = safeHandler(function(self, player, petId, action)
+		return self:handlePetInteraction(player, petId, action)
 	end)
 
 	self.remotes.StartPath.OnServerInvoke = safeHandler(function(self, player, pathId)
@@ -9715,10 +10040,104 @@ function LifeBackend:setupRemotes()
 	-- GLOBAL LEADERBOARD HANDLER: Fetch global leaderboard data for client
 	-- User complaint: "leaderboard... ITS FOR EVERYBODY WHO PLAYS GAME"
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	self.remotes.GetGlobalLeaderboard.OnServerInvoke = function(player, leaderboardType)
+	self.remotes.GetGlobalLeaderboard.OnServerInvoke = function(player, leaderboardType, limit)
 		-- leaderboardType is "richest" or "oldest"
-		local results = fetchGlobalLeaderboard(leaderboardType, 10)
+		-- CRITICAL FIX: Accept limit parameter from client for TOP 50 leaderboards!
+		-- Clamp limit to prevent abuse (1-100 entries max)
+		local safeLimit = math.clamp(limit or 50, 1, 100)
+		local results = fetchGlobalLeaderboard(leaderboardType, safeLimit)
 		return results
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- BABY NAMING HANDLER: Filter and apply baby names
+	-- User review: "we should be able to choose our children's names"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	self.remotes.NameBaby.OnServerInvoke = function(player, babyId, proposedName)
+		local state = self:getState(player)
+		if not state then
+			return { success = false, message = "Life data missing." }
+		end
+		
+		-- Validate name
+		if not proposedName or type(proposedName) ~= "string" then
+			return { success = false, message = "Invalid name." }
+		end
+		
+		-- Clean up the name
+		proposedName = proposedName:gsub("^%s+", ""):gsub("%s+$", "") -- Trim whitespace
+		
+		-- Check name length
+		if #proposedName < 2 then
+			return { success = false, message = "Name too short! (min 2 characters)" }
+		end
+		if #proposedName > 20 then
+			return { success = false, message = "Name too long! (max 20 characters)" }
+		end
+		
+		-- Filter through Roblox's text filter
+		local TextService = game:GetService("TextService")
+		local filteredName = proposedName
+		local filterSuccess, filterResult = pcall(function()
+			local result = TextService:FilterStringAsync(proposedName, player.UserId, Enum.TextFilterContext.PublicChat)
+			return result:GetNonChatStringForBroadcastAsync()
+		end)
+		
+		if filterSuccess then
+			filteredName = filterResult
+		else
+			warn("[LifeBackend] Text filter failed:", filterResult)
+			-- If filter fails, still allow but check for obvious bad words
+		end
+		
+		-- Check if the filtered name is too different (was censored)
+		if filteredName:find("#") then
+			return { success = false, message = "That name contains inappropriate content. Try again!" }
+		end
+		
+		-- Check for duplicate names among existing children
+		state.Relationships = state.Relationships or {}
+		for id, rel in pairs(state.Relationships) do
+			if type(rel) == "table" and (rel.role == "Son" or rel.role == "Daughter") then
+				if rel.name and rel.name:lower() == filteredName:lower() then
+					return { success = false, message = "You already have a child named " .. rel.name .. "! Choose a different name." }
+				end
+			end
+		end
+		
+		-- Find the pending baby or the specified baby
+		local targetBaby = nil
+		if babyId and state.Relationships[babyId] then
+			targetBaby = state.Relationships[babyId]
+		else
+			-- Find a baby with temporary/placeholder name
+			for id, rel in pairs(state.Relationships) do
+				if type(rel) == "table" and (rel.role == "Son" or rel.role == "Daughter") then
+					if rel.pendingName or rel.age == 0 then
+						targetBaby = rel
+						break
+					end
+				end
+			end
+		end
+		
+		if not targetBaby then
+			return { success = false, message = "No baby to name!" }
+		end
+		
+		-- Apply the name!
+		local oldName = targetBaby.name
+		targetBaby.name = filteredName
+		targetBaby.pendingName = nil -- Clear pending flag
+		
+		-- Push state update
+		self:pushState(player, string.format("👶 You named your baby %s!", filteredName))
+		
+		return { 
+			success = true, 
+			message = string.format("Your baby is now named %s!", filteredName),
+			name = filteredName
+		}
 	end
 end
 
@@ -9869,6 +10288,12 @@ end
 
 function LifeBackend:createInitialState(player)
 	local state = LifeState.new(player)
+	
+	-- CRITICAL FIX: Ensure data_restored is FALSE for new lives!
+	-- This prevents the "restored from save" spam bug
+	state.Flags = state.Flags or {}
+	state.Flags.data_restored = nil  -- Explicitly clear this flag for new lives
+	state.Flags.intro_complete = nil -- Allow intro for new lives
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #11: BITIZENSHIP BENEFITS
@@ -15474,6 +15899,13 @@ function LifeBackend:resetLife(player)
 	newState.Flags.has_student_loans = nil
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Clear data restoration flags for fresh life!
+	-- This prevents "restored from save - skipping intro" spam
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	newState.Flags.data_restored = nil
+	newState.Flags.intro_complete = nil
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #12: Reset premium feature states (but preserve gamepass ownership!)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
@@ -18365,7 +18797,7 @@ function LifeBackend:getJobEligibility(player)
 					bully = "History of aggressive behavior",
 					troublemaker = "Troublemaker reputation",
 					street_hustler = "Street hustling experience",
-					drug_dealer_experience = "Drug dealing experience",
+					drug_dealer_experience = "Street trading experience",
 					criminal_path = "Criminal lifestyle commitment",
 					criminal = "Criminal background",
 					criminal_connections = "Criminal network connections",
@@ -18727,11 +19159,11 @@ function LifeBackend:handleJobApplication(player, jobId, clientInterviewScore)
 				bully = "aggressive behavior history (intimidate others)",
 				troublemaker = "troublemaker reputation (cause problems in your community)",
 				street_hustler = "street hustling experience (work as a street hustler first)",
-				drug_dealer_experience = "drug dealing experience (sell drugs on the street)",
+				drug_dealer_experience = "street trading experience (sell items on the street)",
 				criminal_path = "criminal lifestyle (commit to a life of crime)",
 				criminal = "criminal background (engage in criminal activities)",
 				criminal_connections = "criminal network (build connections in the underworld)",
-				established_dealer = "established dealer status (prove yourself in drug trade)",
+				established_dealer = "established dealer status (prove yourself in street trade)",
 				violent_crimes = "violent crime history (engage in violence)",
 				street_fighter = "street fighting experience (prove yourself in fights)",
 				brawler = "brawler reputation (be known for physical violence)",
@@ -21598,9 +22030,9 @@ local InteractionEffects = {
 						{ text = "💕 Time stopped as you kissed " .. partnerName .. ". Magical!", delta = 13, happiness = 14 },
 					},
 					passionate = {
-						{ text = "🔥 PASSIONATE kiss with " .. partnerName .. "! Sparks are FLYING!", delta = 15, happiness = 16 },
-						{ text = "🔥 Intense! You and " .. partnerName .. " couldn't hold back!", delta = 14, happiness = 15 },
-						{ text = "🔥 That kiss left you both breathless! Chemistry is OFF THE CHARTS!", delta = 16, happiness = 17 },
+						{ text = "💋 Surprise smooch with " .. partnerName .. "! Totally spontaneous!", delta = 15, happiness = 16 },
+						{ text = "💋 You surprised " .. partnerName .. " with a quick kiss! They loved it!", delta = 14, happiness = 15 },
+						{ text = "💋 That spontaneous kiss made " .. partnerName .. " grin ear to ear!", delta = 16, happiness = 17 },
 					},
 					forehead = {
 						{ text = "😊 You kissed " .. partnerName .. "'s forehead. \"I love you.\" So sweet!", delta = 10, happiness = 11 },
@@ -22741,6 +23173,130 @@ function LifeBackend:ensureRelationship(state, relType, targetId, options)
 	end
 
 	return targetId and state.Relationships[targetId] or nil
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Pet Interaction Handler
+-- User request: "have PET instead of TALK how humans have"
+-- Allows players to pet their animals from RelationshipsScreen
+-- ═══════════════════════════════════════════════════════════════════════════════
+function LifeBackend:handlePetInteraction(player, petId, action)
+	local state = self:getState(player)
+	if not state then
+		return { success = false, message = "Life data missing." }
+	end
+	
+	state.Flags = state.Flags or {}
+	state.PetData = state.PetData or {}
+	
+	-- Validate pet exists
+	local hasPet = false
+	local petName = "Your pet"
+	local petEmoji = "🐾"
+	
+	if petId == "dog" and state.Flags.has_dog then
+		hasPet = true
+		petName = state.PetData.dogName or "Buddy"
+		petEmoji = "🐕"
+	elseif petId == "cat" and state.Flags.has_cat then
+		hasPet = true
+		petName = state.PetData.catName or "Whiskers"
+		petEmoji = "🐱"
+	elseif petId == "small_pet" and state.Flags.has_small_pet then
+		hasPet = true
+		petName = state.PetData.smallPetName or "Little One"
+		petEmoji = "🐹"
+	elseif petId == "fish" and state.Flags.has_fish then
+		hasPet = true
+		petName = state.PetData.fishName or "Goldie"
+		petEmoji = "🐠"
+	elseif petId == "bird" and state.Flags.has_bird then
+		hasPet = true
+		petName = state.PetData.birdName or "Tweety"
+		petEmoji = "🐦"
+	end
+	
+	if not hasPet then
+		return { success = false, message = "You don't have that pet!" }
+	end
+	
+	-- Handle different pet actions
+	action = action or "pet"
+	
+	if action == "pet" then
+		-- Petting gives happiness!
+		local happinessGain = math.random(3, 8)
+		if state.ModifyStat then
+			state:ModifyStat("Happiness", happinessGain)
+		else
+			state.Stats = state.Stats or {}
+			state.Stats.Happiness = math.min(100, (state.Stats.Happiness or 50) + happinessGain)
+		end
+		
+		-- Random cute messages
+		local messages = {
+			petEmoji .. " " .. petName .. " loves the attention! Tail wagging!",
+			petEmoji .. " " .. petName .. " purrs/wags with happiness!",
+			petEmoji .. " " .. petName .. " nuzzles against you affectionately!",
+			petEmoji .. " " .. petName .. " looks at you with pure love!",
+			petEmoji .. " " .. petName .. " is so happy! Best pet parent ever!",
+			petEmoji .. " You pet " .. petName .. "! They're so happy!",
+		}
+		local message = messages[math.random(1, #messages)]
+		
+		if state.AddFeed then
+			state:AddFeed(message)
+		end
+		
+		self:pushState(player, message)
+		
+		return { 
+			success = true, 
+			message = message,
+			happiness = happinessGain
+		}
+	elseif action == "feed" then
+		-- Feeding costs a little but increases pet bond
+		local cost = 10
+		if (state.Money or 0) < cost then
+			return { success = false, message = "You need $10 for pet food!" }
+		end
+		
+		state.Money = state.Money - cost
+		local happinessGain = math.random(2, 5)
+		if state.ModifyStat then
+			state:ModifyStat("Happiness", happinessGain)
+		end
+		
+		local message = petEmoji .. " " .. petName .. " gobbles up the food! Yum!"
+		if state.AddFeed then
+			state:AddFeed(message)
+		end
+		
+		self:pushState(player, message)
+		
+		return { success = true, message = message }
+	elseif action == "play" then
+		-- Playing with pet - uses some health but gives more happiness
+		local happinessGain = math.random(5, 10)
+		local healthCost = 2
+		
+		if state.ModifyStat then
+			state:ModifyStat("Happiness", happinessGain)
+			state:ModifyStat("Health", -healthCost)
+		end
+		
+		local message = petEmoji .. " You played with " .. petName .. "! So much fun!"
+		if state.AddFeed then
+			state:AddFeed(message)
+		end
+		
+		self:pushState(player, message)
+		
+		return { success = true, message = message }
+	end
+	
+	return { success = false, message = "Unknown pet action." }
 end
 
 function LifeBackend:handleInteraction(player, payload)

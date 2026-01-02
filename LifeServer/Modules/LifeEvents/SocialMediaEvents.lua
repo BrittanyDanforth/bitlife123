@@ -83,6 +83,15 @@ SocialMediaEvents.events = {
 		title = "Content Creation",
 		emoji = "🎬",
 		text = "Time to create some content!",
+		-- CRITICAL FIX: Added text variations for content creation!
+		textVariants = {
+			"You've got a great idea for a video. Time to film!",
+			"Inspiration strikes! You should capture this moment.",
+			"Your followers are expecting content. Better deliver!",
+			"You've been planning this post for weeks. Let's do it.",
+			"The lighting is perfect. Time to create something amazing.",
+			"You saw a trend and have a unique take on it.",
+		},
 		question = "What do you post?",
 		minAge = 13, maxAge = 70,
 		baseChance = 0.455,

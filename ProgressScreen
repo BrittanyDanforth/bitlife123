@@ -200,7 +200,7 @@ function ProgressScreen:createUI()
 	self:createTabBar()
 	self:createContentContainer()
 	self:buildAwardsTab()
-	self:buildPastLivesTab()
+	-- CRITICAL FIX: Removed buildPastLivesTab() as user requested removal of Lives tab!
 	self:buildLeaderboardsTab()
 	self:buildGiveUpTab()
 end
@@ -284,9 +284,9 @@ function ProgressScreen:createTabBar()
 	
 	self.tabButtons = {}
 	
+	-- CRITICAL FIX: Removed "pastlives" tab as requested by user!
 	local tabs = {
 		{ id = "awards", name = "Awards", icon = "🏆", color = C.Amber },
-		{ id = "pastlives", name = "Lives", icon = "📜", color = C.Blue },
 		{ id = "leaderboards", name = "Leaderboard", icon = "🏅", color = C.Green },
 		{ id = "giveup", name = "Give Up", icon = "☠️", color = C.Red },
 	}
@@ -1058,8 +1058,7 @@ function ProgressScreen:switchTab(tabId)
 	
 	if tabId == "awards" then
 		self:refreshAwards()
-	elseif tabId == "pastlives" then
-		self:refreshPastLives()
+	-- CRITICAL FIX: Removed pastlives case - tab was removed per user request!
 	elseif tabId == "leaderboards" then
 		self:refreshLeaderboards()
 	end
@@ -1166,9 +1165,9 @@ function ProgressScreen:refreshLeaderboards()
 	
 	-- Fetch both leaderboards asynchronously
 	task.spawn(function()
-		-- Fetch richest leaderboard
+		-- Fetch richest leaderboard (TOP 50!)
 		local richestSuccess, richestData = pcall(function()
-			return getLeaderboard:InvokeServer("richest")
+			return getLeaderboard:InvokeServer("richest", 50)  -- CRITICAL FIX: Request TOP 50
 		end)
 		
 		-- Clear loading message
@@ -1204,9 +1203,9 @@ function ProgressScreen:refreshLeaderboards()
 	end)
 	
 	task.spawn(function()
-		-- Fetch oldest leaderboard
+		-- Fetch oldest leaderboard (TOP 50!)
 		local oldestSuccess, oldestData = pcall(function()
-			return getLeaderboard:InvokeServer("oldest")
+			return getLeaderboard:InvokeServer("oldest", 50)  -- CRITICAL FIX: Request TOP 50
 		end)
 		
 		-- Clear loading message

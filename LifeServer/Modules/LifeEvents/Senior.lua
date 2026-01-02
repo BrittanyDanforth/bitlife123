@@ -37,6 +37,15 @@ Senior.events = {
         title = "Retirement Party",
         emoji = "🎉",
         text = "Your colleagues are throwing you a retirement party! Everyone is gathered to celebrate your career.",
+        -- CRITICAL FIX: Added text variations for retirement!
+        textVariants = {
+            "After decades of hard work, it's finally time. Your retirement party begins!",
+            "The office is decorated with balloons and a 'Happy Retirement' banner. This is it.",
+            "Your boss hands you a watch. Your colleagues share their favorite memories of you.",
+            "Tears and laughter fill the room as everyone gathers to see you off.",
+            "You've worked here for years. Now it's time to say goodbye.",
+            "The cake says 'Congrats on Retirement!' - this chapter is closing.",
+        },
         question = "How do you feel about retiring?",
         minAge = 60, maxAge = 70,
         oneTime = true,
