@@ -7734,6 +7734,14 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 		end
 		hideTutorial()
 		hideDeathOverlay()
+		
+		-- CRITICAL FIX: Hide ALL screens when starting new life!
+		-- This prevents screens like ProgressScreen from staying visible after death
+		for screenName, screenInstance in pairs(ScreenInstances) do
+			if screenInstance and screenInstance.hide then
+				pcall(function() screenInstance:hide() end)
+			end
+		end
 
 		-- Update all screen instances with the new state (even during reset)
 		-- This ensures screens have proper initial state
