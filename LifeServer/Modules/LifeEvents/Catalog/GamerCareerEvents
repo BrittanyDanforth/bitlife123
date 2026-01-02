@@ -361,7 +361,7 @@ GamerCareerEvents.events = {
 						state:AddFeed("😤 Drama died down. People moved on to the next thing.")
 					else
 						state:ModifyStat("Happiness", -10)
-						state.Fame = (state.Fame or 0) - 15
+						state.Fame = math.max(0, (state.Fame or 0) - 15) -- CRITICAL FIX: Prevent negative Fame
 						state:AddFeed("😤 Silence was seen as guilt. Lost followers and sponsors.")
 					end
 				end,
@@ -378,7 +378,7 @@ GamerCareerEvents.events = {
 						state:AddFeed("😤 Your clap-back went viral! Entertainment value saved your image!")
 					else
 						state:ModifyStat("Happiness", -15)
-						state.Fame = (state.Fame or 0) - 20
+						state.Fame = math.max(0, (state.Fame or 0) - 20) -- CRITICAL FIX: Prevent negative Fame
 						state.Flags = state.Flags or {}
 						state.Flags.toxic_player_rep = true
 						state:AddFeed("😤 Both look terrible now. Sponsors dropping you both.")
@@ -414,7 +414,7 @@ GamerCareerEvents.events = {
 						state:AddFeed("😴 Needed that break! Came back refreshed and viewers understood!")
 					else
 						state:ModifyStat("Happiness", -5)
-						state.Fame = (state.Fame or 0) - 10
+						state.Fame = math.max(0, (state.Fame or 0) - 10) -- CRITICAL FIX: Prevent negative Fame
 						state:AddFeed("😴 Lost momentum during break. Algorithm forgot about you.")
 					end
 				end,
@@ -467,7 +467,7 @@ GamerCareerEvents.events = {
 					state.Flags = state.Flags or {}
 					state.Flags.signed_to_org = true
 					state.Flags.pro_player = true
-					state.Fame = (state.Fame or 0) + 25
+					state.Fame = math.min(100, (state.Fame or 0) + 25) -- CRITICAL FIX: Cap fame at 100
 					state:AddFeed(string.format("📝 Signed! $%s/year salary plus housing and benefits!", salary))
 				end,
 			},

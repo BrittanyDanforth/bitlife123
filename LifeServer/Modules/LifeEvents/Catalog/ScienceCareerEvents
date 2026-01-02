@@ -332,7 +332,7 @@ ScienceCareerEvents.events = {
 					local roll = math.random(1, 100)
 					if roll <= 60 then
 						state.Money = (state.Money or 0) + math.random(30000, 100000)
-						state.Fame = (state.Fame or 0) + 40
+						state.Fame = math.min(100, (state.Fame or 0) + 40) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.major_discovery = true
 						state.Flags.is_famous = true
@@ -530,7 +530,7 @@ ScienceCareerEvents.events = {
 						if state.AddFeed then state:AddFeed("🏆 NOBEL PRIZE WINNER! Highest honor in science! Your life's work recognized!") end
 					else
 						if state.ModifyStat then state:ModifyStat("Happiness", 15) end
-						state.Fame = (state.Fame or 0) + 30
+						state.Fame = math.min(100, (state.Fame or 0) + 30) -- CRITICAL FIX: Cap fame at 100
 						if state.AddFeed then state:AddFeed("🏆 Didn't win this year but the nomination itself is an honor. Few ever get nominated.") end
 					end
 				end,

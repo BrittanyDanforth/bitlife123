@@ -186,7 +186,7 @@ CreativeCareerEvents.events = {
 					if roll <= 40 then
 						state.Money = (state.Money or 0) + math.random(10000, 50000)
 						state:ModifyStat("Happiness", 25)
-						state.Fame = (state.Fame or 0) + 25
+						state.Fame = math.min(100, (state.Fame or 0) + 25) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.award_winning_creative = true
 						state:AddFeed("🎯 CAMPAIGN WENT VIRAL! Industry awards! Your name is everywhere!")
@@ -321,7 +321,7 @@ CreativeCareerEvents.events = {
 					local roll = math.random(1, 100)
 					if roll <= 45 then
 						state:ModifyStat("Happiness", 25)
-						state.Fame = (state.Fame or 0) + 35
+						state.Fame = math.min(100, (state.Fame or 0) + 35) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.award_winning_journalist = true
 						state:AddFeed("📰 STORY BROKE BIG! National attention! Journalism award nomination!")
@@ -426,7 +426,7 @@ CreativeCareerEvents.events = {
 					if roll <= 50 then
 						state.Money = (state.Money or 0) + math.random(20000, 80000)
 						state:ModifyStat("Happiness", 25)
-						state.Fame = (state.Fame or 0) + 30
+						state.Fame = math.min(100, (state.Fame or 0) + 30) -- CRITICAL FIX: Cap fame at 100
 						state:AddFeed("📱 MASSIVE ROI! Campaign broke company records! Bonus incoming!")
 					else
 						state:ModifyStat("Happiness", 5)

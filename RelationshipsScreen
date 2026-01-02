@@ -3125,63 +3125,28 @@ function RelationshipsScreen:createResultModal()
 		})
 	end)
 	
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- CRITICAL FIX: ENHANCED ANIMATIONS for premium BitLife-style card popup!
-	-- User feedback: "it just pops up a boring generic result"
-	-- Now: Slide in from bottom + scale up + bounce effect!
-	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- Clean show/hide methods (matching ActivitiesScreen card popup style)
 	self.resultModal.show = function()
 		closeArea.Visible = true
 		closeArea.BackgroundTransparency = 1
-		-- Start from below and smaller for dramatic entrance
-		container.Position = UDim2.new(0.5, 0, 1.2, 0) -- Start from below screen
-		container.Size = UDim2.new(0, 280, 0, 260)
-		shell.Rotation = -5 -- Slight rotation for drama
+		container.Position = UDim2.new(0.5, 0, 0.5, 40)
+		container.Size = UDim2.new(0, IS_TINY_PHONE and 260 or 320, 0, IS_TINY_PHONE and 240 or 300)
 		
-		-- Fade in the overlay
-		UI.tween(closeArea, TweenInfo.new(0.25), { BackgroundTransparency = 0.35 })
-		
-		-- Slide up and scale with bounce
-		UI.tween(container, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+		UI.tween(closeArea, TweenInfo.new(0.2), { BackgroundTransparency = 0.35 })
+		UI.tween(container, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
 			Position = UDim2.fromScale(0.5, 0.5),
-			Size = UDim2.new(0, IS_TINY_PHONE and 290 or 350, 0, IS_TINY_PHONE and 270 or 330)
+			Size = UDim2.new(0, IS_TINY_PHONE and 280 or 340, 0, IS_TINY_PHONE and 260 or 320)
 		})
-		
-		-- Rotate back to normal
-		UI.tween(shell, TweenInfo.new(0.3, Enum.EasingStyle.Back), {
-			Rotation = 0
-		})
-		
-		-- Add a little "pop" to the emoji
-		task.delay(0.2, function()
-			if self.resultModal.emojiFrame then
-				UI.tween(self.resultModal.emojiFrame, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-					Size = UDim2.new(0, IS_TINY_PHONE and 64 or 90, 0, IS_TINY_PHONE and 64 or 90)
-				})
-				task.delay(0.15, function()
-					if self.resultModal.emojiFrame then
-						UI.tween(self.resultModal.emojiFrame, TweenInfo.new(0.1), {
-							Size = UDim2.new(0, IS_TINY_PHONE and 56 or 80, 0, IS_TINY_PHONE and 56 or 80)
-						})
-					end
-				end)
-			end
-		end)
 	end
 	
 	self.resultModal.hide = function(callback)
-		-- Slide down and fade out
-		UI.tween(closeArea, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
-		UI.tween(container, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-			Position = UDim2.new(0.5, 0, 1.1, 0), -- Slide down
-			Size = UDim2.new(0, 300, 0, 280)
+		UI.tween(closeArea, TweenInfo.new(0.15), { BackgroundTransparency = 1 })
+		UI.tween(container, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+			Position = UDim2.new(0.5, 0, 0.5, 25),
+			Size = UDim2.new(0, 320, 0, 300)
 		})
-		UI.tween(shell, TweenInfo.new(0.15), {
-			Rotation = 3 -- Slight tilt as it exits
-		})
-		task.delay(0.2, function()
+		task.delay(0.15, function()
 			closeArea.Visible = false
-			shell.Rotation = 0 -- Reset rotation
 			if callback then callback() end
 		end)
 	end

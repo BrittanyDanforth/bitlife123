@@ -414,7 +414,7 @@ InvestmentBankingEvents.events = {
 						local bonus = math.random(500000, 3000000)
 						state.Money = (state.Money or 0) + bonus
 						state:ModifyStat("Happiness", 30)
-						state.Fame = (state.Fame or 0) + 30
+						state.Fame = math.min(100, (state.Fame or 0) + 30) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.ipo_legend = true
 						state:AddFeed(string.format("🚀 IPO was MASSIVE success! $%s bonus! Your name in the financial press!", bonus))
@@ -727,7 +727,7 @@ InvestmentBankingEvents.events = {
 						local bonus = math.random(500000, 2000000)
 						state.Money = (state.Money or 0) + bonus
 						state:ModifyStat("Happiness", 25)
-						state.Fame = (state.Fame or 0) + 30
+						state.Fame = math.min(100, (state.Fame or 0) + 30) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.legendary_dealmaker = true
 						state:AddFeed(string.format("🔥 HISTORIC DEAL! $%s bonus! Your name in the Wall Street Journal!", bonus))
@@ -909,13 +909,13 @@ InvestmentBankingEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 60 then
-						state.Fame = (state.Fame or 0) + 40
+						state.Fame = math.min(100, (state.Fame or 0) + 40) -- CRITICAL FIX: Cap fame at 100
 						state.Money = (state.Money or 0) + math.random(100000, 300000)
 						state.Flags = state.Flags or {}
 						state.Flags.tv_personality = true
 						state:AddFeed("📊 You're a TV STAR! 'The Finance Guy!' Book deal incoming!")
 					else
-						state.Fame = (state.Fame or 0) - 10
+						state.Fame = math.max(0, (state.Fame or 0) - 10) -- CRITICAL FIX: Prevent negative Fame
 						state:AddFeed("📊 Made a bad call on TV. Went viral for the wrong reasons.")
 					end
 				end,
@@ -957,7 +957,7 @@ InvestmentBankingEvents.events = {
 					if roll <= 35 then
 						local gains = math.random(1000000, 5000000)
 						state.Money = (state.Money or 0) + gains
-						state.Fame = (state.Fame or 0) + 25
+						state.Fame = math.min(100, (state.Fame or 0) + 25) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.crypto_millionaire = true
 						state:AddFeed(string.format("₿ CRYPTO BOOM! $%s in equity! To the moon!", gains))

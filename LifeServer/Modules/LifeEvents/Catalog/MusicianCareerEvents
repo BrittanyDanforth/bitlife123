@@ -143,7 +143,7 @@ MusicianCareerEvents.events = {
 						state:AddFeed("🎵 Solid numbers! Critics liked it, fans loved it!")
 					else
 						state:ModifyStat("Happiness", -15)
-						state.Fame = (state.Fame or 0) - 10
+						state.Fame = math.max(0, (state.Fame or 0) - 10) -- CRITICAL FIX: Prevent negative Fame
 						state:AddFeed("🎵 Album flopped. Only die-hard fans streamed it. Label is 'disappointed'.")
 					end
 				end,
@@ -158,7 +158,7 @@ MusicianCareerEvents.events = {
 						local sales = math.random(300000, 1000000)
 						state.Money = (state.Money or 0) + sales
 						state:ModifyStat("Happiness", 20)
-						state.Fame = (state.Fame or 0) + 30
+						state.Fame = math.min(100, (state.Fame or 0) + 30) -- CRITICAL FIX: Cap fame at 100
 						state:AddFeed("🎵 Word of mouth went CRAZY! Album is a sleeper hit!")
 					elseif roll <= 65 then
 						local sales = math.random(50000, 200000)
@@ -222,7 +222,7 @@ MusicianCareerEvents.events = {
 						local money = math.random(100000, 500000)
 						state.Money = (state.Money or 0) + money
 						state:ModifyStat("Happiness", 15)
-						state.Fame = (state.Fame or 0) + 25
+						state.Fame = math.min(100, (state.Fame or 0) + 25) -- CRITICAL FIX: Cap fame at 100
 						state:AddFeed(string.format("💼 Song went #1! $%s in royalties! Label loves you!", money))
 					else
 						state:ModifyStat("Happiness", -8)
@@ -240,7 +240,7 @@ MusicianCareerEvents.events = {
 						local money = math.random(200000, 800000)
 						state.Money = (state.Money or 0) + money
 						state:ModifyStat("Happiness", 20)
-						state.Fame = (state.Fame or 0) + 35
+						state.Fame = math.min(100, (state.Fame or 0) + 35) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.artistic_integrity = true
 						state:AddFeed("💼 Your vision was RIGHT! Critically acclaimed AND commercial success!")
@@ -343,7 +343,7 @@ MusicianCareerEvents.events = {
 						local tourMoney = math.random(500000, 3000000)
 						state.Money = (state.Money or 0) + tourMoney
 						state:ModifyStat("Happiness", 20)
-						state.Fame = (state.Fame or 0) + 40
+						state.Fame = math.min(100, (state.Fame or 0) + 40) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.world_toured = true
 						state:AddFeed(string.format("🌍 Tour was LEGENDARY! $%s grossed! Memories for life!", tourMoney))
@@ -435,7 +435,7 @@ MusicianCareerEvents.events = {
 						state:AddFeed("😡 'He said, she said' situation. Nobody knows who to believe.")
 					else
 						state:ModifyStat("Happiness", -12)
-						state.Fame = (state.Fame or 0) - 10
+						state.Fame = math.max(0, (state.Fame or 0) - 10) -- CRITICAL FIX: Prevent negative Fame
 						state:AddFeed("😡 Backfired! You look jealous and petty. Their song still charting.")
 					end
 				end,
@@ -472,7 +472,7 @@ MusicianCareerEvents.events = {
 					local roll = math.random(1, 100)
 					if roll <= 60 then
 						state.Money = (state.Money or 0) + math.random(100000, 500000)
-						state.Fame = (state.Fame or 0) + 35
+						state.Fame = math.min(100, (state.Fame or 0) + 35) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.legendary_collab = true
 						state:AddFeed("🤝 The collab was FIRE! Charted in multiple countries! Legendary!")
@@ -492,7 +492,7 @@ MusicianCareerEvents.events = {
 					if roll <= 50 then
 						state.Money = (state.Money or 0) + math.random(150000, 600000)
 						state:ModifyStat("Happiness", 18)
-						state.Fame = (state.Fame or 0) + 40
+						state.Fame = math.min(100, (state.Fame or 0) + 40) -- CRITICAL FIX: Cap fame at 100
 						state:AddFeed("🤝 Equal billing! Song was a smash! They respect your hustle!")
 					else
 						state:ModifyStat("Happiness", -10)
@@ -579,7 +579,7 @@ MusicianCareerEvents.events = {
 					if roll <= 40 then
 						state.Money = (state.Money or 0) + math.random(200000, 700000)
 						state:ModifyStat("Happiness", 20)
-						state.Fame = (state.Fame or 0) + 30
+						state.Fame = math.min(100, (state.Fame or 0) + 30) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.comeback_king = true
 						state:AddFeed("😰 COMEBACK! New sound was revolutionary! Critics love the evolution!")
@@ -588,7 +588,7 @@ MusicianCareerEvents.events = {
 						state:AddFeed("😰 Mixed reception. Some love the new direction, others don't.")
 					else
 						state:ModifyStat("Happiness", -12)
-						state.Fame = (state.Fame or 0) - 15
+						state.Fame = math.max(0, (state.Fame or 0) - 15) -- CRITICAL FIX: Prevent negative Fame
 						state:AddFeed("😰 Fans hated the change. 'We want the old you back!' Rough.")
 					end
 				end,
@@ -667,7 +667,7 @@ MusicianCareerEvents.events = {
 						state:AddFeed("🎵 Quick turnaround worked! Another hit in the making!")
 					else
 						state:ModifyStat("Happiness", -15)
-						state.Fame = (state.Fame or 0) - 20
+						state.Fame = math.max(0, (state.Fame or 0) - 20) -- CRITICAL FIX: Prevent negative Fame
 						state:AddFeed("🎵 'Clearly rushed' - reviews are harsh. Should have taken more time.")
 					end
 				end,
@@ -778,7 +778,7 @@ MusicianCareerEvents.events = {
 						state.Flags.grammy_winner = true
 						state:AddFeed("🎨 Mic drop moment! 'They said no one would listen!' Viral speech!")
 					else
-						state.Fame = (state.Fame or 0) + 30
+						state.Fame = math.min(100, (state.Fame or 0) + 30) -- CRITICAL FIX: Cap fame at 100
 						state:AddFeed("🎨 Came off as bitter. Still won though!")
 					end
 				end,
@@ -830,7 +830,7 @@ MusicianCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 40 then
-						state.Fame = (state.Fame or 0) + 40
+						state.Fame = math.min(100, (state.Fame or 0) + 40) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.cult_following = true
 						state:AddFeed("💔 Leaked it! Went viral! Fans LOVE you for the rebellion! Label can't contain it!")
@@ -897,7 +897,7 @@ MusicianCareerEvents.events = {
 					local roll = math.random(1, 100)
 					if roll <= 60 then
 						state.Money = (state.Money or 0) + math.random(100000, 400000)
-						state.Fame = (state.Fame or 0) + 25
+						state.Fame = math.min(100, (state.Fame or 0) + 25) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.collab_success = true
 						state:AddFeed("🎙️ The feature artist CRUSHED it! Instant chemistry! Hit incoming!")
@@ -961,7 +961,7 @@ MusicianCareerEvents.events = {
 					if roll <= 50 then
 						state:AddFeed("👥 They understood. No drama. Good call.")
 					else
-						state.Fame = (state.Fame or 0) - 10
+						state.Fame = math.max(0, (state.Fame or 0) - 10) -- CRITICAL FIX: Prevent negative Fame
 						state:AddFeed("👥 They posted about it. 'Cold and rude!' Bad PR.")
 					end
 				end,
@@ -1014,7 +1014,7 @@ MusicianCareerEvents.events = {
 						state.Flags.party_animal = true
 						state:AddFeed("🎉 Had an AMAZING time! People loved your energy! Organic connections!")
 					else
-						state.Fame = (state.Fame or 0) - 5
+						state.Fame = math.max(0, (state.Fame or 0) - 5) -- CRITICAL FIX: Prevent negative Fame
 						state:AddFeed("🎉 Might have had TOO much fun. Embarrassing videos circulating...")
 					end
 				end,
@@ -1055,7 +1055,7 @@ MusicianCareerEvents.events = {
 					local roll = math.random(1, 100)
 					if roll <= 55 then
 						state.Money = (state.Money or 0) + math.random(80000, 300000)
-						state.Fame = (state.Fame or 0) + 25
+						state.Fame = math.min(100, (state.Fame or 0) + 25) -- CRITICAL FIX: Cap fame at 100
 						state:AddFeed("🔊 The remix is FIRE! Charting globally! Playing in every club!")
 					else
 						state:ModifyStat("Happiness", -8)
@@ -1116,7 +1116,7 @@ MusicianCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 50 then
-						state.Fame = (state.Fame or 0) + 40
+						state.Fame = math.min(100, (state.Fame or 0) + 40) -- CRITICAL FIX: Cap fame at 100
 						state.Money = (state.Money or 0) + math.random(50000, 200000)
 						state.Flags = state.Flags or {}
 						state.Flags.social_media_star = true
@@ -1144,7 +1144,7 @@ MusicianCareerEvents.events = {
 					if roll <= 30 then
 						state:AddFeed("📱 They removed it. Crisis averted maybe?")
 					else
-						state.Fame = (state.Fame or 0) - 10
+						state.Fame = math.max(0, (state.Fame or 0) - 10) -- CRITICAL FIX: Prevent negative Fame
 						state:AddFeed("📱 Streisand effect! Trying to remove it made it MORE viral!")
 					end
 				end,
@@ -1178,7 +1178,7 @@ MusicianCareerEvents.events = {
 					local roll = math.random(1, 100)
 					if roll <= 45 then
 						state.Money = (state.Money or 0) + math.random(200000, 800000)
-						state.Fame = (state.Fame or 0) + 45
+						state.Fame = math.min(100, (state.Fame or 0) + 45) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.comeback_king = true
 						state.Flags.voice_damage = nil -- Recovery!
@@ -1236,7 +1236,7 @@ MusicianCareerEvents.events = {
 						state:AddFeed("🎬 'Raw and honest' - Critics LOVED it! Emmy nominated! Career peak!")
 					else
 						state:ModifyStat("Happiness", -15)
-						state.Fame = (state.Fame or 0) - 20
+						state.Fame = math.max(0, (state.Fame or 0) - 20) -- CRITICAL FIX: Prevent negative Fame
 						state:AddFeed("🎬 They exposed things you wish stayed buried. Regrets.")
 					end
 				end,
@@ -1246,7 +1246,7 @@ MusicianCareerEvents.events = {
 				effects = { Money = 100000, Happiness = 5 },
 				feedText = "Protect your image...",
 				onResolve = function(state)
-					state.Fame = (state.Fame or 0) + 25
+					state.Fame = math.min(100, (state.Fame or 0) + 25) -- CRITICAL FIX: Cap fame at 100
 					state:AddFeed("🎬 Polished documentary. Critics say 'sanitized' but fans loved it!")
 				end,
 			},
