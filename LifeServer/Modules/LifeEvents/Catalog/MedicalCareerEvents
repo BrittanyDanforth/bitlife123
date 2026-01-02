@@ -449,7 +449,7 @@ MedicalCareerEvents.events = {
 	
 	{
 		id = "doctor_drug_rep",
-		title = "💼 Drug Rep Offer",
+		title = "💼 Pharma Rep Offer",
 		emoji = "💼",
 		text = "A pharmaceutical rep offers an all-expenses trip to a 'conference' in Hawaii. Just prescribe their new med.",
 		question = "Accept the bribe?",
@@ -632,7 +632,7 @@ MedicalCareerEvents.events = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "pharmacist_dangerous_interaction",
-		title = "💊 Drug Interaction Alert",
+		title = "💊 Medication Alert",
 		emoji = "💊",
 		text = "A prescription would cause a dangerous interaction with patient's existing meds. Doctor insists.",
 		question = "How do you handle it?",

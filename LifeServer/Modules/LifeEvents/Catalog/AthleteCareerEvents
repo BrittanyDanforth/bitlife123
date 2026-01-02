@@ -322,7 +322,7 @@ AthleteCareerEvents.events = {
 		id = "athlete_ped_offer",
 		title = "💊 PED Offer",
 		emoji = "💊",
-		text = "A teammate secretly offers you performance-enhancing drugs. Says half the league is using them.",
+		text = "A teammate secretly offers you performance enhancers. Says half the league is using them.",
 		category = "career_sports",
 		weight = 12,
 		minAge = 18, maxAge = 40,
@@ -355,7 +355,7 @@ AthleteCareerEvents.events = {
 						state.Flags = state.Flags or {}
 						state.Flags.banned_athlete = true
 						state.CurrentJob = nil
-						state:AddFeed("💊 FAILED DRUG TEST! Suspended indefinitely! Legacy tarnished forever!")
+						state:AddFeed("💊 FAILED TEST! Suspended indefinitely! Legacy tarnished forever!")
 					end
 				end,
 			},

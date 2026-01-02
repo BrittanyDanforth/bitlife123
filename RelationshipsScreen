@@ -664,7 +664,7 @@ local ActivityChoices = {
 		choices = {
 			{ id = "peck", text = "😘 Quick peck", effect = "+Relationship" },
 			{ id = "romantic", text = "💕 Romantic kiss", effect = "+Romance +Happiness" },
-			{ id = "passionate", text = "🔥 Passionate kiss", effect = "+Romance!" },
+			{ id = "passionate", text = "💋 Surprise smooch", effect = "+Romance!" },
 			{ id = "forehead", text = "😊 Forehead kiss", effect = "+Sweet +Relationship" },
 			{ id = "surprise", text = "✨ Spontaneous!", effect = "Random!" },
 		},
