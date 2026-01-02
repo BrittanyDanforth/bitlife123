@@ -288,6 +288,15 @@ Random.events = {
 		title = "Vehicle Problems",
 		emoji = "🚗",
 		text = "Your car broke down!",
+		-- CRITICAL FIX: Added text variations for different car problems!
+		textVariants = {
+			"Your car makes a horrible grinding noise and dies on the highway.",
+			"Check engine light came on. Then smoke started coming from the hood.",
+			"You turn the key and... nothing. The car won't start.",
+			"A loud bang, and suddenly you're pulling over with a flat tire.",
+			"Your car is leaking fluid everywhere. This doesn't look good.",
+			"The transmission is slipping. Every gear change is a struggle.",
+		},
 		question = "How do you handle it?",
 		minAge = 16, maxAge = 90,
 		baseChance = 0.55,

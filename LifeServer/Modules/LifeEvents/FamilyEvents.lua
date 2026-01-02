@@ -149,6 +149,15 @@ FamilyEvents.events = {
 		title = "Newborn Life",
 		emoji = "🍼",
 		text = "The newborn phase is intense!",
+		-- CRITICAL FIX: Added text variations for new parent experiences!
+		textVariants = {
+			"Sleep? What's that? The baby needs feeding every 2 hours.",
+			"You haven't showered in 3 days. The baby is finally asleep. What do you do?",
+			"The baby won't stop crying. You've tried everything. Nothing works.",
+			"It's 3am. The baby is awake. Again. You're running on fumes.",
+			"Diapers, feedings, crying, repeat. This is your life now.",
+			"Everyone said it would be hard. They undersold it. WAY undersold it.",
+		},
 		question = "How are you handling it?",
 		minAge = 18, maxAge = 55,
 		baseChance = 0.4,

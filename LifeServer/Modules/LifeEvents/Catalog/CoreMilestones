@@ -702,7 +702,7 @@ local events = {
 			-- CRITICAL FIX: Add a 5th option for broke players - couch surfing!
 			{
 				index = 5,
-				text = "Couch surf with friends (FREE but unstable)",
+				text = "Crash with friends for now",
 				effects = { Happiness = 2, Health = -3 },
 				setFlags = { living_independently = true, couch_surfing = true, unstable_housing = true },
 				-- Always available - no money required!

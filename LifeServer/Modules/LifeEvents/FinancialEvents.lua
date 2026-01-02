@@ -17,6 +17,15 @@ FinancialEvents.events = {
 		title = "Unexpected Income",
 		emoji = "💵",
 		text = "Money came from an unexpected source!",
+		-- CRITICAL FIX: Added text variations for windfall events!
+		textVariants = {
+			"You got a letter in the mail with good news about money!",
+			"Your phone buzzes with a notification about a deposit!",
+			"Someone owes you money and finally paid up!",
+			"An old investment you forgot about paid off!",
+			"You found money you didn't know you had!",
+			"A company you complained to sent compensation!",
+		},
 		question = "Where did it come from?",
 		minAge = 18, maxAge = 90,
 		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.4 to prevent spam

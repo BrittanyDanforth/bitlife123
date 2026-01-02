@@ -17,6 +17,15 @@ SchoolExpanded.events = {
 		title = "First School Friend",
 		emoji = "👋",
 		text = "Another kid wants to be your friend!",
+		-- CRITICAL FIX: Added text variations for first friend scenarios!
+		textVariants = {
+			"A kid in your class keeps saving you a seat at lunch.",
+			"Someone shared their crayons with you. Now they want to hang out!",
+			"You and another kid both love dinosaurs. Instant connection!",
+			"A classmate invited you to their birthday party!",
+			"Someone on the playground asked if you want to play together.",
+			"The new kid picked YOU to be their first friend.",
+		},
 		question = "How do you respond to their friendship?",
 		minAge = 5, maxAge = 8,
 		baseChance = 0.5,
@@ -54,6 +63,14 @@ SchoolExpanded.events = {
 		title = "Spelling Bee",
 		emoji = "🐝",
 		text = "The school spelling bee is coming up!",
+		-- CRITICAL FIX: Added text variations for spelling bee!
+		textVariants = {
+			"Your teacher asked if you want to represent the class in the spelling bee!",
+			"The annual spelling bee is next week. Your parents signed you up.",
+			"Everyone's buzzing about the spelling bee competition.",
+			"You've been practicing words all week. The spelling bee is tomorrow!",
+			"The school spelling bee winner gets a trophy AND pizza party!",
+		},
 		question = "Do you participate?",
 		minAge = 6, maxAge = 12,
 		baseChance = 0.555,

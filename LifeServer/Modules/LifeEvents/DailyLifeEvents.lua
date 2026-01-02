@@ -17,6 +17,15 @@ DailyLifeEvents.events = {
 		title = "Morning Alarm",
 		emoji = "⏰",
 		text = "The alarm is going off!",
+		-- CRITICAL FIX: Added text variations for morning routine!
+		textVariants = {
+			"BEEP BEEP BEEP! The alarm is screaming at you. Time to face the day.",
+			"Your phone alarm starts playing that song. You know the one.",
+			"6:30 AM. The alarm clock is your enemy. But also your friend. Kinda.",
+			"That irritating buzzing sound. Morning has arrived whether you like it or not.",
+			"Another day, another alarm. The eternal struggle begins.",
+			"Your alarm goes off. The battle between sleep and responsibility commences.",
+		},
 		question = "How do you start your day?",
 		minAge = 12, maxAge = 80,
 		baseChance = 0.55,
@@ -60,6 +69,15 @@ DailyLifeEvents.events = {
 		title = "Breakfast Decision",
 		emoji = "🍳",
 		text = "Time for breakfast!",
+		-- CRITICAL FIX: Added text variations for breakfast!
+		textVariants = {
+			"Your stomach is growling. What's for breakfast?",
+			"The most important meal of the day... or is it?",
+			"You stumble into the kitchen. Breakfast options await.",
+			"Your body needs fuel. The fridge awaits your decision.",
+			"Morning hunger hits. What's on the breakfast menu today?",
+			"Time to eat something before starting the day.",
+		},
 		question = "What do you eat?",
 		minAge = 8, maxAge = 100,
 		baseChance = 0.455,

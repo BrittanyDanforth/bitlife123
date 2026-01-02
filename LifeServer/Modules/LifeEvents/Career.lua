@@ -66,6 +66,15 @@ Career.events = {
 		title = "Office Drama",
 		emoji = "😤",
 		text = "A coworker has been taking credit for your work.",
+		-- CRITICAL FIX: Added text variations for workplace conflicts!
+		textVariants = {
+			"You see your coworker presenting YOUR ideas to the boss as their own.",
+			"During a meeting, your coworker takes full credit for the project YOU led.",
+			"Your name mysteriously disappeared from the report you wrote.",
+			"The boss is praising your coworker for work that was clearly yours.",
+			"You overhear your coworker accepting compliments for YOUR presentation.",
+			"Your coworker's promotion announcement mentions accomplishments that were YOURS.",
+		},
 		question = "How do you handle this?",
 		minAge = 18, maxAge = 65,
 		baseChance = 0.25, -- CRITICAL FIX: Reduced from 0.4 - was spamming with other credit events!
@@ -101,6 +110,15 @@ Career.events = {
 		title = "Opportunity Knocks",
 		emoji = "📈",
 		text = "A promotion opportunity has opened up at work.",
+		-- CRITICAL FIX: Added text variations for promotion opportunities!
+		textVariants = {
+			"Your boss pulls you aside. 'There's an opening for a senior position...'",
+			"HR just posted an internal position that's perfect for you.",
+			"The manager above you is leaving. They want to promote from within.",
+			"Your performance reviews have been stellar. Time for a raise?",
+			"A new team needs a leader. Your name came up in discussions.",
+			"The company is expanding. They need someone to step up.",
+		},
 		question = "Do you go for it?",
 		minAge = 20, maxAge = 60,
 		baseChance = 0.20, -- CRITICAL FIX: Further reduced to prevent promotion spam

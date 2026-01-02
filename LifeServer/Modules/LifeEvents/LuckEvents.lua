@@ -14,6 +14,14 @@ LuckEvents.events = {
 		title = "Four-Leaf Clover",
 		emoji = "🍀",
 		text = "You found a four-leaf clover!",
+		-- CRITICAL FIX: Added text variations for clover discovery!
+		textVariants = {
+			"Walking through a field, you spot something rare - a four-leaf clover!",
+			"While sitting on grass, you notice it - an actual four-leaf clover!",
+			"Your eyes catch something special - a lucky four-leaf clover!",
+			"Among all the regular clovers, there it is - four leaves!",
+			"You've never found one before, but today is different - four leaves!",
+		},
 		question = "Does the luck hold?",
 		minAge = 5, maxAge = 100,
 		baseChance = 0.25,

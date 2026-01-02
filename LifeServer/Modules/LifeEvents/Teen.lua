@@ -241,6 +241,15 @@ Teen.events = {
 		title = "The Big Party",
 		emoji = "🎉",
 		text = "You're invited to a party at a popular kid's house. Your parents might not approve.",
+		-- CRITICAL FIX: Added text variations for different party scenarios!
+		textVariants = {
+			"The most popular kid at school is throwing a huge party. You're somehow on the list!",
+			"Word is there's going to be an EPIC party this weekend. You got invited!",
+			"Your crush is going to be at a party this weekend. You just got the address.",
+			"End of semester party! Everyone's going, but your parents are strict about curfew.",
+			"There's a secret party happening. Parents will be gone. You got the invite.",
+			"The football team is celebrating their win with a party. You're invited as a +1.",
+		},
 		question = "What do you do?",
 		minAge = 15, maxAge = 17,
 		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7

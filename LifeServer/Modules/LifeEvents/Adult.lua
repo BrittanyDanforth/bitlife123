@@ -25,6 +25,15 @@ Adult.events = {
 		emoji = "🏠",
 		-- CRITICAL FIX: Better text explaining the financial implications
 		text = "You're considering moving out of your parents' house. Getting your own place means rent, bills, and responsibility!",
+		-- CRITICAL FIX: Added text variations for moving out scenarios!
+		textVariants = {
+			"Your parents have been hinting that maybe it's time to get your own place.",
+			"You're an adult now. Living with mom and dad is getting awkward.",
+			"All your friends have their own apartments. You're still in your childhood room.",
+			"The tension at home is real. You need your own space.",
+			"You got a job. You have savings. Time to spread your wings?",
+			"Your parents found your... personal items. It's time to move out. NOW.",
+		},
 		question = "What's your plan?",
 		minAge = 18, maxAge = 24,
 		oneTime = true,

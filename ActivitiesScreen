@@ -3236,7 +3236,7 @@ function ActivitiesScreen:doMischief(item)
 				throw_food = "SPLAT! Food goes everywhere! Mom is NOT happy.",
 				break_toy = "Oops! The toy is in pieces now...",
 				draw_walls = "Your artistic masterpiece covers the whole wall!",
-				refuse_nap = "NO NAP! You're cranky but FREE!",
+				refuse_nap = "NO NAP! You're cranky but victorious!",
 				tantrum = "You SCREAM and kick! Maximum drama!",
 				bite_sibling = "CHOMP! Your sibling runs away crying!",
 				hide_mom_keys = "The keys are hidden REALLY well. Mom searches for an hour!",
