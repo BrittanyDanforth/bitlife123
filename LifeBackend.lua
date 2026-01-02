@@ -9244,8 +9244,12 @@ function LifeBackend:setupRemotes()
 	
 	-- CRITICAL FEATURE: GiveUp handler - Player surrenders current life
 	self.remotes.GiveUp.OnServerEvent:Connect(function(player)
-		local state = self.playerStates[player.UserId]
-		if not state then return end
+		-- CRITICAL FIX: playerStates is keyed by player object, not UserId!
+		local state = self.playerStates[player]
+		if not state then
+			warn("[LifeBackend] GiveUp: No state found for player", player.Name)
+			return
+		end
 		
 		-- Log the surrender
 		print("[LifeBackend] Player", player.Name, "gave up at age", state.Age or 0)
@@ -14884,7 +14888,7 @@ function LifeBackend:resetLife(player)
 	-- CRITICAL FIX: Preserve PastLives before resetting!
 	-- PastLives should persist across all lives for the Progress screen
 	-- ═══════════════════════════════════════════════════════════════════════════════
-	local oldState = self.playerStates[player.UserId]
+	local oldState = self.playerStates[player]
 	local preservedPastLives = nil
 	if oldState and oldState.PastLives then
 		preservedPastLives = oldState.PastLives

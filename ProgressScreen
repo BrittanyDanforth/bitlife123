@@ -1,6 +1,6 @@
 -- ProgressScreen.lua
 -- Premium BitLife-style Progress & Awards screen
--- Triple AAA polished UI for tracking awards, past lives, leaderboards, and giving up
+-- Tracks awards, past lives, leaderboards, and give up
 
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -59,7 +59,6 @@ C.RedDark    = C.RedDark    or Color3.fromRGB(185, 28, 28)
 C.RedPale    = C.RedPale    or Color3.fromRGB(254, 226, 226)
 C.Purple     = C.Purple     or Color3.fromRGB(139, 92, 246)
 C.PurpleDark = C.PurpleDark or Color3.fromRGB(109, 40, 217)
-C.PurplePale = C.PurplePale or Color3.fromRGB(237, 233, 254)
 C.White      = C.White      or Color3.fromRGB(255, 255, 255)
 C.Black      = C.Black      or Color3.fromRGB(0, 0, 0)
 C.Gray50     = C.Gray50     or Color3.fromRGB(249, 250, 251)
@@ -97,18 +96,6 @@ local function getScale()
 end
 
 local function px(baseValue) return math.floor(baseValue * getScale()) end
-local function textSize(baseSize) 
-	local minSize = IS_TINY_PHONE and 10 or (IS_SMALL_PHONE and 11 or 12)
-	return math.max(minSize, math.floor(baseSize * getScale())) 
-end
-
--- ═══════════════════════════════════════════════════════════════════════════════
--- DEBUG LOGGING
--- ═══════════════════════════════════════════════════════════════════════════════
-local DEBUG = false
-local function log(...)
-	if DEBUG then print("[ProgressScreen]", ...) end
-end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- MONEY FORMATTING
@@ -134,14 +121,6 @@ end
 local ProgressScreen = {}
 ProgressScreen.__index = ProgressScreen
 
--- Tab definitions - BIGGER BUTTONS
-local TABS = {
-	{ id = "awards", name = "Awards", icon = "🏆", color = C.Amber },
-	{ id = "pastlives", name = "Past Lives", icon = "📜", color = C.Blue },
-	{ id = "leaderboards", name = "Ranks", icon = "🏅", color = C.Green },
-	{ id = "giveup", name = "Give Up", icon = "☠️", color = C.Red },
-}
-
 -- Award definitions
 local AWARDS = {
 	{ id = "first_life", icon = "👶", name = "First Life", desc = "Start your first life", check = function(state) return true end },
@@ -165,7 +144,6 @@ print("[ProgressScreen] About to define .new function")
 
 function ProgressScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, playerState)
 	print("[ProgressScreen] .new function called")
-	log("=== CREATING ProgressScreen ===")
 	local self = setmetatable({}, ProgressScreen)
 	self.screenGui = screenGui
 	self.playerState = playerState or {}
@@ -174,17 +152,7 @@ function ProgressScreen.new(screenGui, blurOverlay, showBlurFunc, hideBlurFunc, 
 	self.isVisible = false
 	self.currentTab = "awards"
 	self.pastLivesCards = {}
-	
-	-- Get remotes
-	self.remotes = {}
-	local remotesFolder = ReplicatedStorage:FindFirstChild("LifeRemotes")
-	if remotesFolder then
-		self.remotes.GiveUp = remotesFolder:FindFirstChild("GiveUp")
-		self.remotes.GetLeaderboards = remotesFolder:FindFirstChild("GetLeaderboards")
-	end
-	
 	self:createUI()
-	log("ProgressScreen created successfully")
 	return self
 end
 
@@ -194,15 +162,21 @@ end
 
 function ProgressScreen:updateState(newState)
 	self.playerState = newState or self.playerState
-	-- Refresh current tab when state updates
 	if self.isVisible then
 		self:switchTab(self.currentTab)
 	end
 end
 
+-- Get GiveUp remote at runtime (not at init)
+function ProgressScreen:getGiveUpRemote()
+	local remotesFolder = ReplicatedStorage:FindFirstChild("LifeRemotes")
+	if remotesFolder then
+		return remotesFolder:FindFirstChild("GiveUp")
+	end
+	return nil
+end
+
 function ProgressScreen:createUI()
-	log("Creating UI...")
-	
 	-- Main overlay
 	self.overlay = Instance.new("Frame")
 	self.overlay.Name = "ProgressScreenOverlay"
@@ -212,22 +186,13 @@ function ProgressScreen:createUI()
 	self.overlay.ZIndex = 80
 	self.overlay.Parent = self.screenGui
 	
-	-- Header
 	self:createHeader()
-	
-	-- Tab bar with BIGGER buttons
 	self:createTabBar()
-	
-	-- Content container
 	self:createContentContainer()
-	
-	-- Build all tab content
 	self:buildAwardsTab()
 	self:buildPastLivesTab()
 	self:buildLeaderboardsTab()
 	self:buildGiveUpTab()
-	
-	log("UI created")
 end
 
 function ProgressScreen:createHeader()
@@ -248,20 +213,18 @@ function ProgressScreen:createHeader()
 	headerGrad.Rotation = 90
 	headerGrad.Parent = self.header
 	
-	-- Title
 	local title = Instance.new("TextLabel")
 	title.Size = UDim2.new(1, -100, 1, 0)
 	title.Position = UDim2.new(0, 16, 0, 0)
 	title.BackgroundTransparency = 1
 	title.Font = F.Bold
-	title.TextSize = IS_TINY_PHONE and 18 or textSize(22)
+	title.TextSize = IS_TINY_PHONE and 18 or 22
 	title.TextColor3 = C.White
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.Text = "🏆 Progress"
 	title.ZIndex = 82
 	title.Parent = self.header
 	
-	-- Close button - USE NORMAL X
 	local closeBtn = Instance.new("TextButton")
 	closeBtn.Size = UDim2.new(0, IS_TINY_PHONE and 36 or 44, 0, IS_TINY_PHONE and 36 or 44)
 	closeBtn.Position = UDim2.new(1, IS_TINY_PHONE and -42 or -52, 0.5, 0)
@@ -271,18 +234,12 @@ function ProgressScreen:createHeader()
 	closeBtn.Font = F.Bold
 	closeBtn.TextSize = IS_TINY_PHONE and 18 or 22
 	closeBtn.TextColor3 = C.Amber
-	closeBtn.Text = "X"  -- NORMAL X, not special character
+	closeBtn.Text = "X"
 	closeBtn.AutoButtonColor = false
 	closeBtn.ZIndex = 82
 	closeBtn.Parent = self.header
 	UI.corner(closeBtn, IS_TINY_PHONE and 18 or 22)
 	
-	closeBtn.MouseEnter:Connect(function()
-		UI.tween(closeBtn, TweenInfo.new(0.1), { BackgroundTransparency = 0 })
-	end)
-	closeBtn.MouseLeave:Connect(function()
-		UI.tween(closeBtn, TweenInfo.new(0.1), { BackgroundTransparency = 0.15 })
-	end)
 	closeBtn.MouseButton1Click:Connect(function()
 		self:hide()
 	end)
@@ -290,8 +247,7 @@ end
 
 function ProgressScreen:createTabBar()
 	local headerHeight = IS_TINY_PHONE and 50 or (IS_SMALL_PHONE and 56 or px(65))
-	-- BIGGER TAB BAR
-	local tabBarHeight = IS_TINY_PHONE and 56 or 68
+	local tabBarHeight = IS_TINY_PHONE and 50 or 60
 	
 	self.tabBar = Instance.new("Frame")
 	self.tabBar.Name = "TabBar"
@@ -301,62 +257,45 @@ function ProgressScreen:createTabBar()
 	self.tabBar.ZIndex = 81
 	self.tabBar.Parent = self.overlay
 	
-	-- Shadow under tab bar
-	local shadow = Instance.new("Frame")
-	shadow.Size = UDim2.new(1, 0, 0, 3)
-	shadow.Position = UDim2.new(0, 0, 1, 0)
-	shadow.BackgroundColor3 = C.Black
-	shadow.BackgroundTransparency = 0.92
-	shadow.ZIndex = 80
-	shadow.Parent = self.tabBar
-	
-	local tabLayout = Instance.new("UIListLayout")
-	tabLayout.FillDirection = Enum.FillDirection.Horizontal
-	tabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	tabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-	tabLayout.Padding = UDim.new(0, IS_TINY_PHONE and 6 or 10)
-	tabLayout.Parent = self.tabBar
+	-- Use grid layout for even distribution
+	local tabGrid = Instance.new("UIGridLayout")
+	tabGrid.CellSize = UDim2.new(0.25, -4, 1, -8)
+	tabGrid.CellPadding = UDim2.new(0, 4, 0, 0)
+	tabGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	tabGrid.VerticalAlignment = Enum.VerticalAlignment.Center
+	tabGrid.Parent = self.tabBar
 	
 	local tabPad = Instance.new("UIPadding")
-	tabPad.PaddingLeft = UDim.new(0, IS_TINY_PHONE and 8 or 12)
-	tabPad.PaddingRight = UDim.new(0, IS_TINY_PHONE and 8 or 12)
+	tabPad.PaddingLeft = UDim.new(0, 6)
+	tabPad.PaddingRight = UDim.new(0, 6)
+	tabPad.PaddingTop = UDim.new(0, 4)
+	tabPad.PaddingBottom = UDim.new(0, 4)
 	tabPad.Parent = self.tabBar
 	
 	self.tabButtons = {}
 	
-	-- BIGGER BUTTONS
-	local btnWidth = IS_TINY_PHONE and 75 or 85
-	local btnHeight = IS_TINY_PHONE and 44 or 52
+	local tabs = {
+		{ id = "awards", name = "Awards", icon = "🏆", color = C.Amber },
+		{ id = "pastlives", name = "Lives", icon = "📜", color = C.Blue },
+		{ id = "leaderboards", name = "Ranks", icon = "🏅", color = C.Green },
+		{ id = "giveup", name = "Give Up", icon = "☠️", color = C.Red },
+	}
 	
-	for i, tab in ipairs(TABS) do
+	for i, tab in ipairs(tabs) do
 		local tabBtn = Instance.new("TextButton")
 		tabBtn.Name = "Tab_" .. tab.id
-		tabBtn.Size = UDim2.new(0, btnWidth, 0, btnHeight)
 		tabBtn.BackgroundColor3 = i == 1 and tab.color or C.Gray100
 		tabBtn.Font = F.Bold
-		tabBtn.TextSize = IS_TINY_PHONE and 11 or 13
+		tabBtn.TextSize = IS_TINY_PHONE and 10 or 12
 		tabBtn.TextColor3 = i == 1 and C.White or C.Gray600
-		tabBtn.Text = tab.icon .. "\n" .. tab.name
-		tabBtn.TextWrapped = true
+		tabBtn.Text = tab.icon .. " " .. tab.name
 		tabBtn.AutoButtonColor = false
 		tabBtn.LayoutOrder = i
 		tabBtn.ZIndex = 82
 		tabBtn.Parent = self.tabBar
-		UI.corner(tabBtn, 10)
+		UI.corner(tabBtn, 8)
 		
 		self.tabButtons[tab.id] = { btn = tabBtn, color = tab.color }
-		
-		-- Hover effect
-		tabBtn.MouseEnter:Connect(function()
-			if self.currentTab ~= tab.id then
-				UI.tween(tabBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.Gray200 })
-			end
-		end)
-		tabBtn.MouseLeave:Connect(function()
-			if self.currentTab ~= tab.id then
-				UI.tween(tabBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.Gray100 })
-			end
-		end)
 		
 		tabBtn.MouseButton1Click:Connect(function()
 			self:switchTab(tab.id)
@@ -366,7 +305,7 @@ end
 
 function ProgressScreen:createContentContainer()
 	local headerHeight = IS_TINY_PHONE and 50 or (IS_SMALL_PHONE and 56 or px(65))
-	local tabBarHeight = IS_TINY_PHONE and 56 or 68
+	local tabBarHeight = IS_TINY_PHONE and 50 or 60
 	local topOffset = headerHeight + tabBarHeight
 	
 	self.contentContainer = Instance.new("Frame")
@@ -388,109 +327,84 @@ function ProgressScreen:buildAwardsTab()
 	container.Name = "AwardsContent"
 	container.Size = UDim2.fromScale(1, 1)
 	container.BackgroundTransparency = 1
-	container.ScrollBarThickness = 4
-	container.ScrollBarImageColor3 = C.Gray400
-	container.CanvasSize = UDim2.new(0, 0, 0, #AWARDS * 80 + 30)
+	container.ScrollBarThickness = 6
+	container.ScrollBarImageColor3 = C.Gray300
+	container.CanvasSize = UDim2.new(0, 0, 0, #AWARDS * 75 + 30)
 	container.Visible = true
 	container.ZIndex = 81
 	container.Parent = self.contentContainer
 	
 	local layout = Instance.new("UIListLayout")
-	layout.Padding = UDim.new(0, 10)
+	layout.Padding = UDim.new(0, 8)
 	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	layout.Parent = container
 	
 	local pad = Instance.new("UIPadding")
-	pad.PaddingTop = UDim.new(0, 12)
-	pad.PaddingLeft = UDim.new(0, 12)
-	pad.PaddingRight = UDim.new(0, 12)
-	pad.PaddingBottom = UDim.new(0, 12)
+	pad.PaddingTop = UDim.new(0, 10)
+	pad.PaddingLeft = UDim.new(0, 10)
+	pad.PaddingRight = UDim.new(0, 10)
+	pad.PaddingBottom = UDim.new(0, 10)
 	pad.Parent = container
 	
 	self.awardItems = {}
 	
 	for i, award in ipairs(AWARDS) do
-		-- Premium card style
 		local card = Instance.new("Frame")
 		card.Name = "Award_" .. award.id
-		card.Size = UDim2.new(1, -10, 0, 70)
+		card.Size = UDim2.new(1, -10, 0, 65)
 		card.BackgroundColor3 = C.White
 		card.LayoutOrder = i
 		card.ZIndex = 82
 		card.Parent = container
-		UI.corner(card, 14)
+		UI.corner(card, 12)
 		
-		-- Card shadow
-		local cardShadow = Instance.new("Frame")
-		cardShadow.Size = UDim2.new(1, 4, 1, 4)
-		cardShadow.Position = UDim2.new(0, 2, 0, 2)
-		cardShadow.BackgroundColor3 = C.Black
-		cardShadow.BackgroundTransparency = 0.94
-		cardShadow.ZIndex = 81
-		cardShadow.Parent = card
-		UI.corner(cardShadow, 16)
-		
-		-- Icon circle
 		local iconCircle = Instance.new("Frame")
-		iconCircle.Size = UDim2.new(0, 50, 0, 50)
+		iconCircle.Size = UDim2.new(0, 45, 0, 45)
 		iconCircle.Position = UDim2.new(0, 10, 0.5, 0)
 		iconCircle.AnchorPoint = Vector2.new(0, 0.5)
 		iconCircle.BackgroundColor3 = C.Gray100
 		iconCircle.ZIndex = 83
 		iconCircle.Parent = card
-		UI.corner(iconCircle, 25)
+		UI.corner(iconCircle, 22)
 		
 		local icon = Instance.new("TextLabel")
 		icon.Size = UDim2.fromScale(1, 1)
 		icon.BackgroundTransparency = 1
 		icon.Font = F.Body
-		icon.TextSize = 26
+		icon.TextSize = 22
 		icon.Text = "🔒"
 		icon.ZIndex = 84
 		icon.Parent = iconCircle
 		
-		-- Name
 		local name = Instance.new("TextLabel")
-		name.Size = UDim2.new(1, -80, 0, 24)
-		name.Position = UDim2.new(0, 68, 0, 12)
+		name.Size = UDim2.new(1, -75, 0, 22)
+		name.Position = UDim2.new(0, 62, 0, 12)
 		name.BackgroundTransparency = 1
 		name.Font = F.Bold
-		name.TextSize = 15
+		name.TextSize = 14
 		name.TextColor3 = C.Gray500
 		name.TextXAlignment = Enum.TextXAlignment.Left
 		name.Text = award.name
 		name.ZIndex = 83
 		name.Parent = card
 		
-		-- Description
 		local desc = Instance.new("TextLabel")
-		desc.Size = UDim2.new(1, -80, 0, 22)
-		desc.Position = UDim2.new(0, 68, 0, 36)
+		desc.Size = UDim2.new(1, -75, 0, 20)
+		desc.Position = UDim2.new(0, 62, 0, 34)
 		desc.BackgroundTransparency = 1
 		desc.Font = F.Body
-		desc.TextSize = 12
+		desc.TextSize = 11
 		desc.TextColor3 = C.Gray400
 		desc.TextXAlignment = Enum.TextXAlignment.Left
 		desc.Text = award.desc
 		desc.ZIndex = 83
 		desc.Parent = card
 		
-		-- Status indicator
-		local statusBadge = Instance.new("Frame")
-		statusBadge.Size = UDim2.new(0, 8, 0, 8)
-		statusBadge.Position = UDim2.new(1, -18, 0.5, 0)
-		statusBadge.AnchorPoint = Vector2.new(0, 0.5)
-		statusBadge.BackgroundColor3 = C.Gray300
-		statusBadge.ZIndex = 84
-		statusBadge.Parent = card
-		UI.corner(statusBadge, 4)
-		
 		self.awardItems[award.id] = { 
 			card = card, 
 			iconCircle = iconCircle,
 			icon = icon, 
 			name = name,
-			statusBadge = statusBadge,
 			award = award 
 		}
 	end
@@ -499,7 +413,7 @@ function ProgressScreen:buildAwardsTab()
 end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- PAST LIVES TAB - BEAUTIFUL CARDS
+-- PAST LIVES TAB
 -- ═══════════════════════════════════════════════════════════════════════════════
 function ProgressScreen:buildPastLivesTab()
 	local container = Instance.new("Frame")
@@ -510,100 +424,91 @@ function ProgressScreen:buildPastLivesTab()
 	container.ZIndex = 81
 	container.Parent = self.contentContainer
 	
-	-- Stats summary card at top
+	-- Stats card
 	local statsCard = Instance.new("Frame")
-	statsCard.Size = UDim2.new(1, -24, 0, 100)
-	statsCard.Position = UDim2.new(0, 12, 0, 12)
+	statsCard.Size = UDim2.new(1, -20, 0, 80)
+	statsCard.Position = UDim2.new(0, 10, 0, 10)
 	statsCard.BackgroundColor3 = C.BluePale
 	statsCard.ZIndex = 82
 	statsCard.Parent = container
-	UI.corner(statsCard, 14)
+	UI.corner(statsCard, 12)
 	
-	-- Stats card gradient
-	local statsGrad = Instance.new("UIGradient")
-	statsGrad.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Color3.fromRGB(219, 234, 254)),
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(191, 219, 254)),
-	})
-	statsGrad.Rotation = 90
-	statsGrad.Parent = statsCard
-	
-	-- Stats title
 	local statsTitle = Instance.new("TextLabel")
-	statsTitle.Size = UDim2.new(1, 0, 0, 28)
-	statsTitle.Position = UDim2.new(0, 0, 0, 6)
+	statsTitle.Size = UDim2.new(1, 0, 0, 24)
+	statsTitle.Position = UDim2.new(0, 0, 0, 4)
 	statsTitle.BackgroundTransparency = 1
 	statsTitle.Font = F.Bold
-	statsTitle.TextSize = 16
+	statsTitle.TextSize = 14
 	statsTitle.TextColor3 = C.BlueDark
 	statsTitle.Text = "📊 Lifetime Stats"
 	statsTitle.ZIndex = 83
 	statsTitle.Parent = statsCard
 	
-	-- Stats grid
-	local statsGrid = Instance.new("Frame")
-	statsGrid.Size = UDim2.new(1, -16, 0, 60)
-	statsGrid.Position = UDim2.new(0, 8, 0, 34)
-	statsGrid.BackgroundTransparency = 1
-	statsGrid.ZIndex = 83
-	statsGrid.Parent = statsCard
+	-- Stats row
+	local statsRow = Instance.new("Frame")
+	statsRow.Size = UDim2.new(1, -12, 0, 48)
+	statsRow.Position = UDim2.new(0, 6, 0, 28)
+	statsRow.BackgroundTransparency = 1
+	statsRow.ZIndex = 83
+	statsRow.Parent = statsCard
 	
-	local gridLayout = Instance.new("UIGridLayout")
-	gridLayout.CellSize = UDim2.new(0.5, -4, 0.5, -2)
-	gridLayout.CellPadding = UDim2.new(0, 4, 0, 2)
-	gridLayout.Parent = statsGrid
+	local statsLayout = Instance.new("UIListLayout")
+	statsLayout.FillDirection = Enum.FillDirection.Horizontal
+	statsLayout.Padding = UDim.new(0, 4)
+	statsLayout.Parent = statsRow
 	
-	local function createStatBox(text, order)
+	local function createStat(text, order)
 		local box = Instance.new("Frame")
+		box.Size = UDim2.new(0.25, -3, 1, 0)
 		box.BackgroundColor3 = C.White
-		box.BackgroundTransparency = 0.3
+		box.BackgroundTransparency = 0.4
 		box.LayoutOrder = order
 		box.ZIndex = 84
-		box.Parent = statsGrid
-		UI.corner(box, 8)
+		box.Parent = statsRow
+		UI.corner(box, 6)
 		
 		local lbl = Instance.new("TextLabel")
 		lbl.Size = UDim2.fromScale(1, 1)
 		lbl.BackgroundTransparency = 1
 		lbl.Font = F.Bold
-		lbl.TextSize = IS_TINY_PHONE and 11 or 13
+		lbl.TextSize = IS_TINY_PHONE and 10 or 11
 		lbl.TextColor3 = C.Blue
 		lbl.Text = text
+		lbl.TextWrapped = true
 		lbl.ZIndex = 85
 		lbl.Parent = box
 		return lbl
 	end
 	
 	self.pastLivesStats = {
-		totalLives = createStatBox("Lives: 1", 1),
-		totalYears = createStatBox("Years: 0", 2),
-		longestLife = createStatBox("Longest: 0 yrs", 3),
-		richestLife = createStatBox("Richest: $0", 4),
+		totalLives = createStat("Lives\n1", 1),
+		totalYears = createStat("Years\n0", 2),
+		longestLife = createStat("Best\n0 yrs", 3),
+		richestLife = createStat("Rich\n$0", 4),
 	}
 	
-	-- Lives scroll list
+	-- Lives scroll
 	self.pastLivesScroll = Instance.new("ScrollingFrame")
-	self.pastLivesScroll.Size = UDim2.new(1, -24, 1, -130)
-	self.pastLivesScroll.Position = UDim2.new(0, 12, 0, 122)
+	self.pastLivesScroll.Size = UDim2.new(1, -20, 1, -105)
+	self.pastLivesScroll.Position = UDim2.new(0, 10, 0, 98)
 	self.pastLivesScroll.BackgroundTransparency = 1
-	self.pastLivesScroll.ScrollBarThickness = 4
-	self.pastLivesScroll.ScrollBarImageColor3 = C.Gray400
+	self.pastLivesScroll.ScrollBarThickness = 6
+	self.pastLivesScroll.ScrollBarImageColor3 = C.Gray300
 	self.pastLivesScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 	self.pastLivesScroll.ZIndex = 82
 	self.pastLivesScroll.Parent = container
 	
 	local scrollLayout = Instance.new("UIListLayout")
-	scrollLayout.Padding = UDim.new(0, 10)
+	scrollLayout.Padding = UDim.new(0, 8)
 	scrollLayout.Parent = self.pastLivesScroll
 	
-	-- Placeholder when no past lives
 	self.noLivesLabel = Instance.new("TextLabel")
-	self.noLivesLabel.Size = UDim2.new(1, 0, 0, 80)
+	self.noLivesLabel.Size = UDim2.new(1, 0, 0, 60)
 	self.noLivesLabel.BackgroundTransparency = 1
 	self.noLivesLabel.Font = F.Medium
-	self.noLivesLabel.TextSize = 14
+	self.noLivesLabel.TextSize = 13
 	self.noLivesLabel.TextColor3 = C.Gray400
-	self.noLivesLabel.Text = "🌱 This is your first life!\nYour past lives will appear here."
+	self.noLivesLabel.Text = "🌱 This is your first life!\nPast lives will appear here."
 	self.noLivesLabel.ZIndex = 83
 	self.noLivesLabel.Parent = self.pastLivesScroll
 	
@@ -611,17 +516,16 @@ function ProgressScreen:buildPastLivesTab()
 end
 
 function ProgressScreen:createPastLifeCard(lifeData, index)
-	-- Beautiful card for each past life
 	local card = Instance.new("Frame")
-	card.Name = "PastLife_" .. index
-	card.Size = UDim2.new(1, 0, 0, 120)
+	card.Name = "Life_" .. index
+	card.Size = UDim2.new(1, 0, 0, 90)
 	card.BackgroundColor3 = C.White
 	card.LayoutOrder = index
 	card.ZIndex = 83
 	card.Parent = self.pastLivesScroll
-	UI.corner(card, 14)
+	UI.corner(card, 12)
 	
-	-- Card border based on how successful the life was
+	-- Border color based on success
 	local borderColor = C.Gray200
 	if (lifeData.netWorth or 0) >= 1000000 then
 		borderColor = C.Gold
@@ -634,144 +538,82 @@ function ProgressScreen:createPastLifeCard(lifeData, index)
 	border.Thickness = 2
 	border.Parent = card
 	
-	-- Life number badge
-	local lifeBadge = Instance.new("Frame")
-	lifeBadge.Size = UDim2.new(0, 36, 0, 36)
-	lifeBadge.Position = UDim2.new(0, 10, 0, 10)
-	lifeBadge.BackgroundColor3 = C.Purple
-	lifeBadge.ZIndex = 84
-	lifeBadge.Parent = card
-	UI.corner(lifeBadge, 18)
+	-- Life number
+	local numBadge = Instance.new("Frame")
+	numBadge.Size = UDim2.new(0, 32, 0, 32)
+	numBadge.Position = UDim2.new(0, 8, 0, 8)
+	numBadge.BackgroundColor3 = C.Purple
+	numBadge.ZIndex = 84
+	numBadge.Parent = card
+	UI.corner(numBadge, 16)
 	
-	local lifeNum = Instance.new("TextLabel")
-	lifeNum.Size = UDim2.fromScale(1, 1)
-	lifeNum.BackgroundTransparency = 1
-	lifeNum.Font = F.Bold
-	lifeNum.TextSize = 14
-	lifeNum.TextColor3 = C.White
-	lifeNum.Text = "#" .. index
-	lifeNum.ZIndex = 85
-	lifeNum.Parent = lifeBadge
+	local numLbl = Instance.new("TextLabel")
+	numLbl.Size = UDim2.fromScale(1, 1)
+	numLbl.BackgroundTransparency = 1
+	numLbl.Font = F.Bold
+	numLbl.TextSize = 12
+	numLbl.TextColor3 = C.White
+	numLbl.Text = "#" .. index
+	numLbl.ZIndex = 85
+	numLbl.Parent = numBadge
 	
-	-- Name and lifespan
-	local nameLabel = Instance.new("TextLabel")
-	nameLabel.Size = UDim2.new(1, -60, 0, 22)
-	nameLabel.Position = UDim2.new(0, 54, 0, 8)
-	nameLabel.BackgroundTransparency = 1
-	nameLabel.Font = F.Bold
-	nameLabel.TextSize = 16
-	nameLabel.TextColor3 = C.Gray800
-	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
-	nameLabel.Text = lifeData.name or "Unknown"
-	nameLabel.ZIndex = 84
-	nameLabel.Parent = card
+	-- Name
+	local nameLbl = Instance.new("TextLabel")
+	nameLbl.Size = UDim2.new(1, -55, 0, 20)
+	nameLbl.Position = UDim2.new(0, 48, 0, 6)
+	nameLbl.BackgroundTransparency = 1
+	nameLbl.Font = F.Bold
+	nameLbl.TextSize = 14
+	nameLbl.TextColor3 = C.Gray800
+	nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+	nameLbl.Text = lifeData.name or "Unknown"
+	nameLbl.ZIndex = 84
+	nameLbl.Parent = card
 	
-	-- Age/lifespan
-	local ageLabel = Instance.new("TextLabel")
-	ageLabel.Size = UDim2.new(1, -60, 0, 18)
-	ageLabel.Position = UDim2.new(0, 54, 0, 30)
-	ageLabel.BackgroundTransparency = 1
-	ageLabel.Font = F.Medium
-	ageLabel.TextSize = 13
-	ageLabel.TextColor3 = C.Gray500
-	ageLabel.TextXAlignment = Enum.TextXAlignment.Left
-	ageLabel.Text = "Lived " .. (lifeData.age or 0) .. " years"
-	ageLabel.ZIndex = 84
-	ageLabel.Parent = card
+	-- Age
+	local ageLbl = Instance.new("TextLabel")
+	ageLbl.Size = UDim2.new(1, -55, 0, 16)
+	ageLbl.Position = UDim2.new(0, 48, 0, 26)
+	ageLbl.BackgroundTransparency = 1
+	ageLbl.Font = F.Medium
+	ageLbl.TextSize = 12
+	ageLbl.TextColor3 = C.Gray500
+	ageLbl.TextXAlignment = Enum.TextXAlignment.Left
+	ageLbl.Text = "Lived " .. (lifeData.age or 0) .. " years"
+	ageLbl.ZIndex = 84
+	ageLbl.Parent = card
 	
-	-- Divider line
-	local divider = Instance.new("Frame")
-	divider.Size = UDim2.new(1, -20, 0, 1)
-	divider.Position = UDim2.new(0, 10, 0, 54)
-	divider.BackgroundColor3 = C.Gray200
-	divider.ZIndex = 84
-	divider.Parent = card
+	-- Money
+	local moneyLbl = Instance.new("TextLabel")
+	moneyLbl.Size = UDim2.new(0.5, -10, 0, 20)
+	moneyLbl.Position = UDim2.new(0, 8, 0, 48)
+	moneyLbl.BackgroundTransparency = 1
+	moneyLbl.Font = F.Bold
+	moneyLbl.TextSize = 13
+	moneyLbl.TextColor3 = C.Green
+	moneyLbl.TextXAlignment = Enum.TextXAlignment.Left
+	moneyLbl.Text = "💰 " .. formatMoney(lifeData.netWorth or 0)
+	moneyLbl.ZIndex = 84
+	moneyLbl.Parent = card
 	
-	-- Stats row
-	local statsRow = Instance.new("Frame")
-	statsRow.Size = UDim2.new(1, -20, 0, 28)
-	statsRow.Position = UDim2.new(0, 10, 0, 60)
-	statsRow.BackgroundTransparency = 1
-	statsRow.ZIndex = 84
-	statsRow.Parent = card
-	
-	-- Net worth
-	local worthLabel = Instance.new("TextLabel")
-	worthLabel.Size = UDim2.new(0.5, 0, 1, 0)
-	worthLabel.BackgroundTransparency = 1
-	worthLabel.Font = F.Bold
-	worthLabel.TextSize = 14
-	worthLabel.TextColor3 = C.Green
-	worthLabel.TextXAlignment = Enum.TextXAlignment.Left
-	worthLabel.Text = "💰 " .. formatMoney(lifeData.netWorth or 0)
-	worthLabel.ZIndex = 85
-	worthLabel.Parent = statsRow
-	
-	-- Death cause
-	local causeLabel = Instance.new("TextLabel")
-	causeLabel.Size = UDim2.new(1, -20, 0, 26)
-	causeLabel.Position = UDim2.new(0, 10, 0, 88)
-	causeLabel.BackgroundTransparency = 1
-	causeLabel.Font = F.Body
-	causeLabel.TextSize = 12
-	causeLabel.TextColor3 = C.Gray500
-	causeLabel.TextXAlignment = Enum.TextXAlignment.Left
-	causeLabel.Text = "☠️ " .. (lifeData.cause or "Natural causes")
-	causeLabel.ZIndex = 84
-	causeLabel.Parent = card
-	
-	-- Achievement badges (if any)
-	local achievements = lifeData.achievements or {}
-	if #achievements > 0 or (lifeData.netWorth or 0) >= 1000000 or (lifeData.age or 0) >= 100 then
-		local badgeRow = Instance.new("Frame")
-		badgeRow.Size = UDim2.new(0.5, -10, 0, 28)
-		badgeRow.Position = UDim2.new(0.5, 0, 0, 0)
-		badgeRow.BackgroundTransparency = 1
-		badgeRow.ZIndex = 85
-		badgeRow.Parent = statsRow
-		
-		local badgeLayout = Instance.new("UIListLayout")
-		badgeLayout.FillDirection = Enum.FillDirection.Horizontal
-		badgeLayout.Padding = UDim.new(0, 4)
-		badgeLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-		badgeLayout.Parent = badgeRow
-		
-		-- Auto-add badges based on life stats
-		local badges = {}
-		if (lifeData.netWorth or 0) >= 1000000000 then
-			table.insert(badges, "🤑")
-		elseif (lifeData.netWorth or 0) >= 1000000 then
-			table.insert(badges, "💰")
-		end
-		if (lifeData.age or 0) >= 100 then
-			table.insert(badges, "💯")
-		elseif (lifeData.age or 0) >= 80 then
-			table.insert(badges, "👴")
-		end
-		if lifeData.famous then
-			table.insert(badges, "⭐")
-		end
-		if lifeData.married then
-			table.insert(badges, "💒")
-		end
-		
-		for _, badge in ipairs(badges) do
-			local badgeLbl = Instance.new("TextLabel")
-			badgeLbl.Size = UDim2.new(0, 22, 0, 22)
-			badgeLbl.BackgroundTransparency = 1
-			badgeLbl.Font = F.Body
-			badgeLbl.TextSize = 16
-			badgeLbl.Text = badge
-			badgeLbl.ZIndex = 86
-			badgeLbl.Parent = badgeRow
-		end
-	end
+	-- Cause
+	local causeLbl = Instance.new("TextLabel")
+	causeLbl.Size = UDim2.new(1, -16, 0, 18)
+	causeLbl.Position = UDim2.new(0, 8, 0, 68)
+	causeLbl.BackgroundTransparency = 1
+	causeLbl.Font = F.Body
+	causeLbl.TextSize = 11
+	causeLbl.TextColor3 = C.Gray500
+	causeLbl.TextXAlignment = Enum.TextXAlignment.Left
+	causeLbl.Text = "☠️ " .. (lifeData.cause or "Natural causes")
+	causeLbl.ZIndex = 84
+	causeLbl.Parent = card
 	
 	return card
 end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- LEADERBOARDS TAB - REAL DATA
+-- LEADERBOARDS TAB
 -- ═══════════════════════════════════════════════════════════════════════════════
 function ProgressScreen:buildLeaderboardsTab()
 	local container = Instance.new("Frame")
@@ -782,224 +624,86 @@ function ProgressScreen:buildLeaderboardsTab()
 	container.ZIndex = 81
 	container.Parent = self.contentContainer
 	
-	-- Your Stats Card (show current player stats)
+	-- Your Stats Card
 	local yourCard = Instance.new("Frame")
-	yourCard.Size = UDim2.new(1, -24, 0, 90)
-	yourCard.Position = UDim2.new(0, 12, 0, 12)
+	yourCard.Size = UDim2.new(1, -20, 0, 70)
+	yourCard.Position = UDim2.new(0, 10, 0, 10)
 	yourCard.BackgroundColor3 = C.GreenPale
 	yourCard.ZIndex = 82
 	yourCard.Parent = container
-	UI.corner(yourCard, 14)
-	
-	local yourGrad = Instance.new("UIGradient")
-	yourGrad.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Color3.fromRGB(220, 252, 231)),
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(187, 247, 208)),
-	})
-	yourGrad.Rotation = 90
-	yourGrad.Parent = yourCard
+	UI.corner(yourCard, 12)
 	
 	local yourTitle = Instance.new("TextLabel")
-	yourTitle.Size = UDim2.new(1, 0, 0, 26)
-	yourTitle.Position = UDim2.new(0, 0, 0, 6)
+	yourTitle.Size = UDim2.new(1, 0, 0, 22)
+	yourTitle.Position = UDim2.new(0, 0, 0, 4)
 	yourTitle.BackgroundTransparency = 1
 	yourTitle.Font = F.Bold
-	yourTitle.TextSize = 15
+	yourTitle.TextSize = 13
 	yourTitle.TextColor3 = C.GreenDark
 	yourTitle.Text = "🏅 Your Current Stats"
 	yourTitle.ZIndex = 83
 	yourTitle.Parent = yourCard
 	
-	-- Your stats row
-	local yourStatsRow = Instance.new("Frame")
-	yourStatsRow.Size = UDim2.new(1, -16, 0, 50)
-	yourStatsRow.Position = UDim2.new(0, 8, 0, 34)
-	yourStatsRow.BackgroundTransparency = 1
-	yourStatsRow.ZIndex = 83
-	yourStatsRow.Parent = yourCard
+	-- Stats row
+	local yourRow = Instance.new("Frame")
+	yourRow.Size = UDim2.new(1, -12, 0, 40)
+	yourRow.Position = UDim2.new(0, 6, 0, 26)
+	yourRow.BackgroundTransparency = 1
+	yourRow.ZIndex = 83
+	yourRow.Parent = yourCard
 	
 	local yourLayout = Instance.new("UIListLayout")
 	yourLayout.FillDirection = Enum.FillDirection.Horizontal
-	yourLayout.Padding = UDim.new(0, 8)
+	yourLayout.Padding = UDim.new(0, 6)
 	yourLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	yourLayout.Parent = yourStatsRow
+	yourLayout.Parent = yourRow
 	
-	local function createYourStat(icon, label, order)
-		local stat = Instance.new("Frame")
-		stat.Size = UDim2.new(0, 90, 1, 0)
-		stat.BackgroundColor3 = C.White
-		stat.BackgroundTransparency = 0.4
-		stat.LayoutOrder = order
-		stat.ZIndex = 84
-		stat.Parent = yourStatsRow
-		UI.corner(stat, 8)
+	local function createYourStat(icon, text, order)
+		local box = Instance.new("Frame")
+		box.Size = UDim2.new(0, 90, 1, 0)
+		box.BackgroundColor3 = C.White
+		box.BackgroundTransparency = 0.4
+		box.LayoutOrder = order
+		box.ZIndex = 84
+		box.Parent = yourRow
+		UI.corner(box, 6)
 		
-		local iconLbl = Instance.new("TextLabel")
-		iconLbl.Size = UDim2.new(1, 0, 0, 20)
-		iconLbl.Position = UDim2.new(0, 0, 0, 4)
-		iconLbl.BackgroundTransparency = 1
-		iconLbl.Font = F.Body
-		iconLbl.TextSize = 16
-		iconLbl.Text = icon
-		iconLbl.ZIndex = 85
-		iconLbl.Parent = stat
-		
-		local valueLbl = Instance.new("TextLabel")
-		valueLbl.Size = UDim2.new(1, 0, 0, 22)
-		valueLbl.Position = UDim2.new(0, 0, 0, 24)
-		valueLbl.BackgroundTransparency = 1
-		valueLbl.Font = F.Bold
-		valueLbl.TextSize = 12
-		valueLbl.TextColor3 = C.Gray700
-		valueLbl.Text = label
-		valueLbl.ZIndex = 85
-		valueLbl.Parent = stat
-		
-		return valueLbl
+		local lbl = Instance.new("TextLabel")
+		lbl.Size = UDim2.fromScale(1, 1)
+		lbl.BackgroundTransparency = 1
+		lbl.Font = F.Bold
+		lbl.TextSize = 12
+		lbl.TextColor3 = C.Gray700
+		lbl.Text = icon .. " " .. text
+		lbl.ZIndex = 85
+		lbl.Parent = box
+		return lbl
 	end
 	
 	self.yourStats = {
 		money = createYourStat("💰", "$0", 1),
 		age = createYourStat("📅", "Age 0", 2),
-		fame = createYourStat("⭐", "0 Fame", 3),
+		fame = createYourStat("⭐", "0", 3),
 	}
 	
-	-- Sub-tabs for leaderboard type
-	local subTabBar = Instance.new("Frame")
-	subTabBar.Size = UDim2.new(1, -24, 0, 44)
-	subTabBar.Position = UDim2.new(0, 12, 0, 112)
-	subTabBar.BackgroundTransparency = 1
-	subTabBar.ZIndex = 82
-	subTabBar.Parent = container
-	
-	local subTabLayout = Instance.new("UIListLayout")
-	subTabLayout.FillDirection = Enum.FillDirection.Horizontal
-	subTabLayout.Padding = UDim.new(0, 8)
-	subTabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	subTabLayout.Parent = subTabBar
-	
-	local subTabs = { 
-		{ id = "richest", name = "💰 Richest" },
-		{ id = "oldest", name = "📅 Oldest" },
-		{ id = "fame", name = "⭐ Fame" }
-	}
-	self.leaderboardSubTabs = {}
-	self.currentLeaderboardTab = "richest"
-	
-	for i, tab in ipairs(subTabs) do
-		local btn = Instance.new("TextButton")
-		btn.Size = UDim2.new(0, IS_TINY_PHONE and 85 or 100, 0, 36)
-		btn.BackgroundColor3 = i == 1 and C.Green or C.Gray200
-		btn.Font = F.Bold
-		btn.TextSize = IS_TINY_PHONE and 12 or 14
-		btn.TextColor3 = i == 1 and C.White or C.Gray600
-		btn.Text = tab.name
-		btn.AutoButtonColor = false
-		btn.LayoutOrder = i
-		btn.ZIndex = 83
-		btn.Parent = subTabBar
-		UI.corner(btn, 10)
-		
-		self.leaderboardSubTabs[tab.id] = btn
-		
-		btn.MouseButton1Click:Connect(function()
-			self:switchLeaderboardTab(tab.id)
-		end)
-	end
-	
-	-- Leaderboard scroll
-	self.leaderboardScroll = Instance.new("ScrollingFrame")
-	self.leaderboardScroll.Size = UDim2.new(1, -24, 1, -170)
-	self.leaderboardScroll.Position = UDim2.new(0, 12, 0, 164)
-	self.leaderboardScroll.BackgroundTransparency = 1
-	self.leaderboardScroll.ScrollBarThickness = 4
-	self.leaderboardScroll.ScrollBarImageColor3 = C.Gray400
-	self.leaderboardScroll.CanvasSize = UDim2.new(0, 0, 0, 600)
-	self.leaderboardScroll.ZIndex = 82
-	self.leaderboardScroll.Parent = container
-	
-	local scrollLayout = Instance.new("UIListLayout")
-	scrollLayout.Padding = UDim.new(0, 6)
-	scrollLayout.Parent = self.leaderboardScroll
+	-- Info text
+	local infoLbl = Instance.new("TextLabel")
+	infoLbl.Size = UDim2.new(1, -20, 0, 50)
+	infoLbl.Position = UDim2.new(0, 10, 0, 90)
+	infoLbl.BackgroundTransparency = 1
+	infoLbl.Font = F.Medium
+	infoLbl.TextSize = 13
+	infoLbl.TextColor3 = C.Gray500
+	infoLbl.TextWrapped = true
+	infoLbl.Text = "🌟 Keep playing to climb the ranks!\nCompete with friends for the top spots."
+	infoLbl.ZIndex = 82
+	infoLbl.Parent = container
 	
 	self.tabContents["leaderboards"] = container
 end
 
-function ProgressScreen:switchLeaderboardTab(tabId)
-	self.currentLeaderboardTab = tabId
-	
-	-- Update button styles
-	for id, btn in pairs(self.leaderboardSubTabs) do
-		btn.BackgroundColor3 = id == tabId and C.Green or C.Gray200
-		btn.TextColor3 = id == tabId and C.White or C.Gray600
-	end
-	
-	self:refreshLeaderboards()
-end
-
-function ProgressScreen:createLeaderboardEntry(rank, name, value, isYou)
-	local entry = Instance.new("Frame")
-	entry.Size = UDim2.new(1, 0, 0, 52)
-	entry.BackgroundColor3 = isYou and C.GreenPale or C.White
-	entry.LayoutOrder = rank
-	entry.ZIndex = 83
-	entry.Parent = self.leaderboardScroll
-	UI.corner(entry, 10)
-	
-	if isYou then
-		local stroke = Instance.new("UIStroke")
-		stroke.Color = C.Green
-		stroke.Thickness = 2
-		stroke.Parent = entry
-	end
-	
-	-- Rank
-	local rankIcon = rank <= 3 and ({ "🥇", "🥈", "🥉" })[rank] or tostring(rank)
-	local rankLabel = Instance.new("TextLabel")
-	rankLabel.Size = UDim2.new(0, 44, 1, 0)
-	rankLabel.BackgroundTransparency = 1
-	rankLabel.Font = F.Bold
-	rankLabel.TextSize = rank <= 3 and 22 or 16
-	rankLabel.TextColor3 = rank <= 3 and C.Amber or C.Gray600
-	rankLabel.Text = rankIcon
-	rankLabel.ZIndex = 84
-	rankLabel.Parent = entry
-	
-	-- Name
-	local nameLabel = Instance.new("TextLabel")
-	nameLabel.Size = UDim2.new(0.5, -25, 1, 0)
-	nameLabel.Position = UDim2.new(0, 48, 0, 0)
-	nameLabel.BackgroundTransparency = 1
-	nameLabel.Font = isYou and F.Bold or F.Medium
-	nameLabel.TextSize = 14
-	nameLabel.TextColor3 = isYou and C.GreenDark or C.Gray800
-	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
-	nameLabel.Text = isYou and name .. " (You)" or name
-	nameLabel.ZIndex = 84
-	nameLabel.Parent = entry
-	
-	-- Value
-	local valueLabel = Instance.new("TextLabel")
-	valueLabel.Size = UDim2.new(0.4, 0, 1, 0)
-	valueLabel.Position = UDim2.new(0.6, 0, 0, 0)
-	valueLabel.BackgroundTransparency = 1
-	valueLabel.Font = F.Bold
-	valueLabel.TextSize = 14
-	valueLabel.TextColor3 = C.Green
-	valueLabel.TextXAlignment = Enum.TextXAlignment.Right
-	valueLabel.Text = value
-	valueLabel.ZIndex = 84
-	valueLabel.Parent = entry
-	
-	local valuePad = Instance.new("UIPadding")
-	valuePad.PaddingRight = UDim.new(0, 12)
-	valuePad.Parent = valueLabel
-	
-	return entry
-end
-
 -- ═══════════════════════════════════════════════════════════════════════════════
--- GIVE UP TAB - WORKING PROPERLY
+-- GIVE UP TAB
 -- ═══════════════════════════════════════════════════════════════════════════════
 function ProgressScreen:buildGiveUpTab()
 	local container = Instance.new("Frame")
@@ -1012,49 +716,37 @@ function ProgressScreen:buildGiveUpTab()
 	
 	-- Warning card
 	local card = Instance.new("Frame")
-	card.Size = UDim2.new(1, -40, 0, 320)
+	card.Size = UDim2.new(1, -30, 0, 280)
 	card.AnchorPoint = Vector2.new(0.5, 0.5)
 	card.Position = UDim2.fromScale(0.5, 0.45)
 	card.BackgroundColor3 = C.White
 	card.ZIndex = 82
 	card.Parent = container
-	UI.corner(card, 20)
+	UI.corner(card, 16)
 	
-	-- Red border
 	local border = Instance.new("UIStroke")
 	border.Color = C.Red
 	border.Thickness = 3
 	border.Parent = card
 	
-	-- Card shadow
-	local shadow = Instance.new("Frame")
-	shadow.Size = UDim2.new(1, 10, 1, 10)
-	shadow.AnchorPoint = Vector2.new(0.5, 0.5)
-	shadow.Position = UDim2.new(0.5, 3, 0.5, 5)
-	shadow.BackgroundColor3 = C.Black
-	shadow.BackgroundTransparency = 0.9
-	shadow.ZIndex = 81
-	shadow.Parent = card
-	UI.corner(shadow, 22)
-	
 	-- Warning icon
 	local warnIcon = Instance.new("TextLabel")
-	warnIcon.Size = UDim2.new(1, 0, 0, 80)
-	warnIcon.Position = UDim2.new(0, 0, 0, 20)
+	warnIcon.Size = UDim2.new(1, 0, 0, 70)
+	warnIcon.Position = UDim2.new(0, 0, 0, 15)
 	warnIcon.BackgroundTransparency = 1
 	warnIcon.Font = F.Body
-	warnIcon.TextSize = 64
+	warnIcon.TextSize = 56
 	warnIcon.Text = "⚠️"
 	warnIcon.ZIndex = 83
 	warnIcon.Parent = card
 	
 	-- Warning title
 	local warnTitle = Instance.new("TextLabel")
-	warnTitle.Size = UDim2.new(1, -20, 0, 34)
-	warnTitle.Position = UDim2.new(0, 10, 0, 105)
+	warnTitle.Size = UDim2.new(1, -20, 0, 30)
+	warnTitle.Position = UDim2.new(0, 10, 0, 85)
 	warnTitle.BackgroundTransparency = 1
 	warnTitle.Font = F.Bold
-	warnTitle.TextSize = 24
+	warnTitle.TextSize = 22
 	warnTitle.TextColor3 = C.Red
 	warnTitle.Text = "Give Up On Life?"
 	warnTitle.ZIndex = 83
@@ -1062,47 +754,31 @@ function ProgressScreen:buildGiveUpTab()
 	
 	-- Warning text
 	local warnText = Instance.new("TextLabel")
-	warnText.Size = UDim2.new(1, -30, 0, 60)
-	warnText.Position = UDim2.new(0, 15, 0, 145)
+	warnText.Size = UDim2.new(1, -24, 0, 50)
+	warnText.Position = UDim2.new(0, 12, 0, 120)
 	warnText.BackgroundTransparency = 1
 	warnText.Font = F.Body
-	warnText.TextSize = 14
+	warnText.TextSize = 13
 	warnText.TextColor3 = C.Gray600
 	warnText.TextWrapped = true
-	warnText.Text = "Are you sure you want to end this life?\nAll progress will be saved to Past Lives\nand you'll start fresh with a new life."
+	warnText.Text = "Are you sure? Your life will end and you'll start fresh. This cannot be undone!"
 	warnText.ZIndex = 83
 	warnText.Parent = card
 	
 	-- Give Up button
 	local giveUpBtn = Instance.new("TextButton")
-	giveUpBtn.Size = UDim2.new(0.8, 0, 0, 54)
+	giveUpBtn.Size = UDim2.new(0.75, 0, 0, 48)
 	giveUpBtn.AnchorPoint = Vector2.new(0.5, 0)
-	giveUpBtn.Position = UDim2.new(0.5, 0, 0, 215)
+	giveUpBtn.Position = UDim2.new(0.5, 0, 0, 180)
 	giveUpBtn.BackgroundColor3 = C.Red
 	giveUpBtn.Font = F.Bold
-	giveUpBtn.TextSize = 18
+	giveUpBtn.TextSize = 16
 	giveUpBtn.TextColor3 = C.White
 	giveUpBtn.Text = "☠️ Yes, Give Up"
 	giveUpBtn.AutoButtonColor = false
 	giveUpBtn.ZIndex = 84
 	giveUpBtn.Parent = card
-	UI.corner(giveUpBtn, 14)
-	
-	-- Gradient on button
-	local btnGrad = Instance.new("UIGradient")
-	btnGrad.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, C.Red),
-		ColorSequenceKeypoint.new(1, C.RedDark),
-	})
-	btnGrad.Rotation = 90
-	btnGrad.Parent = giveUpBtn
-	
-	giveUpBtn.MouseEnter:Connect(function()
-		UI.tween(giveUpBtn, TweenInfo.new(0.15), { Size = UDim2.new(0.82, 0, 0, 56) })
-	end)
-	giveUpBtn.MouseLeave:Connect(function()
-		UI.tween(giveUpBtn, TweenInfo.new(0.15), { Size = UDim2.new(0.8, 0, 0, 54) })
-	end)
+	UI.corner(giveUpBtn, 12)
 	
 	giveUpBtn.MouseButton1Click:Connect(function()
 		self:handleGiveUp()
@@ -1110,18 +786,18 @@ function ProgressScreen:buildGiveUpTab()
 	
 	-- Cancel button
 	local cancelBtn = Instance.new("TextButton")
-	cancelBtn.Size = UDim2.new(0.6, 0, 0, 40)
+	cancelBtn.Size = UDim2.new(0.5, 0, 0, 36)
 	cancelBtn.AnchorPoint = Vector2.new(0.5, 0)
-	cancelBtn.Position = UDim2.new(0.5, 0, 0, 275)
+	cancelBtn.Position = UDim2.new(0.5, 0, 0, 235)
 	cancelBtn.BackgroundColor3 = C.Gray200
 	cancelBtn.Font = F.Medium
-	cancelBtn.TextSize = 14
+	cancelBtn.TextSize = 13
 	cancelBtn.TextColor3 = C.Gray600
 	cancelBtn.Text = "Cancel"
 	cancelBtn.AutoButtonColor = false
 	cancelBtn.ZIndex = 84
 	cancelBtn.Parent = card
-	UI.corner(cancelBtn, 10)
+	UI.corner(cancelBtn, 8)
 	
 	cancelBtn.MouseButton1Click:Connect(function()
 		self:hide()
@@ -1131,33 +807,35 @@ function ProgressScreen:buildGiveUpTab()
 end
 
 function ProgressScreen:handleGiveUp()
-	log("Give Up button clicked")
+	print("[ProgressScreen] handleGiveUp called")
 	
-	local state = self:getState()
+	-- Get remote at runtime
+	local giveUpRemote = self:getGiveUpRemote()
 	
-	-- Fire the remote to server
-	if self.remotes.GiveUp then
-		print("[ProgressScreen] Firing GiveUp remote to server")
-		pcall(function()
-			self.remotes.GiveUp:FireServer()
+	if giveUpRemote then
+		print("[ProgressScreen] Found GiveUp remote, firing...")
+		local success, err = pcall(function()
+			giveUpRemote:FireServer()
 		end)
+		if success then
+			print("[ProgressScreen] GiveUp remote fired successfully")
+		else
+			warn("[ProgressScreen] Error firing GiveUp:", err)
+		end
 	else
-		-- Try to find it again
-		local remotesFolder = ReplicatedStorage:FindFirstChild("LifeRemotes")
-		if remotesFolder then
-			local giveUpRemote = remotesFolder:FindFirstChild("GiveUp")
-			if giveUpRemote then
-				print("[ProgressScreen] Found GiveUp remote, firing")
-				pcall(function()
-					giveUpRemote:FireServer()
-				end)
-			else
-				warn("[ProgressScreen] GiveUp remote not found!")
+		warn("[ProgressScreen] GiveUp remote not found in LifeRemotes!")
+		-- Try alternative method
+		local remotes = ReplicatedStorage:FindFirstChild("LifeRemotes")
+		if remotes then
+			print("[ProgressScreen] Found LifeRemotes folder, children:")
+			for _, child in ipairs(remotes:GetChildren()) do
+				print("  -", child.Name, child.ClassName)
 			end
+		else
+			warn("[ProgressScreen] LifeRemotes folder not found!")
 		end
 	end
 	
-	-- Close this screen
 	self:hide()
 end
 
@@ -1165,24 +843,18 @@ end
 -- TAB SWITCHING & REFRESH
 -- ═══════════════════════════════════════════════════════════════════════════════
 function ProgressScreen:switchTab(tabId)
-	log("Switching to tab:", tabId)
 	self.currentTab = tabId
 	
-	-- Update tab button styles
 	for id, tabData in pairs(self.tabButtons) do
 		local isActive = id == tabId
-		UI.tween(tabData.btn, TweenInfo.new(0.15), {
-			BackgroundColor3 = isActive and tabData.color or C.Gray100,
-			TextColor3 = isActive and C.White or C.Gray600
-		})
+		tabData.btn.BackgroundColor3 = isActive and tabData.color or C.Gray100
+		tabData.btn.TextColor3 = isActive and C.White or C.Gray600
 	end
 	
-	-- Show/hide content with fade
 	for id, content in pairs(self.tabContents) do
 		content.Visible = id == tabId
 	end
 	
-	-- Refresh content
 	if tabId == "awards" then
 		self:refreshAwards()
 	elseif tabId == "pastlives" then
@@ -1197,28 +869,17 @@ function ProgressScreen:refreshAwards()
 	
 	for id, itemData in pairs(self.awardItems) do
 		local unlocked = itemData.award.check(state)
-		
-		-- Animate the card
-		UI.tween(itemData.card, TweenInfo.new(0.2), {
-			BackgroundColor3 = unlocked and C.AmberPale or C.White
-		})
-		UI.tween(itemData.iconCircle, TweenInfo.new(0.2), {
-			BackgroundColor3 = unlocked and C.Amber or C.Gray100
-		})
+		itemData.card.BackgroundColor3 = unlocked and C.AmberPale or C.White
+		itemData.iconCircle.BackgroundColor3 = unlocked and C.Amber or C.Gray100
 		itemData.icon.Text = unlocked and itemData.award.icon or "🔒"
-		UI.tween(itemData.name, TweenInfo.new(0.2), {
-			TextColor3 = unlocked and C.AmberDark or C.Gray500
-		})
-		UI.tween(itemData.statusBadge, TweenInfo.new(0.2), {
-			BackgroundColor3 = unlocked and C.Green or C.Gray300
-		})
+		itemData.name.TextColor3 = unlocked and C.AmberDark or C.Gray500
 	end
 end
 
 function ProgressScreen:refreshPastLives()
 	local state = self:getState()
 	
-	-- Clear existing past life cards
+	-- Clear existing cards
 	for _, card in ipairs(self.pastLivesCards) do
 		if card and card.Parent then
 			card:Destroy()
@@ -1226,12 +887,10 @@ function ProgressScreen:refreshPastLives()
 	end
 	self.pastLivesCards = {}
 	
-	-- Get past lives from state
 	local pastLives = state and state.PastLives or {}
 	local currentAge = state and state.Age or 0
 	local currentMoney = state and state.Money or 0
 	
-	-- Calculate stats
 	local totalYears = currentAge
 	local longest = currentAge
 	local richest = currentMoney
@@ -1242,82 +901,30 @@ function ProgressScreen:refreshPastLives()
 		richest = math.max(richest, life.netWorth or 0)
 	end
 	
-	-- Update stats display
-	self.pastLivesStats.totalLives.Text = "Lives: " .. (#pastLives + 1)
-	self.pastLivesStats.totalYears.Text = "Years: " .. totalYears
-	self.pastLivesStats.longestLife.Text = "Best: " .. longest .. " yrs"
-	self.pastLivesStats.richestLife.Text = "Rich: " .. formatMoney(richest)
+	self.pastLivesStats.totalLives.Text = "Lives\n" .. (#pastLives + 1)
+	self.pastLivesStats.totalYears.Text = "Years\n" .. totalYears
+	self.pastLivesStats.longestLife.Text = "Best\n" .. longest .. " yrs"
+	self.pastLivesStats.richestLife.Text = "Rich\n" .. formatMoney(richest)
 	
-	-- Show/hide no lives label
 	self.noLivesLabel.Visible = #pastLives == 0
 	
-	-- Create cards for past lives (reverse order - newest first)
 	for i = #pastLives, 1, -1 do
 		local card = self:createPastLifeCard(pastLives[i], #pastLives - i + 1)
 		table.insert(self.pastLivesCards, card)
 	end
 	
-	-- Update canvas size
-	self.pastLivesScroll.CanvasSize = UDim2.new(0, 0, 0, math.max(100, #pastLives * 130 + 20))
+	self.pastLivesScroll.CanvasSize = UDim2.new(0, 0, 0, math.max(80, #pastLives * 100 + 20))
 end
 
 function ProgressScreen:refreshLeaderboards()
 	local state = self:getState()
 	local playerName = Players.LocalPlayer and Players.LocalPlayer.Name or "You"
 	
-	-- Update your stats
 	if self.yourStats then
-		self.yourStats.money.Text = formatMoney(state and state.Money or 0)
-		self.yourStats.age.Text = "Age " .. (state and state.Age or 0)
-		self.yourStats.fame.Text = (state and state.Fame or 0) .. " Fame"
+		self.yourStats.money.Text = "💰 " .. formatMoney(state and state.Money or 0)
+		self.yourStats.age.Text = "📅 " .. (state and state.Age or 0)
+		self.yourStats.fame.Text = "⭐ " .. (state and state.Fame or 0)
 	end
-	
-	-- Clear existing entries
-	for _, child in ipairs(self.leaderboardScroll:GetChildren()) do
-		if child:IsA("Frame") then
-			child:Destroy()
-		end
-	end
-	
-	-- Get value for current tab
-	local yourValue, yourDisplay
-	if self.currentLeaderboardTab == "richest" then
-		yourValue = state and state.Money or 0
-		yourDisplay = formatMoney(yourValue)
-	elseif self.currentLeaderboardTab == "oldest" then
-		yourValue = state and state.Age or 0
-		yourDisplay = yourValue .. " years"
-	else
-		yourValue = state and state.Fame or 0
-		yourDisplay = yourValue .. " Fame"
-	end
-	
-	-- Create leaderboard entries (show your position among simulated data)
-	-- In production this would fetch from server
-	local yourRank = 1
-	local entries = {}
-	
-	-- Add your entry
-	table.insert(entries, { name = playerName, value = yourValue, display = yourDisplay, isYou = true })
-	
-	-- Sort and determine rank (you're the only real player for now)
-	-- Just show your position at rank 1 since there's no server leaderboard yet
-	self:createLeaderboardEntry(1, playerName, yourDisplay, true)
-	
-	-- Show message about leaderboards
-	local infoLabel = Instance.new("TextLabel")
-	infoLabel.Size = UDim2.new(1, 0, 0, 60)
-	infoLabel.BackgroundTransparency = 1
-	infoLabel.Font = F.Medium
-	infoLabel.TextSize = 13
-	infoLabel.TextColor3 = C.Gray400
-	infoLabel.TextWrapped = true
-	infoLabel.Text = "🌟 Keep playing to climb the ranks!\nCompete with friends for the top spots."
-	infoLabel.LayoutOrder = 100
-	infoLabel.ZIndex = 83
-	infoLabel.Parent = self.leaderboardScroll
-	
-	self.leaderboardScroll.CanvasSize = UDim2.new(0, 0, 0, 150)
 end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
@@ -1325,7 +932,6 @@ end
 -- ═══════════════════════════════════════════════════════════════════════════════
 function ProgressScreen:show(tabId)
 	if self.isVisible then return end
-	log("Showing ProgressScreen")
 	
 	if self.showBlur then
 		pcall(self.showBlur)
@@ -1334,18 +940,13 @@ function ProgressScreen:show(tabId)
 	self.isVisible = true
 	self.overlay.Visible = true
 	
-	-- Animate in
 	UI.slideInScreen(self.overlay, "right")
-	
-	-- Switch to requested tab or default
 	self:switchTab(tabId or self.currentTab or "awards")
 end
 
 function ProgressScreen:hide()
 	if not self.isVisible then return end
-	log("Hiding ProgressScreen")
 	
-	-- Animate out
 	UI.slideOutScreen(self.overlay, "right", function()
 		self.overlay.Visible = false
 		if self.hideBlur then
