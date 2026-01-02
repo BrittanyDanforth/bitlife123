@@ -902,6 +902,8 @@ local events = {
 							state.Flags.cause_of_death = "Racing Accident"
 							state.Stats = state.Stats or {}
 							state.Stats.Health = 0
+							state.Health = 0
+							state.DeathReason = "🏎️ Fatal racing accident. Died doing what you loved. 🏁"
 							if state.AddFeed then
 								state:AddFeed("☠️ FATAL CRASH. You died doing what you loved, but you died.")
 							end
@@ -942,6 +944,8 @@ local events = {
 						state.Flags.cause_of_death = "Racing Accident"
 						state.Stats = state.Stats or {}
 						state.Stats.Health = 0
+						state.Health = 0
+						state.DeathReason = "🏎️ Fatal racing crash. Died on the track. 🏁"
 						if state.AddFeed then
 							state:AddFeed("☠️ You didn't fight. The crash was fatal.")
 						end

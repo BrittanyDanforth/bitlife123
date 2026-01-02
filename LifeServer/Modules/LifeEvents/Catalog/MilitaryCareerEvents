@@ -1671,6 +1671,8 @@ MilitaryCareerEvents.events = {
 						state.Flags.combat_veteran = true
 						state.Flags.veteran = true
 						state.Flags.dead = true
+						state.Stats = state.Stats or {}
+						state.Stats.Health = 0
 						state.Health = 0
 						state.DeathReason = "⚔️ Killed in Action serving their country. A true hero. 🇺🇸"
 						state:AddFeed("⚔️ KILLED IN ACTION. Died a hero on the battlefield. Your sacrifice will never be forgotten.")
@@ -1753,6 +1755,8 @@ MilitaryCareerEvents.events = {
 						state.Flags.veteran = true
 						state.Flags.hero = true
 						state.Flags.dead = true
+						state.Stats = state.Stats or {}
+						state.Stats.Health = 0
 						state.Health = 0
 						state.Fame = 100
 						state.DeathReason = "🩸 Killed in Action while saving a fellow soldier. Died a true hero. 🇺🇸"

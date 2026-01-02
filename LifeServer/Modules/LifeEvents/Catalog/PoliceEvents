@@ -1190,6 +1190,8 @@ local events = {
 						state.Flags.cause_of_death = "Killed in Line of Duty"
 						state.Stats = state.Stats or {}
 						state.Stats.Health = 0
+						state.Health = 0
+						state.DeathReason = "⭐ Killed in the Line of Duty. A true hero. 🇺🇸"
 						if state.AddFeed then
 							state:AddFeed("☠️ END OF WATCH. You gave your life protecting others. A hero's death.")
 						end
@@ -1271,6 +1273,8 @@ local events = {
 							state.Flags.cause_of_death = "Killed in Ambush"
 							state.Stats = state.Stats or {}
 							state.Stats.Health = 0
+							state.Health = 0
+							state.DeathReason = "💔 Killed in an ambush. A hero's sacrifice. 🇺🇸"
 							if state.AddFeed then
 								state:AddFeed("☠️ Killed in ambush. Your name will be on the memorial wall.")
 							end
