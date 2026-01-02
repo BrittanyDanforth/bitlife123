@@ -679,7 +679,8 @@ function ProgressScreen:createPastLifeCard(lifeData, index)
 end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- LEADERBOARDS TAB - Full featured with 3 categories, top 50, medals
+-- LEADERBOARDS TAB - Two columns side by side (Richest & Oldest)
+-- Clean BitLife-tier UX with no sub-tabs needed
 -- ═══════════════════════════════════════════════════════════════════════════════
 function ProgressScreen:buildLeaderboardsTab()
 	local container = Instance.new("Frame")
@@ -689,116 +690,93 @@ function ProgressScreen:buildLeaderboardsTab()
 	container.Visible = false
 	container.ZIndex = 81
 	container.Parent = self.contentContainer
-	
-	-- Category sub-tabs (Richest, Oldest, Fame)
-	local subTabBar = Instance.new("Frame")
-	subTabBar.Name = "SubTabBar"
-	subTabBar.Size = UDim2.new(1, -20, 0, 44)
-	subTabBar.Position = UDim2.new(0, 10, 0, 8)
-	subTabBar.BackgroundColor3 = C.Gray100
-	subTabBar.ZIndex = 82
-	subTabBar.Parent = container
-	UI.corner(subTabBar, 10)
-	
-	local subTabLayout = Instance.new("UIListLayout")
-	subTabLayout.FillDirection = Enum.FillDirection.Horizontal
-	subTabLayout.Padding = UDim.new(0, 4)
-	subTabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	subTabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-	subTabLayout.Parent = subTabBar
-	
-	local subTabPad = Instance.new("UIPadding")
-	subTabPad.PaddingLeft = UDim.new(0, 4)
-	subTabPad.PaddingRight = UDim.new(0, 4)
-	subTabPad.Parent = subTabBar
-	
-	self.leaderboardSubTabs = {}
-	self.currentLeaderboardCategory = "richest"
-	
-	-- CRITICAL FIX: Only Richest and Oldest - Fame is a gamepass feature
-	local categories = {
-		{ id = "richest", name = "💰 Richest", color = C.Green },
-		{ id = "oldest", name = "📅 Oldest", color = C.Blue },
-	}
-	
-	for i, cat in ipairs(categories) do
-		local btn = Instance.new("TextButton")
-		btn.Name = "SubTab_" .. cat.id
-		-- Make buttons wider since there's only 2 now
-		btn.Size = UDim2.new(0, 130, 0, 36)
-		btn.BackgroundColor3 = i == 1 and cat.color or C.White
-		btn.Font = F.Bold
-		btn.TextSize = IS_TINY_PHONE and 12 or 14
-		btn.TextColor3 = i == 1 and C.White or C.Gray600
-		btn.Text = cat.name
-		btn.AutoButtonColor = false
-		btn.LayoutOrder = i
-		btn.ZIndex = 83
-		btn.Parent = subTabBar
-		UI.corner(btn, 8)
-		
-		self.leaderboardSubTabs[cat.id] = { btn = btn, color = cat.color }
-		
-		btn.MouseButton1Click:Connect(function()
-			self:switchLeaderboardCategory(cat.id)
-		end)
+
+	-- Title
+	local title = Instance.new("TextLabel")
+	title.Size = UDim2.new(1, 0, 0, 36)
+	title.Position = UDim2.new(0, 0, 0, 6)
+	title.BackgroundTransparency = 1
+	title.Font = F.Bold
+	title.TextSize = 18
+	title.TextColor3 = C.Gray800
+	title.Text = "🏆 Leaderboards"
+	title.ZIndex = 82
+	title.Parent = container
+
+	-- Two column holder
+	local columns = Instance.new("Frame")
+	columns.Size = UDim2.new(1, -20, 1, -50)
+	columns.Position = UDim2.new(0, 10, 0, 48)
+	columns.BackgroundTransparency = 1
+	columns.ZIndex = 82
+	columns.Parent = container
+
+	local layout = Instance.new("UIListLayout")
+	layout.FillDirection = Enum.FillDirection.Horizontal
+	layout.Padding = UDim.new(0, 10)
+	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	layout.Parent = columns
+
+	-- Helper to create one leaderboard column
+	local function createColumn(titleText, accentColor)
+		local col = Instance.new("Frame")
+		col.Size = UDim2.new(0.5, -5, 1, 0)
+		col.BackgroundColor3 = C.White
+		col.ZIndex = 83
+		col.Parent = columns
+		UI.corner(col, 12)
+
+		local stroke = Instance.new("UIStroke")
+		stroke.Color = accentColor
+		stroke.Thickness = 2
+		stroke.Parent = col
+
+		local lbl = Instance.new("TextLabel")
+		lbl.Size = UDim2.new(1, 0, 0, 32)
+		lbl.BackgroundTransparency = 1
+		lbl.Font = F.Bold
+		lbl.TextSize = 14
+		lbl.TextColor3 = accentColor
+		lbl.Text = titleText
+		lbl.ZIndex = 84
+		lbl.Parent = col
+
+		local scroll = Instance.new("ScrollingFrame")
+		scroll.Size = UDim2.new(1, -10, 1, -40)
+		scroll.Position = UDim2.new(0, 5, 0, 36)
+		scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+		scroll.ScrollBarThickness = 4
+		scroll.ScrollBarImageColor3 = C.Gray300
+		scroll.BackgroundTransparency = 1
+		scroll.ZIndex = 84
+		scroll.Parent = col
+
+		local list = Instance.new("UIListLayout")
+		list.Padding = UDim.new(0, 4)
+		list.SortOrder = Enum.SortOrder.LayoutOrder
+		list.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		list.Parent = scroll
+
+		return scroll
 	end
-	
-	-- Leaderboard scroll container
-	self.leaderboardScroll = Instance.new("ScrollingFrame")
-	self.leaderboardScroll.Name = "LeaderboardScroll"
-	self.leaderboardScroll.Size = UDim2.new(1, -20, 1, -70)
-	self.leaderboardScroll.Position = UDim2.new(0, 10, 0, 60)
-	self.leaderboardScroll.BackgroundTransparency = 1
-	self.leaderboardScroll.ScrollBarThickness = 6
-	self.leaderboardScroll.ScrollBarImageColor3 = C.Gray300
-	self.leaderboardScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-	self.leaderboardScroll.ZIndex = 82
-	self.leaderboardScroll.Parent = container
-	
-	local scrollLayout = Instance.new("UIListLayout")
-	scrollLayout.Padding = UDim.new(0, 6)
-	scrollLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	-- CRITICAL FIX: Sort by LayoutOrder (numeric), NOT by Name (alphabetic string)!
-	-- This fixes the bug where 1, 10, 11, 12... 19, 2, 20... was showing
-	scrollLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	scrollLayout.Parent = self.leaderboardScroll
-	
-	local scrollPad = Instance.new("UIPadding")
-	scrollPad.PaddingTop = UDim.new(0, 4)
-	scrollPad.PaddingBottom = UDim.new(0, 10)
-	scrollPad.Parent = self.leaderboardScroll
-	
-	self.leaderboardEntries = {}
-	
+
+	-- Create both columns
+	self.richestScroll = createColumn("💰 Richest", C.Green)
+	self.oldestScroll  = createColumn("📅 Oldest",  C.Blue)
+
 	self.tabContents["leaderboards"] = container
 end
 
-function ProgressScreen:switchLeaderboardCategory(categoryId)
-	self.currentLeaderboardCategory = categoryId
-	
-	-- Update sub-tab buttons
-	for id, tabData in pairs(self.leaderboardSubTabs) do
-		local isActive = id == categoryId
-		tabData.btn.BackgroundColor3 = isActive and tabData.color or C.White
-		tabData.btn.TextColor3 = isActive and C.White or C.Gray600
-	end
-	
-	-- Refresh the leaderboard with new category
-	self:refreshLeaderboards()
-end
-
 function ProgressScreen:createLeaderboardEntry(rank, playerName, value, valueType, isCurrentPlayer)
-	local entryHeight = 52
+	local entryHeight = 48
 	
 	local entry = Instance.new("Frame")
 	entry.Name = "Entry_" .. rank
-	entry.Size = UDim2.new(1, 0, 0, entryHeight)
-	entry.BackgroundColor3 = isCurrentPlayer and C.AmberPale or C.White
+	entry.Size = UDim2.new(1, -4, 0, entryHeight)
+	entry.BackgroundColor3 = isCurrentPlayer and C.AmberPale or C.Gray100
 	entry.LayoutOrder = rank
-	entry.ZIndex = 83
-	entry.Parent = self.leaderboardScroll
-	UI.corner(entry, 10)
+	entry.ZIndex = 85
+	UI.corner(entry, 8)
 	
 	-- Special styling for top 3
 	if rank <= 3 then
@@ -807,79 +785,68 @@ function ProgressScreen:createLeaderboardEntry(rank, playerName, value, valueTyp
 			[2] = Color3.fromRGB(192, 192, 192), -- Silver
 			[3] = Color3.fromRGB(205, 127, 50),  -- Bronze
 		}
-		local stroke = Instance.new("UIStroke")
-		stroke.Color = medalColors[rank]
-		stroke.Thickness = 2
-		stroke.Parent = entry
-	end
-	
-	-- Current player highlight border
-	if isCurrentPlayer then
-		local stroke = entry:FindFirstChild("UIStroke") or Instance.new("UIStroke")
-		stroke.Color = C.Amber
-		stroke.Thickness = 2
-		stroke.Parent = entry
+		entry.BackgroundColor3 = medalColors[rank]
+		entry.BackgroundTransparency = 0.7
 	end
 	
 	-- Rank badge
 	local rankBadge = Instance.new("Frame")
-	rankBadge.Size = UDim2.new(0, 36, 0, 36)
-	rankBadge.Position = UDim2.new(0, 8, 0.5, 0)
+	rankBadge.Size = UDim2.new(0, 28, 0, 28)
+	rankBadge.Position = UDim2.new(0, 4, 0.5, 0)
 	rankBadge.AnchorPoint = Vector2.new(0, 0.5)
-	rankBadge.ZIndex = 84
+	rankBadge.ZIndex = 86
 	rankBadge.Parent = entry
-	UI.corner(rankBadge, 18)
+	UI.corner(rankBadge, 14)
 	
-	-- Medal emojis for top 3, numbers for rest
 	local rankText = Instance.new("TextLabel")
 	rankText.Size = UDim2.fromScale(1, 1)
 	rankText.BackgroundTransparency = 1
 	rankText.Font = F.Bold
-	rankText.ZIndex = 85
+	rankText.ZIndex = 87
 	rankText.Parent = rankBadge
 	
 	if rank == 1 then
 		rankBadge.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
 		rankText.Text = "🥇"
-		rankText.TextSize = 20
+		rankText.TextSize = 16
 	elseif rank == 2 then
 		rankBadge.BackgroundColor3 = Color3.fromRGB(192, 192, 192)
 		rankText.Text = "🥈"
-		rankText.TextSize = 20
+		rankText.TextSize = 16
 	elseif rank == 3 then
 		rankBadge.BackgroundColor3 = Color3.fromRGB(205, 127, 50)
 		rankText.Text = "🥉"
-		rankText.TextSize = 20
+		rankText.TextSize = 16
 	else
 		rankBadge.BackgroundColor3 = C.Gray200
 		rankText.Text = tostring(rank)
-		rankText.TextSize = 14
+		rankText.TextSize = 12
 		rankText.TextColor3 = C.Gray600
 	end
 	
 	-- Player name
 	local nameLabel = Instance.new("TextLabel")
-	nameLabel.Size = UDim2.new(0.5, -60, 1, 0)
-	nameLabel.Position = UDim2.new(0, 52, 0, 0)
+	nameLabel.Size = UDim2.new(1, -80, 0, 18)
+	nameLabel.Position = UDim2.new(0, 36, 0, 4)
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Font = F.Bold
-	nameLabel.TextSize = 14
-	nameLabel.TextColor3 = isCurrentPlayer and C.AmberDark or C.Gray800
+	nameLabel.TextSize = 11
+	nameLabel.TextColor3 = C.Gray800
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
 	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
-	nameLabel.Text = playerName .. (isCurrentPlayer and " (You)" or "")
-	nameLabel.ZIndex = 84
+	nameLabel.Text = playerName
+	nameLabel.ZIndex = 86
 	nameLabel.Parent = entry
 	
 	-- Value display
 	local valueLabel = Instance.new("TextLabel")
-	valueLabel.Size = UDim2.new(0.4, -10, 1, 0)
-	valueLabel.Position = UDim2.new(0.6, 0, 0, 0)
+	valueLabel.Size = UDim2.new(1, -40, 0, 18)
+	valueLabel.Position = UDim2.new(0, 36, 0, 24)
 	valueLabel.BackgroundTransparency = 1
-	valueLabel.Font = F.Bold
-	valueLabel.TextSize = 15
-	valueLabel.TextXAlignment = Enum.TextXAlignment.Right
-	valueLabel.ZIndex = 84
+	valueLabel.Font = F.Medium
+	valueLabel.TextSize = 11
+	valueLabel.TextXAlignment = Enum.TextXAlignment.Left
+	valueLabel.ZIndex = 86
 	valueLabel.Parent = entry
 	
 	-- Format value based on type
@@ -889,9 +856,6 @@ function ProgressScreen:createLeaderboardEntry(rank, playerName, value, valueTyp
 	elseif valueType == "age" then
 		valueLabel.Text = value .. " yrs"
 		valueLabel.TextColor3 = C.Blue
-	elseif valueType == "fame" then
-		valueLabel.Text = value .. " ⭐"
-		valueLabel.TextColor3 = C.Purple
 	end
 	
 	return entry
@@ -960,23 +924,107 @@ function ProgressScreen:buildGiveUpTab()
 	warnText.ZIndex = 83
 	warnText.Parent = card
 	
-	-- Give Up button
+	-- CRITICAL FIX: Two-step Give Up to prevent accidental taps!
+	-- First click shows "Hold to confirm", then must hold for 2 seconds
 	local giveUpBtn = Instance.new("TextButton")
 	giveUpBtn.Size = UDim2.new(0.75, 0, 0, 48)
 	giveUpBtn.AnchorPoint = Vector2.new(0.5, 0)
 	giveUpBtn.Position = UDim2.new(0.5, 0, 0, 180)
-	giveUpBtn.BackgroundColor3 = C.Red
+	giveUpBtn.BackgroundColor3 = C.Gray400
 	giveUpBtn.Font = F.Bold
-	giveUpBtn.TextSize = 16
+	giveUpBtn.TextSize = 14
 	giveUpBtn.TextColor3 = C.White
-	giveUpBtn.Text = "☠️ Yes, Give Up"
+	giveUpBtn.Text = "☠️ Tap to unlock"
 	giveUpBtn.AutoButtonColor = false
 	giveUpBtn.ZIndex = 84
 	giveUpBtn.Parent = card
 	UI.corner(giveUpBtn, 12)
 	
+	local giveUpUnlocked = false
+	local holdStartTime = nil
+	local holdConnection = nil
+	
+	-- Progress bar for hold-to-confirm
+	local progressBg = Instance.new("Frame")
+	progressBg.Size = UDim2.new(1, 0, 0, 4)
+	progressBg.Position = UDim2.new(0, 0, 1, -4)
+	progressBg.BackgroundColor3 = C.White
+	progressBg.BackgroundTransparency = 0.5
+	progressBg.ZIndex = 85
+	progressBg.Visible = false
+	progressBg.Parent = giveUpBtn
+	UI.corner(progressBg, 2)
+	
+	local progressFill = Instance.new("Frame")
+	progressFill.Size = UDim2.new(0, 0, 1, 0)
+	progressFill.BackgroundColor3 = C.White
+	progressFill.ZIndex = 86
+	progressFill.Parent = progressBg
+	UI.corner(progressFill, 2)
+	
+	-- First tap unlocks the button
 	giveUpBtn.MouseButton1Click:Connect(function()
-		self:handleGiveUp()
+		if not giveUpUnlocked then
+			giveUpUnlocked = true
+			giveUpBtn.BackgroundColor3 = C.Red
+			giveUpBtn.Text = "☠️ HOLD 2 SEC TO CONFIRM"
+			progressBg.Visible = true
+			
+			-- Auto-reset after 5 seconds if not confirmed
+			task.delay(5, function()
+				if giveUpUnlocked and not holdStartTime then
+					giveUpUnlocked = false
+					giveUpBtn.BackgroundColor3 = C.Gray400
+					giveUpBtn.Text = "☠️ Tap to unlock"
+					progressBg.Visible = false
+					progressFill.Size = UDim2.new(0, 0, 1, 0)
+				end
+			end)
+		end
+	end)
+	
+	-- Hold to confirm (2 seconds)
+	giveUpBtn.MouseButton1Down:Connect(function()
+		if giveUpUnlocked then
+			holdStartTime = tick()
+			
+			-- Update progress while holding
+			holdConnection = game:GetService("RunService").Heartbeat:Connect(function()
+				if holdStartTime then
+					local elapsed = tick() - holdStartTime
+					local progress = math.min(elapsed / 2, 1) -- 2 seconds to confirm
+					progressFill.Size = UDim2.new(progress, 0, 1, 0)
+					
+					if progress >= 1 then
+						-- Confirmed!
+						if holdConnection then
+							holdConnection:Disconnect()
+							holdConnection = nil
+						end
+						holdStartTime = nil
+						self:handleGiveUp()
+					end
+				end
+			end)
+		end
+	end)
+	
+	giveUpBtn.MouseButton1Up:Connect(function()
+		holdStartTime = nil
+		if holdConnection then
+			holdConnection:Disconnect()
+			holdConnection = nil
+		end
+		progressFill.Size = UDim2.new(0, 0, 1, 0)
+	end)
+	
+	giveUpBtn.MouseLeave:Connect(function()
+		holdStartTime = nil
+		if holdConnection then
+			holdConnection:Disconnect()
+			holdConnection = nil
+		end
+		progressFill.Size = UDim2.new(0, 0, 1, 0)
 	end)
 	
 	-- Cancel button
@@ -995,6 +1043,12 @@ function ProgressScreen:buildGiveUpTab()
 	UI.corner(cancelBtn, 8)
 	
 	cancelBtn.MouseButton1Click:Connect(function()
+		-- Reset give up state
+		giveUpUnlocked = false
+		giveUpBtn.BackgroundColor3 = C.Gray400
+		giveUpBtn.Text = "☠️ Tap to unlock"
+		progressBg.Visible = false
+		progressFill.Size = UDim2.new(0, 0, 1, 0)
 		self:hide()
 	end)
 	
@@ -1119,174 +1173,66 @@ end
 
 function ProgressScreen:refreshLeaderboards()
 	local state = self:getState()
-	local category = self.currentLeaderboardCategory or "richest"
-	
-	-- Clear existing entries
-	for _, entry in ipairs(self.leaderboardEntries) do
-		if entry and entry.Parent then
-			entry:Destroy()
-		end
-	end
-	self.leaderboardEntries = {}
-	
-	-- Get current player data
-	local playerName = Players.LocalPlayer and Players.LocalPlayer.Name or "You"
-	local playerMoney = state and state.Money or 0
-	local playerAge = state and state.Age or 0
-	
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	-- REAL LEADERBOARD DATA - No fake players!
-	-- Shows YOUR stats prominently. Server-side leaderboard would use DataStore.
-	-- ═══════════════════════════════════════════════════════════════════════════════
-	
-	-- Determine value type for formatting
-	local valueType = "money"
-	local playerValue = playerMoney
-	local statLabel = "Net Worth"
-	local statEmoji = "💰"
-	
-	if category == "oldest" then
-		valueType = "age"
-		playerValue = playerAge
-		statLabel = "Age Reached"
-		statEmoji = "📅"
-	end
-	
-	-- Create "Your Stats" header card
-	local headerCard = Instance.new("Frame")
-	headerCard.Name = "YourStatsHeader"
-	headerCard.Size = UDim2.new(1, 0, 0, 90)
-	headerCard.BackgroundColor3 = C.AmberPale
-	headerCard.LayoutOrder = 0
-	headerCard.ZIndex = 83
-	headerCard.Parent = self.leaderboardScroll
-	UI.corner(headerCard, 12)
-	
-	local headerStroke = Instance.new("UIStroke")
-	headerStroke.Color = C.Amber
-	headerStroke.Thickness = 2
-	headerStroke.Parent = headerCard
-	
-	local headerTitle = Instance.new("TextLabel")
-	headerTitle.Size = UDim2.new(1, 0, 0, 28)
-	headerTitle.Position = UDim2.new(0, 0, 0, 8)
-	headerTitle.BackgroundTransparency = 1
-	headerTitle.Font = F.Bold
-	headerTitle.TextSize = 16
-	headerTitle.TextColor3 = C.AmberDark
-	headerTitle.Text = "🏆 Your " .. statLabel
-	headerTitle.ZIndex = 84
-	headerTitle.Parent = headerCard
-	
-	local headerValue = Instance.new("TextLabel")
-	headerValue.Size = UDim2.new(1, 0, 0, 36)
-	headerValue.Position = UDim2.new(0, 0, 0, 36)
-	headerValue.BackgroundTransparency = 1
-	headerValue.Font = F.Bold
-	headerValue.TextSize = 28
-	headerValue.TextColor3 = category == "richest" and C.Green or C.Blue
-	headerValue.ZIndex = 84
-	headerValue.Parent = headerCard
-	
-	if valueType == "money" then
-		headerValue.Text = formatMoney(playerValue)
-	else
-		headerValue.Text = playerValue .. " years"
-	end
-	
-	local headerName = Instance.new("TextLabel")
-	headerName.Size = UDim2.new(1, 0, 0, 20)
-	headerName.Position = UDim2.new(0, 0, 0, 68)
-	headerName.BackgroundTransparency = 1
-	headerName.Font = F.Medium
-	headerName.TextSize = 12
-	headerName.TextColor3 = C.Gray500
-	headerName.Text = playerName
-	headerName.ZIndex = 84
-	headerName.Parent = headerCard
-	
-	table.insert(self.leaderboardEntries, headerCard)
-	
-	-- Info message about leaderboards
-	local infoCard = Instance.new("Frame")
-	infoCard.Name = "LeaderboardInfo"
-	infoCard.Size = UDim2.new(1, 0, 0, 70)
-	infoCard.BackgroundColor3 = C.Gray100
-	infoCard.LayoutOrder = 1
-	infoCard.ZIndex = 83
-	infoCard.Parent = self.leaderboardScroll
-	UI.corner(infoCard, 10)
-	
-	local infoText = Instance.new("TextLabel")
-	infoText.Size = UDim2.new(1, -20, 1, -10)
-	infoText.Position = UDim2.new(0, 10, 0, 5)
-	infoText.BackgroundTransparency = 1
-	infoText.Font = F.Medium
-	infoText.TextSize = 13
-	infoText.TextColor3 = C.Gray600
-	infoText.TextWrapped = true
-	infoText.TextYAlignment = Enum.TextYAlignment.Center
-	infoText.Text = "🌟 Keep playing to improve your stats!\nYour progress is tracked across all your lives."
-	infoText.ZIndex = 84
-	infoText.Parent = infoCard
-	
-	table.insert(self.leaderboardEntries, infoCard)
-	
-	-- Show past lives stats if available (these are REAL achievements!)
 	local pastLives = state and state.PastLives or {}
-	
-	if #pastLives > 0 then
-		-- Personal Records header
-		local recordsHeader = Instance.new("TextLabel")
-		recordsHeader.Size = UDim2.new(1, 0, 0, 30)
-		recordsHeader.BackgroundTransparency = 1
-		recordsHeader.Font = F.Bold
-		recordsHeader.TextSize = 14
-		recordsHeader.TextColor3 = C.Gray700
-		recordsHeader.Text = "📜 Your Personal Records"
-		recordsHeader.LayoutOrder = 2
-		recordsHeader.ZIndex = 83
-		recordsHeader.Parent = self.leaderboardScroll
-		table.insert(self.leaderboardEntries, recordsHeader)
-		
-		-- Collect best stats from past lives
-		local records = {}
-		for i, life in ipairs(pastLives) do
-			local lifeValue = 0
-			if category == "richest" then
-				lifeValue = life.netWorth or life.money or 0
-			else
-				lifeValue = life.age or 0
-			end
-			table.insert(records, {
-				name = life.name or ("Life #" .. i),
-				value = lifeValue,
-				gender = life.gender,
-				lifeNum = #pastLives - i + 1,
-			})
-		end
-		
-		-- Sort by value descending
-		table.sort(records, function(a, b) return a.value > b.value end)
-		
-		-- Show top 10 past life records
-		for i = 1, math.min(10, #records) do
-			local record = records[i]
-			local entry = self:createLeaderboardEntry(
-				i,
-				record.name,
-				record.value,
-				valueType,
-				false
-			)
-			entry.LayoutOrder = i + 2
-			table.insert(self.leaderboardEntries, entry)
+
+	-- Clear both columns
+	for _, scroll in ipairs({ self.richestScroll, self.oldestScroll }) do
+		for _, c in ipairs(scroll:GetChildren()) do
+			if c:IsA("Frame") then c:Destroy() end
 		end
 	end
+
+	-- Build records
+	local richest = {}
+	local oldest = {}
+
+	for i, life in ipairs(pastLives) do
+		table.insert(richest, {
+			name = life.name or ("Life #" .. i),
+			value = life.netWorth or life.money or 0
+		})
+		table.insert(oldest, {
+			name = life.name or ("Life #" .. i),
+			value = life.age or 0
+		})
+	end
+
+	table.sort(richest, function(a,b) return a.value > b.value end)
+	table.sort(oldest,  function(a,b) return a.value > b.value end)
+
+	-- Populate richest column
+	for i = 1, math.min(10, #richest) do
+		local entry = self:createLeaderboardEntry(i, richest[i].name, richest[i].value, "money", false)
+		entry.Parent = self.richestScroll
+	end
+
+	-- Populate oldest column
+	for i = 1, math.min(10, #oldest) do
+		local entry = self:createLeaderboardEntry(i, oldest[i].name, oldest[i].value, "age", false)
+		entry.Parent = self.oldestScroll
+	end
+
+	-- Canvas sizes (48px entry + 4px padding = 52px per row)
+	self.richestScroll.CanvasSize = UDim2.new(0, 0, 0, math.max(50, math.min(10, #richest) * 52))
+	self.oldestScroll.CanvasSize  = UDim2.new(0, 0, 0, math.max(50, math.min(10, #oldest) * 52))
 	
-	-- Update canvas size
-	local totalHeight = 180 + (#pastLives > 0 and (30 + math.min(10, #pastLives) * 58) or 0)
-	self.leaderboardScroll.CanvasSize = UDim2.new(0, 0, 0, totalHeight)
+	-- If no past lives yet, show a message
+	if #pastLives == 0 then
+		local function createEmptyMessage(scroll, text)
+			local msg = Instance.new("TextLabel")
+			msg.Size = UDim2.new(1, -10, 0, 60)
+			msg.BackgroundTransparency = 1
+			msg.Font = F.Medium
+			msg.TextSize = 11
+			msg.TextColor3 = C.Gray400
+			msg.TextWrapped = true
+			msg.Text = text
+			msg.ZIndex = 86
+			msg.Parent = scroll
+		end
+		createEmptyMessage(self.richestScroll, "🌱 No past lives yet!\nStart playing to see records.")
+		createEmptyMessage(self.oldestScroll, "🌱 No past lives yet!\nStart playing to see records.")
+	end
 end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
