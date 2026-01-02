@@ -128,12 +128,16 @@ Relationships.events = {
 		tags = { "friendship", "social" },
 		blockedByFlags = { in_prison = true },
 		-- Dynamic text generation for the event
+		-- CRITICAL FIX: EXPANDED name lists to prevent repetition!
 		getDynamicText = function(state)
 			-- Generate a random name for the potential friend
-			local names = state.Gender == "male" 
-				and {"Emma", "Olivia", "Sophia", "Ava", "Isabella", "Mia", "Chloe", "Grace", "Lily", "Harper", "Jake", "Alex", "Sam", "Jordan", "Taylor"}
-				or {"James", "Michael", "David", "John", "Alex", "Ryan", "Chris", "Jake", "Ethan", "Noah", "Emma", "Sam", "Jordan", "Taylor", "Morgan"}
-			local name = names[math.random(1, #names)]
+			local maleNames = {"James", "Michael", "David", "John", "Alex", "Ryan", "Chris", "Brandon", "Tyler", "Jake", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Ben", "Daniel", "Andrew", "Joshua", "Nathan", "Kevin", "Justin", "Aaron", "Adam", "Dylan", "Caleb", "Hunter", "Austin", "Connor", "Jordan"}
+			local femaleNames = {"Emma", "Olivia", "Sophia", "Ava", "Isabella", "Mia", "Emily", "Lily", "Chloe", "Harper", "Aria", "Luna", "Zoe", "Riley", "Ella", "Scarlett", "Victoria", "Madison", "Hannah", "Abigail", "Charlotte", "Amelia", "Evelyn", "Elizabeth", "Layla", "Nora", "Hazel", "Aurora", "Savannah", "Brooklyn"}
+			-- Mix of both genders for friends
+			local allNames = {}
+			for _, n in ipairs(maleNames) do table.insert(allNames, n) end
+			for _, n in ipairs(femaleNames) do table.insert(allNames, n) end
+			local name = allNames[math.random(1, #allNames)]
 			return {
 				text = string.format("You've been hitting it off with %s. You two seem to really click!", name),
 				friendName = name,

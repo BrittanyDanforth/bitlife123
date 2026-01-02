@@ -539,7 +539,7 @@ EducationCareerEvents.events = {
 					local roll = math.random(1, 100)
 					if roll <= 60 then
 						state.Money = (state.Money or 0) + math.random(20000, 80000)
-						state.Fame = (state.Fame or 0) + 30
+						state.Fame = math.min(100, (state.Fame or 0) + 30) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.renowned_researcher = true
 						-- AAA FIX: Nil check for all state methods
@@ -902,9 +902,9 @@ local CoachCareerEvents = {
 	},
 }
 
--- Merge coach events into main table
+-- Merge coach events into main events table
 for _, event in ipairs(CoachCareerEvents) do
-	table.insert(EducationCareerEvents, event)
+	table.insert(EducationCareerEvents.events, event)
 end
 
 -- ═══════════════════════════════════════════════════════════════════════════════
@@ -913,7 +913,7 @@ end
 -- Interactive teaching events where player makes curriculum decisions
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-table.insert(EducationCareerEvents, {
+table.insert(EducationCareerEvents.events, {
 	id = "teacher_quiz_choice",
 	emoji = "📝",
 	title = "Pop Quiz Time!",
@@ -988,7 +988,7 @@ table.insert(EducationCareerEvents, {
 	},
 })
 
-table.insert(EducationCareerEvents, {
+table.insert(EducationCareerEvents.events, {
 	id = "teacher_lesson_plan",
 	emoji = "📚",
 	title = "Lesson Planning",
@@ -1031,7 +1031,7 @@ table.insert(EducationCareerEvents, {
 	},
 })
 
-table.insert(EducationCareerEvents, {
+table.insert(EducationCareerEvents.events, {
 	id = "teacher_student_question",
 	emoji = "❓",
 	title = "Tough Student Question",
@@ -1086,7 +1086,7 @@ table.insert(EducationCareerEvents, {
 	},
 })
 
-table.insert(EducationCareerEvents, {
+table.insert(EducationCareerEvents.events, {
 	id = "teacher_field_trip",
 	emoji = "🚌",
 	title = "Field Trip!",

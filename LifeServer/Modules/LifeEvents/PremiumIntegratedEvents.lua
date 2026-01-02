@@ -3101,7 +3101,7 @@ PremiumIntegratedEvents.events = {
 					
 					modifyStat("Happiness", 25)
 					-- Handle Fame specially since it's not a standard stat
-					state.Fame = (state.Fame or 0) + 30
+					state.Fame = math.min(100, (state.Fame or 0) + 30) -- CRITICAL FIX: Cap fame at 100
 					state.Flags = state.Flags or {}
 					state.Flags.is_famous = true
 					state.Flags.celebrity = true

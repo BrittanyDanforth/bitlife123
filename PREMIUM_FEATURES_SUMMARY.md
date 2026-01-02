@@ -180,8 +180,8 @@ Create these RemoteEvents/Functions in `ReplicatedStorage.LifeRemotes`:
 - [x] Server remotes added to LifeBackend (JoinMob, LeaveMob, DoMobOperation, etc.)
 - [x] Time Machine integrated into death screen UI (LifeClient)
 - [x] Mobile responsive UI for all mob features
-- [ ] Create actual Roblox gamepasses
-- [ ] Add God Mode button to stats UI
+- [x] Add God Mode button to stats UI (⚡ button in header opens stat editor modal)
+- [ ] Create actual Roblox gamepasses (requires Roblox Studio)
 
 ---
 

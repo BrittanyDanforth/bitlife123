@@ -238,7 +238,7 @@ local function loadEventModule(moduleName, categoryName)
 	LoadedModules[moduleName] = {
 		instance = moduleInstance,
 		eventCount = count,
-		category = category,
+		category = categoryName,
 	}
 	
 	return count

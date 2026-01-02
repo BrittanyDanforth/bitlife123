@@ -244,8 +244,12 @@ InvestmentBankingEvents.events = {
 						state:ModifyStat("Happiness", -30)
 						state.Flags = state.Flags or {}
 						state.Flags.in_prison = true
-						state.PrisonYearsRemaining = math.random(3, 10)
+						state.Flags.incarcerated = true
+						state.InJail = true -- CRITICAL FIX: Use InJail for consistency with rest of codebase
+						state.JailYearsLeft = math.random(3, 10) -- CRITICAL FIX: Use JailYearsLeft, not PrisonYearsRemaining
 						state.CurrentJob = nil
+						state.Flags.employed = nil
+						state.Flags.has_job = nil
 						state:AddFeed("🤫 ARRESTED for insider trading! Federal charges! Career over!")
 					end
 				end,
@@ -410,7 +414,7 @@ InvestmentBankingEvents.events = {
 						local bonus = math.random(500000, 3000000)
 						state.Money = (state.Money or 0) + bonus
 						state:ModifyStat("Happiness", 30)
-						state.Fame = (state.Fame or 0) + 30
+						state.Fame = math.min(100, (state.Fame or 0) + 30) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.ipo_legend = true
 						state:AddFeed(string.format("🚀 IPO was MASSIVE success! $%s bonus! Your name in the financial press!", bonus))
@@ -599,8 +603,12 @@ InvestmentBankingEvents.events = {
 					else
 						state.Flags = state.Flags or {}
 						state.Flags.in_prison = true
-						state.PrisonYearsRemaining = math.random(2, 8)
+						state.Flags.incarcerated = true
+						state.InJail = true -- CRITICAL FIX: Use InJail for consistency with rest of codebase
+						state.JailYearsLeft = math.random(2, 8) -- CRITICAL FIX: Use JailYearsLeft, not PrisonYearsRemaining
 						state.CurrentJob = nil
+						state.Flags.employed = nil
+						state.Flags.has_job = nil
 						state.Flags.sec_investigation = nil
 						state:AddFeed("🔍 Lost the case. Federal prison. Should have cooperated.")
 					end
@@ -671,7 +679,7 @@ InvestmentBankingEvents.events = {
 							state.Money = (state.Money or 0) + returns
 							state.Flags = state.Flags or {}
 							state.Flags.hedge_fund_founder = true
-							state.Fame = (state.Fame or 0) + 50
+							state.Fame = math.min(100, (state.Fame or 0) + 50) -- CRITICAL FIX: Cap fame at 100
 							state:AddFeed(string.format("🌟 YOUR FUND IS CRUSHING IT! $%s returns in year one!", returns))
 						else
 							state:ModifyStat("Happiness", -15)
@@ -719,7 +727,7 @@ InvestmentBankingEvents.events = {
 						local bonus = math.random(500000, 2000000)
 						state.Money = (state.Money or 0) + bonus
 						state:ModifyStat("Happiness", 25)
-						state.Fame = (state.Fame or 0) + 30
+						state.Fame = math.min(100, (state.Fame or 0) + 30) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.legendary_dealmaker = true
 						state:AddFeed(string.format("🔥 HISTORIC DEAL! $%s bonus! Your name in the Wall Street Journal!", bonus))
@@ -794,9 +802,13 @@ InvestmentBankingEvents.events = {
 						state:ModifyStat("Happiness", -20)
 						state.Flags = state.Flags or {}
 						state.Flags.in_prison = true
-						state.PrisonYearsRemaining = math.random(1, 5)
+						state.Flags.incarcerated = true
+						state.InJail = true -- CRITICAL FIX: Use InJail for consistency with rest of codebase
+						state.JailYearsLeft = math.random(1, 5) -- CRITICAL FIX: Use JailYearsLeft, not PrisonYearsRemaining
 						state.Flags.legal_trouble = nil
 						state.CurrentJob = nil
+						state.Flags.employed = nil
+						state.Flags.has_job = nil
 						state:AddFeed("⚠️ Perjury charges on top of everything else. Prison time.")
 					end
 				end,
@@ -897,13 +909,13 @@ InvestmentBankingEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 60 then
-						state.Fame = (state.Fame or 0) + 40
+						state.Fame = math.min(100, (state.Fame or 0) + 40) -- CRITICAL FIX: Cap fame at 100
 						state.Money = (state.Money or 0) + math.random(100000, 300000)
 						state.Flags = state.Flags or {}
 						state.Flags.tv_personality = true
 						state:AddFeed("📊 You're a TV STAR! 'The Finance Guy!' Book deal incoming!")
 					else
-						state.Fame = (state.Fame or 0) - 10
+						state.Fame = math.max(0, (state.Fame or 0) - 10) -- CRITICAL FIX: Prevent negative Fame
 						state:AddFeed("📊 Made a bad call on TV. Went viral for the wrong reasons.")
 					end
 				end,
@@ -945,7 +957,7 @@ InvestmentBankingEvents.events = {
 					if roll <= 35 then
 						local gains = math.random(1000000, 5000000)
 						state.Money = (state.Money or 0) + gains
-						state.Fame = (state.Fame or 0) + 25
+						state.Fame = math.min(100, (state.Fame or 0) + 25) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.crypto_millionaire = true
 						state:AddFeed(string.format("₿ CRYPTO BOOM! $%s in equity! To the moon!", gains))

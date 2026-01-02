@@ -341,7 +341,7 @@ EarlyLifeEvents.events = {
 		},
 	},
 	{
-		id = "toddler_imaginary_friend",
+		id = "early_life_imaginary_friend", -- CRITICAL FIX: Renamed from toddler_imaginary_friend to avoid duplicate ID with ToddlerPreschoolEvents.lua
 		title = "Imaginary Friend",
 		emoji = "👻",
 		text = "You've started talking to an imaginary friend!",

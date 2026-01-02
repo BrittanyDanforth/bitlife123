@@ -3663,7 +3663,7 @@ Random.events = {
 	},
 	
 	{
-		id = "vehicle_car_show",
+		id = "random_vehicle_car_show", -- CRITICAL FIX: Renamed from vehicle_car_show to avoid duplicate ID with VehicleEvents.lua
 		emoji = "🏆",
 		title = "Local Car Show",
 		text = "There's a car show happening this weekend! People are bringing their best rides.",
@@ -3733,7 +3733,7 @@ Random.events = {
 	},
 	
 	{
-		id = "vehicle_road_trip",
+		id = "random_vehicle_road_trip", -- CRITICAL FIX: Renamed from vehicle_road_trip to avoid duplicate ID with VehicleEvents.lua
 		emoji = "🛣️",
 		title = "Road Trip Opportunity!",
 		text = "Your friends are planning an epic road trip! They want you to drive since you have a car.",
@@ -3862,7 +3862,7 @@ Random.events = {
 	},
 	
 	{
-		id = "vehicle_speeding_ticket",
+		id = "random_vehicle_speeding_ticket", -- CRITICAL FIX: Renamed from vehicle_speeding_ticket to avoid duplicate ID with VehicleEvents.lua
 		emoji = "🚓",
 		title = "Pulled Over!",
 		text = "Blue lights flash behind you. A cop pulls you over for speeding!",
@@ -3949,7 +3949,7 @@ Random.events = {
 	},
 	
 	{
-		id = "vehicle_upgrade_offer",
+		id = "random_vehicle_upgrade_offer", -- CRITICAL FIX: Renamed from vehicle_upgrade_offer to avoid duplicate ID with VehicleEvents.lua
 		emoji = "🔧",
 		title = "Upgrade Your Ride!",
 		text = "A mechanic friend offers to do some upgrades on your car for cheap!",
