@@ -4861,15 +4861,26 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local flags = state.Flags or {}
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: GOD MODE allows players to be BOTH royalty AND mafia!
+	-- User feedback: "GODMODE IS SUPPOSED TO LET YOU BE ROYALTY AND MAFIA IF U WANT AT SAME TIME"
+	-- Only clear conflicting states for non-God-Mode players
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local hasGodMode = flags.god_mode or flags.godmode_owner or 
+		(state.GamepassOwnership and state.GamepassOwnership.GOD_MODE)
+	
 	-- Check if player just became royalty through this event
 	if flags.is_royalty or flags.royal_by_marriage then
-		-- Clear conflicting mafia state
-		if flags.in_mob or state.MobState then
-			warn("[EventEngine] CONFLICT: Player became royalty but had mafia state - clearing mafia")
+		-- CRITICAL FIX: God Mode players can be BOTH royalty AND mafia - skip conflict clearing!
+		if not hasGodMode and (flags.in_mob or state.MobState) then
+			warn("[EventEngine] CONFLICT: Player became royalty but had mafia state - clearing mafia (no God Mode)")
 			flags.in_mob = nil
 			flags.mafia_member = nil
 			flags.chose_mafia_path = nil
 			state.MobState = nil
+		elseif hasGodMode and (flags.in_mob or state.MobState) then
+			-- God Mode: Allow both! Just log for debugging
+			print("[EventEngine] GOD MODE: Player is BOTH royalty AND mafia - allowed!")
 		end
 		-- Ensure primary_wish_type is correct
 		if flags.primary_wish_type ~= "royalty" then
@@ -4890,14 +4901,17 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 	
 	-- Check if player just joined mafia through this event
 	if flags.in_mob or (state.MobState and state.MobState.inMob) then
-		-- Clear conflicting royalty state
-		if flags.is_royalty or state.RoyalState then
-			warn("[EventEngine] CONFLICT: Player joined mafia but had royalty state - clearing royalty")
+		-- CRITICAL FIX: God Mode players can be BOTH royalty AND mafia - skip conflict clearing!
+		if not hasGodMode and (flags.is_royalty or state.RoyalState) then
+			warn("[EventEngine] CONFLICT: Player joined mafia but had royalty state - clearing royalty (no God Mode)")
 			flags.is_royalty = nil
 			flags.royal_birth = nil
 			flags.dating_royalty = nil
 			flags.chose_royalty_path = nil
 			state.RoyalState = nil
+		elseif hasGodMode and (flags.is_royalty or state.RoyalState) then
+			-- God Mode: Allow both! Just log for debugging
+			print("[EventEngine] GOD MODE: Player is BOTH mafia AND royalty - allowed!")
 		end
 		-- Clear conflicting celebrity state
 		if flags.fame_career and not flags.mob_fame then

@@ -1621,23 +1621,38 @@ end
 -- CRITICAL FIX: Now accepts gender parameter to generate appropriate names!
 -- ════════════════════════════════════════════════════════════════════════════════
 function EventEngine.generateRandomName(state, gender)
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Expanded name lists for more variety
+	-- User feedback: "WHEN DATING SOMEBODY IT ALWAYS IS GRACE FOR SOME REASON"
+	-- Increased from ~32 to 60+ names each gender
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	local maleFirstNames = {
 		"James", "John", "Michael", "David", "Robert", "William", "Daniel", "Matthew",
 		"Anthony", "Mark", "Joshua", "Andrew", "Joseph", "Christopher", "Ryan", "Tyler",
 		"Brandon", "Kevin", "Justin", "Jason", "Brian", "Eric", "Steven", "Thomas",
 		"Oliver", "Liam", "Noah", "Lucas", "Mason", "Ethan", "Aiden", "Sebastian",
+		"Alexander", "Benjamin", "Elijah", "Henry", "Jacob", "Logan", "Owen", "Samuel",
+		"Carter", "Dylan", "Gabriel", "Isaac", "Jayden", "Caleb", "Nathan", "Connor",
+		"Evan", "Adrian", "Cole", "Cameron", "Hunter", "Jordan", "Max", "Luke",
+		"Blake", "Chase", "Austin", "Dominic", "Xavier", "Ian", "Aaron", "Tristan",
 	}
 	local femaleFirstNames = {
 		"Emma", "Olivia", "Sophia", "Isabella", "Mia", "Charlotte", "Amelia", "Harper",
 		"Evelyn", "Abigail", "Emily", "Elizabeth", "Sofia", "Ella", "Avery", "Scarlett",
-		"Grace", "Chloe", "Victoria", "Madison", "Luna", "Penelope", "Layla", "Riley",
+		"Chloe", "Victoria", "Madison", "Luna", "Penelope", "Layla", "Riley", "Zoey",
 		"Sarah", "Jessica", "Ashley", "Rachel", "Nicole", "Samantha", "Hannah", "Lauren",
+		"Aria", "Aaliyah", "Camila", "Aurora", "Gianna", "Ellie", "Paisley", "Skylar",
+		"Violet", "Stella", "Hazel", "Audrey", "Brooklyn", "Leah", "Savannah", "Claire",
+		"Natalie", "Lily", "Naomi", "Elena", "Anna", "Maya", "Kennedy", "Madelyn",
+		"Addison", "Lillian", "Bella", "Autumn", "Aubrey", "Quinn", "Ruby", "Serenity",
 	}
 	local lastNames = {
 		"Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis",
 		"Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson",
 		"Thomas", "Taylor", "Moore", "Jackson", "Martin", "Lee", "Perez", "Thompson",
 		"White", "Harris", "Clark", "Lewis", "Robinson", "Walker", "Hall", "Young",
+		"Allen", "King", "Wright", "Scott", "Green", "Baker", "Adams", "Nelson",
+		"Carter", "Mitchell", "Roberts", "Turner", "Phillips", "Campbell", "Parker", "Evans",
 	}
 
 	local firstName

@@ -16261,8 +16261,21 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 	-- Activities with usesInsurance = true get a discount if player has insurance
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	local actualCost = activity.cost or 0
-	if activity.usesInsurance and state.Flags and state.Flags.has_health_insurance then
-		-- Insurance covers 70-80% of medical costs
+	local playerAge = state.Age or 0
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Children under 18 don't pay for medical activities!
+	-- User feedback: "IM 12/13 YEARS OLD AND IT SAYS PAY $100 FOR DOCTOR BRUH IM A KID"
+	-- Parents cover medical costs for their minor children
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isMinor = playerAge < 18
+	local isMedicalActivity = activity.usesInsurance == true
+	
+	if isMinor and isMedicalActivity then
+		-- Parents pay for kids' medical care - no cost for minors
+		actualCost = 0
+	elseif activity.usesInsurance and state.Flags and state.Flags.has_health_insurance then
+		-- Insurance covers 70-80% of medical costs for adults with insurance
 		local insuranceDiscount = 0.75 -- 75% covered by insurance
 		actualCost = math.floor(actualCost * (1 - insuranceDiscount))
 	end

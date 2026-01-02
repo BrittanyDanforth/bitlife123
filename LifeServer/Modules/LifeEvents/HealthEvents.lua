@@ -92,7 +92,26 @@ HealthEvents.events = {
 				end,
 			},
 		{ text = "Push through it", effects = { Health = -3, Happiness = -2, Smarts = 1 }, feedText = "🤒 Working sick. Spreading germs. Delayed recovery." },
-		{ text = "Go to doctor ($50)", effects = { Money = -50, Health = 3 }, feedText = "🤒 Got proper treatment. Meds helping.", eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 for doctor" end },
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Children under 18 shouldn't pay for medical care - parents pay!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		{ 
+			text = "Go to doctor ($50)", 
+			effects = { Health = 3 }, 
+			feedText = "🤒 Got proper treatment. Meds helping.", 
+			eligibility = function(state) 
+				local age = state.Age or 0
+				if age < 18 then return true, nil end -- Kids don't pay
+				return (state.Money or 0) >= 50, "💸 Need $50 for doctor" 
+			end,
+			onResolve = function(state)
+				local age = state.Age or 0
+				if age >= 18 then
+					state.Money = math.max(0, (state.Money or 0) - 50) -- Adults pay
+				end
+				-- Kids: parents pay, no cost deducted
+			end,
+		},
 		},
 	},
 	{
@@ -495,7 +514,24 @@ HealthEvents.events = {
 				end,
 			},
 		{ text = "Suffer through it", effects = { Happiness = -5, Health = -2 }, feedText = "🤧 Sneezing, itching, misery. Toughing it out." },
-		{ text = "Allergy shots ($100)", effects = { Money = -100, Happiness = 2, Health = 3 }, setFlags = { allergy_treatment = true }, feedText = "🤧 Long-term solution! Building immunity!", eligibility = function(state) return (state.Money or 0) >= 100, "💸 Need $100 for shots" end },
+		-- CRITICAL FIX: Children under 18 shouldn't pay for medical care - parents pay!
+		{ 
+			text = "Allergy shots ($100)", 
+			effects = { Happiness = 2, Health = 3 }, 
+			setFlags = { allergy_treatment = true }, 
+			feedText = "🤧 Long-term solution! Building immunity!", 
+			eligibility = function(state) 
+				local age = state.Age or 0
+				if age < 18 then return true, nil end -- Kids don't pay
+				return (state.Money or 0) >= 100, "💸 Need $100 for shots" 
+			end,
+			onResolve = function(state)
+				local age = state.Age or 0
+				if age >= 18 then
+					state.Money = math.max(0, (state.Money or 0) - 100) -- Adults pay
+				end
+			end,
+		},
 		},
 	},
 	
@@ -542,7 +578,24 @@ HealthEvents.events = {
 			},
 		{ text = "Reach out for support", effects = { Happiness = 4, Health = 2 }, feedText = "😰 Talked to someone. Not alone. That helps." },
 		{ text = "Avoid triggers (hide)", effects = { Happiness = -3 }, setFlags = { avoiding_anxiety_triggers = true }, feedText = "😰 Hiding makes it worse. Avoidance isn't coping." },
-		{ text = "Seek professional help ($80)", effects = { Money = -80, Happiness = 6, Health = 3 }, setFlags = { therapy = true }, feedText = "😰 Therapist appointment made. Healing begins.", eligibility = function(state) return (state.Money or 0) >= 80, "💸 Need $80 for therapy" end },
+		-- CRITICAL FIX: Children under 18 shouldn't pay for medical care - parents pay!
+		{ 
+			text = "Seek professional help ($80)", 
+			effects = { Happiness = 6, Health = 3 }, 
+			setFlags = { therapy = true }, 
+			feedText = "😰 Therapist appointment made. Healing begins.", 
+			eligibility = function(state) 
+				local age = state.Age or 0
+				if age < 18 then return true, nil end -- Kids don't pay
+				return (state.Money or 0) >= 80, "💸 Need $80 for therapy" 
+			end,
+			onResolve = function(state)
+				local age = state.Age or 0
+				if age >= 18 then
+					state.Money = math.max(0, (state.Money or 0) - 80) -- Adults pay
+				end
+			end,
+		},
 		},
 	},
 	{
@@ -771,7 +824,23 @@ HealthEvents.events = {
 				end
 			end,
 		},
-		{ text = "See sleep specialist ($150)", effects = { Money = -150, Health = 5, Happiness = 4 }, feedText = "😴 Sleep study revealed issues. Treatment helping!", eligibility = function(state) return (state.Money or 0) >= 150, "💸 Need $150 for specialist" end },
+		-- CRITICAL FIX: Children under 18 shouldn't pay for medical care - parents pay!
+		{ 
+			text = "See sleep specialist ($150)", 
+			effects = { Health = 5, Happiness = 4 }, 
+			feedText = "😴 Sleep study revealed issues. Treatment helping!", 
+			eligibility = function(state) 
+				local age = state.Age or 0
+				if age < 18 then return true, nil end -- Kids don't pay
+				return (state.Money or 0) >= 150, "💸 Need $150 for specialist" 
+			end,
+			onResolve = function(state)
+				local age = state.Age or 0
+				if age >= 18 then
+					state.Money = math.max(0, (state.Money or 0) - 150) -- Adults pay
+				end
+			end,
+		},
 		},
 	},
 	{
