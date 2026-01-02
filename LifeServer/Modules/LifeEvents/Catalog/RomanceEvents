@@ -32,9 +32,23 @@ local function isOnRoyaltyPath(state)
 end
 
 -- Generate random first name
+-- CRITICAL FIX: EXPANDED name lists to prevent "Grace" and other names appearing too often!
+-- User bug: "when dating somebody it always is Grace for some reason"
 local function randomName(gender)
-	local maleNames = {"James", "Michael", "David", "John", "Alex", "Ryan", "Chris", "Brandon", "Tyler", "Jake", "Ethan", "Noah", "Liam", "Mason", "Lucas"}
-	local femaleNames = {"Emma", "Olivia", "Sophia", "Ava", "Isabella", "Mia", "Emily", "Grace", "Lily", "Chloe", "Harper", "Aria", "Luna", "Zoe", "Riley"}
+	local maleNames = {
+		"James", "Michael", "David", "John", "Alex", "Ryan", "Chris", "Brandon", "Tyler", "Jake",
+		"Ethan", "Noah", "Liam", "Mason", "Lucas", "Ben", "Sam", "Will", "Matt", "Nick",
+		"Daniel", "Andrew", "Joshua", "Nathan", "Kevin", "Justin", "Aaron", "Adam", "Dylan", "Caleb",
+		"Hunter", "Austin", "Connor", "Jayden", "Carter", "Luke", "Isaac", "Jordan", "Logan", "Aiden",
+		"Marcus", "Derek", "Kyle", "Trevor", "Scott", "Eric", "Brian", "Patrick", "Sean", "Travis"
+	}
+	local femaleNames = {
+		"Emma", "Olivia", "Sophia", "Ava", "Isabella", "Mia", "Emily", "Lily", "Chloe", "Harper",
+		"Aria", "Luna", "Zoe", "Riley", "Ella", "Scarlett", "Victoria", "Madison", "Hannah", "Abigail",
+		"Charlotte", "Amelia", "Evelyn", "Elizabeth", "Sofia", "Avery", "Layla", "Nora", "Hazel", "Aurora",
+		"Savannah", "Audrey", "Brooklyn", "Claire", "Skylar", "Lucy", "Paisley", "Anna", "Caroline", "Maya",
+		"Natalie", "Leah", "Samantha", "Aaliyah", "Peyton", "Autumn", "Jade", "Stella", "Taylor", "Naomi"
+	}
 	local names = (gender == "male") and maleNames or femaleNames
 	return names[RANDOM:NextInteger(1, #names)]
 end
@@ -274,11 +288,12 @@ local events = {
 				setFlags = { has_partner = true, dating = true, met_cute = true },
 				feedText = "You hit it off! Numbers exchanged!",
 				-- CRITICAL FIX: Actually create the partner relationship
+				-- CRITICAL FIX: EXPANDED name lists to prevent repetition!
 				onResolve = function(state)
 					local partnerGender = (state.Gender == "male") and "female" or "male"
-					local names = (partnerGender == "male") and 
-						{"James", "Michael", "David", "John", "Alex", "Ryan", "Chris", "Brandon"} or
-						{"Emma", "Olivia", "Sophia", "Ava", "Isabella", "Mia", "Emily", "Grace"}
+					local maleNames = {"James", "Michael", "David", "John", "Alex", "Ryan", "Chris", "Brandon", "Tyler", "Jake", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Ben", "Daniel", "Andrew", "Joshua", "Nathan", "Kevin", "Justin", "Aaron", "Adam", "Dylan", "Caleb", "Hunter", "Austin", "Connor", "Jordan"}
+					local femaleNames = {"Emma", "Olivia", "Sophia", "Ava", "Isabella", "Mia", "Emily", "Lily", "Chloe", "Harper", "Aria", "Luna", "Zoe", "Riley", "Ella", "Scarlett", "Victoria", "Madison", "Hannah", "Abigail", "Charlotte", "Amelia", "Evelyn", "Elizabeth", "Layla", "Nora", "Hazel", "Aurora", "Savannah", "Brooklyn"}
+					local names = (partnerGender == "male") and maleNames or femaleNames
 					local partnerName = names[math.random(1, #names)]
 					state.Relationships = state.Relationships or {}
 					state.Relationships.partner = {

@@ -16709,8 +16709,22 @@ function LifeBackend:handleActivity(player, activityId, bonus)
 			-- User bug: "As a girl it only lets me romance girls"
 			local playerGender = (state.Gender or "male"):lower()
 			local partnerIsMale = (playerGender == "female") -- If player is female, partner is male
-			local maleNames = {"James", "Michael", "David", "John", "Alex", "Ryan", "Chris", "Brandon", "Tyler", "Jake", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Ben", "Sam", "Will", "Matt", "Nick"}
-			local femaleNames = {"Emma", "Olivia", "Sophia", "Ava", "Isabella", "Mia", "Emily", "Grace", "Lily", "Chloe", "Harper", "Aria", "Luna", "Zoe", "Riley", "Ella", "Scarlett", "Victoria", "Madison", "Hannah"}
+			-- CRITICAL FIX: EXPANDED name lists to prevent repetition!
+			-- User bug: "when dating somebody it always is Grace for some reason"
+			local maleNames = {
+				"James", "Michael", "David", "John", "Alex", "Ryan", "Chris", "Brandon", "Tyler", "Jake",
+				"Ethan", "Noah", "Liam", "Mason", "Lucas", "Ben", "Sam", "Will", "Matt", "Nick",
+				"Daniel", "Andrew", "Joshua", "Nathan", "Kevin", "Justin", "Aaron", "Adam", "Dylan", "Caleb",
+				"Hunter", "Austin", "Connor", "Jayden", "Carter", "Luke", "Isaac", "Jordan", "Logan", "Aiden",
+				"Marcus", "Derek", "Kyle", "Trevor", "Scott", "Eric", "Brian", "Patrick", "Sean", "Travis"
+			}
+			local femaleNames = {
+				"Emma", "Olivia", "Sophia", "Ava", "Isabella", "Mia", "Emily", "Lily", "Chloe", "Harper",
+				"Aria", "Luna", "Zoe", "Riley", "Ella", "Scarlett", "Victoria", "Madison", "Hannah", "Abigail",
+				"Charlotte", "Amelia", "Evelyn", "Elizabeth", "Sofia", "Avery", "Layla", "Nora", "Hazel", "Aurora",
+				"Savannah", "Audrey", "Brooklyn", "Claire", "Skylar", "Lucy", "Paisley", "Anna", "Caroline", "Maya",
+				"Natalie", "Leah", "Samantha", "Aaliyah", "Peyton", "Autumn", "Jade", "Stella", "Taylor", "Naomi"
+			}
 			local names = partnerIsMale and maleNames or femaleNames
 			local partnerName = names[RANDOM:NextInteger(1, #names)]
 			
