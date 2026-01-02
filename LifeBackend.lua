@@ -17842,6 +17842,7 @@ function LifeBackend:getJobEligibility(player)
 					school_sports = "School sports team participation",
 					plays_soccer = "Soccer team experience",
 					plays_basketball = "Basketball team experience",
+					plays_football = "Football team experience",
 					varsity_athlete = "Varsity sports experience",
 					team_player = "Team sports experience",
 					camp_athlete = "Sports camp experience",
@@ -17850,6 +17851,28 @@ function LifeBackend:getJobEligibility(player)
 					pro_sports_experience = "Professional sports experience",
 					fitness_experience = "Fitness/gym experience",
 					trainer = "Trainer experience",
+					-- NBA Basketball Career Path
+					basketball_prodigy = "Basketball prodigy status",
+					college_basketball = "College basketball experience",
+					college_sports_interest = "College scout interest",
+					scholarship_likely = "Scholarship prospect",
+					state_champion = "State championship winner",
+					sports_legend = "High school sports legend",
+					nba_declared = "Declared for NBA Draft",
+					nba_player = "NBA Player",
+					nba_allstar = "NBA All-Star",
+					nba_mvp = "NBA MVP",
+					nba_champion = "NBA Champion",
+					-- NFL Football Career Path
+					football_star = "Football star status",
+					college_football = "College football experience",
+					heisman_winner = "Heisman Trophy winner",
+					nfl_declared = "Declared for NFL Draft",
+					nfl_player = "NFL Player",
+					nfl_first_round = "NFL First Round Pick",
+					nfl_pro_bowl = "NFL Pro Bowl selection",
+					nfl_mvp = "NFL MVP",
+					super_bowl_champion = "Super Bowl Champion",
 					-- Creative career
 					acting_experience = "Acting experience",
 					professional_actor = "Professional acting career",
@@ -18477,6 +18500,58 @@ function LifeBackend:handleJobApplication(player, jobId, clientInterviewScore)
 		gpaBonus = 0.10 -- Valedictorian gets significant boost
 	end
 	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Career hints from early life choices MASSIVELY help!
+	-- If player showed interest in this career path during childhood/teens, they get bonus
+	-- This makes early life choices MEANINGFUL for career progression!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local careerHintBonus = 0
+	state.CareerHints = state.CareerHints or {}
+	
+	-- Map job categories to career hint categories
+	local categoryToHint = {
+		sports = { "sports", "athletic" },
+		tech = { "tech", "stem", "coding", "gaming" },
+		medical = { "medical", "science", "veterinary" },
+		science = { "science", "stem" },
+		creative = { "creative", "arts", "entertainment" },
+		music = { "creative", "music", "entertainment" },
+		acting = { "creative", "entertainment", "arts" },
+		finance = { "finance", "business" },
+		law = { "law", "justice" },
+		education = { "education" },
+		military = { "military" },
+		gaming = { "gaming", "tech", "esports" },
+	}
+	
+	local jobCategory = (job.category or ""):lower()
+	local hintCategories = categoryToHint[jobCategory] or { jobCategory }
+	
+	for _, hintCat in ipairs(hintCategories) do
+		if state.CareerHints[hintCat] then
+			careerHintBonus = careerHintBonus + 0.15 -- +15% per matching hint
+		end
+	end
+	
+	-- Cap the career hint bonus
+	careerHintBonus = math.min(0.30, careerHintBonus) -- Max +30% bonus from career hints
+	
+	-- Special bonus for sports careers if player has relevant flags
+	if jobCategory == "sports" then
+		if state.Flags then
+			if state.Flags.varsity_athlete then careerHintBonus = careerHintBonus + 0.10 end
+			if state.Flags.state_champion then careerHintBonus = careerHintBonus + 0.15 end
+			if state.Flags.plays_basketball or state.Flags.plays_football then careerHintBonus = careerHintBonus + 0.10 end
+			if state.Flags.college_sports_interest then careerHintBonus = careerHintBonus + 0.10 end
+			if state.Flags.scholarship_likely then careerHintBonus = careerHintBonus + 0.15 end
+			if state.Flags.sports_legend then careerHintBonus = careerHintBonus + 0.20 end
+			if state.Flags.college_basketball or state.Flags.college_football then careerHintBonus = careerHintBonus + 0.20 end
+			if state.Flags.heisman_winner then careerHintBonus = careerHintBonus + 0.30 end
+		end
+		-- But cap at 50% total bonus for sports (still needs some luck!)
+		careerHintBonus = math.min(0.50, careerHintBonus)
+	end
+	
 	-- Previous rejection penalty (companies remember bad interviews)
 	local rejectionPenalty = math.min(0.20, (appHistory.attempts or 0) * 0.08) -- -8% per previous rejection, max -20%
 	
@@ -18555,8 +18630,9 @@ function LifeBackend:handleJobApplication(player, jobId, clientInterviewScore)
 	local maxChance = 1.0 - (difficulty * 0.05) -- difficulty 10 caps at 50%, difficulty 1 caps at 95%
 	maxChance = math.clamp(maxChance, 0.30, 0.95)
 	
-	-- CRITICAL FIX #22: Include GPA bonus in final chance calculation
-	local finalChance = math.clamp(baseChance + experienceBonus + statBonus + gpaBonus - rejectionPenalty - criminalPenalty, 0.02, maxChance)
+	-- CRITICAL FIX #22: Include GPA bonus AND career hint bonus in final chance calculation
+	-- Career hints from early life choices now MATTER for getting jobs!
+	local finalChance = math.clamp(baseChance + experienceBonus + statBonus + gpaBonus + careerHintBonus - rejectionPenalty - criminalPenalty, 0.02, maxChance)
 	
 	-- Entry-level jobs (no requirements, low salary) - still have some chance of rejection
 	if not job.requirement and (job.salary or 0) < 35000 then

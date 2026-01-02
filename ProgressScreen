@@ -1175,10 +1175,12 @@ function ProgressScreen:refreshLeaderboards()
 	local state = self:getState()
 	local pastLives = state and state.PastLives or {}
 
-	-- Clear both columns
+	-- Clear both columns (destroy ALL children except UIListLayout)
 	for _, scroll in ipairs({ self.richestScroll, self.oldestScroll }) do
 		for _, c in ipairs(scroll:GetChildren()) do
-			if c:IsA("Frame") then c:Destroy() end
+			if c:IsA("Frame") or c:IsA("TextLabel") then 
+				c:Destroy() 
+			end
 		end
 	end
 

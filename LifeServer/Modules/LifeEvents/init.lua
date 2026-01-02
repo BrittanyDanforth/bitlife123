@@ -354,6 +354,8 @@ function LifeEvents.init()
 		{ name = "IntelligenceCareerEvents",  category = "career_intelligence" }, -- CIA Agent, FBI
 		{ name = "EnforcerEvents",            category = "career_mafia" },      -- Enforcer, Mob Muscle
 		{ name = "AthleteCareerEvents",       category = "career_sports" },     -- Professional Athlete
+		{ name = "NBACareerEvents",           category = "career_nba" },        -- NBA Basketball Career Path
+		{ name = "NFLCareerEvents",           category = "career_nfl" },        -- NFL Football Career Path
 		{ name = "TradesCareerEvents",        category = "career_trades" },     -- Construction, Electrician, Plumber, Mechanic, Trucker
 		{ name = "ServiceCareerEvents",       category = "career_service" },    -- Waiter, Bartender, Flight Attendant, Personal Trainer
 		{ name = "MedicalCareerEvents",       category = "career_medical" },    -- EMT, Nurse, Doctor, Surgeon, Pharmacist
@@ -2189,13 +2191,14 @@ local AgeMilestoneEvents = {
 	-- CRITICAL FIX: Added teen sports events for athlete career path
 	[16] = { "driving_license", "teen_first_job", "prom_invite", "teen_sports_state_championship", "teen_sports_injury_setback", "fame_audition", "teen_first_heartbreak", "sweet_sixteen", "car_obsession", "college_prep", "premium_turning_point" },
 	[17] = { "high_school_graduation", "prom_invite", "teen_sports_college_scout", "teen_sports_state_championship", "senior_year", "college_applications", "last_summer", "farewell_friends", "adult_soon", "premium_turning_point" },
-	[18] = { "turning_18", "high_school_graduation", "moving_out", "young_adult_move_out", "coming_of_age_ball", "young_adult_adulting_struggle", "legal_adult", "vote_first_time", "premium_life_crossroads" },
+	[18] = { "turning_18", "high_school_graduation", "moving_out", "young_adult_move_out", "coming_of_age_ball", "young_adult_adulting_struggle", "legal_adult", "vote_first_time", "premium_life_crossroads", "college_basketball_scholarship", "college_football_scholarship" },
 	
 	-- YOUNG ADULT (19-24) - Independence and discovery
-	[19] = { "college_experience", "young_adult_first_apartment", "new_city_life", "first_roommate", "homesick_blues", "freedom_excitement" },
-	[20] = { "young_adult_fitness_resolution", "young_adult_financial_habits", "twenties_begin", "identity_crisis_light", "new_decade_new_me" },
-	[21] = { "turning_21_legal_drinking", "first_legal_drink", "royal_military_service", "bar_hopping", "adult_responsibilities", "real_world_hits" },
-	[22] = { "young_adult_career_crossroads", "college_graduation", "job_hunting", "degree_celebration", "real_job_search", "career_start" },
+	-- CRITICAL FIX: Added NBA/NFL draft events for sports career progression!
+	[19] = { "college_experience", "young_adult_first_apartment", "new_city_life", "first_roommate", "homesick_blues", "freedom_excitement", "nba_draft_declaration", "college_heisman_race" },
+	[20] = { "young_adult_fitness_resolution", "young_adult_financial_habits", "twenties_begin", "identity_crisis_light", "new_decade_new_me", "nba_draft_declaration", "college_heisman_race" },
+	[21] = { "turning_21_legal_drinking", "first_legal_drink", "royal_military_service", "bar_hopping", "adult_responsibilities", "real_world_hits", "nba_draft_declaration", "nfl_draft_declaration" },
+	[22] = { "young_adult_career_crossroads", "college_graduation", "job_hunting", "degree_celebration", "real_job_search", "career_start", "nba_draft_declaration", "nfl_draft_declaration" },
 	[23] = { "young_adult_relationship_milestone", "first_real_job", "adult_friendship", "living_alone", "budget_reality" },
 	[24] = { "quarter_life_reflection", "career_established", "friendship_evolution", "serious_dating", "life_direction" },
 	
@@ -2690,6 +2693,52 @@ function LifeEvents.buildYearQueue(state, options)
 		end
 		if not hasAthleteCat then
 			table.insert(categories, "career_sports")
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #NBA-1: ADD NBA CAREER CATEGORY INJECTION
+	-- Inject NBA events for basketball players or those with basketball background
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isNBAEligible = state.Flags and (
+		state.Flags.plays_basketball or state.Flags.nba_player or state.Flags.nba_declared or
+		state.Flags.college_basketball or state.Flags.basketball_prodigy
+	)
+	local hasNBAJob = state.CurrentJob and (
+		(state.CurrentJob.id or ""):lower():find("nba") or
+		(state.CurrentJob.id or ""):lower():find("basketball")
+	)
+	
+	if isNBAEligible or hasNBAJob then
+		local hasNBACat = false
+		for _, cat in ipairs(categories) do
+			if cat == "career_nba" then hasNBACat = true break end
+		end
+		if not hasNBACat then
+			table.insert(categories, "career_nba")
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #NFL-1: ADD NFL CAREER CATEGORY INJECTION
+	-- Inject NFL events for football players or those with football background
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isNFLEligible = state.Flags and (
+		state.Flags.plays_football or state.Flags.nfl_player or state.Flags.nfl_declared or
+		state.Flags.college_football or state.Flags.football_star
+	)
+	local hasNFLJob = state.CurrentJob and (
+		(state.CurrentJob.id or ""):lower():find("nfl") or
+		(state.CurrentJob.id or ""):lower():find("football")
+	)
+	
+	if isNFLEligible or hasNFLJob then
+		local hasNFLCat = false
+		for _, cat in ipairs(categories) do
+			if cat == "career_nfl" then hasNFLCat = true break end
+		end
+		if not hasNFLCat then
+			table.insert(categories, "career_nfl")
 		end
 	end
 	
