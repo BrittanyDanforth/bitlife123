@@ -9244,28 +9244,35 @@ function LifeBackend:setupRemotes()
 	
 	-- CRITICAL FEATURE: GiveUp handler - Player surrenders current life
 	self.remotes.GiveUp.OnServerEvent:Connect(function(player)
-		-- CRITICAL FIX: playerStates is keyed by player object, not UserId!
+		print("[LifeBackend] ========== GIVE UP RECEIVED ==========")
+		print("[LifeBackend] GiveUp from player:", player.Name)
+		
+		-- Find state
 		local state = self.playerStates[player]
 		if not state then
 			warn("[LifeBackend] GiveUp: No state found for player", player.Name)
 			return
 		end
 		
-		-- Log the surrender
 		print("[LifeBackend] Player", player.Name, "gave up at age", state.Age or 0)
 		
-		-- Set death flags
+		-- CRITICAL: Set Health to 0 in BOTH places to prevent pushState from overwriting!
 		state.Health = 0
+		state.Stats = state.Stats or {}
+		state.Stats.Health = 0
+		
+		-- Set death flags
 		state.Flags = state.Flags or {}
 		state.Flags.surrendered = true
 		state.Flags.dead = true
-		state.Flags.cause_of_death = "Gave Up on Life"
+		state.CauseOfDeath = "Gave Up"
+		state.DeathReason = "Gave Up"
 		
 		-- Add to feed
 		state.Feed = state.Feed or {}
 		table.insert(state.Feed, "☠️ You gave up on life at age " .. (state.Age or 0) .. "...")
 		
-		-- Save past life data with full details
+		-- Save past life data
 		state.PastLives = state.PastLives or {}
 		table.insert(state.PastLives, {
 			name = state.Name or "Unknown",
@@ -9273,20 +9280,18 @@ function LifeBackend:setupRemotes()
 			netWorth = state.Money or 0,
 			cause = "Gave Up",
 			timestamp = os.time(),
-			-- Extra details for Past Lives display
-			happiness = state.Happiness or 0,
-			health = state.Health or 0,
-			smarts = state.Smarts or 0,
-			looks = state.Looks or 0,
-			fame = state.Fame or 0,
-			married = state.Flags and state.Flags.married or false,
-			famous = (state.Fame or 0) >= 50,
-			job = state.Job or nil,
-			achievements = {}
 		})
 		
-		-- Push the death state to client (this triggers death screen)
-		self:pushState(player, state)
+		print("[LifeBackend] Death state set (Health=0), pushing to client...")
+		
+		-- Push the death state to client with death info
+		-- The client checks for Health <= 0 to show death screen
+		self:pushState(player, "☠️ You gave up on life...", {
+			fatal = true,
+			cause = "Gave Up"
+		})
+		
+		print("[LifeBackend] ========== GIVE UP COMPLETE ==========")
 	end)
 	
 	-- PREMIUM FEATURES: Organized Crime handlers
