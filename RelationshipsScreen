@@ -2941,7 +2941,30 @@ function RelationshipsScreen:createActionButton(action, order, accentColor, pale
 		clickArea.MouseButton1Click:Connect(function()
 			local relType        = self.currentInteractType
 			local explicitPerson = person or self.currentInteractPerson
-			self:doInteraction(action.id, relType, explicitPerson, cost)
+			local accentColor    = getAccentForType(relType)
+			
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX: BitLife-style activity choices!
+			-- Show choice card FIRST for interactions with choices (hangout, date, party, etc.)
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			local hasChoices = ActivityChoices[action.id] ~= nil
+			
+			if hasChoices then
+				-- Hide interaction modal first
+				if self.interactOverlay and self.interactOverlay.Visible then
+					self:hideInteractionModal()
+				end
+				
+				-- Show choice card
+				self:showActivityChoiceCard(action.id, explicitPerson, relType, accentColor, function(subChoice)
+					-- User picked a choice (or nil if no choice card)
+					-- Pass sub-choice to server in the interaction
+					self:doInteraction(action.id, relType, explicitPerson, cost, subChoice)
+				end)
+			else
+				-- No choices, do interaction directly
+				self:doInteraction(action.id, relType, explicitPerson, cost, nil)
+			end
 		end)
 	else
 		clickArea.Active = false
@@ -3250,9 +3273,386 @@ function RelationshipsScreen:hideResultModal()
 	end
 end
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- BITLIFE-STYLE ACTIVITY CHOICE CARD
+-- When user clicks "Hang Out", "Date", etc., show choices for WHAT they want to do!
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- Define sub-choices for each interaction type (BitLife style!)
+local ActivityChoices = {
+	hangout = {
+		title = "Hang Out",
+		emoji = "👥",
+		question = "What do you want to do together?",
+		choices = {
+			{ id = "movie", text = "🎬 Watch a movie", effect = "+Happiness +Relationship" },
+			{ id = "games", text = "🎮 Play video games", effect = "+Happiness +Relationship" },
+			{ id = "coffee", text = "☕ Get coffee", effect = "+Relationship" },
+			{ id = "shopping", text = "🛒 Go shopping", effect = "+Happiness" },
+			{ id = "walk", text = "🚶 Take a walk", effect = "+Health +Relationship" },
+			{ id = "surprise", text = "✨ Surprise me!", effect = "Random!" },
+		},
+	},
+	party = {
+		title = "Party Together",
+		emoji = "🎉",
+		question = "What kind of party?",
+		choices = {
+			{ id = "house", text = "🏠 House party", effect = "+Fun +Relationship" },
+			{ id = "club", text = "🕺 Hit the club", effect = "+Happiness -Health" },
+			{ id = "chill", text = "😎 Chill hangout", effect = "+Relationship" },
+			{ id = "wild", text = "🤪 Go wild!", effect = "High Risk!" },
+			{ id = "surprise", text = "✨ Surprise me!", effect = "Random!" },
+		},
+	},
+	date = {
+		title = "Go on a Date",
+		emoji = "❤️",
+		question = "Where do you want to go?",
+		choices = {
+			{ id = "dinner", text = "🍽️ Fancy dinner", effect = "+Romance" },
+			{ id = "movies", text = "🎬 Movie date", effect = "+Happiness" },
+			{ id = "romantic", text = "🌹 Romantic walk", effect = "+Romance +Health" },
+			{ id = "adventure", text = "🎢 Adventure date", effect = "+Happiness +Excitement" },
+			{ id = "casual", text = "☕ Casual coffee", effect = "+Relationship" },
+			{ id = "surprise", text = "✨ Surprise me!", effect = "Random!" },
+		},
+	},
+	gift = {
+		title = "Give a Gift",
+		emoji = "🎁",
+		question = "What kind of gift?",
+		choices = {
+			{ id = "thoughtful", text = "💝 Something thoughtful", effect = "+Relationship" },
+			{ id = "expensive", text = "💎 Something expensive", effect = "+Relationship (costs more)" },
+			{ id = "handmade", text = "✂️ Handmade gift", effect = "+Relationship +Personal" },
+			{ id = "funny", text = "😂 Gag gift", effect = "+Happiness" },
+			{ id = "surprise", text = "✨ Random gift", effect = "Random!" },
+		},
+	},
+	support = {
+		title = "Support Them",
+		emoji = "🤗",
+		question = "How do you want to support them?",
+		choices = {
+			{ id = "listen", text = "👂 Be a good listener", effect = "+Relationship" },
+			{ id = "advice", text = "💡 Give advice", effect = "+Relationship +Wisdom" },
+			{ id = "help", text = "🙌 Offer to help", effect = "+Relationship" },
+			{ id = "cheer", text = "📣 Cheer them up", effect = "+Happiness" },
+			{ id = "surprise", text = "✨ Just be there", effect = "Random!" },
+		},
+	},
+	talk = {
+		title = "Have a Talk",
+		emoji = "💬",
+		question = "What do you want to talk about?",
+		choices = {
+			{ id = "life", text = "🌟 Life updates", effect = "+Relationship" },
+			{ id = "memories", text = "📸 Old memories", effect = "+Happiness +Nostalgia" },
+			{ id = "advice", text = "💡 Ask for advice", effect = "+Smarts" },
+			{ id = "deep", text = "🧠 Deep conversation", effect = "+Relationship +Bond" },
+			{ id = "surprise", text = "✨ Random topic", effect = "Random!" },
+		},
+	},
+	kiss = {
+		title = "Kiss",
+		emoji = "💋",
+		question = "What kind of kiss?",
+		choices = {
+			{ id = "peck", text = "😘 Quick peck", effect = "+Relationship" },
+			{ id = "romantic", text = "💕 Romantic kiss", effect = "+Romance +Happiness" },
+			{ id = "passionate", text = "🔥 Passionate kiss", effect = "+Romance!" },
+			{ id = "forehead", text = "😊 Forehead kiss", effect = "+Sweet +Relationship" },
+			{ id = "surprise", text = "✨ Spontaneous!", effect = "Random!" },
+		},
+	},
+}
+
+function RelationshipsScreen:createActivityChoiceCard()
+	if self.activityChoiceCard then return end
+	
+	self.activityChoiceCard = {}
+	
+	-- Overlay
+	local overlay = Instance.new("TextButton")
+	overlay.Name = "ActivityChoiceOverlay"
+	overlay.Size = UDim2.fromScale(1, 1)
+	overlay.BackgroundColor3 = C.Black
+	overlay.BackgroundTransparency = 0.4
+	overlay.Text = ""
+	overlay.AutoButtonColor = false
+	overlay.ZIndex = 95
+	overlay.Visible = false
+	overlay.Parent = self.screenGui
+	self.activityChoiceCard.overlay = overlay
+	
+	-- Card container
+	local cardWidth = IS_TINY_PHONE and 300 or 360
+	local container = Instance.new("Frame")
+	container.Name = "ActivityChoiceCard"
+	container.Size = UDim2.new(0, cardWidth, 0, 0)
+	container.AutomaticSize = Enum.AutomaticSize.Y
+	container.AnchorPoint = Vector2.new(0.5, 0.5)
+	container.Position = UDim2.fromScale(0.5, 0.5)
+	container.BackgroundColor3 = C.White
+	container.ZIndex = 96
+	container.Parent = overlay
+	UI.corner(container, 20)
+	
+	-- Shadow
+	local shadow = Instance.new("Frame")
+	shadow.Size = UDim2.new(1, 8, 1, 8)
+	shadow.Position = UDim2.new(0, 4, 0, 4)
+	shadow.BackgroundColor3 = C.Black
+	shadow.BackgroundTransparency = 0.85
+	shadow.ZIndex = 95
+	shadow.Parent = container
+	UI.corner(shadow, 22)
+	
+	local cardLayout = Instance.new("UIListLayout")
+	cardLayout.Padding = UDim.new(0, 0)
+	cardLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	cardLayout.Parent = container
+	
+	-- Header (colored)
+	local header = Instance.new("Frame")
+	header.Name = "Header"
+	header.Size = UDim2.new(1, 0, 0, IS_TINY_PHONE and 60 or 80)
+	header.BackgroundColor3 = C.Purple
+	header.LayoutOrder = 1
+	header.ZIndex = 97
+	header.Parent = container
+	UI.corner(header, 20)
+	
+	-- Header bottom cover (to round only top corners)
+	local headerCover = Instance.new("Frame")
+	headerCover.Size = UDim2.new(1, 0, 0, 20)
+	headerCover.Position = UDim2.new(0, 0, 1, -20)
+	headerCover.BackgroundColor3 = C.Purple
+	headerCover.ZIndex = 97
+	headerCover.Parent = header
+	
+	-- Emoji
+	local emojiLabel = Instance.new("TextLabel")
+	emojiLabel.Size = UDim2.new(0, 50, 0, 50)
+	emojiLabel.Position = UDim2.new(0, 15, 0.5, -25)
+	emojiLabel.BackgroundTransparency = 1
+	emojiLabel.Font = F.Body
+	emojiLabel.TextSize = IS_TINY_PHONE and 32 or 40
+	emojiLabel.Text = "👥"
+	emojiLabel.ZIndex = 98
+	emojiLabel.Parent = header
+	self.activityChoiceCard.emoji = emojiLabel
+	
+	-- Title
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -80, 0, 30)
+	titleLabel.Position = UDim2.new(0, 70, 0, IS_TINY_PHONE and 10 or 15)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = F.Title
+	titleLabel.TextSize = IS_TINY_PHONE and 18 or 22
+	titleLabel.TextColor3 = C.White
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.Text = "Hang Out"
+	titleLabel.ZIndex = 98
+	titleLabel.Parent = header
+	self.activityChoiceCard.title = titleLabel
+	
+	-- Person name
+	local personLabel = Instance.new("TextLabel")
+	personLabel.Size = UDim2.new(1, -80, 0, 20)
+	personLabel.Position = UDim2.new(0, 70, 0, IS_TINY_PHONE and 35 or 42)
+	personLabel.BackgroundTransparency = 1
+	personLabel.Font = F.Medium
+	personLabel.TextSize = IS_TINY_PHONE and 12 or 14
+	personLabel.TextColor3 = Color3.fromRGB(220, 220, 255)
+	personLabel.TextXAlignment = Enum.TextXAlignment.Left
+	personLabel.Text = "with Friend"
+	personLabel.ZIndex = 98
+	personLabel.Parent = header
+	self.activityChoiceCard.personLabel = personLabel
+	
+	-- Question section
+	local questionSection = Instance.new("Frame")
+	questionSection.Size = UDim2.new(1, 0, 0, IS_TINY_PHONE and 45 or 55)
+	questionSection.BackgroundTransparency = 1
+	questionSection.LayoutOrder = 2
+	questionSection.ZIndex = 97
+	questionSection.Parent = container
+	UI.pad(questionSection, 15, 15, 12, 8)
+	
+	local questionLabel = Instance.new("TextLabel")
+	questionLabel.Size = UDim2.new(1, 0, 1, 0)
+	questionLabel.BackgroundTransparency = 1
+	questionLabel.Font = F.Medium
+	questionLabel.TextSize = IS_TINY_PHONE and 14 or 16
+	questionLabel.TextColor3 = C.Gray700
+	questionLabel.Text = "What do you want to do together?"
+	questionLabel.TextWrapped = true
+	questionLabel.ZIndex = 98
+	questionLabel.Parent = questionSection
+	self.activityChoiceCard.question = questionLabel
+	
+	-- Choices section
+	local choicesSection = Instance.new("Frame")
+	choicesSection.Name = "ChoicesSection"
+	choicesSection.Size = UDim2.new(1, 0, 0, 0)
+	choicesSection.AutomaticSize = Enum.AutomaticSize.Y
+	choicesSection.BackgroundTransparency = 1
+	choicesSection.LayoutOrder = 3
+	choicesSection.ZIndex = 97
+	choicesSection.Parent = container
+	UI.pad(choicesSection, 12, 12, 0, 15)
+	
+	local choicesLayout = Instance.new("UIListLayout")
+	choicesLayout.Padding = UDim.new(0, 8)
+	choicesLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	choicesLayout.Parent = choicesSection
+	
+	self.activityChoiceCard.choicesSection = choicesSection
+	self.activityChoiceCard.choiceButtons = {}
+	
+	-- Cancel button area at bottom
+	local cancelSection = Instance.new("Frame")
+	cancelSection.Size = UDim2.new(1, 0, 0, 50)
+	cancelSection.BackgroundTransparency = 1
+	cancelSection.LayoutOrder = 4
+	cancelSection.ZIndex = 97
+	cancelSection.Parent = container
+	
+	local cancelBtn = Instance.new("TextButton")
+	cancelBtn.Size = UDim2.new(0.5, 0, 0, 32)
+	cancelBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+	cancelBtn.Position = UDim2.fromScale(0.5, 0.5)
+	cancelBtn.BackgroundColor3 = C.Gray200
+	cancelBtn.Font = F.Medium
+	cancelBtn.TextSize = 13
+	cancelBtn.TextColor3 = C.Gray600
+	cancelBtn.Text = "Cancel"
+	cancelBtn.AutoButtonColor = false
+	cancelBtn.ZIndex = 98
+	cancelBtn.Parent = cancelSection
+	UI.corner(cancelBtn, 8)
+	
+	cancelBtn.MouseButton1Click:Connect(function()
+		self:hideActivityChoiceCard()
+	end)
+	
+	overlay.MouseButton1Click:Connect(function()
+		self:hideActivityChoiceCard()
+	end)
+	
+	self.activityChoiceCard.container = container
+	self.activityChoiceCard.header = header
+end
+
+function RelationshipsScreen:showActivityChoiceCard(actionId, person, relType, accentColor, onChoiceSelected)
+	if not self.activityChoiceCard then
+		self:createActivityChoiceCard()
+	end
+	
+	local activityData = ActivityChoices[actionId]
+	if not activityData then
+		-- No choices defined, just do the interaction directly
+		onChoiceSelected(nil)
+		return
+	end
+	
+	-- Set colors
+	local color = accentColor or C.Purple
+	self.activityChoiceCard.header.BackgroundColor3 = color
+	local headerCover = self.activityChoiceCard.header:FindFirstChild("Frame")
+	if headerCover then headerCover.BackgroundColor3 = color end
+	
+	-- Set content
+	self.activityChoiceCard.emoji.Text = activityData.emoji or "👥"
+	self.activityChoiceCard.title.Text = activityData.title or "Activity"
+	self.activityChoiceCard.personLabel.Text = "with " .. (person and person.name or "Friend")
+	self.activityChoiceCard.question.Text = activityData.question or "What do you want to do?"
+	
+	-- Clear old choices
+	for _, btn in ipairs(self.activityChoiceCard.choiceButtons) do
+		btn:Destroy()
+	end
+	self.activityChoiceCard.choiceButtons = {}
+	
+	-- Create choice buttons
+	for i, choice in ipairs(activityData.choices) do
+		local choiceBtn = Instance.new("TextButton")
+		choiceBtn.Size = UDim2.new(1, 0, 0, IS_TINY_PHONE and 44 or 50)
+		choiceBtn.BackgroundColor3 = C.Gray50
+		choiceBtn.Font = F.Medium
+		choiceBtn.TextSize = IS_TINY_PHONE and 14 or 16
+		choiceBtn.TextColor3 = C.Gray800
+		choiceBtn.Text = choice.text
+		choiceBtn.AutoButtonColor = false
+		choiceBtn.LayoutOrder = i
+		choiceBtn.ZIndex = 98
+		choiceBtn.Parent = self.activityChoiceCard.choicesSection
+		UI.corner(choiceBtn, 12)
+		UI.stroke(choiceBtn, 1, 0.8, C.Gray200)
+		
+		-- Effect label
+		local effectLabel = Instance.new("TextLabel")
+		effectLabel.Size = UDim2.new(0.35, 0, 1, 0)
+		effectLabel.Position = UDim2.new(0.65, 0, 0, 0)
+		effectLabel.BackgroundTransparency = 1
+		effectLabel.Font = F.Body
+		effectLabel.TextSize = IS_TINY_PHONE and 10 or 11
+		effectLabel.TextColor3 = C.Gray400
+		effectLabel.TextXAlignment = Enum.TextXAlignment.Right
+		effectLabel.Text = choice.effect or ""
+		effectLabel.ZIndex = 99
+		effectLabel.Parent = choiceBtn
+		UI.pad(effectLabel, 8, 8, 0, 0)
+		
+		-- Hover effect
+		choiceBtn.MouseEnter:Connect(function()
+			UI.tween(choiceBtn, TweenInfo.new(0.1), { BackgroundColor3 = color:Lerp(C.White, 0.85) })
+		end)
+		choiceBtn.MouseLeave:Connect(function()
+			UI.tween(choiceBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.Gray50 })
+		end)
+		
+		choiceBtn.MouseButton1Click:Connect(function()
+			self:hideActivityChoiceCard()
+			onChoiceSelected(choice.id)
+		end)
+		
+		table.insert(self.activityChoiceCard.choiceButtons, choiceBtn)
+	end
+	
+	-- Show with animation
+	self.activityChoiceCard.overlay.Visible = true
+	self.activityChoiceCard.overlay.BackgroundTransparency = 1
+	self.activityChoiceCard.container.Position = UDim2.new(0.5, 0, 0.5, 40)
+	
+	UI.tween(self.activityChoiceCard.overlay, TweenInfo.new(0.2), { BackgroundTransparency = 0.4 })
+	UI.tween(self.activityChoiceCard.container, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+		Position = UDim2.fromScale(0.5, 0.5)
+	})
+end
+
+function RelationshipsScreen:hideActivityChoiceCard()
+	if not self.activityChoiceCard or not self.activityChoiceCard.overlay.Visible then
+		return
+	end
+	
+	UI.tween(self.activityChoiceCard.overlay, TweenInfo.new(0.15), { BackgroundTransparency = 1 })
+	UI.tween(self.activityChoiceCard.container, TweenInfo.new(0.15), {
+		Position = UDim2.new(0.5, 0, 0.5, 30)
+	})
+	
+	task.delay(0.15, function()
+		if self.activityChoiceCard then
+			self.activityChoiceCard.overlay.Visible = false
+		end
+	end)
+end
+
 -- INTERACTION CALL (wired to new backend shape) --------------------------------
 
-function RelationshipsScreen:doInteraction(actionId, relTypeOverride, personOverride, cost)
+function RelationshipsScreen:doInteraction(actionId, relTypeOverride, personOverride, cost, subChoice)
 	if not DoInteraction then
 		logWarn("DoInteraction Remote not found; cannot perform interaction")
 		self:showResultModal("Error", "Interaction system is not ready yet.")
@@ -3283,6 +3683,11 @@ function RelationshipsScreen:doInteraction(actionId, relTypeOverride, personOver
 		targetName            = person and person.name or nil,
 		targetRole            = person and person.role or nil,
 		relationshipStrength  = person and person.relationship or nil,
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL: Pass the sub-choice (what activity they picked) to server!
+		-- e.g., "movie", "games", "coffee" for hangout
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		subChoice             = subChoice,
 	}
 
 	log("Firing DoInteraction:", actionId, "Type:", relType, "Target:", payload.targetId, "Cost:", payload.cost)

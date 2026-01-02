@@ -20620,7 +20620,7 @@ local InteractionEffects = {
 			delta = 6, 
 			cost = 0, 
 			showResult = true,
-			message = function(state, relationship)
+			message = function(state, relationship, payload)
 				local familyName = (relationship and relationship.name) or "your family member"
 				local role = (relationship and relationship.role) or "family"
 				local outcomes = {
@@ -20640,15 +20640,46 @@ local InteractionEffects = {
 		talk = { 
 			delta = 4, 
 			showResult = true,
-			message = function(state, relationship)
+			message = function(state, relationship, payload)
 				local familyName = (relationship and relationship.name) or "your family member"
-				local outcomes = {
-					{ text = "💬 Deep conversation with " .. familyName .. ". You learned something new about them!", delta = 8, happiness = 7 },
-					{ text = "📞 Caught up with " .. familyName .. " about life. Good to stay connected!", delta = 6, happiness = 5 },
-					{ text = "☕ Had a nice chat with " .. familyName .. " over coffee. Quality time!", delta = 7, happiness = 6 },
-					{ text = "🗣️ " .. familyName .. " gave you some advice. They always know what to say.", delta = 5, smarts = 2, happiness = 4 },
-					{ text = "💭 Talked with " .. familyName .. " about old memories. Nostalgic but nice.", delta = 6, happiness = 6 },
+				local subChoice = payload and payload.subChoice or "surprise"
+				
+				local outcomesByChoice = {
+					life = {
+						{ text = "🌟 Great life update chat with " .. familyName .. "! They're proud of you!", delta = 10, happiness = 9 },
+						{ text = "🌟 " .. familyName .. " shared exciting news! You celebrated together!", delta = 9, happiness = 10 },
+						{ text = "🌟 Catching up with " .. familyName .. " felt so good. Family matters!", delta = 8, happiness = 8 },
+					},
+					memories = {
+						{ text = "📸 You and " .. familyName .. " laughed at old photos. Good times!", delta = 9, happiness = 11 },
+						{ text = "📸 Nostalgic trip down memory lane with " .. familyName .. ". So heartwarming!", delta = 10, happiness = 12 },
+						{ text = "📸 " .. familyName .. " told you stories you'd never heard. Family history!", delta = 8, happiness = 10, smarts = 2 },
+					},
+					advice = {
+						{ text = "💡 " .. familyName .. "'s advice was exactly what you needed to hear!", delta = 8, happiness = 7, smarts = 4 },
+						{ text = "💡 Wise words from " .. familyName .. ". They really understand life!", delta = 9, happiness = 8, smarts = 3 },
+						{ text = "💡 You asked " .. familyName .. " for guidance. They came through!", delta = 7, happiness = 6, smarts = 3 },
+					},
+					deep = {
+						{ text = "🧠 Deep conversation with " .. familyName .. ". You connected on another level!", delta = 13, happiness = 11 },
+						{ text = "🧠 Heart-to-heart with " .. familyName .. ". You both got emotional!", delta = 12, happiness = 12 },
+						{ text = "🧠 You and " .. familyName .. " talked about life's big questions. Mind-expanding!", delta = 11, happiness = 10, smarts = 2 },
+					},
 				}
+				
+				local outcomes
+				if subChoice == "surprise" or not outcomesByChoice[subChoice] then
+					local allOutcomes = {}
+					for _, choiceOutcomes in pairs(outcomesByChoice) do
+						for _, outcome in ipairs(choiceOutcomes) do
+							table.insert(allOutcomes, outcome)
+						end
+					end
+					outcomes = allOutcomes
+				else
+					outcomes = outcomesByChoice[subChoice]
+				end
+				
 				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
 				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
 				if outcome.smarts and state.ModifyStat then state:ModifyStat("Smarts", outcome.smarts) end
@@ -20662,7 +20693,7 @@ local InteractionEffects = {
 			delta = 5, 
 			cost = 100, 
 			showResult = true,
-			message = function(state, relationship)
+			message = function(state, relationship, payload)
 				local familyName = (relationship and relationship.name) or "your family member"
 				local outcomes = {
 					{ text = "🎁 " .. familyName .. " loved the gift! \"You didn't have to do this!\" 💕", delta = 10, happiness = 10 },
@@ -20681,7 +20712,7 @@ local InteractionEffects = {
 		argue = { 
 			delta = -8, 
 			showResult = true,
-			message = function(state, relationship)
+			message = function(state, relationship, payload)
 				local familyName = (relationship and relationship.name) or "your family member"
 				local outcomes = {
 					{ text = "😤 Big argument with " .. familyName .. ". Doors slammed. Tension is high.", delta = -12, happiness = -10 },
@@ -20700,7 +20731,7 @@ local InteractionEffects = {
 		money = { 
 			delta = -2, 
 			showResult = true,
-			message = function(state, relationship)
+			message = function(state, relationship, payload)
 				local familyName = (relationship and relationship.name) or "your family member"
 				local amount = RANDOM:NextInteger(100, 500)
 				state.Money = (state.Money or 0) + amount
@@ -20722,7 +20753,7 @@ local InteractionEffects = {
 		apologize = { 
 			delta = 7, 
 			showResult = true,
-			message = function(state, relationship)
+			message = function(state, relationship, payload)
 				local familyName = (relationship and relationship.name) or "your family member"
 				local outcomes = {
 					{ text = "🙏 " .. familyName .. " accepted your apology! \"Water under the bridge.\" 💕", delta = 12, happiness = 10 },
@@ -20747,24 +20778,58 @@ local InteractionEffects = {
 			delta = 8, 
 			cost = 100, 
 			showResult = true,
-			message = function(state, relationship)
+			message = function(state, relationship, payload)
 				local partnerName = (relationship and relationship.name) or "your partner"
-				local outcomes = {
-					{ text = "💑 Perfect date with " .. partnerName .. "! Candlelight dinner, deep conversations, and romance!", delta = 15, happiness = 15 },
-					{ text = "❤️ Amazing time with " .. partnerName .. "! You couldn't stop laughing together!", delta = 12, happiness = 12 },
-					{ text = "🌹 " .. partnerName .. " loved the date spot you picked! You're getting good at this!", delta = 10, happiness = 10 },
-					{ text = "🎬 Movie date with " .. partnerName .. ". Cuddled the whole time! 💕", delta = 10, happiness = 9 },
-					{ text = "🍽️ Nice dinner date with " .. partnerName .. ". Good food, good company!", delta = 8, happiness = 8 },
-					{ text = "🚶 Romantic walk with " .. partnerName .. " under the stars!", delta = 11, happiness = 11 },
-					{ text = "🎭 You surprised " .. partnerName .. " with concert tickets! Best date ever!", delta = 14, happiness = 14 },
-					{ text = "🏖️ Beach date with " .. partnerName .. ". Perfect sunset together!", delta = 12, happiness = 12 },
-					-- Some less perfect outcomes for variety
-					{ text = "😅 Date with " .. partnerName .. " had some awkward moments but ended well.", delta = 5, happiness = 4 },
-					{ text = "📱 " .. partnerName .. " seemed distracted on the date. Hope everything's okay.", delta = 3, happiness = 2 },
-					{ text = "🌧️ Date got rained out, but you and " .. partnerName .. " made the best of it!", delta = 7, happiness = 6 },
+				local subChoice = payload and payload.subChoice or "surprise"
+				
+				local outcomesByChoice = {
+					dinner = {
+						{ text = "🍽️ Candlelight dinner with " .. partnerName .. "! Everything was PERFECT!", delta = 15, happiness = 16 },
+						{ text = "🍽️ Fancy restaurant with " .. partnerName .. "! You felt like royalty!", delta = 14, happiness = 14 },
+						{ text = "🍽️ " .. partnerName .. " loved the food! You have great taste in restaurants!", delta = 12, happiness = 12 },
+						{ text = "🍽️ Intimate dinner conversation. You and " .. partnerName .. " grew even closer!", delta = 13, happiness = 13 },
+					},
+					movies = {
+						{ text = "🎬 Perfect movie date! You held " .. partnerName .. "'s hand the whole time! 💕", delta = 12, happiness = 13 },
+						{ text = "🎬 " .. partnerName .. " cried at the movie. You comforted them. So sweet!", delta = 13, happiness = 11 },
+						{ text = "🎬 You both laughed so hard at the comedy! Great choice with " .. partnerName .. "!", delta = 11, happiness = 14 },
+						{ text = "🎬 Scary movie! " .. partnerName .. " kept hiding in your shoulder! 😊", delta = 12, happiness = 12 },
+					},
+					romantic = {
+						{ text = "🌹 Romantic walk under the stars with " .. partnerName .. ". Absolutely magical!", delta = 16, happiness = 15, health = 3 },
+						{ text = "🌹 You found a secret garden! " .. partnerName .. " said it was the most romantic thing ever!", delta = 17, happiness = 16 },
+						{ text = "🌹 Sunset picnic with " .. partnerName .. ". Time stood still!", delta = 15, happiness = 15 },
+						{ text = "🌹 " .. partnerName .. " said this was the best date of their life!", delta = 18, happiness = 17 },
+					},
+					adventure = {
+						{ text = "🎢 Amusement park with " .. partnerName .. "! You screamed together on every ride!", delta = 14, happiness = 17 },
+						{ text = "🎢 Escape room! You and " .. partnerName .. " made an amazing team!", delta = 13, happiness = 15 },
+						{ text = "🎢 Mini golf date! " .. partnerName .. " won but you had a blast!", delta = 11, happiness = 13 },
+						{ text = "🎢 Go-kart racing! " .. partnerName .. " is surprisingly competitive! Fun!", delta = 12, happiness = 14 },
+					},
+					casual = {
+						{ text = "☕ Casual coffee date with " .. partnerName .. ". Sometimes simple is perfect!", delta = 10, happiness = 10 },
+						{ text = "☕ Deep conversations over lattes. You really connect with " .. partnerName .. "!", delta = 12, happiness = 11 },
+						{ text = "☕ Cozy café vibes. " .. partnerName .. " held your hand under the table!", delta = 11, happiness = 10 },
+					},
 				}
+				
+				local outcomes
+				if subChoice == "surprise" or not outcomesByChoice[subChoice] then
+					local allOutcomes = {}
+					for _, choiceOutcomes in pairs(outcomesByChoice) do
+						for _, outcome in ipairs(choiceOutcomes) do
+							table.insert(allOutcomes, outcome)
+						end
+					end
+					outcomes = allOutcomes
+				else
+					outcomes = outcomesByChoice[subChoice]
+				end
+				
 				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
 				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
+				if outcome.health and state.ModifyStat then state:ModifyStat("Health", outcome.health) end
 				if relationship and outcome.delta then 
 					relationship.relationship = math.min(100, (relationship.relationship or 50) + outcome.delta)
 				end
@@ -20775,16 +20840,46 @@ local InteractionEffects = {
 			delta = 9, 
 			cost = 200, 
 			showResult = true,
-			message = function(state, relationship)
+			message = function(state, relationship, payload)
 				local partnerName = (relationship and relationship.name) or "your partner"
-				local outcomes = {
-					{ text = "💝 " .. partnerName .. " was SPEECHLESS! The perfect gift! They jumped into your arms!", delta = 15, happiness = 15 },
-					{ text = "🎁 " .. partnerName .. " loved it so much they teared up! \"You know me so well!\"", delta = 12, happiness = 12 },
-					{ text = "💎 " .. partnerName .. "'s eyes sparkled when they saw the gift. Big smile!", delta = 10, happiness = 10 },
-					{ text = "🌹 \"That's so sweet!\" " .. partnerName .. " gave you a big kiss!", delta = 9, happiness = 9 },
-					{ text = "🎀 " .. partnerName .. " smiled and said thanks. They seemed to like it!", delta = 7, happiness = 6 },
-					{ text = "😬 " .. partnerName .. " politely thanked you... but you're not sure they loved it.", delta = 4, happiness = 3 },
+				local subChoice = payload and payload.subChoice or "surprise"
+				
+				local outcomesByChoice = {
+					thoughtful = {
+						{ text = "💝 " .. partnerName .. " was SPEECHLESS! \"You know exactly what I love!\"", delta = 16, happiness = 16 },
+						{ text = "🎁 " .. partnerName .. " teared up! \"How did you know I wanted this?!\"", delta = 15, happiness = 15 },
+						{ text = "💕 \"You actually remembered...\" " .. partnerName .. " was so moved!", delta = 14, happiness = 14 },
+					},
+					expensive = {
+						{ text = "💎 " .. partnerName .. "'s jaw DROPPED! \"This is too much!\" But they loved it!", delta = 14, happiness = 14 },
+						{ text = "💎 Luxury gift! " .. partnerName .. " felt like royalty!", delta = 13, happiness = 13 },
+						{ text = "💎 \"You're so generous!\" " .. partnerName .. " was over the moon!", delta = 12, happiness = 12 },
+					},
+					handmade = {
+						{ text = "✂️ \"You MADE this?!\" " .. partnerName .. " was incredibly touched!", delta = 18, happiness = 17 },
+						{ text = "✂️ " .. partnerName .. " treasures your handmade gift more than anything!", delta = 17, happiness = 16 },
+						{ text = "✂️ The effort you put in meant everything to " .. partnerName .. "!", delta = 16, happiness = 15 },
+					},
+					funny = {
+						{ text = "😂 " .. partnerName .. " burst out laughing! Perfect gag gift!", delta = 11, happiness = 15 },
+						{ text = "😂 \"You're hilarious!\" " .. partnerName .. " loved your sense of humor!", delta = 10, happiness = 14 },
+						{ text = "😂 Inside joke gift! You and " .. partnerName .. " laughed for hours!", delta = 12, happiness = 16 },
+					},
 				}
+				
+				local outcomes
+				if subChoice == "surprise" or not outcomesByChoice[subChoice] then
+					local allOutcomes = {}
+					for _, choiceOutcomes in pairs(outcomesByChoice) do
+						for _, outcome in ipairs(choiceOutcomes) do
+							table.insert(allOutcomes, outcome)
+						end
+					end
+					outcomes = allOutcomes
+				else
+					outcomes = outcomesByChoice[subChoice]
+				end
+				
 				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
 				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
 				if relationship and outcome.delta then 
@@ -20796,15 +20891,46 @@ local InteractionEffects = {
 		kiss = { 
 			delta = 5, 
 			showResult = true,
-			message = function(state, relationship)
+			message = function(state, relationship, payload)
 				local partnerName = (relationship and relationship.name) or "your partner"
-				local outcomes = {
-					{ text = "💋 Fireworks! That kiss with " .. partnerName .. " was magical! 💕", delta = 10, happiness = 12 },
-					{ text = "😘 Sweet kiss with " .. partnerName .. ". Your heart skips a beat!", delta = 8, happiness = 8 },
-					{ text = "💕 " .. partnerName .. " kissed you back passionately!", delta = 7, happiness = 7 },
-					{ text = "😊 Cute little peck with " .. partnerName .. ". Simple but sweet!", delta = 5, happiness = 5 },
-					{ text = "😅 Awkward timing! " .. partnerName .. " wasn't expecting that kiss.", delta = 2, happiness = 2 },
+				local subChoice = payload and payload.subChoice or "surprise"
+				
+				local outcomesByChoice = {
+					peck = {
+						{ text = "😘 Quick peck with " .. partnerName .. "! Simple and sweet!", delta = 7, happiness = 7 },
+						{ text = "😘 Little kiss on the cheek for " .. partnerName .. "! Cute moment!", delta = 6, happiness = 6 },
+						{ text = "😘 A soft peck. " .. partnerName .. " smiled warmly!", delta = 7, happiness = 8 },
+					},
+					romantic = {
+						{ text = "💕 Romantic kiss under the stars with " .. partnerName .. "! Perfect!", delta = 12, happiness = 13 },
+						{ text = "💕 You and " .. partnerName .. " shared the most tender kiss!", delta = 11, happiness = 12 },
+						{ text = "💕 Time stopped as you kissed " .. partnerName .. ". Magical!", delta = 13, happiness = 14 },
+					},
+					passionate = {
+						{ text = "🔥 PASSIONATE kiss with " .. partnerName .. "! Sparks are FLYING!", delta = 15, happiness = 16 },
+						{ text = "🔥 Intense! You and " .. partnerName .. " couldn't hold back!", delta = 14, happiness = 15 },
+						{ text = "🔥 That kiss left you both breathless! Chemistry is OFF THE CHARTS!", delta = 16, happiness = 17 },
+					},
+					forehead = {
+						{ text = "😊 You kissed " .. partnerName .. "'s forehead. \"I love you.\" So sweet!", delta = 10, happiness = 11 },
+						{ text = "😊 Tender forehead kiss. " .. partnerName .. " felt so protected and loved!", delta = 11, happiness = 10 },
+						{ text = "😊 A gentle forehead kiss for " .. partnerName .. ". Pure affection!", delta = 9, happiness = 10 },
+					},
 				}
+				
+				local outcomes
+				if subChoice == "surprise" or not outcomesByChoice[subChoice] then
+					local allOutcomes = {}
+					for _, choiceOutcomes in pairs(outcomesByChoice) do
+						for _, outcome in ipairs(choiceOutcomes) do
+							table.insert(allOutcomes, outcome)
+						end
+					end
+					outcomes = allOutcomes
+				else
+					outcomes = outcomesByChoice[subChoice]
+				end
+				
 				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
 				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
 				if relationship and outcome.delta then 
@@ -21058,34 +21184,71 @@ local InteractionEffects = {
 	},
 	friend = {
 		-- ═══════════════════════════════════════════════════════════════════════════════
-		-- CRITICAL FIX: BitLife-style hangout with random events and outcomes!
-		-- User feedback: "HUNG OUT WOULD POPUP A CARD EVENT AND COULD CHOOSE WHAT WE DID"
+		-- CRITICAL FIX: BitLife-style hangout with CHOICE-BASED outcomes!
+		-- User picks what they want to do, outcome is based on their choice!
 		-- ═══════════════════════════════════════════════════════════════════════════════
 		hangout = { 
 			delta = 6, 
 			showResult = true,
-			message = function(state, relationship)
+			message = function(state, relationship, payload)
 				local friendName = (relationship and relationship.name) or "your friend"
-				local outcomes = {
-					{ text = "🎬 You watched movies together and had a great time with " .. friendName .. "!", happiness = 8, delta = 8 },
-					{ text = "🎮 You played video games with " .. friendName .. ". Epic gaming session!", happiness = 10, delta = 7 },
-					{ text = "🍕 You grabbed pizza with " .. friendName .. " and talked for hours!", happiness = 9, delta = 9 },
-					{ text = "☕ Coffee hangout with " .. friendName .. " turned into deep conversations!", happiness = 7, delta = 10 },
-					{ text = "🏀 You and " .. friendName .. " shot some hoops. Good exercise!", happiness = 8, health = 3, delta = 6 },
-					{ text = "🎤 Karaoke night with " .. friendName .. "! You both sounded terrible but had fun!", happiness = 12, delta = 8 },
-					{ text = "🛒 Shopping trip with " .. friendName .. "! You helped each other pick outfits!", happiness = 7, looks = 2, delta = 7 },
-					{ text = "🎲 Board game night with " .. friendName .. "! They beat you at everything but you still had fun!", happiness = 6, delta = 6 },
-					{ text = "🚶 Long walk in the park with " .. friendName .. ". Great heart-to-heart conversation!", happiness = 9, health = 2, delta = 9 },
-					{ text = "🎪 You and " .. friendName .. " went to a local event. Made some memories!", happiness = 11, delta = 8 },
-					-- Some less positive outcomes for variety
-					{ text = "😐 Hangout with " .. friendName .. " was kinda awkward. Not much to talk about today.", happiness = 2, delta = 2 },
-					{ text = "📱 You and " .. friendName .. " spent most of the time on your phones. Not the best hangout.", happiness = 3, delta = 3 },
+				local subChoice = payload and payload.subChoice or "surprise"
+				
+				-- Define outcomes based on sub-choice
+				local outcomesByChoice = {
+					movie = {
+						{ text = "🎬 Perfect movie night with " .. friendName .. "! You both cried at the ending!", happiness = 12, delta = 10 },
+						{ text = "🎬 You and " .. friendName .. " watched a horror movie. You screamed, they laughed!", happiness = 9, delta = 8 },
+						{ text = "🎬 Great movie! You and " .. friendName .. " debated the plot for hours after!", happiness = 10, delta = 9 },
+						{ text = "🎬 Movie was boring but " .. friendName .. "'s commentary made it hilarious!", happiness = 8, delta = 7 },
+					},
+					games = {
+						{ text = "🎮 EPIC gaming session with " .. friendName .. "! You won 10 games in a row!", happiness = 14, delta = 10 },
+						{ text = "🎮 " .. friendName .. " destroyed you at every game. Humiliating but fun!", happiness = 9, delta = 8 },
+						{ text = "🎮 You and " .. friendName .. " stayed up all night gaming. Worth it!", happiness = 12, health = -2, delta = 11 },
+						{ text = "🎮 Tried a new co-op game with " .. friendName .. ". Great teamwork!", happiness = 11, delta = 9 },
+					},
+					coffee = {
+						{ text = "☕ Deep conversations with " .. friendName .. " over coffee! Learned so much!", happiness = 8, smarts = 2, delta = 12 },
+						{ text = "☕ " .. friendName .. " spilled coffee on you but you both laughed it off!", happiness = 7, delta = 8 },
+						{ text = "☕ Heart-to-heart with " .. friendName .. ". You feel so understood!", happiness = 10, delta = 13 },
+						{ text = "☕ Cute café vibes with " .. friendName .. "! Great atmosphere!", happiness = 9, delta = 9 },
+					},
+					shopping = {
+						{ text = "🛒 " .. friendName .. " helped you find the PERFECT outfit!", happiness = 11, looks = 3, delta = 8 },
+						{ text = "🛒 Shopping spree! You and " .. friendName .. " found amazing deals!", happiness = 13, delta = 9 },
+						{ text = "🛒 Window shopping with " .. friendName .. ". Dreams are free!", happiness = 7, delta = 7 },
+						{ text = "🛒 You helped " .. friendName .. " pick a gift. They loved your taste!", happiness = 9, delta = 10 },
+					},
+					walk = {
+						{ text = "🚶 Beautiful walk with " .. friendName .. ". Fresh air and good vibes!", happiness = 9, health = 5, delta = 10 },
+						{ text = "🚶 Long walk turned into an adventure! You and " .. friendName .. " found a hidden spot!", happiness = 12, health = 3, delta = 11 },
+						{ text = "🚶 Deep talk while walking with " .. friendName .. ". Very therapeutic!", happiness = 10, health = 3, delta = 12 },
+						{ text = "🚶 It started raining! You and " .. friendName .. " ran for cover laughing!", happiness = 11, health = 2, delta = 9 },
+					},
 				}
+				
+				-- Get outcomes for the choice (or random if "surprise")
+				local outcomes
+				if subChoice == "surprise" or not outcomesByChoice[subChoice] then
+					-- Random from all possibilities
+					local allOutcomes = {}
+					for _, choiceOutcomes in pairs(outcomesByChoice) do
+						for _, outcome in ipairs(choiceOutcomes) do
+							table.insert(allOutcomes, outcome)
+						end
+					end
+					outcomes = allOutcomes
+				else
+					outcomes = outcomesByChoice[subChoice]
+				end
+				
 				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
 				-- Apply effects
 				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
 				if outcome.health and state.ModifyStat then state:ModifyStat("Health", outcome.health) end
 				if outcome.looks and state.ModifyStat then state:ModifyStat("Looks", outcome.looks) end
+				if outcome.smarts and state.ModifyStat then state:ModifyStat("Smarts", outcome.smarts) end
 				if relationship and outcome.delta then 
 					relationship.relationship = math.min(100, (relationship.relationship or 50) + outcome.delta)
 				end
@@ -21096,14 +21259,46 @@ local InteractionEffects = {
 			delta = 4, 
 			cost = 50, 
 			showResult = true,
-			message = function(state, relationship)
+			message = function(state, relationship, payload)
 				local friendName = (relationship and relationship.name) or "your friend"
-				local outcomes = {
-					{ text = "🎁 " .. friendName .. " LOVED the gift! Their face lit up with joy!", delta = 10, happiness = 8 },
-					{ text = "🎁 " .. friendName .. " really appreciated the thoughtful gesture! +Friendship!", delta = 8, happiness = 6 },
-					{ text = "🎁 " .. friendName .. " said thanks for the gift. They seemed to like it.", delta = 5, happiness = 4 },
-					{ text = "🎁 Hmm, " .. friendName .. " already had that. But it's the thought that counts!", delta = 3, happiness = 2 },
+				local subChoice = payload and payload.subChoice or "surprise"
+				
+				local outcomesByChoice = {
+					thoughtful = {
+						{ text = "🎁 " .. friendName .. " teared up! \"You know me so well!\" The perfect thoughtful gift!", delta = 14, happiness = 12 },
+						{ text = "🎁 " .. friendName .. " was SPEECHLESS! Your thoughtful gift hit all the right notes!", delta = 13, happiness = 11 },
+						{ text = "🎁 \"This is exactly what I needed!\" " .. friendName .. " loved your thoughtful choice!", delta = 12, happiness = 10 },
+					},
+					expensive = {
+						{ text = "💎 " .. friendName .. " was shocked! \"This is too much!\" But they loved it!", delta = 12, happiness = 10 },
+						{ text = "💎 Luxury gift made " .. friendName .. " feel so special!", delta = 11, happiness = 9 },
+						{ text = "💎 " .. friendName .. " said you're too generous. They'll treasure this forever!", delta = 13, happiness = 11 },
+					},
+					handmade = {
+						{ text = "✂️ " .. friendName .. " was moved to tears! \"You MADE this?!\" Incredible!", delta = 16, happiness = 14 },
+						{ text = "✂️ Your handmade gift meant the world to " .. friendName .. "! So personal!", delta = 15, happiness = 13 },
+						{ text = "✂️ \"This is the most thoughtful thing ever!\" " .. friendName .. " loved the effort!", delta = 14, happiness = 12 },
+					},
+					funny = {
+						{ text = "😂 " .. friendName .. " burst out laughing! Perfect gag gift choice!", delta = 9, happiness = 14 },
+						{ text = "😂 You and " .. friendName .. " couldn't stop laughing at your silly gift!", delta = 8, happiness = 13 },
+						{ text = "😂 " .. friendName .. " said \"You know my humor so well!\" Great inside joke gift!", delta = 10, happiness = 12 },
+					},
 				}
+				
+				local outcomes
+				if subChoice == "surprise" or not outcomesByChoice[subChoice] then
+					local allOutcomes = {}
+					for _, choiceOutcomes in pairs(outcomesByChoice) do
+						for _, outcome in ipairs(choiceOutcomes) do
+							table.insert(allOutcomes, outcome)
+						end
+					end
+					outcomes = allOutcomes
+				else
+					outcomes = outcomesByChoice[subChoice]
+				end
+				
 				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
 				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
 				if relationship and outcome.delta then 
@@ -21115,16 +21310,49 @@ local InteractionEffects = {
 		support = { 
 			delta = 5, 
 			showResult = true,
-			message = function(state, relationship)
+			message = function(state, relationship, payload)
 				local friendName = (relationship and relationship.name) or "your friend"
-				local outcomes = {
-					{ text = "💪 " .. friendName .. " really needed your support. You made a real difference in their life!", delta = 12, happiness = 10 },
-					{ text = "🤗 You were there for " .. friendName .. " during a tough time. They won't forget it.", delta = 10, happiness = 8 },
-					{ text = "💕 " .. friendName .. " opened up to you. Your friendship is stronger than ever.", delta = 9, happiness = 7 },
-					{ text = "📞 You called " .. friendName .. " to check in. They appreciated you reaching out.", delta = 6, happiness = 5 },
+				local subChoice = payload and payload.subChoice or "surprise"
+				
+				local outcomesByChoice = {
+					listen = {
+						{ text = "👂 You listened to " .. friendName .. " for hours. They really needed that!", delta = 14, happiness = 10 },
+						{ text = "👂 \"Thank you for not judging.\" " .. friendName .. " opened up completely!", delta = 15, happiness = 11 },
+						{ text = "👂 Sometimes silence is best. You just let " .. friendName .. " vent.", delta = 12, happiness = 9 },
+					},
+					advice = {
+						{ text = "💡 Your advice really helped " .. friendName .. "! They know what to do now!", delta = 13, happiness = 11, smarts = 2 },
+						{ text = "💡 " .. friendName .. " said \"Why didn't I think of that?!\" Great advice!", delta = 12, happiness = 10, smarts = 1 },
+						{ text = "💡 You gave thoughtful perspective. " .. friendName .. " feels more confident now!", delta = 11, happiness = 9 },
+					},
+					help = {
+						{ text = "🙌 You helped " .. friendName .. " with their problem directly! Teamwork!", delta = 14, happiness = 12 },
+						{ text = "🙌 Actions speak louder than words. " .. friendName .. " saw you step up!", delta = 13, happiness = 11 },
+						{ text = "🙌 \"You didn't have to do this!\" " .. friendName .. " was grateful for your help!", delta = 12, happiness = 10 },
+					},
+					cheer = {
+						{ text = "📣 You made " .. friendName .. " laugh during a hard time. Mood lifted!", delta = 11, happiness = 14 },
+						{ text = "📣 \"I feel so much better now!\" " .. friendName .. " cheered up thanks to you!", delta = 10, happiness = 13 },
+						{ text = "📣 You distracted " .. friendName .. " from their worries. Just what they needed!", delta = 9, happiness = 12 },
+					},
 				}
+				
+				local outcomes
+				if subChoice == "surprise" or not outcomesByChoice[subChoice] then
+					local allOutcomes = {}
+					for _, choiceOutcomes in pairs(outcomesByChoice) do
+						for _, outcome in ipairs(choiceOutcomes) do
+							table.insert(allOutcomes, outcome)
+						end
+					end
+					outcomes = allOutcomes
+				else
+					outcomes = outcomesByChoice[subChoice]
+				end
+				
 				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
 				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
+				if outcome.smarts and state.ModifyStat then state:ModifyStat("Smarts", outcome.smarts) end
 				if relationship and outcome.delta then 
 					relationship.relationship = math.min(100, (relationship.relationship or 50) + outcome.delta)
 				end
@@ -21134,16 +21362,47 @@ local InteractionEffects = {
 		party = { 
 			delta = 7, 
 			showResult = true,
-			message = function(state, relationship)
+			message = function(state, relationship, payload)
 				local friendName = (relationship and relationship.name) or "your friend"
-				local outcomes = {
-					{ text = "🎉 EPIC party with " .. friendName .. "! Dancing, drinks, and unforgettable memories!", delta = 12, happiness = 15, health = -2 },
-					{ text = "🥳 Great party! You and " .. friendName .. " were the life of it!", delta = 10, happiness = 12 },
-					{ text = "🎊 Fun night out with " .. friendName .. "! Met some cool people too!", delta = 8, happiness = 10 },
-					{ text = "🍻 The party was okay. You and " .. friendName .. " left early.", delta = 5, happiness = 5 },
-					{ text = "😬 The party got a bit wild. You and " .. friendName .. " escaped before things got crazy.", delta = 6, happiness = 6 },
-					{ text = "🚔 Oops! Party got busted. You and " .. friendName .. " ran for it! Bonding experience.", delta = 9, happiness = 8 },
+				local subChoice = payload and payload.subChoice or "surprise"
+				
+				local outcomesByChoice = {
+					house = {
+						{ text = "🏠 Best house party ever with " .. friendName .. "! Chill vibes, good music!", delta = 12, happiness = 14 },
+						{ text = "🏠 House party was a blast! You and " .. friendName .. " controlled the playlist!", delta = 10, happiness = 12 },
+						{ text = "🏠 Cozy house party. Good conversations with " .. friendName .. " and friends!", delta = 11, happiness = 11 },
+					},
+					club = {
+						{ text = "🕺 CRAZY club night with " .. friendName .. "! Dancing until 3 AM!", delta = 10, happiness = 16, health = -3 },
+						{ text = "🕺 The club was PACKED! You lost " .. friendName .. " but found each other at the bar!", delta = 8, happiness = 13, health = -2 },
+						{ text = "🕺 VIP treatment! You and " .. friendName .. " felt like celebrities!", delta = 12, happiness = 15, health = -2 },
+					},
+					chill = {
+						{ text = "😎 Chill hangout with " .. friendName .. ". Sometimes low-key is the best!", delta = 10, happiness = 10 },
+						{ text = "😎 Netflix and snacks with " .. friendName .. ". Perfect relaxed night!", delta = 9, happiness = 9 },
+						{ text = "😎 You and " .. friendName .. " just vibed. No drama, just good company!", delta = 11, happiness = 11 },
+					},
+					wild = {
+						{ text = "🤪 LEGENDARY night! You and " .. friendName .. " will never forget this!", delta = 14, happiness = 18, health = -5 },
+						{ text = "🤪 Things got WILD! You might have made some questionable decisions with " .. friendName .. "...", delta = 10, happiness = 14, health = -4 },
+						{ text = "🤪 Party animal mode! You and " .. friendName .. " were the talk of the night!", delta = 12, happiness = 16, health = -4 },
+						{ text = "🚔 Party got too wild! You and " .. friendName .. " barely escaped! What a story!", delta = 8, happiness = 10, health = -3 },
+					},
 				}
+				
+				local outcomes
+				if subChoice == "surprise" or not outcomesByChoice[subChoice] then
+					local allOutcomes = {}
+					for _, choiceOutcomes in pairs(outcomesByChoice) do
+						for _, outcome in ipairs(choiceOutcomes) do
+							table.insert(allOutcomes, outcome)
+						end
+					end
+					outcomes = allOutcomes
+				else
+					outcomes = outcomesByChoice[subChoice]
+				end
+				
 				local outcome = outcomes[RANDOM:NextInteger(1, #outcomes)]
 				if outcome.happiness and state.ModifyStat then state:ModifyStat("Happiness", outcome.happiness) end
 				if outcome.health and state.ModifyStat then state:ModifyStat("Health", outcome.health) end
