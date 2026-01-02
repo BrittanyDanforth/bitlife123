@@ -83,12 +83,14 @@ FamilyEvents.events = {
 		tags = { "birth", "baby", "milestone" },
 		requiresFlags = { expecting = true },
 		
-		-- CRITICAL: Random birth outcome
+		-- CRITICAL: Random birth outcome + BABY NAMING PROMPT
 		choices = {
 			{
 				text = "Welcome the new arrival",
 				effects = {},  -- Handle costs in onResolve based on what player has
 				feedText = "In the delivery room...",
+				-- CRITICAL: Tell client to prompt for baby name!
+				promptBabyName = true,
 				onResolve = function(state)
 					-- Take hospital costs proportionally - poor players pay less
 					local currentMoney = state.Money or 0
@@ -96,14 +98,46 @@ FamilyEvents.events = {
 					state.Money = math.max(0, currentMoney - hospitalCost)
 					local roll = math.random()
 					
-					-- CRITICAL FIX: Create child relationship
+					-- CRITICAL FIX: Create child relationship with UNIQUE name
 					state.Relationships = state.Relationships or {}
 					local isBoy = math.random() > 0.5
-					local boyNames = {"James", "William", "Oliver", "Benjamin", "Lucas", "Henry", "Alexander", "Mason", "Ethan", "Noah"}
-					local girlNames = {"Emma", "Olivia", "Ava", "Isabella", "Sophia", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn"}
-					-- CRITICAL FIX: Add fallback in case random returns nil
-					local childName = (isBoy and boyNames[math.random(1, #boyNames)] or girlNames[math.random(1, #girlNames)]) or "Baby"
-					local childId = "child_" .. tostring(os.clock()):gsub("%.", "")
+					
+					-- EXPANDED name pools to reduce duplicates!
+					local boyNames = {
+						"James", "William", "Oliver", "Benjamin", "Lucas", "Henry", "Alexander", "Mason", "Ethan", "Noah",
+						"Liam", "Jackson", "Aiden", "Sebastian", "Matthew", "Daniel", "Michael", "Owen", "David", "Joseph",
+						"Carter", "Jayden", "John", "Luke", "Anthony", "Dylan", "Leo", "Isaac", "Gabriel", "Lincoln",
+						"Theodore", "Joshua", "Caleb", "Ryan", "Asher", "Nathan", "Thomas", "Charles", "Christopher", "Jaxon"
+					}
+					local girlNames = {
+						"Emma", "Olivia", "Ava", "Isabella", "Sophia", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn",
+						"Abigail", "Emily", "Elizabeth", "Sofia", "Ella", "Madison", "Scarlett", "Victoria", "Aria", "Grace",
+						"Chloe", "Camila", "Penelope", "Riley", "Layla", "Lillian", "Nora", "Zoey", "Mila", "Aubrey",
+						"Hannah", "Lily", "Addison", "Eleanor", "Natalie", "Luna", "Savannah", "Brooklyn", "Leah", "Zoe"
+					}
+					
+					-- Get list of existing child names to avoid duplicates
+					local existingNames = {}
+					for _, rel in pairs(state.Relationships) do
+						if type(rel) == "table" and (rel.role == "Son" or rel.role == "Daughter") then
+							if rel.name then
+								existingNames[rel.name:lower()] = true
+							end
+						end
+					end
+					
+					-- Pick a name that's not already used
+					local namePool = isBoy and boyNames or girlNames
+					local childName = "Baby"
+					for attempt = 1, 50 do -- Try up to 50 times to find unique name
+						local candidate = namePool[math.random(1, #namePool)]
+						if not existingNames[candidate:lower()] then
+							childName = candidate
+							break
+						end
+					end
+					
+					local childId = "child_" .. tostring(os.clock()):gsub("%.", "") .. "_" .. math.random(1000, 9999)
 					
 					state.Relationships[childId] = {
 						id = childId,
@@ -117,6 +151,7 @@ FamilyEvents.events = {
 						isChild = true,
 						isFamily = true,
 						birthYear = state.Year or 2025,
+						pendingName = true, -- Flag to allow renaming
 					}
 					
 					state.Flags = state.Flags or {}
@@ -124,21 +159,21 @@ FamilyEvents.events = {
 					state.Flags.new_parent = true
 					state.Flags.parent = true
 					state.Flags.has_child = true
+					state.Flags.pending_baby_naming = childId -- For client to know which baby to name
 					
 					if roll < 0.60 then
 						state:ModifyStat("Happiness", 20)
-						state:AddFeed(string.format("👶 HEALTHY BABY! Welcome %s! Perfect delivery! Overwhelming love!", childName))
+						state:AddFeed(string.format("👶 HEALTHY BABY %s! Perfect delivery! What will you name them?", isBoy and "BOY" or "GIRL"))
 					elseif roll < 0.90 then
 						state:ModifyStat("Happiness", 15)
 						state:ModifyStat("Health", -3)
-						state:AddFeed(string.format("👶 %s is here! Difficult delivery but everyone's okay!", childName))
+						state:AddFeed(string.format("👶 It's a %s! Difficult delivery but everyone's okay! Time to choose a name!", isBoy and "boy" or "girl"))
 					else
 						state:ModifyStat("Happiness", 8)
 						state:ModifyStat("Health", -8)
-						-- CRITICAL FIX: Prevent negative money
 						state.Money = math.max(0, (state.Money or 0) - 2000)
 						state.Flags.nicu_baby = true
-						state:AddFeed(string.format("👶 Complications. %s is in NICU. Scary but hopeful.", childName))
+						state:AddFeed(string.format("👶 Complications. Your %s is in NICU. Scary but hopeful. Choose their name.", isBoy and "son" or "daughter"))
 					end
 				end,
 			},

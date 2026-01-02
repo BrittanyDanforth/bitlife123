@@ -133,6 +133,125 @@ end
 FriendshipDecayEvents.events = {
 	
 	-- ══════════════════════════════════════════════════════════════════════════════
+	-- FRIEND REACHING OUT - WARNING BEFORE THEY LEAVE
+	-- User review: "have it be like they reached out disappointed it's been 2 years"
+	-- This gives players a chance to save friendships before they end!
+	-- ══════════════════════════════════════════════════════════════════════════════
+	
+	{
+		id = "friend_reaching_out_warning",
+		title = "📱 Friend Reaching Out",
+		emoji = "📱",
+		text = "{{FRIEND_NAME}} sent you a message: 'Hey... it's been a while. I miss hanging out. Are we still friends?'",
+		category = "relationships",
+		weight = 25, -- High priority warning event!
+		minAge = 12, maxAge = 90,
+		baseChance = 0.65, -- Higher chance so players see the warning
+		cooldown = 3,
+		blockedByFlags = { in_prison = true },
+		
+		eligibility = function(state)
+			-- Check if any friend needs attention (relationship < 40 but > 0)
+			local relationships = ensureRelationships(state)
+			for id, rel in pairs(relationships) do
+				if type(rel) == "table" and (rel.type == "friend" or rel.role == "Friend") then
+					if rel.alive ~= false and not rel.estranged then
+						local lastContact = rel.lastContact or rel.lastInteraction or 0
+						if type(lastContact) ~= "number" then lastContact = 0 end
+						local yearsSince = (state.Age or 0) - lastContact
+						local relationship = rel.relationship or 50
+						-- Warning if haven't talked in 2+ years and relationship is getting low
+						if yearsSince >= 2 and relationship < 50 and relationship > 10 then
+							return true
+						end
+					end
+				end
+			end
+			return false
+		end,
+		
+		getDynamicText = function(state)
+			local relationships = ensureRelationships(state)
+			for id, rel in pairs(relationships) do
+				if type(rel) == "table" and (rel.type == "friend" or rel.role == "Friend") then
+					if rel.alive ~= false and not rel.estranged then
+						local lastContact = rel.lastContact or rel.lastInteraction or 0
+						if type(lastContact) ~= "number" then lastContact = 0 end
+						local yearsSince = (state.Age or 0) - lastContact
+						local relationship = rel.relationship or 50
+						if yearsSince >= 2 and relationship < 50 and relationship > 10 then
+							local name = rel.name or "Your friend"
+							return {
+								text = string.format("%s sent you a message: 'Hey... it's been %d years. I miss hanging out. Are we still friends? 😢'", name, yearsSince),
+								friendId = id,
+								friendName = name,
+								yearsApart = yearsSince,
+							}
+						end
+					end
+				end
+			end
+			return nil
+		end,
+		
+		choices = {
+			{
+				text = "💬 'Of course! Let's catch up!'",
+				effects = { Happiness = 8 },
+				feedText = "Reconnecting with your friend...",
+				onResolve = function(state, choice, event)
+					local friendId = event._dynamicData and event._dynamicData.friendId
+					local friendName = event._dynamicData and event._dynamicData.friendName or "Your friend"
+					local relationships = ensureRelationships(state)
+					
+					if friendId and relationships[friendId] then
+						relationships[friendId].relationship = math.min(100, (relationships[friendId].relationship or 50) + 25)
+						relationships[friendId].lastContact = state.Age
+						relationships[friendId].needsAttention = nil
+					end
+					addFeed(state, string.format("💕 You and %s had a great catch-up! Friendship renewed! 🎉", friendName))
+				end,
+			},
+			{
+				text = "📅 'Sorry been busy, let's plan something soon!'",
+				effects = { Happiness = 4 },
+				feedText = "Making plans...",
+				onResolve = function(state, choice, event)
+					local friendId = event._dynamicData and event._dynamicData.friendId
+					local friendName = event._dynamicData and event._dynamicData.friendName or "Your friend"
+					local relationships = ensureRelationships(state)
+					
+					if friendId and relationships[friendId] then
+						relationships[friendId].relationship = math.min(100, (relationships[friendId].relationship or 50) + 10)
+						relationships[friendId].lastContact = state.Age
+					end
+					addFeed(state, string.format("📅 %s understood. You've got plans to meet up soon!", friendName))
+				end,
+			},
+			{
+				text = "😶 Ignore the message",
+				effects = { Happiness = -3 },
+				feedText = "Left on read...",
+				onResolve = function(state, choice, event)
+					local friendId = event._dynamicData and event._dynamicData.friendId
+					local friendName = event._dynamicData and event._dynamicData.friendName or "Your friend"
+					local relationships = ensureRelationships(state)
+					
+					if friendId and relationships[friendId] then
+						relationships[friendId].relationship = math.max(0, (relationships[friendId].relationship or 50) - 15)
+						if relationships[friendId].relationship <= 0 then
+							relationships[friendId].estranged = true
+							addFeed(state, string.format("💔 %s gave up on the friendship after being ignored.", friendName))
+						else
+							addFeed(state, string.format("😞 %s is hurt that you didn't respond...", friendName))
+						end
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ══════════════════════════════════════════════════════════════════════════════
 	-- FRIEND ANGRY - HAVEN'T TALKED FOR YEARS
 	-- ══════════════════════════════════════════════════════════════════════════════
 	
@@ -1764,62 +1883,80 @@ function FriendshipDecayEvents.processYearlyDecay(state)
 	local relationships = ensureRelationships(state)
 	local currentAge = state.Age or 0
 	local decayedFriends = {}
+	local warningFriends = {} -- Friends who are getting distant (for warning events)
 	
 	for id, rel in pairs(relationships) do
 		if type(rel) == "table" then
 			if rel.type == "friend" or rel.role == "Friend" or id:find("friend") then
-				if rel.alive ~= false then
+				if rel.alive ~= false and not rel.estranged then
 					-- CRITICAL FIX: Childhood friends are protected from early decay!
-					-- They're friends you grew up with, so they naturally stay in contact
 					local isChildhoodFriend = id:find("childhood") or rel.role == "Childhood Friend" or rel.metAt == "childhood"
 					
 					-- Children (under 18) don't lose childhood friends to decay - they see them at school!
 					local skipDecay = false
 					if isChildhoodFriend and currentAge < 18 then
-						-- Update lastContact to current age so they don't decay
 						rel.lastContact = currentAge
-						-- Skip decay processing entirely for childhood friends during childhood
 						skipDecay = true
 					end
 					
 					if not skipDecay then
-						-- CRITICAL FIX: metAt can be a string like "childhood" or "randomly"!
 						local lastContact = rel.lastContact or rel.lastInteraction
 						if type(lastContact) ~= "number" then
 							if type(rel.metAt) == "number" then
 								lastContact = rel.metAt
 							elseif isChildhoodFriend then
-								-- Childhood friends: assume they've been in contact recently
 								lastContact = math.max(0, currentAge - 2)
 							else
-								lastContact = 0
+								lastContact = currentAge -- CRITICAL FIX: Assume recent contact if unknown
 							end
 						end
-						local yearsSince = math.max(0, currentAge - (tonumber(lastContact) or 0))
+						local yearsSince = math.max(0, currentAge - (tonumber(lastContact) or currentAge))
 						
-						-- CRITICAL FIX: Much gentler decay rates
-						-- Old rates caused all friends to disappear within a few years!
-						-- New rates allow friendships to survive longer without active maintenance
-						if yearsSince >= 2 then -- Changed from 1 year to 2 years minimum
+						-- ═══════════════════════════════════════════════════════════════════════
+						-- CRITICAL FIX: MUCH gentler decay - friends don't leave easily!
+						-- User review: "I shouldn't have to keep encouraging every year or friend leaves"
+						-- Now friends only decay after 3+ years of no contact, and VERY slowly
+						-- ═══════════════════════════════════════════════════════════════════════
+						if yearsSince >= 3 then -- Changed from 2 to 3 years minimum before any decay!
 							local decayAmount = 0
-							if yearsSince >= 10 then
-								decayAmount = 8 -- Was 15 - severe decay only after 10+ years
+							if yearsSince >= 15 then
+								decayAmount = 5 -- Severe decay only after 15+ years no contact
+							elseif yearsSince >= 10 then
+								decayAmount = 3 -- Moderate decay after 10+ years
 							elseif yearsSince >= 5 then
-								decayAmount = 4 -- Was 8 - moderate decay after 5+ years
-							elseif yearsSince >= 2 then
-								decayAmount = 2 -- Was 3 - very light decay after 2+ years
+								decayAmount = 2 -- Light decay after 5+ years
+							elseif yearsSince >= 3 then
+								decayAmount = 1 -- Very light decay after 3+ years
 							end
 							
 							-- Childhood friends decay even slower (lifelong bond)
 							if isChildhoodFriend then
+								decayAmount = math.floor(decayAmount * 0.3) -- 70% reduction!
+							end
+							
+							-- Best friends also decay slower
+							if rel.isBestFriend or rel.role == "Best Friend" then
 								decayAmount = math.floor(decayAmount * 0.5)
 							end
 							
-							rel.relationship = math.max(0, (rel.relationship or 50) - decayAmount)
+							local oldRelationship = rel.relationship or 50
+							rel.relationship = math.max(0, oldRelationship - decayAmount)
+							
+							-- WARNING: If relationship dropped below 30, add to warning list
+							-- This triggers warning events so player knows before friend leaves
+							if oldRelationship >= 30 and rel.relationship < 30 and rel.relationship > 0 then
+								rel.needsAttention = true
+								table.insert(warningFriends, {
+									name = rel.name or "A friend",
+									yearsSince = yearsSince,
+									relationship = rel.relationship
+								})
+							end
 							
 							-- Mark as estranged if relationship hits 0
 							if rel.relationship <= 0 then
 								rel.estranged = true
+								rel.needsAttention = nil
 								table.insert(decayedFriends, rel.name or "A friend")
 							end
 						end
@@ -1829,7 +1966,13 @@ function FriendshipDecayEvents.processYearlyDecay(state)
 		end
 	end
 	
-	return decayedFriends
+	-- Store warning friends for potential events
+	state.Flags = state.Flags or {}
+	if #warningFriends > 0 then
+		state.Flags.friends_need_attention = warningFriends
+	end
+	
+	return decayedFriends, warningFriends
 end
 
 -- ═══════════════════════════════════════════════════════════════════════════════

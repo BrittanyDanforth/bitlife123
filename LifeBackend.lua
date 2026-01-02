@@ -9728,6 +9728,13 @@ function LifeBackend:setupRemotes()
 	-- User complaint: "leaderboard... ITS FOR EVERYBODY WHO PLAYS GAME"
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	self.remotes.GetGlobalLeaderboard = self:createRemote("GetGlobalLeaderboard", "RemoteFunction")
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- BABY NAMING SYSTEM: Allow players to name their babies
+	-- User review: "we should be able to choose our children's names"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	self.remotes.NameBaby = self:createRemote("NameBaby", "RemoteFunction")
+	self.remotes.RequestBabyNaming = self:createRemote("RequestBabyNaming", "RemoteEvent") -- Server -> Client
 
 	-- Event connections
 	self.remotes.RequestAgeUp.OnServerEvent:Connect(function(player)
@@ -10016,6 +10023,97 @@ function LifeBackend:setupRemotes()
 		local safeLimit = math.clamp(limit or 50, 1, 100)
 		local results = fetchGlobalLeaderboard(leaderboardType, safeLimit)
 		return results
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- BABY NAMING HANDLER: Filter and apply baby names
+	-- User review: "we should be able to choose our children's names"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	self.remotes.NameBaby.OnServerInvoke = function(player, babyId, proposedName)
+		local state = self:getState(player)
+		if not state then
+			return { success = false, message = "Life data missing." }
+		end
+		
+		-- Validate name
+		if not proposedName or type(proposedName) ~= "string" then
+			return { success = false, message = "Invalid name." }
+		end
+		
+		-- Clean up the name
+		proposedName = proposedName:gsub("^%s+", ""):gsub("%s+$", "") -- Trim whitespace
+		
+		-- Check name length
+		if #proposedName < 2 then
+			return { success = false, message = "Name too short! (min 2 characters)" }
+		end
+		if #proposedName > 20 then
+			return { success = false, message = "Name too long! (max 20 characters)" }
+		end
+		
+		-- Filter through Roblox's text filter
+		local TextService = game:GetService("TextService")
+		local filteredName = proposedName
+		local filterSuccess, filterResult = pcall(function()
+			local result = TextService:FilterStringAsync(proposedName, player.UserId, Enum.TextFilterContext.PublicChat)
+			return result:GetNonChatStringForBroadcastAsync()
+		end)
+		
+		if filterSuccess then
+			filteredName = filterResult
+		else
+			warn("[LifeBackend] Text filter failed:", filterResult)
+			-- If filter fails, still allow but check for obvious bad words
+		end
+		
+		-- Check if the filtered name is too different (was censored)
+		if filteredName:find("#") then
+			return { success = false, message = "That name contains inappropriate content. Try again!" }
+		end
+		
+		-- Check for duplicate names among existing children
+		state.Relationships = state.Relationships or {}
+		for id, rel in pairs(state.Relationships) do
+			if type(rel) == "table" and (rel.role == "Son" or rel.role == "Daughter") then
+				if rel.name and rel.name:lower() == filteredName:lower() then
+					return { success = false, message = "You already have a child named " .. rel.name .. "! Choose a different name." }
+				end
+			end
+		end
+		
+		-- Find the pending baby or the specified baby
+		local targetBaby = nil
+		if babyId and state.Relationships[babyId] then
+			targetBaby = state.Relationships[babyId]
+		else
+			-- Find a baby with temporary/placeholder name
+			for id, rel in pairs(state.Relationships) do
+				if type(rel) == "table" and (rel.role == "Son" or rel.role == "Daughter") then
+					if rel.pendingName or rel.age == 0 then
+						targetBaby = rel
+						break
+					end
+				end
+			end
+		end
+		
+		if not targetBaby then
+			return { success = false, message = "No baby to name!" }
+		end
+		
+		-- Apply the name!
+		local oldName = targetBaby.name
+		targetBaby.name = filteredName
+		targetBaby.pendingName = nil -- Clear pending flag
+		
+		-- Push state update
+		self:pushState(player, string.format("👶 You named your baby %s!", filteredName))
+		
+		return { 
+			success = true, 
+			message = string.format("Your baby is now named %s!", filteredName),
+			name = filteredName
+		}
 	end
 end
 

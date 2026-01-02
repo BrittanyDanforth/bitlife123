@@ -1721,6 +1721,215 @@ local function showResultPopup(data, callback)
 end
 
 ----------------------------------------------------------------
+-- BABY NAMING MODAL
+-- User review: "we should be able to choose our children's names"
+----------------------------------------------------------------
+
+local BabyNamingUI = {}
+local babyNamingVisible = false
+local pendingBabyId = nil
+
+local function createBabyNamingPopup()
+	-- Main overlay
+	BabyNamingUI.overlay = Instance.new("Frame")
+	BabyNamingUI.overlay.Name = "BabyNamingOverlay"
+	BabyNamingUI.overlay.Size = UDim2.fromScale(1, 1)
+	BabyNamingUI.overlay.BackgroundColor3 = C.Black
+	BabyNamingUI.overlay.BackgroundTransparency = 0.5
+	BabyNamingUI.overlay.ZIndex = 100
+	BabyNamingUI.overlay.Visible = false
+	BabyNamingUI.overlay.Parent = mainContainer
+	
+	-- Card
+	local cardWidth = Device.IS_TINY_PHONE and 280 or 340
+	local cardHeight = Device.IS_TINY_PHONE and 260 or 300
+	BabyNamingUI.card = Instance.new("Frame")
+	BabyNamingUI.card.Name = "BabyNamingCard"
+	BabyNamingUI.card.Size = UDim2.new(0, cardWidth, 0, cardHeight)
+	BabyNamingUI.card.Position = UDim2.new(0.5, -cardWidth/2, 0.5, -cardHeight/2)
+	BabyNamingUI.card.BackgroundColor3 = C.White
+	BabyNamingUI.card.ZIndex = 101
+	BabyNamingUI.card.Parent = BabyNamingUI.overlay
+	corner(BabyNamingUI.card, 16)
+	stroke(BabyNamingUI.card, 3, 0.9, C.Pink or Color3.fromRGB(255, 192, 203))
+	
+	-- Title
+	BabyNamingUI.title = Instance.new("TextLabel")
+	BabyNamingUI.title.Size = UDim2.new(1, -20, 0, 50)
+	BabyNamingUI.title.Position = UDim2.new(0, 10, 0, 10)
+	BabyNamingUI.title.BackgroundTransparency = 1
+	BabyNamingUI.title.Font = F.Title
+	BabyNamingUI.title.TextSize = Device.IS_TINY_PHONE and 18 or 22
+	BabyNamingUI.title.TextColor3 = C.Gray900
+	BabyNamingUI.title.Text = "👶 Name Your Baby!"
+	BabyNamingUI.title.ZIndex = 102
+	BabyNamingUI.title.Parent = BabyNamingUI.card
+	
+	-- Subtitle
+	BabyNamingUI.subtitle = Instance.new("TextLabel")
+	BabyNamingUI.subtitle.Size = UDim2.new(1, -20, 0, 30)
+	BabyNamingUI.subtitle.Position = UDim2.new(0, 10, 0, 55)
+	BabyNamingUI.subtitle.BackgroundTransparency = 1
+	BabyNamingUI.subtitle.Font = F.Medium
+	BabyNamingUI.subtitle.TextSize = Device.IS_TINY_PHONE and 12 or 14
+	BabyNamingUI.subtitle.TextColor3 = C.Gray500
+	BabyNamingUI.subtitle.Text = "Choose a name for your newborn!"
+	BabyNamingUI.subtitle.ZIndex = 102
+	BabyNamingUI.subtitle.Parent = BabyNamingUI.card
+	
+	-- Name input
+	BabyNamingUI.nameInput = Instance.new("TextBox")
+	BabyNamingUI.nameInput.Size = UDim2.new(1, -40, 0, 45)
+	BabyNamingUI.nameInput.Position = UDim2.new(0, 20, 0, 95)
+	BabyNamingUI.nameInput.BackgroundColor3 = C.Gray100
+	BabyNamingUI.nameInput.Text = ""
+	BabyNamingUI.nameInput.PlaceholderText = "Enter baby's name..."
+	BabyNamingUI.nameInput.TextColor3 = C.Gray900
+	BabyNamingUI.nameInput.PlaceholderColor3 = C.Gray400
+	BabyNamingUI.nameInput.TextSize = Device.IS_TINY_PHONE and 16 or 18
+	BabyNamingUI.nameInput.Font = F.Medium
+	BabyNamingUI.nameInput.ClearTextOnFocus = false
+	BabyNamingUI.nameInput.ZIndex = 103
+	BabyNamingUI.nameInput.Parent = BabyNamingUI.card
+	corner(BabyNamingUI.nameInput, 10)
+	
+	-- Error message
+	BabyNamingUI.errorLabel = Instance.new("TextLabel")
+	BabyNamingUI.errorLabel.Size = UDim2.new(1, -40, 0, 25)
+	BabyNamingUI.errorLabel.Position = UDim2.new(0, 20, 0, 145)
+	BabyNamingUI.errorLabel.BackgroundTransparency = 1
+	BabyNamingUI.errorLabel.Font = F.Medium
+	BabyNamingUI.errorLabel.TextSize = 12
+	BabyNamingUI.errorLabel.TextColor3 = C.Red
+	BabyNamingUI.errorLabel.Text = ""
+	BabyNamingUI.errorLabel.ZIndex = 102
+	BabyNamingUI.errorLabel.Parent = BabyNamingUI.card
+	
+	-- Confirm button
+	BabyNamingUI.confirmBtn = Instance.new("TextButton")
+	BabyNamingUI.confirmBtn.Size = UDim2.new(1, -40, 0, 45)
+	BabyNamingUI.confirmBtn.Position = UDim2.new(0, 20, 0, 180)
+	BabyNamingUI.confirmBtn.BackgroundColor3 = C.Green
+	BabyNamingUI.confirmBtn.Font = F.Button
+	BabyNamingUI.confirmBtn.TextSize = Device.IS_TINY_PHONE and 14 or 16
+	BabyNamingUI.confirmBtn.TextColor3 = C.White
+	BabyNamingUI.confirmBtn.Text = "✓ Confirm Name"
+	BabyNamingUI.confirmBtn.ZIndex = 103
+	BabyNamingUI.confirmBtn.Parent = BabyNamingUI.card
+	corner(BabyNamingUI.confirmBtn, 10)
+	
+	-- Random name button
+	BabyNamingUI.randomBtn = Instance.new("TextButton")
+	BabyNamingUI.randomBtn.Size = UDim2.new(1, -40, 0, 35)
+	BabyNamingUI.randomBtn.Position = UDim2.new(0, 20, 0, 235)
+	BabyNamingUI.randomBtn.BackgroundColor3 = C.Gray200
+	BabyNamingUI.randomBtn.Font = F.Medium
+	BabyNamingUI.randomBtn.TextSize = Device.IS_TINY_PHONE and 12 or 14
+	BabyNamingUI.randomBtn.TextColor3 = C.Gray700
+	BabyNamingUI.randomBtn.Text = "🎲 Random Name"
+	BabyNamingUI.randomBtn.ZIndex = 103
+	BabyNamingUI.randomBtn.Parent = BabyNamingUI.card
+	corner(BabyNamingUI.randomBtn, 8)
+	
+	-- Random name lists
+	local randomBoyNames = {"Liam", "Noah", "Oliver", "James", "Elijah", "William", "Henry", "Lucas", "Benjamin", "Theodore", "Jack", "Levi", "Alexander", "Mason", "Ethan", "Sebastian", "Daniel", "Matthew", "Owen", "Aiden"}
+	local randomGirlNames = {"Olivia", "Emma", "Charlotte", "Amelia", "Sophia", "Mia", "Isabella", "Ava", "Evelyn", "Luna", "Harper", "Sofia", "Camila", "Aria", "Scarlett", "Penelope", "Layla", "Chloe", "Victoria", "Madison"}
+	
+	-- Random button click
+	BabyNamingUI.randomBtn.MouseButton1Click:Connect(function()
+		local isBoy = currentState and currentState.Flags and currentState.Flags.pending_baby_gender == "male"
+		local names = isBoy and randomBoyNames or randomGirlNames
+		BabyNamingUI.nameInput.Text = names[math.random(1, #names)]
+		BabyNamingUI.errorLabel.Text = ""
+	end)
+	
+	-- Confirm button click
+	BabyNamingUI.confirmBtn.MouseButton1Click:Connect(function()
+		local name = BabyNamingUI.nameInput.Text:gsub("^%s+", ""):gsub("%s+$", "")
+		
+		if #name < 2 then
+			BabyNamingUI.errorLabel.Text = "❌ Name too short!"
+			return
+		end
+		
+		if #name > 20 then
+			BabyNamingUI.errorLabel.Text = "❌ Name too long!"
+			return
+		end
+		
+		-- Disable button while processing
+		BabyNamingUI.confirmBtn.Text = "⏳ Checking..."
+		BabyNamingUI.confirmBtn.BackgroundColor3 = C.Gray400
+		
+		-- Call server to validate and apply name
+		local remotesFolder = ReplicatedStorage:FindFirstChild("LifeRemotes")
+		local nameBabyRemote = remotesFolder and remotesFolder:FindFirstChild("NameBaby")
+		
+		if nameBabyRemote then
+			local success, result = pcall(function()
+				return nameBabyRemote:InvokeServer(pendingBabyId, name)
+			end)
+			
+			if success and result then
+				if result.success then
+					-- Success! Close the modal
+					BabyNamingUI.overlay.Visible = false
+					babyNamingVisible = false
+					BabyNamingUI.nameInput.Text = ""
+					BabyNamingUI.errorLabel.Text = ""
+					
+					-- Show success message
+					addFeedEntry("👶 Welcome " .. (result.name or name) .. " to the family! 🎉")
+				else
+					-- Show error
+					BabyNamingUI.errorLabel.Text = "❌ " .. (result.message or "Try again!")
+				end
+			else
+				BabyNamingUI.errorLabel.Text = "❌ Connection error. Try again!"
+			end
+		else
+			-- Fallback: just close and use the name locally
+			BabyNamingUI.overlay.Visible = false
+			babyNamingVisible = false
+		end
+		
+		-- Re-enable button
+		BabyNamingUI.confirmBtn.Text = "✓ Confirm Name"
+		BabyNamingUI.confirmBtn.BackgroundColor3 = C.Green
+	end)
+end
+
+local function showBabyNamingPopup(babyId, babyGender)
+	if not BabyNamingUI.overlay then createBabyNamingPopup() end
+	
+	pendingBabyId = babyId
+	BabyNamingUI.nameInput.Text = ""
+	BabyNamingUI.errorLabel.Text = ""
+	
+	-- Update title based on gender
+	if babyGender == "male" then
+		BabyNamingUI.title.Text = "👶 Name Your Baby Boy!"
+		BabyNamingUI.subtitle.Text = "Choose a name for your son!"
+	elseif babyGender == "female" then
+		BabyNamingUI.title.Text = "👶 Name Your Baby Girl!"
+		BabyNamingUI.subtitle.Text = "Choose a name for your daughter!"
+	else
+		BabyNamingUI.title.Text = "👶 Name Your Baby!"
+		BabyNamingUI.subtitle.Text = "Choose a name for your newborn!"
+	end
+	
+	BabyNamingUI.overlay.Visible = true
+	babyNamingVisible = true
+	
+	-- Focus the input
+	task.delay(0.1, function()
+		if BabyNamingUI.nameInput then
+			BabyNamingUI.nameInput:CaptureFocus()
+		end
+	end)
+end
+
+----------------------------------------------------------------
 -- HEADER BAR (Offset to avoid Roblox logo)
 ----------------------------------------------------------------
 
@@ -8078,6 +8287,35 @@ SyncState.OnClientEvent:Connect(function(state, lastFeedText, resultData)
 	-- CRITICAL FIX: Update progress screen state
 	if ScreenInstances.progress and ScreenInstances.progress.updateState then
 		ScreenInstances.progress:updateState(currentState)
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- BABY NAMING PROMPT: Show popup when a baby is born
+	-- User review: "we should be able to choose our children's names"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.Flags and state.Flags.pending_baby_naming then
+		local babyId = state.Flags.pending_baby_naming
+		-- Find the baby's gender
+		local babyGender = nil
+		if state.Relationships then
+			for id, rel in pairs(state.Relationships) do
+				if id == babyId or (type(rel) == "table" and rel.pendingName) then
+					babyGender = rel.gender
+					break
+				end
+			end
+		end
+		-- Show the naming popup after a short delay (let the feed update first)
+		task.delay(0.5, function()
+			if showBabyNamingPopup then
+				showBabyNamingPopup(babyId, babyGender)
+			end
+		end)
+		-- Clear the flag so it doesn't show again
+		state.Flags.pending_baby_naming = nil
+		if currentState.Flags then
+			currentState.Flags.pending_baby_naming = nil
+		end
 	end
 
 	-- CRITICAL FIX: Check for death FIRST before showing any popups
