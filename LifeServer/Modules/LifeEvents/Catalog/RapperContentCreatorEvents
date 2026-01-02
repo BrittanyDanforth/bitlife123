@@ -873,7 +873,7 @@ RapperContentCreatorEvents.events = {
 					local currentListeners = state.FameState.monthlyListeners or 0
 					local boost = math.max(30000, math.floor(currentListeners * 0.5) + math.random(20000, 50000))
 					state.FameState.monthlyListeners = currentListeners + boost
-					state.Fame = (state.Fame or 0) + 15
+					state.Fame = math.min(100, (state.Fame or 0) + 15) -- CRITICAL FIX: Cap fame at 100
 					state.FameState.majorFeatures = (state.FameState.majorFeatures or 0) + 1
 					state:AddFeed(string.format("🌟 Feature dropped! You gained %d new listeners! HUGE W!", boost))
 				end,
@@ -959,7 +959,7 @@ RapperContentCreatorEvents.events = {
 					local boost = math.random(40000, 100000)
 					local newListeners = (state.FameState.monthlyListeners or 0) + boost
 					state.FameState.monthlyListeners = newListeners
-					state.Fame = (state.Fame or 0) + 20
+					state.Fame = math.min(100, (state.Fame or 0) + 20) -- CRITICAL FIX: Cap fame at 100
 					
 					-- CRITICAL FIX #USER-32: Also update job for this choice
 					state.CurrentJob = state.CurrentJob or {}
@@ -1029,7 +1029,7 @@ RapperContentCreatorEvents.events = {
 					state.FameState = state.FameState or {}
 					state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(50000, 120000)
 					state.FameState.albumsReleased = (state.FameState.albumsReleased or 0) + 1
-					state.Fame = (state.Fame or 0) + 20
+					state.Fame = math.min(100, (state.Fame or 0) + 20) -- CRITICAL FIX: Cap fame at 100
 				end,
 			},
 			-- CRITICAL FIX: FREE option to prevent hard lock!
@@ -1090,7 +1090,7 @@ RapperContentCreatorEvents.events = {
 					if roll > 0.5 then
 						state:ModifyStat("Happiness", 30)
 						state.FameState.monthlyListeners = (state.FameState.monthlyListeners or 0) + math.random(50000, 150000)
-						state.Fame = (state.Fame or 0) + 20
+						state.Fame = math.min(100, (state.Fame or 0) + 20) -- CRITICAL FIX: Cap fame at 100
 						state:AddFeed("😤 DISS TRACK OF THE YEAR! You ENDED them! Everyone saying you WON! Career high!")
 					else
 						state:ModifyStat("Happiness", -15)
@@ -1552,7 +1552,7 @@ RapperContentCreatorEvents.events = {
 					state.FameState.viralVideos = (state.FameState.viralVideos or 0) + 1
 					-- CRITICAL FIX: Actually increment totalVideos when posting videos!
 					state.FameState.totalVideos = (state.FameState.totalVideos or 0) + 5
-					state.Fame = (state.Fame or 0) + 20
+					state.Fame = math.min(100, (state.Fame or 0) + 20) -- CRITICAL FIX: Cap fame at 100
 					state.Money = (state.Money or 0) + math.random(5000, 20000)
 					
 					-- CRITICAL FIX #USER-36: Update job title based on subscriber milestones!
@@ -1583,7 +1583,7 @@ RapperContentCreatorEvents.events = {
 					local boost = math.random(30000, 100000)
 					local newSubs = (state.FameState.subscribers or 0) + boost
 					state.FameState.subscribers = newSubs
-					state.Fame = (state.Fame or 0) + 15
+					state.Fame = math.min(100, (state.Fame or 0) + 15) -- CRITICAL FIX: Cap fame at 100
 					
 					-- CRITICAL FIX #USER-36: Update job title based on subscriber milestones
 					state.CurrentJob = state.CurrentJob or {}
@@ -2116,7 +2116,7 @@ RapperContentCreatorEvents.events = {
 				setFlags = { has_management = true, hot_rapper = true },
 				feedText = "💯 MANAGEMENT SIGNED! They're booking shows, handling business. You just RAP!",
 				onResolve = function(state)
-					state.Fame = (state.Fame or 0) + 20
+					state.Fame = math.min(100, (state.Fame or 0) + 20) -- CRITICAL FIX: Cap fame at 100
 					state.CurrentJob = state.CurrentJob or {}
 					state.CurrentJob.name = "Hot Rapper"
 					state.CurrentJob.salary = 75000
@@ -2128,7 +2128,7 @@ RapperContentCreatorEvents.events = {
 				setFlags = { indie_rapper = true, hot_rapper = true },
 				feedText = "💯 100K as an INDIE! You own your masters. The hardest path but most rewarding!",
 				onResolve = function(state)
-					state.Fame = (state.Fame or 0) + 18
+					state.Fame = math.min(100, (state.Fame or 0) + 18) -- CRITICAL FIX: Cap fame at 100
 					state.CurrentJob = state.CurrentJob or {}
 					state.CurrentJob.name = "Independent Rapper"
 					state.CurrentJob.salary = 50000
@@ -2319,7 +2319,7 @@ RapperContentCreatorEvents.events = {
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					state.FameState.subscribers = (state.FameState.subscribers or 0) + math.random(30000, 100000)
-					state.Fame = (state.Fame or 0) + 15
+					state.Fame = math.min(100, (state.Fame or 0) + 15) -- CRITICAL FIX: Cap fame at 100
 					-- CRITICAL FIX: Track video count
 					state.FameState.totalVideos = (state.FameState.totalVideos or 0) + 1
 					state.FameState.totalViews = (state.FameState.totalViews or 0) + math.random(500000, 2000000)
@@ -2332,7 +2332,7 @@ RapperContentCreatorEvents.events = {
 				onResolve = function(state)
 					state.FameState = state.FameState or {}
 					state.FameState.subscribers = (state.FameState.subscribers or 0) + math.random(50000, 150000)
-					state.Fame = (state.Fame or 0) + 20
+					state.Fame = math.min(100, (state.Fame or 0) + 20) -- CRITICAL FIX: Cap fame at 100
 					-- CRITICAL FIX: Track video count - 5 video series
 					state.FameState.totalVideos = (state.FameState.totalVideos or 0) + 5
 					state.FameState.totalViews = (state.FameState.totalViews or 0) + math.random(2000000, 8000000)

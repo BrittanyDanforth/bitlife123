@@ -140,7 +140,7 @@ AthleteCareerEvents.events = {
 						local prize = math.random(100000, 400000)
 						state.Money = (state.Money or 0) + prize
 						state:ModifyStat("Happiness", 10)
-						state.Fame = (state.Fame or 0) + 20
+						state.Fame = math.min(100, (state.Fame or 0) + 20) -- CRITICAL FIX: Cap fame at 100
 						state:AddFeed(string.format("🏆 Lost the game but you played well. $%s consolation. Next year!", prize))
 					else
 						state:ModifyStat("Happiness", -20)
@@ -260,7 +260,7 @@ AthleteCareerEvents.events = {
 						local contract = math.random(10000000, 50000000)
 						state.Money = (state.Money or 0) + contract
 						state:ModifyStat("Happiness", 25)
-						state.Fame = (state.Fame or 0) + 15
+						state.Fame = math.min(100, (state.Fame or 0) + 15) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.max_contract = true
 						state:AddFeed(string.format("💰 GOT THE MAX! $%s contract! Set for life!", contract))
@@ -298,7 +298,7 @@ AthleteCareerEvents.events = {
 						local contract = math.random(15000000, 60000000)
 						state.Money = (state.Money or 0) + contract
 						state:ModifyStat("Happiness", 25)
-						state.Fame = (state.Fame or 0) + 10
+						state.Fame = math.min(100, (state.Fame or 0) + 10) -- CRITICAL FIX: Cap fame at 100
 						state:AddFeed(string.format("💰 Bidding war! Got $%s from a new team!", contract))
 					elseif roll <= 65 then
 						local contract = math.random(5000000, 12000000)
@@ -407,7 +407,7 @@ AthleteCareerEvents.events = {
 				onResolve = function(state)
 					local deal = math.random(500000, 5000000)
 					state.Money = (state.Money or 0) + deal
-					state.Fame = (state.Fame or 0) + 20
+					state.Fame = math.min(100, (state.Fame or 0) + 20) -- CRITICAL FIX: Cap fame at 100
 					state.Flags = state.Flags or {}
 					state.Flags.endorsed_athlete = true
 					state:AddFeed(string.format("📸 Signed! $%s endorsement deal! Your face is everywhere!", deal))
@@ -574,7 +574,7 @@ AthleteCareerEvents.events = {
 						state:AddFeed("🏛️ HALL OF FAME! INDUCTED! Your legacy is immortalized forever!")
 					else
 						state:ModifyStat("Happiness", 5)
-						state.Fame = (state.Fame or 0) + 10
+						state.Fame = math.min(100, (state.Fame or 0) + 10) -- CRITICAL FIX: Cap fame at 100
 						state:AddFeed("🏛️ Didn't make it this year. Maybe next time. Still an honor to be nominated.")
 					end
 				end,
@@ -696,7 +696,7 @@ AthleteCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 50 then
-						state.Fame = (state.Fame or 0) + 10
+						state.Fame = math.min(100, (state.Fame or 0) + 10) -- CRITICAL FIX: Cap fame at 100
 						state:AddFeed("🎤 The walkout became a meme! Actually kind of cool now!")
 					else
 						state:ModifyStat("Happiness", -8)
@@ -795,7 +795,7 @@ AthleteCareerEvents.events = {
 				effects = { Happiness = 12 },
 				feedText = "For a good cause!",
 				onResolve = function(state)
-					state.Fame = (state.Fame or 0) + 15
+					state.Fame = math.min(100, (state.Fame or 0) + 15) -- CRITICAL FIX: Cap fame at 100
 					state.Flags = state.Flags or {}
 					state.Flags.charitable_athlete = true
 					state:AddFeed("❤️ Great event! Made some kids' dreams come true! Wholesome content!")
@@ -918,7 +918,7 @@ AthleteCareerEvents.events = {
 						state.Flags.all_star_mvp = true
 						state:AddFeed(string.format("⭐ ALL-STAR MVP! $%d bonus! Best player in the game!", bonus))
 					else
-						state.Fame = (state.Fame or 0) + 20
+						state.Fame = math.min(100, (state.Fame or 0) + 20) -- CRITICAL FIX: Cap fame at 100
 						state:ModifyStat("Happiness", 12)
 						state:AddFeed("⭐ Great showing! Held your own among the elite!")
 					end
@@ -929,7 +929,7 @@ AthleteCareerEvents.events = {
 				effects = { Happiness = 10 },
 				feedText = "Soak it in...",
 				onResolve = function(state)
-					state.Fame = (state.Fame or 0) + 15
+					state.Fame = math.min(100, (state.Fame or 0) + 15) -- CRITICAL FIX: Cap fame at 100
 					state:AddFeed("⭐ Amazing experience! Met legends! Made memories!")
 				end,
 			},
@@ -972,11 +972,11 @@ AthleteCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 50 then
-						state.Fame = (state.Fame or 0) + 20
+						state.Fame = math.min(100, (state.Fame or 0) + 20) -- CRITICAL FIX: Cap fame at 100
 						state:ModifyStat("Happiness", 15)
 						state:AddFeed("📱 YOUR RESPONSE WON! W! Everyone's on your side! Ratio'd them!")
 					else
-						state.Fame = (state.Fame or 0) + 5
+						state.Fame = math.min(100, (state.Fame or 0) + 5) -- CRITICAL FIX: Cap fame at 100
 						state:ModifyStat("Happiness", -5)
 						state:AddFeed("📱 Twitter war continues. Both of you look silly now.")
 					end
@@ -1043,7 +1043,7 @@ AthleteCareerEvents.events = {
 						state.Flags.record_holder = true
 						state:AddFeed(string.format("📊 RECORD BROKEN! YOUR NAME IN HISTORY FOREVER! $%d in bonuses!", bonus_money))
 					else
-						state.Fame = (state.Fame or 0) + 15
+						state.Fame = math.min(100, (state.Fame or 0) + 15) -- CRITICAL FIX: Cap fame at 100
 						state:ModifyStat("Happiness", -10)
 						state:AddFeed("📊 Fell just short! Still an amazing season but the record stands.")
 					end
@@ -1109,7 +1109,7 @@ AthleteCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 35 then
-						state.Fame = (state.Fame or 0) + 15
+						state.Fame = math.min(100, (state.Fame or 0) + 15) -- CRITICAL FIX: Cap fame at 100
 						state:ModifyStat("Happiness", 10)
 						state:AddFeed("😡 Public sided with you! Coach looks bad!")
 					else

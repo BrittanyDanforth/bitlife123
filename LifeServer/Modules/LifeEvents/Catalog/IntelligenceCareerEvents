@@ -321,7 +321,7 @@ IntelligenceCareerEvents.events = {
 						state:ModifyStat("Happiness", 30)
 						state.Flags = state.Flags or {}
 						state.Flags.defector_handler = true
-						state.Fame = (state.Fame or 0) + 15
+						state.Fame = math.min(100, (state.Fame or 0) + 15) -- CRITICAL FIX: Cap fame at 100
 						state:AddFeed("🛫 DEFECTOR SECURED! Intelligence goldmine! Career-making operation!")
 					elseif roll + bonus >= 25 then
 						state:ModifyStat("Happiness", 5)

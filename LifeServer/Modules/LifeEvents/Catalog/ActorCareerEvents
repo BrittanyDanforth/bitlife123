@@ -217,7 +217,7 @@ ActorCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 50 then
-						state.Fame = (state.Fame or 0) + 20
+						state.Fame = math.min(100, (state.Fame or 0) + 20) -- CRITICAL FIX: Cap fame at 100
 						state:ModifyStat("Happiness", 10)
 						state:AddFeed("📸 Your bad boy/girl image is now your brand! Offers for edgy roles!")
 					else
@@ -335,7 +335,7 @@ ActorCareerEvents.events = {
 						state:AddFeed("😤 Got fired from the project. Word spreads - 'difficult to work with'.")
 					else
 						state:ModifyStat("Happiness", 5)
-						state.Fame = (state.Fame or 0) + 10
+						state.Fame = math.min(100, (state.Fame or 0) + 10) -- CRITICAL FIX: Cap fame at 100
 						state:AddFeed("😤 Story went viral! Industry praised you for standing up to abuse!")
 					end
 				end,
@@ -383,7 +383,7 @@ ActorCareerEvents.events = {
 					if roll <= 45 then
 						state.Money = (state.Money or 0) + math.random(50000, 200000)
 						state:ModifyStat("Happiness", 15)
-						state.Fame = (state.Fame or 0) + 20
+						state.Fame = math.min(100, (state.Fame or 0) + 20) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.versatile_actor = true
 						state:AddFeed("🎭 REVELATION! Critics amazed by your range! New phase of career!")
@@ -480,7 +480,7 @@ ActorCareerEvents.events = {
 					local roll = math.random(1, 100)
 					if roll <= 50 then
 						state:ModifyStat("Happiness", 10)
-						state.Fame = (state.Fame or 0) + 15
+						state.Fame = math.min(100, (state.Fame or 0) + 15) -- CRITICAL FIX: Cap fame at 100
 						state:AddFeed("😳 Scene was tasteful and the film got critical acclaim. Worth it!")
 					else
 						state:ModifyStat("Happiness", -10)
@@ -727,7 +727,7 @@ ActorCareerEvents.events = {
 					local roll = math.random(1, 100)
 					if roll <= 60 then
 						state:ModifyStat("Happiness", 18)
-						state.Fame = (state.Fame or 0) + 15
+						state.Fame = math.min(100, (state.Fame or 0) + 15) -- CRITICAL FIX: Cap fame at 100
 						state.Flags = state.Flags or {}
 						state.Flags.does_own_stunts = true
 						state:AddFeed("🔥 NAILED IT! Shot looks AMAZING! You're officially a badass!")
@@ -774,7 +774,7 @@ ActorCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 55 then
-						state.Fame = (state.Fame or 0) + 20
+						state.Fame = math.min(100, (state.Fame or 0) + 20) -- CRITICAL FIX: Cap fame at 100
 						state:ModifyStat("Happiness", 12)
 						state:AddFeed("📺 VIRAL MOMENT! Your story has millions of views! Great promo!")
 					else
@@ -798,7 +798,7 @@ ActorCareerEvents.events = {
 				onResolve = function(state)
 					local roll = math.random(1, 100)
 					if roll <= 65 then
-						state.Fame = (state.Fame or 0) + 15
+						state.Fame = math.min(100, (state.Fame or 0) + 15) -- CRITICAL FIX: Cap fame at 100
 						state:ModifyStat("Happiness", 10)
 						state:AddFeed("📺 Amazing chemistry with the host! They want you back anytime!")
 					else
@@ -884,7 +884,7 @@ ActorCareerEvents.events = {
 						state.Money = math.max(0, (state.Money or 0) - 10000)
 						local roll = math.random(1, 100)
 						if roll <= 60 then
-							state.Fame = (state.Fame or 0) + 20
+							state.Fame = math.min(100, (state.Fame or 0) + 20) -- CRITICAL FIX: Cap fame at 100
 							state:ModifyStat("Happiness", 15)
 							state:AddFeed("👗 BEST DRESSED! Fashion magazines are calling! Style icon status!")
 						elseif roll <= 90 then
@@ -920,7 +920,7 @@ ActorCareerEvents.events = {
 						state:AddFeed("👗 ICONIC! Your look broke the internet! Memes for days - in a good way!")
 					else
 						state:ModifyStat("Happiness", -8)
-						state.Fame = (state.Fame or 0) + 10
+						state.Fame = math.min(100, (state.Fame or 0) + 10) -- CRITICAL FIX: Cap fame at 100
 						state:AddFeed("👗 Well... people are talking. 'Bold choice' is what they're saying...")
 					end
 				end,
