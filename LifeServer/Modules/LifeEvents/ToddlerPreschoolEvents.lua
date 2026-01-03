@@ -3658,7 +3658,6 @@ events[#events + 1] = {
 			feedText = "🛒 Mad but held it together. Growing up!",
 		},
 	},
-},
 }
 
 return events

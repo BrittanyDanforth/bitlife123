@@ -6035,7 +6035,7 @@ end)()
 		}
 		
 		-- CRITICAL FIX #415: Helper to check Royalty gamepass ownership (uses cached value)
-		local function GamepassCache.royaltyGamepass()
+		local function checkRoyaltyGamepass()
 			-- First check cached value (set immediately on purchase)
 			if GamepassCache.royalty then
 				return true
@@ -6126,7 +6126,7 @@ end)()
 		
 		-- Create wealth buttons using helper function
 		for i, w in ipairs(wOpts) do
-			createWealthBtn(ws, w, i + 1, GamepassCache.royaltyGamepass)
+			createWealthBtn(ws, w, i + 1, checkRoyaltyGamepass)
 		end
 end)()
 
