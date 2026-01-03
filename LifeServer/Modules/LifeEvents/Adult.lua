@@ -15,6 +15,52 @@ local Adult = {}
 
 local STAGE = "adult"
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Helper to generate unique child names
+-- User review: "the system keeps giving me children with the same name over and over again"
+-- This expands name pools AND checks for duplicates
+-- ═══════════════════════════════════════════════════════════════════════════════
+local EXPANDED_BOY_NAMES = {
+	"James", "Oliver", "Ethan", "Noah", "Liam", "Mason", "Lucas", "Benjamin", "Henry", "Alexander",
+	"Sebastian", "Jack", "Owen", "Daniel", "Michael", "William", "Aiden", "Jackson", "Logan", "Carter",
+	"Matthew", "Ryan", "Nathan", "Caleb", "Dylan", "Isaac", "Leo", "Gabriel", "Joshua", "Andrew",
+	"Theodore", "Thomas", "Charles", "Christopher", "Jaxon", "Anthony", "David", "Joseph", "John", "Luke"
+}
+local EXPANDED_GIRL_NAMES = {
+	"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia", "Amelia", "Charlotte", "Harper", "Evelyn",
+	"Abigail", "Emily", "Elizabeth", "Sofia", "Ella", "Madison", "Scarlett", "Victoria", "Aria", "Grace",
+	"Chloe", "Camila", "Penelope", "Riley", "Layla", "Lillian", "Nora", "Zoey", "Mila", "Aubrey",
+	"Hannah", "Lily", "Addison", "Eleanor", "Natalie", "Luna", "Savannah", "Brooklyn", "Leah", "Zoe"
+}
+
+local function getUniqueChildName(state, isBoy)
+	local namePool = isBoy and EXPANDED_BOY_NAMES or EXPANDED_GIRL_NAMES
+	
+	-- Get existing child names to avoid duplicates
+	local existingNames = {}
+	if state.Relationships then
+		for _, rel in pairs(state.Relationships) do
+			if type(rel) == "table" and (rel.role == "Son" or rel.role == "Daughter") then
+				if rel.name then
+					existingNames[rel.name:lower()] = true
+				end
+			end
+		end
+	end
+	
+	-- Try to find unique name
+	for attempt = 1, 100 do
+		local candidate = namePool[math.random(1, #namePool)]
+		if not existingNames[candidate:lower()] then
+			return candidate
+		end
+	end
+	
+	-- If all names used, add a number suffix
+	local baseName = namePool[math.random(1, #namePool)]
+	return baseName .. " Jr."
+end
+
 Adult.events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- YOUNG ADULT (18-29)
@@ -1193,14 +1239,13 @@ Adult.events = {
 				feedText = "Sleep is a distant memory but you're in love.",
 				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 for baby supplies" end,
 				-- CRITICAL FIX: Create actual child in Relationships table
+				-- CRITICAL FIX: Use helper function to avoid duplicate child names
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
 					local childCount = (state.ChildCount or 0) + 1
 					state.ChildCount = childCount
 					local isBoy = math.random() > 0.5
-					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason", "Lucas"} 
-						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia", "Amelia"}
-					local childName = names[math.random(1, #names)] or "Baby"
+					local childName = getUniqueChildName(state, isBoy)
 					local childId = "child_" .. tostring(childCount)
 					state.Relationships[childId] = {
 						id = childId,
@@ -1222,14 +1267,13 @@ Adult.events = {
 				setFlags = { has_child = true, parent = true, overwhelmed_parent = true }, 
 				feedText = "This is harder than you imagined.",
 				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 for baby supplies" end,
+				-- CRITICAL FIX: Use helper function to avoid duplicate child names
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
 					local childCount = (state.ChildCount or 0) + 1
 					state.ChildCount = childCount
 					local isBoy = math.random() > 0.5
-					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason"} 
-						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia"}
-					local childName = names[math.random(1, #names)] or "Baby"
+					local childName = getUniqueChildName(state, isBoy)
 					local childId = "child_" .. tostring(childCount)
 					state.Relationships[childId] = {
 						id = childId,
@@ -1251,14 +1295,13 @@ Adult.events = {
 				setFlags = { has_child = true, parent = true, natural_parent = true }, 
 				feedText = "You were born for this!",
 				eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000 for baby supplies" end,
+				-- CRITICAL FIX: Use helper function to avoid duplicate child names
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
 					local childCount = (state.ChildCount or 0) + 1
 					state.ChildCount = childCount
 					local isBoy = math.random() > 0.5
-					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason"} 
-						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia"}
-					local childName = names[math.random(1, #names)] or "Baby"
+					local childName = getUniqueChildName(state, isBoy)
 					local childId = "child_" .. tostring(childCount)
 					state.Relationships[childId] = {
 						id = childId,
@@ -1286,9 +1329,7 @@ Adult.events = {
 					local childCount = (state.ChildCount or 0) + 1
 					state.ChildCount = childCount
 					local isBoy = math.random() > 0.5
-					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason"} 
-						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia"}
-					local childName = names[math.random(1, #names)] or "Baby"
+					local childName = getUniqueChildName(state, isBoy)
 					local childId = "child_" .. tostring(childCount)
 					state.Relationships[childId] = {
 						id = childId,
@@ -1310,14 +1351,13 @@ Adult.events = {
 				effects = { Happiness = 12, Health = -4 }, 
 				setFlags = { has_child = true, parent = true, family_support = true }, 
 				feedText = "👶 Baby shower gifts, hand-me-downs, and grandparents pitching in! Community stepped up BIG!",
+				-- CRITICAL FIX: Use helper function to avoid duplicate child names
 				onResolve = function(state)
 					state.Relationships = state.Relationships or {}
 					local childCount = (state.ChildCount or 0) + 1
 					state.ChildCount = childCount
 					local isBoy = math.random() > 0.5
-					local names = isBoy and {"James", "Oliver", "Ethan", "Noah", "Liam", "Mason"} 
-						or {"Emma", "Olivia", "Ava", "Sophia", "Isabella", "Mia"}
-					local childName = names[math.random(1, #names)] or "Baby"
+					local childName = getUniqueChildName(state, isBoy)
 					local childId = "child_" .. tostring(childCount)
 					state.Relationships[childId] = {
 						id = childId,

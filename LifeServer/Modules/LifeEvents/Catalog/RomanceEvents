@@ -1337,7 +1337,8 @@ local events = {
 		minAge = 20,
 		requiresPartner = true,
 		requiresFlags = { engaged = true },
-		blockedByFlags = { married = true },
+		-- CRITICAL FIX: Can't have a wedding while in prison!
+		blockedByFlags = { married = true, in_prison = true, incarcerated = true },
 		cooldown = 5,
 		choices = {
 			{

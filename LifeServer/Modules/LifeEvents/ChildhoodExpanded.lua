@@ -88,7 +88,7 @@ ChildhoodExpanded.events = {
 		},
 	},
 	{
-		id = "toddler_picky_eater",
+		id = "toddler_picky_eater_v2",
 		title = "Picky Eater Phase",
 		emoji = "🥦",
 		text = "You've decided you hate certain foods. Dinnertime is a battle.",
@@ -128,7 +128,7 @@ ChildhoodExpanded.events = {
 		},
 	},
 	{
-		id = "toddler_language_explosion",
+		id = "toddler_language_explosion_v2",
 		title = "Talking Up a Storm",
 		emoji = "💬",
 		text = "Your vocabulary is exploding! New words every day!",

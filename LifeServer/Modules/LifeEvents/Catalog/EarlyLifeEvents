@@ -2633,7 +2633,7 @@ EarlyLifeEvents.events = {
 		},
 	},
 	{
-		id = "teen_senioritis",
+		id = "teen_senioritis_catalog",
 		title = "Senioritis",
 		emoji = "😴",
 		text = "You're almost done with high school. Motivation is at an all-time low.",
@@ -3115,7 +3115,7 @@ EarlyLifeEvents.events = {
 		},
 	},
 	{
-		id = "teen_embarrassing_moment",
+		id = "teen_embarrassing_moment_catalog",
 		title = "Embarrassing Moment",
 		emoji = "😳",
 		text = "Something SUPER embarrassing just happened at school!",
@@ -3374,7 +3374,7 @@ EarlyLifeEvents.events = {
 	-- All events have RANDOMIZED outcomes (BitLife style)
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "toddler_learning_shapes",
+		id = "toddler_learning_shapes_catalog",
 		title = "Learning Shapes!",
 		emoji = "🔷",
 		textVariants = {
@@ -4576,7 +4576,7 @@ EarlyLifeEvents.events = {
 		},
 	},
 	{
-		id = "toddler_pet_encounter",
+		id = "toddler_pet_encounter_catalog",
 		title = "🐕 First Pet Encounter!",
 		emoji = "🐕",
 		text = "There's a cute puppy at the park! It comes right up to you!",

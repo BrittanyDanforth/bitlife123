@@ -822,7 +822,7 @@ ProgressiveLifeEvents.events = {
 		},
 	},
 	{
-		id = "teen_first_heartbreak",
+		id = "teen_first_heartbreak_catalog",
 		title = "💔 First Heartbreak",
 		emoji = "💔",
 		text = "Someone you liked doesn't feel the same way. It hurts.",

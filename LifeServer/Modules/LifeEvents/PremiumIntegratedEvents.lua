@@ -160,12 +160,25 @@ PremiumIntegratedEvents.events = {
 		
 		choices = {
 			{
-				text = "Get a second job",
+				-- CRITICAL FIX: Changed from "Get a second job" - user complained "I DONT EVEN HAVE A JOB IN FIRST PLACE"
+				-- Now checks if player has a job and changes text accordingly
+				text = "Work extra hours/Get a job",
 				effects = { Money = 800, Health = -8, Happiness = -5 },
 				setFlags = { overworked = true },
-				feedText = "Working double shifts. Exhausting but the bills are paid.",
+				feedText = "Working hard. Exhausting but the bills are paid.",
+				onResolve = function(state)
+					if state.CurrentJob then
+						state:AddFeed("💸 Working overtime and double shifts. Exhausting but necessary.")
+					else
+						state.Flags = state.Flags or {}
+						state.Flags.looking_for_work = true
+						state:AddFeed("💸 You scrambled for odd jobs and gig work. Got by for now.")
+					end
+				end,
 			},
 		{
+			-- CRITICAL FIX: Shortened text to prevent truncation on mobile
+			-- User complaint: "THE TEXT GETS CUT OFF AT your ....) AND DOESNT FINISH"
 			text = "Ask family for help",
 			effects = {},
 			feedText = "Swallowing your pride...",
@@ -173,7 +186,7 @@ PremiumIntegratedEvents.events = {
 			eligibility = function(state)
 				local flags = state.Flags or {}
 				if flags.lives_with_parents or flags.living_with_family or flags.boomerang_kid then
-					return false, "You already live with your family!"
+					return false, "Already living with family"
 				end
 				return true
 			end,
