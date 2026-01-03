@@ -103,27 +103,26 @@ EarlyLifeEvents.events = {
 		text = "Time for your routine baby checkup at the doctor's office!",
 		question = "How does it go?",
 		minAge = 0, maxAge = 2,
-		baseChance = 0.5, -- CRITICAL FIX: Reduced to prevent spam
-		cooldown = 2, -- CRITICAL FIX: Increased cooldown
+		baseChance = 0.4, -- CRITICAL FIX: Reduced to prevent spam
+		cooldown = 3, -- CRITICAL FIX: Increased cooldown
 		
 		choices = {
 			{
-				text = "Get your shots",
+				text = "Get checked out",
 				effects = {},
-				feedText = "The needle approaches...",
+				feedText = "The doctor examines you...",
 				onResolve = function(state)
 					local roll = math.random(1, 100)
-					if roll <= 40 then
+					if roll <= 50 then
 						state:ModifyStat("Health", 4)
-						state:AddFeed("🏥 You barely cried! Doctor says you're perfectly healthy!")
-					elseif roll <= 80 then
+						state:AddFeed("🏥 You were so good! Doctor says you're growing perfectly!")
+					elseif roll <= 85 then
 						state:ModifyStat("Health", 2)
-						state:ModifyStat("Happiness", -2)
-						state:AddFeed("🏥 You screamed SO LOUD, but you're healthy!")
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("🏥 All healthy! You played with the stethoscope!")
 					else
 						state:ModifyStat("Health", 1)
-						state:ModifyStat("Happiness", -4)
-						state:AddFeed("🏥 You had a slight reaction to the vaccine. Minor fever, but recovered.")
+						state:AddFeed("🏥 You cried a little but the doctor says you're healthy!")
 					end
 				end,
 			},
@@ -2027,8 +2026,8 @@ EarlyLifeEvents.events = {
 		text = "Middle school has cliques. Everyone seems to belong to a group.",
 		question = "Where do you fit in?",
 		minAge = 11, maxAge = 14,
-		baseChance = 0.7,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased cooldown
 		
 		choices = {
 			{
@@ -2117,8 +2116,8 @@ EarlyLifeEvents.events = {
 		text = "Everyone at school is on social media. Your online presence matters!",
 		question = "How do you approach social media?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.7,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased cooldown
 		
 		choices = {
 			{
@@ -3184,8 +3183,8 @@ EarlyLifeEvents.events = {
 		text = "You're developing your own music taste!",
 		question = "What kind of music do you get into?",
 		minAge = 12, maxAge = 17,
-		baseChance = 0.7,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased cooldown
 		
 		choices = {
 			{
@@ -3386,8 +3385,8 @@ EarlyLifeEvents.events = {
 		text = "Your parents are teaching you about shapes and colors!",
 		question = "How do you do?",
 		minAge = 2, maxAge = 4,
-		baseChance = 0.7,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased cooldown
 		
 		choices = {
 			{
