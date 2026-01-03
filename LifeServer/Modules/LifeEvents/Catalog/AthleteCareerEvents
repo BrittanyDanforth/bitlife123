@@ -66,6 +66,15 @@ local function isBlockedByNonAthleticPath(state)
 		return false
 	end
 	
+	-- CRITICAL FIX: Block if player is in military - soldiers can't be pro athletes!
+	-- User complaint: "IM A SOILDER AND IT SAYS DECLARE FOR NBA DRAFT"
+	if flags.in_military or flags.enlisted or flags.soldier or flags.military_active then
+		return true
+	end
+	if flags.deployed or flags.at_war or flags.basic_training or flags.military_career then
+		return true
+	end
+	
 	-- Block if player explicitly chose non-sports paths AND never showed sports interest
 	if flags.hates_sports then return true end
 	if flags.academic_focus and not flags.likes_sports then return true end

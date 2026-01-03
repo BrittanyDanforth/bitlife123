@@ -1980,11 +1980,44 @@ Teen.events = {
 		id = "teen_band_start",
 		title = "Starting a Band",
 		emoji = "🎸",
-		text = "You and your friends want to start a band together!",
+		text = "Your musically-inclined friends want to start a band together!",
 		question = "What role do you play?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.4,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.3, -- CRITICAL FIX: Reduced from 0.4 - bands are rare
+		cooldown = 6, -- CRITICAL FIX: Increased to prevent spam
+		
+		-- CRITICAL FIX: REQUIRE music-related hobby/interest!
+		-- User complaint: "I DIDNT PICK MUSIC?? FOR LIKE A HOBBY I LIKE BRUH"
+		requiresAnyFlags = { 
+			musical_talent = true, 
+			loves_music = true, 
+			pursuing_music = true, 
+			started_music_hobby = true,
+			plays_piano = true,
+			plays_guitar = true, 
+			plays_drums = true,
+			instrument_player = true,
+			choir_member = true,
+			arts_track = true,
+			band_kid = true,
+			music_passion = true,
+			passionate_performer = true,
+		},
+		blockedByFlags = { in_prison = true, in_band = true },
+		
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Must have some music interest
+			local hasMusicInterest = flags.musical_talent or flags.loves_music or 
+				flags.pursuing_music or flags.started_music_hobby or
+				flags.plays_piano or flags.plays_guitar or flags.plays_drums or
+				flags.instrument_player or flags.choir_member or flags.arts_track or
+				flags.band_kid or flags.music_passion or flags.passionate_performer
+			if not hasMusicInterest then
+				return false, "No interest in music"
+			end
+			return true
+		end,
 		
 		choices = {
 			{ text = "Lead vocals", effects = { Happiness = 8, Looks = 3 }, setFlags = { band_vocalist = true, in_band = true }, hintCareer = "entertainment", feedText = "You're the face of the band! Time to practice your stage presence." },
@@ -1992,6 +2025,8 @@ Teen.events = {
 			{ text = "Drums", effects = { Happiness = 6, Health = 2 }, setFlags = { band_drummer = true, in_band = true }, hintCareer = "entertainment", feedText = "You're the heartbeat of the band!" },
 			{ text = "Bass", effects = { Happiness = 5, Smarts = 2 }, setFlags = { band_bassist = true, in_band = true }, hintCareer = "entertainment", feedText = "The underrated hero. Holding down the groove!" },
 			{ text = "Manager/organizer instead", effects = { Smarts = 4, Money = 20 }, setFlags = { band_manager = true }, hintCareer = "business", feedText = "You're handling the business side. Smart move!" },
+			-- CRITICAL FIX: Add decline option - user complained "I CANT EVEN SAY I DONT WANNA JOIN??"
+			{ text = "No thanks, not for me", effects = { Happiness = 1 }, setFlags = { declined_band = true }, feedText = "You politely declined. Band life isn't for everyone." },
 		},
 	},
 	{
