@@ -4175,6 +4175,30 @@ Adult.events = {
 				effects = { Happiness = 2, Money = 300, Health = -2 },
 				setFlags = { gig_worker = true, hustle_mindset = true },
 				feedText = "💼 Flexible hours, decent money. The grind continues!",
+				-- CRITICAL FIX: User bug "SIDE GIG DRIVING LIKE BUT I DONT HAVE A CAR??"
+				-- Only show driving option if player has a vehicle!
+				eligibility = function(state)
+					if not state then return false end
+					-- Check if player has any vehicle
+					if state.Assets and state.Assets.Vehicles and #state.Assets.Vehicles > 0 then
+						return true
+					end
+					-- Also check flags for car ownership
+					if state.Flags and (state.Flags.owns_car or state.Flags.has_vehicle or state.Flags.owns_vehicle) then
+						return true
+					end
+					-- Check if they have driver's license at least (can rent/borrow)
+					if state.Flags and state.Flags.has_drivers_license then
+						return true
+					end
+					return false
+				end,
+			},
+			{
+				text = "🚴 Delivery by bike/walking",
+				effects = { Happiness = 1, Money = 150, Health = 3 },
+				setFlags = { gig_worker = true, hustle_mindset = true, physically_active = true },
+				feedText = "💼 No car? No problem! Deliver on foot or bike. Great exercise!",
 			},
 			{
 				text = "💻 Freelance your skills",

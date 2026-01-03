@@ -531,6 +531,11 @@ local FamilyActions = {
 	{ id = "money",     name = "Ask for Money", emoji = "Money", effect = "+Money maybe", minAge = 10 },
 	{ id = "vacation",  name = "Vacation",      emoji = "Travel",effect = "+Relationship", cost = 2000, minAge = 5 },
 	{ id = "apologize", name = "Apologize",     emoji = "Sorry", effect = "+Relationship", minAge = 4 },
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- BITLIFE FEATURE: Eliminate option
+	-- User request: "feature where i can [eliminate] my own loved ones"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	{ id = "eliminate", name = "Eliminate...",  emoji = "💀",    effect = "VERY RISKY!", minAge = 18, isDangerous = true },
 }
 
 -- ═══════════════════════════════════════════════════════════════════════════════
@@ -557,6 +562,8 @@ local RomanceActions = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{ id = "try_baby",   name = "Have a Kid",   emoji = "Baby",  effect = "Maybe Baby!", minAge = 18 },
 	{ id = "breakup",    name = "Break Up",     emoji = "Break", effect = "End Relationship", minAge = 16 },
+	-- BITLIFE FEATURE: Eliminate option for partners
+	{ id = "eliminate", name = "Eliminate...",  emoji = "💀",    effect = "VERY RISKY!", minAge = 18, isDangerous = true },
 	-- Targetless romance action exists as "Find" card: meet_someone
 }
 
@@ -787,6 +794,27 @@ local ActivityChoices = {
 			{ id = "brawl", text = "💢 Full brawl", effect = "Very risky!!" },
 			{ id = "defend", text = "🛡️ Defensive stance", effect = "Safer" },
 			{ id = "surprise", text = "✨ Let it happen", effect = "Random!" },
+		},
+	},
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- BITLIFE FEATURE: Eliminate option (TOS-friendly, like BitLife)
+	-- User request: "feature where i can [eliminate] my own loved ones and could get 
+	-- caught and i can pick how i do it"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	eliminate = {
+		title = "Plot Against...",
+		emoji = "💀",
+		question = "Choose your method... (VERY RISKY!)",
+		choices = {
+			{ id = "food", text = "🍜 Suspicious meal", effect = "50% caught risk" },
+			{ id = "accident", text = "🪜 Arrange an 'accident'", effect = "40% caught risk" },
+			{ id = "sport", text = "⛳ Golf club 'mishap'", effect = "55% caught risk" },
+			{ id = "push", text = "🏔️ Hiking 'accident'", effect = "35% caught risk" },
+			{ id = "poison", text = "🧪 Tainted beverage", effect = "45% caught risk" },
+			{ id = "hire", text = "🤵 Hire someone shady", effect = "60% caught risk" },
+			{ id = "pillow", text = "🛏️ Peaceful sleep...", effect = "30% caught risk" },
+			{ id = "bathtub", text = "🛁 Slippery bathroom", effect = "40% caught risk" },
+			{ id = "cancel", text = "❌ Never mind!", effect = "Back out safely" },
 		},
 	},
 	vacation = {
@@ -1942,6 +1970,9 @@ function RelationshipsScreen:createPetCard(parent, pet, index)
 		end
 		local petRemote = remotes and remotes:FindFirstChild("InteractWithPet")
 		
+		local petName = pet.name or "Your Pet"
+		local petEmoji = pet.emoji or "🐾"
+		
 		if petRemote then
 			local success, result = pcall(function()
 				return petRemote:InvokeServer(pet.id, "pet")
@@ -1951,18 +1982,42 @@ function RelationshipsScreen:createPetCard(parent, pet, index)
 				-- Show success feedback with cute message
 				petBtn.Text = "❤️"
 				petBtn.BackgroundColor3 = Color3.fromRGB(34, 197, 94)
-				task.wait(1)
+				
+				-- CRITICAL FIX: Show popup with the response message!
+				-- User bug: "when i pet my animal it dosent like popup saying blabla liked it"
+				local message = result.message or (petEmoji .. " " .. petName .. " loves the attention!")
+				local happinessGain = result.happiness or 5
+				local title = petEmoji .. " " .. petName .. " is Happy!"
+				
+				if self and self.showResultModal then
+					self:showResultModal(title, message .. "\n\n💕 +" .. happinessGain .. " Happiness!", Color3.fromRGB(255, 180, 100))
+				end
+				
+				task.wait(0.5)
 			else
 				-- Still show positive feedback even if server fails
 				petBtn.Text = "❤️"
 				petBtn.BackgroundColor3 = Color3.fromRGB(34, 197, 94)
-				task.wait(0.8)
+				
+				-- Show local fallback message
+				local message = petEmoji .. " " .. petName .. " loves the attention!"
+				if self and self.showResultModal then
+					self:showResultModal(petEmoji .. " Pet Time!", message, Color3.fromRGB(255, 180, 100))
+				end
+				
+				task.wait(0.5)
 			end
 		else
-			-- Fallback: Just show a happy animation locally
+			-- Fallback: Just show a happy animation locally with popup
 			petBtn.Text = "❤️"
 			petBtn.BackgroundColor3 = Color3.fromRGB(34, 197, 94)
-			task.wait(0.8)
+			
+			local message = petEmoji .. " " .. petName .. " wags their tail happily!"
+			if self and self.showResultModal then
+				self:showResultModal(petEmoji .. " Pet Time!", message, Color3.fromRGB(255, 180, 100))
+			end
+			
+			task.wait(0.5)
 		end
 		
 		-- Reset button

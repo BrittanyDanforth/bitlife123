@@ -21893,6 +21893,93 @@ local InteractionEffects = {
 				return outcome.text
 			end,
 		},
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- BITLIFE FEATURE: Eliminate action for family (TOS-friendly)
+		-- User request: "feature where i can [eliminate] my own loved ones"
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		eliminate = {
+			delta = 0,
+			showResult = true,
+			isDangerous = true,
+			message = function(state, relationship, payload)
+				local targetName = (relationship and relationship.name) or "them"
+				local subChoice = payload and payload.subChoice or "cancel"
+				
+				-- Cancel option - back out safely
+				if subChoice == "cancel" then
+					return "💭 You thought better of it. This is family... Some lines shouldn't be crossed."
+				end
+				
+				-- Calculate catch risk based on method
+				local methodRisks = {
+					food = { risk = 0.50, name = "suspicious meal" },
+					accident = { risk = 0.40, name = "arranged accident" },
+					sport = { risk = 0.55, name = "golf club mishap" },
+					push = { risk = 0.35, name = "hiking accident" },
+					poison = { risk = 0.45, name = "tainted beverage" },
+					hire = { risk = 0.60, name = "hired help" },
+					pillow = { risk = 0.30, name = "peaceful sleep" },
+					bathtub = { risk = 0.40, name = "bathroom slip" },
+				}
+				
+				local method = methodRisks[subChoice] or { risk = 0.50, name = "mysterious circumstances" }
+				local roll = RANDOM:NextNumber()
+				local isCaught = roll < method.risk
+				
+				state.Flags = state.Flags or {}
+				
+				if isCaught then
+					-- GOT CAUGHT!
+					state.Flags.committed_crime = true
+					state.Flags.caught_for_crime = true
+					state.Flags.in_prison = true
+					state.Flags.incarcerated = true
+					state.Flags.awaiting_trial = true
+					state.PrisonSentence = RANDOM:NextInteger(25, 50)
+					
+					if state.ModifyStat then
+						state:ModifyStat("Happiness", -50)
+					end
+					
+					local caughtMessages = {
+						"🚔 CAUGHT! A family member noticed something was off! Police are at the door!",
+						"🔍 CAUGHT! The coroner found evidence! They're coming for you!",
+						"👮 CAUGHT! Someone talked. You're being arrested for what happened to " .. targetName .. "!",
+						"🚨 CAUGHT! You left fingerprints! Sirens are approaching!",
+						"⚖️ CAUGHT! A witness came forward. Life in prison awaits...",
+					}
+					
+					return caughtMessages[RANDOM:NextInteger(1, #caughtMessages)] .. "\n\n💀 " .. targetName .. " is gone via " .. method.name .. ".\n\n⛓️ Sentence: " .. state.PrisonSentence .. " years!"
+				else
+					-- SUCCESS
+					state.Flags.has_dark_secret = true
+					state.Flags.eliminated_family = true
+					state.Karma = (state.Karma or 100) - 40
+					
+					if state.ModifyStat then
+						state:ModifyStat("Happiness", -20)
+					end
+					
+					-- Remove the relationship
+					if relationship then
+						relationship.alive = false
+						relationship.causeOfDeath = method.name
+						relationship.relationship = -100
+					end
+					
+					local successMessages = {
+						"💀 It's done. " .. targetName .. " is gone. The " .. method.name .. " was... effective.",
+						"☠️ " .. targetName .. " has passed. The " .. method.name .. " worked as planned.",
+						"🕳️ " .. targetName .. " has departed. Everyone thinks it was natural...",
+						"⚰️ A tragic " .. method.name .. " has taken " .. targetName .. " from this world...",
+						"🌑 " .. targetName .. " is no more. You'll carry this secret forever...",
+					}
+					
+					return successMessages[RANDOM:NextInteger(1, #successMessages)] .. "\n\n😈 You got away with it... for now."
+				end
+			end,
+		},
 	},
 	romance = {
 		-- ═══════════════════════════════════════════════════════════════════════════════
@@ -22406,6 +22493,103 @@ local InteractionEffects = {
 			message = function(_, relationship)
 				local name = (relationship and relationship.name) or "someone new"
 				return string.format("You hit it off with %s!", name)
+			end,
+		},
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- BITLIFE FEATURE: Eliminate action for romance (TOS-friendly)
+		-- User request: "feature where i can [eliminate] my own loved ones"
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		eliminate = {
+			delta = 0,
+			showResult = true,
+			isDangerous = true,
+			message = function(state, relationship, payload)
+				local targetName = (relationship and relationship.name) or "your partner"
+				local subChoice = payload and payload.subChoice or "cancel"
+				
+				-- Cancel option
+				if subChoice == "cancel" then
+					return "💭 You thought better of it. Some relationships end differently..."
+				end
+				
+				-- Calculate catch risk based on method
+				local methodRisks = {
+					food = { risk = 0.50, name = "suspicious meal" },
+					accident = { risk = 0.40, name = "arranged accident" },
+					sport = { risk = 0.55, name = "golf club mishap" },
+					push = { risk = 0.35, name = "hiking accident" },
+					poison = { risk = 0.45, name = "tainted beverage" },
+					hire = { risk = 0.60, name = "hired help" },
+					pillow = { risk = 0.30, name = "peaceful sleep" },
+					bathtub = { risk = 0.40, name = "bathroom slip" },
+				}
+				
+				local method = methodRisks[subChoice] or { risk = 0.50, name = "mysterious circumstances" }
+				local roll = RANDOM:NextNumber()
+				local isCaught = roll < method.risk
+				
+				state.Flags = state.Flags or {}
+				
+				if isCaught then
+					-- GOT CAUGHT!
+					state.Flags.committed_crime = true
+					state.Flags.caught_for_crime = true
+					state.Flags.in_prison = true
+					state.Flags.incarcerated = true
+					state.Flags.awaiting_trial = true
+					state.PrisonSentence = RANDOM:NextInteger(25, 50)
+					
+					if state.ModifyStat then
+						state:ModifyStat("Happiness", -50)
+					end
+					
+					local caughtMessages = {
+						"🚔 CAUGHT! " .. targetName .. "'s family suspected something! You're being arrested!",
+						"🔍 CAUGHT! The autopsy revealed evidence! Detectives are at your door!",
+						"👮 CAUGHT! Your alibi didn't hold up. They know what you did to " .. targetName .. "!",
+						"🚨 CAUGHT! The insurance company flagged something. Police are coming!",
+						"⚖️ CAUGHT! A neighbor saw you that night. It's over...",
+					}
+					
+					return caughtMessages[RANDOM:NextInteger(1, #caughtMessages)] .. "\n\n💀 " .. targetName .. " is gone via " .. method.name .. ".\n\n⛓️ Sentence: " .. state.PrisonSentence .. " years!"
+				else
+					-- SUCCESS
+					state.Flags.has_dark_secret = true
+					state.Flags.eliminated_partner = true
+					state.Flags.widow = true
+					state.Karma = (state.Karma or 100) - 35
+					
+					-- Inherit their money if married
+					if state.Flags.married and relationship and relationship.money then
+						state.Money = (state.Money or 0) + (relationship.money or 0)
+					end
+					
+					if state.ModifyStat then
+						state:ModifyStat("Happiness", -15)
+					end
+					
+					-- Clear partner status
+					state.Flags.has_partner = nil
+					state.Flags.dating = nil
+					state.Flags.married = nil
+					state.Flags.engaged = nil
+					
+					if relationship then
+						relationship.alive = false
+						relationship.causeOfDeath = method.name
+					end
+					
+					local successMessages = {
+						"💀 " .. targetName .. " has passed away from a tragic " .. method.name .. ". You're single again...",
+						"☠️ The " .. method.name .. " worked. " .. targetName .. " is no longer with us.",
+						"🕳️ A fatal " .. method.name .. " has claimed " .. targetName .. ". Everyone sends condolences...",
+						"⚰️ " .. targetName .. " departed suddenly. The funeral was... interesting.",
+						"🌑 " .. targetName .. " is gone. You played the grieving partner perfectly...",
+					}
+					
+					return successMessages[RANDOM:NextInteger(1, #successMessages)] .. "\n\n😈 You got away with it... but can you live with yourself?"
+				end
 			end,
 		},
 	},
@@ -23042,6 +23226,95 @@ local InteractionEffects = {
 			end,
 		},
 		ignore = { delta = 0, message = "You ignored them." },
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- BITLIFE FEATURE: Eliminate action (TOS-friendly)
+		-- User request: "feature where i can [eliminate] my own loved ones and could get 
+		-- caught and i can pick how i do it"
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		eliminate = {
+			delta = 0,
+			showResult = true,
+			isDangerous = true,
+			message = function(state, relationship, payload)
+				local targetName = (relationship and relationship.name) or "them"
+				local subChoice = payload and payload.subChoice or "cancel"
+				
+				-- Cancel option - back out safely
+				if subChoice == "cancel" then
+					return "💭 You thought better of it. Some lines shouldn't be crossed..."
+				end
+				
+				-- Calculate catch risk based on method
+				local methodRisks = {
+					food = { risk = 0.50, name = "suspicious meal" },
+					accident = { risk = 0.40, name = "arranged accident" },
+					sport = { risk = 0.55, name = "golf club mishap" },
+					push = { risk = 0.35, name = "hiking accident" },
+					poison = { risk = 0.45, name = "tainted beverage" },
+					hire = { risk = 0.60, name = "hired help" },
+					pillow = { risk = 0.30, name = "peaceful sleep" },
+					bathtub = { risk = 0.40, name = "bathroom slip" },
+				}
+				
+				local method = methodRisks[subChoice] or { risk = 0.50, name = "mysterious circumstances" }
+				local roll = RANDOM:NextNumber()
+				local isCaught = roll < method.risk
+				
+				state.Flags = state.Flags or {}
+				
+				if isCaught then
+					-- GOT CAUGHT!
+					state.Flags.committed_crime = true
+					state.Flags.caught_for_crime = true
+					state.Flags.in_prison = true
+					state.Flags.incarcerated = true
+					state.Flags.awaiting_trial = true
+					state.PrisonSentence = RANDOM:NextInteger(25, 50) -- 25-50 years
+					
+					if state.ModifyStat then
+						state:ModifyStat("Happiness", -40)
+					end
+					
+					local caughtMessages = {
+						"🚔 CAUGHT! A witness saw everything! You're being arrested!",
+						"🔍 CAUGHT! Forensic evidence linked you to the crime!",
+						"👮 CAUGHT! The detective figured it out. You're going away for a LONG time!",
+						"🚨 CAUGHT! You made a critical mistake. Sirens are approaching!",
+						"⚖️ CAUGHT! They found the evidence. Life in prison awaits...",
+					}
+					
+					return caughtMessages[RANDOM:NextInteger(1, #caughtMessages)] .. "\n\n💀 " .. targetName .. " is gone via " .. method.name .. ".\n\n⛓️ Sentence: " .. state.PrisonSentence .. " years!"
+				else
+					-- SUCCESS - They're gone
+					state.Flags.has_dark_secret = true
+					state.Flags.eliminated_someone = true
+					state.Karma = (state.Karma or 100) - 30
+					
+					if state.ModifyStat then
+						state:ModifyStat("Happiness", -15)
+						state:ModifyStat("Health", 5) -- Less stress?
+					end
+					
+					-- Remove the relationship (they're gone)
+					if relationship then
+						relationship.alive = false
+						relationship.causeOfDeath = method.name
+						relationship.relationship = -100
+					end
+					
+					local successMessages = {
+						"💀 It's done. " .. targetName .. " is gone. The " .. method.name .. " was... effective.",
+						"☠️ " .. targetName .. " won't be around anymore. The " .. method.name .. " worked perfectly.",
+						"🕳️ " .. targetName .. " has departed via " .. method.name .. ". No one suspects a thing...",
+						"⚰️ Tragic " .. method.name .. " for " .. targetName .. ". You'll have to live with this secret...",
+						"🌑 " .. targetName .. " is no more. The " .. method.name .. " left no trace. Or did it...?",
+					}
+					
+					return successMessages[RANDOM:NextInteger(1, #successMessages)] .. "\n\n😈 You got away with it... for now."
+				end
+			end,
+		},
 	},
 }
 
