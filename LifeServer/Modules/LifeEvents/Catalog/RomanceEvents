@@ -1357,6 +1357,10 @@ local events = {
 						if state.Relationships and state.Relationships.partner then
 							local partnerGender = state.Relationships.partner.gender or ""
 							state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
+							-- CRITICAL FIX: Also set type and married status on partner!
+							state.Relationships.partner.type = "spouse"
+							state.Relationships.partner.married = true
+							state.Relationships.partner.marriedYear = state.Year
 						end
 						if state.AddFeed then
 							state:AddFeed("💒 MARRIED! Fairy tale wedding! 200 guests, live band, stunning venue!")
@@ -1384,6 +1388,10 @@ local events = {
 				if state.Relationships and state.Relationships.partner then
 					local partnerGender = state.Relationships.partner.gender or ""
 					state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
+					-- CRITICAL FIX: Also set type and married status on partner!
+					state.Relationships.partner.type = "spouse"
+					state.Relationships.partner.married = true
+					state.Relationships.partner.marriedYear = state.Year
 				end
 			end,
 		},
@@ -1401,6 +1409,10 @@ local events = {
 				if state.Relationships and state.Relationships.partner then
 					local partnerGender = state.Relationships.partner.gender or ""
 					state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
+					-- CRITICAL FIX: Also set type and married status on partner!
+					state.Relationships.partner.type = "spouse"
+					state.Relationships.partner.married = true
+					state.Relationships.partner.marriedYear = state.Year
 				end
 			end,
 		},

@@ -93,7 +93,7 @@ Childhood.events = {
 	},
 
 	{
-		id = "toddler_tantrum",
+		id = "toddler_tantrum_store",
 		title = "The Terrible Twos",
 		emoji = "😤",
 		-- CRITICAL FIX #9: Text variations for tantrum scenarios!

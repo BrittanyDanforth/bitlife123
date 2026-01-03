@@ -182,7 +182,7 @@ EarlyLifeEvents.events = {
 	-- TODDLER YEARS (2-4) - Exploring the world
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "toddler_playground_adventure",
+		id = "toddler_playground_adventure_catalog",
 		title = "Playground Adventure",
 		emoji = "🛝",
 		text = "Your parents took you to the playground! So many things to explore!",
@@ -271,7 +271,7 @@ EarlyLifeEvents.events = {
 		},
 	},
 	{
-		id = "toddler_potty_training",
+		id = "toddler_potty_training_catalog",
 		title = "Potty Training",
 		emoji = "🚽",
 		text = "Your parents are trying to teach you to use the potty!",

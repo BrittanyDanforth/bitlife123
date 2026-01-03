@@ -439,6 +439,28 @@ AdultExpanded.events = {
 		category = "romance",
 		tags = { "breakup", "heartbreak", "change" },
 		
+		-- CRITICAL FIX: Clear relationship flags on breakup!
+		onComplete = function(state)
+			state.Flags = state.Flags or {}
+			-- Save ex data before clearing
+			if state.Relationships and state.Relationships.partner then
+				state.Relationships.ex = state.Relationships.partner
+				state.Relationships.last_ex = state.Relationships.partner
+				state.Relationships.ex.breakupAge = state.Age
+			end
+			-- Clear relationship flags
+			state.Flags.has_partner = nil
+			state.Flags.dating = nil
+			state.Flags.committed_relationship = nil
+			state.Flags.engaged = nil
+			state.Flags.single = true
+			state.Flags.recently_single = true
+			-- Clear partner
+			if state.Relationships then
+				state.Relationships.partner = nil
+			end
+		end,
+		
 		choices = {
 			{ text = "Devastated - takes years to recover", effects = { Happiness = -15, Health = -5 }, setFlags = { heartbroken_adult = true }, feedText = "World shattered. Everything reminds you of them." },
 			{ text = "Sad but know it's right", effects = { Happiness = -6, Smarts = 2 }, setFlags = { mature_breakup = true }, feedText = "Hurts but it was the right decision." },

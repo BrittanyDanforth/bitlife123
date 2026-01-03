@@ -659,6 +659,7 @@ events[#events + 1] = {
 					yearsAtJob = 0,
 				}
 				state.Flags.employed = true
+				state.Flags.has_job = true -- CRITICAL FIX: Missing flag!
 				state.Money = (state.Money or 0) + 200
 			end,
 		},

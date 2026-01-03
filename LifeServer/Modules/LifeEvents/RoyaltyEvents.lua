@@ -2358,6 +2358,19 @@ RoyaltyEvents.LifeEvents = {
 		isRoyalOnly = true,
 		oneTime = true,
 		conditions = { blockedFlags = { married = true } },
+		-- CRITICAL FIX: Add onComplete to properly convert partner to spouse!
+		onComplete = function(state)
+			state.Flags = state.Flags or {}
+			state.Flags.engaged = nil
+			state.Flags.has_partner = true
+			if state.Relationships and state.Relationships.partner then
+				local partnerGender = state.Relationships.partner.gender or "female"
+				state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
+				state.Relationships.partner.type = "spouse"
+				state.Relationships.partner.married = true
+				state.Relationships.partner.marriedYear = state.Year
+			end
+		end,
 		choices = {
 			{ text = "Traditional grand ceremony ($5M)", effects = { Happiness = 25, Money = -5000000 }, royaltyEffect = { popularity = 30 }, setFlags = { married = true }, feed = "A fairy tale wedding!", eligibility = function(state) return (state.Money or 0) >= 5000000, "💸 Need $5M for grand ceremony" end },
 			{ text = "Modern celebration ($2M)", effects = { Happiness = 22, Money = -2000000 }, royaltyEffect = { popularity = 20 }, setFlags = { married = true }, feed = "A modern royal wedding!", eligibility = function(state) return (state.Money or 0) >= 2000000, "💸 Need $2M for modern wedding" end },

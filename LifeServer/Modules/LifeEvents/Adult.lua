@@ -1821,6 +1821,15 @@ Adult.events = {
 			state.Flags.dating = nil
 			state.Flags.committed_relationship = nil
 			state.Flags.lives_with_partner = nil
+			-- CRITICAL FIX: Save ex-spouse data BEFORE clearing partner!
+			if state.Relationships and state.Relationships.partner then
+				-- Copy partner to ex_spouse for future reference
+				state.Relationships.ex_spouse = state.Relationships.partner
+				state.Relationships.ex_spouse.divorceAge = state.Age
+				state.Relationships.ex_spouse.divorceYear = state.Year
+				state.Relationships.ex = state.Relationships.partner -- Also set as general ex
+				state.Relationships.last_ex = state.Relationships.partner
+			end
 			-- Clear the partner relationship
 			if state.Relationships then
 				state.Relationships.partner = nil
