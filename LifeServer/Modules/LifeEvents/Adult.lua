@@ -3996,7 +3996,7 @@ Adult.events = {
 	},
 
 	{
-		id = "adult_career_crossroads",
+		id = "adult_career_fork_decision",
 		title = "Career Crossroads!",
 		emoji = "🛤️",
 		textVariants = {
@@ -4053,7 +4053,7 @@ Adult.events = {
 	},
 
 	{
-		id = "adult_health_scare",
+		id = "adult_health_checkup_result",
 		title = "Health Scare!",
 		emoji = "🏥",
 		textVariants = {
@@ -4151,7 +4151,7 @@ Adult.events = {
 	},
 
 	{
-		id = "adult_side_hustle",
+		id = "adult_side_gig_opportunity",
 		title = "Side Hustle!",
 		emoji = "💼",
 		textVariants = {
@@ -5067,7 +5067,7 @@ Adult.events = {
 	},
 
 	{
-		id = "adult_hobby_discovery",
+		id = "adult_new_passion_discovery",
 		title = "New Hobby Discovered!",
 		emoji = "✨",
 		textVariants = {

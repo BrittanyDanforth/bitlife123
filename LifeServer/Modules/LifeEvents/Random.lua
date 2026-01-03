@@ -46,7 +46,7 @@ Random.events = {
 		text = "Someone gave you a scratch lottery ticket.",
 		question = "How do you scratch it?",
 		minAge = 18, maxAge = 90,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		-- CRITICAL FIX: Can't gamble from prison!
 		blockedByFlags = { in_prison = true, incarcerated = true },
@@ -200,7 +200,7 @@ Random.events = {
 		text = "You had an accident!",
 		question = "Do you seek medical attention?",
 		minAge = 5, maxAge = 80,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "random", -- CRITICAL FIX: Added explicit category
 		-- CRITICAL FIX: Can't have accidents in prison (different event set)
@@ -299,7 +299,7 @@ Random.events = {
 		},
 		question = "How do you handle it?",
 		minAge = 16, maxAge = 90,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { has_car = true },
 		-- CRITICAL FIX: Can't have car trouble in prison!
@@ -419,7 +419,7 @@ Random.events = {
 		text = "Your phone is broken/lost!",
 		question = "What do you do?",
 		minAge = 12, maxAge = 80,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		-- CRITICAL FIX #6: Can't lose phone in prison (no phones!)
 		blockedByFlags = { in_prison = true, incarcerated = true },
@@ -517,7 +517,7 @@ Random.events = {
 		text = "You're feeling motivated to get in better shape.",
 		question = "What do you do?",
 		minAge = 15, maxAge = 70,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 3,
 		choices = {
 			{ text = "Start going to the gym ($50)", effects = { Health = 8, Happiness = 5, Money = -50 }, setFlags = { gym_member = true }, feedText = "You signed up for a gym membership! Time to get fit and feel great.", eligibility = function(state) return (state.Money or 0) >= 50, "💸 Need $50 for gym membership" end },
@@ -553,7 +553,7 @@ Random.events = {
 		text = "A stranger did something unexpectedly kind for you.",
 		question = "How did it make you feel?",
 		minAge = 5, maxAge = 90,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Restored faith in humanity", effects = { Happiness = 10 }, feedText = "People can be so good!" },
@@ -590,7 +590,7 @@ Random.events = {
 		text = "There's unusual weather today that might affect your plans.",
 		question = "How do you handle it?",
 		minAge = 5, maxAge = 90,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ 
@@ -644,7 +644,7 @@ Random.events = {
 		text = "You can't find something important. You've searched everywhere!",
 		question = "How hard do you search?",
 		minAge = 5, maxAge = 90,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 3,
 		choices = {
 			{
@@ -695,7 +695,7 @@ Random.events = {
 		text = "You've discovered a new hobby!",
 		question = "What caught your interest?",
 		minAge = 10, maxAge = 80,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 3,
 		choices = {
 			{ text = "Gaming", effects = { Happiness = 7, Smarts = 2 }, setFlags = { gamer = true }, feedText = "You discovered video games and became hooked! Your reaction time improved." },
@@ -751,7 +751,7 @@ Random.events = {
 		text = "An opportunity to travel came up unexpectedly!",
 		question = "Do you go?",
 		minAge = 18, maxAge = 75,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 3,
 		-- CRITICAL FIX #4: Can't travel from prison!
 		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
@@ -780,7 +780,7 @@ Random.events = {
 		text = "You spent some time helping others in need.",
 		question = "How did it feel?",
 		minAge = 12, maxAge = 90,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Incredibly rewarding", effects = { Happiness = 10 }, setFlags = { volunteer = true, community_minded = true }, feedText = "Helping others filled your heart." },
@@ -890,7 +890,7 @@ Random.events = {
 		text = "You got injured playing sports!",
 		question = "How do you respond?",
 		minAge = 6, maxAge = 60,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "injury",
 		-- CRITICAL FIX: Random injury type and severity
@@ -1986,7 +1986,7 @@ Random.events = {
 		text = "You've been recovering from an injury.",
 		question = "How's the recovery going?",
 		minAge = 5, maxAge = 90,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { hospitalized = true },
 		category = "recovery",
@@ -3531,7 +3531,7 @@ Random.events = {
 		weight = 6,
 		minAge = 10,
 		maxAge = 80,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {

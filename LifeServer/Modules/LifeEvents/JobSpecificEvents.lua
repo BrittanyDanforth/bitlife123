@@ -244,7 +244,7 @@ JobSpecificEvents.events = {
 		text = "Working the late night/graveyard shift.",
 		question = "How's the night shift treating you?",
 		minAge = 18, maxAge = 40,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 3,
 		requiresJob = true,
 		eligibility = function(state)
@@ -341,7 +341,7 @@ JobSpecificEvents.events = {
 		text = "There's a major project that could be a big opportunity.",
 		question = "How do you approach the big project?",
 		minAge = 20, maxAge = 55,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Added requiresJobCategory as PRIMARY check
@@ -409,7 +409,7 @@ JobSpecificEvents.events = {
 		text = "A new apprentice is shadowing you and making mistakes.",
 		question = "How do you handle the apprentice?",
 		minAge = 25, maxAge = 60,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Added requiresJobCategory as PRIMARY check
@@ -783,7 +783,7 @@ JobSpecificEvents.events = {
 		text = "Emergency! A patient is crashing!",
 		question = "How do you respond to the code?",
 		minAge = 22, maxAge = 65,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Added requiresJobCategory as PRIMARY check
@@ -977,7 +977,7 @@ JobSpecificEvents.events = {
 		text = "A major deal/account is on the line.",
 		question = "How do you handle the high-pressure deal?",
 		minAge = 24, maxAge = 55,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
@@ -1348,7 +1348,7 @@ JobSpecificEvents.events = {
 		text = "Someone wants to collaborate with you on a project!",
 		question = "Do you accept the collaboration?",
 		minAge = 18, maxAge = 55,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
@@ -1709,7 +1709,7 @@ JobSpecificEvents.events = {
 		text = "The most important game/competition of the season!",
 		question = "How do you perform under pressure?",
 		minAge = 18, maxAge = 45,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		eligibility = function(state)
@@ -1834,7 +1834,7 @@ JobSpecificEvents.events = {
 		question = "How do you face the end of your playing career?",
 		minAge = 32, maxAge = 45,
 		oneTime = true,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		requiresJob = true,
 		eligibility = function(state)
 			return isInJobCategory(state, {"sports", "athletics"})

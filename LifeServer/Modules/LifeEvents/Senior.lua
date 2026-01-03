@@ -207,7 +207,7 @@ Senior.events = {
         text = "Time for your annual senior health screening. The doctor runs all the tests.",
         question = "What did the results show?",
         minAge = 60, maxAge = 95,
-        baseChance = 0.7,
+        baseChance = 0.45,
         cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
         
         stage = STAGE,
@@ -1861,7 +1861,7 @@ Senior.events = {
         text = "It's Veterans Day. Your military service is being honored at a local event. They want you to speak!",
         question = "How do you respond?",
         minAge = 60, maxAge = 95,
-        baseChance = 0.7,
+        baseChance = 0.45,
         cooldown = 3,
         -- CRITICAL: Only for military veterans!
         eligibility = function(state)

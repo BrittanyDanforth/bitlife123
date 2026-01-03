@@ -192,7 +192,7 @@ events[#events + 1] = {
 	text = "It's your first day and you cried when mom/dad left!",
 	question = "How did the day go after that?",
 	minAge = 3, maxAge = 5,
-	baseChance = 0.65, -- CRITICAL FIX: Reduced from 0.8 to prevent too high frequency
+	baseChance = 0.45, -- CRITICAL FIX: Reduced from 0.8 to prevent too high frequency
 	oneTime = true,
 	maxOccurrences = 1,
 	category = "childhood",
@@ -794,7 +794,7 @@ events[#events + 1] = {
 	text = "You've decided you ARE a superhero!",
 	question = "What heroic thing do you do?",
 	minAge = 3, maxAge = 6,
-	baseChance = 0.6,
+	baseChance = 0.45,
 	cooldown = 3,
 	category = "childhood",
 
@@ -961,7 +961,7 @@ events[#events + 1] = {
 	text = "Someone brought the BEST snack to share!",
 	question = "What happens?",
 	minAge = 3, maxAge = 6,
-	baseChance = 0.6,
+	baseChance = 0.45,
 	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	category = "childhood",
 
@@ -1022,7 +1022,7 @@ events[#events + 1] = {
 	text = "You wanted something at the store and mom said NO!",
 	question = "How bad was the tantrum?",
 	minAge = 3, maxAge = 5,
-	baseChance = 0.6,
+	baseChance = 0.45,
 	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	category = "childhood",
 
@@ -1106,7 +1106,7 @@ events[#events + 1] = {
 	text = "Teacher is teaching the ABCs!",
 	question = "How's learning going?",
 	minAge = 3, maxAge = 5,
-	baseChance = 0.7,
+	baseChance = 0.45,
 	oneTime = true,
 	category = "childhood",
 
@@ -1165,7 +1165,7 @@ events[#events + 1] = {
 	text = "You're learning to count to 10!",
 	question = "How high can you count?",
 	minAge = 3, maxAge = 5,
-	baseChance = 0.6,
+	baseChance = 0.45,
 	oneTime = true,
 	category = "childhood",
 
@@ -1219,7 +1219,7 @@ events[#events + 1] = {
 	text = "Time to make art! The possibilities are endless!",
 	question = "What do you create?",
 	minAge = 3, maxAge = 6,
-	baseChance = 0.7,
+	baseChance = 0.45,
 	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	category = "childhood",
 
@@ -1780,7 +1780,7 @@ events[#events + 1] = {
 	text = "The big potty doesn't seem so scary anymore!",
 	question = "Time to try the potty!",
 	minAge = 2, maxAge = 3,
-	baseChance = 0.6,
+	baseChance = 0.45,
 	cooldown = 3,
 	oneTime = true,
 	category = "childhood",
@@ -1937,7 +1937,7 @@ events[#events + 1] = {
 },
 
 {
-	id = "preschool_show_and_tell",
+	id = "preschool_show_and_tell_day",
 	title = "Show and Tell!",
 	emoji = "⭐",
 	textVariants = {
@@ -2298,7 +2298,7 @@ events[#events + 1] = {
 	text = "Today's the big day! First day of preschool!",
 	question = "How do you feel?",
 	minAge = 3, maxAge = 4,
-	baseChance = 0.8,
+	baseChance = 0.5,
 	cooldown = 10,
 	oneTime = true,
 	category = "school",
@@ -3434,7 +3434,7 @@ events[#events + 1] = {
 },
 
 {
-	id = "toddler_first_friend",
+	id = "toddler_best_friend_forever",
 	title = "Best Friend!",
 	emoji = "💕",
 	textVariants = {

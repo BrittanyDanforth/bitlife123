@@ -1460,7 +1460,7 @@ Teen.events = {
 		text = "The big game against your school's rival is this week!",
 		question = "How do you show your school spirit?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.6,
+		baseChance = 0.45,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		choices = {
@@ -2234,7 +2234,7 @@ Teen.events = {
 		text = "You got a response from a college you applied to!",
 		question = "What does the letter say?",
 		minAge = 17, maxAge = 18,
-		baseChance = 0.6,
+		baseChance = 0.45,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { college_bound = true },
 		
@@ -2356,7 +2356,7 @@ Teen.events = {
 		question = "What kind of music defines you?",
 		minAge = 13, maxAge = 17,
 		oneTime = true,
-		baseChance = 0.6,
+		baseChance = 0.45,
 		
 		choices = {
 			{ text = "Hip-hop and rap", effects = { Happiness = 4 }, setFlags = { likes_hiphop = true }, feedText = "The beats and lyrics speak to you." },
@@ -2644,7 +2644,7 @@ Teen.events = {
 		text = "The annual talent show is coming up. Everyone's talking about who's going to perform.",
 		question = "Do you sign up?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.6,
+		baseChance = 0.45,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
@@ -2916,7 +2916,7 @@ Teen.events = {
 		text = "You finally turned 16 and can get your driver's license! Time for the test.",
 		question = "How does the test go?",
 		minAge = 16, maxAge = 17,
-		baseChance = 0.6, -- CRITICAL FIX: Reduced from 0.9 - other driving events exist
+		baseChance = 0.45, -- CRITICAL FIX: Reduced from 0.9 - other driving events exist
 		oneTime = true,
 		maxOccurrences = 1,
 		category = "milestone",
@@ -3086,7 +3086,7 @@ Teen.events = {
 		text = "You got invited to THE party of the year! But your parents said NO going out tonight...",
 		question = "What do you do?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.75,
+		baseChance = 0.5,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
@@ -3141,7 +3141,7 @@ Teen.events = {
 		text = "You just discovered you have an AMAZING talent you never knew about!",
 		question = "What is your hidden talent?",
 		minAge = 12, maxAge = 17,
-		baseChance = 0.65,
+		baseChance = 0.45,
 		cooldown = 99,
 		oneTime = true,
 		priority = "high",
@@ -3180,7 +3180,7 @@ Teen.events = {
 		text = "Someone asked you to be their boyfriend/girlfriend! This is REAL!",
 		question = "How do you feel about this?",
 		minAge = 14, maxAge = 18,
-		baseChance = 0.7,
+		baseChance = 0.45,
 		cooldown = 3,
 		
 		choices = {
@@ -4285,7 +4285,7 @@ Teen.events = {
 		question = "How does the project go?",
 		minAge = 12, maxAge = 17,
 		baseChance = 0.35,
-		cooldown = 2,
+		cooldown = 4,
 		category = "school",
 		tags = { "school", "teamwork", "social" },
 		
@@ -4915,7 +4915,7 @@ Teen.events = {
 	},
 
 	{
-		id = "teen_mentor_figure",
+		id = "teen_guidance_opportunity",
 		title = "🌟 A Mentor Appears",
 		emoji = "🌟",
 		textVariants = {
@@ -5166,7 +5166,7 @@ Teen.events = {
 	},
 
 	{
-		id = "teen_embarrassing_moment",
+		id = "teen_mortifying_moment",
 		title = "😳 Mortifying Moment!",
 		emoji = "😳",
 		textVariants = {
@@ -5299,7 +5299,7 @@ Teen.events = {
 	},
 
 	{
-		id = "teen_parent_conflict",
+		id = "teen_family_argument",
 		title = "😤 Parent Drama",
 		emoji = "😤",
 		textVariants = {
@@ -5455,7 +5455,7 @@ Teen.events = {
 	},
 
 	{
-		id = "teen_social_media_drama",
+		id = "teen_online_drama_explosion",
 		title = "Social Media Drama!",
 		emoji = "📱",
 		textVariants = {
@@ -5501,7 +5501,7 @@ Teen.events = {
 	},
 
 	{
-		id = "teen_college_pressure",
+		id = "teen_college_application_stress",
 		title = "College Pressure!",
 		emoji = "🎓",
 		textVariants = {
@@ -5550,7 +5550,7 @@ Teen.events = {
 	},
 
 	{
-		id = "teen_friend_group_change",
+		id = "teen_social_circle_shift",
 		title = "Friend Group Shift!",
 		emoji = "👥",
 		textVariants = {
@@ -5596,7 +5596,7 @@ Teen.events = {
 	},
 
 	{
-		id = "teen_sports_injury",
+		id = "teen_athletic_injury",
 		title = "Sports Injury!",
 		emoji = "🩹",
 		textVariants = {
@@ -5637,7 +5637,7 @@ Teen.events = {
 	},
 
 	{
-		id = "teen_viral_moment",
+		id = "teen_internet_famous",
 		title = "Going Viral!",
 		emoji = "📈",
 		textVariants = {
@@ -5686,7 +5686,7 @@ Teen.events = {
 	},
 
 	{
-		id = "teen_identity_crisis",
+		id = "teen_self_discovery_journey",
 		title = "Who Am I?",
 		emoji = "🤔",
 		textVariants = {
@@ -5921,7 +5921,7 @@ Teen.events = {
 	},
 
 	{
-		id = "teen_heartbreak",
+		id = "teen_romantic_devastation",
 		title = "Heartbreak 💔",
 		emoji = "💔",
 		textVariants = {
@@ -5967,7 +5967,7 @@ Teen.events = {
 	},
 
 	{
-		id = "teen_academic_pressure",
+		id = "teen_school_stress_overload",
 		title = "Academic Pressure!",
 		emoji = "📚",
 		textVariants = {

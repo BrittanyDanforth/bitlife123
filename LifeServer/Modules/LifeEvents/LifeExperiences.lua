@@ -310,7 +310,7 @@ LifeExperiences.events = {
 		text = "You had a supremely awkward experience!",
 		question = "What was the awkward situation?",
 		minAge = 10, maxAge = 80,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
@@ -510,7 +510,7 @@ LifeExperiences.events = {
 		text = "Technology has failed you spectacularly!",
 		question = "What went wrong?",
 		minAge = 10, maxAge = 90,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
@@ -578,7 +578,7 @@ LifeExperiences.events = {
 		text = "Something triggered intense nostalgia for the past.",
 		question = "What brought on the nostalgia?",
 		minAge = 18, maxAge = 100,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 3,
 		stage = STAGE,
 		ageBand = "any",
@@ -940,7 +940,7 @@ LifeExperiences.events = {
 		text = "Being an escaped convict is exhausting. Every day is a struggle to stay hidden.",
 		question = "How do you handle life as a fugitive?",
 		minAge = 18, maxAge = 80,
-		baseChance = 0.55, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
+		baseChance = 0.4, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
 		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		stage = STAGE,
 		ageBand = "any",
@@ -1003,7 +1003,7 @@ LifeExperiences.events = {
 		text = "That dramatic exit from your last job? It's coming back to haunt you.",
 		question = "What's the fallout?",
 		minAge = 21, maxAge = 65,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4,
 		stage = STAGE,
 		ageBand = "adult",
@@ -1152,7 +1152,7 @@ LifeExperiences.events = {
 		text = "That affair you thought no one knew about? Someone found out...",
 		question = "What happens now?",
 		minAge = 21, maxAge = 70,
-		baseChance = 0.7,
+		baseChance = 0.45,
 		cooldown = 5,
 		oneTime = true,
 		stage = STAGE,

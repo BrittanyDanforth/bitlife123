@@ -318,7 +318,7 @@ MiscEvents.events = {
 		text = "You're stuck in terrible traffic!",
 		question = "How do you handle being stuck?",
 		minAge = 16, maxAge = 90,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 3,
 		stage = STAGE,
 		ageBand = "any",

@@ -1295,7 +1295,7 @@ Childhood.events = {
 		question = "What's your gaming style?",
 		minAge = 6, maxAge = 12,
 		oneTime = true,
-		baseChance = 0.7,
+		baseChance = 0.45,
 
 		stage = STAGE,
 		ageBand = "childhood",
@@ -1419,7 +1419,7 @@ Childhood.events = {
 		question = "How do you approach the water?",
 		minAge = 4, maxAge = 8,
 		oneTime = true,
-		baseChance = 0.7,
+		baseChance = 0.45,
 
 		stage = STAGE,
 		ageBand = "early_childhood",

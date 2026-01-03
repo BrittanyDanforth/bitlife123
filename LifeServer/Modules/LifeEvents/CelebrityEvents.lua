@@ -4450,7 +4450,7 @@ local FamePathEvents = {
 		weight = 20,
 		minAge = 13,
 		maxAge = 30,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		conditions = { requiresFlags = { pursuing_fame = true } },
 		choices = {
@@ -4616,7 +4616,7 @@ local FamePathEvents = {
 		weight = 20,
 		minAge = 13,
 		maxAge = 50,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		oneTime = true, -- CRITICAL FIX: First hater should only happen ONCE!
 		conditions = { requiresFlags = { pursuing_fame = true, content_creator = true } },
 		choices = {

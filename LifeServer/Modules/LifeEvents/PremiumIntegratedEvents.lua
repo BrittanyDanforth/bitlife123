@@ -147,7 +147,7 @@ PremiumIntegratedEvents.events = {
 		text = "You're facing a serious financial crisis. Bills are piling up and you're not sure how to make ends meet.",
 		question = "How do you handle the money troubles?",
 		minAge = 20, maxAge = 70,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		category = "finance",
@@ -663,7 +663,7 @@ PremiumIntegratedEvents.events = {
 		text = "There's major drama in your family. Two relatives are fighting and everyone is being forced to take sides.",
 		question = "How do you handle the family feud?",
 		minAge = 16, maxAge = 80,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		category = "family",
@@ -1464,7 +1464,7 @@ PremiumIntegratedEvents.events = {
 		text = "You have an interview for your dream job. This could change everything!",
 		question = "How do you prepare?",
 		minAge = 18, maxAge = 60,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased cooldown - don't spam job interviews
 		maxOccurrences = 5, -- CRITICAL FIX: Limit total occurrences
 		stage = STAGE,
@@ -2360,7 +2360,7 @@ PremiumIntegratedEvents.events = {
 		text = "You're blowing out your birthday candles! Everyone says if you make a wish without telling anyone, it might come true!",
 		question = "What do you wish for?",
 		minAge = 6, maxAge = 10,
-		baseChance = 0.55, -- CRITICAL FIX: Reduced from 0.85 to prevent guaranteed trigger
+		baseChance = 0.4, -- CRITICAL FIX: Reduced from 0.85 to prevent guaranteed trigger
 		cooldown = 99,
 		oneTime = true,
 		stage = "childhood",
