@@ -5403,25 +5403,27 @@ Teen.events = {
 		oneTime = true,
 		category = "teen",
 		tags = { "teen", "job", "milestone" },
+		careerTags = { "business", "service", "retail" },
 		blockedByFlags = { first_interview_done = true },
 		
 		choices = {
 			{
 				text = "😎 Nailed it! Got hired!",
 				effects = { Happiness = 8, Money = 100 },
-				setFlags = { first_interview_done = true, has_first_job = true, good_interviewer = true },
+				setFlags = { first_interview_done = true, has_first_job = true, good_interviewer = true, work_experience = true, professional_start = true },
+				hintCareer = "business",
 				feedText = "💼 You got the job! First paycheck incoming!",
 			},
 			{
 				text = "😰 So nervous, stumbled words",
 				effects = { Happiness = -2 },
-				setFlags = { first_interview_done = true, interview_anxiety = true },
+				setFlags = { first_interview_done = true, interview_anxiety = true, learned_from_failure = true },
 				feedText = "💼 Not your best performance... they said 'we'll call you'",
 			},
 			{
 				text = "🤷 Did okay, waiting to hear",
 				effects = { Happiness = 3 },
-				setFlags = { first_interview_done = true },
+				setFlags = { first_interview_done = true, interview_experience = true },
 				feedText = "💼 Could've been worse! The waiting is the hardest part.",
 			},
 		},
@@ -5490,12 +5492,14 @@ Teen.events = {
 		cooldown = 4,
 		category = "teen",
 		tags = { "teen", "college", "stress" },
+		careerTags = { "education", "tech", "medical", "law", "finance" },
 		
 		choices = {
 			{
 				text = "📚 Grinding hard! Dream school bound!",
 				effects = { Happiness = 3, Smarts = 5, Health = -2 },
-				setFlags = { college_focused = true, ambitious_student = true },
+				setFlags = { college_focused = true, ambitious_student = true, honors_student = true, academic_achiever = true },
+				hintCareer = "education",
 				feedText = "🎓 Study study study! You WILL get into your dream school!",
 			},
 			{
@@ -5507,7 +5511,8 @@ Teen.events = {
 			{
 				text = "💰 Considering alternatives",
 				effects = { Happiness = 3, Smarts = 3 },
-				setFlags = { considering_trade_school = true, practical_minded = true },
+				setFlags = { considering_trade_school = true, practical_minded = true, vocational_track = true, hands_on_type = true },
+				hintCareer = "trades",
 				feedText = "🎓 Trade school? Gap year? Straight to work? Options!",
 			},
 			{
@@ -5623,12 +5628,14 @@ Teen.events = {
 		cooldown = 6,
 		category = "teen",
 		tags = { "teen", "viral", "social" },
+		careerTags = { "entertainment", "marketing", "esports" },
 		
 		choices = {
 			{
 				text = "🎉 Ride the wave! Post more!",
 				effects = { Happiness = 10, Money = 50 },
-				setFlags = { went_viral = true, content_creator_start = true, influencer_potential = true },
+				setFlags = { went_viral = true, content_creator_start = true, influencer_potential = true, content_creator = true, streamer = true, social_media_savvy = true },
+				hintCareer = "entertainment",
 				feedText = "📈 You're capitalizing on the moment! Followers flooding in!",
 			},
 			{
@@ -5646,7 +5653,8 @@ Teen.events = {
 			{
 				text = "💰 Try to monetize it",
 				effects = { Happiness = 6, Money = 200, Smarts = 2 },
-				setFlags = { went_viral = true, business_minded_teen = true },
+				setFlags = { went_viral = true, business_minded_teen = true, entrepreneur = true, marketing_savvy = true },
+				hintCareer = "business",
 				feedText = "📈 Brand deals? Merch? You see the opportunity!",
 			},
 		},
@@ -5763,12 +5771,14 @@ Teen.events = {
 		cooldown = 4,
 		category = "teen",
 		tags = { "teen", "car", "independence" },
+		careerTags = { "trades", "racing" },
 		
 		choices = {
 			{
 				text = "💰 Saving for MY own car",
 				effects = { Happiness = 4, Money = -100 },
-				setFlags = { saving_for_car = true, financially_motivated = true },
+				setFlags = { saving_for_car = true, financially_motivated = true, money_smart = true },
+				hintCareer = "finance",
 				feedText = "🚗 Every dollar goes to the car fund! Getting there!",
 			},
 			{
@@ -5780,13 +5790,14 @@ Teen.events = {
 			{
 				text = "🚌 Don't really need a car",
 				effects = { Happiness = 3, Smarts = 2 },
-				setFlags = { okay_without_car = true, practical = true },
+				setFlags = { okay_without_car = true, practical = true, environmentally_conscious = true },
 				feedText = "🚗 Public transit, friends with cars... you're good!",
 			},
 			{
 				text = "🛠️ Fix up an old one!",
 				effects = { Happiness = 5, Smarts = 3 },
-				setFlags = { wants_project_car = true, hands_on_type = true },
+				setFlags = { wants_project_car = true, hands_on_type = true, mechanic_interest = true, racing_interest = true },
+				hintCareer = "trades",
 				feedText = "🚗 A fixer-upper! You'll learn so much!",
 			},
 		},

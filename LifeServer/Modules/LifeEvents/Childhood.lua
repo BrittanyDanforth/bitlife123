@@ -3797,25 +3797,29 @@ Childhood.events = {
 		oneTime = true,
 		category = "childhood",
 		tags = { "childhood", "music", "hobbies" },
+		careerTags = { "entertainment", "music" },
 		blockedByFlags = { started_music_lessons = true },
 		
 		choices = {
 			{
 				text = "🎹 Piano - classic!",
 				effects = { Happiness = 5, Smarts = 3 },
-				setFlags = { started_music_lessons = true, plays_piano = true, musical_talent = true },
+				setFlags = { started_music_lessons = true, plays_piano = true, musical_talent = true, instrument_player = true, passionate_performer = true },
+				hintCareer = "entertainment",
 				feedText = "🎵 Learning piano! It's hard but rewarding!",
 			},
 			{
 				text = "🎸 Guitar - rock star!",
 				effects = { Happiness = 6 },
-				setFlags = { started_music_lessons = true, plays_guitar = true, musical_talent = true },
+				setFlags = { started_music_lessons = true, plays_guitar = true, musical_talent = true, instrument_player = true, passionate_performer = true },
+				hintCareer = "entertainment",
 				feedText = "🎵 Guitar lessons! Already dreaming of concerts!",
 			},
 			{
 				text = "🥁 Drums - let's make noise!",
 				effects = { Happiness = 7 },
-				setFlags = { started_music_lessons = true, plays_drums = true, musical_talent = true },
+				setFlags = { started_music_lessons = true, plays_drums = true, musical_talent = true, instrument_player = true, passionate_performer = true },
+				hintCareer = "entertainment",
 				feedText = "🎵 DRUMS! Your neighbors are thrilled (not really)!",
 			},
 			{
@@ -3844,24 +3848,28 @@ Childhood.events = {
 		cooldown = 4,
 		category = "childhood",
 		tags = { "childhood", "science", "school" },
+		careerTags = { "science", "tech", "medical" },
 		
 		choices = {
 			{
 				text = "🌋 Volcano! Classic!",
 				effects = { Happiness = 5, Smarts = 3 },
-				setFlags = { did_science_fair = true, loves_explosions = true },
+				setFlags = { did_science_fair = true, loves_explosions = true, science_interest = true },
+				hintCareer = "science",
 				feedText = "🔬 Your volcano ERUPTED! Messy but amazing!",
 			},
 			{
 				text = "🔋 Battery experiment",
 				effects = { Happiness = 4, Smarts = 5 },
-				setFlags = { did_science_fair = true, future_engineer = true },
+				setFlags = { did_science_fair = true, future_engineer = true, tech_savvy = true, science_interest = true },
+				hintCareer = "tech",
 				feedText = "🔬 You made electricity from a potato! GENIUS!",
 			},
 			{
 				text = "🌱 Plant growth study",
 				effects = { Happiness = 4, Smarts = 4 },
-				setFlags = { did_science_fair = true, nature_lover = true, patient_scientist = true },
+				setFlags = { did_science_fair = true, nature_lover = true, patient_scientist = true, science_interest = true },
+				hintCareer = "science",
 				feedText = "🔬 Weeks of observation paid off! Science!",
 			},
 			{
@@ -4028,24 +4036,27 @@ Childhood.events = {
 		cooldown = 4,
 		category = "childhood",
 		tags = { "childhood", "gaming", "hobby" },
+		careerTags = { "esports", "tech", "entertainment" },
 		
 		choices = {
 			{
 				text = "🎮 Games are life!",
 				effects = { Happiness = 5, Smarts = 2, Health = -2 },
-				setFlags = { gamer_kid = true, game_obsessed = true },
+				setFlags = { gamer_kid = true, game_obsessed = true, gamer = true, passionate_gamer = true, loves_games = true, gaming_interest = true },
+				hintCareer = "entertainment",
 				feedText = "🎮 You're SO good at games! Maybe too good...",
 			},
 			{
 				text = "⚖️ Learn to balance",
 				effects = { Happiness = 4, Smarts = 3, Health = 1 },
-				setFlags = { gamer_kid = true, balanced_gamer = true },
+				setFlags = { gamer_kid = true, balanced_gamer = true, gamer = true, loves_games = true },
+				hintCareer = "entertainment",
 				feedText = "🎮 Games AND homework. Games AND outside time. Balance!",
 			},
 			{
 				text = "📺 Only weekends",
 				effects = { Happiness = 3, Smarts = 2 },
-				setFlags = { disciplined_gamer = true },
+				setFlags = { disciplined_gamer = true, gamer = true },
 				feedText = "🎮 Parents made a rule. Weekends only. Fair enough.",
 			},
 			{
@@ -4075,13 +4086,15 @@ Childhood.events = {
 		oneTime = true,
 		category = "childhood",
 		tags = { "childhood", "money", "learning" },
+		careerTags = { "finance", "business" },
 		blockedByFlags = { gets_allowance = true },
 		
 		choices = {
 			{
 				text = "💰 Save everything!",
 				effects = { Happiness = 3, Smarts = 4, Money = 20 },
-				setFlags = { gets_allowance = true, childhood_saver = true, financially_responsible = true },
+				setFlags = { gets_allowance = true, childhood_saver = true, financially_responsible = true, future_investor = true, money_smart = true },
+				hintCareer = "finance",
 				feedText = "💵 Piggy bank growing! You're gonna be RICH!",
 			},
 			{
@@ -4093,13 +4106,15 @@ Childhood.events = {
 			{
 				text = "⚖️ Save half, spend half",
 				effects = { Happiness = 4, Smarts = 3, Money = 10 },
-				setFlags = { gets_allowance = true, balanced_with_money = true },
+				setFlags = { gets_allowance = true, balanced_with_money = true, money_smart = true },
+				hintCareer = "finance",
 				feedText = "💵 Smart strategy! Enjoy now AND plan for later!",
 			},
 			{
 				text = "🎁 Save for something big",
 				effects = { Happiness = 5, Smarts = 3, Money = 15 },
-				setFlags = { gets_allowance = true, goal_saver = true },
+				setFlags = { gets_allowance = true, goal_saver = true, money_smart = true, future_investor = true },
+				hintCareer = "business",
 				feedText = "💵 Eyes on the prize! Saving for that special thing!",
 			},
 		},
@@ -4122,12 +4137,14 @@ Childhood.events = {
 		cooldown = 4,
 		category = "childhood",
 		tags = { "childhood", "sports", "competition" },
+		careerTags = { "sports", "career_nba", "career_nfl" },
 		
 		choices = {
 			{
 				text = "🏆 Made the team!",
 				effects = { Happiness = 8, Health = 3 },
-				setFlags = { on_sports_team = true, athletic_kid = true, team_player = true },
+				setFlags = { on_sports_team = true, athletic_kid = true, team_player = true, sporty_kid = true, athletic = true, school_athlete = true },
+				hintCareer = "sports",
 				feedText = "⚽ YES! You're on the team! Practice starts Monday!",
 			},
 			{
@@ -4139,7 +4156,8 @@ Childhood.events = {
 			{
 				text = "🔄 Made the B team",
 				effects = { Happiness = 4, Health = 2 },
-				setFlags = { on_b_team = true, working_up = true },
+				setFlags = { on_b_team = true, working_up = true, athletic_kid = true, school_athlete = true },
+				hintCareer = "sports",
 				feedText = "⚽ Not varsity but still on a team! Keep working!",
 			},
 			{
@@ -4173,14 +4191,16 @@ Childhood.events = {
 			{
 				text = "🎉 Best night ever!",
 				effects = { Happiness = 8 },
-				setFlags = { loves_sleepovers = true, good_sleepover = true },
+				setFlags = { loves_sleepovers = true, good_sleepover = true, social_butterfly = true, extrovert = true },
 				feedText = "🌙 Games, snacks, scary stories, no sleep! AMAZING!",
+				relationshipEffect = { type = "friend", change = 15 },
 			},
 			{
 				text = "😢 Got homesick, called home",
 				effects = { Happiness = -3 },
-				setFlags = { sleepover_homesick = true, needs_home_comfort = true },
+				setFlags = { sleepover_homesick = true, needs_home_comfort = true, introvert = true },
 				feedText = "🌙 You called mom at midnight. They picked you up.",
+				relationshipEffect = { type = "family", change = 5 },
 			},
 			{
 				text = "😴 Fell asleep early",
@@ -4193,6 +4213,7 @@ Childhood.events = {
 				effects = { Happiness = -2 },
 				setFlags = { sleepover_drama = true },
 				feedText = "🌙 Someone got upset. Awkward rest of the night.",
+				relationshipEffect = { type = "friend", change = -10 },
 			},
 		},
 	},
@@ -4214,30 +4235,35 @@ Childhood.events = {
 		cooldown = 4,
 		category = "childhood",
 		tags = { "childhood", "reading", "hobby" },
+		careerTags = { "creative", "education", "law" },
 		
 		choices = {
 			{
 				text = "🧙 Fantasy adventures!",
 				effects = { Happiness = 5, Smarts = 4 },
-				setFlags = { bookworm = true, fantasy_lover = true, vivid_imagination = true },
+				setFlags = { bookworm = true, fantasy_lover = true, vivid_imagination = true, loves_reading = true, creative = true },
+				hintCareer = "creative",
 				feedText = "📖 Magic, dragons, quests - you're hooked!",
 			},
 			{
 				text = "🔍 Mystery stories!",
 				effects = { Happiness = 5, Smarts = 5 },
-				setFlags = { bookworm = true, mystery_lover = true, analytical_mind = true },
+				setFlags = { bookworm = true, mystery_lover = true, analytical_mind = true, loves_reading = true },
+				hintCareer = "law",
 				feedText = "📖 Solving crimes from your bedroom! Detective vibes!",
 			},
 			{
 				text = "🦸 Superhero comics!",
 				effects = { Happiness = 6, Smarts = 3 },
-				setFlags = { bookworm = true, comic_lover = true },
+				setFlags = { bookworm = true, comic_lover = true, loves_reading = true },
+				hintCareer = "creative",
 				feedText = "📖 Pow! Bam! Heroes saving the day! You love it!",
 			},
 			{
 				text = "📚 A little of everything!",
 				effects = { Happiness = 4, Smarts = 4 },
-				setFlags = { bookworm = true, diverse_reader = true },
+				setFlags = { bookworm = true, diverse_reader = true, loves_reading = true, intellectual_child = true },
+				hintCareer = "education",
 				feedText = "📖 Your library card is getting a workout!",
 			},
 		},
@@ -4352,6 +4378,7 @@ Childhood.events = {
 		cooldown = 5,
 		category = "childhood",
 		tags = { "childhood", "cooking", "independence" },
+		careerTags = { "service", "creative" },
 		
 		choices = {
 			{
@@ -4363,18 +4390,20 @@ Childhood.events = {
 			{
 				text = "🍳 Eggs! (Brave!)",
 				effects = { Happiness = 5, Smarts = 2 },
-				setFlags = { learning_to_cook = true, adventurous_cooking = true },
+				setFlags = { learning_to_cook = true, adventurous_cooking = true, cooking_interest = true },
+				hintCareer = "service",
 				feedText = "👨‍🍳 Scrambled... kinda. Edible though! Progress!",
 			},
 			{
 				text = "🔥 Full meal! (Chaos!)",
 				effects = { Happiness = 6, Health = -2 },
-				setFlags = { cooking_disaster = true, ambitious = true },
+				setFlags = { cooking_disaster = true, ambitious = true, cooking_interest = true, talented_cook = true },
+				hintCareer = "service",
 				feedText = "👨‍🍳 Smoke alarm went off but you tried! A for effort!",
 			},
 			{
 				text = "🍕 Order pizza instead",
-				effects = { Happiness = 4 },
+				effects = { Happiness = 4, Money = -10 },
 				setFlags = { prefers_delivery = true },
 				feedText = "👨‍🍳 Cooking is hard. Pizza is easy. Smart!",
 			},

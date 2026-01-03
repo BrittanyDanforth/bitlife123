@@ -4109,16 +4109,19 @@ Adult.events = {
 		cooldown = 4,
 		category = "adult",
 		tags = { "adult", "career", "networking" },
+		careerTags = { "business", "finance", "tech", "marketing" },
 		
 		choices = {
 			{
 				text = "😎 Work the room confidently",
-				effects = { Happiness = 5, Smarts = 2 },
-				setFlags = { good_networker = true },
+				effects = { Happiness = 5, Smarts = 2, Money = 200 },
+				setFlags = { good_networker = true, professional_connections = true, charismatic = true },
+				hintCareer = "business",
 				onResolve = function(state)
 					local roll = math.random(100)
 					if roll <= 40 then
 						state.Flags.valuable_contact_made = true
+						state.Flags.career_opportunity = true
 						state:AddFeed("🤝 Made a GREAT connection! Could lead to opportunities!")
 					else
 						state:AddFeed("🤝 Handed out cards, made small talk. Solid networking!")
@@ -4128,13 +4131,14 @@ Adult.events = {
 			{
 				text = "😰 Awkwardly hover near food",
 				effects = { Happiness = -2 },
-				setFlags = { networking_anxiety = true },
+				setFlags = { networking_anxiety = true, introvert = true },
 				feedText = "🤝 At least the appetizers were good...",
 			},
 			{
 				text = "🎯 Target specific people",
-				effects = { Happiness = 4, Smarts = 3 },
-				setFlags = { strategic_networker = true },
+				effects = { Happiness = 4, Smarts = 3, Money = 300 },
+				setFlags = { strategic_networker = true, professional_connections = true, ambitious = true },
+				hintCareer = "finance",
 				feedText = "🤝 Quality over quantity! Meaningful conversations!",
 			},
 			{
@@ -4163,30 +4167,33 @@ Adult.events = {
 		cooldown = 5,
 		category = "adult",
 		tags = { "adult", "money", "hustle" },
+		careerTags = { "business", "tech", "entertainment" },
 		
 		choices = {
 			{
 				text = "🚗 Gig economy (driving/delivery)",
 				effects = { Happiness = 2, Money = 300, Health = -2 },
-				setFlags = { gig_worker = true },
+				setFlags = { gig_worker = true, hustle_mindset = true },
 				feedText = "💼 Flexible hours, decent money. The grind continues!",
 			},
 			{
 				text = "💻 Freelance your skills",
 				effects = { Happiness = 4, Money = 500, Smarts = 2 },
-				setFlags = { freelancer = true },
+				setFlags = { freelancer = true, entrepreneur = true, self_employed = true },
+				hintCareer = "tech",
 				feedText = "💼 Using your talents for extra cash! Smart!",
 			},
 			{
 				text = "📦 Sell stuff online",
 				effects = { Happiness = 3, Money = 200 },
-				setFlags = { online_seller = true },
+				setFlags = { online_seller = true, entrepreneur = true, business_minded = true },
+				hintCareer = "business",
 				feedText = "💼 One person's trash... your profit!",
 			},
 			{
 				text = "🙅 No time for that",
 				effects = { Happiness = 3 },
-				setFlags = { values_free_time = true },
+				setFlags = { values_free_time = true, work_life_balance = true },
 				feedText = "💼 Work-life balance matters. Money isn't everything!",
 			},
 		},
@@ -4214,24 +4221,27 @@ Adult.events = {
 			{
 				text = "📱 Reach out and reconnect",
 				effects = { Happiness = 5 },
-				setFlags = { maintains_friendships = true },
+				setFlags = { maintains_friendships = true, good_friend = true, loyal = true },
 				feedText = "👋 You reached out! Sometimes that's all it takes!",
+				relationshipEffect = { type = "friend", change = 20 },
 			},
 			{
 				text = "😔 Accept people grow apart",
 				effects = { Happiness = -2, Smarts = 2 },
-				setFlags = { accepts_change = true },
+				setFlags = { accepts_change = true, realistic = true },
 				feedText = "👋 Sad but natural. Not all friendships last forever.",
+				relationshipEffect = { type = "friend", change = -15 },
 			},
 			{
 				text = "🆕 Focus on making new friends",
 				effects = { Happiness = 4 },
-				setFlags = { makes_new_friends = true },
+				setFlags = { makes_new_friends = true, social_butterfly = true },
 				feedText = "👋 New chapter, new people! Moving forward!",
 			},
 			{
 				text = "🤷 Was I ever that close to them?",
 				effects = { Happiness = 2 },
+				setFlags = { emotionally_distant = true },
 				feedText = "👋 Maybe it was more casual than you thought.",
 			},
 		},
