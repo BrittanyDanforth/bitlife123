@@ -1423,7 +1423,7 @@ RelationshipsExpanded.events = {
 -- These are NOT hardcoded - they use eligibility functions to react to player state
 -- ══════════════════════════════════════════════════════════════════════════════
 
-{
+	{
 	id = "rel_friend_remembers",
 	title = "A Friend Reaches Out",
 	emoji = "📱",
@@ -1510,7 +1510,7 @@ RelationshipsExpanded.events = {
 	},
 },
 
-{
+	{
 	id = "rel_friend_needs_you",
 	title = "Friend in Crisis",
 	emoji = "🆘",
@@ -1581,7 +1581,7 @@ RelationshipsExpanded.events = {
 	},
 },
 
-{
+	{
 	id = "rel_friend_success",
 	title = "Friend's Big Success",
 	emoji = "🎊",
@@ -1644,7 +1644,7 @@ RelationshipsExpanded.events = {
 	},
 },
 
-{
+	{
 	id = "rel_friend_toxic",
 	title = "Toxic Friend Behavior",
 	emoji = "☢️",
@@ -1732,7 +1732,7 @@ RelationshipsExpanded.events = {
 	},
 },
 
-{
+	{
 	id = "rel_unexpected_reunion",
 	title = "Unexpected Reunion",
 	emoji = "👥",
@@ -1797,7 +1797,7 @@ RelationshipsExpanded.events = {
 	},
 },
 
-{
+	{
 	id = "rel_group_dynamics",
 	title = "Friend Group Drama",
 	emoji = "👯",

@@ -1296,7 +1296,7 @@ LifeExperiences.events = {
 		},
 	},
 	
-{
+	{
 	id = "conseq_reputation_precedes",
 	title = "Your Reputation Precedes You",
 	emoji = "📢",
@@ -1661,7 +1661,7 @@ LifeExperiences.events = {
 -- CRITICAL FIX: NEW CHILDHOOD CONSEQUENCE EVENTS
 -- These connect childhood flags to adult experiences for more variety!
 -- ═══════════════════════════════════════════════════════════════════════════════
-{
+	{
 	id = "conseq_popular_kid_reunion",
 	title = "The Popular Kid Return",
 	emoji = "👑",
@@ -1707,7 +1707,7 @@ LifeExperiences.events = {
 		},
 	},
 },
-{
+	{
 	id = "conseq_kind_kid_payoff",
 	title = "Kindness Remembered",
 	emoji = "💝",
@@ -1748,7 +1748,7 @@ LifeExperiences.events = {
 		},
 	},
 },
-{
+	{
 	id = "conseq_troublemaker_reputation",
 	title = "The Troublemaker's Past",
 	emoji = "😈",
@@ -1812,7 +1812,7 @@ LifeExperiences.events = {
 		},
 	},
 },
-{
+	{
 	id = "conseq_quick_learner_opportunity",
 	title = "The Natural Talent",
 	emoji = "🧠",
@@ -1851,7 +1851,7 @@ LifeExperiences.events = {
 		},
 	},
 },
-{
+	{
 	id = "conseq_animal_lover_calling",
 	title = "The Animal Whisperer",
 	emoji = "🐾",
@@ -1886,7 +1886,7 @@ LifeExperiences.events = {
 		},
 	},
 },
-{
+	{
 	id = "conseq_brave_moment",
 	title = "When Courage Counted",
 	emoji = "🦁",
@@ -1944,7 +1944,7 @@ LifeExperiences.events = {
 		},
 	},
 },
-{
+	{
 	id = "conseq_shy_kid_growth",
 	title = "The Quiet One Speaks",
 	emoji = "🦋",
@@ -1980,7 +1980,7 @@ LifeExperiences.events = {
 		},
 	},
 },
-{
+	{
 	id = "conseq_athletic_growth",
 	title = "The Athletic Kid Grown Up",
 	emoji = "🏃",
@@ -2016,7 +2016,7 @@ LifeExperiences.events = {
 		},
 	},
 },
-{
+	{
 	id = "conseq_creative_kid_career",
 	title = "The Creative Soul",
 	emoji = "🎨",
@@ -2054,7 +2054,7 @@ LifeExperiences.events = {
 		},
 	},
 },
-{
+	{
 	id = "conseq_spoiled_kid_reality",
 	title = "Reality Check",
 	emoji = "💸",
@@ -2114,7 +2114,7 @@ LifeExperiences.events = {
 		},
 	},
 },
-{
+	{
 	id = "conseq_music_talent_bloom",
 	title = "Musical Journey",
 	emoji = "🎵",
@@ -2156,7 +2156,7 @@ LifeExperiences.events = {
 		},
 	},
 },
-{
+	{
 	id = "conseq_outdoors_kid",
 	title = "Nature's Child",
 	emoji = "🌲",

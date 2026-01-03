@@ -1665,7 +1665,7 @@ Career.events = {
 -- ══════════════════════════════════════════════════════════════════════════════
 -- NEW EVENTS - EXPANDED CAREER CONTENT
 -- ══════════════════════════════════════════════════════════════════════════════
-{
+	{
 	id = "company_acquisition",
 	title = "Your Company Got Acquired!",
 	emoji = "🏢",
@@ -1691,7 +1691,7 @@ Career.events = {
 },
 -- REMOVED: Duplicate "remote_work_decision" event - was identical to "work_from_home"
 -- Keeping only one remote work event to prevent spam
-{
+	{
 	-- CRITICAL FIX: Renamed from "side_hustle_opportunity" to avoid ID conflict with FastFoodEvents
 	id = "side_hustle_idea",
 	title = "Side Hustle Opportunity",
@@ -1716,7 +1716,7 @@ Career.events = {
 		{ text = "Partner with a friend on it", effects = { Happiness = 5, Money = 800 }, setFlags = { business_partner = true }, feedText = "You and a friend are building something together!" },
 	},
 },
-{
+	{
 	id = "toxic_workplace_culture",
 	title = "Toxic Work Environment",
 	emoji = "☣️",
@@ -1741,7 +1741,7 @@ Career.events = {
 		{ text = "Start therapy to cope ($500)", effects = { Happiness = 8, Health = 5, Money = -500 }, setFlags = { in_therapy = true }, feedText = "Professional help is making a real difference.", eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for therapy sessions" end },
 	},
 },
-{
+	{
 	id = "mentorship_opportunity",
 	title = "Mentorship Moment",
 	emoji = "🎓",
@@ -1765,7 +1765,7 @@ Career.events = {
 		{ text = "Accept and eventually become a mentor yourself", effects = { Happiness = 10, Smarts = 5 }, setFlags = { has_mentor = true, future_mentor = true }, feedText = "The cycle of mentorship continues through you!" },
 	},
 },
-{
+	{
 	id = "career_pivot_consideration",
 	title = "Career Pivot?",
 	emoji = "🔄",
@@ -1806,7 +1806,7 @@ Career.events = {
 		{ text = "Transition gradually within your company", effects = { Happiness = 6, Smarts = 3 }, setFlags = { internal_pivot = true }, feedText = "You're moving to a different department. New challenges, same paycheck!" },
 	},
 },
-{
+	{
 	-- CRITICAL FIX: This was a god-mode event where player chose if they won!
 	-- Now uses random outcome based on performance like BitLife
 	id = "workplace_recognition",
@@ -1872,7 +1872,7 @@ Career.events = {
 -- ══════════════════════════════════════════════════════════════════════════════
 -- SPORTS JOB SPECIFIC EVENTS  
 -- ══════════════════════════════════════════════════════════════════════════════
-{
+	{
 	-- CRITICAL FIX: Player can't choose injury severity - random outcome
 	-- CRITICAL FIX: Renamed to career_sports_injury_scare for unique ID
 	id = "career_sports_injury_scare",
@@ -1969,7 +1969,7 @@ Career.events = {
 		},
 	},
 },
-{
+	{
 	id = "championship_game",
 	title = "Championship Opportunity",
 	emoji = "🏆",
@@ -2023,7 +2023,7 @@ Career.events = {
 -- ══════════════════════════════════════════════════════════════════════════════
 -- CREATIVE JOB SPECIFIC EVENTS
 -- ══════════════════════════════════════════════════════════════════════════════
-{
+	{
 	-- CRITICAL FIX: Renamed to avoid duplicate ID with earlier creative_block event
 	id = "creative_deadline_crisis",
 	title = "Deadline Creative Block",
@@ -2088,7 +2088,7 @@ Career.events = {
 		},
 	},
 },
-{
+	{
 	id = "creative_viral_moment",
 	title = "Viral Success!",
 	emoji = "📱",
@@ -2139,7 +2139,7 @@ Career.events = {
 -- ══════════════════════════════════════════════════════════════════════════════
 -- GOVERNMENT JOB SPECIFIC EVENTS
 -- ══════════════════════════════════════════════════════════════════════════════
-{
+	{
 	id = "government_whistleblower",
 	title = "Witness Something Wrong",
 	emoji = "🏛️",
@@ -2207,7 +2207,7 @@ Career.events = {
 		},
 	},
 },
-{
+	{
 	id = "government_promotion_politics",
 	title = "Political Promotion",
 	emoji = "🏛️",
@@ -2281,7 +2281,7 @@ Career.events = {
 -- ══════════════════════════════════════════════════════════════════════════════
 
 -- RETAIL & SERVICE INDUSTRY
-{
+	{
 	id = "retail_holiday_rush",
 	title = "Holiday Rush",
 	emoji = "🎄",
@@ -2323,7 +2323,7 @@ Career.events = {
 		{ text = "Call in sick during peak (lose wages)", effects = { Happiness = 5 }, setFlags = { unreliable_worker = true }, feedText = "You ditched during the rush. Manager is furious." },
 	},
 },
-{
+	{
 	id = "retail_difficult_customer",
 	title = "Nightmare Customer",
 	emoji = "😤",
@@ -2385,7 +2385,7 @@ Career.events = {
 },
 
 -- TECH INDUSTRY
-{
+	{
 	id = "tech_crunch_time",
 	title = "Crunch Time",
 	emoji = "💻",
@@ -2430,7 +2430,7 @@ Career.events = {
 		{ text = "Time to update that resume", effects = { Happiness = 2 }, setFlags = { job_hunting = true }, feedText = "This culture isn't for you. Time to find a better environment." },
 	},
 },
-{
+	{
 	id = "tech_startup_equity",
 	title = "Startup Equity Offer",
 	emoji = "🚀",
@@ -2487,7 +2487,7 @@ Career.events = {
 		{ text = "Negotiate for both", effects = { Smarts = 2 }, feedText = "You pushed for more salary AND some equity. Smart negotiating!" },
 	},
 },
-{
+	{
 	id = "tech_side_project_success",
 	title = "Side Project Blows Up",
 	emoji = "📱",
@@ -2561,7 +2561,7 @@ Career.events = {
 },
 
 -- MEDICAL FIELD
-{
+	{
 	id = "medical_code_blue",
 	title = "Code Blue",
 	emoji = "🏥",
@@ -2632,7 +2632,7 @@ Career.events = {
 		},
 	},
 },
-{
+	{
 	-- CRITICAL FIX: Renamed from "medical_malpractice_fear" to avoid duplicate ID conflict
 	-- CareerEvents has another version
 	id = "medical_malpractice_concern",
@@ -2675,7 +2675,7 @@ Career.events = {
 },
 
 -- TRADES & MANUAL LABOR
-{
+	{
 	id = "trades_worksite_injury",
 	title = "Worksite Accident",
 	emoji = "🔧",
@@ -2733,7 +2733,7 @@ Career.events = {
 		},
 	},
 },
-{
+	{
 	id = "trades_big_contract",
 	title = "Big Contract Opportunity",
 	emoji = "📋",
@@ -2790,7 +2790,7 @@ Career.events = {
 },
 
 -- EDUCATION
-{
+	{
 	id = "education_problem_student",
 	title = "Problem Student",
 	emoji = "👨‍🏫",
@@ -2839,7 +2839,7 @@ Career.events = {
 		{ text = "Focus energy on students who want to learn", effects = { Happiness = 2 }, feedText = "You can't save everyone. Harsh but realistic." },
 	},
 },
-{
+	{
 	id = "education_parent_confrontation",
 	title = "Angry Parent",
 	emoji = "😠",
@@ -2901,7 +2901,7 @@ Career.events = {
 },
 
 -- FINANCE
-{
+	{
 	id = "finance_ethical_dilemma",
 	title = "Ethical Gray Area",
 	emoji = "💰",
@@ -2950,7 +2950,7 @@ Career.events = {
 },
 
 -- CREATIVE/ENTERTAINMENT
-{
+	{
 	id = "creative_big_break",
 	title = "Big Break Opportunity",
 	emoji = "⭐",
@@ -3012,7 +3012,7 @@ Career.events = {
 		{ text = "Be authentic - take it or leave it", effects = { Happiness = 5 }, setFlags = { authentic = true }, feedText = "You were yourself. If it works, it works." },
 	},
 },
-{
+	{
 	id = "creative_creative_block",
 	title = "Creative Block",
 	emoji = "🎨",
@@ -3055,7 +3055,7 @@ Career.events = {
 },
 
 -- GENERAL CAREER EVENTS
-{
+	{
 	id = "career_networking_event",
 	title = "Networking Event",
 	emoji = "🤝",
@@ -3104,7 +3104,7 @@ Career.events = {
 		{ text = "Get too drunk at the open bar", effects = { Happiness = 4, Health = -2 }, setFlags = { embarrassed_self = true }, feedText = "You... might have said some things. Monday will be awkward." },
 	},
 },
-{
+	{
 	id = "career_sabbatical_consideration",
 	title = "Sabbatical Offer",
 	emoji = "🏖️",
@@ -3151,7 +3151,7 @@ Career.events = {
 		{ text = "Negotiate for paid sabbatical", effects = { Smarts = 2 }, feedText = "You pushed for paid time. They said they'd consider it." },
 	},
 },
-{
+	{
 	id = "career_raise_negotiation",
 	title = "Raise Negotiation",
 	emoji = "💵",

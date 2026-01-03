@@ -1061,7 +1061,7 @@ FamilyEvents.events = {
 -- PARTNER DEATH DEPRESSION EVENT - Like BitLife!
 -- Triggers after partner/spouse passes away, can diagnose depression
 -- ═══════════════════════════════════════════════════════════════════════════════
-{
+	{
 	id = "grief_depression_diagnosis",
 	title = "💔 Diagnosis: Depression",
 	emoji = "💔",
@@ -1147,7 +1147,7 @@ FamilyEvents.events = {
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- GRIEF RECOVERY EVENT - Follow-up for those dealing with partner loss
 -- ═══════════════════════════════════════════════════════════════════════════════
-{
+	{
 	id = "grief_recovery_progress",
 	title = "💜 Grief Recovery",
 	emoji = "💜",

@@ -1674,7 +1674,7 @@ events[#events + 1] = {
 -- Added for variety and replayability
 -- ══════════════════════════════════════════════════════════════════════════════
 
-{
+events[#events + 1] = {
 	id = "toddler_first_friend",
 	title = "First Friend!",
 	emoji = "🤝",
@@ -1716,7 +1716,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_tantrum",
 	title = "Big Feelings!",
 	emoji = "😤",
@@ -1768,7 +1768,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_potty_milestone",
 	title = "Potty Progress!",
 	emoji = "🚽",
@@ -1808,7 +1808,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_sibling_reaction",
 	title = "New Baby in the House!",
 	emoji = "👶",
@@ -1850,7 +1850,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_food_adventure",
 	title = "New Food Challenge!",
 	emoji = "🥦",
@@ -1899,7 +1899,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_night_terror",
 	title = "Scary Dream!",
 	emoji = "😱",
@@ -1936,7 +1936,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "preschool_show_and_tell_day",
 	title = "Show and Tell!",
 	emoji = "⭐",
@@ -1982,7 +1982,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_art_creation",
 	title = "Masterpiece Time!",
 	emoji = "🎨",
@@ -2027,7 +2027,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_playground_adventure",
 	title = "Playground Challenge!",
 	emoji = "🛝",
@@ -2066,7 +2066,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_pet_encounter",
 	title = "Furry Friend!",
 	emoji = "🐕",
@@ -2105,7 +2105,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "preschool_music_class",
 	title = "Music Time!",
 	emoji = "🎵",
@@ -2151,7 +2151,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_helping_chores",
 	title = "Little Helper!",
 	emoji = "🧹",
@@ -2200,7 +2200,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_water_play",
 	title = "Splash Time!",
 	emoji = "💦",
@@ -2239,7 +2239,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_language_explosion",
 	title = "Words Words Words!",
 	emoji = "🗣️",
@@ -2286,7 +2286,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "preschool_first_day",
 	title = "First Day of Preschool!",
 	emoji = "🏫",
@@ -2327,7 +2327,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_independence",
 	title = "I Can Do It Myself!",
 	emoji = "💪",
@@ -2380,7 +2380,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_imaginary_friend",
 	title = "Special Friend!",
 	emoji = "👻",
@@ -2427,7 +2427,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_counting_milestone",
 	title = "Numbers Time!",
 	emoji = "🔢",
@@ -2468,7 +2468,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_color_learning",
 	title = "Colors Everywhere!",
 	emoji = "🌈",
@@ -2515,7 +2515,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_bedtime_routine",
 	title = "Bedtime Story!",
 	emoji = "📖",
@@ -2565,7 +2565,7 @@ events[#events + 1] = {
 -- These create variety and personalization for early life gameplay
 -- ════════════════════════════════════════════════════════════════════════════
 
-{
+events[#events + 1] = {
 	id = "toddler_picky_eater",
 	title = "Picky Eater Phase",
 	emoji = "🥦",
@@ -2612,7 +2612,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_afraid_of_dark",
 	title = "Afraid of the Dark",
 	emoji = "🌙",
@@ -2661,7 +2661,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_learning_abc",
 	title = "ABC Time!",
 	emoji = "🔤",
@@ -2705,7 +2705,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_first_haircut",
 	title = "First Haircut!",
 	emoji = "✂️",
@@ -2746,7 +2746,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_lost_in_store",
 	title = "Lost in the Store!",
 	emoji = "🏪",
@@ -2792,7 +2792,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_making_friends",
 	title = "Making Friends",
 	emoji = "👫",
@@ -2839,7 +2839,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_pet_encounter",
 	title = "Meeting a Pet!",
 	emoji = "🐕",
@@ -2885,7 +2885,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_temper_tantrum",
 	title = "MELTDOWN!",
 	emoji = "😤",
@@ -2931,7 +2931,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_drawing_masterpiece",
 	title = "Art Time!",
 	emoji = "🎨",
@@ -2983,7 +2983,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_bath_time_fun",
 	title = "Bath Time!",
 	emoji = "🛁",
@@ -3030,7 +3030,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_sibling_moment",
 	title = "Sibling Situation",
 	emoji = "👶",
@@ -3076,7 +3076,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_learning_shapes",
 	title = "Shapes Discovery",
 	emoji = "🔷",
@@ -3123,7 +3123,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_playground_slide",
 	title = "The Big Slide!",
 	emoji = "🛝",
@@ -3169,7 +3169,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_broken_toy",
 	title = "Broken Toy!",
 	emoji = "🧸",
@@ -3215,7 +3215,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_first_joke",
 	title = "Telling Jokes!",
 	emoji = "😂",
@@ -3255,7 +3255,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_dress_up",
 	title = "Dress Up Time!",
 	emoji = "👗",
@@ -3301,7 +3301,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_sharing_lesson",
 	title = "Sharing is Caring?",
 	emoji = "🤝",
@@ -3347,7 +3347,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_messy_eating",
 	title = "Messy Meal!",
 	emoji = "🍝",
@@ -3387,7 +3387,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_question_phase",
 	title = "But WHY?",
 	emoji = "❓",
@@ -3433,7 +3433,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_best_friend_forever",
 	title = "Best Friend!",
 	emoji = "💕",
@@ -3481,7 +3481,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_sleep_problems",
 	title = "Can't Sleep!",
 	emoji = "😴",
@@ -3527,7 +3527,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_outdoor_discovery",
 	title = "Outdoor Adventure!",
 	emoji = "🌳",
@@ -3573,7 +3573,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_potty_training",
 	title = "Potty Training Time!",
 	emoji = "🚽",
@@ -3614,7 +3614,7 @@ events[#events + 1] = {
 	},
 },
 
-{
+events[#events + 1] = {
 	id = "toddler_tantrum_public",
 	title = "Public Meltdown!",
 	emoji = "🛒",

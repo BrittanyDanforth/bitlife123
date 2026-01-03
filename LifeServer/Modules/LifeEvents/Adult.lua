@@ -3097,7 +3097,7 @@ Adult.events = {
 		},
 	},
 },
-{
+	{
 	id = "coworker_friendship",
 		title = "Work Friend",
 		emoji = "👥",
