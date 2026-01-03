@@ -2200,7 +2200,7 @@ MafiaEvents.LifeEvents = {
 				feed = "The boss appreciates your loyalty.",
 			},
 			{
-				text = "Get drunk and make a scene",
+				text = "Make a scene and embarrass yourself",
 				effects = { Happiness = 20, Health = -10 },
 				mafiaEffect = { respect = -30, loyalty = -20 },
 				setFlags = { embarrassed_family = true },

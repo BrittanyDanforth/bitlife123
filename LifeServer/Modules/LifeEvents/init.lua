@@ -2410,18 +2410,19 @@ local AgeMilestoneEvents = {
 	-- YOUNG ADULT (19-24) - Independence and discovery - MASSIVELY EXPANDED!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	[19] = { 
-		-- Age 19: College life - 30+ options!
-		"college_experience", "young_adult_first_apartment", "new_city_life", "first_roommate", 
-		"homesick_blues", "freedom_excitement", "nba_draft_declaration", "college_heisman_race",
-		"adult_leaving_home", "adult_college_experience", "adult_existential_crisis_early", "adult_student_loans",
+		-- Age 19: College life - 25+ options!
+		-- CRITICAL FIX: Removed non-existent events (new_city_life, first_roommate) and duplicates
+		"college_experience", "young_adult_first_apartment", "adult_leaving_home", "adult_college_experience", 
+		"nba_draft_declaration", "college_heisman_race", "adult_existential_crisis_early", "adult_student_loans",
 		"adult_dating_scene", "adult_career_choice", "adult_job_interview", "adult_health_checkup",
 		"adult_fitness_goal", "adult_mental_health_adult", "adult_friendship_evolution", "adult_social_event",
 		"adult_networking", "adult_hobby_discovery", "adult_quarter_life_crisis", "adult_first_apartment"
 	},
 	[20] = { 
 		-- Age 20: Twenties begin - 30+ options!
-		"young_adult_fitness_resolution", "young_adult_financial_habits", "twenties_begin", 
-		"identity_crisis_light", "new_decade_new_me", "nba_draft_declaration", "college_heisman_race",
+		-- CRITICAL FIX: Removed non-existent events (twenties_begin, identity_crisis_light, new_decade_new_me)
+		"young_adult_fitness_resolution", "young_adult_financial_habits", "adult_college_experience",
+		"adult_existential_crisis_early", "adult_student_loans", "nba_draft_declaration", "college_heisman_race",
 		"adult_dating_scene", "adult_serious_relationship", "adult_relationship_challenges", "adult_breakup",
 		"adult_side_hustle", "adult_financial_emergency", "adult_investment_opportunity", "adult_tax_situation",
 		"adult_salary_negotiation", "adult_networking_event", "adult_side_gig_opportunity", "adult_friendship_fade",
@@ -2429,8 +2430,9 @@ local AgeMilestoneEvents = {
 	},
 	[21] = { 
 		-- Age 21: Legal adult - 30+ options!
-		"turning_21_legal_drinking", "first_legal_drink", "royal_military_service", "bar_hopping", 
-		"adult_responsibilities", "real_world_hits", "nba_draft_declaration", "nfl_draft_declaration",
+		-- CRITICAL FIX: Removed non-existent/TOS-violating events
+		"royal_military_service", "adult_leaving_home", "adult_dating_scene", "adult_job_interview", 
+		"nba_draft_declaration", "nfl_draft_declaration", "adult_college_experience",
 		"adult_career_crossroads", "adult_health_scare", "adult_viral_fame", "adult_mentor_opportunity",
 		"adult_existential_thoughts", "adult_reunion", "adult_random_kindness", "adult_tech_burnout",
 		"adult_office_politics", "adult_friend_drift", "adult_money_windfall", "adult_creative_block",
@@ -2489,33 +2491,38 @@ local AgeMilestoneEvents = {
 	},
 	[28] = { 
 		-- Age 28: Pre-30 - 20+ options!
-		"late_20s_life_assessment", "pre_30_panic", "relationship_milestone", "career_change_consideration", "fitness_focus",
+		-- CRITICAL FIX: Removed non-existent events
+		"late_20s_life_assessment", "adult_existential_crisis_early", "relationship_milestone", "adult_career_setback", "adult_fitness_goal",
 		"adult_midlife_crisis", "adult_career_fork_decision", "adult_health_checkup_result", "adult_career_opportunity",
 		"adult_life_milestone_reflection", "adult_pet_consideration", "adult_random_encounter", "adult_unexpected_mentor",
 		"adult_life_crossroads", "adult_nostalgia_moment", "adult_having_children", "adult_existential_crisis_early"
 	},
 	[29] = { 
 		-- Age 29: Last year of twenties - 20+ options!
-		"approaching_30", "relationship_milestone", "decade_reflection", "bucket_list_rush", "life_audit",
+		-- CRITICAL FIX: Removed non-existent events
+		"quarter_life_crisis", "relationship_milestone", "late_20s_life_assessment", "adult_midlife_crisis",
 		"adult_health_wake_up", "adult_unexpected_bill", "adult_neighbor_drama", "adult_social_event_invite",
-		"adult_career_opportunity", "adult_reunite_old_friend", "adult_creative_block", "adult_tech_burnout",
+		"adult_career_opportunity", "adult_reunion", "adult_creative_block", "adult_tech_burnout",
 		"adult_office_politics", "adult_imposter_syndrome", "adult_new_hobby", "adult_social_comparison"
 	},
 	
 	-- 30s-40s - Established adulthood
-	[30] = { "stage_transition_adult", "turning_30", "fame_breakthrough", "dirty_thirty", "real_adult_now", "life_reassessment" },
-	[35] = { "royal_charity_focus", "career_peak", "mid_30s_reflection", "biological_deadline", "life_stability", "half_life_crisis" },
-	[40] = { "turning_40", "midlife_reflection", "royal_mid_reign", "over_the_hill", "wisdom_gained", "health_priority" },
+	-- CRITICAL FIX: Using events that actually exist
+	[30] = { "turning_30", "adult_career_peak", "adult_midlife_crisis", "adult_health_checkup", "adult_wedding_event" },
+	[35] = { "royal_charity_focus", "adult_career_peak", "adult_midlife_crisis", "adult_having_children", "adult_home_ownership" },
+	[40] = { "adult_midlife_crisis", "adult_parents_aging", "adult_health_checkup", "adult_career_crossroads", "royal_mid_reign" },
 	
-	-- 50s-60s - Later adulthood
-	[50] = { "stage_transition_middle_age", "turning_50", "silver_jubilee", "half_century", "empty_nest", "grandparent_maybe" },
-	[60] = { "golden_jubilee", "retirement_consideration", "senior_discount", "legacy_thoughts", "health_checks" },
+	-- 50s-60s - Later adulthood  
+	-- CRITICAL FIX: Using events that actually exist
+	[50] = { "adult_midlife_crisis", "adult_parents_aging", "adult_health_checkup", "adult_career_peak" },
+	[60] = { "adult_parents_aging", "adult_health_checkup", "adult_career_crossroads", "adult_hobby_discovery" },
 	
 	-- 65+ - Senior years
-	[65] = { "stage_transition_senior", "retirement_decision", "royal_succession_planning", "medicare_eligible", "golden_years_begin" },
-	[70] = { "golden_years", "legacy_planning", "diamond_jubilee", "seven_decades", "life_wisdom", "family_patriarch" },
-	[75] = { "platinum_jubilee", "diamond_anniversary_life", "remarkable_longevity", "great_grandparent" },
-	[80] = { "eighty_years_young", "centenarian_path", "family_elder", "life_celebration" },
+	-- CRITICAL FIX: Using events that actually exist
+	[65] = { "adult_parents_aging", "adult_health_checkup", "adult_hobby_discovery", "adult_vacation_plans" },
+	[70] = { "adult_health_checkup", "adult_hobby_discovery", "adult_nostalgia_moment" },
+	[75] = { "adult_health_checkup", "adult_hobby_discovery" },
+	[80] = { "adult_health_checkup" },
 }
 
 -- ═══════════════════════════════════════════════════════════════════════════════

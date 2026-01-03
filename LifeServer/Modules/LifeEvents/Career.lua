@@ -3101,7 +3101,7 @@ Career.events = {
 		},
 		{ text = "Stick close to people you know", effects = { Happiness = 2 }, feedText = "Comfort zone intact. Some light networking." },
 		{ text = "Leave early - hate these things", effects = { Happiness = 3, Smarts = -1 }, feedText = "You escaped! But missed opportunities." },
-		{ text = "Get too drunk at the open bar", effects = { Happiness = 4, Health = -2 }, setFlags = { embarrassed_self = true }, feedText = "You... might have said some things. Monday will be awkward." },
+		{ text = "Overdo the refreshments", effects = { Happiness = 4, Health = -2 }, setFlags = { embarrassed_self = true }, feedText = "You... might have said some things. Monday will be awkward." },
 	},
 },
 	{

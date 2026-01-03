@@ -3738,7 +3738,7 @@ Teen.events = {
 		id = "teen_party_invitation",
 		title = "The Party Invite",
 		emoji = "🎉",
-		text = "The popular kids are throwing a party while their parents are away. You actually got invited! But there's gonna be alcohol and probably some drama...",
+		text = "The popular kids are throwing a party while their parents are away. You actually got invited! But there's gonna be drama and things might get crazy...",
 		question = "Do you go?",
 		minAge = 14, maxAge = 18,
 		baseChance = 0.4,
