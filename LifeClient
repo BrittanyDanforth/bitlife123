@@ -3226,18 +3226,18 @@ local function buildEventModal()
 	
 	if Device.IS_TINY_PHONE then
 		-- ULTRA COMPACT: Tiny phones (iPhone 6: 667x375, iPhone SE: 568x320)
-		-- CRITICAL FIX: Smaller cards that fit nicely on tiny screens
-		eventWidth = math.min(screenWidth - 16, 270)
-		maxEventHeight = math.min(safeHeight * 0.88, 520) -- 88% of safe height, max 520px
+		-- MOBILE FIX: Even smaller cards for tiny screens
+		eventWidth = math.min(screenWidth - 16, 260)
+		maxEventHeight = math.min(safeHeight * 0.82, 450) -- 82% of safe height, max 450px
 	elseif Device.IS_SMALL_PHONE then
 		-- Small phones (under 750px height)
-		-- CRITICAL FIX: Compact but readable cards
-		eventWidth = math.min(screenWidth - 20, 300)
-		maxEventHeight = math.min(safeHeight * 0.88, 580) -- 88% of safe height, max 580px
+		-- MOBILE FIX: More compact cards
+		eventWidth = math.min(screenWidth - 20, 290)
+		maxEventHeight = math.min(safeHeight * 0.82, 500) -- 82% of safe height, max 500px
 	elseif Device.IS_MOBILE then
-		-- Regular phones - slightly smaller cards
-		eventWidth = modalWidth(320)
-		maxEventHeight = math.min(safeHeight * 0.85, 650) -- 85% of safe height
+		-- Regular phones - compact cards
+		eventWidth = modalWidth(310)
+		maxEventHeight = math.min(safeHeight * 0.80, 580) -- 80% of safe height, max 580px
 	else
 		-- Tablet/Desktop - full size
 		eventWidth = modalWidth(360)
@@ -3382,11 +3382,10 @@ local function buildEventModal()
 	titleSection.ZIndex = 64
 	titleSection.Parent = EventUI.card
 
-	-- MOBILE FIX: Very tight padding on tiny phones to fit cards on small screens
-	-- BUG FIX: Even tighter padding so buttons always visible
-	local titlePadTop = Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 4 or padSize(14))
-	local titlePadBottom = Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 4 or padSize(8))
-	local titlePadSide = Device.IS_TINY_PHONE and 6 or (Device.IS_SMALL_PHONE and 8 or padSize(16))
+	-- MOBILE FIX: Ultra tight padding for compact mobile cards
+	local titlePadTop = Device.IS_TINY_PHONE and 1 or (Device.IS_SMALL_PHONE and 2 or padSize(10))
+	local titlePadBottom = Device.IS_TINY_PHONE and 1 or (Device.IS_SMALL_PHONE and 2 or padSize(6))
+	local titlePadSide = Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 6 or padSize(12))
 	local titlePadding = Instance.new("UIPadding")
 	titlePadding.PaddingTop = UDim.new(0, titlePadTop)
 	titlePadding.PaddingBottom = UDim.new(0, titlePadBottom)
@@ -3397,7 +3396,7 @@ local function buildEventModal()
 	local titleLayout = Instance.new("UIListLayout")
 	titleLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	titleLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-	titleLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 2 or padSize(10))
+	titleLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 1 or (Device.IS_SMALL_PHONE and 2 or padSize(6)))
 	titleLayout.Parent = titleSection
 
 	-- MOBILE FIX: Responsive emoji sizing - SMALLER on tiny phones to save vertical space
@@ -3447,9 +3446,9 @@ local function buildEventModal()
 	bodySection.LayoutOrder = 3
 	bodySection.ZIndex = 64
 	bodySection.Parent = EventUI.card
-	-- CRITICAL FIX: Reduced bottom padding for tighter gap between text and buttons
-	local bodyPadSide = Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 6 or padSize(18))
-	local bodyPadBottom = Device.IS_TINY_PHONE and 1 or (Device.IS_SMALL_PHONE and 2 or padSize(4))  -- Reduced gap!
+	-- MOBILE FIX: Much tighter padding for compact mobile cards
+	local bodyPadSide = Device.IS_TINY_PHONE and 3 or (Device.IS_SMALL_PHONE and 5 or padSize(14))
+	local bodyPadBottom = Device.IS_TINY_PHONE and 0 or (Device.IS_SMALL_PHONE and 1 or padSize(2))  -- Minimal gap!
 	pad(bodySection, bodyPadSide, bodyPadSide, 0, bodyPadBottom)
 
 	local bodyLayout = Instance.new("UIListLayout")
@@ -3460,9 +3459,9 @@ local function buildEventModal()
 	bodyLayout.Parent = bodySection
 
 	-- Body text container - NO SCROLLING, card expands to fit
-	-- CRITICAL FIX: Smaller min height for compact mobile cards
+	-- MOBILE FIX: Minimal height for compact cards
 	EventUI.bodyScroll = Instance.new("Frame")
-	EventUI.bodyScroll.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 24 or (Device.IS_SMALL_PHONE and 30 or 40))  -- Reduced min height
+	EventUI.bodyScroll.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 18 or (Device.IS_SMALL_PHONE and 22 or 30))  -- Compact minimum
 	EventUI.bodyScroll.AutomaticSize = Enum.AutomaticSize.Y
 	EventUI.bodyScroll.BackgroundTransparency = 1
 	EventUI.bodyScroll.BorderSizePixel = 0
@@ -3523,17 +3522,17 @@ local function buildEventModal()
 	EventUI.choicesSection.ClipsDescendants = false  -- Don't clip - let parent handle it
 	EventUI.choicesSection.Parent = EventUI.card
 
-	-- MOBILE FIX: Tighter choice section padding - reduced gap between text and buttons
-	local choicePadSide = Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 6 or padSize(14))
-	local choicePadTop = Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 4 or padSize(6))  -- Reduced from padSize(4)
-	local choicePadBottom = Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 6 or padSize(12))
+	-- MOBILE FIX: Very tight choice section padding for compact cards
+	local choicePadSide = Device.IS_TINY_PHONE and 3 or (Device.IS_SMALL_PHONE and 5 or padSize(12))
+	local choicePadTop = Device.IS_TINY_PHONE and 1 or (Device.IS_SMALL_PHONE and 2 or padSize(4))  -- Minimal top gap
+	local choicePadBottom = Device.IS_TINY_PHONE and 3 or (Device.IS_SMALL_PHONE and 4 or padSize(8))  -- Smaller bottom
 	pad(EventUI.choicesSection, choicePadSide, choicePadSide, choicePadTop, choicePadBottom)
 
 	local choicesLayout = Instance.new("UIListLayout")
 	choicesLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	choicesLayout.SortOrder = Enum.SortOrder.LayoutOrder  -- CRITICAL: Force correct order
-	-- MOBILE FIX: Compact spacing between buttons - slightly tighter
-	choicesLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 3 or (Device.IS_SMALL_PHONE and 4 or padSize(6)))
+	-- MOBILE FIX: Very compact spacing between buttons
+	choicesLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 3 or padSize(5)))
 	choicesLayout.Parent = EventUI.choicesSection
 end
 
