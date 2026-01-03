@@ -46,6 +46,9 @@ local function hasIncompatibleLifeChoices(state)
 	if f.streamer or f.famous_streamer then return true end
 	if f.in_mob then return true end
 	if f.is_royalty then return true end
+	-- CRITICAL FIX: Block if in military - can't pursue NBA while enlisted!
+	if f.in_military or f.enlisted or f.soldier or f.military_active then return true end
+	if f.deployed or f.at_war or f.basic_training or f.military_career then return true end
 	return false
 end
 
@@ -651,6 +654,12 @@ NBACareerEvents.events = {
 		blockedByFlags = { 
 			in_prison = true, injured = true, nba_declared = true, nba_player = true,
 			academic_focus = true, nerd_group = true, gamer_kid = true, hates_sports = true,
+			-- CRITICAL FIX: Block for military and other incompatible careers!
+			in_military = true, enlisted = true, soldier = true, military_active = true,
+			deployed = true, at_war = true, basic_training = true, military_career = true,
+			nfl_player = true, nfl_declared = true, -- Can't be in NFL and NBA
+			is_royalty = true, in_mob = true, -- Premium paths block sports
+			full_time_job = true, -- Already in a career
 		},
 		
 		choices = {

@@ -812,21 +812,41 @@ function StoryPathsScreen:createPathCard(parent, path, order)
 	reqLabel.Parent = reqBadge
 
 	-- Action button
+	-- CRITICAL FIX: Premium paths should show "Get Pass" button and be clickable to purchase
+	local isUnlockable = canStart and reqsMet
+	local buttonText = "Start"
+	local buttonColor = path.color
+	local buttonTextColor = C.White
+	
+	if not isUnlockable then
+		if isPremiumPath then
+			-- Premium path - show Get Pass button with gold color
+			buttonText = "Get Pass"
+			buttonColor = Color3.fromRGB(255, 215, 0) -- Gold color
+			buttonTextColor = Color3.fromRGB(100, 70, 0) -- Dark gold text
+		else
+			buttonText = "Locked"
+			buttonColor = C.Gray300
+			buttonTextColor = C.Gray500
+		end
+	end
+	
 	local actionBtn = Instance.new("TextButton")
 	actionBtn.Size = UDim2.new(0, 80, 0, 50)
 	actionBtn.AnchorPoint = Vector2.new(1, 0.5)
 	actionBtn.Position = UDim2.new(1, -14, 0.5, 0)
-	actionBtn.BackgroundColor3 = canStart and reqsMet and path.color or C.Gray300
+	actionBtn.BackgroundColor3 = buttonColor
 	actionBtn.Font = F.Button
 	actionBtn.TextSize = 14
-	actionBtn.TextColor3 = canStart and reqsMet and C.White or C.Gray500
-	actionBtn.Text = canStart and reqsMet and "Start" or "Locked"
+	actionBtn.TextColor3 = buttonTextColor
+	actionBtn.Text = buttonText
 	actionBtn.AutoButtonColor = false
 	actionBtn.ZIndex = 84
 	actionBtn.Parent = card
 	UI.corner(actionBtn, 14)
 
-	if canStart and reqsMet then
+	if isUnlockable then
+		-- Normal start path interaction
 		actionBtn.MouseEnter:Connect(function()
 			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = path.colorDark })
 			UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = path.colorPale:Lerp(C.White, 0.7) })
@@ -837,6 +857,25 @@ function StoryPathsScreen:createPathCard(parent, path, order)
 		end)
 		actionBtn.MouseButton1Click:Connect(function()
 			self:showPathModal(path)
+		end)
+	elseif isPremiumPath then
+		-- CRITICAL FIX: Premium locked paths are CLICKABLE to trigger purchase popup!
+		actionBtn.MouseEnter:Connect(function()
+			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = Color3.fromRGB(255, 235, 100) })
+			UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = path.colorPale:Lerp(C.White, 0.7) })
+		end)
+		actionBtn.MouseLeave:Connect(function()
+			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = Color3.fromRGB(255, 215, 0) })
+			UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = C.White })
+		end)
+		actionBtn.MouseButton1Click:Connect(function()
+			-- Show gamepass purchase prompt!
+			self:showGamepassPrompt(
+				path.gamepassKey,
+				"Unlock " .. path.name,
+				path.description .. "\n\nGet the " .. (path.gamepassName or "Premium Pass") .. " to unlock this story path!",
+				path.color
+			)
 		end)
 	end
 	
