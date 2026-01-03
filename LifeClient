@@ -1549,18 +1549,23 @@ local function showResultPopup(data, callback)
 	if estimatedTextHeight > maxBodyHeight then
 		-- Calculate scale factor needed
 		local scaleFactor = maxBodyHeight / estimatedTextHeight
-		scaleFactor = math.max(0.6, scaleFactor)  -- Don't go below 60%
+		scaleFactor = math.max(0.55, scaleFactor)  -- CRITICAL FIX: Allow smaller text (was 0.6)
 		
-		adjustedResultTextSize = math.max(10, math.floor(baseResultTextSize * scaleFactor))
-		adjustedResultLineHeight = math.max(1.05, adjustedResultLineHeight * 0.9)
+		adjustedResultTextSize = math.max(9, math.floor(baseResultTextSize * scaleFactor))  -- CRITICAL FIX: Allow smaller (was 10)
+		adjustedResultLineHeight = math.max(1.0, adjustedResultLineHeight * 0.85)  -- CRITICAL FIX: Tighter lines
 		
-		-- If still too long after scaling, truncate the text
+		-- CRITICAL FIX: Only truncate for VERY long text (200+ chars)
+		-- Short feedText like "Using your talents for extra cash!" should NEVER be truncated!
+		-- Previous bug: Even 50-char text was getting cut to "extra c...."
 		local newEstimatedLines = maxBodyHeight / (adjustedResultTextSize * adjustedResultLineHeight)
 		local maxChars = math.floor(newEstimatedLines * charsPerLine)
 		
-		if textLen > maxChars + 20 then
-			-- Truncate with ellipsis
-			bodyText = string.sub(bodyText, 1, maxChars) .. "..."
+		-- CRITICAL FIX: Only truncate if text is actually very long AND would overflow
+		-- Minimum threshold of 150 chars before any truncation is considered
+		if textLen > 150 and textLen > maxChars + 30 then
+			-- Truncate with ellipsis, but keep more text visible
+			local truncateAt = math.max(100, maxChars)  -- Keep at least 100 chars
+			bodyText = string.sub(bodyText, 1, truncateAt) .. "..."
 		end
 	elseif textLen > 200 then
 		-- Moderate length - slightly smaller
