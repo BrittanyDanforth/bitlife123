@@ -3321,6 +3321,49 @@ function LifeEvents.buildYearQueue(state, options)
 	end
 
 	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #WEDDING-1: GUARANTEED WEDDING EVENT AFTER ENGAGEMENT!
+	-- User complaint: "PROPOSE MEANS U GET MARRIED LIKE A MARRIFIED LIFE EVENT POPS UP NEXT AGE UP"
+	-- If player is engaged and not married, FORCE the wedding_planning event to trigger!
+	-- This ensures players don't have to manually go to Activities -> Marriage
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isEngaged = flags.engaged == true
+	local isMarried = flags.married == true
+	local isRoyalEngaged = flags.engaged_to_royalty == true
+	
+	if isEngaged and not isMarried then
+		-- Check how long they've been engaged (auto-wedding after 1-2 years)
+		local yearsEngaged = flags.years_engaged or 0
+		flags.years_engaged = yearsEngaged + 1
+		
+		-- 80% chance to trigger wedding on first year, guaranteed by year 2
+		local weddingChance = (yearsEngaged >= 1) and 1.0 or 0.80
+		
+		if RANDOM_LOCAL:NextNumber() < weddingChance then
+			-- Try regular wedding_planning first
+			local weddingEvent = AllEvents["wedding_planning"]
+			
+			-- Royal weddings use a different event
+			if isRoyalEngaged then
+				weddingEvent = AllEvents["royal_wedding_planning"] or AllEvents["premium_wish_wedding"] or weddingEvent
+			end
+			
+			if weddingEvent and canEventTrigger(weddingEvent, state) then
+				local occurCount = (history.occurrences[weddingEvent.id] or 0)
+				if occurCount == 0 or not weddingEvent.oneTime then
+					table.insert(selectedEvents, weddingEvent)
+					recordEventShown(state, weddingEvent)
+					return selectedEvents
+				end
+			end
+		end
+	else
+		-- Clear engagement counter if no longer engaged
+		if flags.years_engaged then
+			flags.years_engaged = nil
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #MOBILE-2: SPLIT RAPPER AND CREATOR EVENTS COMPLETELY!
 	-- BUG: Rapper events fired for streamers because they were grouped together
 	-- FIX: Now we check SEPARATELY for rappers and creators - they are different careers!
@@ -4867,6 +4910,7 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 			state.Flags.engaged = nil -- No longer engaged, now married
 			state.Flags.dating = nil -- No longer just dating
 			state.Flags.has_spouse = true -- Set spouse flag for detection
+			state.Flags.years_engaged = nil -- CRITICAL FIX #WEDDING-3: Clear years_engaged counter after wedding
 			
 			-- CRITICAL FIX: Safe access to partner name with fallback
 			local partnerName = partner.name or partner.Name or "your partner"
@@ -4883,6 +4927,9 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 			local partnerGender = state.Relationships.partner.gender or "female"
 			state.Relationships.partner.role = (partnerGender == "female") and "Fiancée" or "Fiancé"
 		end
+		-- CRITICAL FIX #WEDDING-2: Initialize years_engaged counter when engagement happens
+		-- This is used by the wedding auto-queue system to trigger wedding_planning
+		state.Flags.years_engaged = 0
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════

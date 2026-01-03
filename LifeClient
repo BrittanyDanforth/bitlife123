@@ -3457,8 +3457,9 @@ local function buildEventModal()
 	bodyLayout.Parent = bodySection
 
 	-- Body text container - NO SCROLLING, card expands to fit
+	-- CRITICAL FIX: Give body container a minimum height to prevent "You..." cutoff bug
 	EventUI.bodyScroll = Instance.new("Frame")
-	EventUI.bodyScroll.Size = UDim2.new(1, 0, 0, 0)
+	EventUI.bodyScroll.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 30 or (Device.IS_SMALL_PHONE and 40 or 50))  -- CRITICAL FIX: Minimum height!
 	EventUI.bodyScroll.AutomaticSize = Enum.AutomaticSize.Y
 	EventUI.bodyScroll.BackgroundTransparency = 1
 	EventUI.bodyScroll.BorderSizePixel = 0
@@ -3466,7 +3467,8 @@ local function buildEventModal()
 	EventUI.bodyScroll.ZIndex = 65
 	EventUI.bodyScroll.Parent = bodySection
 
-	local eventBodyTextSize = Device.IS_TINY_PHONE and 14 or (Device.IS_SMALL_PHONE and 16 or textSize(20))
+	-- CRITICAL FIX: Increased body text size 30% for better readability on mobile/tablet
+	local eventBodyTextSize = Device.IS_TINY_PHONE and 16 or (Device.IS_SMALL_PHONE and 18 or textSize(22))  -- Was 14/16/18
 	EventUI.body = Instance.new("TextLabel")
 	EventUI.body.Size = UDim2.new(1, 0, 0, 0)
 	EventUI.body.AutomaticSize = Enum.AutomaticSize.Y
@@ -4936,19 +4938,20 @@ showEvent = function(payload)
 			baseTextSize = 15  -- Was 18, now more readable
 			baseCorner = 10
 		elseif Device.IS_TINY_PHONE then
-			baseButtonHeight = 32
+			baseButtonHeight = 36  -- CRITICAL FIX: Increased for readability
 			baseSpacing = 3
-			baseTextSize = 10
+			baseTextSize = 13  -- CRITICAL FIX: 30% larger (was 10) - user said "pretty hard to read"
 			baseCorner = 5
 		elseif Device.IS_SMALL_PHONE then
-			baseButtonHeight = 38
+			baseButtonHeight = 42  -- CRITICAL FIX: Increased for readability
 			baseSpacing = 5
-			baseTextSize = 12
+			baseTextSize = 16  -- CRITICAL FIX: 30% larger (was 12) - user said "pretty hard to read"
 			baseCorner = 7
 		else
-			baseButtonHeight = 48
+			-- Tablets and larger phones
+			baseButtonHeight = 52  -- CRITICAL FIX: Slightly larger
 			baseSpacing = 8
-			baseTextSize = 15
+			baseTextSize = 20  -- CRITICAL FIX: 30% larger (was 15) - user said "pretty hard to read"
 			baseCorner = 10
 		end
 		
@@ -5413,9 +5416,11 @@ hideEvent = function()
 	tween(EventUI.card, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
 
 	EventUI.currentHideTween.Completed:Connect(function()
+		-- CRITICAL FIX: More robust race condition prevention
 		-- Only hide overlay if we're not currently showing a new event
-		-- This prevents race condition where hide completes after new show started
-		if not awaitingEvent then
+		-- AND the tween wasn't cancelled (check if still tracked)
+		-- This prevents "You..." text cutoff bug where body.Text gets cleared after new event sets it
+		if not awaitingEvent and EventUI.currentHideTween then
 			EventUI.overlay.Visible = false
 
 			-- Reset event UI elements for next event
@@ -5426,7 +5431,6 @@ hideEvent = function()
 			EventUI.nameLbl.Text = ""
 			EventUI.relationLbl.Text = ""
 			EventUI.header.Visible = false
-			
 		end
 
 		EventUI.currentHideTween = nil
