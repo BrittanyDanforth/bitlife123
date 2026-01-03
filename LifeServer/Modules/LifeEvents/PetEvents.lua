@@ -314,7 +314,7 @@ PetEvents.events = {
 		text = "Quality time with your pet!",
 		question = "What do you do together?",
 		minAge = 5, maxAge = 100,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 5,
 		stage = STAGE,
 		ageBand = "any",
@@ -642,7 +642,7 @@ PetEvents.events = {
 		text = "Are you ready to love again?",
 		question = "Do you open your heart to a new pet?",
 		minAge = 10, maxAge = 90,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",

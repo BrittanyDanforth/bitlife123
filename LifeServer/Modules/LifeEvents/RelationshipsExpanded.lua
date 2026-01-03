@@ -505,7 +505,7 @@ RelationshipsExpanded.events = {
 		text = "A close friend is going through something difficult.",
 		question = "How do you support them?",
 		minAge = 12, maxAge = 90,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 3,
 		stage = STAGE,
 		ageBand = "any",
@@ -622,7 +622,7 @@ RelationshipsExpanded.events = {
 		text = "There's tension in your friend group.",
 		question = "How do you handle the group dynamics?",
 		minAge = 13, maxAge = 60,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 3,
 		stage = STAGE,
 		ageBand = "any",
@@ -1029,7 +1029,7 @@ RelationshipsExpanded.events = {
 		text = "Despite being around people, you feel deeply lonely.",
 		question = "How do you combat loneliness?",
 		minAge = 18, maxAge = 90,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 3,
 		stage = STAGE,
 		ageBand = "any",
@@ -1188,7 +1188,7 @@ RelationshipsExpanded.events = {
 		text = "Your royal partner is proposing! They want to marry you and make you part of the royal family! This is a life-changing moment!",
 		question = "Will you become royalty through marriage?",
 		minAge = 20, maxAge = 50,
-		baseChance = 0.8, -- High chance if you have the flags
+		baseChance = 0.5, -- High chance if you have the flags
 		cooldown = 40, -- One-time event
 		oneTime = true,
 		maxOccurrences = 1,
@@ -1423,7 +1423,7 @@ RelationshipsExpanded.events = {
 -- These are NOT hardcoded - they use eligibility functions to react to player state
 -- ══════════════════════════════════════════════════════════════════════════════
 
-{
+	{
 	id = "rel_friend_remembers",
 	title = "A Friend Reaches Out",
 	emoji = "📱",
@@ -1510,7 +1510,7 @@ RelationshipsExpanded.events = {
 	},
 },
 
-{
+	{
 	id = "rel_friend_needs_you",
 	title = "Friend in Crisis",
 	emoji = "🆘",
@@ -1581,7 +1581,7 @@ RelationshipsExpanded.events = {
 	},
 },
 
-{
+	{
 	id = "rel_friend_success",
 	title = "Friend's Big Success",
 	emoji = "🎊",
@@ -1644,7 +1644,7 @@ RelationshipsExpanded.events = {
 	},
 },
 
-{
+	{
 	id = "rel_friend_toxic",
 	title = "Toxic Friend Behavior",
 	emoji = "☢️",
@@ -1732,7 +1732,7 @@ RelationshipsExpanded.events = {
 	},
 },
 
-{
+	{
 	id = "rel_unexpected_reunion",
 	title = "Unexpected Reunion",
 	emoji = "👥",
@@ -1797,7 +1797,7 @@ RelationshipsExpanded.events = {
 	},
 },
 
-{
+	{
 	id = "rel_group_dynamics",
 	title = "Friend Group Drama",
 	emoji = "👯",

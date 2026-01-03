@@ -28,7 +28,7 @@ DailyLifeEvents.events = {
 		},
 		question = "How do you start your day?",
 		minAge = 12, maxAge = 80,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
@@ -330,7 +330,7 @@ DailyLifeEvents.events = {
 		text = "Lunch time!",
 		question = "What do you do for lunch?",
 		minAge = 15, maxAge = 80,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
@@ -366,7 +366,7 @@ DailyLifeEvents.events = {
 		text = "The 3pm slump is hitting hard!",
 		question = "How do you power through?",
 		minAge = 18, maxAge = 75,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
@@ -421,7 +421,7 @@ DailyLifeEvents.events = {
 		text = "What's for dinner?",
 		question = "How do you handle dinner?",
 		minAge = 15, maxAge = 100,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",
@@ -596,7 +596,7 @@ DailyLifeEvents.events = {
 		text = "Chores need doing!",
 		question = "How do you handle chores?",
 		minAge = 12, maxAge = 90,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",

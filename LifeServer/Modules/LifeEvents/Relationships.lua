@@ -490,7 +490,7 @@ Relationships.events = {
 		text = "{{PARTNER_NAME}} has to move away for work/school. It would mean a long-distance relationship.",
 		question = "Can you make it work?",
 		minAge = 18, maxAge = 50,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresPartner = true,
 		choices = {
@@ -726,7 +726,7 @@ Relationships.events = {
 		text = "Your relationship with your parents has been complicated.",
 		question = "How do you approach it?",
 		minAge = 18, maxAge = 50,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Make effort to connect", effects = { Happiness = 8 }, setFlags = { close_to_parents = true }, feedText = "You worked on your relationship with your parents." },
@@ -989,7 +989,7 @@ Relationships.events = {
 		text = "A friend dragged you to a speed dating event. 5 minutes per person!",
 		question = "What's your strategy?",
 		minAge = 21, maxAge = 50,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresSingle = true,
 		-- CRITICAL FIX #11: Can't speed date from prison!
@@ -1055,7 +1055,7 @@ Relationships.events = {
 		text = "A friend set you up on a blind date. You don't know what they look like!",
 		question = "Where do you meet?",
 		minAge = 18, maxAge = 50,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 3,
 		requiresSingle = true,
 		-- CRITICAL FIX #12: Can't go on blind dates from prison!
@@ -1230,7 +1230,7 @@ Relationships.events = {
 		text = "Jealousy is causing issues in your relationship.",
 		question = "Who's the jealous one?",
 		minAge = 16, maxAge = 60,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 3,
 		requiresPartner = true,
 
@@ -1710,7 +1710,7 @@ Relationships.events = {
 		text = "Your sibling achieved something major.",
 		question = "How do you feel?",
 		minAge = 15, maxAge = 70,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { has_siblings = true },
 
@@ -1745,7 +1745,7 @@ Relationships.events = {
 		text = "Your parent is getting remarried.",
 		question = "How do you feel about your new step-parent?",
 		minAge = 10, maxAge = 50,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4,
 		requiresFlags = { parents_divorced = true },
 
@@ -2197,7 +2197,7 @@ Relationships.events = {
 		text = "You're considering renewing your wedding vows.",
 		question = "How do you celebrate?",
 		minAge = 35, maxAge = 80,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4,
 		requiresFlags = { married = true },
 		blockedByFlags = { in_prison = true, incarcerated = true },

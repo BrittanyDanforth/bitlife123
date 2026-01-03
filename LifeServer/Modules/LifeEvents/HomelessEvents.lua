@@ -26,8 +26,8 @@ events[#events + 1] = {
 	question = "You have 48 hours to leave. What do you do?",
 	minAge = 21, maxAge = 75, -- CRITICAL FIX: Increased minAge to 21 - need time to establish housing
 	-- CRITICAL FIX: Reduced baseChance - this was triggering way too often!
-	baseChance = 0.5,
-	cooldown = 5, -- CRITICAL FIX: Increased cooldown - eviction shouldn't happen every few years
+	baseChance = 0.3,
+	cooldown = 8, -- CRITICAL FIX: Increased cooldown - eviction shouldn't happen every few years
 	oneTime = true,
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: EVICTION REQUIRES PLAYER TO ACTUALLY HAVE THEIR OWN HOUSING!
@@ -155,7 +155,7 @@ events[#events + 1] = {
 	text = "Your friend says you need to leave. You've been on their couch for weeks and they need their space back.",
 	question = "Where do you go now?",
 	minAge = 18, maxAge = 70,
-	baseChance = 0.55, -- CRITICAL FIX: Reduced from 0.85 to prevent spam
+	baseChance = 0.4, -- CRITICAL FIX: Reduced from 0.85 to prevent spam
 	cooldown = 4, -- CRITICAL FIX: Increased from 1 to prevent spam
 	category = "homeless", -- CRITICAL FIX: Proper category
 	tags = { "homeless", "housing", "crisis" },
@@ -212,7 +212,7 @@ events[#events + 1] = {
 	question = "How do you start your day?",
 	minAge = 18, maxAge = 80,
 	baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.85 to prevent spam
-	cooldown = 3, -- CRITICAL FIX: Increased from 1 to prevent spam
+	cooldown = 4, -- CRITICAL FIX: Increased from 1 to prevent spam
 	category = "homeless", -- CRITICAL FIX: Proper category
 	tags = { "homeless", "survival", "daily" },
 	requiresFlags = { homeless = true },
@@ -285,7 +285,7 @@ events[#events + 1] = {
 	question = "Where do you sleep tonight?",
 	minAge = 18, maxAge = 80,
 	baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
-	cooldown = 3, -- CRITICAL FIX: Increased from 1 to prevent spam
+	cooldown = 4, -- CRITICAL FIX: Increased from 1 to prevent spam
 	category = "homeless", -- CRITICAL FIX: Proper category
 	tags = { "homeless", "survival", "night" },
 	requiresFlags = { homeless = true },
@@ -346,7 +346,7 @@ events[#events + 1] = {
 	question = "How do you handle this?",
 	minAge = 18, maxAge = 75,
 	baseChance = 0.5,
-	cooldown = 3, -- CRITICAL FIX: Increased from 2
+	cooldown = 4, -- CRITICAL FIX: Increased from 2
 	requiresFlags = { homeless = true },
 	blockedByFlags = { in_prison = true },
 	
@@ -412,7 +412,7 @@ events[#events + 1] = {
 	question = "How do you stay safe?",
 	minAge = 18, maxAge = 80,
 	baseChance = 0.6,
-	cooldown = 3, -- CRITICAL FIX: Increased from 2
+	cooldown = 4, -- CRITICAL FIX: Increased from 2
 	requiresFlags = { homeless = true },
 	blockedByFlags = { in_prison = true },
 	textVariants = {
@@ -494,7 +494,7 @@ events[#events + 1] = {
 	question = "How do you respond?",
 	minAge = 18, maxAge = 80,
 	baseChance = 0.6,
-	cooldown = 3, -- CRITICAL FIX: Increased from 2
+	cooldown = 4, -- CRITICAL FIX: Increased from 2
 	requiresFlags = { homeless = true },
 	blockedByFlags = { in_prison = true },
 	
@@ -526,7 +526,7 @@ events[#events + 1] = {
 	question = "They offer you...",
 	minAge = 18, maxAge = 80,
 	baseChance = 0.45,
-	cooldown = 3,
+	cooldown = 4,
 	requiresFlags = { homeless = true },
 	blockedByFlags = { in_prison = true },
 	
@@ -678,7 +678,7 @@ events[#events + 1] = {
 	question = "What's your breakthrough?",
 	minAge = 18, maxAge = 65,
 	baseChance = 0.5,
-	cooldown = 3,
+	cooldown = 4,
 	requiresFlags = { homeless = true },
 	blockedByFlags = { in_prison = true },
 	eligibility = function(state)
@@ -816,7 +816,7 @@ events[#events + 1] = {
 	question = "What do you do?",
 	minAge = 18, maxAge = 80,
 	baseChance = 0.5,
-	cooldown = 3, -- CRITICAL FIX: Increased from 2
+	cooldown = 4, -- CRITICAL FIX: Increased from 2
 	requiresFlags = { homeless = true },
 	blockedByFlags = { in_prison = true },
 	
@@ -857,8 +857,8 @@ events[#events + 1] = {
 	text = "Police officers approach you. Being homeless isn't a crime, but they want you to move.",
 	question = "How do you handle this?",
 	minAge = 18, maxAge = 80,
-	baseChance = 0.55,
-	cooldown = 3, -- CRITICAL FIX: Increased from 2
+	baseChance = 0.4,
+	cooldown = 4, -- CRITICAL FIX: Increased from 2
 	requiresFlags = { homeless = true },
 	blockedByFlags = { in_prison = true },
 	
@@ -942,7 +942,7 @@ events[#events + 1] = {
 	question = "How do you survive the season?",
 	minAge = 18, maxAge = 80,
 	baseChance = 0.7,
-	cooldown = 3,
+	cooldown = 4,
 	requiresFlags = { homeless = true },
 	blockedByFlags = { in_prison = true },
 	
@@ -1038,7 +1038,7 @@ events[#events + 1] = {
 	question = "What do you do?",
 	minAge = 18, maxAge = 80,
 	baseChance = 0.5,
-	cooldown = 3,
+	cooldown = 4,
 	requiresFlags = { homeless = true },
 	blockedByFlags = { in_prison = true },
 	
@@ -1133,7 +1133,7 @@ events[#events + 1] = {
 	question = "What do you do?",
 	minAge = 18, maxAge = 75,
 	baseChance = 0.45,
-	cooldown = 3,
+	cooldown = 4,
 	requiresFlags = { homeless = true },
 	blockedByFlags = { in_prison = true },
 	
@@ -1184,7 +1184,7 @@ events[#events + 1] = {
 	question = "What do you do?",
 	minAge = 18, maxAge = 80,
 	baseChance = 0.4,
-	cooldown = 3,
+	cooldown = 4,
 	requiresFlags = { homeless = true },
 	blockedByFlags = { in_prison = true },
 	
@@ -1264,8 +1264,8 @@ events[#events + 1] = {
 	text = "The stress of homelessness is overwhelming. You're struggling with depression and anxiety.",
 	question = "How do you cope?",
 	minAge = 18, maxAge = 80,
-	baseChance = 0.55,
-	cooldown = 3,
+	baseChance = 0.4,
+	cooldown = 4,
 	requiresFlags = { homeless = true },
 	blockedByFlags = { in_prison = true },
 	
@@ -1347,7 +1347,7 @@ events[#events + 1] = {
 	question = "How do you get clean?",
 	minAge = 18, maxAge = 80,
 	baseChance = 0.5,
-	cooldown = 3, -- CRITICAL FIX: Increased from 2
+	cooldown = 4, -- CRITICAL FIX: Increased from 2
 	requiresFlags = { homeless = true },
 	blockedByFlags = { in_prison = true },
 	

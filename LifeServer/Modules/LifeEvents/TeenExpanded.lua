@@ -13,7 +13,7 @@ TeenExpanded.events = {
 	-- SOCIAL & IDENTITY (Ages 13-17)
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "teen_identity_crisis",
+		id = "teen_self_questioning",
 		title = "Who Am I?",
 		emoji = "🪞",
 		text = "You're questioning everything about yourself - your identity, beliefs, who you want to be.",
@@ -164,7 +164,7 @@ TeenExpanded.events = {
 		text = "Your clique wants you to do something to prove your loyalty.",
 		question = "What do they want you to do?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "teen",
@@ -367,7 +367,7 @@ TeenExpanded.events = {
 		text = "Your heart has been shattered into a million pieces.",
 		question = "How do you cope with the pain?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "teen",
@@ -485,7 +485,7 @@ TeenExpanded.events = {
 	-- ACADEMIC & FUTURE PLANNING (Ages 14-17)
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "teen_academic_pressure",
+		id = "teen_grade_pressure_overload",
 		title = "Academic Pressure",
 		emoji = "📚",
 		text = "The pressure to get good grades is overwhelming.",
@@ -721,7 +721,7 @@ TeenExpanded.events = {
 		text = "Your friends want you to sneak out tonight.",
 		question = "Do you risk it?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 3,
 		stage = STAGE,
 		ageBand = "teen",
@@ -873,7 +873,7 @@ TeenExpanded.events = {
 		text = "Someone offers you something you know you shouldn't have.",
 		question = "How do you handle the pressure?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "teen",
@@ -1318,7 +1318,7 @@ TeenExpanded.events = {
 		text = "You've discovered a love for reading!",
 		question = "What are you reading?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 3,
 		stage = STAGE,
 		ageBand = "teen",
@@ -1546,7 +1546,7 @@ TeenExpanded.events = {
 		text = "You tried to do laundry by yourself!",
 		question = "How did it go?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "teen",
@@ -1567,7 +1567,7 @@ TeenExpanded.events = {
 		text = "You did something completely on your own for the first time!",
 		question = "What was your independent moment?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4,
 		stage = STAGE,
 		ageBand = "teen",

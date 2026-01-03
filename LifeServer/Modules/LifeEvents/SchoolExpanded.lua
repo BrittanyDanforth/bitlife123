@@ -275,7 +275,7 @@ SchoolExpanded.events = {
 		text = "The class is going on a field trip!",
 		question = "How does the field trip go?",
 		minAge = 5, maxAge = 12,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = "childhood",
 		ageBand = "early_childhood",
@@ -553,7 +553,7 @@ SchoolExpanded.events = {
 		text = "You could run for a leadership position in a school club!",
 		question = "Do you go for it?",
 		minAge = 15, maxAge = 18,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = "teen",
 		ageBand = "teen",
@@ -906,7 +906,7 @@ SchoolExpanded.events = {
 		text = "You made it! Graduation day!",
 		question = "How does graduation feel?",
 		minAge = 21, maxAge = 26,
-		baseChance = 0.8,
+		baseChance = 0.5,
 		cooldown = 4,
 		oneTime = true,
 		stage = "adult",

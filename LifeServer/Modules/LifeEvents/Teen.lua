@@ -93,7 +93,7 @@ Teen.events = {
 		text = "You're assigned a group project, but one member isn't pulling their weight.",
 		question = "How do you handle it?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.55, -- CRITICAL FIX: Reduced from 0.7
+		baseChance = 0.4, -- CRITICAL FIX: Reduced from 0.7
 		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		category = "teen", -- CRITICAL FIX: Proper category
 		tags = { "school", "conflict", "teamwork" },
@@ -167,7 +167,7 @@ Teen.events = {
 		text = "A big exam is coming up. You're feeling the pressure.",
 		question = "How do you cope?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.6
+		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.6
 		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		category = "teen", -- CRITICAL FIX: Proper category
 		tags = { "school", "stress", "exam" },
@@ -191,7 +191,7 @@ Teen.events = {
 		text = "Someone you like seems to be interested in you too.",
 		question = "What do you do?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7
+		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.7
 		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		category = "teen", -- CRITICAL FIX: Proper category
 		tags = { "romance", "relationships", "teen" },
@@ -252,7 +252,7 @@ Teen.events = {
 		},
 		question = "What do you do?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7
+		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.7
 		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		category = "teen", -- CRITICAL FIX: Proper category
 		tags = { "social", "party", "teen" },
@@ -268,40 +268,56 @@ Teen.events = {
 		id = "clique_pressure",
 		title = "Finding Your Group",
 		emoji = "👥",
+		textVariants = {
+			"Different social groups are forming. Where do you fit in?",
+			"High school has tribes. Which one is yours?",
+			"Cafeteria seating says a lot. Where do you sit?",
+			"Every group has its vibe. What's yours?",
+			"Social circles are forming. Time to pick a lane... or not.",
+			"The jocks, the nerds, the artsy kids... where do YOU belong?",
+		},
 		text = "Different social groups are forming. Where do you fit in?",
 		question = "Which group do you gravitate toward?",
 		minAge = 13, maxAge = 16,
 		oneTime = true,
-		category = "teen", -- CRITICAL FIX: Proper category
+		category = "teen",
 		tags = { "social", "identity", "teen" },
-		requiresFlags = { in_high_school = true }, -- CRITICAL FIX: Must be in school
+		requiresFlags = { in_high_school = true },
 		blockedByFlags = { dropped_out_high_school = true, in_prison = true, found_clique = true },
 		choices = {
-			{ text = "The studious overachievers", effects = { Smarts = 5 }, setFlags = { nerd_group = true }, feedText = "You found your tribe among the academic crowd." },
-			{ text = "The athletes and jocks", effects = { Health = 5, Happiness = 3 }, setFlags = { jock_group = true }, hintCareer = "sports", feedText = "You fit in with the athletic crowd." },
-			{ text = "The creative/artsy types", effects = { Happiness = 5, Looks = 2 }, setFlags = { artsy_group = true }, hintCareer = "creative", feedText = "You found kindred creative spirits." },
-			{ text = "The rebels and misfits", effects = { Happiness = 3 }, setFlags = { rebel_group = true }, feedText = "You don't follow the mainstream." },
-			{ text = "A mix of everyone", effects = { Happiness = 3, Smarts = 2 }, setFlags = { social_butterfly = true }, feedText = "You move between groups easily." },
+			{ text = "The studious overachievers", effects = { Smarts = 5 }, setFlags = { nerd_group = true, found_clique = true, academic_focus = true }, hintCareer = "tech", feedText = "You found your tribe among the academic crowd." },
+			{ text = "The athletes and jocks", effects = { Health = 5, Happiness = 3 }, setFlags = { jock_group = true, found_clique = true, athletic = true }, hintCareer = "sports", feedText = "You fit in with the athletic crowd." },
+			{ text = "The creative/artsy types", effects = { Happiness = 5, Looks = 2 }, setFlags = { artsy_group = true, found_clique = true, creative = true }, hintCareer = "creative", feedText = "You found kindred creative spirits." },
+			{ text = "The rebels and misfits", effects = { Happiness = 3 }, setFlags = { rebel_group = true, found_clique = true, independent_thinker = true }, feedText = "You don't follow the mainstream." },
+			{ text = "A mix of everyone", effects = { Happiness = 3, Smarts = 2 }, setFlags = { social_butterfly = true, found_clique = true, adaptable = true }, feedText = "You move between groups easily." },
 		},
 	},
 	{
 		id = "friendship_drama",
 		title = "Best Friend Betrayal",
 		emoji = "💔",
+		textVariants = {
+			"You found out your best friend has been talking behind your back.",
+			"Screenshots don't lie. Your BFF has been saying THINGS about you.",
+			"A mutual friend showed you texts. Your best friend... isn't so friendly.",
+			"The rumors going around? They started with your 'best friend.'",
+			"Trust shattered. Someone you trusted has been fake.",
+			"That person you told everything to? They've been sharing it all.",
+		},
 		text = "You found out your best friend has been talking behind your back.",
 		question = "How do you react?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.4, -- CRITICAL FIX: Reduced
-		cooldown = 5, -- CRITICAL FIX: Increased
-		category = "teen", -- CRITICAL FIX: Proper category
+		baseChance = 0.3,
+		cooldown = 6,
+		category = "teen",
 		tags = { "friendship", "conflict", "teen" },
 		requiresFlags = { has_best_friend = true },
 		blockedByFlags = { in_prison = true },
 		choices = {
-			{ text = "Confront them", effects = { Happiness = 3 }, setFlags = { confrontational = true }, feedText = "You had it out. The truth came to light." },
-			{ text = "End the friendship", effects = { Happiness = -5 }, setFlags = { holds_grudges = true, has_best_friend = false }, feedText = "You cut them off. It hurts." },
-			{ text = "Try to understand why", effects = { Smarts = 2, Happiness = 2 }, setFlags = { empathetic = true }, feedText = "You tried to see their perspective." },
-			{ text = "Forgive and move on", effects = { Happiness = 3 }, setFlags = { forgiving = true }, feedText = "You chose to forgive. Friendships are complicated." },
+			{ text = "Confront them", effects = { Happiness = 3 }, setFlags = { confrontational = true, direct_communicator = true }, feedText = "You had it out. The truth came to light." },
+			{ text = "End the friendship", effects = { Happiness = -5 }, setFlags = { holds_grudges = true, has_best_friend = false, been_betrayed = true }, feedText = "You cut them off. It hurts." },
+			{ text = "Try to understand why", effects = { Smarts = 2, Happiness = 2 }, setFlags = { empathetic = true, emotionally_mature = true }, feedText = "You tried to see their perspective." },
+			{ text = "Forgive and move on", effects = { Happiness = 3 }, setFlags = { forgiving = true, resilient = true }, feedText = "You chose to forgive. Friendships are complicated." },
 		},
 	},
 
@@ -312,18 +328,27 @@ Teen.events = {
 		id = "identity_question",
 		title = "Who Am I?",
 		emoji = "🪞",
+		textVariants = {
+			"You've been thinking a lot about who you really are.",
+			"Late night thoughts hitting different. Who ARE you?",
+			"Looking in the mirror and wondering who's looking back.",
+			"Everyone seems to know who they are. Do you?",
+			"Identity crisis? More like identity exploration.",
+			"The person you were last year isn't who you are now.",
+			"Trying to figure yourself out before life figures you out.",
+		},
 		text = "You've been thinking a lot about who you really are.",
 		question = "What aspect of yourself are you exploring?",
 		minAge = 14, maxAge = 17,
 		oneTime = true,
-		category = "teen", -- CRITICAL FIX: Proper category
+		category = "teen",
 		tags = { "identity", "growth", "teen" },
 		blockedByFlags = { in_prison = true, identity_explored = true },
 		choices = {
-			{ text = "My values and beliefs", effects = { Smarts = 3, Happiness = 3 }, setFlags = { philosophical = true }, feedText = "You're questioning what you believe in." },
-			{ text = "My future career", effects = { Smarts = 3 }, setFlags = { career_focused = true }, feedText = "You're thinking seriously about your future." },
-			{ text = "My style and appearance", effects = { Looks = 5, Happiness = 3 }, setFlags = { style_conscious = true }, feedText = "You're developing your personal style." },
-			{ text = "My relationships with others", effects = { Happiness = 3 }, setFlags = { socially_aware = true }, feedText = "You're learning about how you relate to people." },
+			{ text = "My values and beliefs", effects = { Smarts = 3, Happiness = 3 }, setFlags = { philosophical = true, identity_explored = true, deep_thinker = true }, feedText = "You're questioning what you believe in." },
+			{ text = "My future career", effects = { Smarts = 3 }, setFlags = { career_focused = true, identity_explored = true, ambitious = true }, feedText = "You're thinking seriously about your future." },
+			{ text = "My style and appearance", effects = { Looks = 5, Happiness = 3 }, setFlags = { style_conscious = true, identity_explored = true, fashion_aware = true }, feedText = "You're developing your personal style." },
+			{ text = "My relationships with others", effects = { Happiness = 3 }, setFlags = { socially_aware = true, identity_explored = true, emotionally_intelligent = true }, feedText = "You're learning about how you relate to people." },
 		},
 	},
 	{
@@ -365,7 +390,7 @@ Teen.events = {
 		text = "A local business is hiring teenagers for part-time work.",
 		question = "Will you apply?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7
+		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.7
 		cooldown = 5, -- CRITICAL FIX: Increased
 		category = "teen", -- CRITICAL FIX: Proper category
 		tags = { "job", "money", "teen" },
@@ -595,7 +620,7 @@ Teen.events = {
 		text = "Varsity sports tryouts are coming up. You've been practicing hard.",
 		question = "Which sport?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresStats = { Health = { min = 50 } },
 		choices = {
@@ -804,7 +829,7 @@ Teen.events = {
 		text = "The school is putting on a big play. Auditions are open.",
 		question = "Will you participate?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Audition for lead role", effects = { Happiness = 8, Looks = 3 }, setFlags = { theater_kid = true, lead_actor = true }, hintCareer = "entertainment", feedText = "You went for the lead! Bold move!" },
@@ -820,7 +845,7 @@ Teen.events = {
 		text = "There's an opportunity to volunteer in your community.",
 		question = "What cause calls to you?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Animal shelter", effects = { Happiness = 5 }, setFlags = { volunteer = true, animal_lover = true }, hintCareer = "veterinary", feedText = "You're helping animals at the shelter!" },
@@ -843,7 +868,7 @@ Teen.events = {
 		text = "A teacher suspects you of cheating on a test.",
 		question = "What really happened?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		choices = {
@@ -972,7 +997,7 @@ Teen.events = {
 		text = "You're in a car with a friend who's driving recklessly.",
 		question = "What do you do?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		choices = {
@@ -1165,7 +1190,7 @@ Teen.events = {
 		text = "Someone at a party offers you something sketchy. They say it'll make you 'feel different.'",
 		question = "What do you do?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		choices = {
@@ -1182,7 +1207,7 @@ Teen.events = {
 		text = "Your family takes you on a college tour.",
 		question = "What kind of school appeals to you?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.5, -- CRITICAL FIX: Reduced
+		baseChance = 0.35, -- CRITICAL FIX: Reduced
 		cooldown = 5,
 		maxOccurrences = 2, -- Can tour twice max
 		oneTime = true, -- CRITICAL FIX: Only one college tour decision needed
@@ -1417,7 +1442,7 @@ Teen.events = {
 		text = "You've been staying up way too late playing online games.",
 		question = "How is it affecting you?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { gamer = true },
 
@@ -1435,7 +1460,7 @@ Teen.events = {
 		text = "The big game against your school's rival is this week!",
 		question = "How do you show your school spirit?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.6,
+		baseChance = 0.45,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		choices = {
@@ -1469,7 +1494,7 @@ Teen.events = {
 		text = "It's your senior year and motivation is... lacking.",
 		question = "How do you handle senioritis?",
 		minAge = 17, maxAge = 18,
-		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7 to prevent spam
+		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.7 to prevent spam
 		cooldown = 5, -- CRITICAL FIX: Increased from 3
 		oneTime = true, -- CRITICAL FIX: Only happens once per life
 		blockedByFlags = { in_prison = true, dropped_out_high_school = true, senioritis_event_done = true },
@@ -1488,7 +1513,7 @@ Teen.events = {
 		text = "You tried to sneak out at night but got caught!",
 		question = "What were you trying to do?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		choices = {
@@ -1505,7 +1530,7 @@ Teen.events = {
 		text = "Advanced Placement exams are coming up. The pressure is intense.",
 		question = "How do you prepare?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { academic_path = true },
 
@@ -1666,7 +1691,7 @@ Teen.events = {
 		text = "Your part-time job is interfering with school and social life.",
 		question = "How do you handle this?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { has_teen_job = true },
 		
@@ -1793,7 +1818,7 @@ Teen.events = {
 		text = "Your English teacher nominated you for a prestigious essay contest!",
 		question = "What topic do you write about?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresStats = { Smarts = { min = 55 } },
 		
@@ -1928,7 +1953,7 @@ Teen.events = {
 		text = "You and your friends want to start a band together!",
 		question = "What role do you play?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
@@ -2004,7 +2029,7 @@ Teen.events = {
 		text = "There's major drama happening in your social circle online!",
 		question = "What's your role in all this?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
@@ -2039,7 +2064,7 @@ Teen.events = {
 		text = "You're having an anxiety attack. Heart racing, can't breathe...",
 		question = "How do you cope?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 3,
 		
 		choices = {
@@ -2057,7 +2082,7 @@ Teen.events = {
 		text = "Stress and bad luck have caused skin breakouts. It's ruining your confidence.",
 		question = "How do you deal with it?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 3,
 		
 		choices = {
@@ -2147,7 +2172,7 @@ Teen.events = {
 		text = "You've discovered a new hobby that really excites you!",
 		question = "What hobby captured your interest?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 3,
 		
 		choices = {
@@ -2166,7 +2191,7 @@ Teen.events = {
 		text = "You see someone getting bullied at school.",
 		question = "What do you do?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 3,
 		
 		choices = {
@@ -2209,7 +2234,7 @@ Teen.events = {
 		text = "You got a response from a college you applied to!",
 		question = "What does the letter say?",
 		minAge = 17, maxAge = 18,
-		baseChance = 0.6,
+		baseChance = 0.45,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { college_bound = true },
 		
@@ -2288,7 +2313,7 @@ Teen.events = {
 		text = "You got injured during practice or a game!",
 		question = "How serious is it?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { varsity_athlete = true },
 		
@@ -2331,7 +2356,7 @@ Teen.events = {
 		question = "What kind of music defines you?",
 		minAge = 13, maxAge = 17,
 		oneTime = true,
-		baseChance = 0.6,
+		baseChance = 0.45,
 		
 		choices = {
 			{ text = "Hip-hop and rap", effects = { Happiness = 4 }, setFlags = { likes_hiphop = true }, feedText = "The beats and lyrics speak to you." },
@@ -2389,7 +2414,7 @@ Teen.events = {
 		question = "What style are you going for?",
 		minAge = 13, maxAge = 17,
 		oneTime = true,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		
 		choices = {
 			{ text = "Trendy and fashion-forward ($100)", effects = { Looks = 5, Money = -100 }, setFlags = { fashionista = true }, feedText = "Always on top of the latest trends!",
@@ -2619,7 +2644,7 @@ Teen.events = {
 		text = "The annual talent show is coming up. Everyone's talking about who's going to perform.",
 		question = "Do you sign up?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.6,
+		baseChance = 0.45,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
@@ -2782,7 +2807,7 @@ Teen.events = {
 		text = "Someone's parents are out of town. There's a huge party happening tonight!",
 		question = "Are you going?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 3,
 		maxOccurrences = 5,
 		choices = {
@@ -2820,7 +2845,7 @@ Teen.events = {
 		text = "Your parents caught you sneaking back into the house at 3 AM!",
 		question = "What's your excuse?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		choices = {
@@ -2891,7 +2916,7 @@ Teen.events = {
 		text = "You finally turned 16 and can get your driver's license! Time for the test.",
 		question = "How does the test go?",
 		minAge = 16, maxAge = 17,
-		baseChance = 0.6, -- CRITICAL FIX: Reduced from 0.9 - other driving events exist
+		baseChance = 0.45, -- CRITICAL FIX: Reduced from 0.9 - other driving events exist
 		oneTime = true,
 		maxOccurrences = 1,
 		category = "milestone",
@@ -2978,7 +3003,7 @@ Teen.events = {
 		text = "A video of you just went VIRAL! Thousands of views and climbing!",
 		question = "What happened?!",
 		minAge = 13, maxAge = 18,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4,
 		oneTime = true,
 		priority = "high",
@@ -3061,7 +3086,7 @@ Teen.events = {
 		text = "You got invited to THE party of the year! But your parents said NO going out tonight...",
 		question = "What do you do?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.75,
+		baseChance = 0.5,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
@@ -3116,7 +3141,7 @@ Teen.events = {
 		text = "You just discovered you have an AMAZING talent you never knew about!",
 		question = "What is your hidden talent?",
 		minAge = 12, maxAge = 17,
-		baseChance = 0.65,
+		baseChance = 0.45,
 		cooldown = 99,
 		oneTime = true,
 		priority = "high",
@@ -3155,7 +3180,7 @@ Teen.events = {
 		text = "Someone asked you to be their boyfriend/girlfriend! This is REAL!",
 		question = "How do you feel about this?",
 		minAge = 14, maxAge = 18,
-		baseChance = 0.7,
+		baseChance = 0.45,
 		cooldown = 3,
 		
 		choices = {
@@ -3197,7 +3222,7 @@ Teen.events = {
 		text = "You entered a school competition... and you WON!",
 		question = "What did you win?",
 		minAge = 13, maxAge = 18,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "school",
 		tags = { "competition", "achievement", "school" },
@@ -3542,7 +3567,7 @@ Teen.events = {
 		text = "During a big test, the kid next to you slides a note: 'Please let me see your answers! I'll fail if you don't help. I'll do anything!'",
 		question = "What do you do?",
 		minAge = 13, maxAge = 18,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4,
 		category = "school",
 		tags = { "cheating", "test", "ethics", "school" },
@@ -3686,7 +3711,7 @@ Teen.events = {
 		text = "The popular kids are throwing a party while their parents are away. You actually got invited! But there's gonna be alcohol and probably some drama...",
 		question = "Do you go?",
 		minAge = 14, maxAge = 18,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4,
 		category = "social",
 		tags = { "party", "social", "decisions", "teen" },
@@ -3758,7 +3783,7 @@ Teen.events = {
 		text = "Someone posted something about you online. It's going VIRAL in your school. Your phone is blowing up with notifications.",
 		question = "What did they post?",
 		minAge = 13, maxAge = 18,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4,
 		category = "social",
 		tags = { "social_media", "drama", "viral", "teen" },
@@ -3834,7 +3859,7 @@ Teen.events = {
 		text = "A teacher has it out for you. They keep calling on you when you don't know the answer, grading you harshly, and making snide comments. Today they went TOO far.",
 		question = "What do you do?",
 		minAge = 13, maxAge = 18,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4,
 		category = "school",
 		tags = { "teacher", "conflict", "school", "authority" },
@@ -3906,7 +3931,7 @@ Teen.events = {
 		text = "Your friends want to skip school and go to the mall/movies/beach. 'Come on, live a little!' They're peer pressuring you hard.",
 		question = "What do you do?",
 		minAge = 14, maxAge = 18,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4,
 		category = "social",
 		tags = { "skipping", "peer_pressure", "school", "decisions" },
@@ -4259,8 +4284,8 @@ Teen.events = {
 		text = "You've been assigned a group project! Your partner is someone you don't know well.",
 		question = "How does the project go?",
 		minAge = 12, maxAge = 17,
-		baseChance = 0.5,
-		cooldown = 2,
+		baseChance = 0.35,
+		cooldown = 4,
 		category = "school",
 		tags = { "school", "teamwork", "social" },
 		
@@ -4373,7 +4398,7 @@ Teen.events = {
 		text = "You've discovered something you really enjoy doing!",
 		question = "What's your new hobby?",
 		minAge = 10, maxAge = 17,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4,
 		category = "hobby",
 		tags = { "hobby", "interests", "growth" },
@@ -4550,7 +4575,7 @@ Teen.events = {
 		text = "You could get a summer job to earn some money!",
 		question = "What do you do?",
 		minAge = 15, maxAge = 18,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 3,
 		category = "work",
 		tags = { "job", "money", "summer" },
@@ -4890,7 +4915,7 @@ Teen.events = {
 	},
 
 	{
-		id = "teen_mentor_figure",
+		id = "teen_guidance_opportunity",
 		title = "🌟 A Mentor Appears",
 		emoji = "🌟",
 		textVariants = {
@@ -5141,7 +5166,7 @@ Teen.events = {
 	},
 
 	{
-		id = "teen_embarrassing_moment",
+		id = "teen_mortifying_moment",
 		title = "😳 Mortifying Moment!",
 		emoji = "😳",
 		textVariants = {
@@ -5195,7 +5220,7 @@ Teen.events = {
 		text = "Everyone's talking about college applications...",
 		question = "How do you feel about your future?",
 		minAge = 16, maxAge = 18,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4,
 		category = "school",
 		tags = { "college", "future", "pressure" },
@@ -5274,7 +5299,7 @@ Teen.events = {
 	},
 
 	{
-		id = "teen_parent_conflict",
+		id = "teen_family_argument",
 		title = "😤 Parent Drama",
 		emoji = "😤",
 		textVariants = {
@@ -5341,7 +5366,7 @@ Teen.events = {
 		text = "School's out! What are you doing this summer?",
 		question = "What's your summer plan?",
 		minAge = 12, maxAge = 17,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 6,
 		category = "lifestyle",
 		tags = { "summer", "vacation", "plans" },
@@ -5376,6 +5401,799 @@ Teen.events = {
 				effects = { Happiness = 2, Smarts = 8 },
 				setFlags = { summer_school = true, dedicated_student = true },
 				feedText = "☀️ Getting ahead! While friends play, you learn. Future you says thanks.",
+			},
+		},
+	},
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- MASSIVE EXPANSION: NEW TEEN EVENTS (Ages 13-18)
+-- Rich teenage experiences that shape identity and future
+-- ════════════════════════════════════════════════════════════════════════════
+
+	{
+		id = "teen_first_job_interview",
+		title = "First Job Interview!",
+		emoji = "💼",
+		textVariants = {
+			"Your first ever job interview! So nervous!",
+			"Time to prove yourself for a part-time job!",
+			"You applied for a job and they called back!",
+			"Interview day! Look professional!",
+		},
+		text = "Your first ever job interview! So nervous!",
+		question = "How does it go?",
+		minAge = 15, maxAge = 18,
+		baseChance = 0.45,
+		cooldown = 4,
+		oneTime = true,
+		category = "teen",
+		tags = { "teen", "job", "milestone" },
+		careerTags = { "business", "service", "retail" },
+		blockedByFlags = { first_interview_done = true },
+		
+		choices = {
+			{
+				text = "😎 Nailed it! Got hired!",
+				effects = { Happiness = 8, Money = 100 },
+				setFlags = { first_interview_done = true, has_first_job = true, good_interviewer = true, work_experience = true, professional_start = true },
+				hintCareer = "business",
+				feedText = "💼 You got the job! First paycheck incoming!",
+			},
+			{
+				text = "😰 So nervous, stumbled words",
+				effects = { Happiness = -2 },
+				setFlags = { first_interview_done = true, interview_anxiety = true, learned_from_failure = true },
+				feedText = "💼 Not your best performance... they said 'we'll call you'",
+			},
+			{
+				text = "🤷 Did okay, waiting to hear",
+				effects = { Happiness = 3 },
+				setFlags = { first_interview_done = true, interview_experience = true },
+				feedText = "💼 Could've been worse! The waiting is the hardest part.",
+			},
+		},
+	},
+
+	{
+		id = "teen_online_drama_explosion",
+		title = "Social Media Drama!",
+		emoji = "📱",
+		textVariants = {
+			"Someone said something about you online!",
+			"A post about you is going around!",
+			"Drama in the group chat!",
+			"Screenshots are being shared... involving YOU!",
+		},
+		text = "Someone said something about you online!",
+		question = "How do you handle social media drama?",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.45,
+		cooldown = 4,
+		category = "teen",
+		tags = { "teen", "social", "drama" },
+		
+		choices = {
+			{
+				text = "🔥 Clap back publicly",
+				effects = { Happiness = 3 },
+				setFlags = { social_media_fighter = true, confrontational = true },
+				feedText = "📱 You responded! Now everyone's watching the drama unfold!",
+			},
+			{
+				text = "🤝 Handle it privately",
+				effects = { Happiness = 4, Smarts = 2 },
+				setFlags = { mature_approach = true, conflict_resolver = true },
+				feedText = "📱 You DMed them directly. Mature move. Respect.",
+			},
+			{
+				text = "🤷 Ignore it completely",
+				effects = { Happiness = 2 },
+				setFlags = { above_drama = true },
+				feedText = "📱 Not worth your energy. Let them talk.",
+			},
+			{
+				text = "📴 Delete social media",
+				effects = { Happiness = 5, Smarts = 2 },
+				setFlags = { social_media_break = true, values_peace = true },
+				feedText = "📱 FREEDOM! No more drama! At least for now...",
+			},
+		},
+	},
+
+	{
+		id = "teen_college_application_stress",
+		title = "College Pressure!",
+		emoji = "🎓",
+		textVariants = {
+			"Everyone's talking about college applications!",
+			"SATs, ACTs, applications... the pressure is REAL!",
+			"Your parents keep asking about your college plans!",
+			"College tours, essay writing, it's overwhelming!",
+		},
+		text = "Everyone's talking about college applications!",
+		question = "How are you handling the pressure?",
+		minAge = 16, maxAge = 18,
+		baseChance = 0.45,
+		cooldown = 4,
+		category = "teen",
+		tags = { "teen", "college", "stress" },
+		careerTags = { "education", "tech", "medical", "law", "finance" },
+		
+		choices = {
+			{
+				text = "📚 Grinding hard! Dream school bound!",
+				effects = { Happiness = 3, Smarts = 5, Health = -2 },
+				setFlags = { college_focused = true, ambitious_student = true, honors_student = true, academic_achiever = true },
+				hintCareer = "education",
+				feedText = "🎓 Study study study! You WILL get into your dream school!",
+			},
+			{
+				text = "🤷 Going with the flow",
+				effects = { Happiness = 4, Smarts = 2 },
+				setFlags = { relaxed_about_college = true },
+				feedText = "🎓 Whatever happens, happens. You'll figure it out.",
+			},
+			{
+				text = "💰 Considering alternatives",
+				effects = { Happiness = 3, Smarts = 3 },
+				setFlags = { considering_trade_school = true, practical_minded = true, vocational_track = true, hands_on_type = true },
+				hintCareer = "trades",
+				feedText = "🎓 Trade school? Gap year? Straight to work? Options!",
+			},
+			{
+				text = "😰 Completely overwhelmed",
+				effects = { Happiness = -4, Health = -2 },
+				setFlags = { college_anxiety = true, needs_support = true },
+				feedText = "🎓 It's all too much. You need a break and some guidance.",
+			},
+		},
+	},
+
+	{
+		id = "teen_social_circle_shift",
+		title = "Friend Group Shift!",
+		emoji = "👥",
+		textVariants = {
+			"Your friend group is changing...",
+			"Old friends drifting, new people entering your life!",
+			"High school is reshuffling social circles!",
+			"Are these still YOUR people?",
+		},
+		text = "Your friend group is changing...",
+		question = "How do you navigate this?",
+		minAge = 14, maxAge = 18,
+		baseChance = 0.4,
+		cooldown = 5,
+		category = "teen",
+		tags = { "teen", "friends", "social" },
+		
+		choices = {
+			{
+				text = "🆕 Embrace new friendships",
+				effects = { Happiness = 6 },
+				setFlags = { adaptable_socially = true, open_to_change = true },
+				feedText = "👥 New friends, new experiences! Growth!",
+			},
+			{
+				text = "💔 Miss the old group",
+				effects = { Happiness = -3 },
+				setFlags = { nostalgic = true, values_old_friends = true },
+				feedText = "👥 Things aren't the same. You miss how it used to be.",
+			},
+			{
+				text = "🤝 Keep both old and new",
+				effects = { Happiness = 5, Smarts = 2 },
+				setFlags = { social_butterfly = true, diplomatic = true },
+				feedText = "👥 You balance both groups! More friends = more fun!",
+			},
+			{
+				text = "😌 Prefer being alone anyway",
+				effects = { Happiness = 3 },
+				setFlags = { comfortable_alone = true, introverted = true },
+				feedText = "👥 Less drama this way. You enjoy your own company.",
+			},
+		},
+	},
+
+	{
+		id = "teen_athletic_injury",
+		title = "Sports Injury!",
+		emoji = "🩹",
+		textVariants = {
+			"You got hurt playing sports!",
+			"A bad fall during practice!",
+			"Sports injury - how bad is it?",
+			"Something popped/twisted during the game!",
+		},
+		text = "You got hurt playing sports!",
+		question = "How serious is it?",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.35,
+		cooldown = 5,
+		category = "teen",
+		tags = { "teen", "sports", "injury" },
+		requiresFlags = { on_sports_team = true },
+		
+		choices = {
+			{
+				text = "🩹 Minor - walk it off",
+				effects = { Health = -5, Happiness = 2 },
+				setFlags = { tough_player = true, minor_sports_injury = true },
+				feedText = "🩹 Just a bruise! Back in the game!",
+			},
+			{
+				text = "🏥 Needs medical attention",
+				effects = { Health = -15, Happiness = -5, Money = -200 },
+				setFlags = { had_sports_injury = true },
+				feedText = "🩹 Doctor visit. Rest and recovery needed.",
+			},
+			{
+				text = "😱 Season-ending injury",
+				effects = { Health = -25, Happiness = -10, Money = -500 },
+				setFlags = { serious_sports_injury = true, season_ended = true },
+				feedText = "🩹 Devastating news. Your season is over.",
+			},
+		},
+	},
+
+	{
+		id = "teen_internet_famous",
+		title = "Going Viral!",
+		emoji = "📈",
+		textVariants = {
+			"Something you posted is BLOWING UP!",
+			"Your video is going viral!",
+			"Thousands of likes... wait, MILLIONS?!",
+			"You're internet famous overnight!",
+		},
+		text = "Something you posted is BLOWING UP!",
+		question = "How do you handle sudden fame?",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.25,
+		cooldown = 6,
+		category = "teen",
+		tags = { "teen", "viral", "social" },
+		careerTags = { "entertainment", "marketing", "esports" },
+		
+		choices = {
+			{
+				text = "🎉 Ride the wave! Post more!",
+				effects = { Happiness = 10, Money = 50 },
+				setFlags = { went_viral = true, content_creator_start = true, influencer_potential = true, content_creator = true, streamer = true, social_media_savvy = true },
+				hintCareer = "entertainment",
+				feedText = "📈 You're capitalizing on the moment! Followers flooding in!",
+			},
+			{
+				text = "😳 This is overwhelming",
+				effects = { Happiness = 3 },
+				setFlags = { went_viral = true, viral_anxiety = true },
+				feedText = "📈 So many notifications... is this good? Bad? WHAT?!",
+			},
+			{
+				text = "🔒 Go private, too much attention",
+				effects = { Happiness = -2 },
+				setFlags = { went_viral = true, privacy_focused = true },
+				feedText = "📈 Locking everything down. This is TOO much.",
+			},
+			{
+				text = "💰 Try to monetize it",
+				effects = { Happiness = 6, Money = 200, Smarts = 2 },
+				setFlags = { went_viral = true, business_minded_teen = true, entrepreneur = true, marketing_savvy = true },
+				hintCareer = "business",
+				feedText = "📈 Brand deals? Merch? You see the opportunity!",
+			},
+		},
+	},
+
+	{
+		id = "teen_self_discovery_journey",
+		title = "Who Am I?",
+		emoji = "🤔",
+		textVariants = {
+			"You're questioning everything about yourself...",
+			"Who are you really? Deep thoughts time.",
+			"Identity crisis hitting hard!",
+			"Trying to figure out who you want to be...",
+		},
+		text = "You're questioning everything about yourself...",
+		question = "How do you explore your identity?",
+		minAge = 14, maxAge = 18,
+		baseChance = 0.35,
+		cooldown = 5,
+		oneTime = true,
+		category = "teen",
+		tags = { "teen", "identity", "growth" },
+		blockedByFlags = { identity_explored = true },
+		
+		choices = {
+			{
+				text = "🎨 Try new styles/expressions",
+				effects = { Happiness = 5, Looks = 2 },
+				setFlags = { identity_explored = true, experimental_phase = true },
+				feedText = "🤔 New clothes, new hair, new you? Experimenting!",
+			},
+			{
+				text = "📚 Deep dive into interests",
+				effects = { Happiness = 4, Smarts = 3 },
+				setFlags = { identity_explored = true, finding_passions = true },
+				feedText = "🤔 What do YOU actually like? Time to find out!",
+			},
+			{
+				text = "👥 Try different friend groups",
+				effects = { Happiness = 4 },
+				setFlags = { identity_explored = true, social_explorer = true },
+				feedText = "🤔 Different people, different vibes, finding your tribe!",
+			},
+			{
+				text = "😌 I know who I am",
+				effects = { Happiness = 6 },
+				setFlags = { identity_explored = true, strong_identity = true },
+				feedText = "🤔 Some people just KNOW. You're confident in yourself!",
+			},
+		},
+	},
+
+	{
+		id = "teen_mental_health",
+		title = "Mental Health Check",
+		emoji = "🧠",
+		textVariants = {
+			"You've been feeling... off lately.",
+			"Stress is piling up...",
+			"Some days are harder than others.",
+			"Time to check in with yourself.",
+		},
+		text = "You've been feeling... off lately.",
+		question = "How do you handle your mental health?",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.4,
+		cooldown = 5,
+		category = "teen",
+		tags = { "teen", "mental_health", "wellness" },
+		
+		choices = {
+			{
+				text = "💬 Talk to someone trusted",
+				effects = { Happiness = 6, Health = 3 },
+				setFlags = { seeks_support = true, emotionally_aware = true },
+				feedText = "🧠 Opening up helps. You're not alone in this.",
+			},
+			{
+				text = "📓 Journal your feelings",
+				effects = { Happiness = 4, Smarts = 2 },
+				setFlags = { uses_journaling = true, self_reflective = true },
+				feedText = "🧠 Writing it out helps process emotions.",
+			},
+			{
+				text = "🏃 Exercise to cope",
+				effects = { Happiness = 5, Health = 4 },
+				setFlags = { exercise_coper = true, active_coping = true },
+				feedText = "🧠 Moving your body helps move your mood!",
+			},
+			{
+				text = "😔 Struggle silently",
+				effects = { Happiness = -4, Health = -2 },
+				setFlags = { struggles_alone = true, needs_help = true },
+				feedText = "🧠 It's hard to ask for help. But please try.",
+			},
+		},
+	},
+
+	{
+		id = "teen_car_dreams",
+		title = "Car Dreaming!",
+		emoji = "🚗",
+		textVariants = {
+			"You're dreaming about your first car!",
+			"Everyone's getting their license... now what?",
+			"What kind of car person will you be?",
+			"Freedom on four wheels!",
+		},
+		text = "You're dreaming about your first car!",
+		question = "What's your car situation?",
+		minAge = 16, maxAge = 18,
+		baseChance = 0.4,
+		cooldown = 4,
+		category = "teen",
+		tags = { "teen", "car", "independence" },
+		careerTags = { "trades", "racing" },
+		
+		choices = {
+			{
+				text = "💰 Saving for MY own car",
+				effects = { Happiness = 4, Money = -100 },
+				setFlags = { saving_for_car = true, financially_motivated = true, money_smart = true },
+				hintCareer = "finance",
+				feedText = "🚗 Every dollar goes to the car fund! Getting there!",
+			},
+			{
+				text = "🎁 Parents might help/give me one",
+				effects = { Happiness = 6 },
+				setFlags = { expects_parent_car = true },
+				feedText = "🚗 Fingers crossed! Birthday gift? Graduation present?",
+			},
+			{
+				text = "🚌 Don't really need a car",
+				effects = { Happiness = 3, Smarts = 2 },
+				setFlags = { okay_without_car = true, practical = true, environmentally_conscious = true },
+				feedText = "🚗 Public transit, friends with cars... you're good!",
+			},
+			{
+				text = "🛠️ Fix up an old one!",
+				effects = { Happiness = 5, Smarts = 3 },
+				setFlags = { wants_project_car = true, hands_on_type = true, mechanic_interest = true, racing_interest = true },
+				hintCareer = "trades",
+				feedText = "🚗 A fixer-upper! You'll learn so much!",
+			},
+		},
+	},
+
+	{
+		id = "teen_rebellion_phase",
+		title = "Rebellion!",
+		emoji = "😤",
+		textVariants = {
+			"Rules feel SO unfair!",
+			"You're pushing back against authority!",
+			"Why do adults think they know everything?!",
+			"Time to make your own rules!",
+		},
+		text = "Rules feel SO unfair!",
+		question = "How rebellious are you feeling?",
+		minAge = 13, maxAge = 17,
+		baseChance = 0.35,
+		cooldown = 5,
+		category = "teen",
+		tags = { "teen", "rebellion", "growth" },
+		
+		choices = {
+			{
+				text = "🔥 Full rebel mode!",
+				effects = { Happiness = 4 },
+				setFlags = { rebellious_teen = true, questions_authority = true },
+				feedText = "😤 Rules are meant to be broken! (Within reason...)",
+			},
+			{
+				text = "🎨 Express it through art/music",
+				effects = { Happiness = 5, Smarts = 2 },
+				setFlags = { creative_outlet = true, healthy_rebellion = true },
+				feedText = "😤 Channeling feelings into creative expression!",
+			},
+			{
+				text = "💬 Try to negotiate with parents",
+				effects = { Happiness = 3, Smarts = 3 },
+				setFlags = { diplomatic_teen = true, mature_communication = true },
+				feedText = "😤 Having actual conversations about rules. Respect!",
+			},
+			{
+				text = "😌 Not really my thing",
+				effects = { Happiness = 2 },
+				setFlags = { follows_rules = true, non_rebellious = true },
+				feedText = "😤 Rules exist for reasons. You get it.",
+			},
+		},
+	},
+
+	{
+		id = "teen_future_career_thoughts",
+		title = "Future Dreams!",
+		emoji = "💭",
+		textVariants = {
+			"What do you want to be when you grow up?",
+			"Career day got you thinking...",
+			"The future is coming - what's your path?",
+			"Dreams, goals, aspirations!",
+		},
+		text = "What do you want to be when you grow up?",
+		question = "What's your dream career?",
+		minAge = 14, maxAge = 18,
+		baseChance = 0.4,
+		cooldown = 4,
+		category = "teen",
+		tags = { "teen", "career", "dreams" },
+		
+		choices = {
+			{
+				text = "💰 Something that pays well",
+				effects = { Happiness = 3, Smarts = 2 },
+				setFlags = { money_motivated_career = true, practical_goals = true },
+				feedText = "💭 Financial security is the goal. Respect the hustle!",
+			},
+			{
+				text = "❤️ Follow my passion",
+				effects = { Happiness = 6 },
+				setFlags = { passion_driven = true, follows_heart = true },
+				feedText = "💭 Do what you love and you'll never work a day!",
+			},
+			{
+				text = "🌍 Help make the world better",
+				effects = { Happiness = 5, Smarts = 2 },
+				setFlags = { wants_to_help_others = true, idealistic = true },
+				feedText = "💭 Making a difference matters more than money!",
+			},
+			{
+				text = "🤷 No idea yet",
+				effects = { Happiness = 2 },
+				setFlags = { undecided_career = true, exploring_options = true },
+				feedText = "💭 Still figuring it out. That's totally okay!",
+			},
+		},
+	},
+
+	{
+		id = "teen_romantic_devastation",
+		title = "Heartbreak 💔",
+		emoji = "💔",
+		textVariants = {
+			"Your first real heartbreak...",
+			"A relationship ended and it HURTS.",
+			"They broke up with you... or you broke up with them.",
+			"Love hurts sometimes.",
+		},
+		text = "Your first real heartbreak...",
+		question = "How do you cope?",
+		minAge = 14, maxAge = 18,
+		baseChance = 0.35,
+		cooldown = 5,
+		category = "teen",
+		tags = { "teen", "heartbreak", "romance" },
+		
+		choices = {
+			{
+				text = "😭 Full sad mode",
+				effects = { Happiness = -6 },
+				setFlags = { experienced_heartbreak = true, feels_deeply = true },
+				feedText = "💔 Ice cream. Sad music. Crying. This is PAIN.",
+			},
+			{
+				text = "💪 Keep busy, stay strong",
+				effects = { Happiness = -2, Smarts = 2 },
+				setFlags = { experienced_heartbreak = true, resilient = true },
+				feedText = "💔 Channeling energy into other things. Coping!",
+			},
+			{
+				text = "👫 Lean on friends",
+				effects = { Happiness = 2 },
+				setFlags = { experienced_heartbreak = true, values_friendship = true },
+				feedText = "💔 Friends are there for you. Group hug!",
+			},
+			{
+				text = "🔜 Already over it",
+				effects = { Happiness = 4 },
+				setFlags = { experienced_heartbreak = true, moves_on_quick = true },
+				feedText = "💔 That was quick! Plenty of fish in the sea!",
+			},
+		},
+	},
+
+	{
+		id = "teen_school_stress_overload",
+		title = "Academic Pressure!",
+		emoji = "📚",
+		textVariants = {
+			"Tests, homework, expectations... SO much pressure!",
+			"Your grades determine your future?! STRESS!",
+			"AP classes, honors, extracurriculars... when do you SLEEP?",
+			"The academic grind is REAL.",
+		},
+		text = "Tests, homework, expectations... SO much pressure!",
+		question = "How are you handling it?",
+		minAge = 14, maxAge = 18,
+		baseChance = 0.45,
+		cooldown = 4,
+		category = "teen",
+		tags = { "teen", "school", "stress" },
+		
+		choices = {
+			{
+				text = "💪 Thriving under pressure",
+				effects = { Happiness = 4, Smarts = 4 },
+				setFlags = { handles_pressure_well = true, academic_achiever = true },
+				feedText = "📚 Pressure makes diamonds! You're CRUSHING it!",
+			},
+			{
+				text = "😰 Barely keeping up",
+				effects = { Happiness = -3, Health = -2 },
+				setFlags = { academic_stress = true },
+				feedText = "📚 It's a lot. You're surviving, barely.",
+			},
+			{
+				text = "⚖️ Finding balance",
+				effects = { Happiness = 3, Smarts = 2, Health = 2 },
+				setFlags = { balanced_student = true },
+				feedText = "📚 School matters but so does mental health!",
+			},
+			{
+				text = "🤷 Grades aren't everything",
+				effects = { Happiness = 5 },
+				setFlags = { relaxed_about_grades = true },
+				feedText = "📚 C's get degrees! (Or so you tell yourself)",
+			},
+		},
+	},
+
+	{
+		id = "teen_online_friends",
+		title = "Online Friendships!",
+		emoji = "🌐",
+		textVariants = {
+			"You've made friends online who GET you!",
+			"Internet friends are real friends!",
+			"Your online community means a lot to you!",
+			"Discord, gaming, forums - your people!",
+		},
+		text = "You've made friends online who GET you!",
+		question = "How important are online friendships?",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.4,
+		cooldown = 4,
+		category = "teen",
+		tags = { "teen", "online", "friends" },
+		
+		choices = {
+			{
+				text = "💕 They're my best friends!",
+				effects = { Happiness = 6 },
+				setFlags = { values_online_friends = true, internet_social = true },
+				feedText = "🌐 Real connection doesn't need physical presence!",
+			},
+			{
+				text = "🎮 Gaming buddies are the best",
+				effects = { Happiness = 5 },
+				setFlags = { gaming_friends = true, gamer_social = true },
+				feedText = "🌐 Victory royales and voice chats! Squad goals!",
+			},
+			{
+				text = "⚖️ Online AND offline friends",
+				effects = { Happiness = 5, Smarts = 2 },
+				setFlags = { balanced_friendships = true },
+				feedText = "🌐 Best of both worlds! Double the friendships!",
+			},
+			{
+				text = "🤷 Prefer in-person friends",
+				effects = { Happiness = 3 },
+				setFlags = { prefers_irl_friends = true },
+				feedText = "🌐 Nothing beats hanging out face to face!",
+			},
+		},
+	},
+
+	{
+		id = "teen_body_image",
+		title = "Body Image",
+		emoji = "🪞",
+		textVariants = {
+			"Society has a lot to say about bodies...",
+			"How do you feel about your appearance?",
+			"Social media vs. real life bodies...",
+			"Mirror, mirror on the wall...",
+		},
+		text = "Society has a lot to say about bodies...",
+		question = "How's your body image?",
+		minAge = 13, maxAge = 18,
+		baseChance = 0.35,
+		cooldown = 5,
+		category = "teen",
+		tags = { "teen", "body_image", "wellness" },
+		
+		choices = {
+			{
+				text = "💪 Confident and comfortable!",
+				effects = { Happiness = 6, Looks = 2 },
+				setFlags = { body_confident = true, healthy_self_image = true },
+				feedText = "🪞 You rock what you got! Confidence is ATTRACTIVE!",
+			},
+			{
+				text = "🏋️ Working on self-improvement",
+				effects = { Happiness = 4, Health = 3 },
+				setFlags = { self_improvement_focused = true },
+				feedText = "🪞 Healthy goals, healthy mindset! Progress!",
+			},
+			{
+				text = "😔 Struggling with it",
+				effects = { Happiness = -4 },
+				setFlags = { body_image_issues = true },
+				feedText = "🪞 It's hard. Remember - social media isn't real.",
+			},
+			{
+				text = "🤷 Don't think about it much",
+				effects = { Happiness = 3 },
+				setFlags = { neutral_body_image = true },
+				feedText = "🪞 It's just a body! More important things to think about.",
+			},
+		},
+	},
+
+	{
+		id = "teen_senioritis",
+		title = "Senioritis!",
+		emoji = "😴",
+		textVariants = {
+			"Senior year and... you can't be bothered!",
+			"Senioritis has officially set in!",
+			"Almost done with high school... motivation: GONE!",
+			"Why try when graduation is SO close?",
+		},
+		text = "Senior year and... you can't be bothered!",
+		question = "How bad is the senioritis?",
+		minAge = 17, maxAge = 18,
+		baseChance = 0.35,
+		cooldown = 4,
+		category = "teen",
+		tags = { "teen", "senior", "school" },
+		
+		choices = {
+			{
+				text = "😴 Terminal senioritis",
+				effects = { Happiness = 4, Smarts = -2 },
+				setFlags = { severe_senioritis = true },
+				feedText = "😴 Showing up is optional at this point. Right?",
+			},
+			{
+				text = "💪 Finishing strong!",
+				effects = { Happiness = 3, Smarts = 4 },
+				setFlags = { finishes_strong = true, disciplined = true },
+				feedText = "😴 No senioritis here! Strong finish to high school!",
+			},
+			{
+				text = "⚖️ Bare minimum mode",
+				effects = { Happiness = 5 },
+				setFlags = { minimum_effort = true },
+				feedText = "😴 Just enough to pass. Strategic senioritis!",
+			},
+			{
+				text = "🎉 Already celebrating!",
+				effects = { Happiness = 7 },
+				setFlags = { early_celebration = true },
+				feedText = "😴 You're basically graduated already in your mind!",
+			},
+		},
+	},
+
+	{
+		id = "teen_first_date",
+		title = "First Date!",
+		emoji = "💕",
+		textVariants = {
+			"You asked someone out... and they said YES!",
+			"Your first real date is happening!",
+			"Butterflies everywhere! First date nerves!",
+			"Where should you go? What should you wear?!",
+		},
+		text = "You asked someone out... and they said YES!",
+		question = "How does the date go?",
+		minAge = 14, maxAge = 18,
+		baseChance = 0.35,
+		cooldown = 5,
+		oneTime = true,
+		category = "teen",
+		tags = { "teen", "romance", "date" },
+		blockedByFlags = { first_date_done = true },
+		
+		choices = {
+			{
+				text = "🌟 Amazing! Sparks flew!",
+				effects = { Happiness = 10, Looks = 2 },
+				setFlags = { first_date_done = true, great_first_date = true, romantic_success = true },
+				feedText = "💕 Best night ever! Already planning date #2!",
+			},
+			{
+				text = "😊 Nice! A little awkward but cute",
+				effects = { Happiness = 6 },
+				setFlags = { first_date_done = true, okay_first_date = true },
+				feedText = "💕 Some awkward moments but overall sweet!",
+			},
+			{
+				text = "😬 Disaster... SO awkward",
+				effects = { Happiness = -3 },
+				setFlags = { first_date_done = true, awkward_date = true },
+				feedText = "💕 Cringe moments you'll remember forever. Learning experience!",
+			},
+			{
+				text = "🤝 Friend-zoned but okay",
+				effects = { Happiness = 2 },
+				setFlags = { first_date_done = true, friend_zone_experience = true },
+				feedText = "💕 'Let's just be friends.' Ouch but okay!",
 			},
 		},
 	},

@@ -357,7 +357,7 @@ SocialMediaEvents.events = {
 		text = "The urge to online shop is strong!",
 		question = "Do you resist?",
 		minAge = 16, maxAge = 90,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "any",

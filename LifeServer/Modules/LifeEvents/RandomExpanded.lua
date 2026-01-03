@@ -378,7 +378,7 @@ RandomExpanded.events = {
 		text = "A major appliance in your home has broken down!",
 		question = "What broke and how do you fix it?",
 		minAge = 22, maxAge = 90,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 3,
 		stage = STAGE,
 		ageBand = "adult",
@@ -471,7 +471,7 @@ RandomExpanded.events = {
 		text = "Someone's at your door unexpectedly!",
 		question = "Who is it?",
 		minAge = 18, maxAge = 90,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 3,
 		stage = STAGE,
 		ageBand = "any",
@@ -518,7 +518,7 @@ RandomExpanded.events = {
 		text = "You had an incredibly vivid dream last night.",
 		question = "What was the dream about?",
 		minAge = 10, maxAge = 100,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 3,
 		stage = STAGE,
 		ageBand = "any",
@@ -958,447 +958,447 @@ RandomExpanded.events = {
 -- These use eligibility functions to dynamically respond to player state
 -- ══════════════════════════════════════════════════════════════════════════════
 
-{
-	id = "rand_life_reflection",
-	title = "Life Reflection Moment",
-	emoji = "💭",
-	text = "A quiet moment of reflection. How do you feel about your life right now?",
-	question = "What comes to mind?",
-	minAge = 20, maxAge = 90,
-	baseChance = 0.4,
-	cooldown = 5,
-	stage = STAGE,
-	ageBand = "any",
-	category = "random",
-	tags = { "reflection", "life", "thoughts", "dynamic" },
-	
-	choices = {
-		{
-			text = "Gratitude for what I have",
-			effects = {},
-			feedText = "Counting blessings...",
-			onResolve = function(state)
-				local happiness = (state.Stats and state.Stats.Happiness) or 50
-				local money = state.Money or 0
-				
-				-- More grateful if doing well
-				if happiness > 60 or money > 50000 then
-					state:ModifyStat("Happiness", 12)
-					state:AddFeed("💭 Life is good. Really good. You're lucky and you know it.")
-				else
-					state:ModifyStat("Happiness", 8)
-					state:AddFeed("💭 Could be worse. Focusing on the positives helps.")
-				end
-				state.Flags = state.Flags or {}
-				state.Flags.grateful = true
-			end,
-		},
-		{
-			text = "Regret for missed opportunities",
-			effects = {},
-			feedText = "What ifs...",
-			onResolve = function(state)
-				local age = state.Age or 30
-				if age > 50 then
-					state:ModifyStat("Happiness", -10)
-					state:AddFeed("💭 So many roads not taken. Is it too late? The weight of regret is heavy.")
-				else
-					state:ModifyStat("Happiness", -5)
-					state:AddFeed("💭 Regrets surface. But there's still time to make different choices.")
-				end
-			end,
-		},
-		{
-			text = "Excitement for the future",
-			effects = { Happiness = 8 },
-			feedText = "💭 Best is yet to come! You can feel it. Optimism flowing!",
-			setFlags = { optimistic = true },
-		},
-		{
-			text = "Just surviving day by day",
-			effects = {},
-			feedText = "One day at a time...",
-			onResolve = function(state)
-				local health = (state.Stats and state.Stats.Health) or 50
-				local happiness = (state.Stats and state.Stats.Happiness) or 50
-				
-				if health < 40 or happiness < 30 then
-					state:ModifyStat("Happiness", -5)
-					state:AddFeed("💭 Survival mode. Each day is a struggle. Need help.")
+	{
+		id = "rand_life_reflection",
+		title = "Life Reflection Moment",
+		emoji = "💭",
+		text = "A quiet moment of reflection. How do you feel about your life right now?",
+		question = "What comes to mind?",
+		minAge = 20, maxAge = 90,
+		baseChance = 0.4,
+		cooldown = 5,
+		stage = STAGE,
+		ageBand = "any",
+		category = "random",
+		tags = { "reflection", "life", "thoughts", "dynamic" },
+		
+		choices = {
+			{
+				text = "Gratitude for what I have",
+				effects = {},
+				feedText = "Counting blessings...",
+				onResolve = function(state)
+					local happiness = (state.Stats and state.Stats.Happiness) or 50
+					local money = state.Money or 0
+					
+					-- More grateful if doing well
+					if happiness > 60 or money > 50000 then
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("💭 Life is good. Really good. You're lucky and you know it.")
+					else
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("💭 Could be worse. Focusing on the positives helps.")
+					end
 					state.Flags = state.Flags or {}
-					state.Flags.struggling = true
-				else
-					state:ModifyStat("Happiness", 2)
-					state:AddFeed("💭 Steady rhythm. Not exciting, not terrible. Just... life.")
-				end
-			end,
+					state.Flags.grateful = true
+				end,
+			},
+			{
+				text = "Regret for missed opportunities",
+				effects = {},
+				feedText = "What ifs...",
+				onResolve = function(state)
+					local age = state.Age or 30
+					if age > 50 then
+						state:ModifyStat("Happiness", -10)
+						state:AddFeed("💭 So many roads not taken. Is it too late? The weight of regret is heavy.")
+					else
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("💭 Regrets surface. But there's still time to make different choices.")
+					end
+				end,
+			},
+			{
+				text = "Excitement for the future",
+				effects = { Happiness = 8 },
+				feedText = "💭 Best is yet to come! You can feel it. Optimism flowing!",
+				setFlags = { optimistic = true },
+			},
+			{
+				text = "Just surviving day by day",
+				effects = {},
+				feedText = "One day at a time...",
+				onResolve = function(state)
+					local health = (state.Stats and state.Stats.Health) or 50
+					local happiness = (state.Stats and state.Stats.Happiness) or 50
+					
+					if health < 40 or happiness < 30 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("💭 Survival mode. Each day is a struggle. Need help.")
+						state.Flags = state.Flags or {}
+						state.Flags.struggling = true
+					else
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("💭 Steady rhythm. Not exciting, not terrible. Just... life.")
+					end
+				end,
+			},
 		},
 	},
-},
 
-{
-	id = "rand_random_opportunity",
-	title = "Unexpected Opportunity",
-	emoji = "🎯",
-	text = "An unexpected opportunity lands in your lap!",
-	question = "What kind of opportunity is it?",
-	minAge = 18, maxAge = 70,
-	baseChance = 0.35,
-	cooldown = 5,
-	stage = STAGE,
-	ageBand = "adult",
-	category = "random",
-	tags = { "opportunity", "chance", "luck", "dynamic" },
-	
-	choices = {
-		{
-			text = "A job offer out of nowhere",
-			effects = {},
-			feedText = "Career twist...",
-			onResolve = function(state)
-				local employed = state.CurrentJob ~= nil
-				local roll = math.random()
-				
-				if employed then
-					if roll < 0.5 then
-						state.Money = (state.Money or 0) + math.random(5000, 20000)
-						state:ModifyStat("Happiness", 10)
-						state:AddFeed("🎯 Recruited for a better position! More money! Career boost!")
+	{
+		id = "rand_random_opportunity",
+		title = "Unexpected Opportunity",
+		emoji = "🎯",
+		text = "An unexpected opportunity lands in your lap!",
+		question = "What kind of opportunity is it?",
+		minAge = 18, maxAge = 70,
+		baseChance = 0.35,
+		cooldown = 5,
+		stage = STAGE,
+		ageBand = "adult",
+		category = "random",
+		tags = { "opportunity", "chance", "luck", "dynamic" },
+		
+		choices = {
+			{
+				text = "A job offer out of nowhere",
+				effects = {},
+				feedText = "Career twist...",
+				onResolve = function(state)
+					local employed = state.CurrentJob ~= nil
+					local roll = math.random()
+					
+					if employed then
+						if roll < 0.5 then
+							state.Money = (state.Money or 0) + math.random(5000, 20000)
+							state:ModifyStat("Happiness", 10)
+							state:AddFeed("🎯 Recruited for a better position! More money! Career boost!")
+							state.Flags = state.Flags or {}
+							state.Flags.headhunted = true
+						else
+							state:ModifyStat("Happiness", 5)
+							state:AddFeed("🎯 Interesting offer but decided to stay where you are. Flattering though!")
+						end
+					else
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("🎯 A job when you needed it most! Someone believed in you!")
 						state.Flags = state.Flags or {}
-						state.Flags.headhunted = true
+						state.Flags.got_opportunity = true
+					end
+				end,
+			},
+			{
+				text = "An investment opportunity",
+				effects = {},
+				feedText = "Risk vs reward...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					local roll = math.random()
+					
+					if money < 1000 then
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🎯 Great opportunity but no money to invest. Frustrating!")
+					elseif roll < 0.4 then
+						local profit = math.random(2000, 10000)
+						state.Money = (state.Money or 0) + profit
+						state:ModifyStat("Happiness", 12)
+						state:AddFeed("🎯 Invested and it paid off! +" .. profit .. "! Lucky break!")
+					elseif roll < 0.7 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🎯 Investment is slow but steady. Time will tell if it's worth it.")
+					else
+						local loss = math.random(500, 2000)
+						state.Money = math.max(0, (state.Money or 0) - loss)
+						state:ModifyStat("Happiness", -8)
+						state:AddFeed("🎯 Investment tanked! Lost $" .. loss .. ". Should have been more careful.")
+					end
+				end,
+			},
+			{
+				text = "A creative project invitation",
+				effects = { Happiness = 8, Smarts = 2 },
+				feedText = "🎯 Someone wants to collaborate with you! Creative energy flowing!",
+				setFlags = { creative_opportunity = true },
+			},
+			{
+				text = "Pass - seems too good to be true",
+				effects = { Happiness = -2 },
+				feedText = "🎯 Let it go. Maybe it was legit. Maybe it wasn't. You'll never know.",
+			},
+		},
+	},
+
+	{
+		id = "rand_stranger_interaction",
+		title = "Stranger Interaction",
+		emoji = "👤",
+		text = "A random stranger approaches you in public.",
+		question = "What do they want?",
+		minAge = 16, maxAge = 80,
+		baseChance = 0.45,
+		cooldown = 3,
+		stage = STAGE,
+		ageBand = "any",
+		category = "random",
+		tags = { "stranger", "interaction", "public", "dynamic" },
+		
+		choices = {
+			{
+				text = "They need directions",
+				effects = { Happiness = 3 },
+				feedText = "👤 Helped them find their way. Small act of kindness. Feels good!",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.kind_to_strangers = true
+				end,
+			},
+			{
+				text = "They compliment you",
+				effects = {},
+				feedText = "Unexpected compliment...",
+				onResolve = function(state)
+					local looks = (state.Stats and state.Stats.Looks) or 50
+					if looks > 60 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("👤 They said you look amazing! Confidence boost!")
+					else
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("👤 A genuine compliment from a stranger. Made your day!")
+					end
+				end,
+			},
+			{
+				text = "They're hitting on you",
+				effects = {},
+				feedText = "Getting hit on...",
+				onResolve = function(state)
+					local flags = state.Flags or {}
+					local roll = math.random()
+					
+					if flags.married or flags.has_partner then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("👤 Flattered but committed. Still nice to know you've got it!")
+					elseif roll < 0.3 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("👤 They were actually attractive! Exchange numbers?")
+						state.Flags = state.Flags or {}
+						state.Flags.potential_date = true
+					else
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("👤 Not your type. But the attention is flattering.")
+					end
+				end,
+			},
+		{
+			text = "They want money",
+			effects = {},
+			feedText = "Being asked for money...",
+			onResolve = function(state)
+				local roll = math.random()
+				if roll < 0.3 then
+					-- CRITICAL FIX: Prevent negative money
+					state.Money = math.max(0, (state.Money or 0) - 10)
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("👤 Gave them some change. Hopefully it helps.")
+					state.Flags = state.Flags or {}
+					state.Flags.charitable = true
+				elseif roll < 0.7 then
+					state:ModifyStat("Happiness", -2)
+					state:AddFeed("👤 Said you had no cash. Did you feel guilty?")
+				else
+					state:ModifyStat("Happiness", -5)
+					state:AddFeed("👤 They got aggressive when you said no. Unpleasant encounter.")
+				end
+			end,
+			},
+		},
+	},
+
+	{
+		id = "rand_overheard_conversation",
+		title = "Overheard Something",
+		emoji = "👂",
+		text = "You accidentally overheard a conversation that wasn't meant for you.",
+		question = "What did you hear?",
+		minAge = 14, maxAge = 80,
+		baseChance = 0.4,
+		cooldown = 4,
+		stage = STAGE,
+		ageBand = "any",
+		category = "random",
+		tags = { "overhear", "secret", "information", "dynamic" },
+		
+		choices = {
+			{
+				text = "Gossip about someone you know",
+				effects = {},
+				feedText = "Hearing gossip...",
+				onResolve = function(state)
+					local roll = math.random()
+					if roll < 0.4 then
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("👂 They were talking about YOU! And not nicely. Hurts.")
+					elseif roll < 0.7 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("👂 Juicy gossip about someone else. You didn't hear that...")
+					else
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("👂 They were saying nice things about you! Behind your back praise!")
+					end
+				end,
+			},
+			{
+				text = "A business secret",
+				effects = { Smarts = 2 },
+				feedText = "👂 Information that could be valuable... What do you do with it?",
+				setFlags = { knows_secret = true },
+			},
+			{
+				text = "Someone's personal struggle",
+				effects = { Happiness = -2 },
+				feedText = "👂 Heard someone's pain. Feel intrusive but also empathetic.",
+			},
+			{
+				text = "Nothing interesting",
+				effects = { Happiness = 1 },
+				feedText = "👂 Just mundane chatter. Life goes on.",
+			},
+		},
+	},
+
+	{
+		id = "rand_small_victory",
+		title = "Small Victory",
+		emoji = "🏆",
+		text = "Something small but satisfying happened today!",
+		question = "What was your small win?",
+		minAge = 10, maxAge = 90,
+		baseChance = 0.5,
+		cooldown = 3,
+		stage = STAGE,
+		ageBand = "any",
+		category = "random",
+		tags = { "victory", "small_win", "satisfaction", "dynamic" },
+		
+		choices = {
+			{
+				text = "Found money on the ground",
+				effects = {},
+				feedText = "Lucky find...",
+				onResolve = function(state)
+					local amount = math.random(5, 100)
+					state.Money = (state.Money or 0) + amount
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("🏆 Found $" .. amount .. "! Is it bad luck? Who cares!")
+				end,
+			},
+			{
+				text = "Got the last of something you wanted",
+				effects = { Happiness = 6 },
+				feedText = "🏆 Last one in stock! The universe wanted you to have it!",
+			},
+			{
+				text = "Perfectly caught the bus/train",
+				effects = { Happiness = 5 },
+				feedText = "🏆 Perfect timing! No waiting! It's the little things!",
+			},
+			{
+				text = "Someone let you go first",
+				effects = { Happiness = 4 },
+				feedText = "🏆 Random act of kindness from a stranger. Faith in humanity!",
+			},
+		},
+	},
+
+	{
+		id = "rand_minor_setback",
+		title = "Minor Setback",
+		emoji = "😤",
+		text = "Something small but annoying happened today.",
+		question = "What went wrong?",
+		minAge = 10, maxAge = 90,
+		baseChance = 0.45,
+		cooldown = 3,
+		stage = STAGE,
+		ageBand = "any",
+		category = "random",
+		tags = { "setback", "frustration", "minor", "dynamic" },
+		
+		choices = {
+			{
+				text = "Phone died at the worst time",
+				effects = { Happiness = -4 },
+				feedText = "😤 Dead phone when you needed it most. Technology betrayal!",
+			},
+			{
+				text = "Got stuck in traffic/transit",
+				effects = { Happiness = -3 },
+				feedText = "😤 Wasted time going nowhere. The commute rage is real.",
+			},
+			{
+				-- CRITICAL FIX: This is a consequence - make money cost dynamic
+				text = "Spilled something on yourself",
+				effects = { Happiness = -3 },
+				feedText = "😤 Coffee/food on your clothes. Embarrassing!",
+				onResolve = function(state)
+					-- Only charge if they can afford replacement
+					if (state.Money or 0) >= 20 then
+						state.Money = state.Money - 20
+						state:AddFeed("😤 Had to buy a new shirt for $20!")
+					else
+						state:AddFeed("😤 Can't afford a new shirt. Looking messy today.")
+					end
+				end,
+			},
+			{
+				text = "Forgot something important at home",
+				effects = { Happiness = -4 },
+				feedText = "😤 That thing you needed? At home. On the counter. Mocking you.",
+			},
+		},
+	},
+
+	{
+		id = "rand_life_lesson",
+		title = "Life Lesson Learned",
+		emoji = "📚",
+		text = "Something happened that taught you an important lesson.",
+		question = "What did you learn?",
+		minAge = 16, maxAge = 80,
+		baseChance = 0.35,
+		cooldown = 5,
+		stage = STAGE,
+		ageBand = "any",
+		category = "random",
+		tags = { "lesson", "wisdom", "growth", "dynamic" },
+		
+		choices = {
+			{
+				text = "Not everyone has your best interest",
+				effects = { Smarts = 3, Happiness = -3 },
+				feedText = "📚 Hard lesson but important. Trust must be earned, not given.",
+				setFlags = { street_smart = true, cautious = true },
+			},
+			{
+				text = "Kindness is always worth it",
+				effects = { Happiness = 8 },
+				feedText = "📚 Being good came back around. What you give, you get.",
+				setFlags = { believes_in_kindness = true },
+			},
+			{
+				text = "Time heals most wounds",
+				effects = { Happiness = 5 },
+				feedText = "📚 Things that seemed unbearable before... you survived them all.",
+				setFlags = { resilient = true },
+			},
+			{
+				text = "Money isn't everything",
+				effects = {},
+				feedText = "True wealth...",
+				onResolve = function(state)
+					local money = state.Money or 0
+					if money > 100000 then
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("📚 You have money and realized it doesn't guarantee happiness. Profound.")
 					else
 						state:ModifyStat("Happiness", 5)
-						state:AddFeed("🎯 Interesting offer but decided to stay where you are. Flattering though!")
+						state:AddFeed("📚 Easy to say when you're broke? Maybe. But still feels true.")
 					end
-				else
-					state:ModifyStat("Happiness", 15)
-					state:AddFeed("🎯 A job when you needed it most! Someone believed in you!")
-					state.Flags = state.Flags or {}
-					state.Flags.got_opportunity = true
-				end
-			end,
-		},
-		{
-			text = "An investment opportunity",
-			effects = {},
-			feedText = "Risk vs reward...",
-			onResolve = function(state)
-				local money = state.Money or 0
-				local roll = math.random()
-				
-				if money < 1000 then
-					state:ModifyStat("Happiness", -3)
-					state:AddFeed("🎯 Great opportunity but no money to invest. Frustrating!")
-				elseif roll < 0.4 then
-					local profit = math.random(2000, 10000)
-					state.Money = (state.Money or 0) + profit
-					state:ModifyStat("Happiness", 12)
-					state:AddFeed("🎯 Invested and it paid off! +" .. profit .. "! Lucky break!")
-				elseif roll < 0.7 then
-					state:ModifyStat("Happiness", 3)
-					state:AddFeed("🎯 Investment is slow but steady. Time will tell if it's worth it.")
-				else
-					local loss = math.random(500, 2000)
-					state.Money = math.max(0, (state.Money or 0) - loss)
-					state:ModifyStat("Happiness", -8)
-					state:AddFeed("🎯 Investment tanked! Lost $" .. loss .. ". Should have been more careful.")
-				end
-			end,
-		},
-		{
-			text = "A creative project invitation",
-			effects = { Happiness = 8, Smarts = 2 },
-			feedText = "🎯 Someone wants to collaborate with you! Creative energy flowing!",
-			setFlags = { creative_opportunity = true },
-		},
-		{
-			text = "Pass - seems too good to be true",
-			effects = { Happiness = -2 },
-			feedText = "🎯 Let it go. Maybe it was legit. Maybe it wasn't. You'll never know.",
+				end,
+			},
 		},
 	},
-},
-
-{
-	id = "rand_stranger_interaction",
-	title = "Stranger Interaction",
-	emoji = "👤",
-	text = "A random stranger approaches you in public.",
-	question = "What do they want?",
-	minAge = 16, maxAge = 80,
-	baseChance = 0.45,
-	cooldown = 3,
-	stage = STAGE,
-	ageBand = "any",
-	category = "random",
-	tags = { "stranger", "interaction", "public", "dynamic" },
-	
-	choices = {
-		{
-			text = "They need directions",
-			effects = { Happiness = 3 },
-			feedText = "👤 Helped them find their way. Small act of kindness. Feels good!",
-			onResolve = function(state)
-				state.Flags = state.Flags or {}
-				state.Flags.kind_to_strangers = true
-			end,
-		},
-		{
-			text = "They compliment you",
-			effects = {},
-			feedText = "Unexpected compliment...",
-			onResolve = function(state)
-				local looks = (state.Stats and state.Stats.Looks) or 50
-				if looks > 60 then
-					state:ModifyStat("Happiness", 10)
-					state:AddFeed("👤 They said you look amazing! Confidence boost!")
-				else
-					state:ModifyStat("Happiness", 8)
-					state:AddFeed("👤 A genuine compliment from a stranger. Made your day!")
-				end
-			end,
-		},
-		{
-			text = "They're hitting on you",
-			effects = {},
-			feedText = "Getting hit on...",
-			onResolve = function(state)
-				local flags = state.Flags or {}
-				local roll = math.random()
-				
-				if flags.married or flags.has_partner then
-					state:ModifyStat("Happiness", 3)
-					state:AddFeed("👤 Flattered but committed. Still nice to know you've got it!")
-				elseif roll < 0.3 then
-					state:ModifyStat("Happiness", 10)
-					state:AddFeed("👤 They were actually attractive! Exchange numbers?")
-					state.Flags = state.Flags or {}
-					state.Flags.potential_date = true
-				else
-					state:ModifyStat("Happiness", 2)
-					state:AddFeed("👤 Not your type. But the attention is flattering.")
-				end
-			end,
-		},
-	{
-		text = "They want money",
-		effects = {},
-		feedText = "Being asked for money...",
-		onResolve = function(state)
-			local roll = math.random()
-			if roll < 0.3 then
-				-- CRITICAL FIX: Prevent negative money
-				state.Money = math.max(0, (state.Money or 0) - 10)
-				state:ModifyStat("Happiness", 5)
-				state:AddFeed("👤 Gave them some change. Hopefully it helps.")
-				state.Flags = state.Flags or {}
-				state.Flags.charitable = true
-			elseif roll < 0.7 then
-				state:ModifyStat("Happiness", -2)
-				state:AddFeed("👤 Said you had no cash. Did you feel guilty?")
-			else
-				state:ModifyStat("Happiness", -5)
-				state:AddFeed("👤 They got aggressive when you said no. Unpleasant encounter.")
-			end
-		end,
-		},
-	},
-},
-
-{
-	id = "rand_overheard_conversation",
-	title = "Overheard Something",
-	emoji = "👂",
-	text = "You accidentally overheard a conversation that wasn't meant for you.",
-	question = "What did you hear?",
-	minAge = 14, maxAge = 80,
-	baseChance = 0.4,
-	cooldown = 4,
-	stage = STAGE,
-	ageBand = "any",
-	category = "random",
-	tags = { "overhear", "secret", "information", "dynamic" },
-	
-	choices = {
-		{
-			text = "Gossip about someone you know",
-			effects = {},
-			feedText = "Hearing gossip...",
-			onResolve = function(state)
-				local roll = math.random()
-				if roll < 0.4 then
-					state:ModifyStat("Happiness", -5)
-					state:AddFeed("👂 They were talking about YOU! And not nicely. Hurts.")
-				elseif roll < 0.7 then
-					state:ModifyStat("Happiness", 3)
-					state:AddFeed("👂 Juicy gossip about someone else. You didn't hear that...")
-				else
-					state:ModifyStat("Happiness", 8)
-					state:AddFeed("👂 They were saying nice things about you! Behind your back praise!")
-				end
-			end,
-		},
-		{
-			text = "A business secret",
-			effects = { Smarts = 2 },
-			feedText = "👂 Information that could be valuable... What do you do with it?",
-			setFlags = { knows_secret = true },
-		},
-		{
-			text = "Someone's personal struggle",
-			effects = { Happiness = -2 },
-			feedText = "👂 Heard someone's pain. Feel intrusive but also empathetic.",
-		},
-		{
-			text = "Nothing interesting",
-			effects = { Happiness = 1 },
-			feedText = "👂 Just mundane chatter. Life goes on.",
-		},
-	},
-},
-
-{
-	id = "rand_small_victory",
-	title = "Small Victory",
-	emoji = "🏆",
-	text = "Something small but satisfying happened today!",
-	question = "What was your small win?",
-	minAge = 10, maxAge = 90,
-	baseChance = 0.5,
-	cooldown = 3,
-	stage = STAGE,
-	ageBand = "any",
-	category = "random",
-	tags = { "victory", "small_win", "satisfaction", "dynamic" },
-	
-	choices = {
-		{
-			text = "Found money on the ground",
-			effects = {},
-			feedText = "Lucky find...",
-			onResolve = function(state)
-				local amount = math.random(5, 100)
-				state.Money = (state.Money or 0) + amount
-				state:ModifyStat("Happiness", 5)
-				state:AddFeed("🏆 Found $" .. amount .. "! Is it bad luck? Who cares!")
-			end,
-		},
-		{
-			text = "Got the last of something you wanted",
-			effects = { Happiness = 6 },
-			feedText = "🏆 Last one in stock! The universe wanted you to have it!",
-		},
-		{
-			text = "Perfectly caught the bus/train",
-			effects = { Happiness = 5 },
-			feedText = "🏆 Perfect timing! No waiting! It's the little things!",
-		},
-		{
-			text = "Someone let you go first",
-			effects = { Happiness = 4 },
-			feedText = "🏆 Random act of kindness from a stranger. Faith in humanity!",
-		},
-	},
-},
-
-{
-	id = "rand_minor_setback",
-	title = "Minor Setback",
-	emoji = "😤",
-	text = "Something small but annoying happened today.",
-	question = "What went wrong?",
-	minAge = 10, maxAge = 90,
-	baseChance = 0.45,
-	cooldown = 3,
-	stage = STAGE,
-	ageBand = "any",
-	category = "random",
-	tags = { "setback", "frustration", "minor", "dynamic" },
-	
-	choices = {
-		{
-			text = "Phone died at the worst time",
-			effects = { Happiness = -4 },
-			feedText = "😤 Dead phone when you needed it most. Technology betrayal!",
-		},
-		{
-			text = "Got stuck in traffic/transit",
-			effects = { Happiness = -3 },
-			feedText = "😤 Wasted time going nowhere. The commute rage is real.",
-		},
-		{
-			-- CRITICAL FIX: This is a consequence - make money cost dynamic
-			text = "Spilled something on yourself",
-			effects = { Happiness = -3 },
-			feedText = "😤 Coffee/food on your clothes. Embarrassing!",
-			onResolve = function(state)
-				-- Only charge if they can afford replacement
-				if (state.Money or 0) >= 20 then
-					state.Money = state.Money - 20
-					state:AddFeed("😤 Had to buy a new shirt for $20!")
-				else
-					state:AddFeed("😤 Can't afford a new shirt. Looking messy today.")
-				end
-			end,
-		},
-		{
-			text = "Forgot something important at home",
-			effects = { Happiness = -4 },
-			feedText = "😤 That thing you needed? At home. On the counter. Mocking you.",
-		},
-	},
-},
-
-{
-	id = "rand_life_lesson",
-	title = "Life Lesson Learned",
-	emoji = "📚",
-	text = "Something happened that taught you an important lesson.",
-	question = "What did you learn?",
-	minAge = 16, maxAge = 80,
-	baseChance = 0.35,
-	cooldown = 5,
-	stage = STAGE,
-	ageBand = "any",
-	category = "random",
-	tags = { "lesson", "wisdom", "growth", "dynamic" },
-	
-	choices = {
-		{
-			text = "Not everyone has your best interest",
-			effects = { Smarts = 3, Happiness = -3 },
-			feedText = "📚 Hard lesson but important. Trust must be earned, not given.",
-			setFlags = { street_smart = true, cautious = true },
-		},
-		{
-			text = "Kindness is always worth it",
-			effects = { Happiness = 8 },
-			feedText = "📚 Being good came back around. What you give, you get.",
-			setFlags = { believes_in_kindness = true },
-		},
-		{
-			text = "Time heals most wounds",
-			effects = { Happiness = 5 },
-			feedText = "📚 Things that seemed unbearable before... you survived them all.",
-			setFlags = { resilient = true },
-		},
-		{
-			text = "Money isn't everything",
-			effects = {},
-			feedText = "True wealth...",
-			onResolve = function(state)
-				local money = state.Money or 0
-				if money > 100000 then
-					state:ModifyStat("Happiness", 10)
-					state:AddFeed("📚 You have money and realized it doesn't guarantee happiness. Profound.")
-				else
-					state:ModifyStat("Happiness", 5)
-					state:AddFeed("📚 Easy to say when you're broke? Maybe. But still feels true.")
-				end
-			end,
-		},
-	},
-},
-}
+	}
 
 return RandomExpanded

@@ -4931,7 +4931,7 @@ local JobCatalogList = {
 		difficulty = 2, grantsFlags = { "tech_experience", "it_background" },
 		description = "Entry point to tech career" },
 	{ id = "junior_developer", name = "Junior Developer", company = "CodeStart Inc", emoji = "💻", salary = 65000, minAge = 21, requirement = "bachelor", category = "tech",
-		difficulty = 4, requiresFlags = { "coder", "computer_skills", "tech_experience", "coding_bootcamp" }, grantsFlags = { "developer_experience", "software_engineer" },
+		difficulty = 4, requiresFlags = { "coder", "computer_skills", "tech_experience", "coding_bootcamp", "passionate_coder", "coding_interest", "tech_talent", "future_developer", "loves_coding", "tech_savvy" }, grantsFlags = { "developer_experience", "software_engineer" },
 		description = "Requires coding skills (code as hobby, computer club, bootcamp)" },
 	{ id = "developer", name = "Software Developer", company = "TechStart Inc", emoji = "💻", salary = 95000, minAge = 23, requirement = "bachelor", category = "tech",
 		difficulty = 5, requiresFlags = { "developer_experience", "coder" }, grantsFlags = { "mid_level_dev", "software_engineer" },
@@ -4946,7 +4946,7 @@ local JobCatalogList = {
 		difficulty = 8, requiresFlags = { "tech_lead", "senior_dev" }, grantsFlags = { "architect" },
 		description = "Requires tech lead experience" },
 	{ id = "web_developer", name = "Web Developer", company = "WebWorks Studio", emoji = "🌐", salary = 78000, minAge = 22, requirement = "bachelor", category = "tech",
-		difficulty = 4, requiresFlags = { "coder", "computer_skills", "tech_experience" }, grantsFlags = { "web_dev", "developer_experience" },
+		difficulty = 4, requiresFlags = { "coder", "computer_skills", "tech_experience", "passionate_coder", "coding_interest", "tech_talent", "future_developer", "loves_coding", "tech_savvy" }, grantsFlags = { "web_dev", "developer_experience" },
 		description = "Requires coding skills" },
 	{ id = "mobile_developer", name = "Mobile App Developer", company = "AppFactory", emoji = "📱", salary = 92000, minAge = 23, requirement = "bachelor", category = "tech",
 		difficulty = 5, requiresFlags = { "coder", "developer_experience" }, grantsFlags = { "mobile_dev", "app_developer" },
@@ -5089,7 +5089,9 @@ local JobCatalogList = {
 	-- CRITICAL FIX #66: Creative jobs need proper progression flags
 	{ id = "graphic_designer_jr", name = "Junior Graphic Designer", company = "Design Studio", emoji = "🎨", salary = 42000, minAge = 21, requirement = "bachelor", category = "creative",
 		difficulty = 3, grantsFlags = { "design_experience", "creative_experience", "junior_designer" },
-		description = "Entry-level design position" },
+		-- CRITICAL FIX: Accept childhood artistic flags for better career accessibility!
+		requiresFlags = { "artistic", "creative", "detail_oriented", "observant_artist", "colorful_artist", "creative_imagination", "arts_track" },
+		description = "Entry-level design position - creative passion helps" },
 	{ id = "graphic_designer", name = "Graphic Designer", company = "Creative Agency", emoji = "🎨", salary = 62000, minAge = 24, requirement = "bachelor", category = "creative",
 		difficulty = 4, requiresFlags = { "design_experience", "junior_designer" },
 		grantsFlags = { "senior_designer", "creative_experience", "portfolio_experience" },
@@ -5126,13 +5128,13 @@ local JobCatalogList = {
 		difficulty = 2, minStats = { Looks = 35 }, grantsFlags = { "acting_experience", "film_industry" },
 		description = "Entry point to acting career" },
 	{ id = "actor", name = "Actor", company = "Talent Agency", emoji = "🎭", salary = 85000, minAge = 21, requirement = nil, category = "creative",
-		difficulty = 7, minStats = { Looks = 55 }, requiresFlags = { "acting_experience", "drama_club", "theater_experience", "film_industry" }, grantsFlags = { "professional_actor", "celebrity" },
-		description = "Requires acting experience (drama club, background work)" },
+		difficulty = 7, minStats = { Looks = 55 }, requiresFlags = { "acting_experience", "drama_club", "theater_experience", "film_industry", "theater_kid", "lead_actor", "auditioned_for_play", "natural_performer", "passionate_performer" }, grantsFlags = { "professional_actor", "celebrity" },
+		description = "Requires acting experience (drama club, background work, theater)" },
 	{ id = "movie_star", name = "Movie Star", company = "Major Studios", emoji = "⭐", salary = 2500000, minAge = 25, requirement = nil, category = "creative",
 		difficulty = 10, minStats = { Looks = 80 }, requiresFlags = { "professional_actor", "celebrity" }, grantsFlags = { "movie_star", "famous" },
 		description = "Requires professional acting career - extreme talent and luck" },
 	{ id = "musician_local", name = "Local Musician", company = "Self-Employed", emoji = "🎸", salary = 28000, minAge = 16, requirement = nil, category = "creative",
-		difficulty = 3, requiresFlags = { "musician", "plays_instrument", "in_a_band", "music_lessons" }, grantsFlags = { "local_musician", "music_experience" },
+		difficulty = 3, requiresFlags = { "musician", "plays_instrument", "in_a_band", "music_lessons", "musical_talent", "passionate_performer", "instrument_player", "plays_piano", "plays_guitar", "plays_drums", "started_music_lessons", "shower_singer", "natural_performer" }, grantsFlags = { "local_musician", "music_experience" },
 		description = "Requires musical ability - local gigs and small venues" },
 	{ id = "musician_signed", name = "Signed Musician", company = "Record Label", emoji = "🎸", salary = 95000, minAge = 20, requirement = nil, category = "creative",
 		difficulty = 7, requiresFlags = { "local_musician", "music_experience" }, grantsFlags = { "signed_artist", "recording_artist" },
@@ -5245,9 +5247,9 @@ local JobCatalogList = {
 		description = "Must be in excellent physical shape" },
 	{ id = "minor_league", name = "Minor League Player", company = "Farm Team", emoji = "⚾", salary = 45000, minAge = 18, requirement = nil, category = "sports",
 		minStats = { Health = 70 }, difficulty = 6, 
-		requiresFlags = { "athlete", "school_sports", "plays_soccer", "plays_basketball", "varsity_athlete", "team_player", "camp_athlete" }, -- CRITICAL FIX: Need actual sports background
+		requiresFlags = { "athlete", "school_sports", "plays_soccer", "plays_basketball", "varsity_athlete", "team_player", "camp_athlete", "passionate_athlete", "athletic_talent", "sports_interest", "athletic_kid", "sporty_kid", "on_sports_team", "school_athlete" }, -- CRITICAL FIX: Accept childhood athletic flags
 		grantsFlags = { "minor_league_player", "pro_sports_experience", "professional_athlete_training" },
-		description = "Requires high school/college sports experience - must have played organized sports" },
+		description = "Requires sports background - must have athletic experience from youth" },
 	{ id = "professional_athlete", name = "Professional Athlete", company = "Sports Team", emoji = "🏆", salary = 450000, minAge = 21, requirement = nil, category = "sports",
 		minStats = { Health = 80 }, difficulty = 9, 
 		requiresFlags = { "minor_league_player", "pro_sports_experience" }, -- CRITICAL FIX: Must go through minor leagues
@@ -5260,7 +5262,7 @@ local JobCatalogList = {
 		description = "Requires pro athlete career - world-class ability" },
 	{ id = "sports_coach", name = "Sports Coach", company = "High School", emoji = "📋", salary = 55000, minAge = 25, requirement = "bachelor", category = "sports",
 		minStats = { Smarts = 45 }, difficulty = 4, 
-		requiresFlags = { "athlete", "school_sports", "fitness_experience", "minor_league_player", "pro_athlete", "coach_experience" }, -- CRITICAL FIX: Need athletic background OR coaching experience
+		requiresFlags = { "athlete", "school_sports", "fitness_experience", "minor_league_player", "pro_athlete", "coach_experience", "passionate_athlete", "athletic_talent", "athletic_kid", "sporty_kid", "on_sports_team", "team_player" }, -- CRITICAL FIX: Accept childhood athletic flags
 		grantsFlags = { "coach_experience", "coaching_career" },
 		description = "Requires athletic background - teaching and athletic knowledge" },
 	-- CRITICAL FIX: Added senior_coach position between coach and head_coach
@@ -5282,9 +5284,8 @@ local JobCatalogList = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{ id = "nba_g_league", name = "G-League Player", company = "NBA G-League", emoji = "🏀", salary = 45000, minAge = 19, maxAge = 28, requirement = nil, category = "sports",
 		minStats = { Health = 75 }, difficulty = 8,
-		-- CRITICAL FIX: Accept all basketball-related flags from NBA events! (OR logic - any works)
-		-- Fixed flag names: varsity_athlete (not varsity_basketball), added plays_basketball
-		requiresFlags = { "college_basketball", "basketball_prodigy", "march_madness_star", "nba_dream_setback", "basketball_talent", "camp_standout", "varsity_athlete", "plays_basketball", "aau_player" },
+		-- CRITICAL FIX: Accept all basketball-related flags from NBA events AND childhood athletic flags
+		requiresFlags = { "college_basketball", "basketball_prodigy", "march_madness_star", "nba_dream_setback", "basketball_talent", "camp_standout", "varsity_athlete", "plays_basketball", "aau_player", "passionate_athlete", "athletic_talent", "sports_interest", "athletic_kid", "sporty_kid", "on_sports_team" },
 		grantsFlags = { "nba_g_league_player", "pro_basketball" },
 		description = "Development league - requires strong basketball background" },
 	{ id = "nba_player", name = "NBA Player", company = "NBA Team", emoji = "🏀", salary = 925000, minAge = 19, maxAge = 38, requirement = nil, category = "sports",
@@ -5442,8 +5443,8 @@ local JobCatalogList = {
 	-- CRITICAL FIX: Script kiddie is now more accessible with early-life tech flags!
 	{ id = "script_kiddie", name = "Script Kiddie", company = "The Internet", emoji = "👶💻", salary = 1500, minAge = 14, requirement = nil, category = "hacker",
 		minStats = { Smarts = 45 }, -- CRITICAL FIX: Lowered from 55 for accessibility
-		-- CRITICAL FIX: Accept early-life tech discovery flags OR just high smarts
-		requiresFlags = { "tech_savvy", "coder", "hacker_interest", "computer_interest", "gamer", "coding_prodigy" },
+		-- CRITICAL FIX: Accept early-life tech discovery flags from childhood/teen events!
+		requiresFlags = { "tech_savvy", "coder", "hacker_interest", "computer_interest", "gamer", "coding_prodigy", "passionate_coder", "coding_interest", "tech_talent", "future_developer", "passionate_gamer", "gaming_interest" },
 		grantsFlags = { "coder", "tech_experience", "script_kiddie" }, description = "Learning to hack with pre-made tools - small side gigs" },
 	{ id = "freelance_hacker", name = "Freelance Hacker", company = "Dark Web", emoji = "🖥️", salary = 60000, minAge = 18, requirement = nil, category = "hacker",
 		minStats = { Smarts = 60 }, -- CRITICAL FIX: Lowered from 65
@@ -5479,16 +5480,16 @@ local JobCatalogList = {
 	-- CRITICAL FIX: Entry-level gaming job - accepts all early-life gaming flags!
 	{ id = "casual_gamer", name = "Casual Streamer", company = "Twitch", emoji = "🎮", salary = 5000, minAge = 13, requirement = nil, category = "esports",
 		minStats = { Smarts = 40 }, difficulty = 2,
-		-- CRITICAL FIX: Accept ANY gaming-related flag from early-life discovery events!
-		requiresFlags = { "gamer", "loves_games", "casual_gamer", "tech_savvy", "gaming_prodigy", "competitive_gamer", "esports_winner" },
+		-- CRITICAL FIX: Accept ANY gaming-related flag from childhood/teen discovery events!
+		requiresFlags = { "gamer", "loves_games", "casual_gamer", "tech_savvy", "gaming_prodigy", "competitive_gamer", "esports_winner", "passionate_gamer", "gamer_kid", "gaming_interest", "likes_gaming", "game_obsessed", "balanced_gamer" },
 		grantsFlags = { "streamer", "content_creator_experience", "esports_experience", "gamer" },
 		description = "Stream games with a small following - requires gaming hobby" },
 	{ id = "content_creator", name = "Gaming Content Creator", company = "YouTube Gaming", emoji = "📹", salary = 25000, minAge = 16, requirement = nil, category = "esports",
 		minStats = { Smarts = 50 }, difficulty = 4,
-		-- CRITICAL FIX: Accept streamer flag OR gaming background from early-life events
-		requiresFlags = { "gamer", "streamer", "content_creator_experience", "esports_experience", "gaming_prodigy", "competitive_gamer" },
+		-- CRITICAL FIX: Accept streamer flag OR gaming background from childhood/teen events
+		requiresFlags = { "gamer", "streamer", "content_creator_experience", "esports_experience", "gaming_prodigy", "competitive_gamer", "passionate_gamer", "gamer_kid", "gaming_interest", "game_obsessed", "content_creator_start" },
 		grantsFlags = { "youtube_gamer", "content_creator", "growing_audience", "streamer" },
-		description = "Create gaming content with growing audience - requires streaming experience" },
+		description = "Create gaming content with growing audience - requires gaming interest" },
 	{ id = "pro_gamer", name = "Pro Gamer", company = "Esports Organization", emoji = "🕹️", salary = 65000, minAge = 17, requirement = nil, category = "esports",
 		minStats = { Smarts = 60, Health = 50 }, difficulty = 7,
 		-- CRITICAL FIX: Accept competitive_gamer OR esports_winner from early-life events!
@@ -5615,8 +5616,8 @@ local JobCatalogList = {
 		difficulty = 1, grantsFlags = { "performer", "busker" }, isFameCareer = true,
 		description = "Playing for tips on the street" },
 	{ id = "local_artist", name = "Local Artist", company = "Local Venues", emoji = "🎤", salary = 3000, minAge = 14, requirement = nil, category = "entertainment",
-		difficulty = 3, requiresFlags = { "performer" }, grantsFlags = { "local_musician", "venue_experience" }, isFameCareer = true,
-		description = "Known in your local music scene" },
+		difficulty = 3, requiresFlags = { "performer", "musical_talent", "passionate_performer", "instrument_player", "natural_performer", "likes_music", "shower_singer", "plays_piano", "plays_guitar", "plays_drums", "started_music_lessons" }, grantsFlags = { "local_musician", "venue_experience" }, isFameCareer = true,
+		description = "Known in your local music scene - requires musical ability" },
 	{ id = "indie_artist", name = "Indie Artist", company = "Independent", emoji = "🎵", salary = 25000, minAge = 16, requirement = nil, category = "entertainment",
 		difficulty = 4, requiresFlags = { "local_musician" }, grantsFlags = { "indie_artist", "self_released" }, isFameCareer = true,
 		description = "Self-released music gaining traction" },
@@ -21892,6 +21893,93 @@ local InteractionEffects = {
 				return outcome.text
 			end,
 		},
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- BITLIFE FEATURE: Eliminate action for family (TOS-friendly)
+		-- User request: "feature where i can [eliminate] my own loved ones"
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		eliminate = {
+			delta = 0,
+			showResult = true,
+			isDangerous = true,
+			message = function(state, relationship, payload)
+				local targetName = (relationship and relationship.name) or "them"
+				local subChoice = payload and payload.subChoice or "cancel"
+				
+				-- Cancel option - back out safely
+				if subChoice == "cancel" then
+					return "💭 You thought better of it. This is family... Some lines shouldn't be crossed."
+				end
+				
+				-- Calculate catch risk based on method
+				local methodRisks = {
+					food = { risk = 0.50, name = "suspicious meal" },
+					accident = { risk = 0.40, name = "arranged accident" },
+					sport = { risk = 0.55, name = "golf club mishap" },
+					push = { risk = 0.35, name = "hiking accident" },
+					poison = { risk = 0.45, name = "tainted beverage" },
+					hire = { risk = 0.60, name = "hired help" },
+					pillow = { risk = 0.30, name = "peaceful sleep" },
+					bathtub = { risk = 0.40, name = "bathroom slip" },
+				}
+				
+				local method = methodRisks[subChoice] or { risk = 0.50, name = "mysterious circumstances" }
+				local roll = RANDOM:NextNumber()
+				local isCaught = roll < method.risk
+				
+				state.Flags = state.Flags or {}
+				
+				if isCaught then
+					-- GOT CAUGHT!
+					state.Flags.committed_crime = true
+					state.Flags.caught_for_crime = true
+					state.Flags.in_prison = true
+					state.Flags.incarcerated = true
+					state.Flags.awaiting_trial = true
+					state.PrisonSentence = RANDOM:NextInteger(25, 50)
+					
+					if state.ModifyStat then
+						state:ModifyStat("Happiness", -50)
+					end
+					
+					local caughtMessages = {
+						"🚔 CAUGHT! A family member noticed something was off! Police are at the door!",
+						"🔍 CAUGHT! The coroner found evidence! They're coming for you!",
+						"👮 CAUGHT! Someone talked. You're being arrested for what happened to " .. targetName .. "!",
+						"🚨 CAUGHT! You left fingerprints! Sirens are approaching!",
+						"⚖️ CAUGHT! A witness came forward. Life in prison awaits...",
+					}
+					
+					return caughtMessages[RANDOM:NextInteger(1, #caughtMessages)] .. "\n\n💀 " .. targetName .. " is gone via " .. method.name .. ".\n\n⛓️ Sentence: " .. state.PrisonSentence .. " years!"
+				else
+					-- SUCCESS
+					state.Flags.has_dark_secret = true
+					state.Flags.eliminated_family = true
+					state.Karma = (state.Karma or 100) - 40
+					
+					if state.ModifyStat then
+						state:ModifyStat("Happiness", -20)
+					end
+					
+					-- Remove the relationship
+					if relationship then
+						relationship.alive = false
+						relationship.causeOfDeath = method.name
+						relationship.relationship = -100
+					end
+					
+					local successMessages = {
+						"💀 It's done. " .. targetName .. " is gone. The " .. method.name .. " was... effective.",
+						"☠️ " .. targetName .. " has passed. The " .. method.name .. " worked as planned.",
+						"🕳️ " .. targetName .. " has departed. Everyone thinks it was natural...",
+						"⚰️ A tragic " .. method.name .. " has taken " .. targetName .. " from this world...",
+						"🌑 " .. targetName .. " is no more. You'll carry this secret forever...",
+					}
+					
+					return successMessages[RANDOM:NextInteger(1, #successMessages)] .. "\n\n😈 You got away with it... for now."
+				end
+			end,
+		},
 	},
 	romance = {
 		-- ═══════════════════════════════════════════════════════════════════════════════
@@ -22405,6 +22493,103 @@ local InteractionEffects = {
 			message = function(_, relationship)
 				local name = (relationship and relationship.name) or "someone new"
 				return string.format("You hit it off with %s!", name)
+			end,
+		},
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- BITLIFE FEATURE: Eliminate action for romance (TOS-friendly)
+		-- User request: "feature where i can [eliminate] my own loved ones"
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		eliminate = {
+			delta = 0,
+			showResult = true,
+			isDangerous = true,
+			message = function(state, relationship, payload)
+				local targetName = (relationship and relationship.name) or "your partner"
+				local subChoice = payload and payload.subChoice or "cancel"
+				
+				-- Cancel option
+				if subChoice == "cancel" then
+					return "💭 You thought better of it. Some relationships end differently..."
+				end
+				
+				-- Calculate catch risk based on method
+				local methodRisks = {
+					food = { risk = 0.50, name = "suspicious meal" },
+					accident = { risk = 0.40, name = "arranged accident" },
+					sport = { risk = 0.55, name = "golf club mishap" },
+					push = { risk = 0.35, name = "hiking accident" },
+					poison = { risk = 0.45, name = "tainted beverage" },
+					hire = { risk = 0.60, name = "hired help" },
+					pillow = { risk = 0.30, name = "peaceful sleep" },
+					bathtub = { risk = 0.40, name = "bathroom slip" },
+				}
+				
+				local method = methodRisks[subChoice] or { risk = 0.50, name = "mysterious circumstances" }
+				local roll = RANDOM:NextNumber()
+				local isCaught = roll < method.risk
+				
+				state.Flags = state.Flags or {}
+				
+				if isCaught then
+					-- GOT CAUGHT!
+					state.Flags.committed_crime = true
+					state.Flags.caught_for_crime = true
+					state.Flags.in_prison = true
+					state.Flags.incarcerated = true
+					state.Flags.awaiting_trial = true
+					state.PrisonSentence = RANDOM:NextInteger(25, 50)
+					
+					if state.ModifyStat then
+						state:ModifyStat("Happiness", -50)
+					end
+					
+					local caughtMessages = {
+						"🚔 CAUGHT! " .. targetName .. "'s family suspected something! You're being arrested!",
+						"🔍 CAUGHT! The autopsy revealed evidence! Detectives are at your door!",
+						"👮 CAUGHT! Your alibi didn't hold up. They know what you did to " .. targetName .. "!",
+						"🚨 CAUGHT! The insurance company flagged something. Police are coming!",
+						"⚖️ CAUGHT! A neighbor saw you that night. It's over...",
+					}
+					
+					return caughtMessages[RANDOM:NextInteger(1, #caughtMessages)] .. "\n\n💀 " .. targetName .. " is gone via " .. method.name .. ".\n\n⛓️ Sentence: " .. state.PrisonSentence .. " years!"
+				else
+					-- SUCCESS
+					state.Flags.has_dark_secret = true
+					state.Flags.eliminated_partner = true
+					state.Flags.widow = true
+					state.Karma = (state.Karma or 100) - 35
+					
+					-- Inherit their money if married
+					if state.Flags.married and relationship and relationship.money then
+						state.Money = (state.Money or 0) + (relationship.money or 0)
+					end
+					
+					if state.ModifyStat then
+						state:ModifyStat("Happiness", -15)
+					end
+					
+					-- Clear partner status
+					state.Flags.has_partner = nil
+					state.Flags.dating = nil
+					state.Flags.married = nil
+					state.Flags.engaged = nil
+					
+					if relationship then
+						relationship.alive = false
+						relationship.causeOfDeath = method.name
+					end
+					
+					local successMessages = {
+						"💀 " .. targetName .. " has passed away from a tragic " .. method.name .. ". You're single again...",
+						"☠️ The " .. method.name .. " worked. " .. targetName .. " is no longer with us.",
+						"🕳️ A fatal " .. method.name .. " has claimed " .. targetName .. ". Everyone sends condolences...",
+						"⚰️ " .. targetName .. " departed suddenly. The funeral was... interesting.",
+						"🌑 " .. targetName .. " is gone. You played the grieving partner perfectly...",
+					}
+					
+					return successMessages[RANDOM:NextInteger(1, #successMessages)] .. "\n\n😈 You got away with it... but can you live with yourself?"
+				end
 			end,
 		},
 	},
@@ -23041,6 +23226,95 @@ local InteractionEffects = {
 			end,
 		},
 		ignore = { delta = 0, message = "You ignored them." },
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- BITLIFE FEATURE: Eliminate action (TOS-friendly)
+		-- User request: "feature where i can [eliminate] my own loved ones and could get 
+		-- caught and i can pick how i do it"
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		eliminate = {
+			delta = 0,
+			showResult = true,
+			isDangerous = true,
+			message = function(state, relationship, payload)
+				local targetName = (relationship and relationship.name) or "them"
+				local subChoice = payload and payload.subChoice or "cancel"
+				
+				-- Cancel option - back out safely
+				if subChoice == "cancel" then
+					return "💭 You thought better of it. Some lines shouldn't be crossed..."
+				end
+				
+				-- Calculate catch risk based on method
+				local methodRisks = {
+					food = { risk = 0.50, name = "suspicious meal" },
+					accident = { risk = 0.40, name = "arranged accident" },
+					sport = { risk = 0.55, name = "golf club mishap" },
+					push = { risk = 0.35, name = "hiking accident" },
+					poison = { risk = 0.45, name = "tainted beverage" },
+					hire = { risk = 0.60, name = "hired help" },
+					pillow = { risk = 0.30, name = "peaceful sleep" },
+					bathtub = { risk = 0.40, name = "bathroom slip" },
+				}
+				
+				local method = methodRisks[subChoice] or { risk = 0.50, name = "mysterious circumstances" }
+				local roll = RANDOM:NextNumber()
+				local isCaught = roll < method.risk
+				
+				state.Flags = state.Flags or {}
+				
+				if isCaught then
+					-- GOT CAUGHT!
+					state.Flags.committed_crime = true
+					state.Flags.caught_for_crime = true
+					state.Flags.in_prison = true
+					state.Flags.incarcerated = true
+					state.Flags.awaiting_trial = true
+					state.PrisonSentence = RANDOM:NextInteger(25, 50) -- 25-50 years
+					
+					if state.ModifyStat then
+						state:ModifyStat("Happiness", -40)
+					end
+					
+					local caughtMessages = {
+						"🚔 CAUGHT! A witness saw everything! You're being arrested!",
+						"🔍 CAUGHT! Forensic evidence linked you to the crime!",
+						"👮 CAUGHT! The detective figured it out. You're going away for a LONG time!",
+						"🚨 CAUGHT! You made a critical mistake. Sirens are approaching!",
+						"⚖️ CAUGHT! They found the evidence. Life in prison awaits...",
+					}
+					
+					return caughtMessages[RANDOM:NextInteger(1, #caughtMessages)] .. "\n\n💀 " .. targetName .. " is gone via " .. method.name .. ".\n\n⛓️ Sentence: " .. state.PrisonSentence .. " years!"
+				else
+					-- SUCCESS - They're gone
+					state.Flags.has_dark_secret = true
+					state.Flags.eliminated_someone = true
+					state.Karma = (state.Karma or 100) - 30
+					
+					if state.ModifyStat then
+						state:ModifyStat("Happiness", -15)
+						state:ModifyStat("Health", 5) -- Less stress?
+					end
+					
+					-- Remove the relationship (they're gone)
+					if relationship then
+						relationship.alive = false
+						relationship.causeOfDeath = method.name
+						relationship.relationship = -100
+					end
+					
+					local successMessages = {
+						"💀 It's done. " .. targetName .. " is gone. The " .. method.name .. " was... effective.",
+						"☠️ " .. targetName .. " won't be around anymore. The " .. method.name .. " worked perfectly.",
+						"🕳️ " .. targetName .. " has departed via " .. method.name .. ". No one suspects a thing...",
+						"⚰️ Tragic " .. method.name .. " for " .. targetName .. ". You'll have to live with this secret...",
+						"🌑 " .. targetName .. " is no more. The " .. method.name .. " left no trace. Or did it...?",
+					}
+					
+					return successMessages[RANDOM:NextInteger(1, #successMessages)] .. "\n\n😈 You got away with it... for now."
+				end
+			end,
+		},
 	},
 }
 

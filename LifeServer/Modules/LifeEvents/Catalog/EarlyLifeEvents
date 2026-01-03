@@ -687,7 +687,7 @@ EarlyLifeEvents.events = {
 		},
 	},
 	{
-		id = "childhood_pet_want",
+		id = "childhood_pet_request",
 		title = "Wanting a Pet",
 		emoji = "🐕",
 		text = "You REALLY want a pet! You've been begging your parents for weeks!",
@@ -823,7 +823,7 @@ EarlyLifeEvents.events = {
 		text = "There are tryouts for the school sports team! Do you try out?",
 		question = "What's your approach?",
 		minAge = 7, maxAge = 14,
-		baseChance = 0.6,
+		baseChance = 0.45,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
@@ -886,7 +886,7 @@ EarlyLifeEvents.events = {
 		text = "Your school is having a sports day! There's basketball, football, soccer, and more! What catches your eye?",
 		question = "Which sport do you want to try?",
 		minAge = 5, maxAge = 10,
-		baseChance = 0.65, -- HIGH chance - this is a critical flag-setting event!
+		baseChance = 0.45, -- HIGH chance - this is a critical flag-setting event!
 		cooldown = 5,
 		oneTime = true,
 		category = "childhood",
@@ -1664,7 +1664,7 @@ EarlyLifeEvents.events = {
 		text = "The school science fair is coming up! You need a project!",
 		question = "What kind of project do you do?",
 		minAge = 8, maxAge = 14,
-		baseChance = 0.6,
+		baseChance = 0.45,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
@@ -1817,7 +1817,7 @@ EarlyLifeEvents.events = {
 		text = "You've been begging for a phone forever!",
 		question = "What happens?",
 		minAge = 10, maxAge = 14,
-		baseChance = 0.6,
+		baseChance = 0.45,
 		cooldown = 3,
 		
 		choices = {
@@ -2104,7 +2104,7 @@ EarlyLifeEvents.events = {
 		text = "There's a house party this weekend. Parents are out of town...",
 		question = "Do you go?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.6,
+		baseChance = 0.45,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
@@ -2160,7 +2160,7 @@ EarlyLifeEvents.events = {
 		text = "You're old enough to get a part-time job!",
 		question = "Do you look for work?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.6,
+		baseChance = 0.45,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
@@ -2439,7 +2439,7 @@ EarlyLifeEvents.events = {
 		text = "Your friend group is having major drama!",
 		question = "What do you do?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.6,
+		baseChance = 0.45,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
@@ -2501,7 +2501,7 @@ EarlyLifeEvents.events = {
 		text = "You're figuring out who you are and who you want to be.",
 		question = "What are you exploring?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.6,
+		baseChance = 0.45,
 		cooldown = 3,
 		
 		choices = {
@@ -2606,7 +2606,7 @@ EarlyLifeEvents.events = {
 		text = "Bedtime is scary. You're afraid of what's in the dark!",
 		question = "How do you handle your fear?",
 		minAge = 3, maxAge = 8,
-		baseChance = 0.6,
+		baseChance = 0.45,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
@@ -2698,7 +2698,7 @@ EarlyLifeEvents.events = {
 		text = "Your parents are limiting your TV and video game time!",
 		question = "How do you react?",
 		minAge = 5, maxAge = 12,
-		baseChance = 0.6,
+		baseChance = 0.45,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
@@ -2990,7 +2990,7 @@ EarlyLifeEvents.events = {
 		text = "You're breaking out! Acne is ruining your life!",
 		question = "How do you deal with it?",
 		minAge = 12, maxAge = 17,
-		baseChance = 0.6,
+		baseChance = 0.45,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
@@ -3406,7 +3406,7 @@ EarlyLifeEvents.events = {
 		text = "Art class is today! Time to get creative!",
 		question = "What do you create?",
 		minAge = 5, maxAge = 12,
-		baseChance = 0.6,
+		baseChance = 0.45,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
@@ -3517,7 +3517,7 @@ EarlyLifeEvents.events = {
 		text = "Someone at the playground challenges you to a contest!",
 		question = "What's the challenge?",
 		minAge = 5, maxAge = 12,
-		baseChance = 0.6,
+		baseChance = 0.45,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
@@ -3574,7 +3574,7 @@ EarlyLifeEvents.events = {
 		text = "Your class is visiting the library today!",
 		question = "What kind of books do you pick?",
 		minAge = 5, maxAge = 14,
-		baseChance = 0.6,
+		baseChance = 0.45,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
@@ -3640,7 +3640,7 @@ EarlyLifeEvents.events = {
 		text = "You're exploring the backyard when you find something!",
 		question = "What did you find?",
 		minAge = 4, maxAge = 12,
-		baseChance = 0.6,
+		baseChance = 0.45,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
@@ -4000,7 +4000,7 @@ EarlyLifeEvents.events = {
 		text = "You're old enough for social media! Time to make an account!",
 		question = "What happens when you join?",
 		minAge = 13, maxAge = 15,
-		baseChance = 0.6,
+		baseChance = 0.45,
 		cooldown = 5,
 		oneTime = true,
 		
@@ -4345,7 +4345,7 @@ EarlyLifeEvents.events = {
 		text = "You're old enough to make some choices now! What kind of kid are you?",
 		question = "Who do you want to be?",
 		minAge = 5, maxAge = 6,
-		baseChance = 0.65, -- CRITICAL FIX: Reduced from 0.85 to prevent guaranteed spam
+		baseChance = 0.45, -- CRITICAL FIX: Reduced from 0.85 to prevent guaranteed spam
 		cooldown = 99,
 		oneTime = true,
 		priority = "high",

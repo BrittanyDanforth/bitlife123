@@ -26,6 +26,8 @@ FamilyEvents.events = {
 		category = "family",
 		tags = { "pregnancy", "baby", "family" },
 		requiresPartner = true,
+		-- CRITICAL FIX: Can't have pregnancy news while incarcerated
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		
 		-- CRITICAL: Random pregnancy outcome
 		choices = {
@@ -71,10 +73,17 @@ FamilyEvents.events = {
 		id = "family_birth",
 		title = "Baby Arrives!",
 		emoji = "👶",
+		textVariants = {
+			"The baby is coming!",
+			"It's time! The contractions are getting closer!",
+			"Rush to the hospital - labor has started!",
+			"After months of waiting, the big day is finally here!",
+			"Your family is about to grow by one!",
+		},
 		text = "The baby is coming!",
 		question = "How does the birth go?",
 		minAge = 18, maxAge = 50,
-		baseChance = 0.65, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
+		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.65 for better balance
 		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		oneTime = false,
 		stage = STAGE,
@@ -82,6 +91,8 @@ FamilyEvents.events = {
 		category = "milestone",
 		tags = { "birth", "baby", "milestone" },
 		requiresFlags = { expecting = true },
+		-- CRITICAL FIX: Can't have normal hospital birth while incarcerated
+		blockedByFlags = { in_prison = true, incarcerated = true },
 		
 		-- CRITICAL: Random birth outcome + BABY NAMING PROMPT
 		choices = {
@@ -241,7 +252,7 @@ FamilyEvents.events = {
 		text = "Your child reached a milestone!",
 		question = "What did they achieve?",
 		minAge = 20, maxAge = 60,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 3,
 		stage = STAGE,
 		ageBand = "adult",
@@ -731,7 +742,7 @@ FamilyEvents.events = {
 		text = "The loss of your parent still weighs heavily on you. The house feels empty.",
 		question = "How do you cope with the grief?",
 		minAge = 18, maxAge = 60,
-		baseChance = 0.55, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
+		baseChance = 0.4, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
 		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		oneTime = true,
 		stage = STAGE,
@@ -807,7 +818,7 @@ FamilyEvents.events = {
 		text = "Going through your late parent's belongings, you found something that reveals a side of them you never knew.",
 		question = "What did you discover?",
 		minAge = 18, maxAge = 80,
-		baseChance = 0.7,
+		baseChance = 0.45,
 		cooldown = 5,
 		oneTime = true,
 		stage = STAGE,
@@ -1001,7 +1012,7 @@ FamilyEvents.events = {
 		text = "On the anniversary of your parent's death, you reflect on how you've been living.",
 		question = "Would your parent be proud of who you've become?",
 		minAge = 19, maxAge = 80,
-		baseChance = 0.7,
+		baseChance = 0.45,
 		cooldown = 5,
 		stage = STAGE,
 		ageBand = "adult",
@@ -1050,7 +1061,7 @@ FamilyEvents.events = {
 -- PARTNER DEATH DEPRESSION EVENT - Like BitLife!
 -- Triggers after partner/spouse passes away, can diagnose depression
 -- ═══════════════════════════════════════════════════════════════════════════════
-{
+	{
 	id = "grief_depression_diagnosis",
 	title = "💔 Diagnosis: Depression",
 	emoji = "💔",
@@ -1136,7 +1147,7 @@ FamilyEvents.events = {
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- GRIEF RECOVERY EVENT - Follow-up for those dealing with partner loss
 -- ═══════════════════════════════════════════════════════════════════════════════
-{
+	{
 	id = "grief_recovery_progress",
 	title = "💜 Grief Recovery",
 	emoji = "💜",

@@ -138,7 +138,7 @@ SeniorExpanded.events = {
 		text = "With more free time, you're drawn to volunteering.",
 		question = "What kind of volunteering interests you?",
 		minAge = 60, maxAge = 90,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "senior",
@@ -269,7 +269,7 @@ SeniorExpanded.events = {
 		text = "Your community needs active members.",
 		question = "How involved are you in your community?",
 		minAge = 60, maxAge = 90,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "senior",
@@ -506,7 +506,7 @@ SeniorExpanded.events = {
 		text = "You've been forgetting things more often lately.",
 		question = "How do you address memory concerns?",
 		minAge = 65, maxAge = 100,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "senior",
@@ -747,7 +747,7 @@ SeniorExpanded.events = {
 		text = "Looking back on your life and all you've experienced.",
 		question = "How do you feel about your life?",
 		minAge = 70, maxAge = 100,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "senior",
@@ -790,7 +790,7 @@ SeniorExpanded.events = {
 		text = "Working through things you always wanted to do!",
 		question = "What's on your bucket list?",
 		minAge = 65, maxAge = 95,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		stage = STAGE,
 		ageBand = "senior",

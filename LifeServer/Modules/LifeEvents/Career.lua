@@ -158,7 +158,7 @@ Career.events = {
 		text = "Your company is laying people off. Your position might be at risk.",
 		question = "What do you do?",
 		minAge = 22, maxAge = 60,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Only for formal company jobs - entertainment careers don't get "laid off"
@@ -249,8 +249,8 @@ Career.events = {
 		text = "Your manager says you have a chance to really shine today.",
 		question = "How do you approach this opportunity?",
 		minAge = 20, maxAge = 65,
-		baseChance = 0.55,
-		cooldown = 3,
+		baseChance = 0.4,
+		cooldown = 4,
 		requiresJob = true,
 		requiresStats = { Smarts = { min = 50 } },
 
@@ -356,7 +356,7 @@ Career.events = {
 		text = "You're at a turning point in your career.",
 		question = "What path do you take?",
 		minAge = 28, maxAge = 45,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		blockedByFlags = { in_prison = true, incarcerated = true },
@@ -398,7 +398,7 @@ Career.events = {
 		text = "You have an idea for a revolutionary new feature/product.",
 		question = "What do you do with it?",
 		minAge = 20, maxAge = 50,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		requiresJobCategory = "tech",
@@ -439,7 +439,7 @@ Career.events = {
 		question = "What do you do?",
 		minAge = 28, maxAge = 65,
 		baseChance = 0.4,
-		cooldown = 3,
+		cooldown = 4,
 		requiresJob = true,
 		requiresJobCategory = "medical",
 
@@ -464,7 +464,7 @@ Career.events = {
 		question = "How do you approach it?",
 		minAge = 27, maxAge = 65,
 		baseChance = 0.4,
-		cooldown = 3,
+		cooldown = 4,
 		requiresJob = true,
 		requiresJobCategory = "law",
 
@@ -488,7 +488,7 @@ Career.events = {
 		text = "You're stuck. The inspiration just won't come.",
 		question = "How do you push through?",
 		minAge = 20, maxAge = 60,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		requiresJobCategory = "creative",
@@ -514,8 +514,8 @@ Career.events = {
 		text = "You've sustained an injury that could affect your career.",
 		question = "How do you handle it?",
 		minAge = 18, maxAge = 40,
-		baseChance = 0.5,
-		cooldown = 3,
+		baseChance = 0.35,
+		cooldown = 4,
 		requiresJob = true,
 		requiresJobCategory = "sports",
 
@@ -543,7 +543,7 @@ Career.events = {
 		text = "Someone approaches you with an exciting business opportunity. They promise big returns!",
 		question = "What do you do?",
 		minAge = 22, maxAge = 60,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		-- CRITICAL FIX #10: Can't invest if broke, can't be approached from prison
 		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
@@ -636,7 +636,7 @@ Career.events = {
 		text = "You've been working on a side business that's gaining traction.",
 		question = "What's next?",
 		minAge = 25, maxAge = 55,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { entrepreneur = true },
 
@@ -783,7 +783,7 @@ Career.events = {
 		text = "Your workplace has become extremely toxic.",
 		question = "How do you cope?",
 		minAge = 20, maxAge = 60,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Only for formal workplace jobs
@@ -823,7 +823,7 @@ Career.events = {
 		text = "It's annual review time. You're thinking about asking for a raise.",
 		question = "How do you approach this negotiation?",
 		minAge = 22, maxAge = 60,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Only for formal jobs with salaries and reviews
@@ -918,7 +918,7 @@ Career.events = {
 		question = "How do you react?",
 		minAge = 20, maxAge = 60,
 		baseChance = 0.4,
-		cooldown = 3,
+		cooldown = 4,
 		-- CRITICAL FIX #8: Added "fired" category for red event card
 		category = "fired",
 		requiresJob = true,
@@ -1081,7 +1081,7 @@ Career.events = {
 		text = "You've developed feelings for a coworker.",
 		question = "What do you do?",
 		minAge = 20, maxAge = 55,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Only for formal jobs with coworkers - not entertainment careers
@@ -1164,7 +1164,7 @@ Career.events = {
 		text = "You're completely burnt out. Can't function anymore.",
 		question = "What do you do?",
 		minAge = 25, maxAge = 55,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Use hasFormalWorkplaceJob to exclude entertainment careers
@@ -1250,7 +1250,7 @@ Career.events = {
 		question = "Do you want to pursue this friendship?",
 		minAge = 20, maxAge = 60,
 		baseChance = 0.4,
-		cooldown = 3,
+		cooldown = 4,
 		requiresJob = true,
 		-- CRITICAL FIX: Only for formal jobs with coworkers
 		blockedByFlags = { 
@@ -1305,7 +1305,7 @@ Career.events = {
 		question = "How do you prepare?",
 		minAge = 25, maxAge = 60,
 		baseChance = 0.4,
-		cooldown = 3,
+		cooldown = 4,
 		requiresJob = true,
 		-- CRITICAL FIX: Only for formal corporate jobs
 		blockedByFlags = { 
@@ -1396,7 +1396,7 @@ Career.events = {
 		text = "A senior leader offers to mentor you.",
 		question = "How do you respond?",
 		minAge = 22, maxAge = 40,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true,
 		-- CRITICAL FIX: Only for formal corporate jobs with senior leadership
@@ -1490,8 +1490,8 @@ Career.events = {
 		text = "Your boss caught you slacking off at work!",
 		question = "What happened?",
 		minAge = 18, maxAge = 60,
-		baseChance = 0.55,
-		cooldown = 3,
+		baseChance = 0.4,
+		cooldown = 4,
 		requiresJob = true,
 		-- CRITICAL FIX: Only for formal jobs with bosses watching
 		blockedByFlags = { 
@@ -1517,7 +1517,7 @@ Career.events = {
 		question = "How do you feel?",
 		minAge = 22, maxAge = 60,
 		baseChance = 0.4,
-		cooldown = 3,
+		cooldown = 4,
 		requiresJob = true,
 		-- CRITICAL FIX: Only for formal jobs with coworkers - not entertainment
 		eligibility = hasFormalWorkplaceJob,
@@ -1544,7 +1544,7 @@ Career.events = {
 		question = "What do you do?",
 		minAge = 18, maxAge = 60,
 		baseChance = 0.4,
-		cooldown = 3,
+		cooldown = 4,
 		requiresJob = true,
 		-- CRITICAL FIX: Only for formal jobs with HR options - not entertainment
 		eligibility = hasFormalWorkplaceJob,
@@ -1665,7 +1665,7 @@ Career.events = {
 -- ══════════════════════════════════════════════════════════════════════════════
 -- NEW EVENTS - EXPANDED CAREER CONTENT
 -- ══════════════════════════════════════════════════════════════════════════════
-{
+	{
 	id = "company_acquisition",
 	title = "Your Company Got Acquired!",
 	emoji = "🏢",
@@ -1691,7 +1691,7 @@ Career.events = {
 },
 -- REMOVED: Duplicate "remote_work_decision" event - was identical to "work_from_home"
 -- Keeping only one remote work event to prevent spam
-{
+	{
 	-- CRITICAL FIX: Renamed from "side_hustle_opportunity" to avoid ID conflict with FastFoodEvents
 	id = "side_hustle_idea",
 	title = "Side Hustle Opportunity",
@@ -1716,14 +1716,14 @@ Career.events = {
 		{ text = "Partner with a friend on it", effects = { Happiness = 5, Money = 800 }, setFlags = { business_partner = true }, feedText = "You and a friend are building something together!" },
 	},
 },
-{
+	{
 	id = "toxic_workplace_culture",
 	title = "Toxic Work Environment",
 	emoji = "☣️",
 	text = "Your workplace has become toxic. Gossip, backstabbing, unclear expectations, and constant stress. Your mental health is suffering.",
 	question = "How do you cope?",
 	minAge = 20, maxAge = 55,
-	baseChance = 0.55,
+	baseChance = 0.4,
 	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	requiresStats = { Happiness = { max = 60 } },
@@ -1741,7 +1741,7 @@ Career.events = {
 		{ text = "Start therapy to cope ($500)", effects = { Happiness = 8, Health = 5, Money = -500 }, setFlags = { in_therapy = true }, feedText = "Professional help is making a real difference.", eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for therapy sessions" end },
 	},
 },
-{
+	{
 	id = "mentorship_opportunity",
 	title = "Mentorship Moment",
 	emoji = "🎓",
@@ -1765,7 +1765,7 @@ Career.events = {
 		{ text = "Accept and eventually become a mentor yourself", effects = { Happiness = 10, Smarts = 5 }, setFlags = { has_mentor = true, future_mentor = true }, feedText = "The cycle of mentorship continues through you!" },
 	},
 },
-{
+	{
 	id = "career_pivot_consideration",
 	title = "Career Pivot?",
 	emoji = "🔄",
@@ -1806,7 +1806,7 @@ Career.events = {
 		{ text = "Transition gradually within your company", effects = { Happiness = 6, Smarts = 3 }, setFlags = { internal_pivot = true }, feedText = "You're moving to a different department. New challenges, same paycheck!" },
 	},
 },
-{
+	{
 	-- CRITICAL FIX: This was a god-mode event where player chose if they won!
 	-- Now uses random outcome based on performance like BitLife
 	id = "workplace_recognition",
@@ -1815,8 +1815,8 @@ Career.events = {
 	text = "Your work has been noticed! You're nominated for an employee recognition award. The ceremony is tonight.",
 	question = "Will you attend?",
 	minAge = 22, maxAge = 55,
-	baseChance = 0.55,
-	cooldown = 3,
+	baseChance = 0.4,
+	cooldown = 4,
 	requiresJob = true,
 	
 	-- META
@@ -1872,7 +1872,7 @@ Career.events = {
 -- ══════════════════════════════════════════════════════════════════════════════
 -- SPORTS JOB SPECIFIC EVENTS  
 -- ══════════════════════════════════════════════════════════════════════════════
-{
+	{
 	-- CRITICAL FIX: Player can't choose injury severity - random outcome
 	-- CRITICAL FIX: Renamed to career_sports_injury_scare for unique ID
 	id = "career_sports_injury_scare",
@@ -1969,7 +1969,7 @@ Career.events = {
 		},
 	},
 },
-{
+	{
 	id = "championship_game",
 	title = "Championship Opportunity",
 	emoji = "🏆",
@@ -1977,7 +1977,7 @@ Career.events = {
 	question = "How do you perform?",
 	minAge = 18, maxAge = 40,
 	baseChance = 0.4,
-	cooldown = 3,
+	cooldown = 4,
 	requiresJob = true,
 	requiresJobCategory = "sports",
 	blockedByFlags = { in_prison = true },
@@ -2023,7 +2023,7 @@ Career.events = {
 -- ══════════════════════════════════════════════════════════════════════════════
 -- CREATIVE JOB SPECIFIC EVENTS
 -- ══════════════════════════════════════════════════════════════════════════════
-{
+	{
 	-- CRITICAL FIX: Renamed to avoid duplicate ID with earlier creative_block event
 	id = "creative_deadline_crisis",
 	title = "Deadline Creative Block",
@@ -2032,7 +2032,7 @@ Career.events = {
 	question = "How do you overcome it?",
 	minAge = 20, maxAge = 60,
 	baseChance = 0.555,
-	cooldown = 3,
+	cooldown = 4,
 	requiresJob = true,
 	requiresJobCategory = "creative",
 	blockedByFlags = { in_prison = true },
@@ -2088,7 +2088,7 @@ Career.events = {
 		},
 	},
 },
-{
+	{
 	id = "creative_viral_moment",
 	title = "Viral Success!",
 	emoji = "📱",
@@ -2139,7 +2139,7 @@ Career.events = {
 -- ══════════════════════════════════════════════════════════════════════════════
 -- GOVERNMENT JOB SPECIFIC EVENTS
 -- ══════════════════════════════════════════════════════════════════════════════
-{
+	{
 	id = "government_whistleblower",
 	title = "Witness Something Wrong",
 	emoji = "🏛️",
@@ -2147,7 +2147,7 @@ Career.events = {
 	question = "What do you do?",
 	minAge = 25, maxAge = 65,
 	baseChance = 0.4,
-	cooldown = 3,
+	cooldown = 4,
 	requiresJob = true,
 	requiresJobCategory = "government",
 	blockedByFlags = { in_prison = true },
@@ -2207,7 +2207,7 @@ Career.events = {
 		},
 	},
 },
-{
+	{
 	id = "government_promotion_politics",
 	title = "Political Promotion",
 	emoji = "🏛️",
@@ -2281,14 +2281,14 @@ Career.events = {
 -- ══════════════════════════════════════════════════════════════════════════════
 
 -- RETAIL & SERVICE INDUSTRY
-{
+	{
 	id = "retail_holiday_rush",
 	title = "Holiday Rush",
 	emoji = "🎄",
 	text = "The holiday shopping season is here. Work is insane.",
 	question = "How do you handle the chaos?",
 	minAge = 18, maxAge = 55,
-	baseChance = 0.5,
+	baseChance = 0.35,
 	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	requiresJobCategory = "retail",
@@ -2323,7 +2323,7 @@ Career.events = {
 		{ text = "Call in sick during peak (lose wages)", effects = { Happiness = 5 }, setFlags = { unreliable_worker = true }, feedText = "You ditched during the rush. Manager is furious." },
 	},
 },
-{
+	{
 	id = "retail_difficult_customer",
 	title = "Nightmare Customer",
 	emoji = "😤",
@@ -2385,15 +2385,15 @@ Career.events = {
 },
 
 -- TECH INDUSTRY
-{
+	{
 	id = "tech_crunch_time",
 	title = "Crunch Time",
 	emoji = "💻",
 	text = "Major deadline approaching. The team is working 80-hour weeks.",
 	question = "How do you handle the crunch?",
 	minAge = 20, maxAge = 50,
-	baseChance = 0.5,
-	cooldown = 3,
+	baseChance = 0.35,
+	cooldown = 4,
 	requiresJob = true,
 	requiresJobCategory = "tech",
 	blockedByFlags = { in_prison = true },
@@ -2430,14 +2430,14 @@ Career.events = {
 		{ text = "Time to update that resume", effects = { Happiness = 2 }, setFlags = { job_hunting = true }, feedText = "This culture isn't for you. Time to find a better environment." },
 	},
 },
-{
+	{
 	id = "tech_startup_equity",
 	title = "Startup Equity Offer",
 	emoji = "🚀",
 	text = "A startup offers you equity instead of a higher salary. Could be worth millions... or nothing.",
 	question = "Do you take the gamble?",
 	minAge = 22, maxAge = 45,
-	baseChance = 0.55,
+	baseChance = 0.4,
 	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	requiresJobCategory = "tech",
@@ -2487,7 +2487,7 @@ Career.events = {
 		{ text = "Negotiate for both", effects = { Smarts = 2 }, feedText = "You pushed for more salary AND some equity. Smart negotiating!" },
 	},
 },
-{
+	{
 	id = "tech_side_project_success",
 	title = "Side Project Blows Up",
 	emoji = "📱",
@@ -2561,7 +2561,7 @@ Career.events = {
 },
 
 -- MEDICAL FIELD
-{
+	{
 	id = "medical_code_blue",
 	title = "Code Blue",
 	emoji = "🏥",
@@ -2569,7 +2569,7 @@ Career.events = {
 	question = "You're there. What do you do?",
 	minAge = 24, maxAge = 65,
 	baseChance = 0.4,
-	cooldown = 3,
+	cooldown = 4,
 	requiresJob = true,
 	requiresJobCategory = "medical",
 	blockedByFlags = { in_prison = true },
@@ -2632,7 +2632,7 @@ Career.events = {
 		},
 	},
 },
-{
+	{
 	-- CRITICAL FIX: Renamed from "medical_malpractice_fear" to avoid duplicate ID conflict
 	-- CareerEvents has another version
 	id = "medical_malpractice_concern",
@@ -2675,14 +2675,14 @@ Career.events = {
 },
 
 -- TRADES & MANUAL LABOR
-{
+	{
 	id = "trades_worksite_injury",
 	title = "Worksite Accident",
 	emoji = "🔧",
 	text = "Someone got hurt on the job site today.",
 	question = "How do you respond?",
 	minAge = 18, maxAge = 60,
-	baseChance = 0.55,
+	baseChance = 0.4,
 	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	requiresJobCategory = "trades",
@@ -2733,14 +2733,14 @@ Career.events = {
 		},
 	},
 },
-{
+	{
 	id = "trades_big_contract",
 	title = "Big Contract Opportunity",
 	emoji = "📋",
 	text = "A major client wants to hire you for a big project. Could be very lucrative.",
 	question = "Do you take it on?",
 	minAge = 22, maxAge = 60,
-	baseChance = 0.55,
+	baseChance = 0.4,
 	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	requiresJobCategory = "trades",
@@ -2790,7 +2790,7 @@ Career.events = {
 },
 
 -- EDUCATION
-{
+	{
 	id = "education_problem_student",
 	title = "Problem Student",
 	emoji = "👨‍🏫",
@@ -2798,7 +2798,7 @@ Career.events = {
 	question = "How do you handle this?",
 	minAge = 24, maxAge = 65,
 	baseChance = 0.4,
-	cooldown = 3,
+	cooldown = 4,
 	requiresJob = true,
 	requiresJobCategory = "education",
 	blockedByFlags = { in_prison = true },
@@ -2839,7 +2839,7 @@ Career.events = {
 		{ text = "Focus energy on students who want to learn", effects = { Happiness = 2 }, feedText = "You can't save everyone. Harsh but realistic." },
 	},
 },
-{
+	{
 	id = "education_parent_confrontation",
 	title = "Angry Parent",
 	emoji = "😠",
@@ -2901,14 +2901,14 @@ Career.events = {
 },
 
 -- FINANCE
-{
+	{
 	id = "finance_ethical_dilemma",
 	title = "Ethical Gray Area",
 	emoji = "💰",
 	text = "Your firm wants you to sell a product that technically isn't illegal, but definitely isn't in clients' best interests.",
 	question = "What do you do?",
 	minAge = 24, maxAge = 60,
-	baseChance = 0.55,
+	baseChance = 0.4,
 	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	requiresJobCategory = "finance",
@@ -2950,7 +2950,7 @@ Career.events = {
 },
 
 -- CREATIVE/ENTERTAINMENT
-{
+	{
 	id = "creative_big_break",
 	title = "Big Break Opportunity",
 	emoji = "⭐",
@@ -3012,14 +3012,14 @@ Career.events = {
 		{ text = "Be authentic - take it or leave it", effects = { Happiness = 5 }, setFlags = { authentic = true }, feedText = "You were yourself. If it works, it works." },
 	},
 },
-{
+	{
 	id = "creative_creative_block",
 	title = "Creative Block",
 	emoji = "🎨",
 	text = "You've hit a wall. The creativity just isn't flowing.",
 	question = "How do you push through?",
 	minAge = 18, maxAge = 65,
-	baseChance = 0.5,
+	baseChance = 0.35,
 	cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 	requiresJob = true,
 	requiresJobCategory = "creative",
@@ -3055,7 +3055,7 @@ Career.events = {
 },
 
 -- GENERAL CAREER EVENTS
-{
+	{
 	id = "career_networking_event",
 	title = "Networking Event",
 	emoji = "🤝",
@@ -3063,7 +3063,7 @@ Career.events = {
 	question = "How do you approach it?",
 	minAge = 22, maxAge = 60,
 	baseChance = 0.4,
-	cooldown = 3,
+	cooldown = 4,
 	requiresJob = true,
 	blockedByFlags = { in_prison = true, street_hustler = true, criminal_career = true },
 	
@@ -3104,7 +3104,7 @@ Career.events = {
 		{ text = "Get too drunk at the open bar", effects = { Happiness = 4, Health = -2 }, setFlags = { embarrassed_self = true }, feedText = "You... might have said some things. Monday will be awkward." },
 	},
 },
-{
+	{
 	id = "career_sabbatical_consideration",
 	title = "Sabbatical Offer",
 	emoji = "🏖️",
@@ -3151,7 +3151,7 @@ Career.events = {
 		{ text = "Negotiate for paid sabbatical", effects = { Smarts = 2 }, feedText = "You pushed for paid time. They said they'd consider it." },
 	},
 },
-{
+	{
 	id = "career_raise_negotiation",
 	title = "Raise Negotiation",
 	emoji = "💵",
@@ -3276,8 +3276,8 @@ Career.events = {
 		emoji = "🎤",
 		text = "You've been asked to present at the company-wide meeting. Hundreds will be watching!",
 		minAge = 23, maxAge = 60,
-		baseChance = 0.55,
-		cooldown = 3,
+		baseChance = 0.4,
+		cooldown = 4,
 		requiresJob = true,
 		blockedByFlags = { in_prison = true },
 		stage = STAGE,
@@ -3331,7 +3331,7 @@ Career.events = {
 		text = "A friend's startup is taking off and they want you to join as a founding member. It's risky but could be huge!",
 		minAge = 22, maxAge = 45,
 		baseChance = 0.4,
-		cooldown = 3,
+		cooldown = 4,
 		oneTime = true,
 		requiresJob = true,
 		blockedByFlags = { in_prison = true },
@@ -3465,7 +3465,7 @@ Career.events = {
 		text = "A recruiter called with THE job offer - your dream company wants YOU. But it requires relocating.",
 		minAge = 25, maxAge = 50,
 		baseChance = 0.4,
-		cooldown = 3,
+		cooldown = 4,
 		requiresJob = true,
 		blockedByFlags = { in_prison = true },
 		stage = STAGE,
@@ -3537,7 +3537,7 @@ Career.events = {
 		text = "You've been invited to speak at a local town hall meeting. This is your chance to share your vision!",
 		question = "How do you approach your speech?",
 		minAge = 20, maxAge = 55,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		conditions = { requiresFlags = { pursuing_politics = true, entered_local_politics = true } },
 		category = "career",
@@ -3556,7 +3556,7 @@ Career.events = {
 		question = "How do you handle this potential scandal?",
 		minAge = 21, maxAge = 60,
 		baseChance = 0.45,
-		cooldown = 3,
+		cooldown = 4,
 		conditions = { requiresFlags = { pursuing_politics = true } },
 		category = "career",
 		choices = {
@@ -3573,7 +3573,7 @@ Career.events = {
 		text = "A wealthy donor offers to fund your political ambitions, but they hint at expecting 'favorable treatment' in return.",
 		question = "This money could change everything...",
 		minAge = 25, maxAge = 60,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		oneTime = true,
 		conditions = { requiresFlags = { pursuing_politics = true, entered_local_politics = true } },
 		category = "career",
@@ -3614,8 +3614,8 @@ Career.events = {
 		text = "A small-time crew is looking for new blood. They've been watching you and think you've got what it takes.",
 		question = "Join the crew?",
 		minAge = 17, maxAge = 35,
-		baseChance = 0.55,
-		cooldown = 3,
+		baseChance = 0.4,
+		cooldown = 4,
 		conditions = { requiresFlags = { pursuing_crime = true, first_criminal_job = true } },
 		blockedByFlags = { in_prison = true },
 		category = "crime",
@@ -3632,7 +3632,7 @@ Career.events = {
 		text = "Cops pull up on you while you're handling business. They're asking questions...",
 		question = "How do you handle this?",
 		minAge = 16, maxAge = 50,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		conditions = { requiresFlags = { pursuing_crime = true } },
 		blockedByFlags = { in_prison = true },

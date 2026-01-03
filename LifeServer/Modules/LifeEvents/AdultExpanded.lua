@@ -136,7 +136,7 @@ AdultExpanded.events = {
 		text = "The college experience is shaping who you become.",
 		question = "What's your college experience like?",
 		minAge = 18, maxAge = 23,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { in_college = true },
 		stage = STAGE,
@@ -153,7 +153,7 @@ AdultExpanded.events = {
 		},
 	},
 	{
-		id = "adult_quarter_life_crisis",
+		id = "adult_existential_crisis_early",
 		title = "Quarter-Life Crisis",
 		emoji = "🤯",
 		text = "Am I doing this right? What am I doing with my life?!",
@@ -199,7 +199,7 @@ AdultExpanded.events = {
 		question = "How are you handling the debt?",
 		minAge = 22, maxAge = 35,
 		baseChance = 0.4,
-		cooldown = 3,
+		cooldown = 4,
 		requiresFlags = { college_grad = true },
 		stage = STAGE,
 		ageBand = "young_adult",
@@ -371,7 +371,7 @@ AdultExpanded.events = {
 		question = "What challenge are you facing?",
 		minAge = 20, maxAge = 55,
 		baseChance = 0.35,
-		cooldown = 3,
+		cooldown = 4,
 		requiresPartner = true,
 		stage = STAGE,
 		ageBand = "adult",
@@ -476,7 +476,7 @@ AdultExpanded.events = {
 		question = "How does the interview go?",
 		minAge = 18, maxAge = 55,
 		baseChance = 0.3,
-		cooldown = 3,
+		cooldown = 4,
 		stage = STAGE,
 		ageBand = "adult",
 		category = "career",
@@ -569,7 +569,7 @@ AdultExpanded.events = {
 		question = "What kind of side hustle?",
 		minAge = 22, maxAge = 50,
 		baseChance = 0.3,
-		cooldown = 3,
+		cooldown = 4,
 		stage = STAGE,
 		ageBand = "adult",
 		category = "business",
@@ -662,7 +662,7 @@ AdultExpanded.events = {
 		question = "How do you handle it?",
 		minAge = 20, maxAge = 60,
 		baseChance = 0.35,
-		cooldown = 3,
+		cooldown = 4,
 		stage = STAGE,
 		ageBand = "adult",
 		category = "finance",
@@ -782,7 +782,7 @@ AdultExpanded.events = {
 		question = "How does it go?",
 		minAge = 18, maxAge = 70,
 		baseChance = 0.4,
-		cooldown = 3,
+		cooldown = 4,
 		stage = STAGE,
 		ageBand = "adult",
 		category = "finance",
@@ -1013,7 +1013,7 @@ AdultExpanded.events = {
 		question = "What's your mental state?",
 		minAge = 22, maxAge = 60,
 		baseChance = 0.4,
-		cooldown = 3,
+		cooldown = 4,
 		stage = STAGE,
 		ageBand = "adult",
 		category = "mental_health",
@@ -1041,7 +1041,7 @@ AdultExpanded.events = {
 		question = "What's your social life like?",
 		minAge = 25, maxAge = 55,
 		baseChance = 0.4,
-		cooldown = 3,
+		cooldown = 4,
 		stage = STAGE,
 		ageBand = "adult",
 		category = "social",
@@ -1113,7 +1113,7 @@ AdultExpanded.events = {
 		question = "How do you approach networking?",
 		minAge = 22, maxAge = 55,
 		baseChance = 0.3,
-		cooldown = 3,
+		cooldown = 4,
 		stage = STAGE,
 		ageBand = "adult",
 		category = "career",
@@ -1329,7 +1329,7 @@ AdultExpanded.events = {
 		question = "How are you handling your parents aging?",
 		minAge = 35, maxAge = 60,
 		baseChance = 0.3,
-		cooldown = 3,
+		cooldown = 4,
 		stage = STAGE,
 		ageBand = "adult",
 		category = "family",
@@ -1357,7 +1357,7 @@ AdultExpanded.events = {
 		question = "What's your new passion?",
 		minAge = 25, maxAge = 60,
 		baseChance = 0.3,
-		cooldown = 3,
+		cooldown = 4,
 		stage = STAGE,
 		ageBand = "adult",
 		category = "hobbies",
@@ -1379,7 +1379,7 @@ AdultExpanded.events = {
 		question = "What kind of trip?",
 		minAge = 22, maxAge = 65,
 		baseChance = 0.35,
-		cooldown = 3,
+		cooldown = 4,
 		stage = STAGE,
 		ageBand = "adult",
 		category = "leisure",
@@ -1578,7 +1578,7 @@ AdultExpanded.events = {
 		question = "How do you handle it?",
 		minAge = 22, maxAge = 70,
 		baseChance = 0.3,
-		cooldown = 3,
+		cooldown = 4,
 		stage = STAGE,
 		ageBand = "adult",
 		category = "lifestyle",
@@ -1850,717 +1850,717 @@ AdultExpanded.events = {
 -- These events add more interesting experiences during the 30-50 age range
 -- ═══════════════════════════════════════════════════════════════════════════════
 
-{
-	id = "midlife_hobby_discovery",
-	title = "🎯 New Passion Discovered",
-	emoji = "🎯",
-	text = "You stumbled upon something that genuinely excites you for the first time in years!",
-	question = "What new passion did you discover?",
-	minAge = 32, maxAge = 50,
-	baseChance = 0.35,
-	cooldown = 6,
-	stage = "adult",
-	category = "life",
-	tags = { "hobby", "passion", "midlife", "variety" },
+	{
+		id = "midlife_hobby_discovery",
+		title = "🎯 New Passion Discovered",
+		emoji = "🎯",
+		text = "You stumbled upon something that genuinely excites you for the first time in years!",
+		question = "What new passion did you discover?",
+		minAge = 32, maxAge = 50,
+		baseChance = 0.35,
+		cooldown = 6,
+		stage = "adult",
+		category = "life",
+		tags = { "hobby", "passion", "midlife", "variety" },
 	
-	choices = {
-		{ 
-			text = "Woodworking/Crafting", 
-			effects = { Happiness = 12, Smarts = 3 }, 
-			setFlags = { has_creative_hobby = true, woodworker = true }, 
-			feedText = "🪵 Building things with your hands is incredibly satisfying!" 
-		},
-		{ 
-			text = "Playing an instrument", 
-			effects = { Happiness = 15, Smarts = 4 }, 
-			setFlags = { has_creative_hobby = true, musician_hobby = true }, 
-			feedText = "🎸 It's never too late to rock! Music feeds the soul!" 
-		},
-		{ 
-			text = "Gardening/Farming", 
-			effects = { Happiness = 10, Health = 5 }, 
-			setFlags = { has_outdoor_hobby = true, gardener = true }, 
-			feedText = "🌱 Growing things brings unexpected peace and joy!" 
-		},
-		{ 
-			text = "Martial arts/Boxing", 
-			effects = { Happiness = 8, Health = 8, Smarts = 2 }, 
-			setFlags = { fitness_hobby = true, martial_artist = true }, 
-			feedText = "🥊 The discipline and fitness benefits are amazing!" 
-		},
+		choices = {
+			{ 
+				text = "Woodworking/Crafting", 
+				effects = { Happiness = 12, Smarts = 3 }, 
+				setFlags = { has_creative_hobby = true, woodworker = true }, 
+				feedText = "🪵 Building things with your hands is incredibly satisfying!" 
+			},
+			{ 
+				text = "Playing an instrument", 
+				effects = { Happiness = 15, Smarts = 4 }, 
+				setFlags = { has_creative_hobby = true, musician_hobby = true }, 
+				feedText = "🎸 It's never too late to rock! Music feeds the soul!" 
+			},
+			{ 
+				text = "Gardening/Farming", 
+				effects = { Happiness = 10, Health = 5 }, 
+				setFlags = { has_outdoor_hobby = true, gardener = true }, 
+				feedText = "🌱 Growing things brings unexpected peace and joy!" 
+			},
+			{ 
+				text = "Martial arts/Boxing", 
+				effects = { Happiness = 8, Health = 8, Smarts = 2 }, 
+				setFlags = { fitness_hobby = true, martial_artist = true }, 
+				feedText = "🥊 The discipline and fitness benefits are amazing!" 
+			},
 	},
-},
+	},
 
-{
-	id = "midlife_unexpected_friendship",
-	title = "🤝 Unexpected Connection",
-	emoji = "🤝",
-	text = "You met someone who could become a great friend in the most unexpected place!",
-	question = "Where did you meet them?",
-	minAge = 30, maxAge = 55,
-	baseChance = 0.30,
-	cooldown = 5,
-	stage = "adult",
-	category = "social",
-	tags = { "friendship", "social", "midlife", "variety" },
+	{
+		id = "midlife_unexpected_friendship",
+		title = "🤝 Unexpected Connection",
+		emoji = "🤝",
+		text = "You met someone who could become a great friend in the most unexpected place!",
+		question = "Where did you meet them?",
+		minAge = 30, maxAge = 55,
+		baseChance = 0.30,
+		cooldown = 5,
+		stage = "adult",
+		category = "social",
+		tags = { "friendship", "social", "midlife", "variety" },
 	
-	choices = {
-		{ 
-			text = "At a random coffee shop", 
-			effects = { Happiness = 10 }, 
-			setFlags = { made_adult_friend = true }, 
-			feedText = "☕ Who knew a coffee run would lead to a great friendship!" 
-		},
-		{ 
-			text = "Through a mutual hobby", 
-			effects = { Happiness = 12, Smarts = 2 }, 
-			setFlags = { made_adult_friend = true, hobby_friend = true }, 
-			feedText = "🎯 Shared interests make the best foundations for friendship!" 
-		},
-		{ 
-			text = "At your kid's school event", 
-			effects = { Happiness = 8 }, 
-			setFlags = { made_adult_friend = true, parent_friend = true }, 
-			feedText = "👪 Parent friends understand the struggle!" 
-		},
-		{ 
-			text = "Online community", 
-			effects = { Happiness = 6, Smarts = 1 }, 
-			setFlags = { made_adult_friend = true, online_friend = true }, 
-			feedText = "💻 Distance doesn't matter when you click with someone!" 
-		},
+		choices = {
+			{ 
+				text = "At a random coffee shop", 
+				effects = { Happiness = 10 }, 
+				setFlags = { made_adult_friend = true }, 
+				feedText = "☕ Who knew a coffee run would lead to a great friendship!" 
+			},
+			{ 
+				text = "Through a mutual hobby", 
+				effects = { Happiness = 12, Smarts = 2 }, 
+				setFlags = { made_adult_friend = true, hobby_friend = true }, 
+				feedText = "🎯 Shared interests make the best foundations for friendship!" 
+			},
+			{ 
+				text = "At your kid's school event", 
+				effects = { Happiness = 8 }, 
+				setFlags = { made_adult_friend = true, parent_friend = true }, 
+				feedText = "👪 Parent friends understand the struggle!" 
+			},
+			{ 
+				text = "Online community", 
+				effects = { Happiness = 6, Smarts = 1 }, 
+				setFlags = { made_adult_friend = true, online_friend = true }, 
+				feedText = "💻 Distance doesn't matter when you click with someone!" 
+			},
 	},
-},
+	},
 
-{
-	id = "midlife_random_kindness",
-	title = "💝 Random Act of Kindness",
-	emoji = "💝",
-	text = "A complete stranger did something incredibly kind for you today.",
-	question = "How do you react?",
-	minAge = 25, maxAge = 65,
-	baseChance = 0.28,
-	cooldown = 4,
-	stage = "adult",
-	category = "experience",
-	tags = { "kindness", "heartwarming", "variety" },
+	{
+		id = "midlife_random_kindness",
+		title = "💝 Random Act of Kindness",
+		emoji = "💝",
+		text = "A complete stranger did something incredibly kind for you today.",
+		question = "How do you react?",
+		minAge = 25, maxAge = 65,
+		baseChance = 0.28,
+		cooldown = 4,
+		stage = "adult",
+		category = "experience",
+		tags = { "kindness", "heartwarming", "variety" },
 	
-	choices = {
-		{ 
-			text = "Pay it forward immediately", 
-			effects = { Happiness = 15, Money = -50 }, 
-			setFlags = { pays_it_forward = true }, 
-			feedText = "💝 The kindness chain continues! You helped someone else!" 
-		},
-		{ 
-			text = "Thank them profusely and chat", 
-			effects = { Happiness = 12 }, 
-			feedText = "💝 A brief but meaningful human connection!" 
-		},
-		{ 
-			text = "Reflect on humanity's goodness", 
-			effects = { Happiness = 10, Smarts = 2 }, 
-			feedText = "💝 Faith in humanity: restored!" 
-		},
-		{ 
-			text = "Feel awkward but grateful", 
-			effects = { Happiness = 6 }, 
-			feedText = "💝 Still processing that random kindness..." 
-		},
+		choices = {
+			{ 
+				text = "Pay it forward immediately", 
+				effects = { Happiness = 15, Money = -50 }, 
+				setFlags = { pays_it_forward = true }, 
+				feedText = "💝 The kindness chain continues! You helped someone else!" 
+			},
+			{ 
+				text = "Thank them profusely and chat", 
+				effects = { Happiness = 12 }, 
+				feedText = "💝 A brief but meaningful human connection!" 
+			},
+			{ 
+				text = "Reflect on humanity's goodness", 
+				effects = { Happiness = 10, Smarts = 2 }, 
+				feedText = "💝 Faith in humanity: restored!" 
+			},
+			{ 
+				text = "Feel awkward but grateful", 
+				effects = { Happiness = 6 }, 
+				feedText = "💝 Still processing that random kindness..." 
+			},
 	},
-},
+	},
 
-{
-	id = "midlife_nostalgia_trip",
-	title = "📼 Nostalgia Wave",
-	emoji = "📼",
-	text = "You found something from your past that brought back a flood of memories!",
-	question = "What did you find?",
-	minAge = 35, maxAge = 60,
-	baseChance = 0.32,
-	cooldown = 5,
-	stage = "adult",
-	category = "experience",
-	tags = { "nostalgia", "memories", "midlife", "variety" },
+	{
+		id = "midlife_nostalgia_trip",
+		title = "📼 Nostalgia Wave",
+		emoji = "📼",
+		text = "You found something from your past that brought back a flood of memories!",
+		question = "What did you find?",
+		minAge = 35, maxAge = 60,
+		baseChance = 0.32,
+		cooldown = 5,
+		stage = "adult",
+		category = "experience",
+		tags = { "nostalgia", "memories", "midlife", "variety" },
 	
-	choices = {
-		{ 
-			text = "Old photos from childhood", 
-			effects = { Happiness = 12 }, 
-			setFlags = { nostalgic = true }, 
-			feedText = "📸 Look how young everyone was! Those were simpler times..." 
-		},
-		{ 
-			text = "Music you used to love", 
-			effects = { Happiness = 15 }, 
-			setFlags = { nostalgic = true }, 
-			feedText = "🎵 This song takes you RIGHT back! The feels!" 
-		},
-		{ 
-			text = "Old letters or journals", 
-			effects = { Happiness = 8, Smarts = 3 }, 
-			setFlags = { nostalgic = true }, 
-			feedText = "✉️ Your younger self had a lot to say. Interesting perspective!" 
-		},
-		{ 
-			text = "A childhood toy or item", 
-			effects = { Happiness = 10 }, 
-			setFlags = { nostalgic = true, kept_childhood_item = true }, 
-			feedText = "🧸 This little thing meant the world to young you!" 
-		},
+		choices = {
+			{ 
+				text = "Old photos from childhood", 
+				effects = { Happiness = 12 }, 
+				setFlags = { nostalgic = true }, 
+				feedText = "📸 Look how young everyone was! Those were simpler times..." 
+			},
+			{ 
+				text = "Music you used to love", 
+				effects = { Happiness = 15 }, 
+				setFlags = { nostalgic = true }, 
+				feedText = "🎵 This song takes you RIGHT back! The feels!" 
+			},
+			{ 
+				text = "Old letters or journals", 
+				effects = { Happiness = 8, Smarts = 3 }, 
+				setFlags = { nostalgic = true }, 
+				feedText = "✉️ Your younger self had a lot to say. Interesting perspective!" 
+			},
+			{ 
+				text = "A childhood toy or item", 
+				effects = { Happiness = 10 }, 
+				setFlags = { nostalgic = true, kept_childhood_item = true }, 
+				feedText = "🧸 This little thing meant the world to young you!" 
+			},
 	},
-},
+	},
 
-{
-	id = "midlife_cooking_adventure",
-	title = "👨‍🍳 Kitchen Adventure",
-	emoji = "👨‍🍳",
-	text = "You decided to try cooking something completely outside your comfort zone!",
-	question = "How did it turn out?",
-	minAge = 25, maxAge = 70,
-	baseChance = 0.30,
-	cooldown = 4,
-	stage = "adult",
-	category = "experience",
-	tags = { "cooking", "food", "variety" },
+	{
+		id = "midlife_cooking_adventure",
+		title = "👨‍🍳 Kitchen Adventure",
+		emoji = "👨‍🍳",
+		text = "You decided to try cooking something completely outside your comfort zone!",
+		question = "How did it turn out?",
+		minAge = 25, maxAge = 70,
+		baseChance = 0.30,
+		cooldown = 4,
+		stage = "adult",
+		category = "experience",
+		tags = { "cooking", "food", "variety" },
 	
-	choices = {
-		{ 
-			text = "Master chef moment!", 
-			effects = { Happiness = 15, Smarts = 3 }, 
-			setFlags = { good_cook = true }, 
-			feedText = "👨‍🍳 INCREDIBLE! You might have a hidden talent!" 
-		},
-		{ 
-			text = "Edible but... interesting", 
-			effects = { Happiness = 8, Smarts = 1 }, 
-			feedText = "👨‍🍳 Well, it won't poison anyone. A learning experience!" 
-		},
-		{ 
-			text = "Complete disaster, ordered pizza", 
-			effects = { Happiness = 3, Money = -20 }, 
-			feedText = "🍕 The smoke detector is basically a cooking timer now..." 
-		},
-		{ 
-			text = "Set off the fire alarm", 
-			effects = { Happiness = -2, Health = -1 }, 
-			setFlags = { bad_cook = true }, 
-			feedText = "🔥 Neighbors checking if you're okay. Maybe stick to sandwiches." 
-		},
+		choices = {
+			{ 
+				text = "Master chef moment!", 
+				effects = { Happiness = 15, Smarts = 3 }, 
+				setFlags = { good_cook = true }, 
+				feedText = "👨‍🍳 INCREDIBLE! You might have a hidden talent!" 
+			},
+			{ 
+				text = "Edible but... interesting", 
+				effects = { Happiness = 8, Smarts = 1 }, 
+				feedText = "👨‍🍳 Well, it won't poison anyone. A learning experience!" 
+			},
+			{ 
+				text = "Complete disaster, ordered pizza", 
+				effects = { Happiness = 3, Money = -20 }, 
+				feedText = "🍕 The smoke detector is basically a cooking timer now..." 
+			},
+			{ 
+				text = "Set off the fire alarm", 
+				effects = { Happiness = -2, Health = -1 }, 
+				setFlags = { bad_cook = true }, 
+				feedText = "🔥 Neighbors checking if you're okay. Maybe stick to sandwiches." 
+			},
 	},
-},
+	},
 
-{
-	id = "midlife_spontaneous_day",
-	title = "🌈 Spontaneous Day Off",
-	emoji = "🌈",
-	text = "You woke up and decided today is going to be different. No plans. Pure freedom.",
-	question = "What do you do with your spontaneous day?",
-	minAge = 25, maxAge = 55,
-	baseChance = 0.25,
-	cooldown = 6,
-	stage = "adult",
-	category = "experience",
-	tags = { "spontaneous", "freedom", "variety" },
+	{
+		id = "midlife_spontaneous_day",
+		title = "🌈 Spontaneous Day Off",
+		emoji = "🌈",
+		text = "You woke up and decided today is going to be different. No plans. Pure freedom.",
+		question = "What do you do with your spontaneous day?",
+		minAge = 25, maxAge = 55,
+		baseChance = 0.25,
+		cooldown = 6,
+		stage = "adult",
+		category = "experience",
+		tags = { "spontaneous", "freedom", "variety" },
 	
-	choices = {
-		{ 
-			text = "Random road trip adventure", 
-			effects = { Happiness = 18, Money = -100, Health = 2 }, 
-			setFlags = { spontaneous = true }, 
-			feedText = "🚗 Best. Day. Ever! Where did you even end up?!" 
-		},
-		{ 
-			text = "Full spa and self-care day ($150)", 
-			effects = { Happiness = 15, Health = 5, Money = -150 }, 
-			feedText = "🧖 Complete reset. You feel like a new person!",
-			eligibility = function(state) return (state.Money or 0) >= 150, "💸 Need $150 for spa day" end,
-		},
-		{ 
-			text = "Binge a show guilt-free", 
-			effects = { Happiness = 10 }, 
-			feedText = "📺 Zero productivity, maximum relaxation. Worth it!" 
-		},
-		{ 
-			text = "Reconnect with old friend", 
-			effects = { Happiness = 12 }, 
-			setFlags = { reconnected_friend = true }, 
-			feedText = "📞 Hours of catching up! Why don't you do this more often?" 
-		},
+		choices = {
+			{ 
+				text = "Random road trip adventure", 
+				effects = { Happiness = 18, Money = -100, Health = 2 }, 
+				setFlags = { spontaneous = true }, 
+				feedText = "🚗 Best. Day. Ever! Where did you even end up?!" 
+			},
+			{ 
+				text = "Full spa and self-care day ($150)", 
+				effects = { Happiness = 15, Health = 5, Money = -150 }, 
+				feedText = "🧖 Complete reset. You feel like a new person!",
+				eligibility = function(state) return (state.Money or 0) >= 150, "💸 Need $150 for spa day" end,
+			},
+			{ 
+				text = "Binge a show guilt-free", 
+				effects = { Happiness = 10 }, 
+				feedText = "📺 Zero productivity, maximum relaxation. Worth it!" 
+			},
+			{ 
+				text = "Reconnect with old friend", 
+				effects = { Happiness = 12 }, 
+				setFlags = { reconnected_friend = true }, 
+				feedText = "📞 Hours of catching up! Why don't you do this more often?" 
+			},
 	},
-},
+	},
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- NEW VARIETY EVENTS - Making mid-life more interesting
 -- ═══════════════════════════════════════════════════════════════════════════════
-{
-	id = "midlife_random_opportunity",
-	title = "💫 Unexpected Opportunity",
-	emoji = "💫",
-	text = "Out of nowhere, an interesting opportunity has landed in your lap. Life is full of surprises!",
-	question = "What opportunity came your way?",
-	minAge = 25, maxAge = 55,
-	baseChance = 0.3,
-	cooldown = 5,
-	stage = "adult",
-	category = "opportunity",
-	tags = { "opportunity", "surprise", "variety" },
-	blockedByFlags = { in_prison = true },
+	{
+		id = "midlife_random_opportunity",
+		title = "💫 Unexpected Opportunity",
+		emoji = "💫",
+		text = "Out of nowhere, an interesting opportunity has landed in your lap. Life is full of surprises!",
+		question = "What opportunity came your way?",
+		minAge = 25, maxAge = 55,
+		baseChance = 0.3,
+		cooldown = 5,
+		stage = "adult",
+		category = "opportunity",
+		tags = { "opportunity", "surprise", "variety" },
+		blockedByFlags = { in_prison = true },
 	
-	choices = {
-		{
-			text = "Free tickets to a sold-out event",
-			effects = { Happiness = 15 },
-			feedText = "💫 Someone couldn't go and offered you their tickets! Best night ever!",
-		},
-		{
-			text = "A side gig that pays well",
-			effects = { Money = 800, Happiness = 8 },
-			setFlags = { lucky_side_gig = true },
-			feedText = "💫 Someone needed your skills for a quick job. Easy money!",
-		},
-		{
-			text = "Chance to travel somewhere new",
-			effects = { Happiness = 12, Money = -500 },
-			setFlags = { spontaneous_traveler = true },
-			feedText = "💫 Last-minute travel deal! You're seeing new places!",
-			eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for travel" end,
-		},
-		{
-			text = "Meeting someone who changes your perspective",
-			effects = { Happiness = 10, Smarts = 4 },
-			setFlags = { met_mentor = true },
-			feedText = "💫 A conversation that shifted how you see things. Powerful!",
-		},
+		choices = {
+			{
+				text = "Free tickets to a sold-out event",
+				effects = { Happiness = 15 },
+				feedText = "💫 Someone couldn't go and offered you their tickets! Best night ever!",
+			},
+			{
+				text = "A side gig that pays well",
+				effects = { Money = 800, Happiness = 8 },
+				setFlags = { lucky_side_gig = true },
+				feedText = "💫 Someone needed your skills for a quick job. Easy money!",
+			},
+			{
+				text = "Chance to travel somewhere new",
+				effects = { Happiness = 12, Money = -500 },
+				setFlags = { spontaneous_traveler = true },
+				feedText = "💫 Last-minute travel deal! You're seeing new places!",
+				eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500 for travel" end,
+			},
+			{
+				text = "Meeting someone who changes your perspective",
+				effects = { Happiness = 10, Smarts = 4 },
+				setFlags = { met_mentor = true },
+				feedText = "💫 A conversation that shifted how you see things. Powerful!",
+			},
 	},
-},
-{
-	id = "midlife_mundane_joy",
-	title = "☀️ Simple Pleasures",
-	emoji = "☀️",
-	text = "Sometimes it's the little things that make life worth living.",
-	question = "What small joy did you experience today?",
-	minAge = 25, maxAge = 70,
-	baseChance = 0.35,
-	cooldown = 4,
-	stage = "adult",
-	category = "experience",
-	tags = { "joy", "positive", "variety", "happiness" },
-	blockedByFlags = { in_prison = true },
+	},
+	{
+		id = "midlife_mundane_joy",
+		title = "☀️ Simple Pleasures",
+		emoji = "☀️",
+		text = "Sometimes it's the little things that make life worth living.",
+		question = "What small joy did you experience today?",
+		minAge = 25, maxAge = 70,
+		baseChance = 0.35,
+		cooldown = 4,
+		stage = "adult",
+		category = "experience",
+		tags = { "joy", "positive", "variety", "happiness" },
+		blockedByFlags = { in_prison = true },
 	
-	choices = {
-		{
-			text = "Perfect cup of coffee on a quiet morning",
-			effects = { Happiness = 6, Health = 1 },
-			feedText = "☕ The temperature, the taste, the peace... perfection.",
-		},
-		{
-			text = "A genuine laugh with someone you care about",
-			effects = { Happiness = 8 },
-			feedText = "😂 You laughed so hard your stomach hurt. Pure joy!",
-		},
-		{
-			text = "First bite of a really good meal",
-			effects = { Happiness = 7, Health = 2 },
-			feedText = "🍽️ That moment when flavor hits perfectly... chef's kiss!",
-		},
-		{
-			text = "Unexpected nap on a lazy afternoon",
-			effects = { Happiness = 8, Health = 5 },
-			feedText = "😴 No alarms. Just peace. Woke up feeling amazing!",
-		},
+		choices = {
+			{
+				text = "Perfect cup of coffee on a quiet morning",
+				effects = { Happiness = 6, Health = 1 },
+				feedText = "☕ The temperature, the taste, the peace... perfection.",
+			},
+			{
+				text = "A genuine laugh with someone you care about",
+				effects = { Happiness = 8 },
+				feedText = "😂 You laughed so hard your stomach hurt. Pure joy!",
+			},
+			{
+				text = "First bite of a really good meal",
+				effects = { Happiness = 7, Health = 2 },
+				feedText = "🍽️ That moment when flavor hits perfectly... chef's kiss!",
+			},
+			{
+				text = "Unexpected nap on a lazy afternoon",
+				effects = { Happiness = 8, Health = 5 },
+				feedText = "😴 No alarms. Just peace. Woke up feeling amazing!",
+			},
 	},
-},
-{
-	id = "midlife_close_call",
-	title = "😰 Close Call!",
-	emoji = "😰",
-	text = "Something scary almost happened today! You're shaken but okay.",
-	question = "What was the close call?",
-	minAge = 20, maxAge = 70,
-	baseChance = 0.25,
-	cooldown = 6,
-	stage = "adult",
-	category = "experience",
-	tags = { "close_call", "scary", "variety" },
-	blockedByFlags = { in_prison = true },
+	},
+	{
+		id = "midlife_close_call",
+		title = "😰 Close Call!",
+		emoji = "😰",
+		text = "Something scary almost happened today! You're shaken but okay.",
+		question = "What was the close call?",
+		minAge = 20, maxAge = 70,
+		baseChance = 0.25,
+		cooldown = 6,
+		stage = "adult",
+		category = "experience",
+		tags = { "close_call", "scary", "variety" },
+		blockedByFlags = { in_prison = true },
 	
-	choices = {
-		{
-			text = "Almost got in a bad car accident",
-			effects = { Happiness = -5, Health = -2 },
-			setFlags = { had_close_call = true },
-			feedText = "😰 Brakes squealed. Heart pounding. That was too close!",
-		},
-		{
-			text = "Barely avoided a scam",
-			effects = { Happiness = -2, Smarts = 3 },
-			feedText = "😰 That 'bank' calling was NOT your bank. Almost got fooled!",
-		},
-		{
-			text = "Near-miss with something falling",
-			effects = { Happiness = -4, Health = -1 },
-			feedText = "😰 One second later and that would have hit you! Lucky!",
-		},
-		{
-			text = "Caught a health issue just in time",
-			effects = { Happiness = 5, Health = 5 },
-			setFlags = { early_detection = true },
-			feedText = "😰 Good thing you went to the doctor! Caught early = easily fixed!",
-		},
+		choices = {
+			{
+				text = "Almost got in a bad car accident",
+				effects = { Happiness = -5, Health = -2 },
+				setFlags = { had_close_call = true },
+				feedText = "😰 Brakes squealed. Heart pounding. That was too close!",
+			},
+			{
+				text = "Barely avoided a scam",
+				effects = { Happiness = -2, Smarts = 3 },
+				feedText = "😰 That 'bank' calling was NOT your bank. Almost got fooled!",
+			},
+			{
+				text = "Near-miss with something falling",
+				effects = { Happiness = -4, Health = -1 },
+				feedText = "😰 One second later and that would have hit you! Lucky!",
+			},
+			{
+				text = "Caught a health issue just in time",
+				effects = { Happiness = 5, Health = 5 },
+				setFlags = { early_detection = true },
+				feedText = "😰 Good thing you went to the doctor! Caught early = easily fixed!",
+			},
 	},
-},
-{
-	id = "midlife_past_comes_back",
-	title = "📸 Blast from the Past",
-	emoji = "📸",
-	text = "Something from your past unexpectedly resurfaced today.",
-	question = "What came back?",
-	minAge = 28, maxAge = 60,
-	baseChance = 0.3,
-	cooldown = 5,
-	stage = "adult",
-	category = "experience",
-	tags = { "past", "nostalgia", "variety" },
-	blockedByFlags = { in_prison = true },
+	},
+	{
+		id = "midlife_past_comes_back",
+		title = "📸 Blast from the Past",
+		emoji = "📸",
+		text = "Something from your past unexpectedly resurfaced today.",
+		question = "What came back?",
+		minAge = 28, maxAge = 60,
+		baseChance = 0.3,
+		cooldown = 5,
+		stage = "adult",
+		category = "experience",
+		tags = { "past", "nostalgia", "variety" },
+		blockedByFlags = { in_prison = true },
 	
-	choices = {
-		{
-			text = "Old friend you lost touch with reached out",
-			effects = { Happiness = 10 },
-			setFlags = { reconnected_old_friend = true },
-			feedText = "📸 They found you on social media! Time to catch up!",
-		},
-		{
-			text = "Found old photos that made you emotional",
-			effects = { Happiness = 4 },
-			feedText = "📸 Look at baby you! Look at how far you've come!",
-		},
-		{
-			text = "A childhood song came on the radio",
-			effects = { Happiness = 6 },
-			feedText = "📸 Instant time travel! All those memories flooding back!",
-		},
-		{
-			text = "Old dream you forgot about resurfaced",
-			effects = { Happiness = 5, Smarts = 3 },
-			setFlags = { remembered_dream = true },
-			feedText = "📸 Remember when you wanted to be a...? Maybe it's not too late!",
-		},
+		choices = {
+			{
+				text = "Old friend you lost touch with reached out",
+				effects = { Happiness = 10 },
+				setFlags = { reconnected_old_friend = true },
+				feedText = "📸 They found you on social media! Time to catch up!",
+			},
+			{
+				text = "Found old photos that made you emotional",
+				effects = { Happiness = 4 },
+				feedText = "📸 Look at baby you! Look at how far you've come!",
+			},
+			{
+				text = "A childhood song came on the radio",
+				effects = { Happiness = 6 },
+				feedText = "📸 Instant time travel! All those memories flooding back!",
+			},
+			{
+				text = "Old dream you forgot about resurfaced",
+				effects = { Happiness = 5, Smarts = 3 },
+				setFlags = { remembered_dream = true },
+				feedText = "📸 Remember when you wanted to be a...? Maybe it's not too late!",
+			},
 	},
-},
-{
-	id = "midlife_small_victory",
-	title = "🎉 Small Victory!",
-	emoji = "🎉",
-	text = "Sometimes winning at the little things matters just as much!",
-	question = "What did you accomplish today?",
-	minAge = 20, maxAge = 70,
-	baseChance = 0.35,
-	cooldown = 4,
-	stage = "adult",
-	category = "experience",
-	tags = { "victory", "positive", "variety" },
-	blockedByFlags = { in_prison = true },
+	},
+	{
+		id = "midlife_small_victory",
+		title = "🎉 Small Victory!",
+		emoji = "🎉",
+		text = "Sometimes winning at the little things matters just as much!",
+		question = "What did you accomplish today?",
+		minAge = 20, maxAge = 70,
+		baseChance = 0.35,
+		cooldown = 4,
+		stage = "adult",
+		category = "experience",
+		tags = { "victory", "positive", "variety" },
+		blockedByFlags = { in_prison = true },
 	
-	choices = {
-		{
-			text = "Finally finished that thing you've been putting off",
-			effects = { Happiness = 10, Smarts = 2 },
-			setFlags = { beat_procrastination = true },
-			feedText = "🎉 IT'S DONE! The relief is INCREDIBLE!",
-		},
-		{
-			text = "Got a compliment from someone you respect",
-			effects = { Happiness = 8, Looks = 2 },
-			feedText = "🎉 They noticed your effort! Validation feels amazing!",
-		},
-		{
-			text = "Cooked something that actually turned out great",
-			effects = { Happiness = 7, Health = 2 },
-			setFlags = { cooking_win = true },
-			feedText = "🎉 You're basically a chef now! This is restaurant quality!",
-		},
-		{
-			text = "Made someone's day with a kind gesture",
-			effects = { Happiness = 10 },
-			setFlags = { spread_kindness = true },
-			feedText = "🎉 Their smile made YOUR day! Kindness is a two-way street!",
-		},
+		choices = {
+			{
+				text = "Finally finished that thing you've been putting off",
+				effects = { Happiness = 10, Smarts = 2 },
+				setFlags = { beat_procrastination = true },
+				feedText = "🎉 IT'S DONE! The relief is INCREDIBLE!",
+			},
+			{
+				text = "Got a compliment from someone you respect",
+				effects = { Happiness = 8, Looks = 2 },
+				feedText = "🎉 They noticed your effort! Validation feels amazing!",
+			},
+			{
+				text = "Cooked something that actually turned out great",
+				effects = { Happiness = 7, Health = 2 },
+				setFlags = { cooking_win = true },
+				feedText = "🎉 You're basically a chef now! This is restaurant quality!",
+			},
+			{
+				text = "Made someone's day with a kind gesture",
+				effects = { Happiness = 10 },
+				setFlags = { spread_kindness = true },
+				feedText = "🎉 Their smile made YOUR day! Kindness is a two-way street!",
+			},
 	},
-},
+	},
 -- ══════════════════════════════════════════════════════════════════════════════
 -- COMPREHENSIVE HOUSING SITUATION EVENT
 -- User request: "ensure living situation updates very nicely with lots of options"
 -- ══════════════════════════════════════════════════════════════════════════════
-{
-	id = "housing_situation_review",
-	title = "Housing Check-In",
-	emoji = "🏠",
-	text = "Time to think about your living situation. Are you happy where you are?",
-	textVariants = {
-		"Your lease is coming up for renewal. Time to decide what's next.",
-		"You've been thinking about your living situation lately.",
-		"Friends keep talking about moving. Should you consider it?",
-		"Real estate prices are changing. Time to review your options.",
-		"You wonder if it's time for a change in your living situation.",
+	{
+		id = "housing_situation_review",
+		title = "Housing Check-In",
+		emoji = "🏠",
+		text = "Time to think about your living situation. Are you happy where you are?",
+		textVariants = {
+			"Your lease is coming up for renewal. Time to decide what's next.",
+			"You've been thinking about your living situation lately.",
+			"Friends keep talking about moving. Should you consider it?",
+			"Real estate prices are changing. Time to review your options.",
+			"You wonder if it's time for a change in your living situation.",
 	},
-	question = "What's your housing plan?",
-	minAge = 20, maxAge = 70,
-	baseChance = 0.25,
-	cooldown = 6,
-	stage = "adult",
-	category = "housing",
-	tags = { "housing", "living", "decisions" },
-	blockedByFlags = { in_prison = true, homeless = true },
+		question = "What's your housing plan?",
+		minAge = 20, maxAge = 70,
+		baseChance = 0.25,
+		cooldown = 6,
+		stage = "adult",
+		category = "housing",
+		tags = { "housing", "living", "decisions" },
+		blockedByFlags = { in_prison = true, homeless = true },
 	
-	choices = {
-		{
-			text = "🏠 Stay where I am - it's fine",
-			effects = { Happiness = 2 },
-			feedText = "🏠 Stability is underrated. You know your neighbors, your commute, your spots.",
-		},
-		{
-			text = "🏢 Upgrade to a nicer apartment ($800/mo more)",
-			effects = { Happiness = 8 },
-			feedText = "Moving up...",
-			eligibility = function(state)
-				local monthly = (state.CurrentJob and state.CurrentJob.salary or 0) / 12
-				if monthly < 2500 then return false, "💸 Need higher income for this upgrade" end
-				return true
-			end,
-			onResolve = function(state)
-				state.Flags = state.Flags or {}
-				state.Flags.upgraded_apartment = true
-				state.Flags.nicer_home = true
-				state.HousingState = state.HousingState or {}
-				state.HousingState.quality = "nice"
-				state:AddFeed("🏢 UPGRADED! Nicer place, better neighborhood. Worth every penny!")
-			end,
-		},
-		{
-			text = "🏡 Save for a house down payment",
-			effects = { Happiness = 3, Smarts = 2 },
-			feedText = "🏡 Homeownership is the goal! Cutting back to save that down payment.",
-			onResolve = function(state)
-				state.Flags = state.Flags or {}
-				state.Flags.saving_for_house = true
-				state.Flags.financially_responsible = true
-			end,
-		},
-		{
-			text = "📉 Downsize to save money",
-			effects = { Happiness = -3, Money = 400 },
-			feedText = "📉 Smaller space but bigger savings. Sometimes you gotta sacrifice.",
-			onResolve = function(state)
-				state.Flags = state.Flags or {}
-				state.Flags.downsized = true
-				state.HousingState = state.HousingState or {}
-				state.HousingState.quality = "basic"
-			end,
-		},
-		{
-			text = "👥 Get a roommate to split costs",
-			effects = { Money = 350 },
-			feedText = "Finding a roommate...",
-			onResolve = function(state)
-				local roll = math.random()
-				state.Flags = state.Flags or {}
-				state.Flags.has_roommates = true
-				if roll < 0.4 then
-					state:ModifyStat("Happiness", 5)
-					state.Flags.good_roommates = true
-					state:AddFeed("👥 Got a great roommate! They're clean, quiet, and actually fun!")
-				elseif roll < 0.75 then
-					state:ModifyStat("Happiness", 1)
-					state:AddFeed("👥 Roommate is... okay. Some issues but saving money.")
-				else
-					state:ModifyStat("Happiness", -8)
-					state.Flags.bad_roommates = true
-					state:AddFeed("👥 NIGHTMARE roommate! Dishes everywhere. Loud at 3AM. Send help.")
-				end
-			end,
-		},
-		{
-			text = "🌆 Move to a new city for adventure!",
-			effects = { Happiness = 5 },
-			feedText = "New city, who dis...",
-			eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2000 for moving costs" end,
-			onResolve = function(state)
-				state.Money = (state.Money or 0) - 2000
-				state.Flags = state.Flags or {}
-				state.Flags.city_mover = true
-				state.Flags.adventurous = true
-				local roll = math.random()
-				if roll < 0.5 then
-					state:ModifyStat("Happiness", 15)
-					state:AddFeed("🌆 Best decision ever! New city, new opportunities, new YOU!")
-				else
-					state:ModifyStat("Happiness", 5)
-					state:AddFeed("🌆 Adjusting to the new city. It's different but exciting!")
-				end
-			end,
-		},
-		{
-			text = "🏚️ Move in with family to save money",
-			effects = { Money = 600, Happiness = -5 },
-			feedText = "🏚️ Swallowing pride and moving back home. Money saved, dignity... uncertain.",
-			onResolve = function(state)
-				state.Flags = state.Flags or {}
-				state.Flags.living_with_family = true
-				state.Flags.moved_back_home = true
-			end,
-		},
-		{
-			text = "🚐 Van life! Live on the road!",
-			effects = { Money = 400, Health = -3 },
-			feedText = "🚐 You bought a van and hit the road! #VanLife",
-			eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5000 for a van" end,
-			onResolve = function(state)
-				state.Money = (state.Money or 0) - 5000
-				state.Flags = state.Flags or {}
-				state.Flags.van_life = true
-				state.Flags.nomad = true
-				state.Flags.adventurous = true
-				local roll = math.random()
-				if roll < 0.4 then
-					state:ModifyStat("Happiness", 20)
-					state:AddFeed("🚐 FREEDOM! Waking up in new places every day! This is living!")
-				else
-					state:ModifyStat("Happiness", 5)
-					state:AddFeed("🚐 Van life has challenges but the freedom is worth it!")
-				end
-			end,
-		},
+		choices = {
+			{
+				text = "🏠 Stay where I am - it's fine",
+				effects = { Happiness = 2 },
+				feedText = "🏠 Stability is underrated. You know your neighbors, your commute, your spots.",
+			},
+			{
+				text = "🏢 Upgrade to a nicer apartment ($800/mo more)",
+				effects = { Happiness = 8 },
+				feedText = "Moving up...",
+				eligibility = function(state)
+					local monthly = (state.CurrentJob and state.CurrentJob.salary or 0) / 12
+					if monthly < 2500 then return false, "💸 Need higher income for this upgrade" end
+					return true
+				end,
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.upgraded_apartment = true
+					state.Flags.nicer_home = true
+					state.HousingState = state.HousingState or {}
+					state.HousingState.quality = "nice"
+					state:AddFeed("🏢 UPGRADED! Nicer place, better neighborhood. Worth every penny!")
+				end,
+			},
+			{
+				text = "🏡 Save for a house down payment",
+				effects = { Happiness = 3, Smarts = 2 },
+				feedText = "🏡 Homeownership is the goal! Cutting back to save that down payment.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.saving_for_house = true
+					state.Flags.financially_responsible = true
+				end,
+			},
+			{
+				text = "📉 Downsize to save money",
+				effects = { Happiness = -3, Money = 400 },
+				feedText = "📉 Smaller space but bigger savings. Sometimes you gotta sacrifice.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.downsized = true
+					state.HousingState = state.HousingState or {}
+					state.HousingState.quality = "basic"
+				end,
+			},
+			{
+				text = "👥 Get a roommate to split costs",
+				effects = { Money = 350 },
+				feedText = "Finding a roommate...",
+				onResolve = function(state)
+					local roll = math.random()
+					state.Flags = state.Flags or {}
+					state.Flags.has_roommates = true
+					if roll < 0.4 then
+						state:ModifyStat("Happiness", 5)
+						state.Flags.good_roommates = true
+						state:AddFeed("👥 Got a great roommate! They're clean, quiet, and actually fun!")
+					elseif roll < 0.75 then
+						state:ModifyStat("Happiness", 1)
+						state:AddFeed("👥 Roommate is... okay. Some issues but saving money.")
+					else
+						state:ModifyStat("Happiness", -8)
+						state.Flags.bad_roommates = true
+						state:AddFeed("👥 NIGHTMARE roommate! Dishes everywhere. Loud at 3AM. Send help.")
+					end
+				end,
+			},
+			{
+				text = "🌆 Move to a new city for adventure!",
+				effects = { Happiness = 5 },
+				feedText = "New city, who dis...",
+				eligibility = function(state) return (state.Money or 0) >= 2000, "💸 Need $2000 for moving costs" end,
+				onResolve = function(state)
+					state.Money = (state.Money or 0) - 2000
+					state.Flags = state.Flags or {}
+					state.Flags.city_mover = true
+					state.Flags.adventurous = true
+					local roll = math.random()
+					if roll < 0.5 then
+						state:ModifyStat("Happiness", 15)
+						state:AddFeed("🌆 Best decision ever! New city, new opportunities, new YOU!")
+					else
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🌆 Adjusting to the new city. It's different but exciting!")
+					end
+				end,
+			},
+			{
+				text = "🏚️ Move in with family to save money",
+				effects = { Money = 600, Happiness = -5 },
+				feedText = "🏚️ Swallowing pride and moving back home. Money saved, dignity... uncertain.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.living_with_family = true
+					state.Flags.moved_back_home = true
+				end,
+			},
+			{
+				text = "🚐 Van life! Live on the road!",
+				effects = { Money = 400, Health = -3 },
+				feedText = "🚐 You bought a van and hit the road! #VanLife",
+				eligibility = function(state) return (state.Money or 0) >= 5000, "💸 Need $5000 for a van" end,
+				onResolve = function(state)
+					state.Money = (state.Money or 0) - 5000
+					state.Flags = state.Flags or {}
+					state.Flags.van_life = true
+					state.Flags.nomad = true
+					state.Flags.adventurous = true
+					local roll = math.random()
+					if roll < 0.4 then
+						state:ModifyStat("Happiness", 20)
+						state:AddFeed("🚐 FREEDOM! Waking up in new places every day! This is living!")
+					else
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("🚐 Van life has challenges but the freedom is worth it!")
+					end
+				end,
+			},
 	},
-},
+	},
 -- ══════════════════════════════════════════════════════════════════════════════
 -- MORE VARIETY EVENTS - DAILY LIFE STUFF
 -- ══════════════════════════════════════════════════════════════════════════════
-{
-	id = "hobby_discovery_adult",
-	title = "New Hobby?",
-	emoji = "🎯",
-	text = "You've been thinking about picking up a new hobby.",
-	textVariants = {
-		"Everyone keeps talking about their hobbies. Maybe you should get one?",
-		"You have some free time lately. What should you do with it?",
-		"Your friend started something new and loves it. Maybe you should try something too?",
-		"Scrolling social media, you see everyone doing cool stuff. Time to start something?",
+	{
+		id = "hobby_discovery_adult",
+		title = "New Hobby?",
+		emoji = "🎯",
+		text = "You've been thinking about picking up a new hobby.",
+		textVariants = {
+			"Everyone keeps talking about their hobbies. Maybe you should get one?",
+			"You have some free time lately. What should you do with it?",
+			"Your friend started something new and loves it. Maybe you should try something too?",
+			"Scrolling social media, you see everyone doing cool stuff. Time to start something?",
 	},
-	question = "What catches your interest?",
-	minAge = 18, maxAge = 80,
-	baseChance = 0.20,
-	cooldown = 8,
-	stage = "adult",
-	category = "hobbies",
-	tags = { "hobby", "growth", "variety" },
-	blockedByFlags = { in_prison = true },
+		question = "What catches your interest?",
+		minAge = 18, maxAge = 80,
+		baseChance = 0.20,
+		cooldown = 8,
+		stage = "adult",
+		category = "hobbies",
+		tags = { "hobby", "growth", "variety" },
+		blockedByFlags = { in_prison = true },
 	
-	choices = {
-		{
-			text = "🎸 Learn an instrument",
-			effects = { Happiness = 6, Smarts = 3 },
-			setFlags = { learning_music = true, musician_hobbyist = true },
-			feedText = "🎸 Starting music lessons! Your neighbors may not appreciate the practice...",
-		},
-		{
-			text = "🏋️ Start working out seriously",
-			effects = { Health = 8, Happiness = 4, Looks = 2 },
-			setFlags = { gym_rat = true, fitness_focused = true },
-			feedText = "🏋️ Gym membership activated! Time to get SHREDDED!",
-		},
-		{
-			text = "🎨 Take up painting/art",
-			effects = { Happiness = 7, Smarts = 2 },
-			setFlags = { artist_hobbyist = true, creative_outlet = true },
-			feedText = "🎨 Art supplies purchased! Time to unleash your inner artist!",
-		},
-		{
-			text = "👨‍🍳 Learn to cook properly",
-			effects = { Health = 3, Smarts = 3, Happiness = 5 },
-			setFlags = { learning_cooking = true, home_chef = true },
-			feedText = "👨‍🍳 Cookbooks and YouTube tutorials! You're gonna be a home chef!",
-		},
-		{
-			text = "📚 Join a book club",
-			effects = { Smarts = 5, Happiness = 4 },
-			setFlags = { book_club_member = true, avid_reader = true },
-			feedText = "📚 Reading is cool again! Joining intellectual discussions!",
-		},
-		{
-			text = "🎮 Get into competitive gaming",
-			effects = { Happiness = 6, Smarts = 2, Health = -2 },
-			setFlags = { competitive_gamer = true, gaming_serious = true },
-			feedText = "🎮 Going competitive! Ranked mode, here you come!",
-		},
-		{
-			text = "🌱 Start gardening",
-			effects = { Happiness = 5, Health = 3 },
-			setFlags = { gardener = true, green_thumb = true },
-			feedText = "🌱 Plants are peaceful. Your first seedlings are sprouting!",
-		},
-		{
-			text = "📸 Photography adventures",
-			effects = { Happiness = 6, Looks = 2 },
-			setFlags = { photographer_hobbyist = true },
-			feedText = "📸 Camera purchased! Seeing the world through a new lens!",
-		},
+		choices = {
+			{
+				text = "🎸 Learn an instrument",
+				effects = { Happiness = 6, Smarts = 3 },
+				setFlags = { learning_music = true, musician_hobbyist = true },
+				feedText = "🎸 Starting music lessons! Your neighbors may not appreciate the practice...",
+			},
+			{
+				text = "🏋️ Start working out seriously",
+				effects = { Health = 8, Happiness = 4, Looks = 2 },
+				setFlags = { gym_rat = true, fitness_focused = true },
+				feedText = "🏋️ Gym membership activated! Time to get SHREDDED!",
+			},
+			{
+				text = "🎨 Take up painting/art",
+				effects = { Happiness = 7, Smarts = 2 },
+				setFlags = { artist_hobbyist = true, creative_outlet = true },
+				feedText = "🎨 Art supplies purchased! Time to unleash your inner artist!",
+			},
+			{
+				text = "👨‍🍳 Learn to cook properly",
+				effects = { Health = 3, Smarts = 3, Happiness = 5 },
+				setFlags = { learning_cooking = true, home_chef = true },
+				feedText = "👨‍🍳 Cookbooks and YouTube tutorials! You're gonna be a home chef!",
+			},
+			{
+				text = "📚 Join a book club",
+				effects = { Smarts = 5, Happiness = 4 },
+				setFlags = { book_club_member = true, avid_reader = true },
+				feedText = "📚 Reading is cool again! Joining intellectual discussions!",
+			},
+			{
+				text = "🎮 Get into competitive gaming",
+				effects = { Happiness = 6, Smarts = 2, Health = -2 },
+				setFlags = { competitive_gamer = true, gaming_serious = true },
+				feedText = "🎮 Going competitive! Ranked mode, here you come!",
+			},
+			{
+				text = "🌱 Start gardening",
+				effects = { Happiness = 5, Health = 3 },
+				setFlags = { gardener = true, green_thumb = true },
+				feedText = "🌱 Plants are peaceful. Your first seedlings are sprouting!",
+			},
+			{
+				text = "📸 Photography adventures",
+				effects = { Happiness = 6, Looks = 2 },
+				setFlags = { photographer_hobbyist = true },
+				feedText = "📸 Camera purchased! Seeing the world through a new lens!",
+			},
 	},
-},
-{
-	id = "weekend_decision",
-	title = "Weekend Plans",
-	emoji = "🗓️",
-	text = "The weekend is here! What are you doing?",
-	textVariants = {
-		"Friday evening! The whole weekend stretches ahead. What's the plan?",
-		"You actually have nothing planned this weekend. Freedom!",
-		"Friends are texting about plans. What sounds good?",
-		"Another week survived! How are you celebrating?",
 	},
-	question = "How do you spend your weekend?",
-	minAge = 18, maxAge = 70,
-	baseChance = 0.30,
-	cooldown = 3,
-	stage = "adult",
-	category = "lifestyle",
-	tags = { "weekend", "social", "variety" },
-	blockedByFlags = { in_prison = true },
+	{
+		id = "weekend_decision",
+		title = "Weekend Plans",
+		emoji = "🗓️",
+		text = "The weekend is here! What are you doing?",
+		textVariants = {
+			"Friday evening! The whole weekend stretches ahead. What's the plan?",
+			"You actually have nothing planned this weekend. Freedom!",
+			"Friends are texting about plans. What sounds good?",
+			"Another week survived! How are you celebrating?",
+	},
+		question = "How do you spend your weekend?",
+		minAge = 18, maxAge = 70,
+		baseChance = 0.30,
+		cooldown = 4,
+		stage = "adult",
+		category = "lifestyle",
+		tags = { "weekend", "social", "variety" },
+		blockedByFlags = { in_prison = true },
 	
-	choices = {
-		{
-			text = "🎉 Party time!",
-			effects = { Happiness = 10, Health = -3, Money = -50 },
-			feedText = "🎉 WHAT A NIGHT! You'll recover... eventually.",
-		},
-		{
-			text = "🛋️ Couch and Netflix",
-			effects = { Happiness = 5, Health = 2 },
-			feedText = "🛋️ Self-care is staying in. Recharged and ready for Monday.",
-		},
-		{
-			text = "🏃 Adventure outdoors",
-			effects = { Happiness = 8, Health = 6 },
-			feedText = "🏃 Hiking, biking, exploring! Fresh air hits different!",
-		},
-		{
-			text = "💼 Work on side projects",
-			effects = { Smarts = 5, Happiness = 3, Money = 100 },
-			feedText = "💼 Grinding on the weekend! Future you will thank present you.",
-		},
-		{
-			text = "👨‍👩‍👧‍👦 Quality time with family/friends",
-			effects = { Happiness = 8 },
-			feedText = "👨‍👩‍👧‍👦 Nothing beats good company. Memories made!",
-		},
-		{
-			text = "🧹 Adulting: chores and errands",
-			effects = { Happiness = 2, Smarts = 1 },
-			setFlags = { responsible_adult = true },
-			feedText = "🧹 Boring but necessary. At least your place is clean now.",
-		},
+		choices = {
+			{
+				text = "🎉 Party time!",
+				effects = { Happiness = 10, Health = -3, Money = -50 },
+				feedText = "🎉 WHAT A NIGHT! You'll recover... eventually.",
+			},
+			{
+				text = "🛋️ Couch and Netflix",
+				effects = { Happiness = 5, Health = 2 },
+				feedText = "🛋️ Self-care is staying in. Recharged and ready for Monday.",
+			},
+			{
+				text = "🏃 Adventure outdoors",
+				effects = { Happiness = 8, Health = 6 },
+				feedText = "🏃 Hiking, biking, exploring! Fresh air hits different!",
+			},
+			{
+				text = "💼 Work on side projects",
+				effects = { Smarts = 5, Happiness = 3, Money = 100 },
+				feedText = "💼 Grinding on the weekend! Future you will thank present you.",
+			},
+			{
+				text = "👨‍👩‍👧‍👦 Quality time with family/friends",
+				effects = { Happiness = 8 },
+				feedText = "👨‍👩‍👧‍👦 Nothing beats good company. Memories made!",
+			},
+			{
+				text = "🧹 Adulting: chores and errands",
+				effects = { Happiness = 2, Smarts = 1 },
+				setFlags = { responsible_adult = true },
+				feedText = "🧹 Boring but necessary. At least your place is clean now.",
+			},
 	},
-},
+	},
 }
 
 return AdultExpanded

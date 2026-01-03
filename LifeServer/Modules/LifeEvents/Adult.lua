@@ -202,7 +202,7 @@ Adult.events = {
 		},
 		question = "What's your focus?",
 		minAge = 18, maxAge = 22,
-		baseChance = 0.55, -- CRITICAL FIX: Reduced from 0.7 to prevent spam
+		baseChance = 0.4, -- CRITICAL FIX: Reduced from 0.7 to prevent spam
 		-- CRITICAL FIX #516: Accept MULTIPLE flags for college eligibility
 		-- Was only checking college_bound but user could have in_college, enrolled_college, etc.
 		eligibility = function(state)
@@ -211,7 +211,7 @@ Adult.events = {
 			       state.Flags.enrolled_college or state.Flags.college_student or
 			       (state.EducationData and state.EducationData.Status == "enrolled")
 		end,
-		cooldown = 3, -- CRITICAL FIX: Increased from 1 to prevent spam
+		cooldown = 5, -- CRITICAL FIX: Increased from 1 to prevent spam
 
 		-- META
 		stage = STAGE,
@@ -828,8 +828,8 @@ Adult.events = {
 		text = "Age brings some health challenges that need attention.",
 		question = "How do you handle them?",
 		minAge = 65, maxAge = 90,
-		baseChance = 0.5,
-		cooldown = 3,
+		baseChance = 0.35,
+		cooldown = 5,
 
 		-- META
 		stage = STAGE,
@@ -874,8 +874,8 @@ Adult.events = {
 		text = "Your first apartment has some... issues.",
 		question = "What's the biggest problem?",
 		minAge = 18, maxAge = 26,
-		baseChance = 0.5,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.35,
+		cooldown = 5, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { lives_alone = true },
 
 		choices = {
@@ -894,7 +894,7 @@ Adult.events = {
 		question = "What's the issue?",
 		minAge = 18, maxAge = 28,
 		baseChance = 0.4,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		cooldown = 5, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { has_roommates = true },
 		-- CRITICAL FIX: Can't have roommate drama from prison!
 		blockedByFlags = { in_prison = true, incarcerated = true },
@@ -953,8 +953,8 @@ Adult.events = {
 		text = "The student loan payments have started.",
 		question = "How are you handling the debt?",
 		minAge = 22, maxAge = 30,
-		baseChance = 0.5,
-		cooldown = 3,
+		baseChance = 0.35,
+		cooldown = 5,
 		requiresFlags = { has_degree = true },
 
 		choices = {
@@ -971,8 +971,8 @@ Adult.events = {
 		text = "You've entered the world of dating apps.",
 		question = "How's your experience?",
 		minAge = 20, maxAge = 40,
-		baseChance = 0.5,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.35,
+		cooldown = 5, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresSingle = true,
 		blockedByFlags = { married = true, in_prison = true, incarcerated = true },
 
@@ -1346,7 +1346,7 @@ Adult.events = {
 		question = "What path do you take?",
 		minAge = 28, maxAge = 45,
 		baseChance = 0.4,
-		cooldown = 3,
+		cooldown = 5,
 		requiresJob = true, -- CRITICAL FIX: Only show for employed players!
 
 	choices = {
@@ -1365,7 +1365,7 @@ Adult.events = {
 		question = "How do you handle it?",
 		minAge = 22, maxAge = 60,
 		baseChance = 0.4,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		cooldown = 5, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresJob = true, -- CRITICAL FIX: Only show for employed players!
 
 		choices = {
@@ -1461,7 +1461,7 @@ Adult.events = {
 		question = "How do you respond to the news?",
 		minAge = 25, maxAge = 60,
 		baseChance = 0.45, -- CRITICAL FIX #704: Increased from 0.2 for more career drama
-		cooldown = 3, -- CRITICAL FIX #705: Reduced from 5 for more variety
+		cooldown = 5, -- CRITICAL FIX #705: Reduced from 5 for more variety
 		requiresJob = true, -- Only trigger if you have a job
 		-- CRITICAL FIX: Random layoff outcome - you don't choose if you get laid off
 		choices = {
@@ -1919,7 +1919,7 @@ Adult.events = {
 		question = "How do you respond?",
 		minAge = 35, maxAge = 70, -- Extended age range
 		baseChance = 0.35,
-		cooldown = 4,
+		cooldown = 5,
 		
 		-- CRITICAL FIX #8: Parent health crisis requires living parents!
 		eligibility = function(state)
@@ -1964,7 +1964,7 @@ Adult.events = {
 		question = "What's your next adventure?",
 		minAge = 40, maxAge = 70,
 		baseChance = 0.4,
-		cooldown = 3,
+		cooldown = 5,
 		-- CRITICAL FIX: Can't do bucket list activities from prison or if homeless
 		blockedByFlags = { in_prison = true, incarcerated = true, homeless = true },
 		-- CRITICAL FIX: Removed money check - event has free options
@@ -2319,8 +2319,8 @@ Adult.events = {
 		text = "Technology keeps changing and it's hard to keep up.",
 		question = "How do you handle it?",
 		minAge = 60, maxAge = 95,
-		baseChance = 0.5,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.35,
+		cooldown = 5, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		choices = {
 			{ text = "Take a class to learn", effects = { Smarts = 5, Happiness = 5 }, setFlags = { tech_savvy_senior = true }, feedText = "You're learning! Video calls are great!" },
@@ -2495,7 +2495,7 @@ Adult.events = {
 		question = "What's the issue?",
 		minAge = 22, maxAge = 70,
 		baseChance = 0.3,
-		cooldown = 4,
+		cooldown = 5,
 		blockedByFlags = { in_prison = true, homeless = true },
 		
 		choices = {
@@ -2513,7 +2513,7 @@ Adult.events = {
 		question = "Do you invest?",
 		minAge = 25, maxAge = 65,
 		baseChance = 0.3,
-		cooldown = 4,
+		cooldown = 5,
 		blockedByFlags = { in_prison = true },
 		-- CRITICAL FIX: Need money to invest
 		eligibility = function(state)
@@ -2685,7 +2685,7 @@ Adult.events = {
 		question = "What captured your interest?",
 		minAge = 25, maxAge = 75,
 		baseChance = 0.4,
-		cooldown = 4,
+		cooldown = 5,
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
@@ -2704,7 +2704,7 @@ Adult.events = {
 		question = "What do you do about it?",
 		minAge = 30, maxAge = 65,
 		baseChance = 0.4,
-		cooldown = 4,
+		cooldown = 5,
 		
 		choices = {
 			{ text = "Make effort to reconnect", effects = { Happiness = 8 }, setFlags = { maintains_friendships = true }, feedText = "You organized a reunion. Worth every moment!" },
@@ -2721,7 +2721,7 @@ Adult.events = {
 		question = "How do you contribute?",
 		minAge = 30, maxAge = 80,
 		baseChance = 0.3,
-		cooldown = 4,
+		cooldown = 5,
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
@@ -2761,7 +2761,7 @@ Adult.events = {
 		question = "Where did it come from?",
 		minAge = 20, maxAge = 75,
 		baseChance = 0.4, -- CRITICAL FIX #712: Increased from 0.15 for more financial events
-		cooldown = 3, -- CRITICAL FIX #713: Reduced from 6 for more variety
+		cooldown = 5, -- CRITICAL FIX #713: Reduced from 6 for more variety
 		
 		-- CRITICAL FIX: Random windfall amount - player doesn't choose how much they get!
 		choices = {
@@ -2831,7 +2831,7 @@ Adult.events = {
 		question = "How do you respond?",
 		minAge = 21, maxAge = 70,
 		baseChance = 0.4, -- CRITICAL FIX #714: Increased from 0.2
-		cooldown = 3, -- CRITICAL FIX #715: Reduced from 5 
+		cooldown = 5, -- CRITICAL FIX #715: Reduced from 5 
 		blockedByFlags = { in_prison = true, criminal_record = true },
 		
 		choices = {
@@ -2869,7 +2869,7 @@ Adult.events = {
 		question = "How are you taking care of yourself?",
 		minAge = 30, maxAge = 70,
 		baseChance = 0.4,
-		cooldown = 3,
+		cooldown = 5,
 		blockedByFlags = { in_prison = true },
 		
 		choices = {
@@ -2906,7 +2906,7 @@ Adult.events = {
 		question = "What's your relationship with social media?",
 		minAge = 25, maxAge = 60,
 		baseChance = 0.4,
-		cooldown = 3,
+		cooldown = 5,
 		
 		choices = {
 			{ text = "It's connecting me with people", effects = { Happiness = 4 }, setFlags = { social_online = true }, feedText = "Finding old friends and making new connections!" },
@@ -2923,7 +2923,7 @@ Adult.events = {
 		question = "What do you do about it?",
 		minAge = 35, maxAge = 55,
 		baseChance = 0.3,
-		cooldown = 4,
+		cooldown = 5,
 		requiresJob = true,
 		
 		choices = {
@@ -2959,8 +2959,8 @@ Adult.events = {
 		text = "You have vacation time saved up. Time to use it!",
 		question = "Where do you go?",
 		minAge = 22, maxAge = 70,
-		baseChance = 0.5,
-		cooldown = 4,
+		baseChance = 0.35,
+		cooldown = 5,
 		blockedByFlags = { in_prison = true, homeless = true },
 		-- CRITICAL FIX: Block for military - they have different leave system!
 		eligibility = function(state)
@@ -3041,7 +3041,7 @@ Adult.events = {
 		question = "What do you do about it?",
 		minAge = 28, maxAge = 70,
 		baseChance = 0.3,
-		cooldown = 4,
+		cooldown = 5,
 		
 		choices = {
 			{
@@ -3075,7 +3075,7 @@ Adult.events = {
 		question = "How do you feel about it?",
 		minAge = 25, maxAge = 75,
 		baseChance = 0.3,
-		cooldown = 4,
+		cooldown = 5,
 		blockedByFlags = { in_prison = true },
 		
 	choices = {
@@ -3097,7 +3097,7 @@ Adult.events = {
 		},
 	},
 },
-{
+	{
 	id = "coworker_friendship",
 		title = "Work Friend",
 		emoji = "👥",
@@ -3105,7 +3105,7 @@ Adult.events = {
 		question = "How does this friendship develop?",
 		minAge = 22, maxAge = 60,
 		baseChance = 0.4,
-		cooldown = 3,
+		cooldown = 5,
 		requiresJob = true,
 		
 		choices = {
@@ -3123,7 +3123,7 @@ Adult.events = {
 		question = "What happened?",
 		minAge = 18, maxAge = 85,
 		baseChance = 0.2,
-		cooldown = 4,
+		cooldown = 5,
 		
 		choices = {
 			{ text = "Paid for your coffee", effects = { Happiness = 6, Money = 5 }, feedText = "A stranger ahead of you in line paid for your order!" },
@@ -3140,7 +3140,7 @@ Adult.events = {
 		question = "Do you enter?",
 		minAge = 20, maxAge = 70,
 		baseChance = 0.3,
-		cooldown = 4,
+		cooldown = 5,
 		
 		-- CRITICAL FIX: Random competition outcome
 		choices = {
@@ -3315,7 +3315,7 @@ Adult.events = {
 		text = "Halfway through life. Time to reflect on what you've accomplished and what's still ahead.",
 		question = "How do you feel about your life so far?",
 		minAge = 40, maxAge = 50,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		oneTime = true,
 		maxOccurrences = 1,
 		choices = {
@@ -3378,7 +3378,7 @@ Adult.events = {
 		text = "Your last child just moved out. The house feels so quiet now.",
 		question = "How do you handle this new phase?",
 		minAge = 45, maxAge = 65,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		oneTime = true,
 		maxOccurrences = 1,
 		-- CRITICAL FIX: Changed from has_children to has_child (most events set has_child not has_children)
@@ -3890,6 +3890,1532 @@ Adult.events = {
 				onResolve = function(state)
 					state:AddFeed("🎤 When you speak, people LISTEN. This could open SO many doors!")
 				end,
+			},
+		},
+	},
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- MASSIVE EXPANSION: NEW ADULT EVENTS (Ages 18-65)
+-- Life experiences that shape careers, relationships, and personal growth
+-- ════════════════════════════════════════════════════════════════════════════
+
+	{
+		id = "adult_quarter_life_crisis",
+		title = "Quarter-Life Crisis!",
+		emoji = "😰",
+		textVariants = {
+			"You're 25 and questioning EVERYTHING!",
+			"Is this what adulthood is supposed to be?!",
+			"Comparing yourself to everyone on social media...",
+			"What am I doing with my life?!",
+		},
+		text = "You're 25 and questioning EVERYTHING!",
+		question = "How do you handle this crisis?",
+		minAge = 24, maxAge = 28,
+		baseChance = 0.45,
+		cooldown = 5,
+		oneTime = true,
+		category = "adult",
+		tags = { "adult", "crisis", "growth" },
+		blockedByFlags = { quarter_life_crisis_done = true },
+		
+		choices = {
+			{
+				text = "🔄 Make big life changes",
+				effects = { Happiness = 5 },
+				setFlags = { quarter_life_crisis_done = true, embraces_change = true },
+				feedText = "😰 New career? New city? Time for a fresh start!",
+			},
+			{
+				text = "📚 Invest in self-improvement",
+				effects = { Happiness = 4, Smarts = 4 },
+				setFlags = { quarter_life_crisis_done = true, self_improvement = true },
+				feedText = "😰 Books, courses, therapy - becoming a better you!",
+			},
+			{
+				text = "🎉 YOLO - enjoy the ride",
+				effects = { Happiness = 6 },
+				setFlags = { quarter_life_crisis_done = true, carpe_diem = true },
+				feedText = "😰 Life's too short to stress! Have fun!",
+			},
+			{
+				text = "😌 I'm actually doing okay",
+				effects = { Happiness = 5, Smarts = 2 },
+				setFlags = { quarter_life_crisis_done = true, grounded = true },
+				feedText = "😰 Comparison is the thief of joy. You're doing fine!",
+			},
+		},
+	},
+
+	{
+		id = "adult_first_apartment",
+		title = "First Apartment!",
+		emoji = "🏠",
+		textVariants = {
+			"You signed your first lease! It's YOUR place!",
+			"Keys to your own apartment! Independence!",
+			"First place on your own - freedom AND responsibility!",
+			"Welcome home... to YOUR home!",
+		},
+		text = "You signed your first lease! It's YOUR place!",
+		question = "How's apartment life?",
+		minAge = 18, maxAge = 30,
+		baseChance = 0.4,
+		cooldown = 5,
+		oneTime = true,
+		category = "adult",
+		tags = { "adult", "milestone", "home" },
+		blockedByFlags = { first_apartment = true },
+		
+		choices = {
+			{
+				text = "🎨 Decorating and making it mine!",
+				effects = { Happiness = 8, Money = -500 },
+				setFlags = { first_apartment = true, homemaker = true },
+				feedText = "🏠 IKEA trips, Pinterest boards - it's coming together!",
+			},
+			{
+				text = "💰 Worried about rent",
+				effects = { Happiness = 2, Smarts = 2 },
+				setFlags = { first_apartment = true, budget_conscious = true },
+				feedText = "🏠 Rent is... a lot. But it's worth the independence!",
+			},
+			{
+				text = "🎉 Party at my place!",
+				effects = { Happiness = 7 },
+				setFlags = { first_apartment = true, party_host = true },
+				feedText = "🏠 Housewarming party! You're the host now!",
+			},
+			{
+				text = "😢 Miss living at home",
+				effects = { Happiness = -2 },
+				setFlags = { first_apartment = true, homesick_adult = true },
+				feedText = "🏠 Freedom is great but... who's doing laundry now?",
+			},
+		},
+	},
+
+	{
+		id = "adult_career_fork_decision",
+		title = "Career Crossroads!",
+		emoji = "🛤️",
+		textVariants = {
+			"A major career decision is ahead of you!",
+			"Stay safe or take a risk?",
+			"Your career path is forking...",
+			"Time to choose your professional future!",
+		},
+		text = "A major career decision is ahead of you!",
+		question = "What path do you take?",
+		minAge = 25, maxAge = 50,
+		baseChance = 0.35,
+		cooldown = 6,
+		category = "adult",
+		tags = { "adult", "career", "decision" },
+		
+		choices = {
+			{
+				text = "🚀 Take the risky opportunity",
+				effects = { Happiness = 6 },
+				setFlags = { career_risk_taker = true },
+				onResolve = function(state)
+					local roll = math.random(100)
+					if roll <= 60 then
+						state:ModifyStat("Money", 5000)
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("🛤️ The risk paid off! Career is THRIVING!")
+					else
+						state:ModifyStat("Money", -1000)
+						state:ModifyStat("Happiness", -5)
+						state:AddFeed("🛤️ Risky move didn't work out... lesson learned!")
+					end
+				end,
+			},
+			{
+				text = "🛡️ Stay secure and stable",
+				effects = { Happiness = 3, Smarts = 2 },
+				setFlags = { career_conservative = true },
+				feedText = "🛤️ Security matters. Steady progress wins the race!",
+			},
+			{
+				text = "🔄 Pivot to something new",
+				effects = { Happiness = 5 },
+				setFlags = { career_pivoter = true },
+				feedText = "🛤️ Complete career change! Starting fresh!",
+			},
+			{
+				text = "📚 Invest in more education",
+				effects = { Happiness = 3, Smarts = 5, Money = -2000 },
+				setFlags = { lifelong_learner = true },
+				feedText = "🛤️ Back to school! Knowledge is power!",
+			},
+		},
+	},
+
+	{
+		id = "adult_health_checkup_result",
+		title = "Health Scare!",
+		emoji = "🏥",
+		textVariants = {
+			"Something felt wrong... doctor time!",
+			"A symptom has you worried...",
+			"Health scare - time to get checked!",
+			"Your body is telling you something...",
+		},
+		text = "Something felt wrong... doctor time!",
+		question = "What does the doctor say?",
+		minAge = 25, maxAge = 70,
+		baseChance = 0.35,
+		cooldown = 5,
+		category = "adult",
+		tags = { "adult", "health", "medical" },
+		
+		choices = {
+			{
+				text = "😰 Could be serious - more tests",
+				effects = { Happiness = -5, Health = -5, Money = -500 },
+				setFlags = { health_scare = true, being_monitored = true },
+				feedText = "🏥 Waiting for results is the WORST. Fingers crossed.",
+			},
+			{
+				text = "😅 False alarm! All clear!",
+				effects = { Happiness = 8, Health = 5 },
+				setFlags = { health_scare_clear = true },
+				feedText = "🏥 What a relief! Taking better care of yourself now!",
+			},
+			{
+				text = "⚠️ Minor issue - lifestyle changes needed",
+				effects = { Happiness = 2, Health = -10 },
+				setFlags = { health_warning = true, needs_lifestyle_change = true },
+				feedText = "🏥 Not terrible but a wake-up call. Time for changes!",
+			},
+		},
+	},
+
+	{
+		id = "adult_networking_event",
+		title = "Networking Event!",
+		emoji = "🤝",
+		textVariants = {
+			"Industry networking event - who will you meet?",
+			"Business cards ready! Networking time!",
+			"Making connections could change everything!",
+			"Professional mixer - put yourself out there!",
+		},
+		text = "Industry networking event - who will you meet?",
+		question = "How do you approach networking?",
+		minAge = 22, maxAge = 60,
+		baseChance = 0.35,
+		cooldown = 5,
+		category = "adult",
+		tags = { "adult", "career", "networking" },
+		careerTags = { "business", "finance", "tech", "marketing" },
+		
+		choices = {
+			{
+				text = "😎 Work the room confidently",
+				effects = { Happiness = 5, Smarts = 2, Money = 200 },
+				setFlags = { good_networker = true, professional_connections = true, charismatic = true },
+				hintCareer = "business",
+				onResolve = function(state)
+					local roll = math.random(100)
+					if roll <= 40 then
+						state.Flags.valuable_contact_made = true
+						state.Flags.career_opportunity = true
+						state:AddFeed("🤝 Made a GREAT connection! Could lead to opportunities!")
+					else
+						state:AddFeed("🤝 Handed out cards, made small talk. Solid networking!")
+					end
+				end,
+			},
+			{
+				text = "😰 Awkwardly hover near food",
+				effects = { Happiness = -2 },
+				setFlags = { networking_anxiety = true, introvert = true },
+				feedText = "🤝 At least the appetizers were good...",
+			},
+			{
+				text = "🎯 Target specific people",
+				effects = { Happiness = 4, Smarts = 3, Money = 300 },
+				setFlags = { strategic_networker = true, professional_connections = true, ambitious = true },
+				hintCareer = "finance",
+				feedText = "🤝 Quality over quantity! Meaningful conversations!",
+			},
+			{
+				text = "🚪 Leave early",
+				effects = { Happiness = 2 },
+				setFlags = { avoids_networking = true },
+				feedText = "🤝 Not your scene. That's okay!",
+			},
+		},
+	},
+
+	{
+		id = "adult_side_gig_opportunity",
+		title = "Side Hustle!",
+		emoji = "💼",
+		textVariants = {
+			"Time to start a side hustle?",
+			"Extra income opportunities everywhere!",
+			"Your main job isn't cutting it...",
+			"Everyone has a side hustle these days!",
+		},
+		text = "Time to start a side hustle?",
+		question = "What's your side hustle?",
+		minAge = 20, maxAge = 55,
+		baseChance = 0.35,
+		cooldown = 5,
+		category = "adult",
+		tags = { "adult", "money", "hustle" },
+		careerTags = { "business", "tech", "entertainment" },
+		
+		choices = {
+			{
+				text = "🚗 Gig economy (driving/delivery)",
+				effects = { Happiness = 2, Money = 300, Health = -2 },
+				setFlags = { gig_worker = true, hustle_mindset = true },
+				feedText = "💼 Flexible hours, decent money. The grind continues!",
+				-- CRITICAL FIX: User bug "SIDE GIG DRIVING LIKE BUT I DONT HAVE A CAR??"
+				-- Only show driving option if player has a vehicle!
+				eligibility = function(state)
+					if not state then return false end
+					-- Check if player has any vehicle
+					if state.Assets and state.Assets.Vehicles and #state.Assets.Vehicles > 0 then
+						return true
+					end
+					-- Also check flags for car ownership
+					if state.Flags and (state.Flags.owns_car or state.Flags.has_vehicle or state.Flags.owns_vehicle) then
+						return true
+					end
+					-- Check if they have driver's license at least (can rent/borrow)
+					if state.Flags and state.Flags.has_drivers_license then
+						return true
+					end
+					return false
+				end,
+			},
+			{
+				text = "🚴 Delivery by bike/walking",
+				effects = { Happiness = 1, Money = 150, Health = 3 },
+				setFlags = { gig_worker = true, hustle_mindset = true, physically_active = true },
+				feedText = "💼 No car? No problem! Deliver on foot or bike. Great exercise!",
+			},
+			{
+				text = "💻 Freelance your skills",
+				effects = { Happiness = 4, Money = 500, Smarts = 2 },
+				setFlags = { freelancer = true, entrepreneur = true, self_employed = true },
+				hintCareer = "tech",
+				feedText = "💼 Using your talents for extra cash! Smart!",
+			},
+			{
+				text = "📦 Sell stuff online",
+				effects = { Happiness = 3, Money = 200 },
+				setFlags = { online_seller = true, entrepreneur = true, business_minded = true },
+				hintCareer = "business",
+				feedText = "💼 One person's trash... your profit!",
+			},
+			{
+				text = "🙅 No time for that",
+				effects = { Happiness = 3 },
+				setFlags = { values_free_time = true, work_life_balance = true },
+				feedText = "💼 Work-life balance matters. Money isn't everything!",
+			},
+		},
+	},
+
+	{
+		id = "adult_friendship_fade",
+		title = "Friendship Fading...",
+		emoji = "👋",
+		textVariants = {
+			"An old friendship is drifting apart...",
+			"You haven't talked to your friend in months...",
+			"Life got busy and friendships suffered...",
+			"Are you growing apart from people?",
+		},
+		text = "An old friendship is drifting apart...",
+		question = "What do you do?",
+		minAge = 25, maxAge = 60,
+		baseChance = 0.35,
+		cooldown = 5,
+		category = "adult",
+		tags = { "adult", "friends", "relationships" },
+		
+		choices = {
+			{
+				text = "📱 Reach out and reconnect",
+				effects = { Happiness = 5 },
+				setFlags = { maintains_friendships = true, good_friend = true, loyal = true },
+				feedText = "👋 You reached out! Sometimes that's all it takes!",
+				relationshipEffect = { type = "friend", change = 20 },
+			},
+			{
+				text = "😔 Accept people grow apart",
+				effects = { Happiness = -2, Smarts = 2 },
+				setFlags = { accepts_change = true, realistic = true },
+				feedText = "👋 Sad but natural. Not all friendships last forever.",
+				relationshipEffect = { type = "friend", change = -15 },
+			},
+			{
+				text = "🆕 Focus on making new friends",
+				effects = { Happiness = 4 },
+				setFlags = { makes_new_friends = true, social_butterfly = true },
+				feedText = "👋 New chapter, new people! Moving forward!",
+			},
+			{
+				text = "🤷 Was I ever that close to them?",
+				effects = { Happiness = 2 },
+				setFlags = { emotionally_distant = true },
+				feedText = "👋 Maybe it was more casual than you thought.",
+			},
+		},
+	},
+
+	{
+		id = "adult_social_comparison",
+		title = "Comparison Trap!",
+		emoji = "📱",
+		textVariants = {
+			"Everyone on social media seems more successful...",
+			"Your ex just got engaged. You're eating cereal.",
+			"High school friends are buying houses while you...",
+			"Everyone's highlight reel vs. your behind-the-scenes...",
+		},
+		text = "Everyone on social media seems more successful...",
+		question = "How do you handle comparison?",
+		minAge = 22, maxAge = 45,
+		baseChance = 0.4,
+		cooldown = 5,
+		category = "adult",
+		tags = { "adult", "social", "mental_health" },
+		
+		choices = {
+			{
+				text = "📵 Social media detox",
+				effects = { Happiness = 6, Health = 2 },
+				setFlags = { did_social_detox = true, values_reality = true },
+				feedText = "📱 Stepping away from the highlight reel. Peace!",
+			},
+			{
+				text = "💪 Use it as motivation",
+				effects = { Happiness = 3, Smarts = 2 },
+				setFlags = { competitive_motivation = true },
+				feedText = "📱 If they can do it, so can I! Let's go!",
+			},
+			{
+				text = "🙏 Practice gratitude",
+				effects = { Happiness = 5 },
+				setFlags = { grateful_mindset = true },
+				feedText = "📱 Counting YOUR blessings. Life is good actually!",
+			},
+			{
+				text = "😔 Spiral into self-doubt",
+				effects = { Happiness = -5 },
+				setFlags = { comparison_struggles = true },
+				feedText = "📱 It's hard not to compare. Be kind to yourself.",
+			},
+		},
+	},
+
+	{
+		id = "adult_passive_income",
+		title = "Passive Income Dream!",
+		emoji = "💰",
+		textVariants = {
+			"What if your money worked for you?",
+			"Passive income is the dream!",
+			"Making money while you sleep?",
+			"Building wealth without trading time?",
+		},
+		text = "What if your money worked for you?",
+		question = "How do you pursue passive income?",
+		minAge = 25, maxAge = 55,
+		baseChance = 0.3,
+		cooldown = 6,
+		category = "adult",
+		tags = { "adult", "money", "investment" },
+		requiresStats = { Money = 1000 },
+		
+		choices = {
+			{
+				text = "📈 Invest in stocks/index funds",
+				effects = { Smarts = 3 },
+				setFlags = { passive_investor = true },
+				onResolve = function(state)
+					local roll = math.random(100)
+					if roll <= 70 then
+						state:ModifyStat("Money", 500)
+						state:AddFeed("💰 Your investments are growing! Slow and steady!")
+					else
+						state:ModifyStat("Money", -300)
+						state:AddFeed("💰 Market dipped. Long-term game though!")
+					end
+				end,
+			},
+			{
+				text = "🏠 Save for rental property",
+				effects = { Happiness = 3, Smarts = 2 },
+				setFlags = { real_estate_interest = true },
+				feedText = "💰 Landlord dreams! One day...",
+			},
+			{
+				text = "💻 Create digital products",
+				effects = { Happiness = 4, Smarts = 4 },
+				setFlags = { digital_entrepreneur = true },
+				feedText = "💰 E-books, courses, templates - sell while you sleep!",
+			},
+			{
+				text = "🎰 Get rich quick schemes",
+				effects = { Happiness = 2 },
+				setFlags = { falls_for_schemes = true },
+				onResolve = function(state)
+					local roll = math.random(100)
+					if roll <= 10 then
+						state:ModifyStat("Money", 2000)
+						state:AddFeed("💰 Wait... it actually worked?! Lucky!")
+					else
+						state:ModifyStat("Money", -500)
+						state:AddFeed("💰 Shocker - the scheme was a scam.")
+					end
+				end,
+			},
+		},
+	},
+
+	{
+		id = "adult_burnout",
+		title = "Burnout!",
+		emoji = "🔥",
+		textVariants = {
+			"You're running on empty...",
+			"Work, life, everything - too much!",
+			"The candle has burned at both ends...",
+			"You can't keep this pace up...",
+		},
+		text = "You're running on empty...",
+		question = "How do you handle burnout?",
+		minAge = 25, maxAge = 60,
+		baseChance = 0.35,
+		cooldown = 5,
+		category = "adult",
+		tags = { "adult", "health", "work" },
+		
+		choices = {
+			{
+				text = "🏖️ Take time off",
+				effects = { Happiness = 8, Health = 5, Money = -300 },
+				setFlags = { took_mental_health_break = true },
+				feedText = "🔥 Rest is productive. You needed this!",
+			},
+			{
+				text = "💪 Push through",
+				effects = { Happiness = -4, Health = -5, Money = 500 },
+				setFlags = { pushed_through_burnout = true },
+				feedText = "🔥 Made it work but at what cost?",
+			},
+			{
+				text = "🔄 Make lifestyle changes",
+				effects = { Happiness = 5, Health = 3 },
+				setFlags = { lifestyle_change = true },
+				feedText = "🔥 Setting boundaries. Saying no. Self-care!",
+			},
+			{
+				text = "🚪 Quit the source of stress",
+				effects = { Happiness = 6, Money = -1000 },
+				setFlags = { quit_due_to_burnout = true },
+				feedText = "🔥 Mental health > money. Starting fresh!",
+			},
+		},
+	},
+
+	{
+		id = "adult_new_hobby",
+		title = "New Hobby!",
+		emoji = "🎨",
+		textVariants = {
+			"Time to pick up a new hobby!",
+			"You need something just for FUN!",
+			"All work and no play? Not anymore!",
+			"What will your new passion be?",
+		},
+		text = "Time to pick up a new hobby!",
+		question = "What hobby do you try?",
+		minAge = 20, maxAge = 70,
+		baseChance = 0.35,
+		cooldown = 5,
+		category = "adult",
+		tags = { "adult", "hobby", "lifestyle" },
+		
+		choices = {
+			{
+				text = "🎮 Gaming/Esports",
+				effects = { Happiness = 6, Smarts = 2 },
+				setFlags = { adult_gamer = true },
+				feedText = "🎨 Games are for everyone! Having a blast!",
+			},
+			{
+				text = "🏃 Fitness/Running",
+				effects = { Happiness = 5, Health = 5 },
+				setFlags = { fitness_hobby = true },
+				feedText = "🎨 Runner's high is REAL! Feeling great!",
+			},
+			{
+				text = "📸 Photography",
+				effects = { Happiness = 5, Smarts = 3 },
+				setFlags = { photography_hobby = true },
+				feedText = "🎨 Capturing moments! Art through the lens!",
+			},
+			{
+				text = "🎸 Music/Instrument",
+				effects = { Happiness = 6, Smarts = 3 },
+				setFlags = { music_hobby = true },
+				feedText = "🎨 Learning an instrument! It's never too late!",
+			},
+			{
+				text = "🪴 Gardening/Plants",
+				effects = { Happiness = 5, Health = 2 },
+				setFlags = { gardening_hobby = true },
+				feedText = "🎨 Plant parent! They're alive! Mostly!",
+			},
+		},
+	},
+
+	{
+		id = "adult_dating_apps",
+		title = "Dating App Experience!",
+		emoji = "💕",
+		textVariants = {
+			"Swiping right, swiping left...",
+			"The modern dating scene is WILD!",
+			"Looking for love in the digital age!",
+			"Your dating profile is live!",
+		},
+		text = "Swiping right, swiping left...",
+		question = "How's online dating going?",
+		minAge = 18, maxAge = 55,
+		baseChance = 0.35,
+		cooldown = 5,
+		category = "adult",
+		tags = { "adult", "dating", "romance" },
+		blockedByFlags = { has_partner = true, married = true },
+		
+		choices = {
+			{
+				text = "💕 Met someone amazing!",
+				effects = { Happiness = 10 },
+				setFlags = { app_dating_success = true },
+				feedText = "💕 Swipe right SUCCESS! A real connection!",
+			},
+			{
+				text = "😬 Mostly disasters",
+				effects = { Happiness = -3 },
+				setFlags = { app_dating_fails = true },
+				feedText = "💕 Bad dates make great stories... right?",
+			},
+			{
+				text = "😴 Lots of matching, no meeting",
+				effects = { Happiness = -1 },
+				setFlags = { dating_app_fatigue = true },
+				feedText = "💕 Conversations that go nowhere. Exhausting!",
+			},
+			{
+				text = "📴 Deleted the apps",
+				effects = { Happiness = 4 },
+				setFlags = { over_dating_apps = true },
+				feedText = "💕 Back to meeting people organically!",
+			},
+		},
+	},
+
+	{
+		id = "adult_imposter_syndrome",
+		title = "Imposter Syndrome!",
+		emoji = "🎭",
+		textVariants = {
+			"Do you really belong here?",
+			"Everyone else seems to know what they're doing...",
+			"Are they going to find out you're faking it?",
+			"Feeling like a fraud at your job...",
+		},
+		text = "Do you really belong here?",
+		question = "How do you deal with imposter syndrome?",
+		minAge = 22, maxAge = 50,
+		baseChance = 0.35,
+		cooldown = 5,
+		category = "adult",
+		tags = { "adult", "work", "mental_health" },
+		
+		choices = {
+			{
+				text = "💪 Fake it till you make it",
+				effects = { Happiness = 3 },
+				setFlags = { fakes_confidence = true },
+				feedText = "🎭 Act confident, become confident. It works!",
+			},
+			{
+				text = "📝 Track your accomplishments",
+				effects = { Happiness = 5, Smarts = 2 },
+				setFlags = { tracks_success = true },
+				feedText = "🎭 Actually, you HAVE done a lot! Look at that list!",
+			},
+			{
+				text = "💬 Talk to others about it",
+				effects = { Happiness = 6 },
+				setFlags = { shares_feelings = true },
+				feedText = "🎭 Wait, EVERYONE feels this way sometimes?!",
+			},
+			{
+				text = "😔 Let it hold you back",
+				effects = { Happiness = -5 },
+				setFlags = { imposter_syndrome_struggles = true },
+				feedText = "🎭 The doubt is paralyzing. You deserve to be here!",
+			},
+		},
+	},
+
+	{
+		id = "adult_mentor_opportunity",
+		title = "Mentor Opportunity!",
+		emoji = "🧑‍🏫",
+		textVariants = {
+			"Someone wants YOU to be their mentor!",
+			"A chance to give back and teach!",
+			"Could you guide someone else's journey?",
+			"Mentorship opportunity knocks!",
+		},
+		text = "Someone wants YOU to be their mentor!",
+		question = "Do you take on a mentee?",
+		minAge = 30, maxAge = 65,
+		baseChance = 0.3,
+		cooldown = 6,
+		category = "adult",
+		tags = { "adult", "career", "teaching" },
+		requiresStats = { Smarts = 60 },
+		
+		choices = {
+			{
+				text = "👍 Absolutely! Paying it forward!",
+				effects = { Happiness = 7, Smarts = 2 },
+				setFlags = { is_mentor = true, gives_back = true },
+				feedText = "🧑‍🏫 Teaching others helps you grow too! Rewarding!",
+			},
+			{
+				text = "😅 Not sure I'm qualified",
+				effects = { Happiness = 2 },
+				setFlags = { humble = true },
+				feedText = "🧑‍🏫 You have more to offer than you think!",
+			},
+			{
+				text = "⏰ Don't have the time",
+				effects = { Happiness = 1 },
+				setFlags = { too_busy = true },
+				feedText = "🧑‍🏫 Life is full. Maybe another time.",
+			},
+		},
+	},
+
+	{
+		id = "adult_existential_thoughts",
+		title = "Deep Thoughts!",
+		emoji = "🌌",
+		textVariants = {
+			"Late night existential crisis!",
+			"What's the meaning of all this?",
+			"Deep thoughts at 3 AM...",
+			"Pondering life's big questions!",
+		},
+		text = "Late night existential crisis!",
+		question = "What conclusion do you come to?",
+		minAge = 25, maxAge = 70,
+		baseChance = 0.3,
+		cooldown = 6,
+		category = "adult",
+		tags = { "adult", "philosophy", "growth" },
+		
+		choices = {
+			{
+				text = "🎯 Find meaning in your work",
+				effects = { Happiness = 5, Smarts = 3 },
+				setFlags = { meaning_in_work = true },
+				feedText = "🌌 Purpose through contribution! Makes sense!",
+			},
+			{
+				text = "❤️ It's about relationships",
+				effects = { Happiness = 6 },
+				setFlags = { meaning_in_love = true },
+				feedText = "🌌 Love and connection. That's what matters!",
+			},
+			{
+				text = "🎉 Just enjoy the ride",
+				effects = { Happiness = 5 },
+				setFlags = { meaning_in_joy = true },
+				feedText = "🌌 Life is meant to be lived! Enjoy it!",
+			},
+			{
+				text = "🤷 Still figuring it out",
+				effects = { Happiness = 2, Smarts = 2 },
+				setFlags = { meaning_seeking = true },
+				feedText = "🌌 The search continues. That's okay too.",
+			},
+		},
+	},
+
+	{
+		id = "adult_reunion",
+		title = "Reunion Time!",
+		emoji = "👥",
+		textVariants = {
+			"High school reunion! Will you go?",
+			"Class reunion invite arrived!",
+			"Time to see old classmates...",
+			"The reunion is happening!",
+		},
+		text = "High school reunion! Will you go?",
+		question = "Do you attend?",
+		minAge = 28, maxAge = 60,
+		baseChance = 0.3,
+		cooldown = 8,
+		category = "adult",
+		tags = { "adult", "social", "nostalgia" },
+		
+		choices = {
+			{
+				text = "🎉 Go and have a blast!",
+				effects = { Happiness = 7 },
+				setFlags = { attended_reunion = true, social_person = true },
+				feedText = "👥 Great seeing everyone! Some surprises! Good memories!",
+			},
+			{
+				text = "😬 Go but it's awkward",
+				effects = { Happiness = 2 },
+				setFlags = { attended_reunion = true },
+				feedText = "👥 Some things don't change. Some things REALLY do.",
+			},
+			{
+				text = "📵 Hard pass",
+				effects = { Happiness = 3 },
+				setFlags = { skipped_reunion = true },
+				feedText = "👥 High school is in the past for a reason!",
+			},
+			{
+				text = "📱 Stalk from social media instead",
+				effects = { Happiness = 4 },
+				setFlags = { reunion_stalker = true },
+				feedText = "👥 Why go when you can see everything online?",
+			},
+		},
+	},
+
+	{
+		id = "adult_random_kindness",
+		title = "Random Kindness!",
+		emoji = "💝",
+		textVariants = {
+			"Opportunity to help a stranger!",
+			"Someone needs help - do you step up?",
+			"A chance to make someone's day!",
+			"Kindness moment incoming!",
+		},
+		text = "Opportunity to help a stranger!",
+		question = "What do you do?",
+		minAge = 18, maxAge = 80,
+		baseChance = 0.35,
+		cooldown = 5,
+		category = "adult",
+		tags = { "adult", "kindness", "community" },
+		
+		choices = {
+			{
+				text = "💝 Help without hesitation",
+				effects = { Happiness = 6, Health = 2 },
+				setFlags = { kind_person = true },
+				feedText = "💝 You helped! Feels good to do good!",
+			},
+			{
+				text = "💰 Help AND pay it forward",
+				effects = { Happiness = 8, Money = -50 },
+				setFlags = { very_generous = true },
+				feedText = "💝 Went above and beyond! Made their whole week!",
+			},
+			{
+				text = "😟 Want to help but can't",
+				effects = { Happiness = -2 },
+				feedText = "💝 Sometimes we can't. Don't be too hard on yourself.",
+			},
+			{
+				text = "🚶 Keep walking",
+				effects = { Happiness = -1 },
+				setFlags = { missed_kindness_chance = true },
+				feedText = "💝 Life is busy. But maybe next time...",
+			},
+		},
+	},
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- MASSIVE VARIETY EXPANSION: Career-Personalized Events
+-- Events that change based on your job/career flags for unique experiences!
+-- ════════════════════════════════════════════════════════════════════════════
+
+	{
+		id = "adult_tech_burnout",
+		title = "Tech Industry Burnout",
+		emoji = "💻",
+		textVariants = {
+			"Staring at screens for 12 hours a day is taking its toll...",
+			"Another urgent Slack message at 11pm. When does it end?",
+			"Your GitHub contributions are strong but your soul is weak.",
+			"Sprint planning, standup, retro, repeat. The cycle never ends.",
+			"You've debugged 47 issues this week. You ARE the bug now.",
+		},
+		text = "The tech grind is wearing you down...",
+		question = "How do you cope?",
+		minAge = 22, maxAge = 55,
+		baseChance = 0.25,
+		cooldown = 6,
+		category = "career",
+		tags = { "career", "tech", "burnout" },
+		requiresAnyFlags = { developer_experience = true, coder = true, tech_experience = true, software_engineer = true },
+		
+		choices = {
+			{
+				text = "📵 Digital detox weekend",
+				effects = { Happiness = 8, Health = 5, Smarts = -2 },
+				setFlags = { manages_burnout = true },
+				feedText = "💻 No screens for 48 hours. You remembered what grass looks like!",
+			},
+			{
+				text = "🏃 Start exercising between sprints",
+				effects = { Happiness = 5, Health = 8 },
+				setFlags = { healthy_dev = true },
+				feedText = "💻 Pushups between pushes. Your body thanks you!",
+			},
+			{
+				text = "🔄 Ask for different project",
+				effects = { Happiness = 4, Smarts = 2 },
+				setFlags = { career_pivoted = true },
+				feedText = "💻 New codebase, fresh challenges. Sometimes change helps!",
+			},
+			{
+				text = "☕ Just more coffee",
+				effects = { Happiness = -3, Health = -5 },
+				setFlags = { coffee_dependent = true, ignoring_burnout = true },
+				feedText = "💻 Your blood is 40% caffeine now. This isn't sustainable...",
+			},
+		},
+	},
+
+	{
+		id = "adult_office_politics",
+		title = "Office Politics Drama",
+		emoji = "🏢",
+		textVariants = {
+			"There's drama brewing in the break room...",
+			"Teams are forming. Whose side are you on?",
+			"The office is divided. Upper management vs everyone else.",
+			"Whispered conversations stop when you walk by. Awkward.",
+			"Someone's getting thrown under the bus. Don't let it be you.",
+		},
+		text = "Office politics are heating up!",
+		question = "How do you navigate this?",
+		minAge = 22, maxAge = 65,
+		baseChance = 0.3,
+		cooldown = 5,
+		category = "career",
+		tags = { "career", "office", "drama" },
+		requiresAnyFlags = { employed = true, has_job = true, career_started = true },
+		blockedByFlags = { self_employed = true, freelancer = true },
+		
+		choices = {
+			{
+				text = "🤝 Stay neutral, be Switzerland",
+				effects = { Happiness = 3, Smarts = 3 },
+				setFlags = { office_diplomat = true },
+				feedText = "🏢 You stayed out of it. Smart move. Trust maintained.",
+			},
+			{
+				text = "🎯 Side with whoever's winning",
+				effects = { Happiness = 4, Money = 200 },
+				setFlags = { political_player = true },
+				feedText = "🏢 You picked the right side. Bonus incoming!",
+			},
+			{
+				text = "🦸 Defend the underdog",
+				effects = { Happiness = 6, Smarts = -1 },
+				setFlags = { office_hero = true, made_enemies = true },
+				feedText = "🏢 You spoke up for what's right. Some appreciate it. Others don't.",
+			},
+			{
+				text = "📱 Document everything",
+				effects = { Happiness = 2, Smarts = 4 },
+				setFlags = { cautious_employee = true },
+				feedText = "🏢 Emails saved. Receipts collected. Always be prepared.",
+			},
+		},
+	},
+
+	{
+		id = "adult_friend_drift",
+		title = "Friendship Growing Apart",
+		emoji = "👥",
+		textVariants = {
+			"You and your best friend haven't hung out in months...",
+			"Life got busy. You've both changed. Is this friendship over?",
+			"Your old friend's life went a completely different direction.",
+			"You used to talk every day. Now? Read receipts and silence.",
+			"Do friendships have an expiration date?",
+		},
+		text = "An important friendship feels like it's fading...",
+		question = "What do you do?",
+		minAge = 22, maxAge = 60,
+		baseChance = 0.3,
+		cooldown = 6,
+		category = "social",
+		tags = { "social", "friends", "growth" },
+		
+		choices = {
+			{
+				text = "📱 Reach out - plan something!",
+				effects = { Happiness = 7 },
+				setFlags = { maintains_friendships = true, loyal_friend = true },
+				feedText = "👥 You made the effort! Lunch next week! Friendship saved!",
+			},
+			{
+				text = "🤷 Accept it - people change",
+				effects = { Happiness = -2, Smarts = 3 },
+				setFlags = { accepting_of_change = true },
+				feedText = "👥 Sad but mature. Not all friendships last forever.",
+			},
+			{
+				text = "😤 Confront them about it",
+				effects = { Happiness = 4 },
+				setFlags = { direct_communicator = true },
+				feedText = "👥 'Are we still friends?' Awkward but necessary conversation.",
+			},
+			{
+				text = "🆕 Focus on new friendships",
+				effects = { Happiness = 5 },
+				setFlags = { social_butterfly = true },
+				feedText = "👥 Making new friends doesn't mean forgetting old ones!",
+			},
+		},
+	},
+
+	{
+		id = "adult_money_windfall",
+		title = "Unexpected Money!",
+		emoji = "💰",
+		textVariants = {
+			"You found $500 in an old coat pocket!",
+			"Tax refund was way bigger than expected!",
+			"Distant relative left you some money!",
+			"Your side project actually made money!",
+			"Won a small prize! Not lottery, but still nice!",
+		},
+		text = "Unexpected money came your way!",
+		question = "What do you do with it?",
+		minAge = 18, maxAge = 80,
+		baseChance = 0.25,
+		cooldown = 8,
+		category = "finance",
+		tags = { "money", "windfall", "choices" },
+		
+		choices = {
+			{
+				text = "💰 Straight to savings",
+				effects = { Happiness = 3, Money = 500, Smarts = 2 },
+				setFlags = { good_saver = true },
+				feedText = "💰 Smart! Future you will thank present you!",
+			},
+			{
+				text = "🛍️ Treat yourself!",
+				effects = { Happiness = 8, Money = 200 },
+				setFlags = { enjoys_rewards = true },
+				feedText = "💰 You deserve nice things sometimes! Enjoy!",
+			},
+			{
+				text = "🎁 Share with loved ones",
+				effects = { Happiness = 6, Money = 250 },
+				setFlags = { generous_person = true },
+				feedText = "💰 Spreading the wealth! Making others happy makes YOU happy!",
+			},
+			{
+				text = "📈 Invest it",
+				effects = { Happiness = 4, Money = 400, Smarts = 3 },
+				setFlags = { investor_mindset = true },
+				feedText = "💰 Money making money! Compound interest baby!",
+			},
+		},
+	},
+
+	{
+		id = "adult_creative_block",
+		title = "Creative Block!",
+		emoji = "🎨",
+		textVariants = {
+			"Your creative well has run dry...",
+			"Staring at a blank canvas/page/screen for hours...",
+			"Where did all your inspiration go?",
+			"Everything you make feels... wrong.",
+			"The muse has abandoned you.",
+		},
+		text = "You're experiencing a major creative block!",
+		question = "How do you break through?",
+		minAge = 18, maxAge = 70,
+		baseChance = 0.25,
+		cooldown = 6,
+		category = "hobby",
+		tags = { "creative", "art", "struggle" },
+		requiresAnyFlags = { artistic = true, creative = true, musician = true, writer = true, passionate_performer = true },
+		
+		choices = {
+			{
+				text = "🚶 Take a long walk in nature",
+				effects = { Happiness = 5, Health = 3 },
+				setFlags = { finds_inspiration_outdoors = true },
+				feedText = "🎨 Fresh air, new perspective. Ideas starting to flow again!",
+			},
+			{
+				text = "🎭 Try a completely different medium",
+				effects = { Happiness = 6, Smarts = 3 },
+				setFlags = { versatile_creator = true },
+				feedText = "🎨 Painter trying writing? Writer trying music? Fresh approach!",
+			},
+			{
+				text = "📚 Consume other people's art",
+				effects = { Happiness = 4, Smarts = 4 },
+				setFlags = { studies_masters = true },
+				feedText = "🎨 Museums, books, concerts - refilling the creative tank!",
+			},
+			{
+				text = "😤 Force through it",
+				effects = { Happiness = -3, Smarts = 2 },
+				setFlags = { disciplined_artist = true },
+				feedText = "🎨 The work is bad but you're WORKING. That's what matters.",
+			},
+		},
+	},
+
+	{
+		id = "adult_health_wake_up",
+		title = "Health Reality Check",
+		emoji = "🏥",
+		textVariants = {
+			"Doctor's visit gave you a wake-up call...",
+			"Those numbers on the scale aren't great...",
+			"You get winded climbing one flight of stairs...",
+			"Your body is sending warning signals.",
+			"Time to take health more seriously.",
+		},
+		text = "Your health needs attention!",
+		question = "What changes do you make?",
+		minAge = 28, maxAge = 70,
+		baseChance = 0.3,
+		cooldown = 7,
+		category = "health",
+		tags = { "health", "wellness", "lifestyle" },
+		
+		choices = {
+			{
+				text = "🥗 Complete diet overhaul",
+				effects = { Happiness = 4, Health = 10, Money = -100 },
+				setFlags = { healthy_eater = true, diet_change = true },
+				feedText = "🏥 More vegetables, less junk. Your body is thanking you!",
+			},
+			{
+				text = "🏃 Start exercising regularly",
+				effects = { Happiness = 6, Health = 12 },
+				setFlags = { regular_exerciser = true },
+				feedText = "🏥 Gym membership actually being used! Progress!",
+			},
+			{
+				text = "😴 Focus on sleep first",
+				effects = { Happiness = 5, Health = 8, Smarts = 2 },
+				setFlags = { prioritizes_sleep = true },
+				feedText = "🏥 8 hours a night. Amazing what rest can do!",
+			},
+			{
+				text = "🙈 Ignore it for now",
+				effects = { Happiness = 2, Health = -5 },
+				setFlags = { health_procrastinator = true },
+				feedText = "🏥 Future you is very disappointed in present you...",
+			},
+		},
+	},
+
+	{
+		id = "adult_unexpected_bill",
+		title = "Surprise Expense!",
+		emoji = "💸",
+		textVariants = {
+			"Car repair bill: WAY more than expected!",
+			"Medical bill arrived. That's... a lot of zeros.",
+			"Home repair emergency - not cheap!",
+			"Phone screen shattered. Again.",
+			"Life is expensive and it just got more expensive.",
+		},
+		text = "An unexpected bill just hit your wallet!",
+		question = "How do you handle it?",
+		minAge = 18, maxAge = 80,
+		baseChance = 0.35,
+		cooldown = 5,
+		category = "finance",
+		tags = { "money", "stress", "bills" },
+		
+		choices = {
+			{
+				text = "💰 Emergency fund to the rescue!",
+				effects = { Happiness = 2, Money = -300 },
+				setFlags = { prepared_financially = true },
+				eligibility = function(state) return (state.Money or 0) >= 500, "Need $500+ savings" end,
+				feedText = "💸 This is exactly why you saved! Still stings though.",
+			},
+			{
+				text = "💳 Put it on credit",
+				effects = { Happiness = -2, Money = -50 },
+				setFlags = { uses_credit = true, has_debt = true },
+				feedText = "💸 Immediate problem solved. Future problem created.",
+			},
+			{
+				text = "📱 Ask family for help",
+				effects = { Happiness = -3, Money = 0 },
+				setFlags = { asked_family_for_money = true },
+				feedText = "💸 They helped. But there was a lecture too.",
+			},
+			{
+				text = "🔧 Try to fix it yourself",
+				effects = { Happiness = 4, Smarts = 2, Money = -100 },
+				setFlags = { diy_person = true },
+				feedText = "💸 YouTube tutorials for the win! Mostly worked!",
+			},
+		},
+	},
+
+	{
+		id = "adult_new_passion_discovery",
+		title = "New Hobby Discovered!",
+		emoji = "✨",
+		textVariants = {
+			"You tried something new and... you LOVE it!",
+			"A friend introduced you to their hobby. You're hooked!",
+			"What started as curiosity became an obsession!",
+			"Finally found something to be passionate about!",
+			"This might be your new thing!",
+		},
+		text = "You discovered a new hobby that excites you!",
+		question = "How do you pursue it?",
+		minAge = 18, maxAge = 75,
+		baseChance = 0.3,
+		cooldown = 8,
+		category = "hobby",
+		tags = { "hobby", "discovery", "passion" },
+		
+		choices = {
+			{
+				text = "🚀 Go all in! Equipment, classes, everything!",
+				effects = { Happiness = 10, Money = -500, Smarts = 3 },
+				setFlags = { committed_hobbyist = true, passionate_about_hobby = true },
+				feedText = "✨ This is YOUR thing now! Investment made!",
+			},
+			{
+				text = "📚 Learn slowly and thoroughly",
+				effects = { Happiness = 6, Smarts = 5 },
+				setFlags = { patient_learner = true },
+				feedText = "✨ Taking your time. Enjoying the learning process!",
+			},
+			{
+				text = "👥 Join a community/group",
+				effects = { Happiness = 8 },
+				setFlags = { social_hobbyist = true },
+				feedText = "✨ New hobby AND new friends! Double win!",
+			},
+			{
+				text = "🤫 Keep it casual for now",
+				effects = { Happiness = 5 },
+				setFlags = { casual_hobbyist = true },
+				feedText = "✨ No pressure. Just fun. That's what hobbies should be!",
+			},
+		},
+	},
+
+	{
+		id = "adult_neighbor_drama",
+		title = "Neighbor Situation!",
+		emoji = "🏘️",
+		textVariants = {
+			"Your neighbor is playing music at 2am. AGAIN.",
+			"Their dog won't stop barking. Ever.",
+			"They keep parking in YOUR spot!",
+			"Passive aggressive notes are being exchanged.",
+			"The neighborhood group chat is getting HEATED.",
+		},
+		text = "Neighbor drama is affecting your peace!",
+		question = "How do you handle it?",
+		minAge = 20, maxAge = 80,
+		baseChance = 0.3,
+		cooldown = 6,
+		category = "home",
+		tags = { "home", "neighbors", "conflict" },
+		
+		choices = {
+			{
+				text = "🗣️ Have a calm, direct conversation",
+				effects = { Happiness = 4, Smarts = 2 },
+				setFlags = { good_communicator = true },
+				feedText = "🏘️ You talked it out! They actually didn't realize. Problem solved!",
+			},
+			{
+				text = "📝 Leave a polite note",
+				effects = { Happiness = 2 },
+				setFlags = { passive_approach = true },
+				feedText = "🏘️ Note delivered. Hoping they get the message...",
+			},
+			{
+				text = "😤 Give them a taste of their own medicine",
+				effects = { Happiness = 3, Health = -2 },
+				setFlags = { petty_neighbor = true },
+				feedText = "🏘️ If they can be loud at 2am, SO CAN YOU. War begun.",
+			},
+			{
+				text = "🎧 Noise-canceling headphones",
+				effects = { Happiness = 4, Money = -80 },
+				setFlags = { avoids_conflict = true },
+				feedText = "🏘️ Can't hear drama if you're vibing to your playlist!",
+			},
+		},
+	},
+
+	{
+		id = "adult_social_event_invite",
+		title = "Social Event Invitation!",
+		emoji = "🎉",
+		textVariants = {
+			"You've been invited to a party! Do you know anyone there?",
+			"Wedding invitation arrived! It's a long trip though...",
+			"Coworker's birthday party - mandatory fun?",
+			"Old friend's gathering - haven't seen them in years!",
+			"Networking event - could be good for your career!",
+		},
+		text = "You've been invited to a social event!",
+		question = "Do you go?",
+		minAge = 18, maxAge = 75,
+		baseChance = 0.35,
+		cooldown = 5,
+		category = "social",
+		tags = { "social", "events", "choices" },
+		
+		choices = {
+			{
+				text = "🎉 Absolutely! Let's socialize!",
+				effects = { Happiness = 7, Money = -50 },
+				setFlags = { social_person = true },
+				feedText = "🎉 Great time! New connections made! Worth it!",
+			},
+			{
+				text = "😬 Go but leave early",
+				effects = { Happiness = 3 },
+				setFlags = { shows_face = true },
+				feedText = "🎉 Made an appearance. Irish goodbye successful.",
+			},
+			{
+				text = "🙅 Politely decline",
+				effects = { Happiness = 4 },
+				setFlags = { values_alone_time = true },
+				feedText = "🎉 Couch time is valuable too. No regrets.",
+			},
+			{
+				text = "🤔 Only if someone I know is going",
+				effects = { Happiness = 5 },
+				setFlags = { needs_social_buffer = true },
+				feedText = "🎉 Found a buddy! Much better with company!",
+			},
+		},
+	},
+
+	{
+		id = "adult_career_opportunity",
+		title = "Career Opportunity!",
+		emoji = "📈",
+		textVariants = {
+			"A recruiter reached out with an interesting offer...",
+			"Your boss mentioned a promotion might be coming!",
+			"A competitor wants to poach you!",
+			"Leadership role just opened up in your department!",
+			"Your skills are in demand right now!",
+		},
+		text = "A career opportunity has appeared!",
+		question = "What do you do?",
+		minAge = 22, maxAge = 60,
+		baseChance = 0.3,
+		cooldown = 6,
+		category = "career",
+		tags = { "career", "opportunity", "growth" },
+		requiresAnyFlags = { employed = true, has_job = true, career_started = true },
+		
+		choices = {
+			{
+				text = "🚀 Pursue it aggressively!",
+				effects = { Happiness = 5, Money = 500, Smarts = 2 },
+				setFlags = { career_ambitious = true, promotion_earned = true },
+				feedText = "📈 You went for it! New title, new responsibilities, new MONEY!",
+			},
+			{
+				text = "🤝 Use it to negotiate current position",
+				effects = { Happiness = 4, Money = 300 },
+				setFlags = { good_negotiator = true },
+				feedText = "📈 Counter-offer accepted! Staying put with a raise!",
+			},
+			{
+				text = "🤔 Think about it carefully",
+				effects = { Happiness = 3, Smarts = 3 },
+				setFlags = { thoughtful_decision_maker = true },
+				feedText = "📈 Pros and cons listed. Taking time to decide right.",
+			},
+			{
+				text = "😌 Happy where I am",
+				effects = { Happiness = 5 },
+				setFlags = { content_with_career = true },
+				feedText = "📈 Money isn't everything. You like your work-life balance!",
+			},
+		},
+	},
+
+	{
+		id = "adult_life_milestone_reflection",
+		title = "Life Milestone!",
+		emoji = "🎂",
+		textVariants = {
+			"Another birthday. Another year older. Time for reflection...",
+			"Looking through old photos. Where did the time go?",
+			"Life milestone approaching. How do you feel about it?",
+			"You're entering a new decade of life!",
+			"Time to take stock of where you are in life.",
+		},
+		text = "Time for life reflection!",
+		question = "How are you feeling about life?",
+		minAge = 30, maxAge = 70,
+		baseChance = 0.25,
+		cooldown = 10,
+		category = "life",
+		tags = { "life", "reflection", "growth" },
+		
+		choices = {
+			{
+				text = "😊 Proud of how far I've come!",
+				effects = { Happiness = 8, Health = 3 },
+				setFlags = { self_proud = true, positive_reflection = true },
+				feedText = "🎂 You've accomplished a lot! Celebrate yourself!",
+			},
+			{
+				text = "🎯 Setting new goals for next chapter",
+				effects = { Happiness = 6, Smarts = 3 },
+				setFlags = { goal_oriented = true, forward_thinking = true },
+				feedText = "🎂 The best is yet to come! New adventures await!",
+			},
+			{
+				text = "😰 Feeling behind compared to others",
+				effects = { Happiness = -4 },
+				setFlags = { comparison_trap = true },
+				feedText = "🎂 Everyone's journey is different. Don't compare!",
+			},
+			{
+				text = "🙏 Grateful for what I have",
+				effects = { Happiness = 7 },
+				setFlags = { grateful_heart = true },
+				feedText = "🎂 Gratitude is the attitude! Life is good!",
+			},
+		},
+	},
+
+	{
+		id = "adult_pet_consideration",
+		title = "Thinking About a Pet!",
+		emoji = "🐾",
+		textVariants = {
+			"Your place feels empty... maybe a furry friend would help?",
+			"You've been watching pet videos non-stop. Is this a sign?",
+			"Friend's pet is SO cute. You want one!",
+			"Adopting a pet could change your life!",
+			"Ready for the responsibility of a pet?",
+		},
+		text = "You're thinking about getting a pet!",
+		question = "Do you take the plunge?",
+		minAge = 20, maxAge = 70,
+		baseChance = 0.25,
+		cooldown = 8,
+		category = "life",
+		tags = { "life", "pets", "decisions" },
+		blockedByFlags = { has_pet = true },
+		
+		choices = {
+			{
+				text = "🐕 Adopt a dog!",
+				effects = { Happiness = 10, Money = -200, Health = 3 },
+				setFlags = { has_pet = true, dog_owner = true, pet_parent = true },
+				feedText = "🐾 Welcome home, furry friend! Best decision ever!",
+			},
+			{
+				text = "🐱 Get a cat!",
+				effects = { Happiness = 9, Money = -150 },
+				setFlags = { has_pet = true, cat_owner = true, pet_parent = true },
+				feedText = "🐾 A fluffy overlord joins your home! You serve them now!",
+			},
+			{
+				text = "🤔 Not the right time",
+				effects = { Happiness = 2 },
+				setFlags = { waiting_for_pet = true },
+				feedText = "🐾 Responsible choice. Pets are a big commitment!",
+			},
+			{
+				text = "🐠 Start small - fish or hamster",
+				effects = { Happiness = 5, Money = -50 },
+				setFlags = { has_pet = true, small_pet_owner = true },
+				feedText = "🐾 Baby steps! Still a life to care for!",
+			},
+		},
+	},
+
+	{
+		id = "adult_random_encounter",
+		title = "Random Encounter!",
+		emoji = "🎲",
+		textVariants = {
+			"You bumped into someone interesting at the coffee shop!",
+			"The person next to you on the plane wants to chat!",
+			"Random conversation at a bar turned fascinating!",
+			"Met someone at a bookstore - same favorite author!",
+			"Chance encounter that could lead somewhere!",
+		},
+		text = "A random encounter with a stranger!",
+		question = "How do you engage?",
+		minAge = 18, maxAge = 75,
+		baseChance = 0.3,
+		cooldown = 5,
+		category = "social",
+		tags = { "social", "random", "connection" },
+		
+		choices = {
+			{
+				text = "💬 Have a deep conversation",
+				effects = { Happiness = 6, Smarts = 2 },
+				setFlags = { open_to_strangers = true },
+				feedText = "🎲 Fascinating talk! New perspective gained!",
+			},
+			{
+				text = "📱 Exchange contact info",
+				effects = { Happiness = 5 },
+				setFlags = { makes_connections = true },
+				feedText = "🎲 New contact added! Maybe a future friend?",
+			},
+			{
+				text = "😊 Pleasant small talk, move on",
+				effects = { Happiness = 3 },
+				feedText = "🎲 Nice moment, but life moves on. That's okay!",
+			},
+			{
+				text = "🎧 Headphones in - not today",
+				effects = { Happiness = 2 },
+				setFlags = { values_peace = true },
+				feedText = "🎲 Sometimes you just want to be in your own world!",
 			},
 		},
 	},

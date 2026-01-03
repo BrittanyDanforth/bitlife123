@@ -851,7 +851,7 @@ HobbyEvents.events = {
 		text = "Gaming is life!",
 		question = "How is your gaming going?",
 		minAge = 8, maxAge = 80,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 5,
 		stage = STAGE,
 		ageBand = "any",

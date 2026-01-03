@@ -263,7 +263,7 @@ FriendshipDecayEvents.events = {
 		category = "relationships",
 		weight = 18,
 		minAge = 16, maxAge = 80,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		eligibility = hasNeglectedFriend,
 		blockedByFlags = { in_prison = true },
