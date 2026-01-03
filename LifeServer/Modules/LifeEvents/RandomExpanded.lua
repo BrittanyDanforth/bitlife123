@@ -465,49 +465,186 @@ RandomExpanded.events = {
 	},
 	{
 		-- CRITICAL FIX: Renamed from "random_surprise_visit" to avoid duplicate ID
+		-- CRITICAL FIX: Personalized with actual relationship names per user request
 		id = "random_doorbell_visitor",
 		title = "Surprise Visit",
 		emoji = "🚪",
 		text = "Someone's at your door unexpectedly!",
-		question = "Who is it?",
+		question = "What do you do?",
 		minAge = 18, maxAge = 90,
-		baseChance = 0.4,
-		cooldown = 3,
+		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.4
+		cooldown = 5, -- CRITICAL FIX: Increased from 3
 		stage = STAGE,
 		ageBand = "any",
 		category = "social",
 		tags = { "surprise", "visitor", "social" },
 		
-		-- CRITICAL: Random visitor
+		-- CRITICAL FIX: Initialize with PERSONALIZED text using actual relationship names!
+		onInit = function(event, state)
+			local visitors = {}
+			local relationships = state.Relationships or {}
+			
+			-- CRITICAL FIX: Use actual EX name if player has one
+			local exName = nil
+			if state.Flags and state.Flags.has_ex and relationships.ex then
+				exName = relationships.ex.name or "your ex"
+			end
+			
+			-- CRITICAL FIX: Find an old friend name from relationships
+			local oldFriendName = nil
+			for id, rel in pairs(relationships) do
+				if rel.type == "friend" and (rel.yearsKnown or 0) > 5 then
+					oldFriendName = rel.name or "an old friend"
+					break
+				end
+			end
+			
+			-- CRITICAL FIX: Find family member name
+			local familyMemberName = nil
+			for id, rel in pairs(relationships) do
+				if rel.type == "sibling" or rel.type == "parent" or rel.type == "family" then
+					familyMemberName = rel.name
+					break
+				end
+			end
+			
+			-- Build visitor list with personalized names
+			table.insert(visitors, { 
+				type = "old_friend", 
+				emoji = "👋", 
+				text = oldFriendName 
+					and string.format("It's %s! Your old friend you haven't seen in ages is at the door!", oldFriendName)
+					or "An OLD FRIEND from years ago is at the door! You haven't seen them in forever!" 
+			})
+			
+			if exName and state.Flags.has_ex then
+				table.insert(visitors, { 
+					type = "ex", 
+					emoji = "💔", 
+					text = string.format("It's %s - your EX! They're at your door looking nervous. This is unexpected...", exName),
+					negative = true
+				})
+			end
+			
+			if familyMemberName then
+				table.insert(visitors, { 
+					type = "family", 
+					emoji = "👨‍👩‍👧", 
+					text = string.format("%s is at the door! They stopped by for a surprise visit!", familyMemberName)
+				})
+			else
+				table.insert(visitors, { 
+					type = "family", 
+					emoji = "👨‍👩‍👧", 
+					text = "A family member you haven't seen in a while is at the door!"
+				})
+			end
+			
+			table.insert(visitors, { type = "neighbor", emoji = "🏠", text = "Your NEIGHBOR is at the door looking stressed. They need help with something." })
+			table.insert(visitors, { type = "package", emoji = "📦", text = "A DELIVERY PERSON is at the door with a mystery package! You don't remember ordering anything..." })
+			table.insert(visitors, { type = "scammer", emoji = "🚨", text = "A sketchy person is at the door claiming you won a PRIZE and need to pay 'processing fees'. Looks like a SCAM.", negative = true })
+			table.insert(visitors, { type = "charity", emoji = "💝", text = "Someone from a LOCAL CHARITY is at the door. They're collecting donations for a good cause." })
+			
+			local visitor = visitors[math.random(1, #visitors)]
+			event._visitor = visitor
+			event._exName = exName
+			event._oldFriendName = oldFriendName
+			event._familyMemberName = familyMemberName
+			event.text = visitor.text
+			event.title = visitor.emoji .. " Someone's At The Door!"
+			
+			return event
+		end,
+		
+		-- CRITICAL: Random visitor with personalized outcomes
 		choices = {
 			{
 				text = "Answer the door",
 				effects = {},
 				feedText = "Opening the door...",
-				onResolve = function(state)
-					local roll = math.random()
-					if roll < 0.30 then
-						state:ModifyStat("Happiness", 8)
-						state:AddFeed("🚪 Old friend visiting! Wonderful surprise!")
-					elseif roll < 0.50 then
-						state:ModifyStat("Happiness", 5)
-						state:AddFeed("🚪 Family member stopped by! Good to see them!")
-					elseif roll < 0.65 then
+				onResolve = function(state, _, event)
+					local visitor = event._visitor
+					if not visitor then
 						state:ModifyStat("Happiness", 2)
-						state:AddFeed("🚪 Neighbor needs help. Being a good person.")
-					elseif roll < 0.80 then
-						state:ModifyStat("Happiness", -2)
-						state:AddFeed("🚪 Salesperson. Wasted time. Door closed.")
-					else
-						state:ModifyStat("Happiness", -4)
-						state:AddFeed("🚪 Awkward acquaintance. Forced small talk. Exhausting.")
+						state:AddFeed("🚪 False alarm - nobody there.")
+						return
+					end
+					
+					if visitor.type == "old_friend" then
+						local friendName = event._oldFriendName or "your old friend"
+						state:ModifyStat("Happiness", 10)
+						state.Flags = state.Flags or {}
+						state.Flags.reconnected_old_friend = true
+						state:AddFeed(string.format("👋 Amazing reunion with %s! You talked for hours!", friendName))
+					elseif visitor.type == "ex" then
+						local exName = event._exName or "your ex"
+						local roll = math.random()
+						if roll < 0.3 then
+							state:ModifyStat("Happiness", 3)
+							state:AddFeed(string.format("💔 Had a civil conversation with %s. Some closure, finally.", exName))
+						else
+							state:ModifyStat("Happiness", -8)
+							state:AddFeed(string.format("💔 Seeing %s was a mistake. Old feelings came flooding back.", exName))
+						end
+					elseif visitor.type == "family" then
+						local familyName = event._familyMemberName or "your family member"
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed(string.format("👨‍👩‍👧 Great visit with %s! Quality family time!", familyName))
+					elseif visitor.type == "neighbor" then
+						state:ModifyStat("Happiness", 4)
+						state.Flags = state.Flags or {}
+						state.Flags.good_neighbor = true
+						state:AddFeed("🏠 You helped your neighbor out. They're so grateful!")
+					elseif visitor.type == "package" then
+						state:ModifyStat("Happiness", 6)
+						state:AddFeed("📦 A surprise package! Something you forgot you ordered. Nice!")
+					elseif visitor.type == "scammer" then
+						local roll = math.random()
+						if roll < 0.3 then
+							state.Money = math.max(0, (state.Money or 0) - 150)
+							state:ModifyStat("Happiness", -5)
+							state:AddFeed("🚨 You fell for it! Lost $150 to the scam!")
+						else
+							state:ModifyStat("Smarts", 2)
+							state:AddFeed("🚨 You saw through the scam immediately and closed the door!")
+						end
+					elseif visitor.type == "charity" then
+						state.Money = math.max(0, (state.Money or 0) - 20)
+						state:ModifyStat("Happiness", 5)
+						state.Flags = state.Flags or {}
+						state.Flags.charitable = true
+						state:AddFeed("💝 Donated $20 to charity. Feels good to help!")
 					end
 				end,
 			},
 			{
 				text = "Pretend you're not home",
 				effects = { Happiness = 1 },
-				feedText = "Hiding. Not in the mood.",
+				feedText = "Hiding. Not in the mood for visitors right now.",
+			},
+			{
+				text = "Peek through the peephole first",
+				effects = {},
+				feedText = "Being cautious...",
+				onResolve = function(state, _, event)
+					local visitor = event._visitor
+					if not visitor then
+						state:AddFeed("🚪 Looked like nobody important. Didn't answer.")
+						return
+					end
+					
+					if visitor.type == "scammer" then
+						state:ModifyStat("Smarts", 3)
+						state:AddFeed("🚨 Looked sketchy through the peephole. Didn't open. Smart move!")
+					elseif visitor.type == "ex" then
+						state:ModifyStat("Happiness", -1)
+						local exName = event._exName or "your ex"
+						state:AddFeed(string.format("💔 It's %s... You decided not to answer. Not ready for that.", exName))
+					else
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("🚪 You cautiously opened the door after checking who it was.")
+					end
+				end,
 			},
 		},
 	},

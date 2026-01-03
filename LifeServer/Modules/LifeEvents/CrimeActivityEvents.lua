@@ -127,7 +127,7 @@ CrimeActivityEvents.Pickpocket = {
 		choices = {
 			{ text = "🤏 Quick fingers", feed = "Your hands moved like lightning.", successChance = 70, reward = {30, 300} },
 			{ text = "💨 Bump and grab", feed = "Classic technique.", successChance = 60, reward = {50, 400} },
-			{ text = "👀 Wait for drunk targets", feed = "Easy marks after dark.", successChance = 80, reward = {20, 200} },
+			{ text = "👀 Wait for distracted targets", feed = "Easy marks after dark.", successChance = 80, reward = {20, 200} },
 			{ text = "🚶 Not worth the risk", feed = "You walked away.", abort = true },
 		},
 	},
@@ -425,7 +425,7 @@ CrimeActivityEvents.Mugging = {
 		texts = {
 			"A lone person is walking through a dark alley.",
 			"Someone looks lost and vulnerable. Easy target.",
-			"A drunk person is stumbling home alone late at night.",
+			"A tired person is walking home alone late at night.",
 		},
 		choices = {
 			{ text = "🔪 Threaten with weapon", feed = "Give me everything!", successChance = 70, reward = {50, 500}, risk = 60 },

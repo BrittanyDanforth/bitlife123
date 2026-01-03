@@ -472,6 +472,10 @@ EnforcerEvents.events = {
 						-- CRITICAL FIX: Use JailYearsLeft and InJail for consistency
 						state.InJail = true
 						state.JailYearsLeft = math.random(3, 8)
+						-- CRITICAL FIX: Clear job when going to jail even for short sentence!
+						state.CurrentJob = nil
+						state.Flags.employed = nil
+						state.Flags.has_job = nil
 						state:AddFeed("⚖️ Convicted on lesser charges. Few years. You kept your mouth shut.")
 					else
 						state:ModifyStat("Happiness", -25)

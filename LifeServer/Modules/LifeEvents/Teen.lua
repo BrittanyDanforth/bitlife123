@@ -620,15 +620,45 @@ Teen.events = {
 		text = "Varsity sports tryouts are coming up. You've been practicing hard.",
 		question = "Which sport?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.35,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.25, -- REDUCED from 0.35 - need prior sports interest
+		cooldown = 5, -- INCREASED from 4
 		requiresStats = { Health = { min = 50 } },
+		-- CRITICAL FIX #TEEN-1: Block if player chose incompatible paths
+		blockedByFlags = { 
+			hates_sports = true, academic_focus = true, nerd_group = true,
+			gamer_kid = true, tech_interest = true, coding_prodigy = true,
+		},
+		-- CRITICAL FIX: Require SOME prior sports interest
+		eligibility = function(state)
+			if state.Flags and state.Flags.hates_sports then return false end
+			-- Must have SOME athletic interest
+			if state.Flags then
+				local hasInterest = state.Flags.likes_sports or state.Flags.athletic_focus 
+					or state.Flags.plays_football or state.Flags.plays_basketball
+					or state.Flags.sporty or state.Flags.natural_athlete
+					or state.Flags.adventurous_spirit
+				return hasInterest
+			end
+			return false -- No interest = no varsity tryouts
+		end,
 		choices = {
-			{ text = "Football", effects = { Health = 5, Happiness = 5 }, setFlags = { varsity_athlete = true, plays_football = true }, hintCareer = "sports", feedText = "You made the football team!" },
-			{ text = "Basketball", effects = { Health = 5, Happiness = 5 }, setFlags = { varsity_athlete = true, plays_basketball = true }, hintCareer = "sports", feedText = "You made the basketball team!" },
+			{ text = "Football", effects = { Health = 5, Happiness = 5 }, setFlags = { varsity_athlete = true, varsity_football = true, plays_football = true }, hintCareer = "sports", feedText = "You made the football team!" },
+			{ text = "Basketball", effects = { Health = 5, Happiness = 5 }, setFlags = { varsity_athlete = true, varsity_basketball = true, plays_basketball = true }, hintCareer = "sports", feedText = "You made the basketball team!" },
 			{ text = "Soccer", effects = { Health = 5, Happiness = 5 }, setFlags = { varsity_athlete = true, plays_soccer = true }, hintCareer = "sports", feedText = "You made the soccer team!" },
 			{ text = "Track & Field", effects = { Health = 7, Happiness = 5 }, setFlags = { varsity_athlete = true, runs_track = true }, hintCareer = "sports", feedText = "You joined the track team!" },
-			{ text = "Not really into sports", effects = { }, feedText = "Organized sports aren't your thing." },
+			{ 
+				text = "Not really into sports", 
+				effects = { }, 
+				feedText = "Organized sports aren't your thing.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.sports_declines = (state.Flags.sports_declines or 0) + 1
+					if state.Flags.sports_declines >= 2 then
+						state.Flags.hates_sports = true
+					end
+					state:AddFeed("🏅 Varsity sports aren't for you. Other interests await!")
+				end,
+			},
 		},
 	},
 	
@@ -1950,11 +1980,44 @@ Teen.events = {
 		id = "teen_band_start",
 		title = "Starting a Band",
 		emoji = "🎸",
-		text = "You and your friends want to start a band together!",
+		text = "Your musically-inclined friends want to start a band together!",
 		question = "What role do you play?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.4,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.3, -- CRITICAL FIX: Reduced from 0.4 - bands are rare
+		cooldown = 6, -- CRITICAL FIX: Increased to prevent spam
+		
+		-- CRITICAL FIX: REQUIRE music-related hobby/interest!
+		-- User complaint: "I DIDNT PICK MUSIC?? FOR LIKE A HOBBY I LIKE BRUH"
+		requiresAnyFlags = { 
+			musical_talent = true, 
+			loves_music = true, 
+			pursuing_music = true, 
+			started_music_hobby = true,
+			plays_piano = true,
+			plays_guitar = true, 
+			plays_drums = true,
+			instrument_player = true,
+			choir_member = true,
+			arts_track = true,
+			band_kid = true,
+			music_passion = true,
+			passionate_performer = true,
+		},
+		blockedByFlags = { in_prison = true, in_band = true },
+		
+		eligibility = function(state)
+			local flags = state.Flags or {}
+			-- Must have some music interest
+			local hasMusicInterest = flags.musical_talent or flags.loves_music or 
+				flags.pursuing_music or flags.started_music_hobby or
+				flags.plays_piano or flags.plays_guitar or flags.plays_drums or
+				flags.instrument_player or flags.choir_member or flags.arts_track or
+				flags.band_kid or flags.music_passion or flags.passionate_performer
+			if not hasMusicInterest then
+				return false, "No interest in music"
+			end
+			return true
+		end,
 		
 		choices = {
 			{ text = "Lead vocals", effects = { Happiness = 8, Looks = 3 }, setFlags = { band_vocalist = true, in_band = true }, hintCareer = "entertainment", feedText = "You're the face of the band! Time to practice your stage presence." },
@@ -1962,6 +2025,8 @@ Teen.events = {
 			{ text = "Drums", effects = { Happiness = 6, Health = 2 }, setFlags = { band_drummer = true, in_band = true }, hintCareer = "entertainment", feedText = "You're the heartbeat of the band!" },
 			{ text = "Bass", effects = { Happiness = 5, Smarts = 2 }, setFlags = { band_bassist = true, in_band = true }, hintCareer = "entertainment", feedText = "The underrated hero. Holding down the groove!" },
 			{ text = "Manager/organizer instead", effects = { Smarts = 4, Money = 20 }, setFlags = { band_manager = true }, hintCareer = "business", feedText = "You're handling the business side. Smart move!" },
+			-- CRITICAL FIX: Add decline option - user complained "I CANT EVEN SAY I DONT WANNA JOIN??"
+			{ text = "No thanks, not for me", effects = { Happiness = 1 }, setFlags = { declined_band = true }, feedText = "You politely declined. Band life isn't for everyone." },
 		},
 	},
 	{
@@ -3708,7 +3773,7 @@ Teen.events = {
 		id = "teen_party_invitation",
 		title = "The Party Invite",
 		emoji = "🎉",
-		text = "The popular kids are throwing a party while their parents are away. You actually got invited! But there's gonna be alcohol and probably some drama...",
+		text = "The popular kids are throwing a party while their parents are away. You actually got invited! But there's gonna be drama and things might get crazy...",
 		question = "Do you go?",
 		minAge = 14, maxAge = 18,
 		baseChance = 0.4,

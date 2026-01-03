@@ -1674,6 +1674,7 @@ MilitaryCareerEvents.events = {
 						state.Stats = state.Stats or {}
 						state.Stats.Health = 0
 						state.Health = 0
+						state.IsDead = true -- CRITICAL FIX: Set IsDead for consistency
 						state.DeathReason = "⚔️ Killed in Action serving their country. A true hero. 🇺🇸"
 						state:AddFeed("⚔️ KILLED IN ACTION. Died a hero on the battlefield. Your sacrifice will never be forgotten.")
 					end
@@ -1758,6 +1759,7 @@ MilitaryCareerEvents.events = {
 						state.Stats = state.Stats or {}
 						state.Stats.Health = 0
 						state.Health = 0
+						state.IsDead = true -- CRITICAL FIX: Set IsDead for consistency
 						state.Fame = 100
 						state.DeathReason = "🩸 Killed in Action while saving a fellow soldier. Died a true hero. 🇺🇸"
 						state:AddFeed("🩸 You gave your life to save your squadmate. They'll never forget your sacrifice.")

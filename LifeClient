@@ -1549,18 +1549,23 @@ local function showResultPopup(data, callback)
 	if estimatedTextHeight > maxBodyHeight then
 		-- Calculate scale factor needed
 		local scaleFactor = maxBodyHeight / estimatedTextHeight
-		scaleFactor = math.max(0.6, scaleFactor)  -- Don't go below 60%
+		scaleFactor = math.max(0.55, scaleFactor)  -- CRITICAL FIX: Allow smaller text (was 0.6)
 		
-		adjustedResultTextSize = math.max(10, math.floor(baseResultTextSize * scaleFactor))
-		adjustedResultLineHeight = math.max(1.05, adjustedResultLineHeight * 0.9)
+		adjustedResultTextSize = math.max(9, math.floor(baseResultTextSize * scaleFactor))  -- CRITICAL FIX: Allow smaller (was 10)
+		adjustedResultLineHeight = math.max(1.0, adjustedResultLineHeight * 0.85)  -- CRITICAL FIX: Tighter lines
 		
-		-- If still too long after scaling, truncate the text
+		-- CRITICAL FIX: Only truncate for VERY long text (200+ chars)
+		-- Short feedText like "Using your talents for extra cash!" should NEVER be truncated!
+		-- Previous bug: Even 50-char text was getting cut to "extra c...."
 		local newEstimatedLines = maxBodyHeight / (adjustedResultTextSize * adjustedResultLineHeight)
 		local maxChars = math.floor(newEstimatedLines * charsPerLine)
 		
-		if textLen > maxChars + 20 then
-			-- Truncate with ellipsis
-			bodyText = string.sub(bodyText, 1, maxChars) .. "..."
+		-- CRITICAL FIX: Only truncate if text is actually very long AND would overflow
+		-- Minimum threshold of 150 chars before any truncation is considered
+		if textLen > 150 and textLen > maxChars + 30 then
+			-- Truncate with ellipsis, but keep more text visible
+			local truncateAt = math.max(100, maxChars)  -- Keep at least 100 chars
+			bodyText = string.sub(bodyText, 1, truncateAt) .. "..."
 		end
 	elseif textLen > 200 then
 		-- Moderate length - slightly smaller
@@ -3226,20 +3231,22 @@ local function buildEventModal()
 	
 	if Device.IS_TINY_PHONE then
 		-- ULTRA COMPACT: Tiny phones (iPhone 6: 667x375, iPhone SE: 568x320)
-		-- CRITICAL FIX: Use nearly full safe height to prevent button cutoff
-		eventWidth = math.min(screenWidth - 12, 280)
-		maxEventHeight = math.min(safeHeight - 10, 650) -- Nearly full safe height
+		-- MOBILE FIX: Even smaller cards for tiny screens
+		eventWidth = math.min(screenWidth - 16, 260)
+		maxEventHeight = math.min(safeHeight * 0.82, 450) -- 82% of safe height, max 450px
 	elseif Device.IS_SMALL_PHONE then
 		-- Small phones (under 750px height)
-		-- CRITICAL FIX: Use nearly full safe height to prevent button cutoff  
-		eventWidth = math.min(screenWidth - 16, 310)
-		maxEventHeight = math.min(safeHeight - 10, 720) -- Nearly full safe height
+		-- MOBILE FIX: More compact cards
+		eventWidth = math.min(screenWidth - 20, 290)
+		maxEventHeight = math.min(safeHeight * 0.82, 500) -- 82% of safe height, max 500px
 	elseif Device.IS_MOBILE then
-		eventWidth = modalWidth(330)
-		maxEventHeight = math.min(safeHeight - 10, 800) -- Nearly full safe height
+		-- Regular phones - compact cards
+		eventWidth = modalWidth(310)
+		maxEventHeight = math.min(safeHeight * 0.80, 580) -- 80% of safe height, max 580px
 	else
+		-- Tablet/Desktop - full size
 		eventWidth = modalWidth(360)
-		maxEventHeight = math.min(safeHeight - 10, 900) -- Nearly full safe height
+		maxEventHeight = math.min(safeHeight - 10, 900)
 	end
 	
 	-- Calculate responsive corner radii and margins (slightly larger for cleaner look)
@@ -3380,11 +3387,10 @@ local function buildEventModal()
 	titleSection.ZIndex = 64
 	titleSection.Parent = EventUI.card
 
-	-- MOBILE FIX: Very tight padding on tiny phones to fit cards on small screens
-	-- BUG FIX: Even tighter padding so buttons always visible
-	local titlePadTop = Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 4 or padSize(14))
-	local titlePadBottom = Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 4 or padSize(8))
-	local titlePadSide = Device.IS_TINY_PHONE and 6 or (Device.IS_SMALL_PHONE and 8 or padSize(16))
+	-- MOBILE FIX: Ultra tight padding for compact mobile cards
+	local titlePadTop = Device.IS_TINY_PHONE and 1 or (Device.IS_SMALL_PHONE and 2 or padSize(10))
+	local titlePadBottom = Device.IS_TINY_PHONE and 1 or (Device.IS_SMALL_PHONE and 2 or padSize(6))
+	local titlePadSide = Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 6 or padSize(12))
 	local titlePadding = Instance.new("UIPadding")
 	titlePadding.PaddingTop = UDim.new(0, titlePadTop)
 	titlePadding.PaddingBottom = UDim.new(0, titlePadBottom)
@@ -3395,7 +3401,7 @@ local function buildEventModal()
 	local titleLayout = Instance.new("UIListLayout")
 	titleLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	titleLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-	titleLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 2 or padSize(10))
+	titleLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 1 or (Device.IS_SMALL_PHONE and 2 or padSize(6)))
 	titleLayout.Parent = titleSection
 
 	-- MOBILE FIX: Responsive emoji sizing - SMALLER on tiny phones to save vertical space
@@ -3445,20 +3451,22 @@ local function buildEventModal()
 	bodySection.LayoutOrder = 3
 	bodySection.ZIndex = 64
 	bodySection.Parent = EventUI.card
-	-- BUG FIX: Tighter padding to leave room for buttons
-	local bodyPadSide = Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 8 or padSize(24))
-	local bodyPadBottom = Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 4 or padSize(10))
+	-- MOBILE FIX: Much tighter padding for compact mobile cards
+	local bodyPadSide = Device.IS_TINY_PHONE and 3 or (Device.IS_SMALL_PHONE and 5 or padSize(14))
+	local bodyPadBottom = Device.IS_TINY_PHONE and 0 or (Device.IS_SMALL_PHONE and 1 or padSize(2))  -- Minimal gap!
 	pad(bodySection, bodyPadSide, bodyPadSide, 0, bodyPadBottom)
 
 	local bodyLayout = Instance.new("UIListLayout")
 	bodyLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	bodyLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-	bodyLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 4 or padSize(10)))
+	-- CRITICAL FIX: Reduced gap between body text and question for tighter cards
+	bodyLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 1 or (Device.IS_SMALL_PHONE and 2 or padSize(6)))
 	bodyLayout.Parent = bodySection
 
 	-- Body text container - NO SCROLLING, card expands to fit
+	-- MOBILE FIX: Minimal height for compact cards
 	EventUI.bodyScroll = Instance.new("Frame")
-	EventUI.bodyScroll.Size = UDim2.new(1, 0, 0, 0)
+	EventUI.bodyScroll.Size = UDim2.new(1, 0, 0, Device.IS_TINY_PHONE and 18 or (Device.IS_SMALL_PHONE and 22 or 30))  -- Compact minimum
 	EventUI.bodyScroll.AutomaticSize = Enum.AutomaticSize.Y
 	EventUI.bodyScroll.BackgroundTransparency = 1
 	EventUI.bodyScroll.BorderSizePixel = 0
@@ -3466,7 +3474,8 @@ local function buildEventModal()
 	EventUI.bodyScroll.ZIndex = 65
 	EventUI.bodyScroll.Parent = bodySection
 
-	local eventBodyTextSize = Device.IS_TINY_PHONE and 14 or (Device.IS_SMALL_PHONE and 16 or textSize(20))
+	-- CRITICAL FIX: Increased body text size 30% for better readability on mobile/tablet
+	local eventBodyTextSize = Device.IS_TINY_PHONE and 16 or (Device.IS_SMALL_PHONE and 18 or textSize(22))  -- Was 14/16/18
 	EventUI.body = Instance.new("TextLabel")
 	EventUI.body.Size = UDim2.new(1, 0, 0, 0)
 	EventUI.body.AutomaticSize = Enum.AutomaticSize.Y
@@ -3518,17 +3527,17 @@ local function buildEventModal()
 	EventUI.choicesSection.ClipsDescendants = false  -- Don't clip - let parent handle it
 	EventUI.choicesSection.Parent = EventUI.card
 
-	-- MOBILE FIX: VERY tight choice section padding on tiny phones
-	local choicePadSide = Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 8 or padSize(18))
-	local choicePadTop = Device.IS_TINY_PHONE and 0 or (Device.IS_SMALL_PHONE and 2 or padSize(4))
-	local choicePadBottom = Device.IS_TINY_PHONE and 4 or (Device.IS_SMALL_PHONE and 8 or padSize(18))
+	-- MOBILE FIX: Very tight choice section padding for compact cards
+	local choicePadSide = Device.IS_TINY_PHONE and 3 or (Device.IS_SMALL_PHONE and 5 or padSize(12))
+	local choicePadTop = Device.IS_TINY_PHONE and 1 or (Device.IS_SMALL_PHONE and 2 or padSize(4))  -- Minimal top gap
+	local choicePadBottom = Device.IS_TINY_PHONE and 3 or (Device.IS_SMALL_PHONE and 4 or padSize(8))  -- Smaller bottom
 	pad(EventUI.choicesSection, choicePadSide, choicePadSide, choicePadTop, choicePadBottom)
 
 	local choicesLayout = Instance.new("UIListLayout")
 	choicesLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	choicesLayout.SortOrder = Enum.SortOrder.LayoutOrder  -- CRITICAL: Force correct order
-	-- MOBILE FIX: Very tight spacing between buttons on tiny phones
-	choicesLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 4 or padSize(8)))
+	-- MOBILE FIX: Very compact spacing between buttons
+	choicesLayout.Padding = UDim.new(0, Device.IS_TINY_PHONE and 2 or (Device.IS_SMALL_PHONE and 3 or padSize(5)))
 	choicesLayout.Parent = EventUI.choicesSection
 end
 
@@ -4936,19 +4945,20 @@ showEvent = function(payload)
 			baseTextSize = 15  -- Was 18, now more readable
 			baseCorner = 10
 		elseif Device.IS_TINY_PHONE then
-			baseButtonHeight = 32
+			baseButtonHeight = 36  -- CRITICAL FIX: Increased for readability
 			baseSpacing = 3
-			baseTextSize = 10
+			baseTextSize = 13  -- CRITICAL FIX: 30% larger (was 10) - user said "pretty hard to read"
 			baseCorner = 5
 		elseif Device.IS_SMALL_PHONE then
-			baseButtonHeight = 38
+			baseButtonHeight = 42  -- CRITICAL FIX: Increased for readability
 			baseSpacing = 5
-			baseTextSize = 12
+			baseTextSize = 16  -- CRITICAL FIX: 30% larger (was 12) - user said "pretty hard to read"
 			baseCorner = 7
 		else
-			baseButtonHeight = 48
+			-- Tablets and larger phones
+			baseButtonHeight = 52  -- CRITICAL FIX: Slightly larger
 			baseSpacing = 8
-			baseTextSize = 15
+			baseTextSize = 20  -- CRITICAL FIX: 30% larger (was 15) - user said "pretty hard to read"
 			baseCorner = 10
 		end
 		
@@ -5413,9 +5423,11 @@ hideEvent = function()
 	tween(EventUI.card, TweenInfo.new(0.2), { BackgroundTransparency = 1 })
 
 	EventUI.currentHideTween.Completed:Connect(function()
+		-- CRITICAL FIX: More robust race condition prevention
 		-- Only hide overlay if we're not currently showing a new event
-		-- This prevents race condition where hide completes after new show started
-		if not awaitingEvent then
+		-- AND the tween wasn't cancelled (check if still tracked)
+		-- This prevents "You..." text cutoff bug where body.Text gets cleared after new event sets it
+		if not awaitingEvent and EventUI.currentHideTween then
 			EventUI.overlay.Visible = false
 
 			-- Reset event UI elements for next event
@@ -5426,7 +5438,6 @@ hideEvent = function()
 			EventUI.nameLbl.Text = ""
 			EventUI.relationLbl.Text = ""
 			EventUI.header.Visible = false
-			
 		end
 
 		EventUI.currentHideTween = nil

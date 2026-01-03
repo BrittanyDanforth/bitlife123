@@ -380,8 +380,11 @@ local events = {
 						state.InJail = true
 						state.JailYearsLeft = RANDOM:NextInteger(3, 8)
 						state.Flags.in_prison = true
+						state.Flags.incarcerated = true -- CRITICAL FIX: Missing flag!
 						state.Flags.criminal_record = true
 						state.CurrentJob = nil
+						state.Flags.employed = nil -- CRITICAL FIX: Clear job flags!
+						state.Flags.has_job = nil
 						state:ModifyStat("Happiness", -20)
 						state:AddFeed(string.format("🚔 Busted! %d years in prison.", state.JailYearsLeft))
 					end
@@ -710,8 +713,11 @@ local events = {
 						state.InJail = true
 						state.JailYearsLeft = RANDOM:NextInteger(2, 6)
 						state.Flags.in_prison = true
+						state.Flags.incarcerated = true -- CRITICAL FIX: Missing flag!
 						state.Flags.criminal_record = true
 						state.CurrentJob = nil
+						state.Flags.employed = nil -- CRITICAL FIX: Clear job flags!
+						state.Flags.has_job = nil
 						state:AddFeed(string.format("🚔 They got you. %d years.", state.JailYearsLeft))
 					else
 						state.Flags.crime_reputation = (state.Flags.crime_reputation or 0) + 10

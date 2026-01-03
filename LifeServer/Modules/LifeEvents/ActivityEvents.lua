@@ -821,7 +821,7 @@ ActivityEvents.Nightclub = {
 		weight = 10,
 		texts = {
 			"Someone bumped into you and spilled your drink. They look aggressive.",
-			"A drunk person is getting in your face about something.",
+			"An aggressive person is getting in your face about something.",
 		},
 		effects = { Happiness = {-5, 0} },
 		category = "danger",

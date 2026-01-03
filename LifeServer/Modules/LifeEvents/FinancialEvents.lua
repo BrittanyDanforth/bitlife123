@@ -1037,7 +1037,7 @@ FinancialEvents.events = {
 			eligibility = function(state)
 				local flags = state.Flags or {}
 				if flags.lives_with_parents or flags.living_with_family or flags.boomerang_kid then
-					return false, "You already live with your family!"
+					return false, "Already with family"
 				end
 				return true
 			end,
@@ -1540,7 +1540,7 @@ FinancialEvents.events = {
 		local housing = state.HousingState or {}
 		-- Must be renting AND not living with family
 		if flags.lives_with_parents or flags.living_with_family or flags.boomerang_kid then
-			return false, "You don't pay rent - you live with family!"
+			return false, "Live with family - no rent"
 		end
 		return (flags.renting or housing.status == "renter") and not flags.homeless
 	end,

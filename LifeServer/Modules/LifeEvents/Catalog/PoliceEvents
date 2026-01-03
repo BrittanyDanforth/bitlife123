@@ -1191,6 +1191,7 @@ local events = {
 						state.Stats = state.Stats or {}
 						state.Stats.Health = 0
 						state.Health = 0
+						state.IsDead = true -- CRITICAL FIX: Set IsDead for consistency
 						state.DeathReason = "⭐ Killed in the Line of Duty. A true hero. 🇺🇸"
 						if state.AddFeed then
 							state:AddFeed("☠️ END OF WATCH. You gave your life protecting others. A hero's death.")
@@ -1274,6 +1275,7 @@ local events = {
 							state.Stats = state.Stats or {}
 							state.Stats.Health = 0
 							state.Health = 0
+							state.IsDead = true -- CRITICAL FIX: Set IsDead for consistency
 							state.DeathReason = "💔 Killed in an ambush. A hero's sacrifice. 🇺🇸"
 							if state.AddFeed then
 								state:AddFeed("☠️ Killed in ambush. Your name will be on the memorial wall.")

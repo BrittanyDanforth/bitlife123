@@ -3837,6 +3837,10 @@ CelebrityEvents.CareerProgressionEvents = {
 						isActing = true,
 						isFameCareer = true,
 					}
+					-- CRITICAL FIX: Set employed/has_job flags for consistency!
+					state.Flags = state.Flags or {}
+					state.Flags.employed = true
+					state.Flags.has_job = true
 					if state.AddFeed then
 						state:AddFeed("🎬 Your acting journey begins! Starting as an extra...")
 					end
@@ -3864,6 +3868,10 @@ CelebrityEvents.CareerProgressionEvents = {
 						isMusic = true,
 						isFameCareer = true,
 					}
+					-- CRITICAL FIX: Set employed/has_job flags for consistency!
+					state.Flags = state.Flags or {}
+					state.Flags.employed = true
+					state.Flags.has_job = true
 					if state.AddFeed then
 						state:AddFeed("🎵 Your music journey begins! Playing for tips...")
 					end
@@ -3891,6 +3899,10 @@ CelebrityEvents.CareerProgressionEvents = {
 						isRapper = true,
 						isFameCareer = true,
 					}
+					-- CRITICAL FIX: Set employed/has_job flags for consistency!
+					state.Flags = state.Flags or {}
+					state.Flags.employed = true
+					state.Flags.has_job = true
 					if state.AddFeed then
 						state:AddFeed("🎤 Your rap journey begins! Spitting bars in cyphers...")
 					end
@@ -3919,6 +3931,10 @@ CelebrityEvents.CareerProgressionEvents = {
 						isStreamer = true,
 						isFameCareer = true,
 					}
+					-- CRITICAL FIX: Set employed/has_job flags for consistency!
+					state.Flags = state.Flags or {}
+					state.Flags.employed = true
+					state.Flags.has_job = true
 					if state.AddFeed then
 						state:AddFeed("🎮 Your streaming journey begins! Time to go live!")
 					end
@@ -3947,6 +3963,10 @@ CelebrityEvents.CareerProgressionEvents = {
 						isInfluencer = true,
 						isFameCareer = true,
 					}
+					-- CRITICAL FIX: Set employed/has_job flags for consistency!
+					state.Flags = state.Flags or {}
+					state.Flags.employed = true
+					state.Flags.has_job = true
 					if state.AddFeed then
 						state:AddFeed("📱 Your influencer journey begins! Time to build that following!")
 					end
@@ -3974,6 +3994,10 @@ CelebrityEvents.CareerProgressionEvents = {
 						isAthlete = true,
 						isFameCareer = true,
 					}
+					-- CRITICAL FIX: Set employed/has_job flags for consistency!
+					state.Flags = state.Flags or {}
+					state.Flags.employed = true
+					state.Flags.has_job = true
 					if state.AddFeed then
 						state:AddFeed("🏆 Your athletic journey begins! Train hard!")
 					end

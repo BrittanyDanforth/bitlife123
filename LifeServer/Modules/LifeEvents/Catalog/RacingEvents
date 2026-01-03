@@ -910,6 +910,7 @@ local events = {
 							state.Stats = state.Stats or {}
 							state.Stats.Health = 0
 							state.Health = 0
+							state.IsDead = true -- CRITICAL FIX: Set IsDead for consistency
 							state.DeathReason = "🏎️ Fatal racing accident. Died doing what you loved. 🏁"
 							if state.AddFeed then
 								state:AddFeed("☠️ FATAL CRASH. You died doing what you loved, but you died.")
@@ -954,6 +955,7 @@ local events = {
 						state.Stats = state.Stats or {}
 						state.Stats.Health = 0
 						state.Health = 0
+						state.IsDead = true -- CRITICAL FIX: Set IsDead for consistency
 						state.DeathReason = "🏎️ Fatal racing crash. Died on the track. 🏁"
 						if state.AddFeed then
 							state:AddFeed("☠️ You didn't fight. The crash was fatal.")

@@ -239,10 +239,10 @@ ServiceCareerEvents.events = {
 	-- BARTENDER EVENTS
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
-		id = "bartender_drunk_customer",
-		title = "🍸 Cut Off Time",
+		id = "bartender_difficult_customer",
+		title = "🍸 Difficult Customer",
 		emoji = "🍸",
-		text = "A customer is clearly too drunk. They're demanding more drinks and getting aggressive.",
+		text = "A customer is getting rowdy and demanding. They're getting aggressive with the staff.",
 		question = "What do you do?",
 		category = CATEGORY,
 		weight = 16,

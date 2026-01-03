@@ -489,9 +489,44 @@ RelationshipsExpanded.events = {
 		choices = {
 		{ text = "Bridezilla/Groomzilla mode ($1,000)", effects = { Happiness = -5, Money = -1000 }, setFlags = { wedding_drama = true }, feedText = "📋 This wedding WILL be perfect. Everyone is terrified of you.", eligibility = function(state) return (state.Money or 0) >= 1000, "💸 Need $1,000" end },
 		{ text = "Stay calm and delegate ($500)", effects = { Happiness = 2, Money = -500 }, feedText = "📋 Wedding planner, family help. Manageable.", eligibility = function(state) return (state.Money or 0) >= 500, "💸 Need $500" end },
-		{ text = "Elope instead ($200)", effects = { Happiness = 8, Money = -200 }, setFlags = { eloped = true, married = true }, feedText = "📋 Forget all this! Just the two of you! MARRIED!", eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200" end },
+		{ 
+			text = "Elope instead ($200)", 
+			effects = { Happiness = 8, Money = -200 }, 
+			setFlags = { eloped = true, married = true }, 
+			feedText = "📋 Forget all this! Just the two of you! MARRIED!", 
+			eligibility = function(state) return (state.Money or 0) >= 200, "💸 Need $200" end,
+			-- CRITICAL FIX: Convert partner to spouse on marriage!
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags.engaged = nil
+				if state.Relationships and state.Relationships.partner then
+					local partnerGender = state.Relationships.partner.gender or "female"
+					state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
+					state.Relationships.partner.type = "spouse"
+					state.Relationships.partner.married = true
+					state.Relationships.partner.marriedYear = state.Year
+				end
+			end,
+		},
 		{ text = "Push through together ($700)", effects = { Happiness = 4, Money = -700 }, feedText = "📋 Stressful but you're doing it as a team. That matters.", eligibility = function(state) return (state.Money or 0) >= 700, "💸 Need $700" end },
-		{ text = "Courthouse wedding", effects = { Happiness = 5 }, setFlags = { courthouse_wedding = true, married = true }, feedText = "📋 Just you, a judge, and your love. Simple and beautiful." },
+		{ 
+			text = "Courthouse wedding", 
+			effects = { Happiness = 5 }, 
+			setFlags = { courthouse_wedding = true, married = true }, 
+			feedText = "📋 Just you, a judge, and your love. Simple and beautiful.",
+			-- CRITICAL FIX: Convert partner to spouse on marriage!
+			onResolve = function(state)
+				state.Flags = state.Flags or {}
+				state.Flags.engaged = nil
+				if state.Relationships and state.Relationships.partner then
+					local partnerGender = state.Relationships.partner.gender or "female"
+					state.Relationships.partner.role = (partnerGender == "female") and "Wife" or "Husband"
+					state.Relationships.partner.type = "spouse"
+					state.Relationships.partner.married = true
+					state.Relationships.partner.marriedYear = state.Year
+				end
+			end,
+		},
 		},
 	},
 	

@@ -256,6 +256,16 @@ local function serializeState(state)
 	-- Education
 	serialized.Education = state.Education
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Save InJail and JailYearsLeft!
+	-- User bug: "if you leave during a life and rejoin you can commit crimes without going to jail"
+	-- This was because InJail was never persisted, so players could escape jail by leaving!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.InJail then
+		serialized.InJail = state.InJail
+		serialized.JailYearsLeft = state.JailYearsLeft or 0
+	end
+
 	-- Assets
 	if state.Assets then
 		serialized.Assets = state.Assets
@@ -3670,19 +3680,25 @@ end
 -- ╚══════════════════════════════════════════════════════════════════════════════╝
 local RelationshipDecaySystem = {}
 
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX: Reduced decay rates based on user feedback
+-- User review: "I shouldn't have to keep encouraging our relationship every year or my friend leaves"
+-- Friends should decay more slowly and give more time before leaving
+-- ═══════════════════════════════════════════════════════════════════════════════
 RelationshipDecaySystem.DECAY_RATES = {
-	friend = 3,           -- Friends decay 3 points per year of no contact
-	best_friend = 2,      -- Best friends decay slower
-	acquaintance = 5,     -- Acquaintances fade faster
-	partner = 1,          -- Partners decay very slowly
-	ex = 4,               -- Exes fade quickly
+	friend = 1.5,         -- Friends decay 1.5 points per year (was 3) - much more lenient
+	best_friend = 0.5,    -- Best friends decay very slowly (was 2)
+	acquaintance = 3,     -- Acquaintances fade (was 5)
+	partner = 0.5,        -- Partners decay very slowly (was 1)
+	ex = 2,               -- Exes fade (was 4)
+	childhood_friend = 1, -- Childhood friends decay even slower
 }
 
 RelationshipDecaySystem.ANGER_THRESHOLDS = {
-	annoyed = 2,          -- 2 years = annoyed
-	angry = 4,            -- 4 years = angry
-	furious = 6,          -- 6 years = furious (may end friendship)
-	estranged = 8,        -- 8 years = friendship over
+	annoyed = 4,          -- 4 years = annoyed (was 2)
+	angry = 7,            -- 7 years = angry (was 4)
+	furious = 10,         -- 10 years = furious (was 6)
+	estranged = 15,       -- 15 years = friendship over (was 8) - MUCH more lenient
 }
 
 function RelationshipDecaySystem.processYearlyDecay(state)
@@ -10985,32 +11001,70 @@ function LifeBackend:onPlayerAdded(player)
 				-- Clear assets (new life starts fresh)
 				state.Assets = { Properties = {}, Vehicles = {}, Items = {} }
 				
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				-- CRITICAL FIX: Set flag to prevent restoring old relationships!
+				-- User bug: "all of my past parents show up for family so I had about 7 parents"
+				-- This was happening because we cleared Relationships but then restored savedData below
+				-- ═══════════════════════════════════════════════════════════════════════════════
+				state._skipRelationshipRestore = true
+				state._skipCareerRestore = true
+				state._skipPremiumRestore = true
+				
 				print("[LifeBackend] 🆕 New life created! Name:", state.Name, "as a", state.Gender)
 			end
 		end
 
-		-- Restore career
-		if savedData.CurrentJob then
-			state.CurrentJob = savedData.CurrentJob
-		end
-		if savedData.CareerInfo then
-			state.CareerInfo = savedData.CareerInfo
-		end
-
-		-- Restore relationships
-		if savedData.Relationships then
-			state.Relationships = savedData.Relationships
+		-- Restore career (ONLY if not starting a new life)
+		if not state._skipCareerRestore then
+			if savedData.CurrentJob then
+				state.CurrentJob = savedData.CurrentJob
+			end
+			if savedData.CareerInfo then
+				state.CareerInfo = savedData.CareerInfo
+			end
 		end
 
-		-- Restore premium states
-		if savedData.RoyalState then
-			state.RoyalState = savedData.RoyalState
+		-- Restore relationships (ONLY if not starting a new life due to death)
+		-- CRITICAL FIX: User bug "all of my past parents show up for family so I had about 7 parents"
+		if not state._skipRelationshipRestore then
+			if savedData.Relationships then
+				state.Relationships = savedData.Relationships
+			end
 		end
-		if savedData.MobState then
-			state.MobState = savedData.MobState
+		
+		-- Clear the skip flags
+		state._skipRelationshipRestore = nil
+		state._skipCareerRestore = nil
+
+		-- Restore premium states (ONLY if not starting a new life due to death)
+		if not state._skipPremiumRestore then
+			if savedData.RoyalState then
+				state.RoyalState = savedData.RoyalState
+			end
+			if savedData.MobState then
+				state.MobState = savedData.MobState
+			end
+			if savedData.FameState then
+				state.FameState = savedData.FameState
+			end
 		end
-		if savedData.FameState then
-			state.FameState = savedData.FameState
+		
+		-- Clear the skip flag
+		state._skipPremiumRestore = nil
+
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Restore InJail state!
+		-- User bug: "if you leave during a life and rejoin you can commit crimes without going to jail"
+		-- Players were escaping jail by leaving and rejoining because InJail wasn't restored!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		if savedData.InJail then
+			state.InJail = savedData.InJail
+			state.JailYearsLeft = savedData.JailYearsLeft or 0
+			-- Also set the flags
+			state.Flags = state.Flags or {}
+			state.Flags.in_prison = true
+			state.Flags.incarcerated = true
+			print("[LifeBackend] 🔒 Restored jail state - Years left:", state.JailYearsLeft)
 		end
 
 		-- Restore gamepass ownership
@@ -15178,7 +15232,10 @@ function LifeBackend:handleAgeUp(player)
 		local currentTime = os.clock()
 		
 		if pendingTimestamp and (currentTime - pendingTimestamp) > 60 then
-			warn("[LifeBackend] ⚠️ SOFTLOCK DETECTED! Clearing awaitingDecision after 60s timeout for", player.Name)
+			-- CRITICAL FIX: Include event ID in softlock log for debugging!
+			local stuckEventId = pending and pending.eventId or "unknown"
+			local stuckEventTitle = pending and pending.event and pending.event.title or "unknown"
+			warn("[LifeBackend] ⚠️ SOFTLOCK DETECTED! Clearing awaitingDecision after 60s timeout for", player.Name, "- Stuck on event:", stuckEventId, "(", stuckEventTitle, ")")
 			state.awaitingDecision = false
 			self.pendingEvents[player.UserId] = nil
 			-- Continue with age up instead of returning
@@ -17136,6 +17193,45 @@ function LifeBackend:resolvePendingEvent(player, eventId, choiceIndex)
 			popupBody = popupBody:gsub("{{JOB_NAME}}", "your job")
 			popupBody = popupBody:gsub("{{COMPANY}}", "the company")
 			popupBody = popupBody:gsub("{{SALARY}}", "0")
+		end
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Check for gamepass purchase prompt flags set by events
+	-- User complaint: "DOESNT LET U PURCHASE THE MAFIA GAMEPASS"
+	-- When shady_opportunity or similar events set prompt_*_purchase flags, we should
+	-- actually prompt the gamepass purchase after showing the result popup
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if state.Flags then
+		if state.Flags.prompt_mafia_purchase then
+			state.Flags.prompt_mafia_purchase = nil -- Clear the flag
+			if not self:checkGamepassOwnership(player, "MAFIA") then
+				task.delay(1.5, function()
+					if player and player.Parent then
+						self:promptGamepassPurchase(player, "MAFIA", true)
+					end
+				end)
+			end
+		end
+		if state.Flags.prompt_royalty_purchase then
+			state.Flags.prompt_royalty_purchase = nil
+			if not self:checkGamepassOwnership(player, "ROYALTY") then
+				task.delay(1.5, function()
+					if player and player.Parent then
+						self:promptGamepassPurchase(player, "ROYALTY", true)
+					end
+				end)
+			end
+		end
+		if state.Flags.prompt_celebrity_purchase then
+			state.Flags.prompt_celebrity_purchase = nil
+			if not self:checkGamepassOwnership(player, "CELEBRITY") then
+				task.delay(1.5, function()
+					if player and player.Parent then
+						self:promptGamepassPurchase(player, "CELEBRITY", true)
+					end
+				end)
+			end
 		end
 	end
 	

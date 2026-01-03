@@ -85,10 +85,10 @@ MedicalCareerEvents.events = {
 	},
 	
 	{
-		id = "emt_overdose_call",
-		title = "💉 Overdose Call",
+		id = "emt_emergency_call",
+		title = "💉 Critical Emergency",
 		emoji = "💉",
-		text = "Young person overdosed. Family is panicking. Narcan is ready.",
+		text = "A young person has collapsed and is unresponsive. Family is panicking. Equipment is ready.",
 		question = "How do you handle the scene?",
 		category = CATEGORY,
 		weight = 16,
@@ -101,7 +101,7 @@ MedicalCareerEvents.events = {
 		
 		choices = {
 			{
-				text = "Administer Narcan and stabilize",
+				text = "Administer treatment and stabilize",
 				effects = { Smarts = 2 },
 				feedText = "Administering treatment...",
 				onResolve = function(state)
@@ -109,8 +109,8 @@ MedicalCareerEvents.events = {
 					if roll <= 85 then
 						state:ModifyStat("Happiness", 15)
 						state.Flags = state.Flags or {}
-						state.Flags.saved_overdose_victim = true
-						state:AddFeed("💉 They came back! Handed them off to ER. You saved a life today.")
+						state.Flags.saved_emergency_victim = true
+						state:AddFeed("💉 They're stable! Handed them off to ER. You saved a life today.")
 					else
 						state:ModifyStat("Happiness", -20)
 						state:AddFeed("💉 Too late. Nothing could save them. This job takes a toll.")

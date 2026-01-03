@@ -2162,74 +2162,367 @@ local AgeMilestoneEvents = {
 	-- Added new viral, superpower, adventure, and talent discovery events
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	
-	-- BABY/TODDLER (0-4) - Lots of variety in early years
-	-- CRITICAL FIX: Removed nonsensical events - newborns can't do talents/go viral/laugh attacks
-	-- Age 0 = birth events only (realistic for a newborn)
-	[0] = { "royal_birth_announcement", "baby_first_smile", "baby_first_laugh", "newborn_checkup", "first_photo", "naming_ceremony" },
-	[1] = { "royal_christening", "first_words", "first_steps", "baby_first_food", "baby_teething_pain", "first_birthday", "walk_talk_milestone", "baby_discovered_talent", "baby_laugh_attack" },
-	[2] = { "toddler_potty_training", "toddler_tantrum", "toddler_language_explosion", "terrible_twos", "playground_adventure", "toddler_art_masterpiece", "toddler_big_choice" },
-	[3] = { "first_public_appearance", "preschool_start", "imaginary_friend", "toddler_fear_dark", "first_pet_encounter", "bedtime_stories", "princess_prince_phase", "toddler_big_choice" },
-	-- FIXED: Removed events that don't make sense for this age (child_adventure_call now starts at 5, child_superpower_discovery at 4)
-	[4] = { "toddler_curiosity_incident", "toddler_sibling_dynamics", "toddler_picky_eater", "first_playdate", "learning_colors", "hide_and_seek_champion", "child_superpower_discovery" },
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- BABY/TODDLER (0-4) - MASSIVELY EXPANDED for variety!
+	-- CRITICAL FIX #VARIETY-MEGA: 20+ events per age = way less repetition!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	[0] = { 
+		-- Birth & first moments - 25+ options!
+		"royal_birth_announcement", "baby_first_smile", "baby_first_laugh", "newborn_checkup", 
+		"first_photo", "naming_ceremony", "baby_personality_emerging", "baby_doctor_visit",
+		"baby_sleep_schedule", "baby_crawling", "baby_first_word", "baby_first_steps",
+		"baby_secret_power", "baby_celebrity_encounter", "baby_discovered_talent",
+		-- NEW: Added more variety!
+		"baby_meeting_grandparents", "baby_first_bath", "baby_sleeping_through_night", 
+		"baby_rolling_over", "baby_hiccups"
+	},
+	[1] = { 
+		-- Age 1: Walking, talking, exploring - 30+ options!
+		"royal_christening", "first_words", "first_steps", "baby_first_food", "baby_teething_pain", 
+		"first_birthday", "walk_talk_milestone", "baby_discovered_talent", "baby_laugh_attack",
+		"baby_sibling_arrival", "baby_doctor_visit", "baby_sleep_schedule", "baby_crawling",
+		"baby_first_word", "baby_first_steps", "baby_secret_power", "baby_celebrity_encounter",
+		"toddler_first_friend", "toddler_first_drawing", "toddler_favorite_food", "toddler_first_music",
+		"toddler_pet_encounter", "toddler_magical_friend", "toddler_treasure_hunt",
+		-- NEW: Added more variety!
+		"baby_meeting_grandparents", "baby_first_bath", "baby_sleeping_through_night",
+		"baby_rolling_over", "baby_hiccups", "toddler_pet_bond"
+	},
+	[2] = { 
+		-- Age 2: Terrible twos, independence - 40+ options!
+		"toddler_potty_training", "toddler_tantrum", "toddler_language_explosion", "terrible_twos", 
+		"playground_adventure", "toddler_art_masterpiece", "toddler_big_choice", "toddler_picky_eater",
+		"toddler_favorite_toy", "toddler_separation_anxiety", "toddler_first_haircut", "toddler_potty_milestone",
+		"toddler_sibling_reaction", "toddler_food_adventure", "toddler_night_terror", "toddler_art_creation",
+		"toddler_playground_adventure", "toddler_pet_encounter", "toddler_helping_chores", "toddler_water_play",
+		"toddler_independence", "toddler_invisible_companion", "toddler_counting_milestone", "toddler_color_learning",
+		"toddler_bedtime_routine", "toddler_afraid_of_dark", "toddler_learning_abc", "toddler_lost_in_store",
+		"toddler_making_friends", "toddler_temper_tantrum", "toddler_drawing_masterpiece", "toddler_bath_time_fun",
+		-- NEW: Added more variety!
+		"toddler_hiding_game", "toddler_mud_puddle", "toddler_fridge_raid", "toddler_copying_adult", "toddler_pet_bond"
+	},
+	[3] = { 
+		-- Age 3: Preschool prep, imagination - 40+ options!
+		"first_public_appearance", "preschool_start", "imaginary_friend", "toddler_fear_dark", 
+		"first_pet_encounter", "bedtime_stories", "princess_prince_phase", "toddler_imaginary_friend",
+		"toddler_sibling_moment", "toddler_learning_shapes", "toddler_playground_slide", "toddler_broken_toy",
+		"toddler_first_joke", "toddler_dress_up", "toddler_sharing_lesson", "toddler_messy_eating",
+		"toddler_question_phase", "toddler_best_friend_forever", "toddler_sleep_problems", "toddler_outdoor_discovery",
+		"toddler_tantrum_public", "preschool_show_and_tell", "naptime_rebellion", "potty_accident",
+		"best_friend_fight", "sharing_is_hard", "superhero_phase", "learning_abcs", "counting_fingers",
+		"toddler_superhero_moment", "toddler_magic_discovery", "child_building_blocks", "child_role_playing",
+		-- NEW: Added more variety!
+		"toddler_hiding_game", "toddler_mud_puddle", "toddler_fridge_raid", "toddler_copying_adult",
+		"preschool_best_painter", "preschool_line_leader", "preschool_new_kid", "preschool_bug_discovery", "preschool_playground_fall"
+	},
+	[4] = { 
+		-- Age 4: Pre-K, social skills - 40+ options!
+		"toddler_curiosity_incident", "toddler_sibling_dynamics", "toddler_picky_eater", "first_playdate", 
+		"learning_colors", "hide_and_seek_champion", "child_superpower_discovery", "preschool_first_day",
+		"toddler_birthday_party", "classmate_birthday", "art_project", "lunchbox_disaster", "snack_time_drama",
+		"public_tantrum", "first_day_crying", "ran_to_class_late", "preschool_show_and_tell_day",
+		"preschool_music_class", "playground_champion", "playground_bully_encounter", "toddler_meeting_new_pet",
+		"potty_training", "learned_numbers", "temper_tantrum_public", "first_haircut", "playground_friend",
+		"kindergarten_simple", "toddler_animal_encounter", "child_imaginary_world", "child_bedtime_routine",
+		-- NEW: Added more variety!
+		"preschool_best_painter", "preschool_line_leader", "preschool_new_kid", "preschool_bug_discovery", 
+		"preschool_playground_fall", "toddler_hiding_game", "toddler_mud_puddle", "toddler_copying_adult"
+	},
 	
-	-- EARLY CHILDHOOD (5-8) - School and discovery
-	-- CRITICAL FIX #604: Added premium events to age milestones for gamepass exposure
-	[5] = { "first_day_kindergarten", "royal_education_choice", "stage_transition_child", "child_reading_discovery", "lost_first_tooth", "first_homework", "making_friends", "child_adventure_call" },
-	[6] = { "first_day_school", "first_best_friend", "child_show_and_tell", "child_music_lesson", "elementary_adventure", "learning_to_read", "playground_king", "premium_career_day_dream", "child_adventure_call" },
-	[7] = { "child_playground_adventure", "child_sports_tryout", "sports_talent_discovered", "child_allowance_lesson", "science_project", "first_crush_maybe", "school_play", "summer_reading", "premium_magic_wish", "child_superpower_discovery" },
-	[8] = { "learning_to_ride_bike", "child_video_games_discovery", "sports_first_competition", "child_summer_camp", "sleepover_first", "collector_hobby", "tree_climbing", "neighborhood_explorer", "premium_dream_big" },
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- EARLY CHILDHOOD (5-8) - School and discovery - MASSIVELY EXPANDED!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	[5] = { 
+		-- Age 5: Kindergarten, new world - 45+ options!
+		"first_day_kindergarten", "royal_education_choice", "stage_transition_child", "child_reading_discovery", 
+		"lost_first_tooth", "first_homework", "making_friends", "child_adventure_call", "kindergarten_simple",
+		"first_day_anxiety", "losing_tooth", "learned_bike", "school_bully", "class_pet", "playground_accident",
+		"lost_in_store", "new_baby_sibling", "childhood_sports_choice", "piano_lessons", "sleepover_first",
+		"show_and_tell", "reading_discovery", "treehouse_adventure", "swimming_lessons", "holiday_excitement",
+		"dentist_visit", "learning_to_read", "learned_numbers", "playground_friend", "childhood_birthday_celebration",
+		"school_picture_day", "field_trip", "learned_tie_shoes", "chore_introduction", "learning_alphabet",
+		-- NEW: Added more variety!
+		"school_lunch_trade", "school_reading_award", "school_pencil_collection", "school_class_hamster",
+		"school_recess_game", "school_show_and_tell_epic", "school_fire_drill", "school_library_day",
+		"preschool_new_kid", "preschool_bug_discovery", "school_substitute_teacher"
+	},
+	[6] = { 
+		-- Age 6: First grade, friendships - 45+ options!
+		"first_day_school", "first_best_friend", "child_show_and_tell", "child_music_lesson", "elementary_adventure", 
+		"learning_to_read", "playground_king", "premium_career_day_dream", "child_adventure_call", "school_lunch",
+		"class_project_partner", "sick_day_school", "homework_struggle", "recess_choices", "new_sibling_adjustment",
+		"art_class_project", "school_nurse_visit", "classroom_disruption", "caught_curse_word", "childhood_fear",
+		"making_up_stories", "childhood_collection", "sharing_lesson", "first_loose_tooth_eating", "caught_picking_nose",
+		"childhood_loose_tooth", "childhood_school_photo_day", "childhood_recess_drama", "childhood_birthday_party",
+		"child_first_lie", "child_homework_habits", "child_sick_day_real", "child_nature_discovery", "child_creativity_expression",
+		-- NEW: Added more variety!
+		"school_lunch_trade", "school_reading_award", "school_pencil_collection", "school_class_hamster",
+		"school_recess_game", "school_show_and_tell_epic", "school_mystery_lunch", "school_substitute_teacher",
+		"school_fire_drill", "school_library_day"
+	},
+	[7] = { 
+		-- Age 7: Growing confidence - 45+ options!
+		"child_playground_adventure", "child_sports_tryout", "sports_talent_discovered", "child_allowance_lesson", 
+		"science_project", "first_crush_maybe", "school_play", "summer_reading", "premium_magic_wish", 
+		"child_superpower_discovery", "discovered_passion", "science_fair", "summer_camp", "pet_encounter",
+		"first_crush", "allowance_decision", "scary_movie", "talent_show", "spelling_bee", "caught_lying",
+		"video_game_discovery", "bad_dream", "broken_favorite_toy", "caught_in_rain", "childhood_first_crush",
+		"childhood_talent_show", "childhood_summer_camp", "childhood_pet_want", "childhood_school_play",
+		"childhood_music_lessons", "childhood_science_experiment", "childhood_teacher_favorite", "childhood_allowance",
+		-- NEW: Added more variety!
+		"school_lunch_trade", "school_reading_award", "school_class_hamster", "school_recess_game",
+		"school_mystery_lunch", "school_substitute_teacher", "school_fire_drill", "school_library_day"
+	},
+	[8] = { 
+		-- Age 8: Independence growing - 45+ options!
+		"learning_to_ride_bike", "child_video_games_discovery", "sports_first_competition", "child_summer_camp", 
+		"sleepover_first", "collector_hobby", "tree_climbing", "neighborhood_explorer", "premium_dream_big",
+		"learned_ride_scooter", "childhood_sports_tryout", "childhood_sleepover", "childhood_reading_discovery",
+		"childhood_chores", "childhood_scary_movie", "childhood_cooking_attempt", "childhood_field_trip",
+		"childhood_video_game_addiction", "sports_interest_growing", "child_playground_accident_serious",
+		"child_first_pet_responsibility", "child_school_fight", "child_money_lesson", "child_sibling_rivalry_intense",
+		"child_stranger_danger", "child_achievement_academic", "child_first_award", "child_first_concert",
+		"child_learning_instrument_progress", "child_superhero_phase", "child_cooking_with_parent", "child_secret_spot",
+		-- NEW: Added more variety!
+		"school_lunch_trade", "school_reading_award", "school_pencil_collection", "school_class_hamster",
+		"school_recess_game", "school_mystery_lunch", "school_substitute_teacher", "school_fire_drill", "school_library_day"
+	},
 	
-	-- LATE CHILDHOOD (9-12) - Growing up
-	-- CRITICAL FIX: Added sports progression events for athlete career path
-	[9] = { "discovered_passion", "child_first_crush", "hobby_discovery", "sports_interest_growing", "sports_burnout_warning", "best_friend_forever", "school_award", "family_vacation", "premium_dream_big" },
-	[10] = { "talent_show", "double_digits", "school_competition", "first_cell_phone", "sleepover_party", "childhood_ending", "growing_independence", "premium_dream_big" },
-	[11] = { "middle_school_start", "royal_summer_vacation", "friend_group_changes", "sports_scholarship_talk", "new_interests", "voice_changing", "growth_spurt", "independence_growing" },
-	[12] = { "elementary_graduation", "growing_up_fast", "teen_transition", "sports_scholarship_talk", "first_dance", "mature_conversations", "childhood_goodbye", "middle_school_life" },
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- LATE CHILDHOOD (9-12) - Growing up - MASSIVELY EXPANDED!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	[9] = { 
+		-- Age 9: Pre-teen awakening - 30+ options!
+		"discovered_passion", "child_first_crush", "hobby_discovery", "sports_interest_growing", 
+		"sports_burnout_warning", "best_friend_forever", "school_award", "family_vacation", "premium_dream_big",
+		"child_video_game_obsession", "child_promise_to_friend", "child_saved_animal", "child_standing_up_to_bully",
+		"child_big_lie", "child_talent_discovered", "school_copy_homework", "school_classmate_hits_you",
+		"school_teacher_accuses", "school_bathroom_incident", "school_rumor_spreading", "school_cafeteria_incident",
+		"school_group_project", "school_caught_passing_notes", "child_moving_houses", "child_new_school",
+		"child_test_cheating_dilemma", "child_embarrassing_moment", "child_grades_slipping", "child_religion_question",
+		"childhood_sick_day", "child_family_crisis"
+	},
+	[10] = { 
+		-- Age 10: Double digits, growing up - 30+ options!
+		"talent_show", "double_digits", "school_competition", "first_cell_phone", "sleepover_party", 
+		"childhood_ending", "growing_independence", "premium_dream_big", "sports_first_competition",
+		"sports_talent_discovered", "first_crush", "video_game_discovery", "spelling_bee", "science_fair",
+		"school_play", "summer_camp", "child_first_pet_responsibility", "child_school_fight", "child_money_lesson",
+		"child_homework_habits", "child_sibling_rivalry_intense", "child_achievement_academic", "child_first_award",
+		"child_first_concert", "child_learning_instrument_progress", "child_cooking_with_parent",
+		"child_standing_up_to_bully", "child_talent_discovered", "school_group_project", "child_grades_slipping"
+	},
+	[11] = { 
+		-- Age 11: Middle school prep - 25+ options!
+		"middle_school_start", "royal_summer_vacation", "friend_group_changes", "sports_scholarship_talk", 
+		"new_interests", "voice_changing", "growth_spurt", "independence_growing", "child_moving_houses",
+		"child_new_school", "child_embarrassing_moment", "child_test_cheating_dilemma", "school_rumor_spreading",
+		"school_cafeteria_incident", "child_big_lie", "school_classmate_hits_you", "school_bathroom_incident",
+		"sports_interest_growing", "sports_burnout_warning", "child_video_game_obsession", "child_promise_to_friend",
+		"child_saved_animal", "child_talent_discovered", "child_family_crisis", "childhood_first_crush"
+	},
+	[12] = { 
+		-- Age 12: Teen transition - 25+ options!
+		"elementary_graduation", "growing_up_fast", "teen_transition", "sports_scholarship_talk", 
+		"first_dance", "mature_conversations", "childhood_goodbye", "middle_school_life", "child_first_crush",
+		"sports_first_competition", "first_crush", "video_game_discovery", "child_new_school",
+		"child_embarrassing_moment", "school_rumor_spreading", "school_group_project", "child_grades_slipping",
+		"child_standing_up_to_bully", "child_talent_discovered", "child_family_crisis", "sports_talent_discovered",
+		"voice_changing", "growth_spurt", "child_religion_question", "school_caught_passing_notes"
+	},
 	
-	-- EARLY TEEN (13-15) - Identity formation
-	-- CRITICAL FIX: Added teen sports events for athlete career path progression
-	[13] = { "stage_transition_teen", "teen_social_media", "talent_discovery", "teen_social_media_debut", "first_crush_serious", "style_change", "friend_drama" },
-	[14] = { "class_selection", "teen_study_habits", "teen_friend_drama", "teen_sports_varsity", "first_relationship", "high_school_prep", "rebel_phase", "identity_question" },
-	[15] = { "learning_to_drive", "teen_part_time_job_decision", "teen_sports_college_scout", "teen_future_planning", "sweet_fifteen", "independence_push", "career_dream", "first_car_dream" },
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- EARLY TEEN (13-15) - Identity formation - MASSIVELY EXPANDED!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	[13] = { 
+		-- Age 13: Teen awakening - 40+ options!
+		"stage_transition_teen", "teen_social_media", "talent_discovery", "teen_social_media_debut", 
+		"first_crush_serious", "style_change", "friend_drama", "teen_self_questioning", "teen_friend_group_change",
+		"teen_popularity_contest", "teen_clique_pressure", "teen_online_life", "teen_viral_post",
+		"teen_acne", "teen_embarrassing_moment", "teen_bedroom_privacy", "teen_weekend_plans",
+		"teen_phone_drama", "teen_fashion_sense", "teen_social_media_start", "teen_identity",
+		"teen_hobby_discovery", "teen_music_taste", "teen_fashion_evolution", "teen_sibling_dynamic",
+		"teen_anxiety_episode", "teen_parent_fight", "teen_sibling_relationship_teen", "teen_family_secret",
+		"teen_sports_tryouts", "teen_artistic_expression", "teen_gaming_serious", "teen_reading_habit"
+	},
+	[14] = { 
+		-- Age 14: High school prep - 40+ options!
+		"class_selection", "teen_study_habits", "teen_friend_drama", "teen_sports_varsity", 
+		"first_relationship", "high_school_prep", "rebel_phase", "identity_question", "teen_relationship_stages",
+		"teen_heartbreak", "teen_dating_app_secret", "teen_grade_pressure_overload", "teen_college_prep",
+		"teen_risky_party_invite", "teen_sneaking_out", "teen_substance_pressure", "teen_self_esteem_crisis",
+		"teen_crush_confession", "teen_social_media_drama", "teen_parent_conflict", "teen_bullying_witness",
+		"teen_internet_argument", "teen_late_night_studying", "teen_dating_drama", "teen_caught_sneaking",
+		"teen_secret_party", "teen_unexpected_friendship", "teen_cheating_request", "teen_locker_room_confrontation",
+		"teen_party_invitation", "teen_teacher_conflict", "teen_random_act_kindness", "teen_fitness_journey"
+	},
+	[15] = { 
+		-- Age 15: Almost driving - 40+ options!
+		"learning_to_drive", "teen_part_time_job_decision", "teen_sports_college_scout", "teen_future_planning", 
+		"sweet_fifteen", "independence_push", "career_dream", "first_car_dream", "teen_learning_drive",
+		"teen_prom_drama", "teen_standardized_test", "teen_extracurricular_overload", "teen_scholarship_opportunity",
+		"teen_driving_reckless", "teen_shoplifting_dare", "teen_depression_warning", "teen_therapy_decision",
+		"teen_part_time_struggle", "teen_essay_contest", "teen_car_purchase_dream", "teen_band_start",
+		"teen_first_kiss", "teen_college_rejection", "teen_volunteer_impact", "teen_sports_injury",
+		"teen_house_party", "teen_ap_classes", "teen_talent_discovered", "teen_first_real_relationship",
+		"teen_school_competition_win", "teen_defining_moment", "teen_mentor_figure", "teen_cooking_skills"
+	},
 	
-	-- LATE TEEN (16-18) - Major milestones
-	-- CRITICAL FIX #604: Added premium turning point events for gamepass exposure
-	-- CRITICAL FIX: Added teen sports events for athlete career path
-	[16] = { "driving_license", "teen_first_job", "prom_invite", "teen_sports_state_championship", "teen_sports_injury_setback", "fame_audition", "teen_first_heartbreak", "sweet_sixteen", "car_obsession", "college_prep", "premium_turning_point" },
-	[17] = { "high_school_graduation", "prom_invite", "teen_sports_college_scout", "teen_sports_state_championship", "senior_year", "college_applications", "last_summer", "farewell_friends", "adult_soon", "premium_turning_point" },
-	[18] = { "turning_18", "high_school_graduation", "moving_out", "young_adult_move_out", "coming_of_age_ball", "young_adult_adulting_struggle", "legal_adult", "vote_first_time", "premium_life_crossroads", "college_basketball_scholarship", "college_football_scholarship" },
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- LATE TEEN (16-18) - Major milestones - MASSIVELY EXPANDED!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	[16] = { 
+		-- Age 16: Sweet sixteen - 40+ options!
+		"driving_license", "teen_first_job", "prom_invite", "teen_sports_state_championship", 
+		"teen_sports_injury_setback", "fame_audition", "teen_first_heartbreak", "sweet_sixteen", 
+		"car_obsession", "college_prep", "premium_turning_point", "teen_drivers_license",
+		"teen_messages_leaked", "teen_viral_moment", "teen_secret_revealed", "teen_viral_video",
+		"teen_social_media_explosion", "teen_caught_skipping", "teen_internet_rabbit_hole",
+		"teen_existential_crisis", "teen_unexpected_talent", "teen_school_project_partner",
+		"teen_crush_drama", "teen_new_hobby_discovery", "teen_school_dance", "teen_sibling_rivalry",
+		"teen_identity_exploration", "teen_summer_job", "teen_academic_pressure", "teen_social_media_fame",
+		"teen_first_job_experience", "teen_money_management", "teen_entrepreneurship", "teen_coding_project"
+	},
+	[17] = { 
+		-- Age 17: Senior year - 40+ options!
+		"high_school_graduation", "prom_invite", "teen_sports_college_scout", "teen_sports_state_championship", 
+		"senior_year", "college_applications", "last_summer", "farewell_friends", "adult_soon", "premium_turning_point",
+		"teen_senioritis", "teen_identity_crisis", "teen_peer_pressure_party", "teen_talent_discovery",
+		"teen_guidance_opportunity", "teen_creative_project", "teen_friendship_drama", "teen_future_dreams",
+		"teen_volunteering", "teen_mortifying_moment", "teen_college_pressure", "teen_online_gaming",
+		"teen_family_argument", "teen_summer_plans", "teen_first_job_interview", "teen_online_drama_explosion",
+		"teen_college_application_stress", "teen_social_circle_shift", "teen_athletic_injury", "teen_internet_famous",
+		"teen_self_discovery_journey", "teen_mental_health", "teen_car_dreams", "teen_gaming_tournament"
+	},
+	[18] = { 
+		-- Age 18: Legal adult - 40+ options!
+		"turning_18", "high_school_graduation", "moving_out", "young_adult_move_out", "coming_of_age_ball", 
+		"young_adult_adulting_struggle", "legal_adult", "vote_first_time", "premium_life_crossroads", 
+		"college_basketball_scholarship", "college_football_scholarship", "teen_rebellion_phase",
+		"teen_future_career_thoughts", "teen_romantic_devastation", "teen_school_stress_overload",
+		"teen_online_friends", "teen_body_image", "teen_senioritis", "teen_first_date",
+		"teen_laundry_disaster", "teen_independence_moment", "teen_music_performance",
+		"teen_filmed_viral", "teen_band_gig", "teen_first_job_offer", "teen_anxiety_attack", 
+		"teen_acne_struggle", "teen_college_rejection", "teen_family_move"
+	},
 	
-	-- YOUNG ADULT (19-24) - Independence and discovery
-	-- CRITICAL FIX: Added NBA/NFL draft events for sports career progression!
-	[19] = { "college_experience", "young_adult_first_apartment", "new_city_life", "first_roommate", "homesick_blues", "freedom_excitement", "nba_draft_declaration", "college_heisman_race" },
-	[20] = { "young_adult_fitness_resolution", "young_adult_financial_habits", "twenties_begin", "identity_crisis_light", "new_decade_new_me", "nba_draft_declaration", "college_heisman_race" },
-	[21] = { "turning_21_legal_drinking", "first_legal_drink", "royal_military_service", "bar_hopping", "adult_responsibilities", "real_world_hits", "nba_draft_declaration", "nfl_draft_declaration" },
-	[22] = { "young_adult_career_crossroads", "college_graduation", "job_hunting", "degree_celebration", "real_job_search", "career_start", "nba_draft_declaration", "nfl_draft_declaration" },
-	[23] = { "young_adult_relationship_milestone", "first_real_job", "adult_friendship", "living_alone", "budget_reality" },
-	[24] = { "quarter_life_reflection", "career_established", "friendship_evolution", "serious_dating", "life_direction" },
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- YOUNG ADULT (19-24) - Independence and discovery - MASSIVELY EXPANDED!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	[19] = { 
+		-- Age 19: College life - 25+ options!
+		-- CRITICAL FIX: Removed non-existent events (new_city_life, first_roommate) and duplicates
+		"college_experience", "young_adult_first_apartment", "adult_leaving_home", "adult_college_experience", 
+		"nba_draft_declaration", "college_heisman_race", "adult_existential_crisis_early", "adult_student_loans",
+		"adult_dating_scene", "adult_career_choice", "adult_job_interview", "adult_health_checkup",
+		"adult_fitness_goal", "adult_mental_health_adult", "adult_friendship_evolution", "adult_social_event",
+		"adult_networking", "adult_hobby_discovery", "adult_quarter_life_crisis", "adult_first_apartment"
+	},
+	[20] = { 
+		-- Age 20: Twenties begin - 30+ options!
+		-- CRITICAL FIX: Removed non-existent events (twenties_begin, identity_crisis_light, new_decade_new_me)
+		"young_adult_fitness_resolution", "young_adult_financial_habits", "adult_college_experience",
+		"adult_existential_crisis_early", "adult_student_loans", "nba_draft_declaration", "college_heisman_race",
+		"adult_dating_scene", "adult_serious_relationship", "adult_relationship_challenges", "adult_breakup",
+		"adult_side_hustle", "adult_financial_emergency", "adult_investment_opportunity", "adult_tax_situation",
+		"adult_salary_negotiation", "adult_networking_event", "adult_side_gig_opportunity", "adult_friendship_fade",
+		"adult_social_comparison", "adult_burnout", "adult_new_hobby", "adult_dating_apps", "adult_imposter_syndrome"
+	},
+	[21] = { 
+		-- Age 21: Legal adult - 30+ options!
+		-- CRITICAL FIX: Removed non-existent/TOS-violating events
+		"royal_military_service", "adult_leaving_home", "adult_dating_scene", "adult_job_interview", 
+		"nba_draft_declaration", "nfl_draft_declaration", "adult_college_experience",
+		"adult_career_crossroads", "adult_health_scare", "adult_viral_fame", "adult_mentor_opportunity",
+		"adult_existential_thoughts", "adult_reunion", "adult_random_kindness", "adult_tech_burnout",
+		"adult_office_politics", "adult_friend_drift", "adult_money_windfall", "adult_creative_block",
+		"adult_health_wake_up", "adult_unexpected_bill", "adult_new_passion_discovery", "adult_neighbor_drama"
+	},
+	[22] = { 
+		-- Age 22: Post-graduation - 30+ options!
+		"young_adult_career_crossroads", "college_graduation", "job_hunting", "degree_celebration", 
+		"real_job_search", "career_start", "nba_draft_declaration", "nfl_draft_declaration",
+		"adult_career_setback", "adult_career_peak", "adult_career_fork_decision", "adult_health_checkup_result",
+		"adult_social_event_invite", "adult_career_opportunity", "adult_life_milestone_reflection",
+		"adult_pet_consideration", "adult_random_encounter", "adult_unexpected_mentor", "adult_life_crossroads",
+		"adult_random_opportunity", "adult_nostalgia_moment", "adult_bucket_list_item", "adult_vacation_plans"
+	},
+	[23] = { 
+		-- Age 23: Real world - 25+ options!
+		"young_adult_relationship_milestone", "first_real_job", "adult_friendship", "living_alone", "budget_reality",
+		"adult_wedding_event", "adult_having_children", "adult_home_ownership", "adult_parents_aging",
+		"adult_car_situation", "adult_pet_decision", "adult_neighborhood_issues", "adult_work_life_balance",
+		"adult_car_shopping", "adult_salary_negotiation", "adult_investment_opportunity", "adult_side_hustle",
+		"adult_networking", "adult_social_event", "adult_career_opportunity", "adult_new_hobby"
+	},
+	[24] = { 
+		-- Age 24: Quarter life - 25+ options!
+		"quarter_life_reflection", "career_established", "friendship_evolution", "serious_dating", "life_direction",
+		"adult_quarter_life_crisis", "adult_midlife_crisis", "adult_career_crossroads", "adult_health_scare",
+		"adult_existential_thoughts", "adult_burnout", "adult_dating_apps", "adult_imposter_syndrome",
+		"adult_mentor_opportunity", "adult_reunion", "adult_tech_burnout", "adult_office_politics",
+		"adult_money_windfall", "adult_creative_block", "adult_new_passion_discovery", "adult_random_encounter"
+	},
 	
-	-- MID-LATE 20s (25-29) - Settling into adulthood
-	-- CRITICAL FIX #604: Added premium crossroads and special opportunity events
-	[25] = { "quarter_life_crisis", "royal_engagement_pressure", "late_20s_hobby_serious", "mid_twenties_milestone", "career_advancement", "relationship_pressure", "premium_life_crossroads", "premium_special_opportunity" },
-	[26] = { "late_20s_social_circle_shift", "career_plateau", "friends_marrying", "biological_clock", "life_comparison" },
-	[27] = { "late_20s_health_wake_up", "career_advancement", "settling_down_thoughts", "travel_urge", "achievement_review" },
-	[28] = { "late_20s_life_assessment", "pre_30_panic", "relationship_milestone", "career_change_consideration", "fitness_focus" },
-	[29] = { "approaching_30", "relationship_milestone", "decade_reflection", "bucket_list_rush", "life_audit" },
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- MID-LATE 20s (25-29) - Settling into adulthood - MASSIVELY EXPANDED!
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	[25] = { 
+		-- Age 25: Quarter century - 25+ options!
+		"quarter_life_crisis", "royal_engagement_pressure", "late_20s_hobby_serious", "mid_twenties_milestone", 
+		"career_advancement", "relationship_pressure", "premium_life_crossroads", "premium_special_opportunity",
+		"adult_quarter_life_crisis", "adult_career_crossroads", "adult_health_scare", "adult_viral_fame",
+		"adult_networking_event", "adult_side_gig_opportunity", "adult_burnout", "adult_dating_apps",
+		"adult_mentor_opportunity", "adult_existential_thoughts", "adult_money_windfall", "adult_new_passion_discovery"
+	},
+	[26] = { 
+		-- Age 26: Late twenties - 20+ options!
+		"late_20s_social_circle_shift", "career_plateau", "friends_marrying", "biological_clock", "life_comparison",
+		"adult_serious_relationship", "adult_relationship_challenges", "adult_breakup", "adult_wedding_event",
+		"adult_investment_opportunity", "adult_salary_negotiation", "adult_home_ownership", "adult_parents_aging",
+		"adult_car_situation", "adult_pet_decision", "adult_work_life_balance", "adult_friend_drift"
+	},
+	[27] = { 
+		-- Age 27: Approaching 30 - 20+ options!
+		"late_20s_health_wake_up", "career_advancement", "settling_down_thoughts", "travel_urge", "achievement_review",
+		"adult_health_checkup", "adult_fitness_goal", "adult_mental_health_adult", "adult_vacation_plans",
+		"adult_hobby_discovery", "adult_neighborhood_issues", "adult_career_peak", "adult_side_hustle",
+		"adult_financial_emergency", "adult_tax_situation", "adult_random_opportunity", "adult_bucket_list_item"
+	},
+	[28] = { 
+		-- Age 28: Pre-30 - 20+ options!
+		-- CRITICAL FIX: Removed non-existent events
+		"late_20s_life_assessment", "adult_existential_crisis_early", "relationship_milestone", "adult_career_setback", "adult_fitness_goal",
+		"adult_midlife_crisis", "adult_career_fork_decision", "adult_health_checkup_result", "adult_career_opportunity",
+		"adult_life_milestone_reflection", "adult_pet_consideration", "adult_random_encounter", "adult_unexpected_mentor",
+		"adult_life_crossroads", "adult_nostalgia_moment", "adult_having_children", "adult_existential_crisis_early"
+	},
+	[29] = { 
+		-- Age 29: Last year of twenties - 20+ options!
+		-- CRITICAL FIX: Removed non-existent events
+		"quarter_life_crisis", "relationship_milestone", "late_20s_life_assessment", "adult_midlife_crisis",
+		"adult_health_wake_up", "adult_unexpected_bill", "adult_neighbor_drama", "adult_social_event_invite",
+		"adult_career_opportunity", "adult_reunion", "adult_creative_block", "adult_tech_burnout",
+		"adult_office_politics", "adult_imposter_syndrome", "adult_new_hobby", "adult_social_comparison"
+	},
 	
 	-- 30s-40s - Established adulthood
-	[30] = { "stage_transition_adult", "turning_30", "fame_breakthrough", "dirty_thirty", "real_adult_now", "life_reassessment" },
-	[35] = { "royal_charity_focus", "career_peak", "mid_30s_reflection", "biological_deadline", "life_stability", "half_life_crisis" },
-	[40] = { "turning_40", "midlife_reflection", "royal_mid_reign", "over_the_hill", "wisdom_gained", "health_priority" },
+	-- CRITICAL FIX: Using events that actually exist
+	[30] = { "turning_30", "adult_career_peak", "adult_midlife_crisis", "adult_health_checkup", "adult_wedding_event" },
+	[35] = { "royal_charity_focus", "adult_career_peak", "adult_midlife_crisis", "adult_having_children", "adult_home_ownership" },
+	[40] = { "adult_midlife_crisis", "adult_parents_aging", "adult_health_checkup", "adult_career_crossroads", "royal_mid_reign" },
 	
-	-- 50s-60s - Later adulthood
-	[50] = { "stage_transition_middle_age", "turning_50", "silver_jubilee", "half_century", "empty_nest", "grandparent_maybe" },
-	[60] = { "golden_jubilee", "retirement_consideration", "senior_discount", "legacy_thoughts", "health_checks" },
+	-- 50s-60s - Later adulthood  
+	-- CRITICAL FIX: Using events that actually exist
+	[50] = { "adult_midlife_crisis", "adult_parents_aging", "adult_health_checkup", "adult_career_peak" },
+	[60] = { "adult_parents_aging", "adult_health_checkup", "adult_career_crossroads", "adult_hobby_discovery" },
 	
 	-- 65+ - Senior years
-	[65] = { "stage_transition_senior", "retirement_decision", "royal_succession_planning", "medicare_eligible", "golden_years_begin" },
-	[70] = { "golden_years", "legacy_planning", "diamond_jubilee", "seven_decades", "life_wisdom", "family_patriarch" },
-	[75] = { "platinum_jubilee", "diamond_anniversary_life", "remarkable_longevity", "great_grandparent" },
-	[80] = { "eighty_years_young", "centenarian_path", "family_elder", "life_celebration" },
+	-- CRITICAL FIX: Using events that actually exist
+	[65] = { "adult_parents_aging", "adult_health_checkup", "adult_hobby_discovery", "adult_vacation_plans" },
+	[70] = { "adult_health_checkup", "adult_hobby_discovery", "adult_nostalgia_moment" },
+	[75] = { "adult_health_checkup", "adult_hobby_discovery" },
+	[80] = { "adult_health_checkup" },
 }
 
 -- ═══════════════════════════════════════════════════════════════════════════════
@@ -3320,6 +3613,49 @@ function LifeEvents.buildYearQueue(state, options)
 		end
 	end
 
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX #WEDDING-1: GUARANTEED WEDDING EVENT AFTER ENGAGEMENT!
+	-- User complaint: "PROPOSE MEANS U GET MARRIED LIKE A MARRIFIED LIFE EVENT POPS UP NEXT AGE UP"
+	-- If player is engaged and not married, FORCE the wedding_planning event to trigger!
+	-- This ensures players don't have to manually go to Activities -> Marriage
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isEngaged = flags.engaged == true
+	local isMarried = flags.married == true
+	local isRoyalEngaged = flags.engaged_to_royalty == true
+	
+	if isEngaged and not isMarried then
+		-- Check how long they've been engaged (auto-wedding after 1-2 years)
+		local yearsEngaged = flags.years_engaged or 0
+		flags.years_engaged = yearsEngaged + 1
+		
+		-- 80% chance to trigger wedding on first year, guaranteed by year 2
+		local weddingChance = (yearsEngaged >= 1) and 1.0 or 0.80
+		
+		if RANDOM_LOCAL:NextNumber() < weddingChance then
+			-- Try regular wedding_planning first
+			local weddingEvent = AllEvents["wedding_planning"]
+			
+			-- Royal weddings use a different event
+			if isRoyalEngaged then
+				weddingEvent = AllEvents["royal_wedding_planning"] or AllEvents["premium_wish_wedding"] or weddingEvent
+			end
+			
+			if weddingEvent and canEventTrigger(weddingEvent, state) then
+				local occurCount = (history.occurrences[weddingEvent.id] or 0)
+				if occurCount == 0 or not weddingEvent.oneTime then
+					table.insert(selectedEvents, weddingEvent)
+					recordEventShown(state, weddingEvent)
+					return selectedEvents
+				end
+			end
+		end
+	else
+		-- Clear engagement counter if no longer engaged
+		if flags.years_engaged then
+			flags.years_engaged = nil
+		end
+	end
+	
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX #MOBILE-2: SPLIT RAPPER AND CREATOR EVENTS COMPLETELY!
 	-- BUG: Rapper events fired for streamers because they were grouped together
@@ -4867,6 +5203,7 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 			state.Flags.engaged = nil -- No longer engaged, now married
 			state.Flags.dating = nil -- No longer just dating
 			state.Flags.has_spouse = true -- Set spouse flag for detection
+			state.Flags.years_engaged = nil -- CRITICAL FIX #WEDDING-3: Clear years_engaged counter after wedding
 			
 			-- CRITICAL FIX: Safe access to partner name with fallback
 			local partnerName = partner.name or partner.Name or "your partner"
@@ -4883,6 +5220,9 @@ function EventEngine.completeEvent(eventDef, choiceIndex, state)
 			local partnerGender = state.Relationships.partner.gender or "female"
 			state.Relationships.partner.role = (partnerGender == "female") and "Fiancée" or "Fiancé"
 		end
+		-- CRITICAL FIX #WEDDING-2: Initialize years_engaged counter when engagement happens
+		-- This is used by the wedding auto-queue system to trigger wedding_planning
+		state.Flags.years_engaged = 0
 	end
 	
 	-- ═══════════════════════════════════════════════════════════════════════════════

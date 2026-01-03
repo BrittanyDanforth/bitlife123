@@ -43,6 +43,12 @@ local function canDoSocialActivities(state)
 	if flags.in_prison or flags.incarcerated or flags.in_jail then
 		return false
 	end
+	-- CRITICAL FIX: Homeless people struggle to attend social events
+	-- (though they can still do some basic social activities)
+	if flags.homeless and not flags.homeless_community then
+		-- Homeless without community support rarely go to parties
+		return false
+	end
 	return true
 end
 

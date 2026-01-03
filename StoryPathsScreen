@@ -719,13 +719,20 @@ function StoryPathsScreen:createPathCard(parent, path, order)
 	UI.stroke(card, canStart and reqsMet and 2 or 1, canStart and reqsMet and 0.7 or 0.88, canStart and reqsMet and path.color or C.Gray200)
 	UI.createShadow(card, 2, 6, C.Black, 0.95)
 	
-	-- CRITICAL FIX #6: Add premium badge for gamepass-required paths
+	-- CRITICAL FIX: Check gamepass ownership for premium badge display
+	local ownsGamepassForBadge = true
+	if isPremiumPath and path.gamepassKey then
+		ownsGamepassForBadge = self:checkGamepassOwnership(path.gamepassKey)
+	end
+	
+	-- CRITICAL FIX #6: Only show premium badge if player DOESN'T own the gamepass
+	-- If they own it, show "OWNED" badge instead
 	if isPremiumPath then
 		local premiumBadge = Instance.new("Frame")
 		premiumBadge.Name = "PremiumBadge"
-		premiumBadge.Size = UDim2.new(0, 60, 0, 20)
-		premiumBadge.Position = UDim2.new(1, -74, 0, 6)
-		premiumBadge.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+		premiumBadge.Size = UDim2.new(0, ownsGamepassForBadge and 55 or 60, 0, 20)
+		premiumBadge.Position = UDim2.new(1, ownsGamepassForBadge and -69 or -74, 0, 6)
+		premiumBadge.BackgroundColor3 = ownsGamepassForBadge and Color3.fromRGB(34, 197, 94) or Color3.fromRGB(255, 215, 0)
 		premiumBadge.ZIndex = 86
 		premiumBadge.Parent = card
 		UI.pill(premiumBadge)
@@ -735,8 +742,8 @@ function StoryPathsScreen:createPathCard(parent, path, order)
 		premiumLabel.BackgroundTransparency = 1
 		premiumLabel.Font = F.Bold or F.Title
 		premiumLabel.TextSize = 10
-		premiumLabel.TextColor3 = Color3.fromRGB(100, 70, 0)
-		premiumLabel.Text = "👑 PREMIUM"
+		premiumLabel.TextColor3 = ownsGamepassForBadge and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(100, 70, 0)
+		premiumLabel.Text = ownsGamepassForBadge and "✓ OWNED" or "👑 PREMIUM"
 		premiumLabel.ZIndex = 87
 		premiumLabel.Parent = premiumBadge
 	end
@@ -812,21 +819,47 @@ function StoryPathsScreen:createPathCard(parent, path, order)
 	reqLabel.Parent = reqBadge
 
 	-- Action button
+	-- CRITICAL FIX: Check gamepass ownership for premium paths BEFORE deciding button state
+	local ownsGamepass = true -- Default true for non-premium paths
+	if isPremiumPath and path.gamepassKey then
+		ownsGamepass = self:checkGamepassOwnership(path.gamepassKey)
+	end
+	
+	-- CRITICAL FIX: Premium paths should show "Get Pass" only if player doesn't own the pass
+	local isUnlockable = canStart and reqsMet and ownsGamepass
+	local needsGamepass = isPremiumPath and not ownsGamepass
+	local buttonText = "Start"
+	local buttonColor = path.color
+	local buttonTextColor = C.White
+	
+	if needsGamepass then
+		-- Premium path - player doesn't own gamepass - show Get Pass button
+		buttonText = "Get Pass"
+		buttonColor = Color3.fromRGB(255, 215, 0) -- Gold color
+		buttonTextColor = Color3.fromRGB(100, 70, 0) -- Dark gold text
+	elseif not isUnlockable then
+		-- Player owns gamepass but doesn't meet age/stat requirements
+		buttonText = "Locked"
+		buttonColor = C.Gray300
+		buttonTextColor = C.Gray500
+	end
+	
 	local actionBtn = Instance.new("TextButton")
 	actionBtn.Size = UDim2.new(0, 80, 0, 50)
 	actionBtn.AnchorPoint = Vector2.new(1, 0.5)
 	actionBtn.Position = UDim2.new(1, -14, 0.5, 0)
-	actionBtn.BackgroundColor3 = canStart and reqsMet and path.color or C.Gray300
+	actionBtn.BackgroundColor3 = buttonColor
 	actionBtn.Font = F.Button
 	actionBtn.TextSize = 14
-	actionBtn.TextColor3 = canStart and reqsMet and C.White or C.Gray500
-	actionBtn.Text = canStart and reqsMet and "Start" or "Locked"
+	actionBtn.TextColor3 = buttonTextColor
+	actionBtn.Text = buttonText
 	actionBtn.AutoButtonColor = false
 	actionBtn.ZIndex = 84
 	actionBtn.Parent = card
 	UI.corner(actionBtn, 14)
 
-	if canStart and reqsMet then
+	if isUnlockable then
+		-- Normal start path interaction - player owns gamepass and meets requirements
 		actionBtn.MouseEnter:Connect(function()
 			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = path.colorDark })
 			UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = path.colorPale:Lerp(C.White, 0.7) })
@@ -838,7 +871,27 @@ function StoryPathsScreen:createPathCard(parent, path, order)
 		actionBtn.MouseButton1Click:Connect(function()
 			self:showPathModal(path)
 		end)
+	elseif needsGamepass then
+		-- CRITICAL FIX: Player doesn't own gamepass - show purchase popup on click
+		actionBtn.MouseEnter:Connect(function()
+			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = Color3.fromRGB(255, 235, 100) })
+			UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = path.colorPale:Lerp(C.White, 0.7) })
+		end)
+		actionBtn.MouseLeave:Connect(function()
+			UI.tween(actionBtn, TweenInfo.new(0.12), { BackgroundColor3 = Color3.fromRGB(255, 215, 0) })
+			UI.tween(card, TweenInfo.new(0.12), { BackgroundColor3 = C.White })
+		end)
+		actionBtn.MouseButton1Click:Connect(function()
+			-- Show gamepass purchase prompt!
+			self:showGamepassPrompt(
+				path.gamepassKey,
+				"Unlock " .. path.name,
+				path.description .. "\n\nGet the " .. (path.gamepassName or "Premium Pass") .. " to unlock this story path!",
+				path.color
+			)
+		end)
 	end
+	-- Note: If player owns gamepass but doesn't meet requirements, button stays gray/locked with no action
 	
 	-- CRITICAL FIX #7: Store isPremium on card for modal to use
 	card:SetAttribute("isPremium", isPremiumPath)

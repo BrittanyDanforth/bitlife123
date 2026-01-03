@@ -89,7 +89,7 @@ events[#events + 1] = {
 			eligibility = function(state)
 				local flags = state.Flags or {}
 				if flags.lives_with_parents or flags.living_with_family or flags.boomerang_kid then
-					return false, "You already live with your family!"
+					return false, "Already with family"
 				end
 				return true
 			end,
@@ -659,6 +659,7 @@ events[#events + 1] = {
 					yearsAtJob = 0,
 				}
 				state.Flags.employed = true
+				state.Flags.has_job = true -- CRITICAL FIX: Missing flag!
 				state.Money = (state.Money or 0) + 200
 			end,
 		},

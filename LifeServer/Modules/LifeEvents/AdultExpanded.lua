@@ -81,12 +81,14 @@ AdultExpanded.events = {
 					end
 				end,
 			},
-			{
-				text = "Struggle and return home",
-				effects = { Happiness = -8 },
-				setFlags = { boomerang_kid = true, lives_with_parents = true },
-				feedText = "Reality hit hard. Back to parents' house. Humbling.",
-			},
+		{
+			-- CRITICAL FIX: Changed from "Struggle and return home" - user complained it made no sense
+			-- "IT SAYS STRUGGLE AND RETURN HOME THATS NOT A GOOD THING MAKES NO SENSE CUZ IM LEAVING I HAVNT LEFT YET"
+			text = "Not ready yet - stay with parents",
+			effects = { Happiness = -3, Money = 200 },
+			setFlags = { lives_with_parents = true, chose_to_stay = true },
+			feedText = "You decided you're not quite ready to leave. Saving more money first.",
+		},
 			{
 				text = "Get roommates to afford it ($500)",
 				effects = { Money = -500 }, -- CRITICAL FIX: Shared costs
@@ -436,6 +438,28 @@ AdultExpanded.events = {
 		ageBand = "adult",
 		category = "romance",
 		tags = { "breakup", "heartbreak", "change" },
+		
+		-- CRITICAL FIX: Clear relationship flags on breakup!
+		onComplete = function(state)
+			state.Flags = state.Flags or {}
+			-- Save ex data before clearing
+			if state.Relationships and state.Relationships.partner then
+				state.Relationships.ex = state.Relationships.partner
+				state.Relationships.last_ex = state.Relationships.partner
+				state.Relationships.ex.breakupAge = state.Age
+			end
+			-- Clear relationship flags
+			state.Flags.has_partner = nil
+			state.Flags.dating = nil
+			state.Flags.committed_relationship = nil
+			state.Flags.engaged = nil
+			state.Flags.single = true
+			state.Flags.recently_single = true
+			-- Clear partner
+			if state.Relationships then
+				state.Relationships.partner = nil
+			end
+		end,
 		
 		choices = {
 			{ text = "Devastated - takes years to recover", effects = { Happiness = -15, Health = -5 }, setFlags = { heartbroken_adult = true }, feedText = "World shattered. Everything reminds you of them." },
@@ -1168,8 +1192,9 @@ AdultExpanded.events = {
 		text = "Everyone's getting married! You're invited to another wedding.",
 		question = "How do you feel about wedding season?",
 		minAge = 24, maxAge = 40,
-		baseChance = 0.4,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.25, -- CRITICAL FIX: Reduced from 0.4 - user said "THE WEDDING SEASON SHOWS UP ALOT"
+		cooldown = 6, -- CRITICAL FIX: Increased from 4 to reduce spam more
+		maxOccurrences = 3, -- CRITICAL FIX: Limit total occurrences per life
 		stage = STAGE,
 		ageBand = "adult",
 		category = "social",

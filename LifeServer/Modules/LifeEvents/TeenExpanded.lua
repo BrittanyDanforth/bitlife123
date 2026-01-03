@@ -868,9 +868,9 @@ TeenExpanded.events = {
 	},
 	{
 		id = "teen_substance_pressure",
-		title = "Substance Pressure",
-		emoji = "🚬",
-		text = "Someone offers you something you know you shouldn't have.",
+		title = "Peer Pressure",
+		emoji = "⚠️",
+		text = "Someone is pressuring you to do something you know is wrong.",
 		question = "How do you handle the pressure?",
 		minAge = 14, maxAge = 17,
 		baseChance = 0.4,
@@ -878,7 +878,7 @@ TeenExpanded.events = {
 		stage = STAGE,
 		ageBand = "teen",
 		category = "risky",
-		tags = { "substances", "alcohol", "peer_pressure" },
+		tags = { "peer_pressure", "decisions" },
 		
 		choices = {
 			{
@@ -896,7 +896,7 @@ TeenExpanded.events = {
 					if roll < 0.40 then
 						state:ModifyStat("Happiness", 3)
 						state:ModifyStat("Health", -2)
-						state:AddFeed("🚬 Tried it. Meh. Not for you.")
+						state:AddFeed("⚠️ Tried it. Meh. Not for you.")
 					elseif roll < 0.75 then
 						state:ModifyStat("Happiness", -3)
 						state:ModifyStat("Health", -5)
