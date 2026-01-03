@@ -5507,6 +5507,1120 @@ EarlyLifeEvents.events = {
 	-- REMOVED: baby_viral_moment event was confusing and triggered too early
 	-- The "500 likes grandma shared" text was nonsensical for a newborn
 	-- Replaced with a simpler, more appropriate family video event
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- MEGA EXPANSION: 40+ NEW UNIQUE EARLY LIFE EVENTS!
+	-- Added for maximum variety in ages 0-8
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	
+	-- ════════════════════════════════════════════════════════════════
+	-- BABY EVENTS (Ages 0-1)
+	-- ════════════════════════════════════════════════════════════════
+	{
+		id = "baby_meeting_grandparents",
+		title = "Meeting Grandparents",
+		emoji = "👴",
+		textVariants = {
+			"Your grandparents are visiting to meet you for the first time!",
+			"Grandma and Grandpa are here! They're so excited to see you!",
+			"The grandparents drove hours just to hold you!",
+			"Family gathered to celebrate your arrival - grandparents are emotional!",
+		},
+		text = "Your grandparents are visiting to meet you for the first time!",
+		question = "How does the visit go?",
+		minAge = 0, maxAge = 1,
+		baseChance = 0.5,
+		cooldown = 3,
+		oneTime = true,
+		category = "childhood",
+		
+		choices = {
+			{
+				text = "Cuddle with them",
+				effects = {},
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 8)
+					state:AddFeed("👴 Grandma couldn't stop smiling while holding you!")
+				end,
+			},
+			{
+				text = "Cry when they pick me up",
+				effects = {},
+				onResolve = function(state)
+					local roll = math.random(100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("👴 You cried at first but eventually warmed up to grandma!")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("👴 You screamed the whole visit... grandma still loved you though!")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "baby_first_bath",
+		title = "First Bath",
+		emoji = "🛁",
+		textVariants = {
+			"It's time for your very first bath at home!",
+			"Mom is giving you your first proper bath!",
+			"Your parents prepare the baby tub for your first bath!",
+			"Bath time! The water is warm and bubbly!",
+		},
+		text = "It's time for your very first bath at home!",
+		question = "How do you react to the water?",
+		minAge = 0, maxAge = 1,
+		baseChance = 0.5,
+		cooldown = 3,
+		oneTime = true,
+		category = "childhood",
+		
+		choices = {
+			{
+				text = "Love the water!",
+				effects = {},
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.loves_water = true
+					state:ModifyStat("Happiness", 8)
+					state:AddFeed("🛁 You LOVED bath time! Splashing everywhere!")
+				end,
+			},
+			{
+				text = "Scream bloody murder",
+				effects = {},
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.hates_baths = true
+					state:ModifyStat("Happiness", -3)
+					state:AddFeed("🛁 You screamed so loud the neighbors probably heard! Bath time = torture!")
+				end,
+			},
+		},
+	},
+	{
+		id = "baby_sleeping_through_night",
+		title = "Sleeping Through the Night",
+		emoji = "😴",
+		textVariants = {
+			"For the first time, you slept through the entire night!",
+			"You finally gave your parents a full night's sleep!",
+			"A miracle! You slept 8 hours straight!",
+			"Your parents woke up refreshed - you slept all night!",
+		},
+		text = "For the first time, you slept through the entire night!",
+		question = "How do your parents react?",
+		minAge = 0, maxAge = 1,
+		baseChance = 0.5,
+		cooldown = 3,
+		oneTime = true,
+		category = "childhood",
+		
+		choices = {
+			{
+				text = "They're so happy!",
+				effects = {},
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 10)
+					state:AddFeed("😴 Your parents are THRILLED! Maybe life is manageable after all!")
+				end,
+			},
+		},
+	},
+	{
+		id = "baby_rolling_over",
+		title = "Rolling Over",
+		emoji = "🔄",
+		textVariants = {
+			"You rolled over by yourself for the first time!",
+			"Mom put you on your tummy and you ROLLED!",
+			"You mastered the art of the roll!",
+			"Dad caught you rolling over and freaked out with excitement!",
+		},
+		text = "You rolled over by yourself for the first time!",
+		question = "What happens next?",
+		minAge = 0, maxAge = 1,
+		baseChance = 0.5,
+		cooldown = 3,
+		oneTime = true,
+		category = "childhood",
+		
+		choices = {
+			{
+				text = "Keep rolling!",
+				effects = {},
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.active_baby = true
+					state:ModifyStat("Health", 3)
+					state:ModifyStat("Happiness", 6)
+					state:AddFeed("🔄 You rolled across the entire room! Future athlete?!")
+				end,
+			},
+			{
+				text = "Get stuck and cry",
+				effects = {},
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 2)
+					state:AddFeed("🔄 You rolled over but got stuck! Help!")
+				end,
+			},
+		},
+	},
+	{
+		id = "baby_hiccups",
+		title = "The Hiccups",
+		emoji = "🫢",
+		textVariants = {
+			"You got the hiccups and they won't stop!",
+			"Hiccup! Hiccup! You can't stop hiccuping!",
+			"After feeding, you got a case of the hiccups!",
+			"Your tiny hiccups are the cutest thing ever!",
+		},
+		text = "You got the hiccups and they won't stop!",
+		question = "How long do they last?",
+		minAge = 0, maxAge = 1,
+		baseChance = 0.4,
+		cooldown = 2,
+		category = "childhood",
+		
+		choices = {
+			{
+				text = "Just a few minutes",
+				effects = {},
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("🫢 Your adorable hiccups made everyone laugh!")
+				end,
+			},
+		},
+	},
+	
+	-- ════════════════════════════════════════════════════════════════
+	-- TODDLER EVENTS (Ages 2-3)
+	-- ════════════════════════════════════════════════════════════════
+	{
+		id = "toddler_hiding_game",
+		title = "The Great Hide",
+		emoji = "🙈",
+		textVariants = {
+			"You found the PERFECT hiding spot during hide and seek!",
+			"You hid so well that everyone panicked looking for you!",
+			"You discovered the best hiding spot in the house!",
+			"You hid behind the couch and nobody could find you!",
+		},
+		text = "You found the PERFECT hiding spot during hide and seek!",
+		question = "What happens?",
+		minAge = 2, maxAge = 4,
+		baseChance = 0.5,
+		cooldown = 4,
+		category = "childhood",
+		
+		choices = {
+			{
+				text = "Stay hidden like a pro!",
+				effects = {},
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.sneaky = true
+					state:ModifyStat("Happiness", 8)
+					state:AddFeed("🙈 You hid for 20 MINUTES! Everyone was so worried then impressed!")
+				end,
+			},
+			{
+				text = "Giggle and give myself away",
+				effects = {},
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 6)
+					state:AddFeed("🙈 You couldn't stop giggling! The best hiding spots mean nothing with no poker face!")
+				end,
+			},
+		},
+	},
+	{
+		id = "toddler_mud_puddle",
+		title = "Mud Puddle Adventure",
+		emoji = "💦",
+		textVariants = {
+			"You found a big mud puddle after the rain!",
+			"There's a HUGE puddle outside and it's calling your name!",
+			"The backyard has turned into a mud paradise!",
+			"Mom looked away for ONE second and you found MUD!",
+		},
+		text = "You found a big mud puddle after the rain!",
+		question = "What do you do?",
+		minAge = 2, maxAge = 4,
+		baseChance = 0.5,
+		cooldown = 3,
+		category = "childhood",
+		
+		choices = {
+			{
+				text = "JUMP IN!",
+				effects = {},
+				onResolve = function(state)
+					local roll = math.random(100)
+					if roll <= 60 then
+						state.Flags = state.Flags or {}
+						state.Flags.loves_outdoors = true
+						state:ModifyStat("Happiness", 10)
+						state:AddFeed("💦 MUD EVERYWHERE! You're covered but SO HAPPY! Bath time now...")
+					else
+						state:ModifyStat("Happiness", 5)
+						state:ModifyStat("Health", -2)
+						state:AddFeed("💦 You splashed in the mud but caught a little cold!")
+					end
+				end,
+			},
+			{
+				text = "Just dip my toes",
+				effects = {},
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("💦 You tested the waters... literally. Pretty fun!")
+				end,
+			},
+		},
+	},
+	{
+		id = "toddler_fridge_raid",
+		title = "Midnight Snack Raid",
+		emoji = "🍪",
+		textVariants = {
+			"You snuck to the fridge in the middle of the night!",
+			"Everyone's asleep... time to find snacks!",
+			"You woke up hungry and decided to take matters into your own hands!",
+			"The fridge is calling you at 2 AM!",
+		},
+		text = "You snuck to the fridge in the middle of the night!",
+		question = "Do you get caught?",
+		minAge = 2, maxAge = 5,
+		baseChance = 0.4,
+		cooldown = 4,
+		category = "childhood",
+		
+		choices = {
+			{
+				text = "Sneak mission successful!",
+				effects = {},
+				onResolve = function(state)
+					local roll = math.random(100)
+					state.Flags = state.Flags or {}
+					if roll <= 40 then
+						state.Flags.sneaky = true
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🍪 You ate cookies at 2 AM and nobody knows! Perfect crime!")
+					else
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("🍪 Mom found crumbs in your bed... busted!")
+					end
+				end,
+			},
+			{
+				text = "Get caught immediately",
+				effects = {},
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 2)
+					state:AddFeed("🍪 Dad heard the fridge door! Mission failed!")
+				end,
+			},
+		},
+	},
+	{
+		id = "toddler_copying_adult",
+		title = "Mini Adult",
+		emoji = "👔",
+		textVariants = {
+			"You're copying everything the adults do!",
+			"You put on daddy's shoes and tie and pretend to go to work!",
+			"You grabbed mom's purse and said 'I'm going shopping!'",
+			"You're on the 'phone' having a very important business call!",
+		},
+		text = "You're copying everything the adults do!",
+		question = "What do you copy?",
+		minAge = 2, maxAge = 4,
+		baseChance = 0.5,
+		cooldown = 4,
+		category = "childhood",
+		
+		choices = {
+			{
+				text = "Go to 'work' like daddy",
+				effects = {},
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 7)
+					state:AddFeed("👔 You grabbed a briefcase and said 'See you later, I have meetings!' ADORABLE!")
+				end,
+			},
+			{
+				text = "Cook like mommy",
+				effects = {},
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.interested_cooking = true
+					state:ModifyStat("Happiness", 6)
+					state:AddFeed("👔 You pretended to cook dinner! 'Order up!'")
+				end,
+			},
+			{
+				text = "Talk on the 'phone'",
+				effects = {},
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 6)
+					state:AddFeed("👔 'Hello? Yes, very busy. Many things to do. Bye bye!' - You with a TV remote")
+				end,
+			},
+		},
+	},
+	{
+		id = "toddler_pet_bond",
+		title = "Best Furry Friend",
+		emoji = "🐕",
+		textVariants = {
+			"You and the family pet are becoming inseparable!",
+			"The dog follows you EVERYWHERE now!",
+			"The cat has chosen you as its favorite human!",
+			"You share your snacks with the family pet!",
+		},
+		text = "You and the family pet are becoming inseparable!",
+		question = "What's your relationship like?",
+		minAge = 1, maxAge = 5,
+		baseChance = 0.4,
+		cooldown = 5,
+		requiresFlags = { has_family_pet = true },
+		category = "childhood",
+		
+		choices = {
+			{
+				text = "We're best friends!",
+				effects = {},
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.animal_lover = true
+					state:ModifyStat("Happiness", 10)
+					state:AddFeed("🐕 You and your pet are inseparable! You even share toys!")
+				end,
+			},
+			{
+				text = "I try to ride them",
+				effects = {},
+				onResolve = function(state)
+					local roll = math.random(100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 6)
+						state:AddFeed("🐕 The dog let you 'ride' for 3 seconds! Yee-haw!")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("🐕 The dog was NOT happy about being a horse!")
+					end
+				end,
+			},
+		},
+	},
+	
+	-- ════════════════════════════════════════════════════════════════
+	-- PRESCHOOL EVENTS (Ages 3-5)
+	-- ════════════════════════════════════════════════════════════════
+	{
+		id = "preschool_best_painter",
+		title = "Little Picasso",
+		emoji = "🎨",
+		textVariants = {
+			"Your finger painting is the best in class!",
+			"Teacher put YOUR art on the special wall!",
+			"Everyone is impressed by your artistic skills!",
+			"You created a masterpiece with macaroni and glue!",
+		},
+		text = "Your finger painting is the best in class!",
+		question = "How do you feel?",
+		minAge = 3, maxAge = 5,
+		baseChance = 0.5,
+		cooldown = 4,
+		category = "childhood",
+		
+		choices = {
+			{
+				text = "I'm going to be an artist!",
+				effects = {},
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.artistic = true
+					state:ModifyStat("Happiness", 10)
+					state:AddFeed("🎨 Your artwork is displayed in the hallway! Future artist confirmed!")
+				end,
+			},
+			{
+				text = "Make more art for everyone!",
+				effects = {},
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 8)
+					state:AddFeed("🎨 You gave everyone paintings! The most generous artist!")
+				end,
+			},
+		},
+	},
+	{
+		id = "preschool_line_leader",
+		title = "Line Leader",
+		emoji = "👑",
+		textVariants = {
+			"You get to be LINE LEADER today!",
+			"Teacher picked YOU to lead the class!",
+			"It's your turn to be at the front of the line!",
+			"You're the line leader - the most important job!",
+		},
+		text = "You get to be LINE LEADER today!",
+		question = "How do you lead?",
+		minAge = 3, maxAge = 5,
+		baseChance = 0.5,
+		cooldown = 3,
+		category = "childhood",
+		
+		choices = {
+			{
+				text = "March proudly!",
+				effects = {},
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.leadership_potential = true
+					state:ModifyStat("Happiness", 8)
+					state:AddFeed("👑 You led the class perfectly! A natural born leader!")
+				end,
+			},
+			{
+				text = "Walk super slow to show off",
+				effects = {},
+				onResolve = function(state)
+					local roll = math.random(100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 5)
+						state:AddFeed("👑 Everyone had to follow YOUR pace! Power!")
+					else
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("👑 Teacher told you to pick up the pace...")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "preschool_new_kid",
+		title = "New Kid in Class",
+		emoji = "👋",
+		textVariants = {
+			"A new kid joined your class today!",
+			"There's a nervous new student in preschool!",
+			"Someone new is looking for friends!",
+			"A new classmate is sitting alone at lunch!",
+		},
+		text = "A new kid joined your class today!",
+		question = "What do you do?",
+		minAge = 3, maxAge = 6,
+		baseChance = 0.5,
+		cooldown = 4,
+		category = "childhood",
+		
+		choices = {
+			{
+				text = "Be their friend!",
+				effects = {},
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.friendly = true
+					state:ModifyStat("Happiness", 8)
+					state:AddFeed("👋 You made the new kid feel welcome! Teacher is so proud!")
+				end,
+			},
+			{
+				text = "Watch from a distance",
+				effects = {},
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.shy = true
+					state:ModifyStat("Happiness", 3)
+					state:AddFeed("👋 You're a bit shy around new people. That's okay!")
+				end,
+			},
+			{
+				text = "Show them around!",
+				effects = {},
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.helpful = true
+					state:ModifyStat("Happiness", 9)
+					state:AddFeed("👋 You gave them the full tour! Bathroom, toys, snack corner!")
+				end,
+			},
+		},
+	},
+	{
+		id = "preschool_bug_discovery",
+		title = "Bug Discovery",
+		emoji = "🐛",
+		textVariants = {
+			"You found a cool bug on the playground!",
+			"There's a caterpillar on the fence!",
+			"You discovered an ant colony near the sandbox!",
+			"A ladybug landed on your hand!",
+		},
+		text = "You found a cool bug on the playground!",
+		question = "What do you do with it?",
+		minAge = 3, maxAge = 6,
+		baseChance = 0.5,
+		cooldown = 3,
+		category = "childhood",
+		
+		choices = {
+			{
+				text = "Study it carefully",
+				effects = {},
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.curious_nature = true
+					state:ModifyStat("Smarts", 2)
+					state:ModifyStat("Happiness", 6)
+					state:AddFeed("🐛 You learned so much about bugs today! Future scientist?")
+				end,
+			},
+			{
+				text = "Try to keep it as a pet",
+				effects = {},
+				onResolve = function(state)
+					local roll = math.random(100)
+					if roll <= 40 then
+						state:ModifyStat("Happiness", 7)
+						state:AddFeed("🐛 You kept the bug in a jar for a whole day! Best pet ever!")
+					else
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("🐛 Mom made you release the bug... sad day.")
+					end
+				end,
+			},
+			{
+				text = "Run away screaming",
+				effects = {},
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 2)
+					state:AddFeed("🐛 BUGS ARE SCARY! You'll stick to butterflies only!")
+				end,
+			},
+		},
+	},
+	{
+		id = "preschool_playground_fall",
+		title = "Playground Oopsie",
+		emoji = "🩹",
+		textVariants = {
+			"You fell off the jungle gym!",
+			"You tripped and scraped your knee!",
+			"You slipped on the slide!",
+			"The swing went too high and you fell off!",
+		},
+		text = "You fell off the jungle gym!",
+		question = "How bad is it?",
+		minAge = 3, maxAge = 6,
+		baseChance = 0.4,
+		cooldown = 4,
+		category = "childhood",
+		
+		choices = {
+			{
+				text = "Just a scratch!",
+				effects = {},
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.tough = true
+					state:ModifyStat("Happiness", 4)
+					state:AddFeed("🩹 You got a band-aid and went right back to playing! Tough kid!")
+				end,
+			},
+			{
+				text = "Cry for attention",
+				effects = {},
+				onResolve = function(state)
+					state:ModifyStat("Happiness", -2)
+					state:ModifyStat("Health", -1)
+					state:AddFeed("🩹 The tears got you extra hugs and a popsicle!")
+				end,
+			},
+		},
+	},
+	
+	-- ════════════════════════════════════════════════════════════════
+	-- EARLY SCHOOL EVENTS (Ages 5-8)
+	-- ════════════════════════════════════════════════════════════════
+	{
+		id = "school_lunch_trade",
+		title = "Lunch Trade",
+		emoji = "🥪",
+		textVariants = {
+			"Someone wants to trade lunches with you!",
+			"The kid next to you has a way better snack!",
+			"Lunch time trading has begun!",
+			"You see someone with cookies... you have carrots.",
+		},
+		text = "Someone wants to trade lunches with you!",
+		question = "Do you trade?",
+		minAge = 5, maxAge = 8,
+		baseChance = 0.5,
+		cooldown = 3,
+		category = "childhood",
+		
+		choices = {
+			{
+				text = "Make the trade!",
+				effects = {},
+				onResolve = function(state)
+					local roll = math.random(100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 7)
+						state:AddFeed("🥪 BEST TRADE EVER! You got fruit snacks for your apple!")
+					else
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("🥪 Bad trade... their sandwich was weird.")
+					end
+				end,
+			},
+			{
+				text = "Keep what I have",
+				effects = {},
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 4)
+					state:AddFeed("🥪 You enjoyed your own lunch! Mom makes the best!")
+				end,
+			},
+		},
+	},
+	{
+		id = "school_reading_award",
+		title = "Reading Star",
+		emoji = "📚",
+		textVariants = {
+			"You read the most books this month!",
+			"Teacher gave you a reading award!",
+			"You finished the reading challenge!",
+			"You're the fastest reader in class!",
+		},
+		text = "You read the most books this month!",
+		question = "How do you celebrate?",
+		minAge = 5, maxAge = 8,
+		baseChance = 0.5,
+		cooldown = 4,
+		oneTime = true,
+		category = "childhood",
+		
+		choices = {
+			{
+				text = "Read even more!",
+				effects = {},
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.bookworm = true
+					state:ModifyStat("Smarts", 4)
+					state:ModifyStat("Happiness", 8)
+					state:AddFeed("📚 You got a gold star and a free book! Reading is your superpower!")
+				end,
+			},
+			{
+				text = "Show off my certificate",
+				effects = {},
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 7)
+					state:AddFeed("📚 Mom put your reading award on the fridge! So proud!")
+				end,
+			},
+		},
+	},
+	{
+		id = "school_pencil_collection",
+		title = "Pencil Collector",
+		emoji = "✏️",
+		textVariants = {
+			"You've started collecting fancy pencils!",
+			"Your pencil case is the envy of the class!",
+			"You have 47 different pencils now!",
+			"Someone wants to trade pencils with you!",
+		},
+		text = "You've started collecting fancy pencils!",
+		question = "How's your collection?",
+		minAge = 5, maxAge = 8,
+		baseChance = 0.4,
+		cooldown = 4,
+		category = "childhood",
+		
+		choices = {
+			{
+				text = "Best collection ever!",
+				effects = {},
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.collector = true
+					state:ModifyStat("Happiness", 6)
+					state:AddFeed("✏️ Your sparkly pencil is the talk of the class!")
+				end,
+			},
+			{
+				text = "Trade for rare pencils",
+				effects = {},
+				onResolve = function(state)
+					local roll = math.random(100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("✏️ You traded for a HOLOGRAPHIC pencil! Legendary!")
+					else
+						state:ModifyStat("Happiness", 3)
+						state:AddFeed("✏️ Someone traded you a chewed pencil... not fair!")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "school_class_hamster",
+		title = "Class Pet Duty",
+		emoji = "🐹",
+		textVariants = {
+			"It's your turn to take care of the class hamster!",
+			"You get to feed the class pet today!",
+			"The class fish needs feeding - your job!",
+			"You're on class pet duty this week!",
+		},
+		text = "It's your turn to take care of the class hamster!",
+		question = "How does it go?",
+		minAge = 5, maxAge = 8,
+		baseChance = 0.5,
+		cooldown = 4,
+		category = "childhood",
+		
+		choices = {
+			{
+				text = "Take great care!",
+				effects = {},
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.responsible = true
+					state:ModifyStat("Happiness", 8)
+					state:AddFeed("🐹 You did such a good job! Teacher says you're so responsible!")
+				end,
+			},
+			{
+				text = "Let it escape (accidentally)",
+				effects = {},
+				onResolve = function(state)
+					local roll = math.random(100)
+					if roll <= 60 then
+						state:ModifyStat("Happiness", 2)
+						state:AddFeed("🐹 The hamster escaped! Everyone helped catch it - crisis averted!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🐹 You lost the class pet for 20 minutes... teacher was NOT happy.")
+					end
+				end,
+			},
+		},
+	},
+	{
+		id = "school_recess_game",
+		title = "Recess Games",
+		emoji = "⚽",
+		textVariants = {
+			"Time to pick teams for kickball!",
+			"Everyone wants to play tag - who's it?",
+			"The swings are all taken - what now?",
+			"It's the ultimate four square championship!",
+		},
+		text = "Time to pick teams for kickball!",
+		question = "How does it go?",
+		minAge = 5, maxAge = 8,
+		baseChance = 0.5,
+		cooldown = 3,
+		category = "childhood",
+		
+		choices = {
+			{
+				text = "I get picked first!",
+				effects = {},
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.athletic = true
+					state:ModifyStat("Happiness", 9)
+					state:AddFeed("⚽ You got picked FIRST! Everyone wants you on their team!")
+				end,
+			},
+			{
+				text = "Picked somewhere in the middle",
+				effects = {},
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("⚽ Good game! You had fun either way!")
+				end,
+			},
+			{
+				text = "I pick the teams!",
+				effects = {},
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.leadership_potential = true
+					state:ModifyStat("Happiness", 7)
+					state:AddFeed("⚽ You're the captain! Big responsibility!")
+				end,
+			},
+		},
+	},
+	{
+		id = "school_show_and_tell_epic",
+		title = "Epic Show and Tell",
+		emoji = "🌟",
+		textVariants = {
+			"Show and tell day - you brought something AWESOME!",
+			"Everyone is excited to see what you brought!",
+			"Your show and tell item is the best!",
+			"You have the coolest thing in class today!",
+		},
+		text = "Show and tell day - you brought something AWESOME!",
+		question = "What did you bring?",
+		minAge = 5, maxAge = 7,
+		baseChance = 0.5,
+		cooldown = 4,
+		category = "childhood",
+		
+		choices = {
+			{
+				text = "My pet!",
+				effects = {},
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 10)
+					state:AddFeed("🌟 Everyone loved your pet! Most popular show and tell EVER!")
+				end,
+			},
+			{
+				text = "A cool toy",
+				effects = {},
+				onResolve = function(state)
+					local roll = math.random(100)
+					if roll <= 70 then
+						state:ModifyStat("Happiness", 8)
+						state:AddFeed("🌟 Your toy was SO COOL! Everyone wanted to play with it!")
+					else
+						state:ModifyStat("Happiness", 4)
+						state:AddFeed("🌟 Someone else brought the same toy... awkward!")
+					end
+				end,
+			},
+			{
+				text = "Something I made",
+				effects = {},
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.creative = true
+					state:ModifyStat("Happiness", 9)
+					state:AddFeed("🌟 You made it yourself?! Teacher is SO impressed!")
+				end,
+			},
+		},
+	},
+	{
+		id = "school_mystery_lunch",
+		title = "Mystery Cafeteria Food",
+		emoji = "🤔",
+		textVariants = {
+			"The cafeteria is serving something... mysterious today.",
+			"You can't identify what's on your lunch tray!",
+			"Is that... chicken? Or fish? Nobody knows!",
+			"The lunch lady says it's 'special surprise day'!",
+		},
+		text = "The cafeteria is serving something... mysterious today.",
+		question = "Do you eat it?",
+		minAge = 5, maxAge = 10,
+		baseChance = 0.4,
+		cooldown = 4,
+		category = "childhood",
+		
+		choices = {
+			{
+				text = "Take a brave bite!",
+				effects = {},
+				onResolve = function(state)
+					local roll = math.random(100)
+					if roll <= 50 then
+						state.Flags = state.Flags or {}
+						state.Flags.adventurous_eater = true
+						state:ModifyStat("Happiness", 7)
+						state:AddFeed("🤔 It was actually... pretty good?! You're brave!")
+					else
+						state:ModifyStat("Happiness", -3)
+						state:AddFeed("🤔 GROSS! You spit it into your napkin! Never again!")
+					end
+				end,
+			},
+			{
+				text = "Trade for someone's snack",
+				effects = {},
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("🤔 Smart move! You traded for a PB&J!")
+				end,
+			},
+			{
+				text = "Just eat the sides",
+				effects = {},
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 3)
+					state:AddFeed("🤔 You stuck with bread and milk. Safe choice!")
+				end,
+			},
+		},
+	},
+	{
+		id = "school_substitute_teacher",
+		title = "Substitute Teacher Day",
+		emoji = "👩‍🏫",
+		textVariants = {
+			"There's a substitute teacher today!",
+			"Your regular teacher is out sick!",
+			"New teacher alert! No one knows the rules!",
+			"The sub doesn't know anyone's name!",
+		},
+		text = "There's a substitute teacher today!",
+		question = "How do you act?",
+		minAge = 5, maxAge = 10,
+		baseChance = 0.5,
+		cooldown = 4,
+		category = "childhood",
+		
+		choices = {
+			{
+				text = "Be on my best behavior",
+				effects = {},
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.well_behaved = true
+					state:ModifyStat("Happiness", 6)
+					state:AddFeed("👩‍🏫 The sub wrote a nice note to your teacher! Gold star!")
+				end,
+			},
+			{
+				text = "Test the limits a little",
+				effects = {},
+				onResolve = function(state)
+					local roll = math.random(100)
+					if roll <= 50 then
+						state:ModifyStat("Happiness", 7)
+						state:AddFeed("👩‍🏫 You got away with SO much! Free day!")
+					else
+						state:ModifyStat("Happiness", -2)
+						state:AddFeed("👩‍🏫 You got in trouble! The sub was STRICT!")
+					end
+				end,
+			},
+			{
+				text = "Help the sub with class names",
+				effects = {},
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.helpful = true
+					state:ModifyStat("Happiness", 7)
+					state:AddFeed("👩‍🏫 You helped the sub all day! Teacher's little helper!")
+				end,
+			},
+		},
+	},
+	{
+		id = "school_fire_drill",
+		title = "Fire Drill!",
+		emoji = "🔔",
+		textVariants = {
+			"FIRE DRILL! Everyone line up!",
+			"The fire alarm just went off!",
+			"Time to practice evacuating the building!",
+			"BEEP BEEP BEEP! Fire drill time!",
+		},
+		text = "FIRE DRILL! Everyone line up!",
+		question = "How do you handle it?",
+		minAge = 5, maxAge = 10,
+		baseChance = 0.4,
+		cooldown = 5,
+		category = "childhood",
+		
+		choices = {
+			{
+				text = "Walk calmly in line",
+				effects = {},
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("🔔 Perfect fire drill! You walked in a single file line!")
+				end,
+			},
+			{
+				text = "Get scared by the alarm",
+				effects = {},
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 2)
+					state:AddFeed("🔔 That alarm is LOUD! You covered your ears the whole time!")
+				end,
+			},
+			{
+				text = "Enjoy the break from class",
+				effects = {},
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 7)
+					state:AddFeed("🔔 Free outdoor time! You wished the drill lasted longer!")
+				end,
+			},
+		},
+	},
+	{
+		id = "school_library_day",
+		title = "Library Day",
+		emoji = "📖",
+		textVariants = {
+			"It's library day! Time to pick a new book!",
+			"The librarian is showing you the new books!",
+			"So many books to choose from!",
+			"You can check out TWO books today!",
+		},
+		text = "It's library day! Time to pick a new book!",
+		question = "What do you pick?",
+		minAge = 5, maxAge = 10,
+		baseChance = 0.5,
+		cooldown = 3,
+		category = "childhood",
+		
+		choices = {
+			{
+				text = "A cool adventure book",
+				effects = {},
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.adventurous = true
+					state:ModifyStat("Happiness", 6)
+					state:ModifyStat("Smarts", 1)
+					state:AddFeed("📖 Dragons, pirates, and treasure! Best book ever!")
+				end,
+			},
+			{
+				text = "A funny book",
+				effects = {},
+				onResolve = function(state)
+					state:ModifyStat("Happiness", 7)
+					state:AddFeed("📖 You laughed so hard reading this! Everyone wanted to borrow it!")
+				end,
+			},
+			{
+				text = "An educational book",
+				effects = {},
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.curious_learner = true
+					state:ModifyStat("Smarts", 3)
+					state:ModifyStat("Happiness", 5)
+					state:AddFeed("📖 You learned so much about dinosaurs/space/science!")
+				end,
+			},
+		},
+	},
 }
 
 return EarlyLifeEvents
