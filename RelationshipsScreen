@@ -4002,17 +4002,85 @@ function RelationshipsScreen:showRelationshipResultCard(actionId, title, message
 		emoji = "😠"
 	end
 	
-	-- Build result event card
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Detect negative/crime outcomes for proper shake/red effects!
+	-- User bug: "IT SAYS A BLUE BORDER INSTEAD OF RED... ITS SUPPOSED SHAKE LIKE BAD"
+	-- LifeClient checks: wasSuccess, wasCaught, isNegative, health, happiness, money
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	local isNegative = not success
+	local wasCaught = false
+	local healthDelta = 0
+	local happinessDelta = 0
+	
+	-- Check message for crime/caught indicators
+	if message then
+		local lowerMsg = message:lower()
+		
+		-- Detect caught/arrested scenarios
+		if lowerMsg:find("caught") or lowerMsg:find("arrested") or lowerMsg:find("prison")
+			or lowerMsg:find("jail") or lowerMsg:find("sentence") or lowerMsg:find("police")
+			or lowerMsg:find("detective") or lowerMsg:find("🚔") or lowerMsg:find("👮")
+			or lowerMsg:find("⚖️") or lowerMsg:find("⛓️") then
+			wasCaught = true
+			isNegative = true
+			healthDelta = -20  -- Simulate health loss for shake
+			happinessDelta = -50
+			emoji = "🚔"
+		end
+		
+		-- Detect eliminate success (still dark/negative feel)
+		if lowerMsg:find("got away with it") or lowerMsg:find("dark secret") 
+			or lowerMsg:find("is gone") or lowerMsg:find("is no more")
+			or lowerMsg:find("has passed") or lowerMsg:find("💀") or lowerMsg:find("☠️") then
+			isNegative = true
+			healthDelta = -5  -- Small shake for dark success
+			happinessDelta = -15
+			emoji = "💀"
+		end
+		
+		-- Detect general failures
+		if lowerMsg:find("fail") or lowerMsg:find("reject") or lowerMsg:find("refused")
+			or lowerMsg:find("angry") or lowerMsg:find("upset") or lowerMsg:find("💔") then
+			isNegative = true
+			happinessDelta = -10
+		end
+		
+		-- Fight outcomes
+		if actionId == "fight" or lowerMsg:find("fight") or lowerMsg:find("punch") or lowerMsg:find("brawl") then
+			healthDelta = math.min(healthDelta, -5)
+		end
+	end
+	
+	-- Special emoji for eliminate action
+	if actionId == "eliminate" then
+		if wasCaught then
+			emoji = "🚔"
+		else
+			emoji = "💀"
+		end
+	end
+	
+	-- Build result event card with proper flags for LifeClient shake/flash
 	local eventCard = {
 		id = "relationship_result_" .. actionId .. "_" .. math.random(10000),
 		title = emoji .. " " .. title,
-		emoji = success and "✅" or "😔",
+		emoji = wasCaught and "🚔" or (isNegative and "😰" or "✅"),
 		text = message,
-		question = success and "Nice!" or "What now?",
+		body = message, -- LifeClient also checks 'body' for keywords
+		question = wasCaught and "Oh no..." or (success and "Nice!" or "What now?"),
 		choices = {
-			{ text = success and "👍 Okay!" or "😔 Oh well...", index = 1 },
+			{ text = wasCaught and "😰 Oh no..." or (success and "👍 Okay!" or "😔 Oh well..."), index = 1 },
 		},
 		category = "relationship_result",
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL: These flags tell LifeClient to shake/flash RED!
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		wasSuccess = success and not wasCaught,
+		wasCaught = wasCaught,
+		isNegative = isNegative,
+		health = healthDelta,      -- Negative health triggers shake
+		happiness = happinessDelta, -- Large negative happiness triggers shake
 	}
 	
 	-- Show via LifeClient's event card system!

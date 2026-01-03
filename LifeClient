@@ -4787,11 +4787,73 @@ showEvent = function(payload)
 		local colors = getEventColors(payload)
 		local isDisaster = isDisasterEvent(payload)
 
-		-- Apply themed shell color
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Detect negative ACTIVITY RESULT cards for red border + shake!
+		-- User bug: "IT SAYS A BLUE BORDER INSTEAD OF RED... ITS SUPPOSED SHAKE LIKE BAD"
+		-- When RelationshipsScreen/ActivitiesScreen shows result cards via this callback,
+		-- we need to check their negative flags and override colors + trigger effects
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		local isActivityNegative = false
+		local activityShakeIntensity = 0
+		local activityShouldFlash = false
+		
+		if payload.isActivityEvent then
+			-- Check all the negative flags passed from screen callbacks
+			if payload.wasCaught == true then
+				isActivityNegative = true
+				activityShakeIntensity = 12
+				activityShouldFlash = true
+			elseif payload.wasSuccess == false then
+				isActivityNegative = true
+				activityShakeIntensity = 8
+				activityShouldFlash = true
+			elseif payload.isNegative == true then
+				isActivityNegative = true
+				activityShakeIntensity = 6
+			end
+			
+			-- Check stat deltas for negative outcomes
+			if payload.health and payload.health < 0 then
+				isActivityNegative = true
+				if payload.health < -10 then
+					activityShakeIntensity = math.max(activityShakeIntensity, 12)
+					activityShouldFlash = true
+				elseif payload.health < -5 then
+					activityShakeIntensity = math.max(activityShakeIntensity, 8)
+				else
+					activityShakeIntensity = math.max(activityShakeIntensity, 5)
+				end
+			end
+			
+			if payload.happiness and payload.happiness < -15 then
+				isActivityNegative = true
+				activityShakeIntensity = math.max(activityShakeIntensity, 6)
+			end
+			
+			-- Override colors for negative activity results
+			if isActivityNegative then
+				colors = {
+					shell = C.Red,
+					stroke = C.RedDark,
+					button = C.Red,
+					buttonDark = C.RedDark,
+				}
+			end
+		end
+
+		-- Apply themed shell color (or red for negative activity results)
 		EventUI.shell.BackgroundColor3 = colors.shell
 		local shellStroke = EventUI.shell:FindFirstChildOfClass("UIStroke")
 		if shellStroke then
 			shellStroke.Color = colors.stroke
+		end
+		
+		-- Trigger shake/flash for negative activity results
+		if isActivityNegative and activityShakeIntensity > 0 then
+			shakeScreen(activityShakeIntensity, 0.3)
+		end
+		if activityShouldFlash then
+			flashScreen(C.Red, 0.6, 0.3)
 		end
 
 		-- header
@@ -8324,11 +8386,23 @@ ScreenInstances.callbacks.onRelationshipShowEventCard = function(eventCard, onCh
 			title = eventCard.title or "💕 Relationship",
 			emoji = eventCard.emoji or "💕",
 			text = eventCard.text or "Something happened...",
+			body = eventCard.body or eventCard.text, -- For keyword detection
 			question = eventCard.question or "What will you do?",
 			choices = eventCard.choices or {{text = "Continue", index = 1}},
 			category = eventCard.category,
 			isActivityEvent = true,
 			onActivityChoice = onChoiceCallback,
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			-- CRITICAL FIX: Pass through flags for shake/flash/red border!
+			-- User bug: "IT SAYS A BLUE BORDER INSTEAD OF RED... ITS SUPPOSED SHAKE"
+			-- These flags tell showResultCard to use red colors and shake animation
+			-- ═══════════════════════════════════════════════════════════════════════════════
+			wasSuccess = eventCard.wasSuccess,
+			wasCaught = eventCard.wasCaught,
+			isNegative = eventCard.isNegative,
+			health = eventCard.health,
+			happiness = eventCard.happiness,
+			money = eventCard.money,
 		})
 	end
 end
