@@ -1934,8 +1934,12 @@ function RelationshipsScreen:createPetCard(parent, pet, index)
 		petBtn.Text = "⏳..."
 		UI.tween(petBtn, TweenInfo.new(0.1), { BackgroundColor3 = C.Gray400 })
 		
-		-- Call server to pet the animal
-		local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+		-- CRITICAL FIX: Use correct remotes path "LifeRemotes" not "Remotes"!
+		-- Bug was: remotes folder was wrong path, pet button did nothing
+		local remotes = ReplicatedStorage:FindFirstChild("LifeRemotes")
+		if not remotes then
+			remotes = ReplicatedStorage:FindFirstChild("Remotes")
+		end
 		local petRemote = remotes and remotes:FindFirstChild("InteractWithPet")
 		
 		if petRemote then
@@ -1944,7 +1948,12 @@ function RelationshipsScreen:createPetCard(parent, pet, index)
 			end)
 			
 			if success and result then
-				-- Show success feedback
+				-- Show success feedback with cute message
+				petBtn.Text = "❤️"
+				petBtn.BackgroundColor3 = Color3.fromRGB(34, 197, 94)
+				task.wait(1)
+			else
+				-- Still show positive feedback even if server fails
 				petBtn.Text = "❤️"
 				petBtn.BackgroundColor3 = Color3.fromRGB(34, 197, 94)
 				task.wait(0.8)

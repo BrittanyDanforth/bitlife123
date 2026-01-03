@@ -2559,6 +2559,1094 @@ events[#events + 1] = {
 		},
 	},
 },
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- MASSIVE EXPANSION: NEW TODDLER/PRESCHOOL EVENTS (50+ new events)
+-- These create variety and personalization for early life gameplay
+-- ════════════════════════════════════════════════════════════════════════════
+
+{
+	id = "toddler_picky_eater",
+	title = "Picky Eater Phase",
+	emoji = "🥦",
+	textVariants = {
+		"Vegetables? GROSS! You refuse to eat anything green!",
+		"You've decided you ONLY want chicken nuggets. Nothing else!",
+		"Every meal is a battle. You want mac and cheese ONLY!",
+		"You push away your plate. 'I don't LIKE it!'",
+		"The broccoli looks like tiny trees. Scary tiny trees!",
+	},
+	text = "Vegetables? GROSS! You refuse to eat anything green!",
+	question = "What do you do at dinner time?",
+	minAge = 2, maxAge = 5,
+	baseChance = 0.45,
+	cooldown = 4,
+	category = "childhood",
+	tags = { "toddler", "food", "behavior" },
+	
+	choices = {
+		{
+			text = "🙅 Refuse to eat ANYTHING",
+			effects = { Health = -3, Happiness = 2 },
+			setFlags = { picky_eater = true, stubborn = true },
+			feedText = "🥦 You went to bed hungry. Victory? Defeat? Who knows!",
+		},
+		{
+			text = "🤢 Pretend to eat, hide food",
+			effects = { Smarts = 2 },
+			setFlags = { sneaky_kid = true, problem_solver = true },
+			feedText = "🥦 Vegetables under the table... until the dog ate them!",
+		},
+		{
+			text = "😋 Actually try the food",
+			effects = { Health = 4, Happiness = 3 },
+			setFlags = { adventurous_eater = true, open_minded = true },
+			feedText = "🥦 Wait... broccoli is actually kinda good?!",
+		},
+		{
+			text = "😭 Cry until you get dessert",
+			effects = { Happiness = 4, Health = -2 },
+			setFlags = { knows_manipulation = true },
+			feedText = "🥦 Tears work! Ice cream for dinner! (Just this once...)",
+		},
+	},
+},
+
+{
+	id = "toddler_afraid_of_dark",
+	title = "Afraid of the Dark",
+	emoji = "🌙",
+	textVariants = {
+		"The lights go off and you're TERRIFIED!",
+		"Something moved in the shadows! Or... did it?",
+		"Bedtime is scary. The dark is full of monsters!",
+		"Every shadow looks like a monster waiting to get you!",
+		"You hear strange noises when it's dark...",
+	},
+	text = "The lights go off and you're TERRIFIED!",
+	question = "How do you handle bedtime?",
+	minAge = 2, maxAge = 6,
+	baseChance = 0.5,
+	cooldown = 4,
+	category = "childhood",
+	tags = { "toddler", "fear", "bedtime" },
+	
+	choices = {
+		{
+			text = "😱 Scream for parents",
+			effects = { Happiness = -2 },
+			setFlags = { scared_of_dark = true, needs_comfort = true },
+			feedText = "🌙 Mom/Dad came running. You slept in their bed!",
+		},
+		{
+			text = "🔦 Use a nightlight",
+			effects = { Happiness = 2 },
+			setFlags = { uses_nightlight = true, problem_solver = true },
+			feedText = "🌙 The nightlight keeps the monsters away! Much better!",
+		},
+		{
+			text = "🦸 Pretend to be brave",
+			effects = { Happiness = 3, Smarts = 2 },
+			setFlags = { brave_kid = true, overcomes_fears = true },
+			feedText = "🌙 You're a superhero! Superheroes aren't afraid of dark!",
+		},
+		{
+			text = "🧸 Hug stuffed animal tighter",
+			effects = { Happiness = 3 },
+			setFlags = { comfort_object = true, emotionally_attached = true },
+			feedText = "🌙 Mr. Bear will protect you! Together you're invincible!",
+		},
+	},
+},
+
+{
+	id = "toddler_learning_abc",
+	title = "ABC Time!",
+	emoji = "🔤",
+	textVariants = {
+		"A, B, C, D, E, F, G... you're learning the alphabet!",
+		"Time to sing the ABC song!",
+		"Letters are everywhere! Signs, books, everything!",
+		"Your parents are teaching you letters today!",
+	},
+	text = "A, B, C, D, E, F, G... you're learning the alphabet!",
+	question = "How's the learning going?",
+	minAge = 2, maxAge = 5,
+	baseChance = 0.45,
+	cooldown = 5,
+	oneTime = true,
+	category = "childhood",
+	tags = { "toddler", "learning", "letters" },
+	blockedByFlags = { learned_alphabet = true },
+	
+	choices = {
+		{
+			text = "🎵 Sing the whole song!",
+			effects = { Happiness = 5, Smarts = 4 },
+			setFlags = { learned_alphabet = true, quick_learner = true, musical_memory = true },
+			feedText = "🔤 A B C D E F G... all the way to Z! You nailed it!",
+		},
+		{
+			text = "🤔 Get stuck at L-M-N-O-P",
+			effects = { Happiness = 3, Smarts = 2 },
+			setFlags = { learned_alphabet = true },
+			feedText = "🔤 'Elemeno P!' It's all one letter, right? Close enough!",
+		},
+		{
+			text = "😴 Fall asleep during lesson",
+			effects = { Happiness = 2 },
+			setFlags = { learned_alphabet = true, sleepy_learner = true },
+			feedText = "🔤 Zzz... you'll learn it tomorrow. Or the next day...",
+		},
+	},
+},
+
+{
+	id = "toddler_first_haircut",
+	title = "First Haircut!",
+	emoji = "✂️",
+	textVariants = {
+		"Time for your first haircut! The barber chair is HUGE!",
+		"Snip snip! Your parents brought you for your first haircut!",
+		"The scissors look scary... but your hair IS pretty long...",
+		"You're getting a real grown-up haircut today!",
+	},
+	text = "Time for your first haircut! The barber chair is HUGE!",
+	question = "How do you handle it?",
+	minAge = 1, maxAge = 4,
+	baseChance = 0.55,
+	oneTime = true,
+	category = "childhood",
+	tags = { "toddler", "milestone", "haircut" },
+	blockedByFlags = { first_haircut_done = true },
+	
+	choices = {
+		{
+			text = "😭 Cry the whole time",
+			effects = { Happiness = -3, Looks = 3 },
+			setFlags = { first_haircut_done = true, hates_haircuts = true },
+			feedText = "✂️ TRAUMATIC! But at least you look cute now...",
+		},
+		{
+			text = "😊 Sit still like a champ",
+			effects = { Happiness = 4, Looks = 4 },
+			setFlags = { first_haircut_done = true, patient_kid = true, brave_kid = true },
+			feedText = "✂️ You were so good! Got a lollipop as reward!",
+		},
+		{
+			text = "🏃 Try to run away",
+			effects = { Happiness = 2, Looks = 2 },
+			setFlags = { first_haircut_done = true, wild_spirit = true },
+			feedText = "✂️ Chaos! But they caught you. Uneven haircut... character!",
+		},
+	},
+},
+
+{
+	id = "toddler_lost_in_store",
+	title = "Lost in the Store!",
+	emoji = "🏪",
+	textVariants = {
+		"Where's mommy?! WHERE'S MOMMY?! You're LOST!",
+		"One minute you were right there, the next... WHERE ARE THEY?!",
+		"You looked at toys for ONE second and now you're alone!",
+		"The store is HUGE and you can't find your parents!",
+	},
+	text = "Where's mommy?! WHERE'S MOMMY?! You're LOST!",
+	question = "What do you do?",
+	minAge = 2, maxAge = 6,
+	baseChance = 0.4,
+	cooldown = 5,
+	category = "childhood",
+	tags = { "toddler", "scary", "store" },
+	
+	choices = {
+		{
+			text = "😭 Cry really loud",
+			effects = { Happiness = -5 },
+			setFlags = { got_lost_once = true },
+			feedText = "🏪 Your crying worked! A worker found your parents!",
+		},
+		{
+			text = "🧑 Find a store employee",
+			effects = { Smarts = 3, Happiness = -2 },
+			setFlags = { got_lost_once = true, knows_stranger_safety = true, smart_kid = true },
+			feedText = "🏪 Smart! You found help and they called your parents!",
+		},
+		{
+			text = "🔍 Try to find them yourself",
+			effects = { Happiness = -3 },
+			setFlags = { got_lost_once = true, independent_kid = true },
+			feedText = "🏪 After scary minutes, you found them in checkout!",
+		},
+		{
+			text = "🪑 Stay where you are",
+			effects = { Smarts = 4 },
+			setFlags = { got_lost_once = true, follows_instructions = true },
+			feedText = "🏪 Good strategy! They came back to where they lost you!",
+		},
+	},
+},
+
+{
+	id = "toddler_making_friends",
+	title = "Making Friends",
+	emoji = "👫",
+	textVariants = {
+		"There's another kid at the playground! They look nice!",
+		"A new kid moved in next door. They're your age!",
+		"At daycare, a kid shares their snack with you!",
+		"Another kid has the SAME favorite toy as you!",
+	},
+	text = "There's another kid at the playground! They look nice!",
+	question = "Do you want to be friends?",
+	minAge = 2, maxAge = 5,
+	baseChance = 0.5,
+	cooldown = 3,
+	category = "childhood",
+	tags = { "toddler", "social", "friends" },
+	
+	choices = {
+		{
+			text = "👋 Walk up and say hi!",
+			effects = { Happiness = 6 },
+			setFlags = { outgoing_kid = true, friendly_personality = true },
+			feedText = "👫 You made a new friend! You played all afternoon!",
+		},
+		{
+			text = "🎁 Share your toy with them",
+			effects = { Happiness = 5, Smarts = 2 },
+			setFlags = { generous_kid = true, makes_friends_easily = true },
+			feedText = "👫 Sharing is caring! Now you're best buddies!",
+		},
+		{
+			text = "😶 Wait for them to approach",
+			effects = { Happiness = 3 },
+			setFlags = { shy_personality = true },
+			feedText = "👫 They came over! Sometimes waiting works!",
+		},
+		{
+			text = "🏃 Run away shyly",
+			effects = { Happiness = -2 },
+			setFlags = { very_shy = true, social_anxiety = true },
+			feedText = "👫 Maybe next time. Friends are scary...",
+		},
+	},
+},
+
+{
+	id = "toddler_pet_encounter",
+	title = "Meeting a Pet!",
+	emoji = "🐕",
+	textVariants = {
+		"Your family got a new puppy! It's so fluffy!",
+		"Grandma's cat wants to play with you!",
+		"There's a friendly dog at the park!",
+		"The neighbor's pet bunny is visiting!",
+	},
+	text = "Your family got a new puppy! It's so fluffy!",
+	question = "How do you react to the animal?",
+	minAge = 1, maxAge = 5,
+	baseChance = 0.45,
+	cooldown = 4,
+	category = "childhood",
+	tags = { "toddler", "pets", "animals" },
+	
+	choices = {
+		{
+			text = "🤗 Hug it immediately!",
+			effects = { Happiness = 8 },
+			setFlags = { animal_lover = true, loves_pets = true },
+			feedText = "🐕 BEST. DAY. EVER! You and the pet are inseparable!",
+		},
+		{
+			text = "😨 Back away scared",
+			effects = { Happiness = -2 },
+			setFlags = { scared_of_animals = true },
+			feedText = "🐕 Animals are unpredictable! You kept your distance.",
+		},
+		{
+			text = "🤔 Observe carefully first",
+			effects = { Happiness = 4, Smarts = 2 },
+			setFlags = { cautious_with_animals = true, observant_kid = true },
+			feedText = "🐕 Smart approach! You slowly made friends with it!",
+		},
+		{
+			text = "🍪 Try to feed it",
+			effects = { Happiness = 6 },
+			setFlags = { animal_lover = true, nurturing_personality = true },
+			feedText = "🐕 You shared your snack! Animals love you!",
+		},
+	},
+},
+
+{
+	id = "toddler_temper_tantrum",
+	title = "MELTDOWN!",
+	emoji = "😤",
+	textVariants = {
+		"You can't have ice cream for breakfast?! UNACCEPTABLE!",
+		"TV time is OVER?! This is the WORST day EVER!",
+		"Your sibling touched YOUR toy! RAGE MODE ACTIVATED!",
+		"Bedtime already?! But you're NOT TIRED!",
+	},
+	text = "You can't have ice cream for breakfast?! UNACCEPTABLE!",
+	question = "How bad does the tantrum get?",
+	minAge = 2, maxAge = 5,
+	baseChance = 0.45,
+	cooldown = 4,
+	category = "childhood",
+	tags = { "toddler", "behavior", "tantrum" },
+	
+	choices = {
+		{
+			text = "😤 Full nuclear meltdown",
+			effects = { Happiness = -5, Health = -2 },
+			setFlags = { throws_big_tantrums = true, emotional_kid = true },
+			feedText = "😤 EPIC tantrum! Screaming, crying, the works! Then... nap time.",
+		},
+		{
+			text = "😢 Cry but calm down",
+			effects = { Happiness = -3 },
+			setFlags = { normal_tantrums = true },
+			feedText = "😤 You cried it out. Feeling better now.",
+		},
+		{
+			text = "🤝 Try to negotiate",
+			effects = { Smarts = 3, Happiness = -1 },
+			setFlags = { tries_to_negotiate = true, smart_kid = true },
+			feedText = "😤 'What about just ONE scoop?' Good try, little lawyer!",
+		},
+		{
+			text = "😔 Accept it sadly",
+			effects = { Happiness = -2, Smarts = 2 },
+			setFlags = { mature_for_age = true, emotionally_regulated = true },
+			feedText = "😤 You pouted but accepted it. Growing up already!",
+		},
+	},
+},
+
+{
+	id = "toddler_drawing_masterpiece",
+	title = "Art Time!",
+	emoji = "🎨",
+	textVariants = {
+		"Crayons are out! Time to create your masterpiece!",
+		"You found markers! The world is your canvas!",
+		"Finger paints! This is going to be MESSY!",
+		"Time to draw! What will you create?",
+	},
+	text = "Crayons are out! Time to create your masterpiece!",
+	question = "What do you draw?",
+	minAge = 2, maxAge = 5,
+	baseChance = 0.5,
+	cooldown = 3,
+	category = "childhood",
+	tags = { "toddler", "creative", "art" },
+	
+	choices = {
+		{
+			text = "👨‍👩‍👦 Draw your family",
+			effects = { Happiness = 5 },
+			setFlags = { family_artist = true, loves_family = true },
+			feedText = "🎨 A masterpiece! It's going on the fridge!",
+		},
+		{
+			text = "🌈 Scribble rainbows",
+			effects = { Happiness = 6 },
+			setFlags = { colorful_artist = true, happy_kid = true },
+			feedText = "🎨 SO MANY COLORS! It's beautiful chaos!",
+		},
+		{
+			text = "🦖 Draw dinosaurs/monsters",
+			effects = { Happiness = 5, Smarts = 2 },
+			setFlags = { creative_imagination = true, loves_dinosaurs = true },
+			feedText = "🎨 RAWR! Your T-Rex is terrifying! (In a cute way)",
+		},
+		{
+			text = "🏠 Draw everything around you",
+			effects = { Happiness = 4, Smarts = 3 },
+			setFlags = { observant_artist = true, detail_oriented = true },
+			feedText = "🎨 You drew the house, the dog, everything! Future artist!",
+		},
+	},
+},
+
+{
+	id = "toddler_bath_time_fun",
+	title = "Bath Time!",
+	emoji = "🛁",
+	textVariants = {
+		"Splash splash! Bath time!",
+		"Bubble bath time! So many bubbles!",
+		"Time to get clean! The bathtub is calling!",
+		"Rubber ducky, you're the one!",
+	},
+	text = "Splash splash! Bath time!",
+	question = "How do you approach bath time?",
+	minAge = 1, maxAge = 5,
+	baseChance = 0.45,
+	cooldown = 4,
+	category = "childhood",
+	tags = { "toddler", "routine", "bath" },
+	
+	choices = {
+		{
+			text = "🎉 LOVE IT! Splash city!",
+			effects = { Happiness = 6 },
+			setFlags = { loves_bath_time = true, water_lover = true },
+			feedText = "🛁 SPLASH! The bathroom is flooded but you're happy!",
+		},
+		{
+			text = "😭 HATE IT! No bath!",
+			effects = { Happiness = -3, Health = -1 },
+			setFlags = { hates_baths = true },
+			feedText = "🛁 You screamed like it was lava. Drama queen/king!",
+		},
+		{
+			text = "🧸 Only with toys!",
+			effects = { Happiness = 4 },
+			setFlags = { needs_bath_toys = true },
+			feedText = "🛁 Rubber ducky and boats make everything better!",
+		},
+		{
+			text = "🎵 Sing in the tub",
+			effects = { Happiness = 5 },
+			setFlags = { shower_singer = true, musical_interest = true },
+			feedText = "🛁 Your bathroom concerts are legendary!",
+		},
+	},
+},
+
+{
+	id = "toddler_sibling_moment",
+	title = "Sibling Situation",
+	emoji = "👶",
+	textVariants = {
+		"Your parents bring home a NEW BABY! What?!",
+		"You have to share your room with your sibling now!",
+		"Your sibling took YOUR toy! This means war!",
+		"Mom and dad are paying more attention to the baby!",
+	},
+	text = "Your parents bring home a NEW BABY! What?!",
+	question = "How do you feel about this?",
+	minAge = 2, maxAge = 6,
+	baseChance = 0.4,
+	cooldown = 5,
+	category = "family",
+	tags = { "toddler", "sibling", "family" },
+	
+	choices = {
+		{
+			text = "😊 Excited! A friend!",
+			effects = { Happiness = 6 },
+			setFlags = { loves_siblings = true, welcoming_sibling = true },
+			feedText = "👶 You're the BEST big brother/sister! So excited!",
+		},
+		{
+			text = "😤 Jealous! No fair!",
+			effects = { Happiness = -4 },
+			setFlags = { sibling_jealousy = true },
+			feedText = "👶 Why do THEY get all the attention?! You were here first!",
+		},
+		{
+			text = "🤔 Confused... what IS that?",
+			effects = { Happiness = 2, Smarts = 2 },
+			setFlags = { curious_about_baby = true },
+			feedText = "👶 Why does it cry so much? Can it play yet?",
+		},
+		{
+			text = "🛡️ Must protect the baby!",
+			effects = { Happiness = 5 },
+			setFlags = { protective_sibling = true, caring_personality = true },
+			feedText = "👶 You're on guard duty! No one hurts YOUR baby!",
+		},
+	},
+},
+
+{
+	id = "toddler_learning_shapes",
+	title = "Shapes Discovery",
+	emoji = "🔷",
+	textVariants = {
+		"Circles! Squares! Triangles! Shapes are everywhere!",
+		"Everything has a shape! You're noticing them all!",
+		"Shape puzzle time! Can you match them?",
+		"Your teacher is showing you all the different shapes!",
+	},
+	text = "Circles! Squares! Triangles! Shapes are everywhere!",
+	question = "Which shape is your favorite?",
+	minAge = 2, maxAge = 5,
+	baseChance = 0.45,
+	cooldown = 5,
+	oneTime = true,
+	category = "childhood",
+	tags = { "toddler", "learning", "shapes" },
+	
+	choices = {
+		{
+			text = "⭕ Circle! Like pizza!",
+			effects = { Happiness = 4, Smarts = 2 },
+			setFlags = { learned_shapes = true, likes_circles = true },
+			feedText = "🔷 Circles are perfect! Like the sun and cookies!",
+		},
+		{
+			text = "⬜ Square! Like a block!",
+			effects = { Happiness = 4, Smarts = 2 },
+			setFlags = { learned_shapes = true, likes_squares = true },
+			feedText = "🔷 Squares are sturdy! Building blocks are squares!",
+		},
+		{
+			text = "🔺 Triangle! Like a mountain!",
+			effects = { Happiness = 4, Smarts = 3 },
+			setFlags = { learned_shapes = true, likes_triangles = true },
+			feedText = "🔷 Triangles are pointy! Like pizza slices!",
+		},
+		{
+			text = "⭐ Star! Like in the sky!",
+			effects = { Happiness = 5, Smarts = 2 },
+			setFlags = { learned_shapes = true, likes_stars = true, dreams_big = true },
+			feedText = "🔷 Stars are magical! You're a star yourself!",
+		},
+	},
+},
+
+{
+	id = "toddler_playground_slide",
+	title = "The Big Slide!",
+	emoji = "🛝",
+	textVariants = {
+		"The BIG slide at the playground! It's so tall!",
+		"All the big kids use that slide. Can you do it?",
+		"That slide looks scary... but also fun?",
+		"You've conquered the baby slide. Time for the BIG one!",
+	},
+	text = "The BIG slide at the playground! It's so tall!",
+	question = "Do you try the big slide?",
+	minAge = 3, maxAge = 6,
+	baseChance = 0.5,
+	cooldown = 4,
+	category = "childhood",
+	tags = { "toddler", "playground", "challenge" },
+	
+	choices = {
+		{
+			text = "🚀 WHEEE! Down I go!",
+			effects = { Happiness = 8, Health = 2 },
+			setFlags = { brave_kid = true, conquered_big_slide = true, thrill_seeker = true },
+			feedText = "🛝 AMAZING! You did it! Best feeling ever!",
+		},
+		{
+			text = "😰 Climb up, chicken out",
+			effects = { Happiness = -2 },
+			setFlags = { has_fears = true },
+			feedText = "🛝 You walked back down the stairs. Maybe next time!",
+		},
+		{
+			text = "👨 Only with parent help",
+			effects = { Happiness = 5 },
+			setFlags = { cautious_kid = true },
+			feedText = "🛝 With mom/dad at the bottom, you did it! Safe AND fun!",
+		},
+		{
+			text = "🔁 Practice on small slide first",
+			effects = { Happiness = 4, Smarts = 2 },
+			setFlags = { methodical_learner = true, practices_first = true },
+			feedText = "🛝 Smart! Build up to it. You'll conquer it soon!",
+		},
+	},
+},
+
+{
+	id = "toddler_broken_toy",
+	title = "Broken Toy!",
+	emoji = "🧸",
+	textVariants = {
+		"Oh no! Your favorite toy broke!",
+		"The head came off your stuffed animal!",
+		"Your toy truck lost a wheel!",
+		"Something terrible happened to your beloved toy!",
+	},
+	text = "Oh no! Your favorite toy broke!",
+	question = "How do you handle this tragedy?",
+	minAge = 2, maxAge = 6,
+	baseChance = 0.45,
+	cooldown = 5,
+	category = "childhood",
+	tags = { "toddler", "toys", "emotions" },
+	
+	choices = {
+		{
+			text = "😭 Cry forever",
+			effects = { Happiness = -6 },
+			setFlags = { attached_to_toys = true, emotional_kid = true },
+			feedText = "🧸 The tears won't stop! This is the saddest day!",
+		},
+		{
+			text = "🔧 Try to fix it",
+			effects = { Happiness = 2, Smarts = 3 },
+			setFlags = { tries_to_fix_things = true, problem_solver = true },
+			feedText = "🧸 With tape and hope, you tried to save it!",
+		},
+		{
+			text = "👨 Ask parent to fix it",
+			effects = { Happiness = 4 },
+			setFlags = { asks_for_help = true },
+			feedText = "🧸 Parent magic! It's almost like new!",
+		},
+		{
+			text = "🤷 Move on to next toy",
+			effects = { Happiness = 1 },
+			setFlags = { adaptable_kid = true, not_attached = true },
+			feedText = "🧸 Easy come, easy go. Other toys await!",
+		},
+	},
+},
+
+{
+	id = "toddler_first_joke",
+	title = "Telling Jokes!",
+	emoji = "😂",
+	textVariants = {
+		"Why did the chicken cross the road? You don't know but it's HILARIOUS!",
+		"You learned a joke! Time to tell EVERYONE!",
+		"Knock knock! You've discovered the power of humor!",
+		"You made someone laugh! This is your new superpower!",
+	},
+	text = "Why did the chicken cross the road? You don't know but it's HILARIOUS!",
+	question = "How's your comedy career starting?",
+	minAge = 3, maxAge = 6,
+	baseChance = 0.45,
+	cooldown = 4,
+	category = "childhood",
+	tags = { "toddler", "humor", "social" },
+	
+	choices = {
+		{
+			text = "😂 Tell the joke 100 times",
+			effects = { Happiness = 5 },
+			setFlags = { class_clown = true, loves_attention = true },
+			feedText = "😂 You told it SO many times! Still funny to you!",
+		},
+		{
+			text = "🤔 Try to make up your own jokes",
+			effects = { Happiness = 4, Smarts = 3 },
+			setFlags = { creative_kid = true, aspiring_comedian = true },
+			feedText = "😂 'Why did the banana... uh... go!' Comedy gold!",
+		},
+		{
+			text = "😊 Save it for special moments",
+			effects = { Happiness = 3 },
+			setFlags = { knows_timing = true },
+			feedText = "😂 Strategic humor. Save the best jokes!",
+		},
+	},
+},
+
+{
+	id = "toddler_dress_up",
+	title = "Dress Up Time!",
+	emoji = "👗",
+	textVariants = {
+		"Time to play dress up! Who will you be today?",
+		"You found the costume box! So many options!",
+		"Halloween or not, it's dress up time!",
+		"You want to wear your costume EVERYWHERE!",
+	},
+	text = "Time to play dress up! Who will you be today?",
+	question = "What do you dress up as?",
+	minAge = 2, maxAge = 6,
+	baseChance = 0.5,
+	cooldown = 3,
+	category = "childhood",
+	tags = { "toddler", "play", "imagination" },
+	
+	choices = {
+		{
+			text = "🦸 Superhero! I have powers!",
+			effects = { Happiness = 6 },
+			setFlags = { loves_superheroes = true, hero_complex = true },
+			feedText = "👗 You're SUPER! Fighting invisible bad guys all day!",
+		},
+		{
+			text = "👸 Princess/Prince! Royal life!",
+			effects = { Happiness = 6, Looks = 1 },
+			setFlags = { loves_royalty = true, royalty_dreams = true },
+			feedText = "👗 Your majesty! The kingdom (backyard) awaits!",
+		},
+		{
+			text = "🦖 Dinosaur! RAWR!",
+			effects = { Happiness = 5 },
+			setFlags = { loves_dinosaurs = true, wild_imagination = true },
+			feedText = "👗 RAWR! You're a terrifying T-Rex! Run, humans!",
+		},
+		{
+			text = "👨‍🚀 Astronaut! Space explorer!",
+			effects = { Happiness = 5, Smarts = 2 },
+			setFlags = { loves_space = true, wants_to_explore = true },
+			feedText = "👗 3... 2... 1... BLAST OFF! To infinity and beyond!",
+		},
+	},
+},
+
+{
+	id = "toddler_sharing_lesson",
+	title = "Sharing is Caring?",
+	emoji = "🤝",
+	textVariants = {
+		"Another kid wants to play with YOUR toy!",
+		"Time to share your snack with your friend!",
+		"Your sibling wants your stuff! Again!",
+		"Sharing is what nice kids do... but it's HARD!",
+	},
+	text = "Another kid wants to play with YOUR toy!",
+	question = "Do you share?",
+	minAge = 2, maxAge = 5,
+	baseChance = 0.5,
+	cooldown = 3,
+	category = "childhood",
+	tags = { "toddler", "social", "sharing" },
+	
+	choices = {
+		{
+			text = "😊 Sure! Here you go!",
+			effects = { Happiness = 4, Smarts = 2 },
+			setFlags = { good_sharer = true, generous_personality = true },
+			feedText = "🤝 You shared! And guess what? They shared back!",
+		},
+		{
+			text = "😤 NO! MINE!",
+			effects = { Happiness = 2 },
+			setFlags = { doesn_share = true, possessive = true },
+			feedText = "🤝 You clutched it tight. Sharing is HARD!",
+		},
+		{
+			text = "⏰ They can have a turn later",
+			effects = { Happiness = 3, Smarts = 2 },
+			setFlags = { fair_sharer = true, diplomatic_kid = true },
+			feedText = "🤝 Taking turns! Fair solution for everyone!",
+		},
+		{
+			text = "🔄 Trade for their toy",
+			effects = { Happiness = 5, Smarts = 3 },
+			setFlags = { good_negotiator = true, business_minded = true },
+			feedText = "🤝 A deal was made! Both kids happy!",
+		},
+	},
+},
+
+{
+	id = "toddler_messy_eating",
+	title = "Messy Meal!",
+	emoji = "🍝",
+	textVariants = {
+		"Spaghetti! It's everywhere! On you, the chair, the floor!",
+		"Feeding yourself is HARD! Food goes everywhere!",
+		"You're covered in food! But you're feeding yourself!",
+		"Meal time = mess time at your age!",
+	},
+	text = "Spaghetti! It's everywhere! On you, the chair, the floor!",
+	question = "How does the meal go?",
+	minAge = 1, maxAge = 4,
+	baseChance = 0.45,
+	cooldown = 4,
+	category = "childhood",
+	tags = { "toddler", "food", "milestone" },
+	
+	choices = {
+		{
+			text = "🎨 Food is art! Spread it everywhere!",
+			effects = { Happiness = 6 },
+			setFlags = { messy_eater = true, creative_mess = true },
+			feedText = "🍝 The high chair is now a modern art installation!",
+		},
+		{
+			text = "🥄 Try to be neat",
+			effects = { Happiness = 3, Smarts = 2 },
+			setFlags = { neat_eater = true, coordinated = true },
+			feedText = "🍝 Some made it in your mouth! Progress!",
+		},
+		{
+			text = "✋ Use hands! Utensils are for losers!",
+			effects = { Happiness = 5 },
+			setFlags = { hands_on_eater = true, independent = true },
+			feedText = "🍝 Hands work just fine! Who needs forks?!",
+		},
+	},
+},
+
+{
+	id = "toddler_question_phase",
+	title = "But WHY?",
+	emoji = "❓",
+	textVariants = {
+		"Why is the sky blue? Why? But WHY?",
+		"You've discovered the power of asking WHY!",
+		"Everything needs an explanation! WHY WHY WHY!",
+		"Parents are getting tired of your questions!",
+	},
+	text = "Why is the sky blue? Why? But WHY?",
+	question = "How curious are you?",
+	minAge = 2, maxAge = 6,
+	baseChance = 0.5,
+	cooldown = 4,
+	category = "childhood",
+	tags = { "toddler", "curious", "development" },
+	
+	choices = {
+		{
+			text = "❓ Ask WHY about EVERYTHING",
+			effects = { Smarts = 4, Happiness = 3 },
+			setFlags = { very_curious = true, question_asker = true, future_scientist = true },
+			feedText = "❓ Your parents are exhausted but you're LEARNING!",
+		},
+		{
+			text = "🤔 Ask about specific things",
+			effects = { Smarts = 3, Happiness = 2 },
+			setFlags = { thoughtfully_curious = true },
+			feedText = "❓ Focused questions! Getting real answers!",
+		},
+		{
+			text = "📚 Look at books for answers",
+			effects = { Smarts = 4, Happiness = 2 },
+			setFlags = { book_learner = true, independent_learner = true },
+			feedText = "❓ Books have SO many answers! (And pictures!)",
+		},
+		{
+			text = "🤷 Accept 'because I said so'",
+			effects = { Happiness = 2 },
+			setFlags = { accepts_authority = true },
+			feedText = "❓ Sometimes you just gotta accept it!",
+		},
+	},
+},
+
+{
+	id = "toddler_first_friend",
+	title = "Best Friend!",
+	emoji = "💕",
+	textVariants = {
+		"You found your BEST FRIEND! You're inseparable!",
+		"There's one kid you ALWAYS want to play with!",
+		"You and another kid just CLICK! Best friends forever!",
+		"You made a best friend at daycare/preschool!",
+	},
+	text = "You found your BEST FRIEND! You're inseparable!",
+	question = "How did you become best friends?",
+	minAge = 3, maxAge = 6,
+	baseChance = 0.45,
+	cooldown = 5,
+	oneTime = true,
+	category = "childhood",
+	tags = { "toddler", "friends", "milestone" },
+	blockedByFlags = { first_best_friend = true },
+	
+	choices = {
+		{
+			text = "🎮 Same favorite things!",
+			effects = { Happiness = 7 },
+			setFlags = { first_best_friend = true, has_childhood_friend = true, bonds_over_interests = true },
+			feedText = "💕 You both love the SAME stuff! Perfect match!",
+		},
+		{
+			text = "🛡️ They stood up for me",
+			effects = { Happiness = 6 },
+			setFlags = { first_best_friend = true, has_childhood_friend = true, values_loyalty = true },
+			feedText = "💕 They had your back! A true friend!",
+		},
+		{
+			text = "🏠 They're my neighbor!",
+			effects = { Happiness = 6 },
+			setFlags = { first_best_friend = true, has_childhood_friend = true, neighborhood_friend = true },
+			feedText = "💕 Living close means playing together all the time!",
+		},
+		{
+			text = "😄 We just laugh together!",
+			effects = { Happiness = 8 },
+			setFlags = { first_best_friend = true, has_childhood_friend = true, fun_loving = true },
+			feedText = "💕 Everything is funnier together! BFFs!",
+		},
+	},
+},
+
+{
+	id = "toddler_sleep_problems",
+	title = "Can't Sleep!",
+	emoji = "😴",
+	textVariants = {
+		"You don't want to go to bed! You're NOT TIRED!",
+		"It's bedtime but your eyes won't close!",
+		"You keep getting out of bed!",
+		"Sleep is for boring people! You want to PLAY!",
+	},
+	text = "You don't want to go to bed! You're NOT TIRED!",
+	question = "What's your bedtime strategy?",
+	minAge = 2, maxAge = 6,
+	baseChance = 0.45,
+	cooldown = 4,
+	category = "childhood",
+	tags = { "toddler", "sleep", "behavior" },
+	
+	choices = {
+		{
+			text = "🏃 Keep getting out of bed",
+			effects = { Happiness = 2, Health = -2 },
+			setFlags = { fights_bedtime = true, energetic_kid = true },
+			feedText = "😴 Round 1... Round 2... Round 10... Finally asleep!",
+		},
+		{
+			text = "💧 'I need water!' 'One more story!'",
+			effects = { Happiness = 3 },
+			setFlags = { bedtime_delays = true, clever_kid = true },
+			feedText = "😴 Water, bathroom, snack... you know all the tricks!",
+		},
+		{
+			text = "😇 Go to sleep like a good kid",
+			effects = { Health = 3, Happiness = 2 },
+			setFlags = { good_sleeper = true, follows_rules = true },
+			feedText = "😴 Out like a light! What a good kid!",
+		},
+		{
+			text = "🎵 Need songs/stories to sleep",
+			effects = { Happiness = 4 },
+			setFlags = { needs_sleep_routine = true },
+			feedText = "😴 The routine works! Songs and stories, then zzz...",
+		},
+	},
+},
+
+{
+	id = "toddler_outdoor_discovery",
+	title = "Outdoor Adventure!",
+	emoji = "🌳",
+	textVariants = {
+		"The backyard is full of wonders! Bugs! Dirt! Sticks!",
+		"You're exploring outside! Nature is AMAZING!",
+		"Everything outside is new and exciting!",
+		"The great outdoors awaits, little explorer!",
+	},
+	text = "The backyard is full of wonders! Bugs! Dirt! Sticks!",
+	question = "What's the best part of being outside?",
+	minAge = 2, maxAge = 6,
+	baseChance = 0.45,
+	cooldown = 3,
+	category = "childhood",
+	tags = { "toddler", "nature", "explore" },
+	
+	choices = {
+		{
+			text = "🐛 BUGS! They're fascinating!",
+			effects = { Happiness = 5, Smarts = 2 },
+			setFlags = { likes_bugs = true, nature_curious = true },
+			feedText = "🌳 You collected SO many bugs! (Mom was not thrilled)",
+		},
+		{
+			text = "🪨 Rocks and sticks collection!",
+			effects = { Happiness = 5 },
+			setFlags = { collector_kid = true, treasure_hunter = true },
+			feedText = "🌳 Your pockets are FULL of 'treasures'!",
+		},
+		{
+			text = "🌸 Flowers and plants!",
+			effects = { Happiness = 5 },
+			setFlags = { nature_lover = true, gentle_with_nature = true },
+			feedText = "🌳 You picked flowers for everyone! (Well, the weeds too)",
+		},
+		{
+			text = "💨 Running around everywhere!",
+			effects = { Happiness = 6, Health = 3 },
+			setFlags = { outdoor_kid = true, athletic_start = true },
+			feedText = "🌳 You ran until you dropped! Happy exhaustion!",
+		},
+	},
+},
+
+{
+	id = "toddler_potty_training",
+	title = "Potty Training Time!",
+	emoji = "🚽",
+	textVariants = {
+		"Time to learn to use the potty like a big kid!",
+		"No more diapers? This is a big step!",
+		"The potty is scary but exciting!",
+		"Everyone's celebrating your potty progress!",
+	},
+	text = "Time to learn to use the potty like a big kid!",
+	question = "How's potty training going?",
+	minAge = 2, maxAge = 4,
+	baseChance = 0.5,
+	oneTime = true,
+	category = "childhood",
+	tags = { "toddler", "milestone", "development" },
+	blockedByFlags = { potty_trained = true },
+	
+	choices = {
+		{
+			text = "🏆 I got this! Champion!",
+			effects = { Happiness = 6, Smarts = 2 },
+			setFlags = { potty_trained = true, quick_learner = true },
+			feedText = "🚽 You're a potty PRODIGY! No more diapers!",
+		},
+		{
+			text = "😅 Some accidents happen",
+			effects = { Happiness = 3 },
+			setFlags = { potty_trained = true },
+			feedText = "🚽 Learning process! Getting better every day!",
+		},
+		{
+			text = "😰 It's scary! I don't wanna!",
+			effects = { Happiness = -2 },
+			setFlags = { potty_trained = true, potty_fears = true },
+			feedText = "🚽 Eventually got there! Just needed time!",
+		},
+	},
+},
+
+{
+	id = "toddler_tantrum_public",
+	title = "Public Meltdown!",
+	emoji = "🛒",
+	textVariants = {
+		"You're melting down... in the GROCERY STORE!",
+		"Full tantrum at the restaurant! Everyone's staring!",
+		"You lost it at the mall! Maximum embarrassment!",
+		"Public place + tired toddler = DISASTER!",
+	},
+	text = "You're melting down... in the GROCERY STORE!",
+	question = "How bad does it get?",
+	minAge = 2, maxAge = 5,
+	baseChance = 0.4,
+	cooldown = 5,
+	category = "childhood",
+	tags = { "toddler", "tantrum", "public" },
+	
+	choices = {
+		{
+			text = "🌊 Full theatrical performance",
+			effects = { Happiness = -5 },
+			setFlags = { public_tantrums = true, dramatic_kid = true },
+			feedText = "🛒 Oscar-worthy tantrum! Everyone watched in horror!",
+		},
+		{
+			text = "😢 Cry but get carried out",
+			effects = { Happiness = -3 },
+			setFlags = { sometimes_tantrums = true },
+			feedText = "🛒 Emergency exit! Parents are mortified!",
+		},
+		{
+			text = "🍬 Bribed with snacks",
+			effects = { Happiness = 4 },
+			setFlags = { snack_motivated = true },
+			feedText = "🛒 A snack fixed everything! Crisis averted!",
+		},
+		{
+			text = "😤 Pouty but manageable",
+			effects = { Happiness = -1 },
+			setFlags = { controlled_emotions = true },
+			feedText = "🛒 Mad but held it together. Growing up!",
+		},
+	},
+},
 }
 
 return events

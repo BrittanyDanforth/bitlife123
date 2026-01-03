@@ -3356,6 +3356,1030 @@ Childhood.events = {
 			},
 		},
 	},
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- MASSIVE EXPANSION: NEW CHILDHOOD EVENTS (Ages 5-12)
+-- These create rich, varied childhood experiences with lasting impacts
+-- ════════════════════════════════════════════════════════════════════════════
+
+	{
+		id = "childhood_loose_tooth",
+		title = "Loose Tooth!",
+		emoji = "🦷",
+		textVariants = {
+			"Your tooth is wiggling! It's so loose!",
+			"One of your baby teeth is about to fall out!",
+			"Wiggle wiggle... your tooth is barely hanging on!",
+			"The tooth fairy is coming soon!",
+		},
+		text = "Your tooth is wiggling! It's so loose!",
+		question = "How do you handle the loose tooth?",
+		minAge = 5, maxAge = 10,
+		baseChance = 0.5,
+		cooldown = 3,
+		category = "childhood",
+		tags = { "childhood", "milestone", "teeth" },
+		
+		choices = {
+			{
+				text = "😱 Leave it alone!",
+				effects = { Happiness = 2 },
+				setFlags = { lost_baby_tooth = true },
+				feedText = "🦷 It fell out on its own while you were eating! Surprise!",
+			},
+			{
+				text = "✊ Pull it out yourself!",
+				effects = { Happiness = 5 },
+				setFlags = { lost_baby_tooth = true, brave_kid = true },
+				feedText = "🦷 YANK! Out it came! You're so brave! Blood everywhere tho.",
+			},
+			{
+				text = "🍎 Bite an apple!",
+				effects = { Happiness = 4, Health = 2 },
+				setFlags = { lost_baby_tooth = true, clever_problem_solver = true },
+				feedText = "🦷 Apple trick worked! Out came the tooth!",
+			},
+			{
+				text = "💵 Put it under pillow!",
+				effects = { Happiness = 6, Money = 5 },
+				setFlags = { lost_baby_tooth = true, believes_in_tooth_fairy = true },
+				feedText = "🦷 The tooth fairy came! $5! Rich!",
+			},
+		},
+	},
+
+	{
+		id = "childhood_school_photo_day",
+		title = "School Photo Day!",
+		emoji = "📸",
+		textVariants = {
+			"It's picture day! Everyone's dressed up nice!",
+			"School photos are happening! Smile!",
+			"Time for your yearbook photo!",
+			"Picture day! Looking your best!",
+		},
+		text = "It's picture day! Everyone's dressed up nice!",
+		question = "How does your photo turn out?",
+		minAge = 5, maxAge = 12,
+		baseChance = 0.45,
+		cooldown = 4,
+		category = "childhood",
+		tags = { "childhood", "school", "photos" },
+		
+		choices = {
+			{
+				text = "😁 Perfect smile!",
+				effects = { Happiness = 5, Looks = 2 },
+				setFlags = { photogenic = true },
+				feedText = "📸 Best photo ever! Your parents bought ALL the packages!",
+			},
+			{
+				text = "😬 Awkward face",
+				effects = { Happiness = -2, Looks = -1 },
+				setFlags = { bad_school_photo = true },
+				feedText = "📸 Oh no... this one's going in the 'embarrassing' pile.",
+			},
+			{
+				text = "🤪 Silly face on purpose",
+				effects = { Happiness = 6 },
+				setFlags = { class_clown = true, funny_photos = true },
+				feedText = "📸 Your parents weren't happy but YOU love it!",
+			},
+			{
+				text = "😭 Blink right when they snap",
+				effects = { Happiness = -3 },
+				setFlags = { blinker_in_photos = true },
+				feedText = "📸 Classic blink photo. At least retakes are free!",
+			},
+		},
+	},
+
+	{
+		id = "childhood_recess_drama",
+		title = "Recess Drama!",
+		emoji = "🏃",
+		textVariants = {
+			"Drama at recess! Someone's being mean!",
+			"Things got heated on the playground!",
+			"There's a disagreement during recess games!",
+			"Playground politics are INTENSE!",
+		},
+		text = "Drama at recess! Someone's being mean!",
+		question = "What's happening?",
+		minAge = 6, maxAge = 12,
+		baseChance = 0.45,
+		cooldown = 3,
+		category = "childhood",
+		tags = { "childhood", "social", "conflict" },
+		
+		choices = {
+			{
+				text = "🤝 Help resolve it",
+				effects = { Happiness = 4, Smarts = 2 },
+				setFlags = { peacemaker = true, good_mediator = true },
+				feedText = "🏃 You helped everyone calm down! Crisis averted!",
+			},
+			{
+				text = "😤 Take sides",
+				effects = { Happiness = 2 },
+				setFlags = { loyal_friend = true },
+				feedText = "🏃 You backed up your friend! Loyalty points!",
+			},
+			{
+				text = "🚶 Walk away",
+				effects = { Happiness = 3 },
+				setFlags = { avoids_drama = true },
+				feedText = "🏃 Not your problem! You went to play elsewhere.",
+			},
+			{
+				text = "🗣️ Tell a teacher",
+				effects = { Happiness = 1, Smarts = 1 },
+				setFlags = { rule_follower = true },
+				feedText = "🏃 Teacher handled it. The right thing to do!",
+			},
+		},
+	},
+
+	{
+		id = "childhood_birthday_party",
+		title = "Birthday Party!",
+		emoji = "🎂",
+		textVariants = {
+			"Happy birthday! You're having a party!",
+			"It's YOUR special day! Party time!",
+			"Birthday party at your house!",
+			"Cake, presents, friends - it's your birthday!",
+		},
+		text = "Happy birthday! You're having a party!",
+		question = "What kind of party do you want?",
+		minAge = 5, maxAge = 12,
+		baseChance = 0.5,
+		cooldown = 5,
+		category = "childhood",
+		tags = { "childhood", "birthday", "social" },
+		
+		choices = {
+			{
+				text = "🎈 Big party, all my friends!",
+				effects = { Happiness = 10 },
+				setFlags = { loves_parties = true, social_butterfly = true },
+				feedText = "🎂 BEST PARTY EVER! So many presents! So much cake!",
+			},
+			{
+				text = "👫 Small party, close friends only",
+				effects = { Happiness = 7 },
+				setFlags = { quality_over_quantity = true, close_friends = true },
+				feedText = "🎂 Perfect size! Real friends, real fun!",
+			},
+			{
+				text = "🎮 Gaming/movie party",
+				effects = { Happiness = 8 },
+				setFlags = { gamer_kid = true },
+				feedText = "🎂 Video games and pizza! Best combo!",
+			},
+			{
+				text = "🏠 Just family is fine",
+				effects = { Happiness = 5 },
+				setFlags = { family_oriented = true, introverted = true },
+				feedText = "🎂 Quiet celebration but still special!",
+			},
+		},
+	},
+
+	{
+		id = "childhood_first_crush",
+		title = "First Crush!",
+		emoji = "💕",
+		textVariants = {
+			"There's someone at school you really like...",
+			"Your heart beats faster when THEY walk by!",
+			"You think about them ALL the time!",
+			"Is this... a crush?!",
+		},
+		text = "There's someone at school you really like...",
+		question = "How do you handle these feelings?",
+		minAge = 8, maxAge = 12,
+		baseChance = 0.4,
+		cooldown = 5,
+		oneTime = true,
+		category = "childhood",
+		tags = { "childhood", "crush", "social" },
+		blockedByFlags = { first_crush_happened = true },
+		
+		choices = {
+			{
+				text = "😳 Keep it secret forever",
+				effects = { Happiness = 3 },
+				setFlags = { first_crush_happened = true, keeps_feelings_secret = true },
+				feedText = "💕 Your secret is safe. Heart flutters from afar!",
+			},
+			{
+				text = "📝 Write them a note",
+				effects = { Happiness = 5 },
+				setFlags = { first_crush_happened = true, romantic_soul = true },
+				feedText = "💕 'Do you like me? Circle yes or no.' SO brave!",
+			},
+			{
+				text = "👫 Try to become friends first",
+				effects = { Happiness = 4, Smarts = 2 },
+				setFlags = { first_crush_happened = true, smart_approach = true },
+				feedText = "💕 Playing it cool! Friends first, see what happens!",
+			},
+			{
+				text = "🤷 Crushes are dumb",
+				effects = { Happiness = 1, Smarts = 1 },
+				setFlags = { first_crush_happened = true, late_bloomer_romance = true },
+				feedText = "💕 You're not interested in all that yet. Fair enough!",
+			},
+		},
+	},
+
+	{
+		id = "childhood_talent_show",
+		title = "School Talent Show!",
+		emoji = "🌟",
+		textVariants = {
+			"The school talent show is coming! Will you perform?",
+			"Everyone's showing off their talents! What about you?",
+			"Talent show sign-ups! Do you have what it takes?",
+			"It's time to shine at the talent show!",
+		},
+		text = "The school talent show is coming! Will you perform?",
+		question = "What do you do?",
+		minAge = 6, maxAge = 12,
+		baseChance = 0.4,
+		cooldown = 5,
+		category = "childhood",
+		tags = { "childhood", "talent", "performance" },
+		
+		choices = {
+			{
+				text = "🎤 Sing a song!",
+				effects = { Happiness = 6 },
+				setFlags = { performed_in_talent_show = true, likes_singing = true, stage_performer = true },
+				feedText = "🌟 You sang your heart out! Standing ovation!",
+			},
+			{
+				text = "🕺 Dance performance!",
+				effects = { Happiness = 6, Health = 2 },
+				setFlags = { performed_in_talent_show = true, likes_dancing = true, stage_performer = true },
+				feedText = "🌟 Your moves were FIRE! The crowd went wild!",
+			},
+			{
+				text = "🎭 Comedy routine!",
+				effects = { Happiness = 7 },
+				setFlags = { performed_in_talent_show = true, class_clown = true, comedian_potential = true },
+				feedText = "🌟 You had everyone DYING laughing!",
+			},
+			{
+				text = "😰 No way, too scary!",
+				effects = { Happiness = -2 },
+				setFlags = { stage_fright = true },
+				feedText = "🌟 You watched from the audience. Maybe next year!",
+			},
+		},
+	},
+
+	{
+		id = "childhood_summer_camp",
+		title = "Summer Camp!",
+		emoji = "🏕️",
+		textVariants = {
+			"Summer camp time! A whole week away from home!",
+			"You're going to camp! Adventures await!",
+			"Time for summer camp! Campfires and cabins!",
+			"Pack your bags for summer camp!",
+		},
+		text = "Summer camp time! A whole week away from home!",
+		question = "How does camp go?",
+		minAge = 7, maxAge = 12,
+		baseChance = 0.4,
+		cooldown = 5,
+		category = "childhood",
+		tags = { "childhood", "camp", "summer" },
+		
+		choices = {
+			{
+				text = "🏆 Best week ever!",
+				effects = { Happiness = 10, Health = 3 },
+				setFlags = { loved_summer_camp = true, outdoor_kid = true, makes_friends_easily = true },
+				feedText = "🏕️ Made camp friends! Learned survival skills! AMAZING!",
+			},
+			{
+				text = "😢 Homesick the whole time",
+				effects = { Happiness = -3 },
+				setFlags = { got_homesick = true, attached_to_home = true },
+				feedText = "🏕️ You missed home. Called parents crying. They picked you up early.",
+			},
+			{
+				text = "😊 Mixed feelings",
+				effects = { Happiness = 5 },
+				setFlags = { camp_experience = true },
+				feedText = "🏕️ Some fun, some boring. Overall decent experience!",
+			},
+			{
+				text = "😤 Got in trouble",
+				effects = { Happiness = 3 },
+				setFlags = { camp_rebel = true, troublemaker = true },
+				feedText = "🏕️ Pranks, rule-breaking... unforgettable camp stories!",
+			},
+		},
+	},
+
+	{
+		id = "childhood_pet_want",
+		title = "I Want a Pet!",
+		emoji = "🐕",
+		textVariants = {
+			"You REALLY want a pet! Please please please!",
+			"Every kid has a pet but YOU! Not fair!",
+			"You've been begging for a pet for MONTHS!",
+			"A pet would be your best friend!",
+		},
+		text = "You REALLY want a pet! Please please please!",
+		question = "How do you convince your parents?",
+		minAge = 5, maxAge = 12,
+		baseChance = 0.4,
+		cooldown = 5,
+		category = "childhood",
+		tags = { "childhood", "pets", "family" },
+		blockedByFlags = { has_pet = true },
+		
+		choices = {
+			{
+				text = "📋 Make a responsibility plan",
+				effects = { Smarts = 3, Happiness = 4 },
+				setFlags = { asked_for_pet = true, responsible_approach = true },
+				feedText = "🐕 You showed them a feeding schedule, cleaning plan - impressive!",
+			},
+			{
+				text = "😭 Beg non-stop",
+				effects = { Happiness = 2 },
+				setFlags = { asked_for_pet = true, persistent = true },
+				feedText = "🐕 Eventually they caved! Persistence pays off!",
+			},
+			{
+				text = "💰 Offer to save allowance",
+				effects = { Smarts = 2, Happiness = 3 },
+				setFlags = { asked_for_pet = true, financially_aware = true },
+				feedText = "🐕 You showed you're serious about commitment!",
+			},
+			{
+				text = "🤷 Accept 'maybe someday'",
+				effects = { Happiness = -2 },
+				setFlags = { asked_for_pet = true, patient = true },
+				feedText = "🐕 'When you're older' - the classic parent response.",
+			},
+		},
+	},
+
+	{
+		id = "childhood_school_play",
+		title = "School Play Auditions!",
+		emoji = "🎭",
+		textVariants = {
+			"The school play needs actors! Will you audition?",
+			"Drama club is putting on a show! Want a part?",
+			"Theater tryouts are happening!",
+			"Lights, camera, school play action!",
+		},
+		text = "The school play needs actors! Will you audition?",
+		question = "Do you try out?",
+		minAge = 7, maxAge = 12,
+		baseChance = 0.4,
+		cooldown = 5,
+		category = "childhood",
+		tags = { "childhood", "theater", "school" },
+		
+		choices = {
+			{
+				text = "🌟 Go for the lead role!",
+				effects = { Happiness = 6 },
+				setFlags = { auditioned_for_play = true, ambitious = true, theater_kid = true },
+				feedText = "🎭 You got a main part! Memorizing SO many lines!",
+			},
+			{
+				text = "😊 Any role is fine",
+				effects = { Happiness = 5 },
+				setFlags = { auditioned_for_play = true, theater_kid = true },
+				feedText = "🎭 You're in the play! Small part but still exciting!",
+			},
+			{
+				text = "🔧 Work backstage",
+				effects = { Happiness = 4, Smarts = 2 },
+				setFlags = { backstage_crew = true, behind_scenes = true },
+				feedText = "🎭 Lights, sound, props - backstage is where the magic happens!",
+			},
+			{
+				text = "😰 Too scary, pass",
+				effects = { Happiness = 1 },
+				setFlags = { stage_fright = true },
+				feedText = "🎭 You'll support from the audience!",
+			},
+		},
+	},
+
+	{
+		id = "childhood_music_lessons",
+		title = "Music Lessons Offer!",
+		emoji = "🎵",
+		textVariants = {
+			"Your parents offer to get you music lessons!",
+			"Want to learn an instrument?",
+			"Music school is an option!",
+			"You could be a musician!",
+		},
+		text = "Your parents offer to get you music lessons!",
+		question = "What instrument do you pick?",
+		minAge = 6, maxAge = 12,
+		baseChance = 0.4,
+		cooldown = 5,
+		oneTime = true,
+		category = "childhood",
+		tags = { "childhood", "music", "hobbies" },
+		blockedByFlags = { started_music_lessons = true },
+		
+		choices = {
+			{
+				text = "🎹 Piano - classic!",
+				effects = { Happiness = 5, Smarts = 3 },
+				setFlags = { started_music_lessons = true, plays_piano = true, musical_talent = true },
+				feedText = "🎵 Learning piano! It's hard but rewarding!",
+			},
+			{
+				text = "🎸 Guitar - rock star!",
+				effects = { Happiness = 6 },
+				setFlags = { started_music_lessons = true, plays_guitar = true, musical_talent = true },
+				feedText = "🎵 Guitar lessons! Already dreaming of concerts!",
+			},
+			{
+				text = "🥁 Drums - let's make noise!",
+				effects = { Happiness = 7 },
+				setFlags = { started_music_lessons = true, plays_drums = true, musical_talent = true },
+				feedText = "🎵 DRUMS! Your neighbors are thrilled (not really)!",
+			},
+			{
+				text = "🙅 No thanks",
+				effects = { Happiness = 2 },
+				setFlags = { declined_music_lessons = true },
+				feedText = "🎵 Music isn't for you right now. That's okay!",
+			},
+		},
+	},
+
+	{
+		id = "childhood_science_experiment",
+		title = "Science Fair Project!",
+		emoji = "🔬",
+		textVariants = {
+			"Science fair is coming! What will you create?",
+			"Time to be a scientist! Project ideas?",
+			"The science fair awaits your genius!",
+			"Hypothesis time! Science fair project!",
+		},
+		text = "Science fair is coming! What will you create?",
+		question = "What's your project about?",
+		minAge = 7, maxAge = 12,
+		baseChance = 0.4,
+		cooldown = 4,
+		category = "childhood",
+		tags = { "childhood", "science", "school" },
+		
+		choices = {
+			{
+				text = "🌋 Volcano! Classic!",
+				effects = { Happiness = 5, Smarts = 3 },
+				setFlags = { did_science_fair = true, loves_explosions = true },
+				feedText = "🔬 Your volcano ERUPTED! Messy but amazing!",
+			},
+			{
+				text = "🔋 Battery experiment",
+				effects = { Happiness = 4, Smarts = 5 },
+				setFlags = { did_science_fair = true, future_engineer = true },
+				feedText = "🔬 You made electricity from a potato! GENIUS!",
+			},
+			{
+				text = "🌱 Plant growth study",
+				effects = { Happiness = 4, Smarts = 4 },
+				setFlags = { did_science_fair = true, nature_lover = true, patient_scientist = true },
+				feedText = "🔬 Weeks of observation paid off! Science!",
+			},
+			{
+				text = "😅 Last minute poster",
+				effects = { Happiness = 2, Smarts = 1 },
+				setFlags = { did_science_fair = true, procrastinator = true },
+				feedText = "🔬 Glitter and enthusiasm covered up the lack of effort!",
+			},
+		},
+	},
+
+	{
+		id = "childhood_teacher_favorite",
+		title = "Teacher's Pet?",
+		emoji = "📚",
+		textVariants = {
+			"Your teacher seems to really like you!",
+			"You're answering ALL the questions right!",
+			"Teacher always calls on YOU!",
+			"Is being teacher's favorite good or bad?",
+		},
+		text = "Your teacher seems to really like you!",
+		question = "How do you feel about the extra attention?",
+		minAge = 6, maxAge = 12,
+		baseChance = 0.4,
+		cooldown = 4,
+		category = "childhood",
+		tags = { "childhood", "school", "social" },
+		requiresStats = { Smarts = 55 },
+		
+		choices = {
+			{
+				text = "😊 Love it! I'm smart!",
+				effects = { Happiness = 5, Smarts = 2 },
+				setFlags = { teachers_pet = true, proud_student = true },
+				feedText = "📚 You love being recognized for your hard work!",
+			},
+			{
+				text = "😰 Embarrassing...",
+				effects = { Happiness = -2, Smarts = 1 },
+				setFlags = { shy_smart_kid = true },
+				feedText = "📚 You wish they'd call on someone else sometimes!",
+			},
+			{
+				text = "😎 Use it to my advantage",
+				effects = { Happiness = 4, Smarts = 3 },
+				setFlags = { strategic_student = true },
+				feedText = "📚 Extra credit opportunities? Don't mind if I do!",
+			},
+			{
+				text = "🤷 Just doing my best",
+				effects = { Happiness = 3, Smarts = 2 },
+				setFlags = { humble_student = true },
+				feedText = "📚 You just focus on learning. Recognition is a bonus!",
+			},
+		},
+	},
+
+	{
+		id = "childhood_sick_day",
+		title = "Sick Day!",
+		emoji = "🤒",
+		textVariants = {
+			"You're not feeling well... sick day?",
+			"Your stomach hurts! Or does it?",
+			"Too sick for school? Maybe!",
+			"You don't feel good this morning...",
+		},
+		text = "You're not feeling well... sick day?",
+		question = "Are you really sick?",
+		minAge = 5, maxAge = 12,
+		baseChance = 0.45,
+		cooldown = 3,
+		category = "childhood",
+		tags = { "childhood", "sick", "school" },
+		
+		choices = {
+			{
+				text = "😷 Yes, actually sick",
+				effects = { Health = -5, Happiness = -3 },
+				setFlags = { actually_sick = true },
+				feedText = "🤒 You really are sick. Soup and rest all day.",
+			},
+			{
+				text = "🎭 Faking it for fun day",
+				effects = { Happiness = 6, Smarts = 2 },
+				setFlags = { faked_sick = true, good_actor = true },
+				feedText = "🤒 Oscar-worthy performance! Video games all day!",
+			},
+			{
+				text = "🦸 Push through, go to school",
+				effects = { Health = -2, Smarts = 2 },
+				setFlags = { tough_kid = true, school_dedicated = true },
+				feedText = "🤒 You powered through! But maybe should've stayed home...",
+			},
+			{
+				text = "🤔 Not sure, let parent decide",
+				effects = { Happiness = 2 },
+				feedText = "🤒 Parent felt your forehead. Verdict: school!",
+			},
+		},
+	},
+
+	{
+		id = "childhood_field_trip",
+		title = "Field Trip!",
+		emoji = "🚌",
+		textVariants = {
+			"FIELD TRIP DAY! No regular classes!",
+			"The class is going somewhere exciting!",
+			"Permission slip signed! Field trip time!",
+			"Best day ever - field trip!",
+		},
+		text = "FIELD TRIP DAY! No regular classes!",
+		question = "How does the field trip go?",
+		minAge = 5, maxAge = 12,
+		baseChance = 0.45,
+		cooldown = 4,
+		category = "childhood",
+		tags = { "childhood", "school", "adventure" },
+		
+		choices = {
+			{
+				text = "🎉 Best day ever!",
+				effects = { Happiness = 8, Smarts = 2 },
+				setFlags = { loves_field_trips = true },
+				feedText = "🚌 You learned AND had fun! Perfect combo!",
+			},
+			{
+				text = "🤢 Got bus sick",
+				effects = { Happiness = -3, Health = -2 },
+				setFlags = { motion_sickness = true },
+				feedText = "🚌 The bus ride was rough... but the destination was worth it!",
+			},
+			{
+				text = "😈 Got in trouble",
+				effects = { Happiness = 3 },
+				setFlags = { field_trip_troublemaker = true },
+				feedText = "🚌 Wandered off, touched things you shouldn't... classic field trip!",
+			},
+			{
+				text = "👫 Made a new friend!",
+				effects = { Happiness = 6 },
+				setFlags = { makes_friends_easily = true },
+				feedText = "🚌 Sat next to someone new. Now you're buddies!",
+			},
+		},
+	},
+
+	{
+		id = "childhood_video_game_addiction",
+		title = "Gaming Obsession!",
+		emoji = "🎮",
+		textVariants = {
+			"You can't stop playing video games!",
+			"One more level... one more hour... one more day!",
+			"Your parents say you play too much!",
+			"Video games are taking over your life!",
+		},
+		text = "You can't stop playing video games!",
+		question = "Can you find balance?",
+		minAge = 7, maxAge = 12,
+		baseChance = 0.45,
+		cooldown = 4,
+		category = "childhood",
+		tags = { "childhood", "gaming", "hobby" },
+		
+		choices = {
+			{
+				text = "🎮 Games are life!",
+				effects = { Happiness = 5, Smarts = 2, Health = -2 },
+				setFlags = { gamer_kid = true, game_obsessed = true },
+				feedText = "🎮 You're SO good at games! Maybe too good...",
+			},
+			{
+				text = "⚖️ Learn to balance",
+				effects = { Happiness = 4, Smarts = 3, Health = 1 },
+				setFlags = { gamer_kid = true, balanced_gamer = true },
+				feedText = "🎮 Games AND homework. Games AND outside time. Balance!",
+			},
+			{
+				text = "📺 Only weekends",
+				effects = { Happiness = 3, Smarts = 2 },
+				setFlags = { disciplined_gamer = true },
+				feedText = "🎮 Parents made a rule. Weekends only. Fair enough.",
+			},
+			{
+				text = "😤 Get grounded from games",
+				effects = { Happiness = -4 },
+				setFlags = { game_grounded = true },
+				feedText = "🎮 You played too much and now... no games. Disaster!",
+			},
+		},
+	},
+
+	{
+		id = "childhood_allowance",
+		title = "Allowance Talk!",
+		emoji = "💵",
+		textVariants = {
+			"Your parents offer you an allowance!",
+			"Time to learn about money management!",
+			"Weekly allowance! What will you do with it?",
+			"Your first regular income!",
+		},
+		text = "Your parents offer you an allowance!",
+		question = "What's your money strategy?",
+		minAge = 6, maxAge = 12,
+		baseChance = 0.4,
+		cooldown = 5,
+		oneTime = true,
+		category = "childhood",
+		tags = { "childhood", "money", "learning" },
+		blockedByFlags = { gets_allowance = true },
+		
+		choices = {
+			{
+				text = "💰 Save everything!",
+				effects = { Happiness = 3, Smarts = 4, Money = 20 },
+				setFlags = { gets_allowance = true, childhood_saver = true, financially_responsible = true },
+				feedText = "💵 Piggy bank growing! You're gonna be RICH!",
+			},
+			{
+				text = "🍬 Spend it immediately!",
+				effects = { Happiness = 6, Money = 5 },
+				setFlags = { gets_allowance = true, childhood_spender = true },
+				feedText = "💵 Candy, toys, MORE candy! Money is for fun!",
+			},
+			{
+				text = "⚖️ Save half, spend half",
+				effects = { Happiness = 4, Smarts = 3, Money = 10 },
+				setFlags = { gets_allowance = true, balanced_with_money = true },
+				feedText = "💵 Smart strategy! Enjoy now AND plan for later!",
+			},
+			{
+				text = "🎁 Save for something big",
+				effects = { Happiness = 5, Smarts = 3, Money = 15 },
+				setFlags = { gets_allowance = true, goal_saver = true },
+				feedText = "💵 Eyes on the prize! Saving for that special thing!",
+			},
+		},
+	},
+
+	{
+		id = "childhood_sports_tryout",
+		title = "Sports Tryouts!",
+		emoji = "⚽",
+		textVariants = {
+			"Sports team tryouts! Can you make the cut?",
+			"Time to show your athletic skills!",
+			"Want to join a team? Tryouts are today!",
+			"Nervous butterflies for tryouts!",
+		},
+		text = "Sports team tryouts! Can you make the cut?",
+		question = "How do tryouts go?",
+		minAge = 7, maxAge = 12,
+		baseChance = 0.4,
+		cooldown = 4,
+		category = "childhood",
+		tags = { "childhood", "sports", "competition" },
+		
+		choices = {
+			{
+				text = "🏆 Made the team!",
+				effects = { Happiness = 8, Health = 3 },
+				setFlags = { on_sports_team = true, athletic_kid = true, team_player = true },
+				feedText = "⚽ YES! You're on the team! Practice starts Monday!",
+			},
+			{
+				text = "😢 Didn't make it",
+				effects = { Happiness = -5 },
+				setFlags = { cut_from_team = true, faced_rejection = true },
+				feedText = "⚽ Not this time... but you'll try again next year!",
+			},
+			{
+				text = "🔄 Made the B team",
+				effects = { Happiness = 4, Health = 2 },
+				setFlags = { on_b_team = true, working_up = true },
+				feedText = "⚽ Not varsity but still on a team! Keep working!",
+			},
+			{
+				text = "😰 Too nervous to try",
+				effects = { Happiness = -2 },
+				setFlags = { sports_anxiety = true, missed_opportunity = true },
+				feedText = "⚽ You chickened out. Maybe next time...",
+			},
+		},
+	},
+
+	{
+		id = "childhood_sleepover",
+		title = "Sleepover Time!",
+		emoji = "🌙",
+		textVariants = {
+			"Your first sleepover! A whole night at a friend's house!",
+			"Sleepover party! Staying up ALL night!",
+			"Packing your bag for the sleepover!",
+			"Sleeping somewhere other than home!",
+		},
+		text = "Your first sleepover! A whole night at a friend's house!",
+		question = "How does it go?",
+		minAge = 7, maxAge = 12,
+		baseChance = 0.4,
+		cooldown = 4,
+		category = "childhood",
+		tags = { "childhood", "social", "sleepover" },
+		
+		choices = {
+			{
+				text = "🎉 Best night ever!",
+				effects = { Happiness = 8 },
+				setFlags = { loves_sleepovers = true, good_sleepover = true },
+				feedText = "🌙 Games, snacks, scary stories, no sleep! AMAZING!",
+			},
+			{
+				text = "😢 Got homesick, called home",
+				effects = { Happiness = -3 },
+				setFlags = { sleepover_homesick = true, needs_home_comfort = true },
+				feedText = "🌙 You called mom at midnight. They picked you up.",
+			},
+			{
+				text = "😴 Fell asleep early",
+				effects = { Happiness = 3, Health = 2 },
+				setFlags = { early_sleeper = true },
+				feedText = "🌙 You missed all the late-night fun... but felt great!",
+			},
+			{
+				text = "😤 Drama with friends",
+				effects = { Happiness = -2 },
+				setFlags = { sleepover_drama = true },
+				feedText = "🌙 Someone got upset. Awkward rest of the night.",
+			},
+		},
+	},
+
+	{
+		id = "childhood_reading_discovery",
+		title = "Book Magic!",
+		emoji = "📖",
+		textVariants = {
+			"You discovered a book you can't put down!",
+			"Reading is actually... FUN?!",
+			"A book series has captured your imagination!",
+			"Lost in a story world!",
+		},
+		text = "You discovered a book you can't put down!",
+		question = "What kind of books do you love?",
+		minAge = 6, maxAge = 12,
+		baseChance = 0.4,
+		cooldown = 4,
+		category = "childhood",
+		tags = { "childhood", "reading", "hobby" },
+		
+		choices = {
+			{
+				text = "🧙 Fantasy adventures!",
+				effects = { Happiness = 5, Smarts = 4 },
+				setFlags = { bookworm = true, fantasy_lover = true, vivid_imagination = true },
+				feedText = "📖 Magic, dragons, quests - you're hooked!",
+			},
+			{
+				text = "🔍 Mystery stories!",
+				effects = { Happiness = 5, Smarts = 5 },
+				setFlags = { bookworm = true, mystery_lover = true, analytical_mind = true },
+				feedText = "📖 Solving crimes from your bedroom! Detective vibes!",
+			},
+			{
+				text = "🦸 Superhero comics!",
+				effects = { Happiness = 6, Smarts = 3 },
+				setFlags = { bookworm = true, comic_lover = true },
+				feedText = "📖 Pow! Bam! Heroes saving the day! You love it!",
+			},
+			{
+				text = "📚 A little of everything!",
+				effects = { Happiness = 4, Smarts = 4 },
+				setFlags = { bookworm = true, diverse_reader = true },
+				feedText = "📖 Your library card is getting a workout!",
+			},
+		},
+	},
+
+	{
+		id = "childhood_chores",
+		title = "Chore Time!",
+		emoji = "🧹",
+		textVariants = {
+			"Time to do your chores!",
+			"Your parents added MORE chores!",
+			"Cleaning your room... again!",
+			"Chores are part of life now!",
+		},
+		text = "Time to do your chores!",
+		question = "How do you approach chores?",
+		minAge = 6, maxAge = 12,
+		baseChance = 0.45,
+		cooldown = 3,
+		category = "childhood",
+		tags = { "childhood", "responsibility", "home" },
+		
+		choices = {
+			{
+				text = "😊 Do them right away",
+				effects = { Happiness = 3, Smarts = 2 },
+				setFlags = { responsible_kid = true, good_with_chores = true },
+				feedText = "🧹 Done! Now you have free time without guilt!",
+			},
+			{
+				text = "😤 Complain but do them",
+				effects = { Happiness = 1 },
+				setFlags = { reluctant_worker = true },
+				feedText = "🧹 Lots of sighing, but you got it done eventually.",
+			},
+			{
+				text = "🙈 Hide and avoid",
+				effects = { Happiness = 4 },
+				setFlags = { avoids_chores = true, procrastinator = true },
+				feedText = "🧹 Parents can't find you... but they will eventually.",
+			},
+			{
+				text = "💰 Negotiate for extra pay",
+				effects = { Happiness = 3, Smarts = 3, Money = 5 },
+				setFlags = { negotiator_kid = true, business_minded = true },
+				feedText = "🧹 Extra chores for extra cash? Deal!",
+			},
+		},
+	},
+
+	{
+		id = "childhood_scary_movie",
+		title = "Scary Movie!",
+		emoji = "👻",
+		textVariants = {
+			"Your friends want to watch a scary movie!",
+			"There's a horror film everyone's talking about!",
+			"Too young for scary movies? Let's find out!",
+			"Dare to watch something spooky?",
+		},
+		text = "Your friends want to watch a scary movie!",
+		question = "How brave are you?",
+		minAge = 8, maxAge = 12,
+		baseChance = 0.4,
+		cooldown = 4,
+		category = "childhood",
+		tags = { "childhood", "movies", "fear" },
+		
+		choices = {
+			{
+				text = "😎 Not scared at all!",
+				effects = { Happiness = 5 },
+				setFlags = { brave_with_scary = true, thrill_seeker = true },
+				feedText = "👻 You laughed through the whole thing! Fearless!",
+			},
+			{
+				text = "😨 Watched through fingers",
+				effects = { Happiness = 2 },
+				setFlags = { scared_of_horror = true },
+				feedText = "👻 Mostly didn't see it... but claimed you did!",
+			},
+			{
+				text = "😱 Nightmares for days",
+				effects = { Happiness = -4, Health = -2 },
+				setFlags = { gets_nightmares = true, sensitive_to_scary = true },
+				feedText = "👻 Bad idea. Can't sleep. Everything is scary now.",
+			},
+			{
+				text = "🙅 No way, not watching",
+				effects = { Happiness = 1 },
+				setFlags = { avoids_scary = true, knows_limits = true },
+				feedText = "👻 You sat out. Smart move honestly!",
+			},
+		},
+	},
+
+	{
+		id = "childhood_cooking_attempt",
+		title = "I Can Cook!",
+		emoji = "👨‍🍳",
+		textVariants = {
+			"You want to try cooking on your own!",
+			"How hard can making food be?",
+			"Parents are busy - time to be independent!",
+			"You've watched enough cooking shows!",
+		},
+		text = "You want to try cooking on your own!",
+		question = "What do you make?",
+		minAge = 8, maxAge = 12,
+		baseChance = 0.4,
+		cooldown = 5,
+		category = "childhood",
+		tags = { "childhood", "cooking", "independence" },
+		
+		choices = {
+			{
+				text = "🥣 Cereal! (Safe choice)",
+				effects = { Happiness = 3 },
+				setFlags = { basic_cooking = true },
+				feedText = "👨‍🍳 Cereal mastery achieved! Step one complete!",
+			},
+			{
+				text = "🍳 Eggs! (Brave!)",
+				effects = { Happiness = 5, Smarts = 2 },
+				setFlags = { learning_to_cook = true, adventurous_cooking = true },
+				feedText = "👨‍🍳 Scrambled... kinda. Edible though! Progress!",
+			},
+			{
+				text = "🔥 Full meal! (Chaos!)",
+				effects = { Happiness = 6, Health = -2 },
+				setFlags = { cooking_disaster = true, ambitious = true },
+				feedText = "👨‍🍳 Smoke alarm went off but you tried! A for effort!",
+			},
+			{
+				text = "🍕 Order pizza instead",
+				effects = { Happiness = 4 },
+				setFlags = { prefers_delivery = true },
+				feedText = "👨‍🍳 Cooking is hard. Pizza is easy. Smart!",
+			},
+		},
+	},
 }
 
 return Childhood
