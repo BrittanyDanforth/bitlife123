@@ -1667,7 +1667,7 @@ events[#events + 1] = {
 			feedText = "👨‍🍳 'Order up!' Your mud pies and leaf salads are 5-star!",
 		},
 	},
-},
+}
 
 -- ══════════════════════════════════════════════════════════════════════════════
 -- MASSIVE EXPANSION: 50+ NEW TODDLER/PRESCHOOL EVENTS
@@ -1714,7 +1714,7 @@ events[#events + 1] = {
 			feedText = "🤝 You bonded through energetic play! Tag, you're friends now!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_tantrum",
@@ -1766,7 +1766,7 @@ events[#events + 1] = {
 			feedText = "🗣️ 'I... feel... SAD!' You tried words! Adults were proud!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_potty_milestone",
@@ -1806,7 +1806,7 @@ events[#events + 1] = {
 			feedText = "🚽 That's okay. The potty will be there when you're ready!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_sibling_reaction",
@@ -1848,7 +1848,7 @@ events[#events + 1] = {
 			feedText = "🤔 The baby is interesting... but also kind of weird and loud.",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_food_adventure",
@@ -1897,7 +1897,7 @@ events[#events + 1] = {
 			feedText = "😋 Delicious! You ate it all and wanted more! Adventurous eater!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_night_terror",
@@ -1934,7 +1934,7 @@ events[#events + 1] = {
 			feedText = "😰 The blanket became your fortress. Nothing could get you there!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "preschool_show_and_tell_day",
@@ -1980,7 +1980,7 @@ events[#events + 1] = {
 			feedText = "⭐ A BUG?! Some kids screamed, some thought it was AWESOME!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_art_creation",
@@ -2025,7 +2025,7 @@ events[#events + 1] = {
 			feedText = "🎨 RAWR! It's scary and awesome! You're quite the artist!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_playground_adventure",
@@ -2064,7 +2064,7 @@ events[#events + 1] = {
 			feedText = "🛝 You watched and learned. Maybe next time you'll try!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_pet_encounter",
@@ -2103,7 +2103,7 @@ events[#events + 1] = {
 			feedText = "🐕 You and the dog ran around! Best day ever!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "preschool_music_class",
@@ -2149,7 +2149,7 @@ events[#events + 1] = {
 			feedText = "🪇 Shake shake shake! You've got rhythm!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_helping_chores",
@@ -2198,7 +2198,7 @@ events[#events + 1] = {
 			feedText = "🍽️ You carried the napkins! Such a big help!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_water_play",
@@ -2237,7 +2237,7 @@ events[#events + 1] = {
 			feedText = "🫧 Bubbles! So many bubbles! Pop pop pop! Magic!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_language_explosion",
@@ -2284,7 +2284,7 @@ events[#events + 1] = {
 			feedText = "🗣️ 'Boppity-woop!' What does it mean? Only YOU know!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "preschool_first_day",
@@ -2325,7 +2325,7 @@ events[#events + 1] = {
 			feedText = "🏫 First day was... fine. Takes time to adjust.",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_independence",
@@ -2378,7 +2378,7 @@ events[#events + 1] = {
 			feedText = "👟 Shoes on! Wrong feet, but they're ON! Victory!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_invisible_companion",
@@ -2425,7 +2425,7 @@ events[#events + 1] = {
 			feedText = "👻 Bloop the blob is your best friend. No one else understands!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_counting_milestone",
@@ -2466,7 +2466,7 @@ events[#events + 1] = {
 			feedText = "🔢 'One, seven, three, eleventy!' Close... ish!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_color_learning",
@@ -2513,7 +2513,7 @@ events[#events + 1] = {
 			feedText = "🌈 Why pick one?! ALL colors are amazing! Rainbow lover!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_bedtime_routine",
@@ -2558,7 +2558,7 @@ events[#events + 1] = {
 			feedText = "📖 Soft songs lulled you to sleep. Sweet dreams!",
 		},
 	},
-},
+}
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- MASSIVE EXPANSION: NEW TODDLER/PRESCHOOL EVENTS (50+ new events)
@@ -2610,7 +2610,7 @@ events[#events + 1] = {
 			feedText = "🥦 Tears work! Ice cream for dinner! (Just this once...)",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_afraid_of_dark",
@@ -2659,7 +2659,7 @@ events[#events + 1] = {
 			feedText = "🌙 Mr. Bear will protect you! Together you're invincible!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_learning_abc",
@@ -2703,7 +2703,7 @@ events[#events + 1] = {
 			feedText = "🔤 Zzz... you'll learn it tomorrow. Or the next day...",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_first_haircut",
@@ -2744,7 +2744,7 @@ events[#events + 1] = {
 			feedText = "✂️ Chaos! But they caught you. Uneven haircut... character!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_lost_in_store",
@@ -2790,7 +2790,7 @@ events[#events + 1] = {
 			feedText = "🏪 Good strategy! They came back to where they lost you!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_making_friends",
@@ -2837,7 +2837,7 @@ events[#events + 1] = {
 			feedText = "👫 Maybe next time. Friends are scary...",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_meeting_new_pet",
@@ -2883,7 +2883,7 @@ events[#events + 1] = {
 			feedText = "🐕 You shared your snack! Animals love you!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_temper_tantrum",
@@ -2929,7 +2929,7 @@ events[#events + 1] = {
 			feedText = "😤 You pouted but accepted it. Growing up already!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_drawing_masterpiece",
@@ -2981,7 +2981,7 @@ events[#events + 1] = {
 			feedText = "🎨 You drew the house, the dog, everything! Future artist!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_bath_time_fun",
@@ -3028,7 +3028,7 @@ events[#events + 1] = {
 			feedText = "🛁 Your bathroom concerts are legendary!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_sibling_moment",
@@ -3074,7 +3074,7 @@ events[#events + 1] = {
 			feedText = "👶 You're on guard duty! No one hurts YOUR baby!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_learning_shapes",
@@ -3121,7 +3121,7 @@ events[#events + 1] = {
 			feedText = "🔷 Stars are magical! You're a star yourself!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_playground_slide",
@@ -3167,7 +3167,7 @@ events[#events + 1] = {
 			feedText = "🛝 Smart! Build up to it. You'll conquer it soon!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_broken_toy",
@@ -3213,7 +3213,7 @@ events[#events + 1] = {
 			feedText = "🧸 Easy come, easy go. Other toys await!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_first_joke",
@@ -3253,7 +3253,7 @@ events[#events + 1] = {
 			feedText = "😂 Strategic humor. Save the best jokes!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_dress_up",
@@ -3299,7 +3299,7 @@ events[#events + 1] = {
 			feedText = "👗 3... 2... 1... BLAST OFF! To infinity and beyond!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_sharing_lesson",
@@ -3345,7 +3345,7 @@ events[#events + 1] = {
 			feedText = "🤝 A deal was made! Both kids happy!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_messy_eating",
@@ -3385,7 +3385,7 @@ events[#events + 1] = {
 			feedText = "🍝 Hands work just fine! Who needs forks?!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_question_phase",
@@ -3431,7 +3431,7 @@ events[#events + 1] = {
 			feedText = "❓ Sometimes you just gotta accept it!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_best_friend_forever",
@@ -3479,7 +3479,7 @@ events[#events + 1] = {
 			feedText = "💕 Everything is funnier together! BFFs!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_sleep_problems",
@@ -3525,7 +3525,7 @@ events[#events + 1] = {
 			feedText = "😴 The routine works! Songs and stories, then zzz...",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_outdoor_discovery",
@@ -3571,7 +3571,7 @@ events[#events + 1] = {
 			feedText = "🌳 You ran until you dropped! Happy exhaustion!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_potty_training",
@@ -3612,7 +3612,7 @@ events[#events + 1] = {
 			feedText = "🚽 Eventually got there! Just needed time!",
 		},
 	},
-},
+}
 
 events[#events + 1] = {
 	id = "toddler_tantrum_public",
