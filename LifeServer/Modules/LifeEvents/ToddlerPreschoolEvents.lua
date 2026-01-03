@@ -2381,7 +2381,7 @@ events[#events + 1] = {
 },
 
 events[#events + 1] = {
-	id = "toddler_imaginary_friend",
+	id = "toddler_invisible_companion",
 	title = "Special Friend!",
 	emoji = "👻",
 	textVariants = {
@@ -2840,7 +2840,7 @@ events[#events + 1] = {
 },
 
 events[#events + 1] = {
-	id = "toddler_pet_encounter",
+	id = "toddler_meeting_new_pet",
 	title = "Meeting a Pet!",
 	emoji = "🐕",
 	textVariants = {

@@ -782,7 +782,7 @@ MiscEvents.events = {
 		},
 	},
 	{
-		id = "misc_unexpected_compliment",
+		id = "misc_stranger_compliment",
 		title = "Unexpected Compliment!",
 		emoji = "✨",
 		text = "A stranger just gave you a genuine compliment!",
