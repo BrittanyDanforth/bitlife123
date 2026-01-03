@@ -47,12 +47,43 @@ local function isBlockedByPremiumPath(state)
 	return false
 end
 
+-- ═════════════════════════════════════════════════════════════════════════════════════
+-- CRITICAL FIX #ATHLETE-2: Block athlete events for non-athletic players
+-- If player explicitly chose academic/tech/creative paths and never showed sports interest
+-- ═════════════════════════════════════════════════════════════════════════════════════
+local function isBlockedByNonAthleticPath(state)
+	if not state.Flags then return false end
+	local flags = state.Flags
+	
+	-- If player already has athletic credentials, allow
+	if flags.signed_athlete or flags.pro_athlete or flags.nfl_player or flags.nba_player then
+		return false
+	end
+	if flags.varsity_athlete or flags.college_athlete or flags.school_athlete then
+		return false
+	end
+	if flags.plays_football or flags.plays_basketball then
+		return false
+	end
+	
+	-- Block if player explicitly chose non-sports paths AND never showed sports interest
+	if flags.hates_sports then return true end
+	if flags.academic_focus and not flags.likes_sports then return true end
+	if flags.gamer_kid and not flags.athletic_focus then return true end
+	if flags.coding_prodigy and not flags.likes_sports then return true end
+	if flags.tech_interest and not flags.athletic_focus then return true end
+	
+	return false
+end
+
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- CRITICAL FIX #16: Enhanced helper functions for athletic careers
 -- ═══════════════════════════════════════════════════════════════════════════════
 local function hasAthleteJob(state)
 	-- CRITICAL FIX #RVS-ATHLETE-2: Check premium path blocking first
 	if isBlockedByPremiumPath(state) then return false end
+	-- CRITICAL FIX #ATHLETE-3: Check non-athletic path blocking
+	if isBlockedByNonAthleticPath(state) then return false end
 	if not state.CurrentJob then return false end
 	local jobId = (state.CurrentJob.id or ""):lower()
 	local jobCat = (state.CurrentJob.category or ""):lower()

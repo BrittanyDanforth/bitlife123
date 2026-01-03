@@ -22,11 +22,58 @@ local RANDOM = Random.new()
 -- HELPER FUNCTIONS
 -- ═══════════════════════════════════════════════════════════════════════════════
 
+-- CRITICAL FIX #NFL-1: Check if player made incompatible life choices
+-- If player explicitly chose academic/tech/creative path, block sports discovery
+local function hasIncompatibleLifeChoices(state)
+	if not state or not state.Flags then return false end
+	local f = state.Flags
+	-- Block if player explicitly chose non-sports paths in childhood
+	if f.academic_focus and not f.likes_sports then return true end
+	if f.nerd_group and not f.athletic_focus then return true end
+	if f.gamer_kid and not f.likes_sports then return true end
+	if f.tech_interest and not f.athletic_focus then return true end
+	if f.computer_enthusiast and not f.likes_sports then return true end
+	if f.artistic_focus and not f.likes_sports then return true end
+	if f.hates_sports then return true end
+	if f.prefers_studying then return true end
+	if f.bookworm and not f.likes_sports then return true end
+	if f.coding_prodigy then return true end
+	if f.hacker_discovered then return true end
+	-- Block if already committed to another career path
+	if f.nba_player or f.nba_declared then return true end -- Can't do both NBA and NFL
+	if f.actor or f.famous_actor then return true end
+	if f.rapper or f.famous_rapper then return true end
+	if f.streamer or f.famous_streamer then return true end
+	if f.in_mob then return true end
+	if f.is_royalty then return true end
+	return false
+end
+
 local function hasFootballBackground(state)
 	if not state or not state.Flags then return false end
 	local f = state.Flags
-	return f.plays_football or f.varsity_athlete or f.football_star
-		or f.college_football or f.school_athlete or f.likes_sports
+	-- CRITICAL FIX: Only count ACTUAL football experience, not just generic likes_sports
+	return f.plays_football or f.football_star or f.college_football or f.varsity_football
+end
+
+-- CRITICAL FIX #NFL-2: Check if player has STRONG football background (for draft)
+local function hasStrongFootballBackground(state)
+	if not state or not state.Flags then return false end
+	local f = state.Flags
+	-- Must have played football AND achieved something notable
+	if not f.plays_football and not f.college_football then return false end
+	local achievements = 0
+	if f.varsity_athlete or f.varsity_football then achievements = achievements + 1 end
+	if f.football_star then achievements = achievements + 1 end
+	if f.state_champion then achievements = achievements + 1 end
+	if f.bowl_game_mvp then achievements = achievements + 1 end
+	if f.heisman_winner then achievements = achievements + 1 end
+	if f.heisman_finalist then achievements = achievements + 1 end
+	if f.combine_standout then achievements = achievements + 1 end
+	if f.college_national_champion then achievements = achievements + 1 end
+	if f.football_dedicated then achievements = achievements + 1 end
+	if f.camp_standout then achievements = achievements + 1 end
+	return achievements >= 2 -- Need at least 2 achievements
 end
 
 local function isActiveNFLPlayer(state)
@@ -116,6 +163,7 @@ NFLCareerEvents.events = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: FOOTBALL INTEREST DISCOVERY EVENT
 	-- This event SETS the likes_sports flag - it's an entry point for NFL path!
+	-- CRITICAL FIX #NFL-3: Now properly blocked if player made incompatible choices!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "nfl_interest_discovery",
@@ -123,13 +171,23 @@ NFLCareerEvents.events = {
 		emoji = "🏈",
 		text = "You're watching some bigger kids play football at the park. They're throwing long passes and making amazing catches! One kid throws a spiral right past you!",
 		category = "career_nfl",
-		weight = 25, -- HIGH weight to ensure this triggers!
+		weight = 15, -- REDUCED from 25 - not everyone discovers football
 		minAge = 6, maxAge = 11,
-		baseChance = 0.55, -- HIGH chance - critical for career path
+		baseChance = 0.30, -- REDUCED from 0.55 - must be more selective
 		oneTime = true,
+		-- CRITICAL FIX: Block if player already chose a different path!
+		blockedByFlags = { 
+			academic_focus = true, nerd_group = true, gamer_kid = true, 
+			tech_interest = true, hates_sports = true, computer_enthusiast = true,
+			artistic_focus = true, bookworm = true, coding_prodigy = true,
+			hacker_discovered = true, prefers_studying = true,
+			plays_basketball = true, -- Already chose basketball path
+		},
 		eligibility = function(state)
 			if not isEligibleForNFL(state) then return false end
-			-- NO FLAGS REQUIRED - This is a discovery event!
+			if hasIncompatibleLifeChoices(state) then return false end
+			-- CRITICAL FIX: Don't trigger if already playing basketball
+			if state.Flags and state.Flags.plays_basketball then return false end
 			return true
 		end,
 		
@@ -202,16 +260,25 @@ NFLCareerEvents.events = {
 		emoji = "🏈",
 		text = "The local youth football league is accepting players! It's a great way to learn the game and make friends.",
 		category = "career_nfl",
-		weight = 22, -- CRITICAL FIX: Increased weight
-		minAge = 7, maxAge = 12, -- CRITICAL FIX: Start younger!
-		baseChance = 0.45, -- CRITICAL FIX: Increased chance
+		weight = 14, -- REDUCED from 22 - must have some interest first
+		minAge = 7, maxAge = 12,
+		baseChance = 0.30, -- REDUCED from 0.45
 		oneTime = true,
+		-- CRITICAL FIX #NFL-4: Block if player chose incompatible paths
+		blockedByFlags = { 
+			hates_sports = true, academic_focus = true, nerd_group = true,
+			gamer_kid = true, tech_interest = true, artistic_focus = true,
+			coding_prodigy = true, computer_enthusiast = true,
+		},
 		eligibility = function(state)
 			if not isEligibleForNFL(state) then return false end
-			-- CRITICAL FIX: No strict flag requirements - anyone can try youth football!
-			-- Only block if they've explicitly rejected sports
-			if state.Flags and state.Flags.hates_sports then return false end
-			return true
+			if hasIncompatibleLifeChoices(state) then return false end
+			-- CRITICAL FIX: Require SOME prior sports interest or athletic disposition
+			if not state.Flags then return false end
+			local hasInterest = state.Flags.likes_sports or state.Flags.athletic_focus 
+				or state.Flags.sporty or state.Flags.adventurous_spirit
+				or state.Flags.natural_athlete or state.Flags.playground_champion
+			return hasInterest
 		end,
 		
 		choices = {
@@ -233,6 +300,16 @@ NFLCareerEvents.events = {
 				text = "Not interested in football",
 				effects = {},
 				feedText = "Football isn't for me.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.declined_football = true
+					-- CRITICAL FIX: Track declining sports
+					state.Flags.sports_declines = (state.Flags.sports_declines or 0) + 1
+					if state.Flags.sports_declines >= 2 then
+						state.Flags.hates_sports = true
+					end
+					state:AddFeed("🏈 Football isn't really your thing.")
+				end,
 			},
 		},
 	},
@@ -243,11 +320,16 @@ NFLCareerEvents.events = {
 		emoji = "🏈",
 		text = "Your coach is evaluating players for different positions. Based on your size and skills, what position fits you?",
 		category = "career_nfl",
-		weight = 12,
+		weight = 10, -- REDUCED from 12
 		minAge = 10, maxAge = 15,
-		baseChance = 0.25,
+		baseChance = 0.22, -- REDUCED from 0.25
 		oneTime = true,
+		-- CRITICAL FIX #NFL-11: Add proper blocks
+		blockedByFlags = { 
+			football_position = true, hates_sports = true, plays_basketball = true,
+		},
 		eligibility = function(state)
+			if hasIncompatibleLifeChoices(state) then return false end
 			return state.Flags and state.Flags.plays_football and not state.Flags.football_position
 		end,
 		
@@ -306,12 +388,17 @@ NFLCareerEvents.events = {
 		emoji = "🏋️",
 		text = "The serious football players train year-round. There's an offseason strength and conditioning program starting. It's brutal but essential for making varsity.",
 		category = "career_nfl",
-		weight = 15,
+		weight = 12, -- REDUCED from 15
 		minAge = 12, maxAge = 16,
-		baseChance = 0.35,
-		cooldown = 2,
+		baseChance = 0.28, -- REDUCED from 0.35
+		cooldown = 3, -- INCREASED from 2
+		-- CRITICAL FIX #NFL-12: Add proper blocks
+		blockedByFlags = { 
+			offseason_trained = true, hates_sports = true, plays_basketball = true,
+		},
 		eligibility = function(state)
 			if not isEligibleForNFL(state) then return false end
+			if hasIncompatibleLifeChoices(state) then return false end
 			return state.Flags and state.Flags.plays_football and not state.Flags.offseason_trained
 		end,
 		
@@ -354,12 +441,17 @@ NFLCareerEvents.events = {
 		emoji = "🏈",
 		text = "An elite summer football camp is coming to town! College coaches and NFL scouts sometimes attend. It costs money but could be career-changing.",
 		category = "career_nfl",
-		weight = 12,
+		weight = 10, -- REDUCED from 12
 		minAge = 13, maxAge = 17,
-		baseChance = 0.25,
-		cooldown = 2,
+		baseChance = 0.22, -- REDUCED from 0.25
+		cooldown = 3, -- INCREASED from 2
+		-- CRITICAL FIX #NFL-13: Add proper blocks
+		blockedByFlags = { 
+			hates_sports = true, plays_basketball = true,
+		},
 		eligibility = function(state)
 			if not isEligibleForNFL(state) then return false end
+			if hasIncompatibleLifeChoices(state) then return false end
 			return state.Flags and state.Flags.plays_football
 		end,
 		
@@ -405,14 +497,21 @@ NFLCareerEvents.events = {
 		emoji = "🏈",
 		text = "High school varsity football tryouts are here! The competition is FIERCE. Only the best make the team.",
 		category = "career_nfl",
-		weight = 14,
+		weight = 12, -- REDUCED from 14
 		minAge = 14, maxAge = 16,
-		baseChance = 0.28, -- Slightly reduced
+		baseChance = 0.22, -- REDUCED from 0.28
 		oneTime = true,
+		-- CRITICAL FIX #NFL-7: Block if incompatible path
+		blockedByFlags = { 
+			hates_sports = true, academic_focus = true, gamer_kid = true,
+			varsity_football = true, varsity_basketball = true, -- Already on a team
+		},
 		eligibility = function(state)
 			if not isEligibleForNFL(state) then return false end
-			-- Need to have played football before trying for varsity
-			return state.Flags and state.Flags.plays_football
+			if hasIncompatibleLifeChoices(state) then return false end
+			-- CRITICAL: Need to have ACTUALLY played football (not just likes_sports)
+			if not state.Flags then return false end
+			return state.Flags.plays_football
 		end,
 		
 		choices = {
@@ -467,11 +566,18 @@ NFLCareerEvents.events = {
 		emoji = "🏆",
 		text = "Your high school football team made it to the STATE CHAMPIONSHIP! Friday night, packed stadium, scouts everywhere!",
 		category = "career_nfl",
-		weight = 12,
+		weight = 10, -- REDUCED from 12
 		minAge = 15, maxAge = 18,
-		baseChance = 0.20,
-		cooldown = 2,
+		baseChance = 0.18, -- REDUCED from 0.20
+		cooldown = 3, -- INCREASED from 2
+		-- CRITICAL FIX #NFL-8: Block if chose basketball or incompatible paths
+		blockedByFlags = { 
+			hates_sports = true, plays_basketball = true, varsity_basketball = true,
+			college_basketball = true, nba_player = true,
+		},
 		eligibility = function(state)
+			if hasIncompatibleLifeChoices(state) then return false end
+			-- Must be on varsity football specifically
 			return state.Flags and state.Flags.varsity_football
 		end,
 		
@@ -532,17 +638,27 @@ NFLCareerEvents.events = {
 		emoji = "🎓",
 		text = "A D1 college football program wants YOU! Full ride scholarship plus NIL deals! Your path to the NFL!",
 		category = "career_nfl",
-		weight = 14,
+		weight = 12, -- REDUCED slightly
 		minAge = 17, maxAge = 18,
-		baseChance = 0.35,
+		baseChance = 0.25, -- REDUCED from 0.35 - scholarships are competitive
 		oneTime = true,
 		eligibility = function(state)
 			if not isEligibleForNFL(state) then return false end
+			if hasIncompatibleLifeChoices(state) then return false end
 			if state.Flags and state.Flags.college_football then return false end
 			if not state.Flags then return false end
-			return state.Flags.varsity_football or state.Flags.plays_football or state.Flags.varsity_athlete
+			-- CRITICAL FIX #NFL-6: Require ACTUAL football achievement, not just generic varsity
+			-- Must have played football AND made varsity OR have football star status
+			local playedFootball = state.Flags.plays_football
+			local hasVarsityFootball = state.Flags.varsity_football or 
+				(state.Flags.varsity_athlete and state.Flags.plays_football)
+			local isFootballStar = state.Flags.football_star or state.Flags.state_champion
+			return playedFootball and (hasVarsityFootball or isFootballStar)
 		end,
-		blockedByFlags = { college_football = true },
+		blockedByFlags = { 
+			college_football = true, hates_sports = true, 
+			academic_focus = true, chose_academics_over_football = true,
+		},
 		
 		choices = {
 			{
@@ -591,11 +707,16 @@ NFLCareerEvents.events = {
 		emoji = "🏈",
 		text = "Your college team is playing in a major BOWL GAME! National TV, huge exposure, NFL scouts in every section!",
 		category = "career_nfl",
-		weight = 12,
+		weight = 10, -- REDUCED from 12
 		minAge = 18, maxAge = 22,
-		baseChance = 0.25,
-		cooldown = 1,
+		baseChance = 0.20, -- REDUCED from 0.25
+		cooldown = 2, -- INCREASED from 1
+		-- CRITICAL FIX #NFL-9: Block conflicting paths
+		blockedByFlags = { 
+			college_basketball = true, nba_player = true, hates_sports = true,
+		},
 		eligibility = function(state)
+			if hasIncompatibleLifeChoices(state) then return false end
 			return state.Flags and state.Flags.college_football
 		end,
 		
@@ -747,14 +868,26 @@ NFLCareerEvents.events = {
 		emoji = "🏈",
 		text = "You've been invited to the NFL COMBINE! This is where you show scouts what you're made of!",
 		category = "career_nfl",
-		weight = 12,
+		weight = 10, -- REDUCED from 12
 		minAge = 21, maxAge = 24,
-		baseChance = 0.30,
+		baseChance = 0.22, -- REDUCED from 0.30
 		oneTime = true,
+		-- CRITICAL FIX #NFL-10: Stricter eligibility for combine
+		blockedByFlags = { 
+			combine_done = true, hates_sports = true, nba_player = true,
+		},
 		eligibility = function(state)
 			if not isEligibleForNFL(state) then return false end
-			if not state.Flags or not state.Flags.college_football then return false end
-			return not state.Flags.combine_done
+			if hasIncompatibleLifeChoices(state) then return false end
+			if not state.Flags then return false end
+			-- Must have FULL football pipeline AND achievements
+			if not state.Flags.college_football then return false end
+			if not state.Flags.plays_football then return false end
+			if state.Flags.combine_done then return false end
+			-- Need at least one notable achievement
+			local hasAchievement = state.Flags.varsity_football or state.Flags.football_star 
+				or state.Flags.bowl_game_mvp or state.Flags.state_champion
+			return hasAchievement
 		end,
 		
 		choices = {
@@ -805,26 +938,37 @@ NFLCareerEvents.events = {
 		id = "nfl_draft_declaration",
 		title = "🏈 Declare for NFL Draft?",
 		emoji = "🏈",
-		text = "NFL scouts have been watching you closely. Your agent believes you could be drafted. This decision will change your LIFE! But the odds are long - only the BEST make it.",
+		text = "NFL scouts have been watching you closely. Your agent believes you could be drafted. This decision will change your LIFE! But the odds are extremely long - only the ELITE make it.",
 		question = "Do you declare for the NFL Draft?",
 		category = "career_nfl",
-		weight = 12, -- REDUCED weight - less common
+		weight = 10, -- REDUCED weight - very selective
 		minAge = 21, maxAge = 24,
-		baseChance = 0.20, -- REDUCED from 0.35 - harder to get this event
+		baseChance = 0.15, -- REDUCED from 0.20 - even harder
 		oneTime = true,
 		eligibility = function(state)
 			if not isEligibleForNFL(state) then return false end
+			if hasIncompatibleLifeChoices(state) then return false end
 			if not state.Flags then return false end
 			if state.Flags.nfl_declared or state.Flags.nfl_player then return false end
-			-- CRITICAL: Must have STRONG football background to even get the chance
-			-- Requires college football + at least one standout achievement
+			
+			-- CRITICAL FIX #NFL-5: Much stricter requirements!
+			-- Must have FULL football pipeline: played football -> varsity -> college
+			local hasPlayedFootball = state.Flags.plays_football
+			local hasVarsity = state.Flags.varsity_football or state.Flags.varsity_athlete
 			local hasCollegeFootball = state.Flags.college_football
-			local hasStandoutAchievement = state.Flags.varsity_athlete or state.Flags.football_star 
-				or state.Flags.state_champion or state.Flags.bowl_game_mvp or state.Flags.heisman_winner
-				or state.Flags.combine_standout
-			return hasCollegeFootball and hasStandoutAchievement
+			
+			-- Must have the full pipeline
+			if not hasPlayedFootball or not hasCollegeFootball then return false end
+			
+			-- CRITICAL: Must have MULTIPLE standout achievements (at least 2)
+			if not hasStrongFootballBackground(state) then return false end
+			
+			return true
 		end,
-		blockedByFlags = { in_prison = true, injured = true, nfl_declared = true, nfl_player = true },
+		blockedByFlags = { 
+			in_prison = true, injured = true, nfl_declared = true, nfl_player = true,
+			academic_focus = true, nerd_group = true, gamer_kid = true, hates_sports = true,
+		},
 		
 		choices = {
 			{

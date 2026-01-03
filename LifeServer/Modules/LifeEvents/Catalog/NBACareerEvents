@@ -22,11 +22,58 @@ local RANDOM = Random.new()
 -- HELPER FUNCTIONS
 -- ═══════════════════════════════════════════════════════════════════════════════
 
+-- CRITICAL FIX #NBA-1: Check if player made incompatible life choices
+-- If player explicitly chose academic/tech/creative path, block sports discovery
+local function hasIncompatibleLifeChoices(state)
+	if not state or not state.Flags then return false end
+	local f = state.Flags
+	-- Block if player explicitly chose non-sports paths in childhood
+	if f.academic_focus and not f.likes_sports then return true end
+	if f.nerd_group and not f.athletic_focus then return true end
+	if f.gamer_kid and not f.likes_sports then return true end
+	if f.tech_interest and not f.athletic_focus then return true end
+	if f.computer_enthusiast and not f.likes_sports then return true end
+	if f.artistic_focus and not f.likes_sports then return true end
+	if f.hates_sports then return true end
+	if f.prefers_studying then return true end
+	if f.bookworm and not f.likes_sports then return true end
+	if f.coding_prodigy then return true end
+	if f.hacker_discovered then return true end
+	-- Block if already committed to another career path
+	if f.nfl_player or f.nfl_declared then return true end -- Can't do both NBA and NFL
+	if f.actor or f.famous_actor then return true end
+	if f.rapper or f.famous_rapper then return true end
+	if f.streamer or f.famous_streamer then return true end
+	if f.in_mob then return true end
+	if f.is_royalty then return true end
+	return false
+end
+
 local function hasBasketballBackground(state)
 	if not state or not state.Flags then return false end
 	local f = state.Flags
-	return f.plays_basketball or f.varsity_athlete or f.basketball_prodigy 
-		or f.college_basketball or f.school_athlete or f.likes_sports
+	-- CRITICAL FIX: Only count ACTUAL basketball experience, not just generic likes_sports
+	return f.plays_basketball or f.basketball_prodigy or f.college_basketball or f.varsity_basketball
+end
+
+-- CRITICAL FIX #NBA-2: Check if player has STRONG basketball background (for draft)
+local function hasStrongBasketballBackground(state)
+	if not state or not state.Flags then return false end
+	local f = state.Flags
+	-- Must have played basketball AND achieved something notable
+	if not f.plays_basketball and not f.college_basketball then return false end
+	local achievements = 0
+	if f.varsity_athlete or f.varsity_basketball then achievements = achievements + 1 end
+	if f.basketball_prodigy then achievements = achievements + 1 end
+	if f.basketball_talent then achievements = achievements + 1 end
+	if f.state_champion then achievements = achievements + 1 end
+	if f.march_madness_star then achievements = achievements + 1 end
+	if f.college_poy then achievements = achievements + 1 end
+	if f.college_mvp then achievements = achievements + 1 end
+	if f.national_champion_college then achievements = achievements + 1 end
+	if f.aau_player then achievements = achievements + 1 end
+	if f.scholarship_likely then achievements = achievements + 1 end
+	return achievements >= 2 -- Need at least 2 achievements
 end
 
 local function isActiveNBAPlayer(state)
@@ -115,6 +162,7 @@ NBACareerEvents.events = {
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: SPORTS INTEREST DISCOVERY EVENT
 	-- This event SETS the likes_sports flag - it's an entry point!
+	-- CRITICAL FIX #NBA-3: Now properly blocked if player made incompatible choices!
 	-- ═══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "nba_interest_discovery",
@@ -122,13 +170,23 @@ NBACareerEvents.events = {
 		emoji = "🏀",
 		text = "You see some kids playing basketball at the park. The game looks exciting! The ball swishes through the net - nothing but net!",
 		category = "career_nba",
-		weight = 25, -- HIGH weight to ensure this triggers!
+		weight = 15, -- REDUCED from 25 - not everyone discovers basketball
 		minAge = 6, maxAge = 11,
-		baseChance = 0.55, -- HIGH chance - this is critical for career path
+		baseChance = 0.30, -- REDUCED from 0.55 - must be more selective
 		oneTime = true,
+		-- CRITICAL FIX: Block if player already chose a different path!
+		blockedByFlags = { 
+			academic_focus = true, nerd_group = true, gamer_kid = true, 
+			tech_interest = true, hates_sports = true, computer_enthusiast = true,
+			artistic_focus = true, bookworm = true, coding_prodigy = true,
+			hacker_discovered = true, prefers_studying = true,
+			plays_football = true, -- Already chose football path
+		},
 		eligibility = function(state)
 			if not isEligibleForNBA(state) then return false end
-			-- CRITICAL: No flags required! This is a DISCOVERY event!
+			if hasIncompatibleLifeChoices(state) then return false end
+			-- CRITICAL FIX: Don't trigger if already playing football
+			if state.Flags and state.Flags.plays_football then return false end
 			return true
 		end,
 		
@@ -179,18 +237,26 @@ NBACareerEvents.events = {
 		emoji = "🏀",
 		text = "There's an elite basketball camp this summer. Top college and even NBA scouts attend! It costs money but could be life-changing.",
 		category = "career_nba",
-		weight = 20, -- CRITICAL FIX: Increased weight
-		minAge = 10, maxAge = 16, -- CRITICAL FIX: Start younger!
-		baseChance = 0.40, -- CRITICAL FIX: Increased chance
+		weight = 14, -- REDUCED from 20 - must have some interest first
+		minAge = 10, maxAge = 16,
+		baseChance = 0.28, -- REDUCED from 0.40
 		oneTime = true,
+		-- CRITICAL FIX #NBA-4: Block if player chose incompatible paths
+		blockedByFlags = { 
+			hates_sports = true, academic_focus = true, nerd_group = true,
+			gamer_kid = true, tech_interest = true, artistic_focus = true,
+			coding_prodigy = true, computer_enthusiast = true,
+		},
 		eligibility = function(state)
 			if not isEligibleForNBA(state) then return false end
-			-- CRITICAL FIX: Relaxed eligibility - OR condition with NO required flags as fallback
-			if not state.Flags then return true end -- No flags = fresh player, let them discover!
-			-- Trigger if ANY sports interest OR if player has no sports flags yet
-			local hasInterest = state.Flags.likes_sports or state.Flags.plays_basketball or state.Flags.athletic_focus
-			local noSportsDecisionYet = not state.Flags.chose_academics_over_basketball and not state.Flags.hates_sports
-			return hasInterest or noSportsDecisionYet
+			if hasIncompatibleLifeChoices(state) then return false end
+			-- CRITICAL FIX: Require SOME prior sports interest or athletic disposition
+			if not state.Flags then return false end
+			local hasInterest = state.Flags.likes_sports or state.Flags.plays_basketball 
+				or state.Flags.athletic_focus or state.Flags.sporty 
+				or state.Flags.adventurous_spirit or state.Flags.natural_athlete
+				or state.Flags.playground_champion
+			return hasInterest
 		end,
 		
 		choices = {
@@ -233,13 +299,20 @@ NBACareerEvents.events = {
 		emoji = "🏀",
 		text = "The local AAU basketball team is holding tryouts. AAU is where future NBA players get noticed by college scouts!",
 		category = "career_nba",
-		weight = 14,
+		weight = 12, -- REDUCED slightly
 		minAge = 13, maxAge = 17,
-		baseChance = 0.25,
+		baseChance = 0.22, -- REDUCED slightly
 		oneTime = true,
+		-- CRITICAL FIX #NBA-5: Block if player chose incompatible paths
+		blockedByFlags = { 
+			hates_sports = true, academic_focus = true, nerd_group = true,
+			gamer_kid = true, tech_interest = true, coding_prodigy = true,
+		},
 		eligibility = function(state)
 			if not isEligibleForNBA(state) then return false end
-			return state.Flags and (state.Flags.plays_basketball or state.Flags.likes_sports)
+			if hasIncompatibleLifeChoices(state) then return false end
+			-- CRITICAL FIX: Must have ACTUAL basketball experience
+			return state.Flags and state.Flags.plays_basketball
 		end,
 		
 		choices = {
@@ -253,6 +326,7 @@ NBACareerEvents.events = {
 					local bonus = 0
 					if state.Flags.basketball_prodigy then bonus = 40 end
 					if state.Flags.plays_basketball then bonus = bonus + 20 end
+					if state.Flags.basketball_talent then bonus = bonus + 15 end
 					if (state.Health or 0) >= 70 then bonus = bonus + 10 end
 					
 					if roll + bonus >= 50 then
@@ -272,6 +346,16 @@ NBACareerEvents.events = {
 				text = "Not interested",
 				effects = {},
 				feedText = "Basketball isn't for me.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.declined_basketball = true
+					-- CRITICAL FIX: Track declining sports
+					state.Flags.sports_declines = (state.Flags.sports_declines or 0) + 1
+					if state.Flags.sports_declines >= 2 then
+						state.Flags.hates_sports = true
+					end
+					state:AddFeed("🏀 Basketball isn't really your thing.")
+				end,
 			},
 		},
 	},
@@ -282,13 +366,21 @@ NBACareerEvents.events = {
 		emoji = "🏆",
 		text = "Your high school team made it to the STATE CHAMPIONSHIP! The gym is packed, scouts are watching, and the whole town is counting on you!",
 		category = "career_nba",
-		weight = 12,
+		weight = 10, -- REDUCED from 12
 		minAge = 15, maxAge = 18,
-		baseChance = 0.20,
-		cooldown = 2,
+		baseChance = 0.18, -- REDUCED from 0.20
+		cooldown = 3, -- INCREASED from 2
+		-- CRITICAL FIX #NBA-8: Block if chose football or incompatible paths
+		blockedByFlags = { 
+			hates_sports = true, plays_football = true, varsity_football = true,
+			college_football = true, nfl_player = true,
+		},
 		eligibility = function(state)
 			if not isEligibleForNBA(state) then return false end
-			return state.Flags and (state.Flags.varsity_athlete or state.Flags.plays_basketball)
+			if hasIncompatibleLifeChoices(state) then return false end
+			-- Must be playing basketball specifically
+			return state.Flags and state.Flags.plays_basketball and 
+				(state.Flags.varsity_athlete or state.Flags.varsity_basketball)
 		end,
 		
 		choices = {
@@ -346,17 +438,27 @@ NBACareerEvents.events = {
 		emoji = "🎓",
 		text = "A college basketball program is offering you a FULL SCHOLARSHIP! Free education AND a chance to develop for the NBA!",
 		category = "career_nba",
-		weight = 14,
+		weight = 12, -- REDUCED slightly
 		minAge = 17, maxAge = 18,
-		baseChance = 0.35,
+		baseChance = 0.25, -- REDUCED from 0.35 - scholarships are competitive
 		oneTime = true,
 		eligibility = function(state)
 			if not isEligibleForNBA(state) then return false end
+			if hasIncompatibleLifeChoices(state) then return false end
 			if state.Flags and state.Flags.college_basketball then return false end
 			if not state.Flags then return false end
-			return state.Flags.plays_basketball or state.Flags.varsity_athlete or state.Flags.basketball_prodigy
+			-- CRITICAL FIX #NBA-7: Require ACTUAL basketball achievement
+			-- Must have played basketball AND made varsity/AAU OR have prodigy status
+			local playedBasketball = state.Flags.plays_basketball
+			local hasVarsityOrAAU = state.Flags.varsity_basketball or state.Flags.aau_player or
+				(state.Flags.varsity_athlete and state.Flags.plays_basketball)
+			local isProdigy = state.Flags.basketball_prodigy or state.Flags.state_champion
+			return playedBasketball and (hasVarsityOrAAU or isProdigy)
 		end,
-		blockedByFlags = { college_basketball = true },
+		blockedByFlags = { 
+			college_basketball = true, hates_sports = true, 
+			academic_focus = true, chose_academics_over_basketball = true,
+		},
 		
 		choices = {
 			{
@@ -400,12 +502,17 @@ NBACareerEvents.events = {
 		emoji = "🏀",
 		text = "It's the NCAA Tournament - MARCH MADNESS! Your college team made it! This is where legends are made and NBA scouts watch EVERY game!",
 		category = "career_nba",
-		weight = 12,
+		weight = 10, -- REDUCED from 12
 		minAge = 18, maxAge = 22,
-		baseChance = 0.25,
-		cooldown = 1,
+		baseChance = 0.20, -- REDUCED from 0.25
+		cooldown = 2, -- INCREASED from 1
+		-- CRITICAL FIX #NBA-9: Block conflicting paths
+		blockedByFlags = { 
+			college_football = true, nfl_player = true, hates_sports = true,
+		},
 		eligibility = function(state)
 			if not isEligibleForNBA(state) then return false end
+			if hasIncompatibleLifeChoices(state) then return false end
 			return state.Flags and state.Flags.college_basketball
 		end,
 		
@@ -514,26 +621,37 @@ NBACareerEvents.events = {
 		id = "nba_draft_declaration",
 		title = "🏀 Declare for NBA Draft?",
 		emoji = "🏀",
-		text = "NBA scouts have been watching you closely. Your agent thinks you could get drafted. But the odds are LONG - only the elite make it. This is a LIFE-CHANGING decision!",
+		text = "NBA scouts have been watching you closely. Your agent thinks you could get drafted. But the odds are extremely LONG - only the ELITE make it. This is a LIFE-CHANGING decision!",
 		question = "Do you declare for the NBA Draft?",
 		category = "career_nba",
-		weight = 12, -- REDUCED weight
+		weight = 10, -- REDUCED weight - very selective
 		minAge = 19, maxAge = 22,
-		baseChance = 0.18, -- REDUCED from 0.30
+		baseChance = 0.14, -- REDUCED from 0.18 - even harder
 		oneTime = true,
 		eligibility = function(state)
 			if not isEligibleForNBA(state) then return false end
+			if hasIncompatibleLifeChoices(state) then return false end
 			if not state.Flags then return false end
 			if state.Flags.nba_declared or state.Flags.nba_player then return false end
-			-- CRITICAL: Must have STRONG basketball background
-			-- Requires college basketball + at least one standout achievement
+			
+			-- CRITICAL FIX #NBA-6: Much stricter requirements!
+			-- Must have FULL basketball pipeline: played basketball -> varsity/AAU -> college
+			local hasPlayedBasketball = state.Flags.plays_basketball
+			local hasCompetitive = state.Flags.varsity_basketball or state.Flags.varsity_athlete or state.Flags.aau_player
 			local hasCollegeBasketball = state.Flags.college_basketball
-			local hasStandoutAchievement = state.Flags.basketball_prodigy or state.Flags.varsity_athlete
-				or state.Flags.state_champion or state.Flags.march_madness_star or state.Flags.college_poy
-				or state.Flags.aau_player
-			return hasCollegeBasketball and hasStandoutAchievement
+			
+			-- Must have the full pipeline
+			if not hasPlayedBasketball or not hasCollegeBasketball then return false end
+			
+			-- CRITICAL: Must have MULTIPLE standout achievements (at least 2)
+			if not hasStrongBasketballBackground(state) then return false end
+			
+			return true
 		end,
-		blockedByFlags = { in_prison = true, injured = true, nba_declared = true, nba_player = true },
+		blockedByFlags = { 
+			in_prison = true, injured = true, nba_declared = true, nba_player = true,
+			academic_focus = true, nerd_group = true, gamer_kid = true, hates_sports = true,
+		},
 		
 		choices = {
 			{

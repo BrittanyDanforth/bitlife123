@@ -620,15 +620,45 @@ Teen.events = {
 		text = "Varsity sports tryouts are coming up. You've been practicing hard.",
 		question = "Which sport?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.35,
-		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
+		baseChance = 0.25, -- REDUCED from 0.35 - need prior sports interest
+		cooldown = 5, -- INCREASED from 4
 		requiresStats = { Health = { min = 50 } },
+		-- CRITICAL FIX #TEEN-1: Block if player chose incompatible paths
+		blockedByFlags = { 
+			hates_sports = true, academic_focus = true, nerd_group = true,
+			gamer_kid = true, tech_interest = true, coding_prodigy = true,
+		},
+		-- CRITICAL FIX: Require SOME prior sports interest
+		eligibility = function(state)
+			if state.Flags and state.Flags.hates_sports then return false end
+			-- Must have SOME athletic interest
+			if state.Flags then
+				local hasInterest = state.Flags.likes_sports or state.Flags.athletic_focus 
+					or state.Flags.plays_football or state.Flags.plays_basketball
+					or state.Flags.sporty or state.Flags.natural_athlete
+					or state.Flags.adventurous_spirit
+				return hasInterest
+			end
+			return false -- No interest = no varsity tryouts
+		end,
 		choices = {
-			{ text = "Football", effects = { Health = 5, Happiness = 5 }, setFlags = { varsity_athlete = true, plays_football = true }, hintCareer = "sports", feedText = "You made the football team!" },
-			{ text = "Basketball", effects = { Health = 5, Happiness = 5 }, setFlags = { varsity_athlete = true, plays_basketball = true }, hintCareer = "sports", feedText = "You made the basketball team!" },
+			{ text = "Football", effects = { Health = 5, Happiness = 5 }, setFlags = { varsity_athlete = true, varsity_football = true, plays_football = true }, hintCareer = "sports", feedText = "You made the football team!" },
+			{ text = "Basketball", effects = { Health = 5, Happiness = 5 }, setFlags = { varsity_athlete = true, varsity_basketball = true, plays_basketball = true }, hintCareer = "sports", feedText = "You made the basketball team!" },
 			{ text = "Soccer", effects = { Health = 5, Happiness = 5 }, setFlags = { varsity_athlete = true, plays_soccer = true }, hintCareer = "sports", feedText = "You made the soccer team!" },
 			{ text = "Track & Field", effects = { Health = 7, Happiness = 5 }, setFlags = { varsity_athlete = true, runs_track = true }, hintCareer = "sports", feedText = "You joined the track team!" },
-			{ text = "Not really into sports", effects = { }, feedText = "Organized sports aren't your thing." },
+			{ 
+				text = "Not really into sports", 
+				effects = { }, 
+				feedText = "Organized sports aren't your thing.",
+				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.sports_declines = (state.Flags.sports_declines or 0) + 1
+					if state.Flags.sports_declines >= 2 then
+						state.Flags.hates_sports = true
+					end
+					state:AddFeed("🏅 Varsity sports aren't for you. Other interests await!")
+				end,
+			},
 		},
 	},
 	

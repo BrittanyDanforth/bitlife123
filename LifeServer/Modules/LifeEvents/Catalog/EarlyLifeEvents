@@ -877,7 +877,7 @@ EarlyLifeEvents.events = {
 	-- ══════════════════════════════════════════════════════════════════════════════
 	-- CRITICAL FIX: SPORTS DISCOVERY EVENTS
 	-- These events set the likes_sports flag which is REQUIRED for NBA/NFL career paths!
-	-- Without these events, youth_basketball_camp and similar events NEVER trigger!
+	-- CRITICAL FIX #EARLY-1: Now properly blocked if player made incompatible choices!
 	-- ══════════════════════════════════════════════════════════════════════════════
 	{
 		id = "child_sports_discovery",
@@ -886,12 +886,27 @@ EarlyLifeEvents.events = {
 		text = "Your school is having a sports day! There's basketball, football, soccer, and more! What catches your eye?",
 		question = "Which sport do you want to try?",
 		minAge = 5, maxAge = 10,
-		baseChance = 0.45, -- HIGH chance - this is a critical flag-setting event!
+		baseChance = 0.35, -- REDUCED from 0.45 - not everyone gets into sports
 		cooldown = 5,
 		oneTime = true,
 		category = "childhood",
-		weight = 20, -- CRITICAL: High weight to ensure it triggers
+		weight = 15, -- REDUCED from 20 - should be more balanced
 		tags = { "sports", "discovery", "childhood" },
+		-- CRITICAL FIX: Block if player already chose a different path!
+		blockedByFlags = { 
+			academic_focus = true, gamer_kid = true, tech_interest = true,
+			computer_enthusiast = true, artistic_focus = true, bookworm = true,
+			coding_prodigy = true, hacker_discovered = true, hates_sports = true,
+		},
+		eligibility = function(state)
+			-- CRITICAL FIX: Don't offer sports if player made academic/tech choices
+			if state.Flags then
+				if state.Flags.academic_focus and not state.Flags.likes_sports then return false end
+				if state.Flags.gamer_kid and not state.Flags.athletic_focus then return false end
+				if state.Flags.hates_sports then return false end
+			end
+			return true
+		end,
 		
 		choices = {
 			{
@@ -961,9 +976,17 @@ EarlyLifeEvents.events = {
 				effects = {},
 				feedText = "You watch from the sidelines...",
 				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					-- CRITICAL FIX: Track declining sports to prevent future sports events
+					state.Flags.sports_declines = (state.Flags.sports_declines or 0) + 1
+					state.Flags.declined_sports_day = true
+					if state.Flags.sports_declines >= 2 then
+						state.Flags.hates_sports = true
+					end
 					local roll = math.random(1, 100)
 					if roll <= 30 then
 						state:ModifyStat("Smarts", 2)
+						state.Flags.prefers_studying = true
 						state:AddFeed("📚 You read a book instead. Different interests!")
 					else
 						state:AddFeed("😊 Sports aren't your thing. That's okay!")
@@ -979,11 +1002,21 @@ EarlyLifeEvents.events = {
 		text = "Some kids are playing basketball at recess! They need one more player. Want to join?",
 		question = "Do you play?",
 		minAge = 6, maxAge = 12,
-		baseChance = 0.55,
-		cooldown = 4,
+		baseChance = 0.40, -- REDUCED from 0.55
+		cooldown = 5, -- INCREASED from 4
 		category = "childhood",
-		weight = 18,
+		weight = 14, -- REDUCED from 18
 		tags = { "sports", "basketball", "recess" },
+		-- CRITICAL FIX #EARLY-2: Block if player chose incompatible paths
+		blockedByFlags = { 
+			academic_focus = true, gamer_kid = true, tech_interest = true,
+			hates_sports = true, plays_football = true, -- Already chose football
+		},
+		eligibility = function(state)
+			if state.Flags and state.Flags.hates_sports then return false end
+			if state.Flags and state.Flags.plays_football then return false end -- Chose football instead
+			return true
+		end,
 		
 		choices = {
 			{
@@ -1018,6 +1051,11 @@ EarlyLifeEvents.events = {
 				effects = {},
 				feedText = "You watch from the bench...",
 				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.sports_declines = (state.Flags.sports_declines or 0) + 1
+					if state.Flags.sports_declines >= 3 then
+						state.Flags.hates_sports = true
+					end
 					state:ModifyStat("Happiness", 1)
 					state:AddFeed("🏀 Fun to watch! Maybe you'll play next time.")
 				end,
@@ -1031,11 +1069,21 @@ EarlyLifeEvents.events = {
 		text = "Some kids are playing football at recess! They're picking teams. Want to play?",
 		question = "Do you join?",
 		minAge = 6, maxAge = 12,
-		baseChance = 0.55,
-		cooldown = 4,
+		baseChance = 0.40, -- REDUCED from 0.55
+		cooldown = 5, -- INCREASED from 4
 		category = "childhood",
-		weight = 18,
+		weight = 14, -- REDUCED from 18
 		tags = { "sports", "football", "recess" },
+		-- CRITICAL FIX #EARLY-3: Block if player chose incompatible paths
+		blockedByFlags = { 
+			academic_focus = true, gamer_kid = true, tech_interest = true,
+			hates_sports = true, plays_basketball = true, -- Already chose basketball
+		},
+		eligibility = function(state)
+			if state.Flags and state.Flags.hates_sports then return false end
+			if state.Flags and state.Flags.plays_basketball then return false end -- Chose basketball instead
+			return true
+		end,
 		
 		choices = {
 			{
@@ -1070,6 +1118,11 @@ EarlyLifeEvents.events = {
 				effects = {},
 				feedText = "You find something else to do...",
 				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.sports_declines = (state.Flags.sports_declines or 0) + 1
+					if state.Flags.sports_declines >= 3 then
+						state.Flags.hates_sports = true
+					end
 					state:ModifyStat("Happiness", 1)
 					state:AddFeed("🏈 Football looks rough. Probably a smart choice!")
 				end,
@@ -1083,11 +1136,15 @@ EarlyLifeEvents.events = {
 		text = "Your family is watching an NBA game on TV! The players are AMAZING!",
 		question = "What do you think?",
 		minAge = 5, maxAge = 12,
-		baseChance = 0.50,
-		cooldown = 5,
+		baseChance = 0.35, -- REDUCED from 0.50
+		cooldown = 6, -- INCREASED from 5
 		category = "childhood",
-		weight = 15,
+		weight = 12, -- REDUCED from 15
 		tags = { "sports", "nba", "tv" },
+		-- CRITICAL FIX #EARLY-4: Block if player chose incompatible paths
+		blockedByFlags = { 
+			hates_sports = true, plays_football = true, -- Already chose football
+		},
 		
 		choices = {
 			{
@@ -1125,6 +1182,11 @@ EarlyLifeEvents.events = {
 				effects = {},
 				feedText = "Sports aren't your thing...",
 				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.sports_declines = (state.Flags.sports_declines or 0) + 1
+					if state.Flags.sports_declines >= 3 then
+						state.Flags.hates_sports = true
+					end
 					state:AddFeed("🏀 You'd rather do something else. That's fine!")
 				end,
 			},
@@ -1137,11 +1199,15 @@ EarlyLifeEvents.events = {
 		text = "It's Sunday and your family is watching football! The crowd is going CRAZY!",
 		question = "What do you think?",
 		minAge = 5, maxAge = 12,
-		baseChance = 0.50,
-		cooldown = 5,
+		baseChance = 0.35, -- REDUCED from 0.50
+		cooldown = 6, -- INCREASED from 5
 		category = "childhood",
-		weight = 15,
+		weight = 12, -- REDUCED from 15
 		tags = { "sports", "nfl", "tv" },
+		-- CRITICAL FIX #EARLY-5: Block if player chose incompatible paths
+		blockedByFlags = { 
+			hates_sports = true, plays_basketball = true, -- Already chose basketball
+		},
 		
 		choices = {
 			{
@@ -1179,6 +1245,11 @@ EarlyLifeEvents.events = {
 				effects = {},
 				feedText = "Not interested...",
 				onResolve = function(state)
+					state.Flags = state.Flags or {}
+					state.Flags.sports_declines = (state.Flags.sports_declines or 0) + 1
+					if state.Flags.sports_declines >= 3 then
+						state.Flags.hates_sports = true
+					end
 					state:AddFeed("🏈 Football isn't for everyone. You do you!")
 				end,
 			},
@@ -1191,12 +1262,25 @@ EarlyLifeEvents.events = {
 		text = "There's a sports summer camp! You could learn basketball, football, soccer, and more! It costs $500.",
 		question = "Do you want to go?",
 		minAge = 8, maxAge = 13,
-		baseChance = 0.45,
+		baseChance = 0.35, -- REDUCED from 0.45
 		cooldown = 6,
 		oneTime = true,
 		category = "childhood",
-		weight = 16,
+		weight = 13, -- REDUCED from 16
 		tags = { "sports", "camp", "summer" },
+		-- CRITICAL FIX #EARLY-6: Block if player chose incompatible paths
+		blockedByFlags = { 
+			hates_sports = true, academic_focus = true, gamer_kid = true,
+			tech_interest = true, artistic_focus = true,
+		},
+		eligibility = function(state)
+			-- Require SOME prior athletic interest
+			if state.Flags and state.Flags.hates_sports then return false end
+			if state.Flags and (state.Flags.likes_sports or state.Flags.athletic_focus or state.Flags.adventurous_spirit) then
+				return true
+			end
+			return false -- Don't offer camp to kids with no sports interest
+		end,
 		
 		choices = {
 			{
