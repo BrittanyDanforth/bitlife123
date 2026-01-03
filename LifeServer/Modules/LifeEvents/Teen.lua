@@ -93,7 +93,7 @@ Teen.events = {
 		text = "You're assigned a group project, but one member isn't pulling their weight.",
 		question = "How do you handle it?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.55, -- CRITICAL FIX: Reduced from 0.7
+		baseChance = 0.4, -- CRITICAL FIX: Reduced from 0.7
 		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		category = "teen", -- CRITICAL FIX: Proper category
 		tags = { "school", "conflict", "teamwork" },
@@ -167,7 +167,7 @@ Teen.events = {
 		text = "A big exam is coming up. You're feeling the pressure.",
 		question = "How do you cope?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.6
+		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.6
 		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		category = "teen", -- CRITICAL FIX: Proper category
 		tags = { "school", "stress", "exam" },
@@ -191,7 +191,7 @@ Teen.events = {
 		text = "Someone you like seems to be interested in you too.",
 		question = "What do you do?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7
+		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.7
 		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		category = "teen", -- CRITICAL FIX: Proper category
 		tags = { "romance", "relationships", "teen" },
@@ -252,7 +252,7 @@ Teen.events = {
 		},
 		question = "What do you do?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7
+		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.7
 		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		category = "teen", -- CRITICAL FIX: Proper category
 		tags = { "social", "party", "teen" },
@@ -268,40 +268,56 @@ Teen.events = {
 		id = "clique_pressure",
 		title = "Finding Your Group",
 		emoji = "👥",
+		textVariants = {
+			"Different social groups are forming. Where do you fit in?",
+			"High school has tribes. Which one is yours?",
+			"Cafeteria seating says a lot. Where do you sit?",
+			"Every group has its vibe. What's yours?",
+			"Social circles are forming. Time to pick a lane... or not.",
+			"The jocks, the nerds, the artsy kids... where do YOU belong?",
+		},
 		text = "Different social groups are forming. Where do you fit in?",
 		question = "Which group do you gravitate toward?",
 		minAge = 13, maxAge = 16,
 		oneTime = true,
-		category = "teen", -- CRITICAL FIX: Proper category
+		category = "teen",
 		tags = { "social", "identity", "teen" },
-		requiresFlags = { in_high_school = true }, -- CRITICAL FIX: Must be in school
+		requiresFlags = { in_high_school = true },
 		blockedByFlags = { dropped_out_high_school = true, in_prison = true, found_clique = true },
 		choices = {
-			{ text = "The studious overachievers", effects = { Smarts = 5 }, setFlags = { nerd_group = true }, feedText = "You found your tribe among the academic crowd." },
-			{ text = "The athletes and jocks", effects = { Health = 5, Happiness = 3 }, setFlags = { jock_group = true }, hintCareer = "sports", feedText = "You fit in with the athletic crowd." },
-			{ text = "The creative/artsy types", effects = { Happiness = 5, Looks = 2 }, setFlags = { artsy_group = true }, hintCareer = "creative", feedText = "You found kindred creative spirits." },
-			{ text = "The rebels and misfits", effects = { Happiness = 3 }, setFlags = { rebel_group = true }, feedText = "You don't follow the mainstream." },
-			{ text = "A mix of everyone", effects = { Happiness = 3, Smarts = 2 }, setFlags = { social_butterfly = true }, feedText = "You move between groups easily." },
+			{ text = "The studious overachievers", effects = { Smarts = 5 }, setFlags = { nerd_group = true, found_clique = true, academic_focus = true }, hintCareer = "tech", feedText = "You found your tribe among the academic crowd." },
+			{ text = "The athletes and jocks", effects = { Health = 5, Happiness = 3 }, setFlags = { jock_group = true, found_clique = true, athletic = true }, hintCareer = "sports", feedText = "You fit in with the athletic crowd." },
+			{ text = "The creative/artsy types", effects = { Happiness = 5, Looks = 2 }, setFlags = { artsy_group = true, found_clique = true, creative = true }, hintCareer = "creative", feedText = "You found kindred creative spirits." },
+			{ text = "The rebels and misfits", effects = { Happiness = 3 }, setFlags = { rebel_group = true, found_clique = true, independent_thinker = true }, feedText = "You don't follow the mainstream." },
+			{ text = "A mix of everyone", effects = { Happiness = 3, Smarts = 2 }, setFlags = { social_butterfly = true, found_clique = true, adaptable = true }, feedText = "You move between groups easily." },
 		},
 	},
 	{
 		id = "friendship_drama",
 		title = "Best Friend Betrayal",
 		emoji = "💔",
+		textVariants = {
+			"You found out your best friend has been talking behind your back.",
+			"Screenshots don't lie. Your BFF has been saying THINGS about you.",
+			"A mutual friend showed you texts. Your best friend... isn't so friendly.",
+			"The rumors going around? They started with your 'best friend.'",
+			"Trust shattered. Someone you trusted has been fake.",
+			"That person you told everything to? They've been sharing it all.",
+		},
 		text = "You found out your best friend has been talking behind your back.",
 		question = "How do you react?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.4, -- CRITICAL FIX: Reduced
-		cooldown = 5, -- CRITICAL FIX: Increased
-		category = "teen", -- CRITICAL FIX: Proper category
+		baseChance = 0.3,
+		cooldown = 6,
+		category = "teen",
 		tags = { "friendship", "conflict", "teen" },
 		requiresFlags = { has_best_friend = true },
 		blockedByFlags = { in_prison = true },
 		choices = {
-			{ text = "Confront them", effects = { Happiness = 3 }, setFlags = { confrontational = true }, feedText = "You had it out. The truth came to light." },
-			{ text = "End the friendship", effects = { Happiness = -5 }, setFlags = { holds_grudges = true, has_best_friend = false }, feedText = "You cut them off. It hurts." },
-			{ text = "Try to understand why", effects = { Smarts = 2, Happiness = 2 }, setFlags = { empathetic = true }, feedText = "You tried to see their perspective." },
-			{ text = "Forgive and move on", effects = { Happiness = 3 }, setFlags = { forgiving = true }, feedText = "You chose to forgive. Friendships are complicated." },
+			{ text = "Confront them", effects = { Happiness = 3 }, setFlags = { confrontational = true, direct_communicator = true }, feedText = "You had it out. The truth came to light." },
+			{ text = "End the friendship", effects = { Happiness = -5 }, setFlags = { holds_grudges = true, has_best_friend = false, been_betrayed = true }, feedText = "You cut them off. It hurts." },
+			{ text = "Try to understand why", effects = { Smarts = 2, Happiness = 2 }, setFlags = { empathetic = true, emotionally_mature = true }, feedText = "You tried to see their perspective." },
+			{ text = "Forgive and move on", effects = { Happiness = 3 }, setFlags = { forgiving = true, resilient = true }, feedText = "You chose to forgive. Friendships are complicated." },
 		},
 	},
 
@@ -312,18 +328,27 @@ Teen.events = {
 		id = "identity_question",
 		title = "Who Am I?",
 		emoji = "🪞",
+		textVariants = {
+			"You've been thinking a lot about who you really are.",
+			"Late night thoughts hitting different. Who ARE you?",
+			"Looking in the mirror and wondering who's looking back.",
+			"Everyone seems to know who they are. Do you?",
+			"Identity crisis? More like identity exploration.",
+			"The person you were last year isn't who you are now.",
+			"Trying to figure yourself out before life figures you out.",
+		},
 		text = "You've been thinking a lot about who you really are.",
 		question = "What aspect of yourself are you exploring?",
 		minAge = 14, maxAge = 17,
 		oneTime = true,
-		category = "teen", -- CRITICAL FIX: Proper category
+		category = "teen",
 		tags = { "identity", "growth", "teen" },
 		blockedByFlags = { in_prison = true, identity_explored = true },
 		choices = {
-			{ text = "My values and beliefs", effects = { Smarts = 3, Happiness = 3 }, setFlags = { philosophical = true }, feedText = "You're questioning what you believe in." },
-			{ text = "My future career", effects = { Smarts = 3 }, setFlags = { career_focused = true }, feedText = "You're thinking seriously about your future." },
-			{ text = "My style and appearance", effects = { Looks = 5, Happiness = 3 }, setFlags = { style_conscious = true }, feedText = "You're developing your personal style." },
-			{ text = "My relationships with others", effects = { Happiness = 3 }, setFlags = { socially_aware = true }, feedText = "You're learning about how you relate to people." },
+			{ text = "My values and beliefs", effects = { Smarts = 3, Happiness = 3 }, setFlags = { philosophical = true, identity_explored = true, deep_thinker = true }, feedText = "You're questioning what you believe in." },
+			{ text = "My future career", effects = { Smarts = 3 }, setFlags = { career_focused = true, identity_explored = true, ambitious = true }, feedText = "You're thinking seriously about your future." },
+			{ text = "My style and appearance", effects = { Looks = 5, Happiness = 3 }, setFlags = { style_conscious = true, identity_explored = true, fashion_aware = true }, feedText = "You're developing your personal style." },
+			{ text = "My relationships with others", effects = { Happiness = 3 }, setFlags = { socially_aware = true, identity_explored = true, emotionally_intelligent = true }, feedText = "You're learning about how you relate to people." },
 		},
 	},
 	{
@@ -365,7 +390,7 @@ Teen.events = {
 		text = "A local business is hiring teenagers for part-time work.",
 		question = "Will you apply?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7
+		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.7
 		cooldown = 5, -- CRITICAL FIX: Increased
 		category = "teen", -- CRITICAL FIX: Proper category
 		tags = { "job", "money", "teen" },
@@ -595,7 +620,7 @@ Teen.events = {
 		text = "Varsity sports tryouts are coming up. You've been practicing hard.",
 		question = "Which sport?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresStats = { Health = { min = 50 } },
 		choices = {
@@ -804,7 +829,7 @@ Teen.events = {
 		text = "The school is putting on a big play. Auditions are open.",
 		question = "Will you participate?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Audition for lead role", effects = { Happiness = 8, Looks = 3 }, setFlags = { theater_kid = true, lead_actor = true }, hintCareer = "entertainment", feedText = "You went for the lead! Bold move!" },
@@ -820,7 +845,7 @@ Teen.events = {
 		text = "There's an opportunity to volunteer in your community.",
 		question = "What cause calls to you?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		choices = {
 			{ text = "Animal shelter", effects = { Happiness = 5 }, setFlags = { volunteer = true, animal_lover = true }, hintCareer = "veterinary", feedText = "You're helping animals at the shelter!" },
@@ -843,7 +868,7 @@ Teen.events = {
 		text = "A teacher suspects you of cheating on a test.",
 		question = "What really happened?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		choices = {
@@ -972,7 +997,7 @@ Teen.events = {
 		text = "You're in a car with a friend who's driving recklessly.",
 		question = "What do you do?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		choices = {
@@ -1165,7 +1190,7 @@ Teen.events = {
 		text = "Someone at a party offers you something sketchy. They say it'll make you 'feel different.'",
 		question = "What do you do?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		choices = {
@@ -1182,7 +1207,7 @@ Teen.events = {
 		text = "Your family takes you on a college tour.",
 		question = "What kind of school appeals to you?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.5, -- CRITICAL FIX: Reduced
+		baseChance = 0.35, -- CRITICAL FIX: Reduced
 		cooldown = 5,
 		maxOccurrences = 2, -- Can tour twice max
 		oneTime = true, -- CRITICAL FIX: Only one college tour decision needed
@@ -1417,7 +1442,7 @@ Teen.events = {
 		text = "You've been staying up way too late playing online games.",
 		question = "How is it affecting you?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { gamer = true },
 
@@ -1469,7 +1494,7 @@ Teen.events = {
 		text = "It's your senior year and motivation is... lacking.",
 		question = "How do you handle senioritis?",
 		minAge = 17, maxAge = 18,
-		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7 to prevent spam
+		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.7 to prevent spam
 		cooldown = 5, -- CRITICAL FIX: Increased from 3
 		oneTime = true, -- CRITICAL FIX: Only happens once per life
 		blockedByFlags = { in_prison = true, dropped_out_high_school = true, senioritis_event_done = true },
@@ -1488,7 +1513,7 @@ Teen.events = {
 		text = "You tried to sneak out at night but got caught!",
 		question = "What were you trying to do?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		choices = {
@@ -1505,7 +1530,7 @@ Teen.events = {
 		text = "Advanced Placement exams are coming up. The pressure is intense.",
 		question = "How do you prepare?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { academic_path = true },
 
@@ -1666,7 +1691,7 @@ Teen.events = {
 		text = "Your part-time job is interfering with school and social life.",
 		question = "How do you handle this?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { has_teen_job = true },
 		
@@ -1793,7 +1818,7 @@ Teen.events = {
 		text = "Your English teacher nominated you for a prestigious essay contest!",
 		question = "What topic do you write about?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresStats = { Smarts = { min = 55 } },
 		
@@ -1928,7 +1953,7 @@ Teen.events = {
 		text = "You and your friends want to start a band together!",
 		question = "What role do you play?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
@@ -2004,7 +2029,7 @@ Teen.events = {
 		text = "There's major drama happening in your social circle online!",
 		question = "What's your role in all this?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		choices = {
@@ -2039,7 +2064,7 @@ Teen.events = {
 		text = "You're having an anxiety attack. Heart racing, can't breathe...",
 		question = "How do you cope?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 3,
 		
 		choices = {
@@ -2057,7 +2082,7 @@ Teen.events = {
 		text = "Stress and bad luck have caused skin breakouts. It's ruining your confidence.",
 		question = "How do you deal with it?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 3,
 		
 		choices = {
@@ -2147,7 +2172,7 @@ Teen.events = {
 		text = "You've discovered a new hobby that really excites you!",
 		question = "What hobby captured your interest?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 3,
 		
 		choices = {
@@ -2166,7 +2191,7 @@ Teen.events = {
 		text = "You see someone getting bullied at school.",
 		question = "What do you do?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 3,
 		
 		choices = {
@@ -2288,7 +2313,7 @@ Teen.events = {
 		text = "You got injured during practice or a game!",
 		question = "How serious is it?",
 		minAge = 13, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		requiresFlags = { varsity_athlete = true },
 		
@@ -2389,7 +2414,7 @@ Teen.events = {
 		question = "What style are you going for?",
 		minAge = 13, maxAge = 17,
 		oneTime = true,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		
 		choices = {
 			{ text = "Trendy and fashion-forward ($100)", effects = { Looks = 5, Money = -100 }, setFlags = { fashionista = true }, feedText = "Always on top of the latest trends!",
@@ -2782,7 +2807,7 @@ Teen.events = {
 		text = "Someone's parents are out of town. There's a huge party happening tonight!",
 		question = "Are you going?",
 		minAge = 15, maxAge = 17,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 3,
 		maxOccurrences = 5,
 		choices = {
@@ -2820,7 +2845,7 @@ Teen.events = {
 		text = "Your parents caught you sneaking back into the house at 3 AM!",
 		question = "What's your excuse?",
 		minAge = 14, maxAge = 17,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3,
 		choices = {
@@ -2978,7 +3003,7 @@ Teen.events = {
 		text = "A video of you just went VIRAL! Thousands of views and climbing!",
 		question = "What happened?!",
 		minAge = 13, maxAge = 18,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4,
 		oneTime = true,
 		priority = "high",
@@ -3197,7 +3222,7 @@ Teen.events = {
 		text = "You entered a school competition... and you WON!",
 		question = "What did you win?",
 		minAge = 13, maxAge = 18,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		category = "school",
 		tags = { "competition", "achievement", "school" },
@@ -3542,7 +3567,7 @@ Teen.events = {
 		text = "During a big test, the kid next to you slides a note: 'Please let me see your answers! I'll fail if you don't help. I'll do anything!'",
 		question = "What do you do?",
 		minAge = 13, maxAge = 18,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4,
 		category = "school",
 		tags = { "cheating", "test", "ethics", "school" },
@@ -3686,7 +3711,7 @@ Teen.events = {
 		text = "The popular kids are throwing a party while their parents are away. You actually got invited! But there's gonna be alcohol and probably some drama...",
 		question = "Do you go?",
 		minAge = 14, maxAge = 18,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4,
 		category = "social",
 		tags = { "party", "social", "decisions", "teen" },
@@ -3758,7 +3783,7 @@ Teen.events = {
 		text = "Someone posted something about you online. It's going VIRAL in your school. Your phone is blowing up with notifications.",
 		question = "What did they post?",
 		minAge = 13, maxAge = 18,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4,
 		category = "social",
 		tags = { "social_media", "drama", "viral", "teen" },
@@ -3834,7 +3859,7 @@ Teen.events = {
 		text = "A teacher has it out for you. They keep calling on you when you don't know the answer, grading you harshly, and making snide comments. Today they went TOO far.",
 		question = "What do you do?",
 		minAge = 13, maxAge = 18,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4,
 		category = "school",
 		tags = { "teacher", "conflict", "school", "authority" },
@@ -3906,7 +3931,7 @@ Teen.events = {
 		text = "Your friends want to skip school and go to the mall/movies/beach. 'Come on, live a little!' They're peer pressuring you hard.",
 		question = "What do you do?",
 		minAge = 14, maxAge = 18,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4,
 		category = "social",
 		tags = { "skipping", "peer_pressure", "school", "decisions" },
@@ -4259,7 +4284,7 @@ Teen.events = {
 		text = "You've been assigned a group project! Your partner is someone you don't know well.",
 		question = "How does the project go?",
 		minAge = 12, maxAge = 17,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 2,
 		category = "school",
 		tags = { "school", "teamwork", "social" },
@@ -4373,7 +4398,7 @@ Teen.events = {
 		text = "You've discovered something you really enjoy doing!",
 		question = "What's your new hobby?",
 		minAge = 10, maxAge = 17,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4,
 		category = "hobby",
 		tags = { "hobby", "interests", "growth" },
@@ -4550,7 +4575,7 @@ Teen.events = {
 		text = "You could get a summer job to earn some money!",
 		question = "What do you do?",
 		minAge = 15, maxAge = 18,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 3,
 		category = "work",
 		tags = { "job", "money", "summer" },
@@ -5195,7 +5220,7 @@ Teen.events = {
 		text = "Everyone's talking about college applications...",
 		question = "How do you feel about your future?",
 		minAge = 16, maxAge = 18,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4,
 		category = "school",
 		tags = { "college", "future", "pressure" },
@@ -5341,7 +5366,7 @@ Teen.events = {
 		text = "School's out! What are you doing this summer?",
 		question = "What's your summer plan?",
 		minAge = 12, maxAge = 17,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 6,
 		category = "lifestyle",
 		tags = { "summer", "vacation", "plans" },
@@ -6092,7 +6117,7 @@ Teen.events = {
 		text = "Senior year and... you can't be bothered!",
 		question = "How bad is the senioritis?",
 		minAge = 17, maxAge = 18,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4,
 		category = "teen",
 		tags = { "teen", "senior", "school" },

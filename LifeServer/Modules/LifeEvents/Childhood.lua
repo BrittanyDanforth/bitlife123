@@ -108,7 +108,7 @@ Childhood.events = {
 	text = "You want a toy at the store, but your parents said no.",
 	question = "What do you do?",
 	minAge = 2, maxAge = 3,
-	baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
+	baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.8 to prevent spam
 	cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 
 		-- META
@@ -402,7 +402,7 @@ Childhood.events = {
 		text = "Your classroom got a new pet hamster! The teacher needs someone to care for it.",
 		question = "Do you volunteer?",
 		minAge = 6, maxAge = 9,
-		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7
+		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.7
 		cooldown = 5, -- CRITICAL FIX: Increased to prevent spam
 		blockedByFlags = { class_pet_done = true }, -- CRITICAL FIX: Prevent repeat
 
@@ -615,7 +615,7 @@ Childhood.events = {
 		text = "Your parents are sending you to summer camp!",
 		question = "What kind of camp appeals to you?",
 		minAge = 8, maxAge = 12,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		-- META
@@ -642,7 +642,7 @@ Childhood.events = {
 		question = "What pet do you choose?",
 		minAge = 8, maxAge = 12,
 		oneTime = true,
-		baseChance = 0.5,
+		baseChance = 0.35,
 
 		-- META
 		stage = STAGE,
@@ -668,7 +668,7 @@ Childhood.events = {
 		minAge = 9, maxAge = 12,
 		oneTime = true,
 		maxOccurrences = 1,
-		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7 to prevent spam
+		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.7 to prevent spam
 		cooldown = 5, -- CRITICAL FIX: Added cooldown
 		-- CRITICAL FIX: Block if already experienced first crush
 		blockedByFlags = { had_first_crush = true, in_prison = true, dropped_out = true },
@@ -788,7 +788,7 @@ Childhood.events = {
 		text = "You accidentally watched a scary movie that was way too intense for your age.",
 		question = "How do you react?",
 		minAge = 5, maxAge = 10,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		stage = STAGE,
@@ -1106,7 +1106,7 @@ Childhood.events = {
 		question = "What instrument do you learn?",
 		minAge = 5, maxAge = 10,
 		oneTime = true,
-		baseChance = 0.5,
+		baseChance = 0.35,
 
 		stage = STAGE,
 		ageBand = "childhood",
@@ -1129,7 +1129,7 @@ Childhood.events = {
 		text = "Your tooth is really loose and wiggling around. It's about to fall out!",
 		question = "How do you handle it?",
 		minAge = 5, maxAge = 8,
-		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.7 to prevent spam
+		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.7 to prevent spam
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		maxOccurrences = 3, -- Kids lose multiple teeth but not infinite
 
@@ -1263,7 +1263,7 @@ Childhood.events = {
 		text = "You told a lie and your parents found out!",
 		question = "What was the lie about?",
 		minAge = 5, maxAge = 12,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 3,
 
 		stage = STAGE,
@@ -1326,7 +1326,7 @@ Childhood.events = {
 		text = "It's your turn for show and tell at school!",
 		question = "What do you bring?",
 		minAge = 4, maxAge = 7,
-		baseChance = 0.5, -- CRITICAL FIX: Reduced from 0.8
+		baseChance = 0.35, -- CRITICAL FIX: Reduced from 0.8
 		cooldown = 5, -- CRITICAL FIX: Increased
 
 		stage = STAGE,
@@ -1374,7 +1374,7 @@ Childhood.events = {
 		text = "You and your friends found a perfect spot for a secret hideout!",
 		question = "What kind of hideout do you build?",
 		minAge = 7, maxAge = 12,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		stage = STAGE,
@@ -1396,7 +1396,7 @@ Childhood.events = {
 		text = "You've been having scary dreams lately.",
 		question = "How do you cope with the nightmares?",
 		minAge = 4, maxAge = 10,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 3,
 
 		stage = STAGE,
@@ -1634,7 +1634,7 @@ Childhood.events = {
 		text = "Your favorite toy broke!",
 		question = "How do you react?",
 		minAge = 3, maxAge = 8,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 3,
 
 		stage = STAGE,
@@ -1656,7 +1656,7 @@ Childhood.events = {
 		text = "You got caught in a sudden rainstorm!",
 		question = "What do you do?",
 		minAge = 5, maxAge = 12,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 
 		stage = STAGE,
@@ -1879,7 +1879,7 @@ Childhood.events = {
 		text = "You're having a full meltdown in public!",
 		question = "What triggered it?",
 		minAge = 2, maxAge = 5,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		stage = STAGE,
@@ -2119,7 +2119,7 @@ Childhood.events = {
 		text = "Lunchtime at school! The cafeteria is crowded.",
 		question = "What's your lunch routine?",
 		minAge = 5, maxAge = 12,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		stage = STAGE,
@@ -2162,7 +2162,7 @@ Childhood.events = {
 		text = "You have a group project at school and need to work with a partner.",
 		question = "How does the partnership go?",
 		minAge = 7, maxAge = 12,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		stage = STAGE,
@@ -2306,7 +2306,7 @@ Childhood.events = {
 		text = "You're stuck on a really hard homework assignment!",
 		question = "How do you handle the difficult homework?",
 		minAge = 6, maxAge = 12,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		stage = STAGE,
@@ -2421,7 +2421,7 @@ Childhood.events = {
 		text = "You got a scooter! Time to learn to ride it.",
 		question = "How do you do on the scooter?",
 		minAge = 5, maxAge = 9,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 3,
 		
 		stage = STAGE,
@@ -2682,7 +2682,7 @@ Childhood.events = {
 		text = "You've become one of the popular kids at recess!",
 		question = "How do you use your popularity?",
 		minAge = 6, maxAge = 11,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		stage = STAGE,
@@ -2736,7 +2736,7 @@ Childhood.events = {
 		text = "Your grandparents are visiting!",
 		question = "What do you do together?",
 		minAge = 3, maxAge = 12,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		stage = STAGE,
@@ -2895,7 +2895,7 @@ Childhood.events = {
 		question = "What do you collect?",
 		minAge = 6, maxAge = 12,
 		oneTime = true,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		
 		stage = STAGE,
 		ageBand = "childhood",
@@ -2939,7 +2939,7 @@ Childhood.events = {
 		text = "You were eating and accidentally swallowed your loose tooth!",
 		question = "What do you do about the tooth fairy?",
 		minAge = 5, maxAge = 8,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 4, -- CRITICAL FIX: Increased from 2 to reduce spam
 		
 		stage = STAGE,
@@ -3066,7 +3066,7 @@ Childhood.events = {
 		text = "You've been playing sports for a while now, and your coach noticed something - you're actually pretty good! Your coach wants to talk to your parents about putting you in a more competitive league.",
 		question = "How do you feel about taking sports more seriously?",
 		minAge = 8, maxAge = 12,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 8,
 		requiresFlags = { school_athlete = true },
 		blockedByFlags = { quit_sports = true, elite_athlete_kid = true },
@@ -3184,7 +3184,7 @@ Childhood.events = {
 		text = "Your first real tournament is this weekend! Your parents took the day off work, grandparents are coming, everyone's excited. The pressure is ON. How do you handle it?",
 		question = "Big game nerves - what's your mindset?",
 		minAge = 7, maxAge = 13,
-		baseChance = 0.55,
+		baseChance = 0.4,
 		cooldown = 5,
 		requiresFlags = { school_athlete = true },
 		blockedByFlags = { first_competition_done = true },
@@ -3375,7 +3375,7 @@ Childhood.events = {
 		text = "Your tooth is wiggling! It's so loose!",
 		question = "How do you handle the loose tooth?",
 		minAge = 5, maxAge = 10,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 3,
 		category = "childhood",
 		tags = { "childhood", "milestone", "teeth" },
@@ -3513,7 +3513,7 @@ Childhood.events = {
 		text = "Happy birthday! You're having a party!",
 		question = "What kind of party do you want?",
 		minAge = 5, maxAge = 12,
-		baseChance = 0.5,
+		baseChance = 0.35,
 		cooldown = 5,
 		category = "childhood",
 		tags = { "childhood", "birthday", "social" },
