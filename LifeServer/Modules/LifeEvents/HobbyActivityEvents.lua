@@ -62,8 +62,20 @@ end
 -- MUSIC EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 HobbyEvents.Music = {
-	-- CRITICAL FIX: Category-wide eligibility
-	eligibility = function(state) return canDoHobbies(state) and isOldEnoughForHobby(state, 6) end,
+	-- CRITICAL FIX: Category-wide eligibility - MUST have musical interest!
+	-- User complained: "I DIDNT PICK MUSIC?? FOR LIKE A HOBBY I LIKE BRUH"
+	eligibility = function(state) 
+		if not canDoHobbies(state) then return false end
+		if not isOldEnoughForHobby(state, 6) then return false end
+		-- CRITICAL FIX: Require musical interest flags!
+		local flags = state.Flags or {}
+		if flags.musical_talent or flags.loves_music or flags.plays_instrument or 
+		   flags.musician or flags.in_band or flags.music_hobby or flags.choir_member or
+		   flags.musical_prodigy or flags.music_lover or flags.music_career then
+			return true
+		end
+		return false
+	end,
 	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	-- Event 1: Practice session
 	{
@@ -201,8 +213,19 @@ HobbyEvents.Music = {
 -- ART EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 HobbyEvents.Art = {
-	-- CRITICAL FIX: Category-wide eligibility
-	eligibility = function(state) return canDoHobbies(state) and isOldEnoughForHobby(state, 4) end,
+	-- CRITICAL FIX: Category-wide eligibility - MUST have artistic interest!
+	eligibility = function(state) 
+		if not canDoHobbies(state) then return false end
+		if not isOldEnoughForHobby(state, 4) then return false end
+		-- CRITICAL FIX: Require artistic interest flags!
+		local flags = state.Flags or {}
+		if flags.artistic or flags.loves_art or flags.creative or flags.artist or
+		   flags.draws or flags.paints or flags.art_hobby or flags.art_lover or
+		   flags.creative_type or flags.visual_artist then
+			return true
+		end
+		return false
+	end,
 	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	-- Event 1: Creating art
 	{
@@ -340,8 +363,19 @@ HobbyEvents.Art = {
 -- GAMING EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 HobbyEvents.Gaming = {
-	-- CRITICAL FIX: Category-wide eligibility
-	eligibility = function(state) return canDoHobbies(state) and isOldEnoughForHobby(state, 5) end,
+	-- CRITICAL FIX: Category-wide eligibility - prefer players with gaming interest
+	eligibility = function(state) 
+		if not canDoHobbies(state) then return false end
+		if not isOldEnoughForHobby(state, 5) then return false end
+		-- Gaming is more universal, but prioritize players with gaming interest
+		local flags = state.Flags or {}
+		if flags.gamer or flags.loves_games or flags.video_games or flags.gaming_hobby or
+		   flags.esports or flags.streamer or flags.game_addict or flags.tech_savvy then
+			return true
+		end
+		-- Allow for any young person (gaming is common) but with lower chance
+		return (state.Age or 0) < 25
+	end,
 	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	-- Event 1: Gaming session
 	{
@@ -479,8 +513,20 @@ HobbyEvents.Gaming = {
 -- SPORTS HOBBY EVENTS
 -- ═══════════════════════════════════════════════════════════════════════════════
 HobbyEvents.Sports = {
-	-- CRITICAL FIX: Category-wide eligibility
-	eligibility = function(state) return canDoHobbies(state) and isOldEnoughForHobby(state, 5) end,
+	-- CRITICAL FIX: Category-wide eligibility - MUST have sports interest!
+	eligibility = function(state) 
+		if not canDoHobbies(state) then return false end
+		if not isOldEnoughForHobby(state, 5) then return false end
+		-- CRITICAL FIX: Require sports interest flags!
+		local flags = state.Flags or {}
+		if flags.athletic or flags.loves_sports or flags.sporty or flags.athlete or
+		   flags.plays_sports or flags.sports_hobby or flags.sports_fan or
+		   flags.fitness_enthusiast or flags.gym_rat or flags.jock or
+		   flags.football_player or flags.basketball_player or flags.soccer_player then
+			return true
+		end
+		return false
+	end,
 	blockedByFlags = { in_prison = true, incarcerated = true, in_jail = true },
 	-- Event 1: Working out
 	{

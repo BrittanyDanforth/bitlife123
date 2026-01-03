@@ -15232,7 +15232,10 @@ function LifeBackend:handleAgeUp(player)
 		local currentTime = os.clock()
 		
 		if pendingTimestamp and (currentTime - pendingTimestamp) > 60 then
-			warn("[LifeBackend] ⚠️ SOFTLOCK DETECTED! Clearing awaitingDecision after 60s timeout for", player.Name)
+			-- CRITICAL FIX: Include event ID in softlock log for debugging!
+			local stuckEventId = pending and pending.eventId or "unknown"
+			local stuckEventTitle = pending and pending.event and pending.event.title or "unknown"
+			warn("[LifeBackend] ⚠️ SOFTLOCK DETECTED! Clearing awaitingDecision after 60s timeout for", player.Name, "- Stuck on event:", stuckEventId, "(", stuckEventTitle, ")")
 			state.awaitingDecision = false
 			self.pendingEvents[player.UserId] = nil
 			-- Continue with age up instead of returning
