@@ -3636,20 +3636,60 @@ function RelationshipsScreen:showResultModal(title, message, accentColor)
 	end
 
 	local isPositive = true
+	local isCrime = false  -- CRITICAL FIX: Track crime/caught scenarios for special handling
+	
 	if message then
 		local lowerMsg = message:lower()
+		-- Standard negative keywords
 		if lowerMsg:find("fail") or lowerMsg:find("reject") or lowerMsg:find("refused")
 			or lowerMsg:find("angry") or lowerMsg:find("upset") or lowerMsg:find("worse")
 			or lowerMsg:find("error") or lowerMsg:find("broke up") or lowerMsg:find("ended") then
 			isPositive = false
 		end
+		
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		-- CRITICAL FIX: Detect eliminate/crime/caught scenarios
+		-- User bug: "IT SAYS A BLUE BORDER INSTEAD OF RED" when caught
+		-- ═══════════════════════════════════════════════════════════════════════════════
+		if lowerMsg:find("caught") or lowerMsg:find("prison") or lowerMsg:find("arrested")
+			or lowerMsg:find("jail") or lowerMsg:find("sentence") or lowerMsg:find("police")
+			or lowerMsg:find("detective") or lowerMsg:find("evidence") or lowerMsg:find("crime")
+			or lowerMsg:find("💀") or lowerMsg:find("☠️") or lowerMsg:find("🚔") or lowerMsg:find("⚖️")
+			or lowerMsg:find("⛓️") or lowerMsg:find("🔍") or lowerMsg:find("👮") then
+			isPositive = false
+			isCrime = true
+		end
+		
+		-- Also check for dark success (eliminate success is still negative/dark)
+		if lowerMsg:find("got away with it") or lowerMsg:find("dark secret") 
+			or lowerMsg:find("is gone") or lowerMsg:find("is no more")
+			or lowerMsg:find("has passed") or lowerMsg:find("departed") then
+			isPositive = false  -- Even success is dark for eliminate
+			isCrime = true
+		end
 	end
 
-	local shellColor = accentColor or (isPositive and C.Green or C.Red)
-	local shellDark  = isPositive and C.GreenDark or C.RedDark
-	local paleColor  = isPositive and C.GreenPale or C.RedPale
+	-- CRITICAL FIX: Force RED colors for crime/eliminate scenarios
+	local shellColor, shellDark, paleColor
+	
+	if isCrime then
+		-- Crime/eliminate always uses RED/dark colors
+		shellColor = C.Red or Color3.fromRGB(239, 68, 68)
+		shellDark = C.RedDark or Color3.fromRGB(185, 28, 28)
+		paleColor = C.RedPale or Color3.fromRGB(254, 226, 226)
+	elseif isPositive then
+		shellColor = accentColor or C.Green or Color3.fromRGB(34, 197, 94)
+		shellDark = C.GreenDark or Color3.fromRGB(22, 163, 74)
+		paleColor = C.GreenPale or Color3.fromRGB(220, 252, 231)
+	else
+		shellColor = C.Red or Color3.fromRGB(239, 68, 68)
+		shellDark = C.RedDark or Color3.fromRGB(185, 28, 28)
+		paleColor = C.RedPale or Color3.fromRGB(254, 226, 226)
+	end
 
-	if accentColor then
+	-- Override with custom accent color if provided and NOT a crime
+	if accentColor and not isCrime then
+		shellColor = accentColor
 		if accentColor == C.Pink then
 			shellDark = C.PinkDark
 			paleColor = C.PinkPale
@@ -3682,18 +3722,53 @@ function RelationshipsScreen:showResultModal(title, message, accentColor)
 	if title and title:find("Fight")     then emoji = "👊" end
 	if title and title:find("Insult")    then emoji = "😤" end
 	if title and title:find("Apologize") then emoji = isPositive and "🙏" or "😕" end
+	
+	-- CRITICAL FIX: Special emoji for crime/eliminate scenarios
+	if isCrime then
+		if message and message:lower():find("caught") then
+			emoji = "🚔"
+		elseif message and (message:lower():find("got away") or message:lower():find("success")) then
+			emoji = "💀"
+		else
+			emoji = "⚠️"
+		end
+	end
 
 	self.resultModal.emojiLabel.Text       = emoji
 	self.resultModal.titleLabel.Text       = title or "Interaction"
 	self.resultModal.titleLabel.TextColor3 = shellDark
 	self.resultModal.messageLabel.Text     = message or "Something happened..."
-	self.resultModal.okButton.Text         = isPositive and "💕 Continue" or "😔 Okay..."
+	self.resultModal.okButton.Text         = isPositive and "💕 Continue" or (isCrime and "😰 Oh no..." or "😔 Okay...")
 
 	-- Use custom show method if available
 	if self.resultModal.show then
 		self.resultModal.show()
 	elseif UI.showModal then
 		UI.showModal(self.resultModal)
+	end
+	
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	-- CRITICAL FIX: Add shake animation for negative/crime outcomes
+	-- User request: "ITS SUPPOSED SHAKE LIKE BAD"
+	-- ═══════════════════════════════════════════════════════════════════════════════
+	if (not isPositive or isCrime) and self.resultModal.container then
+		local container = self.resultModal.container
+		local originalPos = container.Position
+		
+		-- Shake animation for bad outcomes
+		task.spawn(function()
+			for i = 1, 6 do
+				local offset = (i % 2 == 0) and 8 or -8
+				UI.tween(container, TweenInfo.new(0.05, Enum.EasingStyle.Quad), {
+					Position = UDim2.new(originalPos.X.Scale, originalPos.X.Offset + offset, originalPos.Y.Scale, originalPos.Y.Offset)
+				})
+				task.wait(0.05)
+			end
+			-- Return to original position
+			UI.tween(container, TweenInfo.new(0.05, Enum.EasingStyle.Quad), {
+				Position = originalPos
+			})
+		end)
 	end
 end
 
